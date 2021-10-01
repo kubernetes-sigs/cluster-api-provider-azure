@@ -355,6 +355,9 @@ type ManagedClusterSpec struct {
 
 	// LoadBalancerProfile is the profile of the cluster load balancer.
 	LoadBalancerProfile *LoadBalancerProfile
+
+	// APIServerAccessProfile is the access profile for AKS API server.
+	APIServerAccessProfile *APIServerAccessProfile
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
@@ -396,6 +399,18 @@ type LoadBalancerProfile struct {
 
 	// IdleTimeoutInMinutes - Desired outbound flow idle timeout in minutes. Allowed values must be in the range of 4 to 120 (inclusive). The default value is 30 minutes.
 	IdleTimeoutInMinutes *int32
+}
+
+// APIServerAccessProfile is the access profile for AKS API server.
+type APIServerAccessProfile struct {
+	// AuthorizedIPRanges - Authorized IP Ranges to kubernetes API server.
+	AuthorizedIPRanges []string
+	// EnablePrivateCluster - Whether to create the cluster as a private cluster or not.
+	EnablePrivateCluster *bool
+	// PrivateDNSZone - Private dns zone mode for private cluster.
+	PrivateDNSZone *string
+	// EnablePrivateClusterPublicFQDN - Whether to create additional public FQDN for private cluster or not.
+	EnablePrivateClusterPublicFQDN *bool
 }
 
 // AgentPoolSpec contains agent pool specification details.

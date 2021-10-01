@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	"errors"
 	"net"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -242,6 +243,10 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 		}
 	}
 
+	if errs := r.validateAPIServerAccessProfileUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if len(allErrs) == 0 {
 		return r.Validate()
 	}
@@ -263,6 +268,7 @@ func (r *AzureManagedControlPlane) Validate() error {
 		r.validateDNSServiceIP,
 		r.validateSSHKey,
 		r.validateLoadBalancerProfile,
+		r.validateAPIServerAccessProfile,
 	}
 
 	var errs []error
@@ -356,4 +362,53 @@ func (r *AzureManagedControlPlane) validateLoadBalancerProfile() error {
 	}
 
 	return nil
+}
+
+// validateAPIServerAccessProfile validates an APIServerAccessProfile.
+func (r *AzureManagedControlPlane) validateAPIServerAccessProfile() error {
+	if r.Spec.APIServerAccessProfile != nil {
+		var allErrs field.ErrorList
+		for _, ipRange := range r.Spec.APIServerAccessProfile.AuthorizedIPRanges {
+			if _, _, err := net.ParseCIDR(ipRange); err != nil {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "APIServerAccessProfile", "AuthorizedIPRanges"), ipRange, "invalid CIDR format"))
+			}
+		}
+		if len(allErrs) > 0 {
+			agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+			azuremanagedcontrolplanelog.Info("Invalid apiServerAccessProfile: %s", agg.Error())
+			return agg
+		}
+	}
+	return nil
+}
+
+// validateAPIServerAccessProfileUpdate validates update to APIServerAccessProfile.
+func (r *AzureManagedControlPlane) validateAPIServerAccessProfileUpdate(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+
+	newAPIServerAccessProfileNormalized := &APIServerAccessProfile{}
+	oldAPIServerAccessProfileNormalized := &APIServerAccessProfile{}
+	if r.Spec.APIServerAccessProfile != nil {
+		newAPIServerAccessProfileNormalized = &APIServerAccessProfile{
+			EnablePrivateCluster:           r.Spec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 r.Spec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: r.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+	}
+	if old.Spec.APIServerAccessProfile != nil {
+		oldAPIServerAccessProfileNormalized = &APIServerAccessProfile{
+			EnablePrivateCluster:           old.Spec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 old.Spec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: old.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+	}
+
+	if !reflect.DeepEqual(newAPIServerAccessProfileNormalized, oldAPIServerAccessProfileNormalized) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "APIServerAccessProfile"),
+				r.Spec.APIServerAccessProfile, "fields (except for AuthorizedIPRanges) are immutable"),
+		)
+	}
+
+	return allErrs
 }

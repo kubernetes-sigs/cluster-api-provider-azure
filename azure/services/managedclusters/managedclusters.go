@@ -107,6 +107,18 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 		existingMCPropertiesNormalized.NetworkProfile.LoadBalancerProfile = existingMC.NetworkProfile.LoadBalancerProfile
 	}
 
+	if managedCluster.APIServerAccessProfile != nil {
+		propertiesNormalized.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+			AuthorizedIPRanges: managedCluster.APIServerAccessProfile.AuthorizedIPRanges,
+		}
+	}
+
+	if existingMC.APIServerAccessProfile != nil {
+		existingMCPropertiesNormalized.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+			AuthorizedIPRanges: existingMC.APIServerAccessProfile.AuthorizedIPRanges,
+		}
+	}
+
 	clusterNormalized := &containerservice.ManagedCluster{
 		ManagedClusterProperties: propertiesNormalized,
 	}
@@ -266,6 +278,15 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			managedCluster.NetworkProfile.LoadBalancerProfile.OutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPs{
 				PublicIPs: convertToResourceReferences(managedClusterSpec.LoadBalancerProfile.OutboundIPs),
 			}
+		}
+	}
+
+	if managedClusterSpec.APIServerAccessProfile != nil {
+		managedCluster.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+			AuthorizedIPRanges:             &managedClusterSpec.APIServerAccessProfile.AuthorizedIPRanges,
+			EnablePrivateCluster:           managedClusterSpec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 managedClusterSpec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: managedClusterSpec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
 		}
 	}
 

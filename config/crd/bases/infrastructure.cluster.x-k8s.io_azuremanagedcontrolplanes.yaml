@@ -226,6 +226,32 @@ spec:
                   resources managed by the Azure provider, in addition to the ones
                   added by default.
                 type: object
+              apiServerAccessProfile:
+                description: APIServerAccessProfile is the access profile for AKS
+                  API server.
+                properties:
+                  authorizedIPRanges:
+                    description: AuthorizedIPRanges - Authorized IP Ranges to kubernetes
+                      API server.
+                    items:
+                      type: string
+                    type: array
+                  enablePrivateCluster:
+                    description: EnablePrivateCluster - Whether to create the cluster
+                      as a private cluster or not.
+                    type: boolean
+                  enablePrivateClusterPublicFQDN:
+                    description: EnablePrivateClusterPublicFQDN - Whether to create
+                      additional public FQDN for private cluster or not.
+                    type: boolean
+                  privateDNSZone:
+                    description: PrivateDNSZone - Private dns zone mode for private
+                      cluster.
+                    enum:
+                    - System
+                    - None
+                    type: string
+                type: object
               controlPlaneEndpoint:
                 description: ControlPlaneEndpoint represents the endpoint used to
                   communicate with the control plane.
