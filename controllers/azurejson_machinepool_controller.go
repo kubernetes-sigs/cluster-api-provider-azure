@@ -23,8 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,15 +64,17 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, m
 func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureJSONMachinePoolReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureMachinePool"),
-		))
-	defer span.End()
+	ctx, log, done := tele.StartSpanWithLogger(
+		ctx,
+		"controllers.AzureJSONMachinePoolReconciler.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureMachinePool"),
+	)
+	defer done()
+
+	log = log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
 	// Fetch the AzureMachine instance
 	azureMachinePool := &expv1.AzureMachinePool{}

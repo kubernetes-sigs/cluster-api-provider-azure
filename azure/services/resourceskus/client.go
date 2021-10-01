@@ -55,8 +55,8 @@ func newResourceSkusClient(subscriptionID string, baseURI string, authorizer aut
 
 // List returns all Resource SKUs available to the subscription.
 func (ac *AzureClient) List(ctx context.Context, filter string) ([]compute.ResourceSku, error) {
-	ctx, span := tele.Tracer().Start(ctx, "resourceskus.AzureClient.List")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourceskus.AzureClient.List")
+	defer done()
 
 	iter, err := ac.skus.ListComplete(ctx, filter)
 	if err != nil {

@@ -105,8 +105,11 @@ func (rollingUpdateStrategy *rollingUpdateStrategy) maxUnavailable(desiredReplic
 // SelectMachinesToDelete selects the machines to delete based on the machine state, desired replica count, and
 // the DeletePolicy.
 func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx context.Context, desiredReplicaCount int32, machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) ([]infrav1exp.AzureMachinePoolMachine, error) {
-	ctx, span := tele.Tracer().Start(ctx, "strategies.rollingUpdateStrategy.SelectMachinesToDelete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"strategies.rollingUpdateStrategy.SelectMachinesToDelete",
+	)
+	defer done()
 
 	maxUnavailable, err := rollingUpdateStrategy.maxUnavailable(int(desiredReplicaCount))
 	if err != nil {

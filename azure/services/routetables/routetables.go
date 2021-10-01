@@ -53,8 +53,8 @@ func New(scope *scope.ClusterScope) *Service {
 
 // Reconcile gets/creates/updates a route table.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "routetables.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Reconcile")
+	defer done()
 
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping route tables reconcile in custom vnet mode")
@@ -97,8 +97,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the route table with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "routetables.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Delete")
+	defer done()
 
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping route table deletion in custom vnet mode")

@@ -54,16 +54,16 @@ func newVirtualMachineExtensionsClient(subscriptionID string, baseURI string, au
 
 // Get the virtual machine extension.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmName, name string) (compute.VirtualMachineExtension, error) {
-	ctx, span := tele.Tracer().Start(ctx, "vmextensions.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "vmextensions.AzureClient.Get")
+	defer done()
 
 	return ac.vmextensions.Get(ctx, resourceGroupName, vmName, name, "")
 }
 
 // CreateOrUpdateAsync creates or updates the virtual machine extension.
 func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, resourceGroupName, vmName, name string, parameters compute.VirtualMachineExtension) error {
-	ctx, span := tele.Tracer().Start(ctx, "vmextensions.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "vmextensions.AzureClient.CreateOrUpdate")
+	defer done()
 
 	_, err := ac.vmextensions.CreateOrUpdate(ctx, resourceGroupName, vmName, name, parameters)
 	return err
@@ -71,8 +71,8 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, resourceGroupNam
 
 // Delete removes the virtual machine extension.
 func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, vmName, name string) error {
-	ctx, span := tele.Tracer().Start(ctx, "vmextensions.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "vmextensions.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.vmextensions.Delete(ctx, resourceGroupName, vmName, name)
 	if err != nil {

@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -77,8 +75,8 @@ func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder r
 
 // SetupWithManager initializes this controller with a manager.
 func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options Options) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.SetupWithManager")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineReconciler.SetupWithManager")
+	defer done()
 
 	log := amr.Log.WithValues("controller", "AzureMachine")
 	var r reconcile.Reconciler = amr
@@ -139,16 +137,17 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(amr.ReconcileTimeout))
 	defer cancel()
-	logger := amr.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureMachine"),
-		),
+	ctx, logger, done := tele.StartSpanWithLogger(
+		ctx,
+		"controllers.AzureMachineReconciler.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureMachine"),
 	)
-	defer span.End()
+	defer done()
+
+	logger = logger.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
 
 	// Fetch the AzureMachine VM.
 	azureMachine := &infrav1.AzureMachine{}
@@ -244,8 +243,8 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.reconcileNormal")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineReconciler.reconcileNormal")
+	defer done()
 
 	machineScope.Info("Reconciling AzureMachine")
 	// If the AzureMachine is in an error state, return early.
@@ -321,8 +320,8 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 }
 
 func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.reconcileDelete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineReconciler.reconcileDelete")
+	defer done()
 
 	machineScope.Info("Handling deleted AzureMachine")
 

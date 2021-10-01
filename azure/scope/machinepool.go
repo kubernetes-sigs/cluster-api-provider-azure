@@ -212,8 +212,8 @@ func (m MachinePoolScope) MaxSurge() (int, error) {
 // updateReplicasAndProviderIDs ties the Azure VMSS instance data and the Node status data together to build and update
 // the AzureMachinePool replica count and providerIDList.
 func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.UpdateInstanceStatuses")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.UpdateInstanceStatuses")
+	defer done()
 
 	machines, err := m.getMachinePoolMachines(ctx)
 	if err != nil {
@@ -235,8 +235,11 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 }
 
 func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav1exp.AzureMachinePoolMachine, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.getMachinePoolMachines")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolScope.getMachinePoolMachines",
+	)
+	defer done()
 
 	labels := map[string]string{
 		clusterv1.ClusterLabelName:      m.ClusterName(),
@@ -251,8 +254,11 @@ func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav
 }
 
 func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.applyAzureMachinePoolMachines")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolScope.applyAzureMachinePoolMachines",
+	)
+	defer done()
 
 	if m.vmssState == nil {
 		m.Info("vmssState is nil")
@@ -493,16 +499,19 @@ func (m *MachinePoolScope) SetAnnotation(key, value string) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.PatchObject")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolScope.PatchObject",
+	)
+	defer done()
 
 	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
 }
 
 // Close the MachineScope by updating the machine spec, machine status.
 func (m *MachinePoolScope) Close(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.Close")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.Close")
+	defer done()
 
 	if m.vmssState != nil {
 		if err := m.applyAzureMachinePoolMachines(ctx); err != nil {
@@ -521,8 +530,11 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 
 // GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
 func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.GetBootstrapData")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolScope.GetBootstrapData",
+	)
+	defer done()
 
 	dataSecretName := m.MachinePool.Spec.Template.Spec.Bootstrap.DataSecretName
 	if dataSecretName == nil {

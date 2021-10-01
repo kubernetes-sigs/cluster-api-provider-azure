@@ -54,16 +54,16 @@ func newTagsClient(subscriptionID string, baseURI string, authorizer autorest.Au
 
 // GetAtScope sends the get at scope request.
 func (ac *azureClient) GetAtScope(ctx context.Context, scope string) (resources.TagsResource, error) {
-	ctx, span := tele.Tracer().Start(ctx, "tags.AzureClient.GetAtScope")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.GetAtScope")
+	defer done()
 
 	return ac.tags.GetAtScope(ctx, scope)
 }
 
 // CreateOrUpdateAtScope allows adding or replacing the entire set of tags on the specified resource or subscription.
 func (ac *azureClient) CreateOrUpdateAtScope(ctx context.Context, scope string, parameters resources.TagsResource) (resources.TagsResource, error) {
-	ctx, span := tele.Tracer().Start(ctx, "tags.AzureClient.CreateOrUpdateAtScope")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.CreateOrUpdateAtScope")
+	defer done()
 
 	return ac.tags.CreateOrUpdateAtScope(ctx, scope, parameters)
 }

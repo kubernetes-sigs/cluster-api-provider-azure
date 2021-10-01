@@ -54,8 +54,8 @@ func New(scope NSGScope) *Service {
 
 // Reconcile gets/creates/updates a network security group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "securitygroups.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.Reconcile")
+	defer done()
 
 	if !s.Scope.IsVnetManaged() {
 		s.Scope.V(4).Info("Skipping network security group reconcile in custom VNet mode")
@@ -137,8 +137,8 @@ func ruleExists(rules []network.SecurityRule, rule network.SecurityRule) bool {
 
 // Delete deletes the network security group with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "securitygroups.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.Delete")
+	defer done()
 
 	if !s.Scope.IsVnetManaged() {
 		s.Scope.V(4).Info("Skipping network security group delete in custom VNet mode")

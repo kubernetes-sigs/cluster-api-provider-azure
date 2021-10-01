@@ -59,8 +59,8 @@ func NewService(scope ScaleSetVMScope) *Service {
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.Reconcile")
+	defer done()
 
 	var (
 		resourceGroup = s.Scope.ResourceGroup()
@@ -83,8 +83,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes a scaleset instance asynchronously returning a future which encapsulates the long-running operation.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.Delete")
+	defer done()
 
 	var (
 		resourceGroup = s.Scope.ResourceGroup()

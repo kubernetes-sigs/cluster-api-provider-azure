@@ -57,8 +57,8 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 
 // Reconcile reconciles all the services in a predetermined order.
 func (r *azureManagedControlPlaneService) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneService.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedControlPlaneService.Reconcile")
+	defer done()
 
 	if err := r.groupsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile managed cluster resource group")
@@ -86,8 +86,8 @@ func (r *azureManagedControlPlaneService) Reconcile(ctx context.Context) error {
 
 // Delete reconciles all the services in a predetermined order.
 func (r *azureManagedControlPlaneService) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneService.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedControlPlaneService.Delete")
+	defer done()
 
 	if err := r.managedClustersSvc.Delete(ctx); err != nil {
 		return errors.Wrapf(err, "failed to delete managed cluster")
@@ -105,8 +105,8 @@ func (r *azureManagedControlPlaneService) Delete(ctx context.Context) error {
 }
 
 func (r *azureManagedControlPlaneService) reconcileKubeconfig(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneService.reconcileKubeconfig")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedControlPlaneService.reconcileKubeconfig")
+	defer done()
 
 	kubeConfigData := r.scope.GetKubeConfigData()
 	if kubeConfigData == nil {

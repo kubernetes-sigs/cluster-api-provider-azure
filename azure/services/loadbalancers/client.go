@@ -55,16 +55,16 @@ func newLoadBalancersClient(subscriptionID string, baseURI string, authorizer au
 
 // Get gets the specified load balancer.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, lbName string) (network.LoadBalancer, error) {
-	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.AzureClient.Get")
+	defer done()
 
 	return ac.loadbalancers.Get(ctx, resourceGroupName, lbName, "")
 }
 
 // CreateOrUpdate creates or updates a load balancer.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, lbName string, lb network.LoadBalancer) error {
-	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.AzureClient.CreateOrUpdate")
+	defer done()
 
 	var etag string
 	if lb.Etag != nil {
@@ -98,8 +98,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified load balancer.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, lbName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.loadbalancers.Delete(ctx, resourceGroupName, lbName)
 	if err != nil {

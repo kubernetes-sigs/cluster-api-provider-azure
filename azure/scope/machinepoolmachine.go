@@ -268,8 +268,11 @@ func (s *MachinePoolMachineScope) ProviderID() string {
 
 // Close updates the state of MachinePoolMachine.
 func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.Close",
+	)
+	defer done()
 
 	return s.patchHelper.Patch(ctx, s.AzureMachinePoolMachine)
 }
@@ -277,8 +280,11 @@ func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 // UpdateStatus updates the node reference for the machine and other status fields. This func should be called at the
 // end of a reconcile request and after updating the scope with the most recent Azure data.
 func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.Get",
+	)
+	defer done()
 
 	var (
 		nodeRef = s.AzureMachinePoolMachine.Status.NodeRef
@@ -323,8 +329,11 @@ func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
 
 // CordonAndDrain will cordon and drain the Kubernetes node associated with this AzureMachinePoolMachine.
 func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.CordonAndDrain")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.CordonAndDrain",
+	)
+	defer done()
 
 	var (
 		nodeRef = s.AzureMachinePoolMachine.Status.NodeRef
@@ -386,8 +395,11 @@ func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
 }
 
 func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.Node) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.drainNode")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.drainNode",
+	)
+	defer done()
 
 	restConfig, err := remote.RESTConfig(ctx, MachinePoolMachineScopeName, s.client, client.ObjectKey{
 		Name:      s.ClusterName(),
@@ -523,8 +535,11 @@ func (np *workloadClusterProxy) GetNodeByObjectReference(ctx context.Context, no
 
 // GetNodeByProviderID will fetch a node from the workload cluster by it's providerID.
 func (np *workloadClusterProxy) GetNodeByProviderID(ctx context.Context, providerID string) (*corev1.Node, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getNode")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.getNode",
+	)
+	defer done()
 
 	workloadClient, err := getWorkloadClient(ctx, np.Client, np.Cluster)
 	if err != nil {
@@ -535,8 +550,11 @@ func (np *workloadClusterProxy) GetNodeByProviderID(ctx context.Context, provide
 }
 
 func getNodeByProviderID(ctx context.Context, workloadClient client.Client, providerID string) (*corev1.Node, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getNodeRefForProviderID")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.getNodeRefForProviderID",
+	)
+	defer done()
 
 	nodeList := corev1.NodeList{}
 	for {
@@ -559,8 +577,11 @@ func getNodeByProviderID(ctx context.Context, workloadClient client.Client, prov
 }
 
 func getWorkloadClient(ctx context.Context, c client.Client, cluster client.ObjectKey) (client.Client, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getWorkloadClient")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.getWorkloadClient",
+	)
+	defer done()
 
 	return remote.NewClusterClient(ctx, MachinePoolMachineScopeName, c, cluster)
 }

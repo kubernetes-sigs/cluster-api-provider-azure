@@ -57,8 +57,8 @@ func New(scope GroupScope) *Service {
 
 // Reconcile gets/creates/updates a resource group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "groups.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Reconcile")
+	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
@@ -72,8 +72,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the resource group if it is managed by capz.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "groups.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
+	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
@@ -104,8 +104,8 @@ func (s *Service) Delete(ctx context.Context) error {
 // IsGroupManaged returns true if the resource group has an owned tag with the cluster name as value,
 // meaning that the resource group's lifecycle is managed.
 func (s *Service) IsGroupManaged(ctx context.Context) (bool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "groups.Service.IsGroupManaged")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.IsGroupManaged")
+	defer done()
 
 	groupSpec := s.Scope.GroupSpec()
 	group, err := s.client.Get(ctx, groupSpec.ResourceName())

@@ -375,21 +375,24 @@ HTTP headers. By propagating span context, it creates a distributed, causal rela
 For tracing, we use [OpenTelemetry](https://github.com/open-telemetry).
 
 Here is an example of staring a span in the beginning of a controller reconcile.
+
 ```go
-ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconcile",
-    trace.WithAttributes(
-        attribute.String("namespace", req.Namespace),
-        attribute.String("name", req.Name),
-        attribute.String("kind", "AzureMachine"),
-    ))
-defer span.End()
+ctx, logger, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineReconciler.Reconcile",
+   tele.KVP("namespace", req.Namespace),
+   tele.KVP("name", req.Name),
+   tele.KVP("kind", "AzureMachine"),
+)
+defer done()
 ```
+
 The code above creates a context with a new span stored in the context.Context value bag. If a span already existed in
 the `ctx` arguement, then the new span would take on the parentID of the existing span, otherwise the new span
 becomes a "root span", one that does not have a parent. The span is also created with labels, or tags, which
 provide metadata about the span and can be used to query in many distributed tracing systems.
 
-You should consider adding tracing if your func accepts a context.
+It also creates a logger that logs messages both to the span and `STDOUT`. The span is not returned directly, but closure of the span is handled by the final `done` value. This is a simple nil-ary function (`func()`) that should be called  as appropriate. Most likely, this should be done in a defer -- as shown in the above code sample -- to ensure that the span is closed at the end of your function or scope.
+
+>Consider adding tracing if your func accepts a context.
 
 #### Metrics
 Metrics provide quantitative data about the operations of the controller. This includes cumulative data like

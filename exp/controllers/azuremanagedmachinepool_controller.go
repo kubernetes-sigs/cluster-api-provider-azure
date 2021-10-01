@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -76,8 +74,8 @@ func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger,
 
 // SetupWithManager initializes this controller with a manager.
 func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.SetupWithManager")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePoolReconciler.SetupWithManager")
+	defer done()
 
 	log := ammpr.Log.WithValues("controller", "AzureManagedMachinePool")
 	var r reconcile.Reconciler = ammpr
@@ -135,13 +133,12 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	defer cancel()
 	log := ammpr.Log.WithValues("namespace", req.Namespace, "azureManagedMachinePool", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureManagedMachinePool"),
-		))
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePoolReconciler.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureManagedMachinePool"),
+	)
+	defer done()
 
 	// Fetch the AzureManagedMachinePool instance
 	infraPool := &infrav1exp.AzureManagedMachinePool{}
@@ -230,8 +227,8 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 }
 
 func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.reconcileNormal")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePoolReconciler.reconcileNormal")
+	defer done()
 
 	scope.Logger.Info("Reconciling AzureManagedMachinePool")
 
@@ -259,8 +256,8 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 }
 
 func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.reconcileDelete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePoolReconciler.reconcileDelete")
+	defer done()
 
 	scope.Logger.Info("Reconciling AzureManagedMachinePool delete")
 

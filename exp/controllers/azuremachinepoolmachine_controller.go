@@ -23,8 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -85,8 +83,8 @@ func NewAzureMachinePoolMachineController(c client.Client, log logr.Logger, reco
 
 // SetupWithManager initializes this controller with a manager.
 func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolMachineController.SetupWithManager")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolMachineController.SetupWithManager")
+	defer done()
 
 	log := ampmr.Log.WithValues("controller", "AzureMachinePoolMachine")
 
@@ -128,18 +126,19 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, logger, done := tele.StartSpanWithLogger(
+		ctx,
+		"controllers.AzureMachinePoolMachineController.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureMachinePoolMachine"),
+	)
+	defer done()
+
+	logger = logger.WithValues("namespace", req.Namespace, "azureMachinePoolMachine", req.Name)
+
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampmr.ReconcileTimeout))
 	defer cancel()
-	logger := ampmr.Log.WithValues("namespace", req.Namespace, "azureMachinePoolMachine", req.Name)
-
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolMachineController.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureMachinePoolMachine"),
-		),
-	)
-	defer span.End()
 
 	machine := &infrav1exp.AzureMachinePoolMachine{}
 	err := ampmr.Get(ctx, req.NamespacedName, machine)
@@ -248,8 +247,8 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 }
 
 func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Context, machineScope *scope.MachinePoolMachineScope) (_ reconcile.Result, reterr error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolMachineController.reconcileNormal")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolMachineController.reconcileNormal")
+	defer done()
 
 	machineScope.Info("Reconciling AzureMachinePoolMachine")
 	// If the AzureMachine is in an error state, return early.
@@ -305,8 +304,8 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 }
 
 func (ampmr *AzureMachinePoolMachineController) reconcileDelete(ctx context.Context, machineScope *scope.MachinePoolMachineScope) (_ reconcile.Result, reterr error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolMachineController.reconcileDelete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolMachineController.reconcileDelete")
+	defer done()
 
 	machineScope.Info("Handling deleted AzureMachinePoolMachine")
 
@@ -354,8 +353,8 @@ func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) 
 
 // Reconcile will reconcile the state of the Machine Pool Machine with the state of the Azure VMSS VM.
 func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachinePoolMachineReconciler.Reconcile")
+	defer done()
 
 	if err := r.scalesetVMsService.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile scalesetVMs")
@@ -370,8 +369,8 @@ func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error
 
 // Delete will attempt to drain and delete the Azure VMSS VM.
 func (r *azureMachinePoolMachineReconciler) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachinePoolMachineReconciler.Delete")
+	defer done()
 
 	defer func() {
 		if err := r.Scope.UpdateStatus(ctx); err != nil {

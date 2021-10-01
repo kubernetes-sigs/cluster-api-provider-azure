@@ -55,16 +55,16 @@ func newSecurityGroupsClient(subscriptionID string, baseURI string, authorizer a
 
 // Get gets the specified network security group.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, sgName string) (network.SecurityGroup, error) {
-	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.AzureClient.Get")
+	defer done()
 
 	return ac.securitygroups.Get(ctx, resourceGroupName, sgName, "")
 }
 
 // CreateOrUpdate creates or updates a network security group in the specified resource group.
 func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, sgName string, sg network.SecurityGroup) error {
-	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.AzureClient.CreateOrUpdate")
+	defer done()
 
 	var etag string
 	if sg.Etag != nil {
@@ -95,8 +95,8 @@ func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified network security group.
 func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, sgName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.securitygroups.Delete(ctx, resourceGroupName, sgName)
 	if err != nil {

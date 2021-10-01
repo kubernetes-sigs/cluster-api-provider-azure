@@ -54,8 +54,8 @@ func New(scope InboundNatScope) *Service {
 
 // Reconcile gets/creates/updates an inbound NAT rule.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.Service.Reconcile")
+	defer done()
 
 	for _, inboundNatSpec := range s.Scope.InboundNatSpecs() {
 		s.Scope.V(2).Info("creating inbound NAT rule", "NAT rule", inboundNatSpec.Name)
@@ -107,8 +107,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the inbound NAT rule with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.Service.Delete")
+	defer done()
 
 	for _, inboundNatSpec := range s.Scope.InboundNatSpecs() {
 		s.Scope.V(2).Info("deleting inbound NAT rule", "NAT rule", inboundNatSpec.Name)

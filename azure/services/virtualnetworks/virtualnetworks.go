@@ -54,8 +54,8 @@ func New(scope VNetScope) *Service {
 
 // Reconcile gets/creates/updates a virtual network.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Reconcile")
+	defer done()
 
 	// Following should be created upstream and provided as an input to NewService
 	// A VNet has following dependencies
@@ -109,8 +109,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Delete")
+	defer done()
 
 	vnetSpec := s.Scope.VNetSpec()
 	existingVnet, err := s.getExisting(ctx, vnetSpec)
@@ -141,8 +141,8 @@ func (s *Service) Delete(ctx context.Context) error {
 
 // getExisting provides information about an existing virtual network.
 func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav1.VnetSpec, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.getExisting")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.getExisting")
+	defer done()
 
 	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
 	if err != nil {

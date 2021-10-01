@@ -49,8 +49,13 @@ func (t tracer) Start(
 }
 
 // Tracer returns an OpenTelemetry Tracer implementation to be used
-// to create spans. Use this implementation instead of the "raw" one that
-// you could otherwise get from calling `otel.Tracer("whatever")`.
+// to create spans. If you need access to the raw globally-registered
+// tracer, use this function.
+//
+// Most people should not use this function directly, however.
+// Instead, consider using StartSpanWithLogger, which uses
+// this tracer to start a new span, configures logging, and
+// more.
 //
 // Example usage:
 //
