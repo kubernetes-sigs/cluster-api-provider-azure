@@ -69,7 +69,7 @@ type AzureClusterSpec struct {
 
 	// BastionSpec encapsulates all things related to the Bastions in the cluster.
 	// +optional
-	BastionSpec BastionSpec `json:"bastionSpec,omitempty"`
+	BastionSpec BastionSpec `json:"azureBastion,omitempty"`
 
 	// CloudProviderConfigOverrides is an optional set of configuration values that can be overridden in azure cloud provider config.
 	// This is only a subset of options that are available in azure cloud provider config.

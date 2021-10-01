@@ -731,6 +731,15 @@ func (s *ClusterScope) SetDNSName() {
 func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalancerSpec, generateOutboundIPName func(string) string) []azure.PublicIPSpec {
 	var outboundIPSpecs []azure.PublicIPSpec
 	loadBalancerNodeOutboundIPs := outboundLB.FrontendIPsCount
+	for _, frontendIP := range outboundLB.FrontendIPs {
+		if outboundIP := frontendIP.PublicIP.OutboundIP; outboundIP != "" {
+			outboundIPSpecs = append(outboundIPSpecs, azure.PublicIPSpec{
+				OutboundIP: outboundIP,
+				Name:       frontendIP.PublicIP.Name,
+				DNSName:    frontendIP.PublicIP.DNSName,
+			})
+		}
+	}
 	if loadBalancerNodeOutboundIPs == nil || *loadBalancerNodeOutboundIPs == 0 {
 		// do nothing
 	} else if *loadBalancerNodeOutboundIPs == 1 {

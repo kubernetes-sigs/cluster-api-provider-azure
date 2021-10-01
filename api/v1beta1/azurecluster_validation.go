@@ -22,12 +22,12 @@ import (
 	"reflect"
 	"regexp"
 
-	"k8s.io/utils/pointer"
-
 	valid "github.com/asaskevich/govalidator"
+	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 )
 
 const (
@@ -84,6 +84,15 @@ func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
 	allErrs = append(allErrs, validateCloudProviderConfigOverrides(c.Spec.CloudProviderConfigOverrides, oldCloudProviderConfigOverrides,
 		field.NewPath("spec").Child("cloudProviderConfigOverrides"))...)
 
+	if c.Spec.BastionSpec.AzureBastion != nil && c.Spec.BastionSpec.AzureBastion.PublicIP.OutboundIP != "" {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec").Child("BastionSpec").Child("AzureBastion").Child("PublicIP").Child("OutboundIP"),
+			"Setting OutboundIP for AzureBastion PublicIP spec not allowed"))
+	}
+
+	if c.Spec.BastionSpec.AzureBastion != nil && c.Spec.BastionSpec.AzureBastion.Subnet.NatGateway.NatGatewayIP.OutboundIP != "" {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec").Child("BastionSpec").Child("AzureBastion").Child("Subnet").Child("NatGateway").Child("NatGatewayIP").Child("OutboundIP"),
+			"Setting OutboundIP for AzureBastion PublicIP spec not allowed"))
+	}
 	return allErrs
 }
 
@@ -437,6 +446,16 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 			fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
 	}
 
+	for index, frontendIP := range lb.FrontendIPs {
+		if frontendIP.PublicIP != nil && frontendIP.PublicIP.OutboundIP != "" {
+			err := validateOutboundIP(frontendIP)
+			if err != nil {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPs").Index(index).Child("publicIP").Child("outboundIP"), lb.FrontendIPs[index].PublicIP.OutboundIP,
+					"Outbound IP for NodeOutbound LB isn't a valid IPv4 or IPv6 address/CIDR."))
+			}
+		}
+	}
+
 	return allErrs
 }
 
@@ -497,4 +516,16 @@ func validateCloudProviderConfigOverrides(old, new *CloudProviderConfigOverrides
 		allErrs = append(allErrs, field.Invalid(fldPath, new, "cannot change cloudProviderConfigOverrides cluster creation"))
 	}
 	return allErrs
+}
+
+func validateOutboundIP(frontendIP FrontendIP) error {
+	outboundIP := net.ParseIP(frontendIP.PublicIP.OutboundIP)
+	if outboundIP != nil {
+		return nil
+	}
+	_, _, err := net.ParseCIDR(frontendIP.PublicIP.OutboundIP)
+	if err == nil {
+		return nil
+	}
+	return errors.Wrap(err, "could not parse into an ip or prefix")
 }

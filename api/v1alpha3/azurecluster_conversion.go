@@ -54,6 +54,10 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst.Spec.NetworkSpec.APIServerLB.IdleTimeoutInMinutes = restored.Spec.NetworkSpec.APIServerLB.IdleTimeoutInMinutes
 	dst.Spec.CloudProviderConfigOverrides = restored.Spec.CloudProviderConfigOverrides
 	dst.Spec.BastionSpec = restored.Spec.BastionSpec
+	if restored.Spec.BastionSpec.AzureBastion != nil {
+		dst.Spec.BastionSpec.AzureBastion.PublicIP.OutboundIP = restored.Spec.BastionSpec.AzureBastion.PublicIP.OutboundIP
+		dst.Spec.BastionSpec.AzureBastion.Subnet.NatGateway.NatGatewayIP.OutboundIP = restored.Spec.BastionSpec.AzureBastion.Subnet.NatGateway.NatGatewayIP.OutboundIP
+	}
 
 	// set default control plane outbound lb for private v1alpha3 clusters
 	if src.Spec.NetworkSpec.APIServerLB.Type == Internal && restored.Spec.NetworkSpec.ControlPlaneOutboundLB == nil {
@@ -87,7 +91,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 				}
 				dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules = append(dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules, restoredOutboundRules...)
 				dst.Spec.NetworkSpec.Subnets[i].NatGateway = restoredSubnet.NatGateway
-
+				dst.Spec.NetworkSpec.Subnets[i].NatGateway.NatGatewayIP = restoredSubnet.NatGateway.NatGatewayIP
 				break
 			}
 		}
@@ -308,4 +312,8 @@ func Convert_v1alpha3_Future_To_v1beta1_Future(in *Future, out *infrav1beta1.Fut
 func Convert_v1beta1_Future_To_v1alpha3_Future(in *infrav1beta1.Future, out *Future, s apiconversion.Scope) error {
 	out.FutureData = in.Data
 	return autoConvert_v1beta1_Future_To_v1alpha3_Future(in, out, s)
+}
+
+func Convert_v1beta1_PublicIPSpec_To_v1alpha3_PublicIPSpec(in *infrav1beta1.PublicIPSpec, out *PublicIPSpec, s apiconversion.Scope) error {
+	return autoConvert_v1beta1_PublicIPSpec_To_v1alpha3_PublicIPSpec(in, out, s)
 }

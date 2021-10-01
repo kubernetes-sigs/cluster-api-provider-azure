@@ -26,9 +26,10 @@ import (
 
 // PublicIPSpec defines the specification for a Public IP.
 type PublicIPSpec struct {
-	Name    string
-	DNSName string
-	IsIPv6  bool
+	Name       string
+	DNSName    string
+	IsIPv6     bool
+	OutboundIP string
 }
 
 // NICSpec defines the specification for a Network Interface.

@@ -284,6 +284,8 @@ type PublicIPSpec struct {
 	Name string `json:"name"`
 	// +optional
 	DNSName string `json:"dnsName,omitempty"`
+	// +optional
+	OutboundIP string `json:"outboundIP,omitempty"`
 }
 
 // VMState describes the state of an Azure virtual machine.

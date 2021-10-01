@@ -18,6 +18,7 @@ package publicips
 
 import (
 	"context"
+	"net"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
@@ -75,6 +76,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 		}
 
+		outboundIP := net.ParseIP(ip.OutboundIP)
+		outboundIPPrefix, _, _ := net.ParseCIDR(ip.OutboundIP)
+
 		err := s.Client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
@@ -86,15 +90,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					Name:        to.StringPtr(ip.Name),
 					Additional:  s.Scope.AdditionalTags(),
 				})),
-				Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-				Name:     to.StringPtr(ip.Name),
-				Location: to.StringPtr(s.Scope.Location()),
-				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-					PublicIPAddressVersion:   addressVersion,
-					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-					DNSSettings:              dnsSettings,
-				},
-				Zones: to.StringSlicePtr(s.Scope.FailureDomains()),
+				Sku:                             &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+				Name:                            to.StringPtr(ip.Name),
+				Location:                        to.StringPtr(s.Scope.Location()),
+				PublicIPAddressPropertiesFormat: getPublicIPAddressPropertiesFormat(addressVersion, dnsSettings, outboundIP, outboundIPPrefix),
+				Zones:                           to.StringSlicePtr(s.Scope.FailureDomains()),
 			},
 		)
 
@@ -148,4 +148,21 @@ func (s *Service) isIPManaged(ctx context.Context, ipName string) (bool, error) 
 	}
 	tags := converters.MapToTags(ip.Tags)
 	return tags.HasOwned(s.Scope.ClusterName()), nil
+}
+
+func getPublicIPAddressPropertiesFormat(addressVersion network.IPVersion, dnsSettings *network.PublicIPAddressDNSSettings, outboundIP, outboundIPPrefix net.IP) *network.PublicIPAddressPropertiesFormat {
+	pipAddressProperties := &network.PublicIPAddressPropertiesFormat{
+		PublicIPAddressVersion:   addressVersion,
+		PublicIPAllocationMethod: network.IPAllocationMethodStatic,
+		DNSSettings:              dnsSettings,
+	}
+
+	if outboundIP != nil {
+		pipAddressProperties.IPAddress = to.StringPtr(outboundIP.String())
+	} else if outboundIPPrefix != nil {
+		pipAddressProperties.PublicIPPrefix = &network.SubResource{
+			ID: to.StringPtr(outboundIPPrefix.String()),
+		}
+	}
+	return pipAddressProperties
 }

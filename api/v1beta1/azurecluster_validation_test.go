@@ -19,11 +19,10 @@ package v1beta1
 import (
 	"testing"
 
-	"k8s.io/utils/pointer"
-
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 )
 
 func TestClusterNameValidation(t *testing.T) {
@@ -1050,6 +1049,26 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 				Detail:   "Max front end ips allowed is 16",
 			},
 		},
+		{
+			name: "outbound IP is invalid",
+			lb: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						PublicIP: &PublicIPSpec{OutboundIP: "1.3", Name: "public-ip-1"},
+					},
+					{
+						PublicIP: &PublicIPSpec{OutboundIP: "1.2.3.4", Name: "public-ip-2"},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.frontendIPs[0].publicIP.outboundIP",
+				BadValue: "1.3",
+				Detail:   "Outbound IP for NodeOutbound LB isn't a valid IPv4 or IPv6 address/CIDR.",
+			},
+		},
 	}
 
 	for _, test := range testcases {
@@ -1218,6 +1237,38 @@ func TestValidateCloudProviderConfigOverrides(t *testing.T) {
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
+		})
+	}
+}
+
+func TestClusterWithBastionSpecPublicIP(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		name         string
+		cluster      *AzureCluster
+		azureBastion *AzureBastion
+	}
+
+	testCase := []test{
+		{
+			name:         "azurecluster with bastion spec NAT Gateway consisting public IP - invalid",
+			cluster:      createValidCluster(),
+			azureBastion: &AzureBastion{PublicIP: PublicIPSpec{OutboundIP: "1.2.3.4"}},
+		},
+		{
+			name:    "azurecluster with bastion spec public IP - invalid",
+			cluster: createValidCluster(),
+			azureBastion: &AzureBastion{
+				Subnet: SubnetSpec{NatGateway: NatGateway{NatGatewayIP: PublicIPSpec{OutboundIP: "1.2.3.4"}}},
+			},
+		},
+	}
+	for _, test := range testCase {
+		t.Run(test.name, func(t *testing.T) {
+			test.cluster.Spec.BastionSpec.AzureBastion = test.azureBastion
+			err := test.cluster.validateCluster(nil)
+			g.Expect(err).ToNot(BeNil())
 		})
 	}
 }

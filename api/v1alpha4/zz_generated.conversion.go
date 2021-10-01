@@ -401,11 +401,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.PublicIPSpec)(nil), (*PublicIPSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_PublicIPSpec_To_v1alpha4_PublicIPSpec(a.(*v1beta1.PublicIPSpec), b.(*PublicIPSpec), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*RateLimitConfig)(nil), (*v1beta1.RateLimitConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_RateLimitConfig_To_v1beta1_RateLimitConfig(a.(*RateLimitConfig), b.(*v1beta1.RateLimitConfig), scope)
 	}); err != nil {
@@ -503,6 +498,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1beta1.AzureMachineTemplateResource)(nil), (*AzureMachineTemplateResource)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(a.(*v1beta1.AzureMachineTemplateResource), b.(*AzureMachineTemplateResource), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta1.PublicIPSpec)(nil), (*PublicIPSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_PublicIPSpec_To_v1alpha4_PublicIPSpec(a.(*v1beta1.PublicIPSpec), b.(*PublicIPSpec), scope)
 	}); err != nil {
 		return err
 	}
@@ -1313,7 +1313,15 @@ func Convert_v1beta1_BackOffConfig_To_v1alpha4_BackOffConfig(in *v1beta1.BackOff
 }
 
 func autoConvert_v1alpha4_BastionSpec_To_v1beta1_BastionSpec(in *BastionSpec, out *v1beta1.BastionSpec, s conversion.Scope) error {
-	out.AzureBastion = (*v1beta1.AzureBastion)(unsafe.Pointer(in.AzureBastion))
+	if in.AzureBastion != nil {
+		in, out := &in.AzureBastion, &out.AzureBastion
+		*out = new(v1beta1.AzureBastion)
+		if err := Convert_v1alpha4_AzureBastion_To_v1beta1_AzureBastion(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AzureBastion = nil
+	}
 	return nil
 }
 
@@ -1323,7 +1331,15 @@ func Convert_v1alpha4_BastionSpec_To_v1beta1_BastionSpec(in *BastionSpec, out *v
 }
 
 func autoConvert_v1beta1_BastionSpec_To_v1alpha4_BastionSpec(in *v1beta1.BastionSpec, out *BastionSpec, s conversion.Scope) error {
-	out.AzureBastion = (*AzureBastion)(unsafe.Pointer(in.AzureBastion))
+	if in.AzureBastion != nil {
+		in, out := &in.AzureBastion, &out.AzureBastion
+		*out = new(AzureBastion)
+		if err := Convert_v1beta1_AzureBastion_To_v1alpha4_AzureBastion(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AzureBastion = nil
+	}
 	return nil
 }
 
@@ -1459,7 +1475,15 @@ func Convert_v1beta1_DiskEncryptionSetParameters_To_v1alpha4_DiskEncryptionSetPa
 func autoConvert_v1alpha4_FrontendIP_To_v1beta1_FrontendIP(in *FrontendIP, out *v1beta1.FrontendIP, s conversion.Scope) error {
 	out.Name = in.Name
 	out.PrivateIPAddress = in.PrivateIPAddress
-	out.PublicIP = (*v1beta1.PublicIPSpec)(unsafe.Pointer(in.PublicIP))
+	if in.PublicIP != nil {
+		in, out := &in.PublicIP, &out.PublicIP
+		*out = new(v1beta1.PublicIPSpec)
+		if err := Convert_v1alpha4_PublicIPSpec_To_v1beta1_PublicIPSpec(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.PublicIP = nil
+	}
 	return nil
 }
 
@@ -1471,7 +1495,15 @@ func Convert_v1alpha4_FrontendIP_To_v1beta1_FrontendIP(in *FrontendIP, out *v1be
 func autoConvert_v1beta1_FrontendIP_To_v1alpha4_FrontendIP(in *v1beta1.FrontendIP, out *FrontendIP, s conversion.Scope) error {
 	out.Name = in.Name
 	out.PrivateIPAddress = in.PrivateIPAddress
-	out.PublicIP = (*PublicIPSpec)(unsafe.Pointer(in.PublicIP))
+	if in.PublicIP != nil {
+		in, out := &in.PublicIP, &out.PublicIP
+		*out = new(PublicIPSpec)
+		if err := Convert_v1beta1_PublicIPSpec_To_v1alpha4_PublicIPSpec(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.PublicIP = nil
+	}
 	return nil
 }
 
@@ -1536,7 +1568,17 @@ func autoConvert_v1alpha4_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *LoadB
 	out.ID = in.ID
 	out.Name = in.Name
 	out.SKU = v1beta1.SKU(in.SKU)
-	out.FrontendIPs = *(*[]v1beta1.FrontendIP)(unsafe.Pointer(&in.FrontendIPs))
+	if in.FrontendIPs != nil {
+		in, out := &in.FrontendIPs, &out.FrontendIPs
+		*out = make([]v1beta1.FrontendIP, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha4_FrontendIP_To_v1beta1_FrontendIP(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.FrontendIPs = nil
+	}
 	out.Type = v1beta1.LBType(in.Type)
 	out.FrontendIPsCount = (*int32)(unsafe.Pointer(in.FrontendIPsCount))
 	out.IdleTimeoutInMinutes = (*int32)(unsafe.Pointer(in.IdleTimeoutInMinutes))
@@ -1552,7 +1594,17 @@ func autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(in *v1bet
 	out.ID = in.ID
 	out.Name = in.Name
 	out.SKU = SKU(in.SKU)
-	out.FrontendIPs = *(*[]FrontendIP)(unsafe.Pointer(&in.FrontendIPs))
+	if in.FrontendIPs != nil {
+		in, out := &in.FrontendIPs, &out.FrontendIPs
+		*out = make([]FrontendIP, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_FrontendIP_To_v1alpha4_FrontendIP(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.FrontendIPs = nil
+	}
 	out.Type = LBType(in.Type)
 	out.FrontendIPsCount = (*int32)(unsafe.Pointer(in.FrontendIPsCount))
 	out.IdleTimeoutInMinutes = (*int32)(unsafe.Pointer(in.IdleTimeoutInMinutes))
@@ -1618,12 +1670,38 @@ func autoConvert_v1alpha4_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, ou
 	if err := Convert_v1alpha4_VnetSpec_To_v1beta1_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
-	out.Subnets = *(*v1beta1.Subnets)(unsafe.Pointer(&in.Subnets))
+	if in.Subnets != nil {
+		in, out := &in.Subnets, &out.Subnets
+		*out = make(v1beta1.Subnets, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha4_SubnetSpec_To_v1beta1_SubnetSpec(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Subnets = nil
+	}
 	if err := Convert_v1alpha4_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
-	out.NodeOutboundLB = (*v1beta1.LoadBalancerSpec)(unsafe.Pointer(in.NodeOutboundLB))
-	out.ControlPlaneOutboundLB = (*v1beta1.LoadBalancerSpec)(unsafe.Pointer(in.ControlPlaneOutboundLB))
+	if in.NodeOutboundLB != nil {
+		in, out := &in.NodeOutboundLB, &out.NodeOutboundLB
+		*out = new(v1beta1.LoadBalancerSpec)
+		if err := Convert_v1alpha4_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.NodeOutboundLB = nil
+	}
+	if in.ControlPlaneOutboundLB != nil {
+		in, out := &in.ControlPlaneOutboundLB, &out.ControlPlaneOutboundLB
+		*out = new(v1beta1.LoadBalancerSpec)
+		if err := Convert_v1alpha4_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ControlPlaneOutboundLB = nil
+	}
 	out.PrivateDNSZoneName = in.PrivateDNSZoneName
 	return nil
 }
@@ -1637,12 +1715,38 @@ func autoConvert_v1beta1_NetworkSpec_To_v1alpha4_NetworkSpec(in *v1beta1.Network
 	if err := Convert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
-	out.Subnets = *(*Subnets)(unsafe.Pointer(&in.Subnets))
+	if in.Subnets != nil {
+		in, out := &in.Subnets, &out.Subnets
+		*out = make(Subnets, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_SubnetSpec_To_v1alpha4_SubnetSpec(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Subnets = nil
+	}
 	if err := Convert_v1beta1_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
-	out.NodeOutboundLB = (*LoadBalancerSpec)(unsafe.Pointer(in.NodeOutboundLB))
-	out.ControlPlaneOutboundLB = (*LoadBalancerSpec)(unsafe.Pointer(in.ControlPlaneOutboundLB))
+	if in.NodeOutboundLB != nil {
+		in, out := &in.NodeOutboundLB, &out.NodeOutboundLB
+		*out = new(LoadBalancerSpec)
+		if err := Convert_v1beta1_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.NodeOutboundLB = nil
+	}
+	if in.ControlPlaneOutboundLB != nil {
+		in, out := &in.ControlPlaneOutboundLB, &out.ControlPlaneOutboundLB
+		*out = new(LoadBalancerSpec)
+		if err := Convert_v1beta1_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ControlPlaneOutboundLB = nil
+	}
 	out.PrivateDNSZoneName = in.PrivateDNSZoneName
 	return nil
 }
@@ -1694,12 +1798,8 @@ func Convert_v1alpha4_PublicIPSpec_To_v1beta1_PublicIPSpec(in *PublicIPSpec, out
 func autoConvert_v1beta1_PublicIPSpec_To_v1alpha4_PublicIPSpec(in *v1beta1.PublicIPSpec, out *PublicIPSpec, s conversion.Scope) error {
 	out.Name = in.Name
 	out.DNSName = in.DNSName
+	// WARNING: in.OutboundIP requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta1_PublicIPSpec_To_v1alpha4_PublicIPSpec is an autogenerated conversion function.
-func Convert_v1beta1_PublicIPSpec_To_v1alpha4_PublicIPSpec(in *v1beta1.PublicIPSpec, out *PublicIPSpec, s conversion.Scope) error {
-	return autoConvert_v1beta1_PublicIPSpec_To_v1alpha4_PublicIPSpec(in, out, s)
 }
 
 func autoConvert_v1alpha4_RateLimitConfig_To_v1beta1_RateLimitConfig(in *RateLimitConfig, out *v1beta1.RateLimitConfig, s conversion.Scope) error {

@@ -1298,14 +1298,7 @@ spec:
                   resources managed by the Azure provider, in addition to the ones
                   added by default.
                 type: object
-              azureEnvironment:
-                description: 'AzureEnvironment is the name of the AzureCloud to be
-                  used. The default value that would be used by most users is "AzurePublicCloud",
-                  other values are: - ChinaCloud: "AzureChinaCloud" - GermanCloud:
-                  "AzureGermanCloud" - PublicCloud: "AzurePublicCloud" - USGovernmentCloud:
-                  "AzureUSGovernmentCloud"'
-                type: string
-              bastionSpec:
+              azureBastion:
                 description: BastionSpec encapsulates all things related to the Bastions
                   in the cluster.
                 properties:
@@ -1322,6 +1315,8 @@ spec:
                           dnsName:
                             type: string
                           name:
+                            type: string
+                          outboundIP:
                             type: string
                         required:
                         - name
@@ -1356,6 +1351,8 @@ spec:
                                   dnsName:
                                     type: string
                                   name:
+                                    type: string
+                                  outboundIP:
                                     type: string
                                 required:
                                 - name
@@ -1482,6 +1479,13 @@ spec:
                         type: object
                     type: object
                 type: object
+              azureEnvironment:
+                description: 'AzureEnvironment is the name of the AzureCloud to be
+                  used. The default value that would be used by most users is "AzurePublicCloud",
+                  other values are: - ChinaCloud: "AzureChinaCloud" - GermanCloud:
+                  "AzureGermanCloud" - PublicCloud: "AzurePublicCloud" - USGovernmentCloud:
+                  "AzureUSGovernmentCloud"'
+                type: string
               cloudProviderConfigOverrides:
                 description: 'CloudProviderConfigOverrides is an optional set of configuration
                   values that can be overridden in azure cloud provider config. This
@@ -1653,6 +1657,8 @@ spec:
                                   type: string
                                 name:
                                   type: string
+                                outboundIP:
+                                  type: string
                               required:
                               - name
                               type: object
@@ -1707,6 +1713,8 @@ spec:
                                   type: string
                                 name:
                                   type: string
+                                outboundIP:
+                                  type: string
                               required:
                               - name
                               type: object
@@ -1758,6 +1766,8 @@ spec:
                                 dnsName:
                                   type: string
                                 name:
+                                  type: string
+                                outboundIP:
                                   type: string
                               required:
                               - name
@@ -1826,6 +1836,8 @@ spec:
                                 dnsName:
                                   type: string
                                 name:
+                                  type: string
+                                outboundIP:
                                   type: string
                               required:
                               - name
