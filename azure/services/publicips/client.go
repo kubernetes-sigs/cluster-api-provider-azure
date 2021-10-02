@@ -33,8 +33,7 @@ import (
 type Client interface {
 	Get(context.Context, string, string) (network.PublicIPAddress, error)
 	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
-	// TODO(karuppiah7890): Rename to DeleteAsync
-	Delete(context.Context, string, string) error
+	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
 }
 
@@ -129,6 +128,7 @@ func (ac *AzureClient) publicIPParams(ctx context.Context, spec azure.ResourceSp
 	return &ip, nil
 }
 
+// TODO(karuppiah7890): Delete this Delete method in favor of Delete Async
 // TODO(karuppiah7890): Rename to DeleteAsync and make the delete logic async to delete public IPs asynchronously
 // and not block till the operation is over.
 // TODO(karuppiah7890): Check all usages and convert it into DeleteAsync and also recreate the mock client logic
@@ -148,6 +148,10 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName str
 	}
 	_, err = future.Result(ac.publicips)
 	return err
+}
+
+func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+	return nil, nil
 }
 
 // IsDone returns true if the long-running operation has completed.

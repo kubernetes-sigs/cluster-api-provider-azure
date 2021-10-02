@@ -89,10 +89,20 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
+	// We go through the list of public ip specs to delete each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one
+	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
+	var result error
+
 	for _, ip := range s.Scope.PublicIPSpecs() {
 		managed, err := s.isIPManaged(ctx, ip.Name)
-		if err != nil && !azure.ResourceNotFound(err) {
-			return errors.Wrap(err, "could not get public IP management state")
+		if err != nil {
+			if azure.ResourceNotFound(err) {
+				// public ip already deleted or doesn't exist
+				continue
+			}
+
+			result = errors.Wrap(err, "could not get management state of test-group/my-publicip public ip")
 		}
 
 		if !managed {
@@ -100,19 +110,15 @@ func (s *Service) Delete(ctx context.Context) error {
 			continue
 		}
 
-		s.Scope.V(2).Info("deleting public IP", "public ip", ip.Name)
-		err = s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)
-		if err != nil && azure.ResourceNotFound(err) {
-			// already deleted
-			continue
+		if err = async.DeleteResource(ctx, s.Scope, s.Client, ip, serviceName); err != nil {
+			if !azure.IsOperationNotDoneError(err) || result == nil {
+				result = err
+			}
 		}
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete public IP %s in resource group %s", ip.Name, s.Scope.ResourceGroup())
-		}
-
-		s.Scope.V(2).Info("deleted public IP", "public ip", ip.Name)
 	}
-	return nil
+
+	s.Scope.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, result)
+	return result
 }
 
 // isIPManaged returns true if the IP has an owned tag with the cluster name as value,
