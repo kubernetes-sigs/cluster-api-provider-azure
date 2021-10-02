@@ -86,6 +86,9 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Delete")
 	defer done()
 
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
 	for _, ip := range s.Scope.PublicIPSpecs() {
 		managed, err := s.isIPManaged(ctx, ip.Name)
 		if err != nil && !azure.ResourceNotFound(err) {
