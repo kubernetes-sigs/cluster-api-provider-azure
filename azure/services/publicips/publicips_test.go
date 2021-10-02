@@ -49,15 +49,21 @@ func init() {
 var (
 	serviceName = "publicips"
 	ipSpec1     = publicips.PublicIPSpec{
-		Name:          "my-publicip",
-		DNSName:       "fakedns.mydomain.io",
-		ResourceGroup: "test-group",
+		Name:           "my-publicip",
+		DNSName:        "fakedns.mydomain.io",
+		ResourceGroup:  "test-group",
+		Location:       "location",
+		ClusterName:    "cluster-name",
+		AdditionalTags: infrav1.Tags{"foo": "bar"},
 	}
 	ipSpec2 = publicips.PublicIPSpec{
-		Name:          "my-publicip-ipv6",
-		IsIPv6:        true,
-		DNSName:       "fakename.mydomain.io",
-		ResourceGroup: "test-group",
+		Name:           "my-publicip-ipv6",
+		IsIPv6:         true,
+		DNSName:        "fakename.mydomain.io",
+		ResourceGroup:  "test-group",
+		Location:       "location",
+		ClusterName:    "cluster-name",
+		AdditionalTags: infrav1.Tags{"foo": "bar"},
 	}
 	fakePublicIPSpecs = []publicips.PublicIPSpec{
 		ipSpec1,

@@ -33,6 +33,7 @@ import (
 type Client interface {
 	Get(context.Context, string, string) (network.PublicIPAddress, error)
 	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
+	// TODO(karuppiah7890): Rename to DeleteAsync
 	Delete(context.Context, string, string) error
 	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
 }
@@ -65,6 +66,10 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, ipName string
 	return ac.publicips.Get(ctx, resourceGroupName, ipName, "")
 }
 
+// TODO(karuppiah7890): Write tests for this method - one with no existing public IP and another (later) with existing public IP.
+// The test will do a short E2E test with Azure client mocked. It will check if everything is integrated well - Parameters method, the Azure
+// client, the handling of futures. Check what's being done in the code and test what's already not tested. Paramters method is well tested
+// and will be well tested when it's updated with logic to handle existing public IP too
 // CreateOrUpdateAsync creates or updates a static public IP in the specified resource group asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
@@ -128,6 +133,10 @@ func (ac *AzureClient) publicIPParams(ctx context.Context, spec azure.ResourceSp
 	return &ip, nil
 }
 
+// TODO(karuppiah7890): Rename to DeleteAsync and make the delete logic async to delete public IPs asynchronously
+// and not block till the operation is over.
+// TODO(karuppiah7890): Check all usages and convert it into DeleteAsync and also recreate the mock client logic
+// using the new name and signature. Write tests of course
 // Delete deletes the specified public IP address.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName string) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.Delete")
@@ -145,6 +154,7 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName str
 	return err
 }
 
+// TODO(karuppiah7890): Implement this method
 // IsDone returns true if the long-running operation has completed.
 func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
 	return false, nil

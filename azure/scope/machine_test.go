@@ -257,9 +257,19 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 			name: "appends to PublicIPSpec for node if AllocatePublicIP is true",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster-name",
+						},
+					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "resource-group",
+							Location:      "location",
+							AdditionalTags: infrav1.Tags{
+								"a": "a1",
+								"b": "b1",
+							},
 						},
 					},
 				},
@@ -269,6 +279,10 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 					},
 					Spec: infrav1.AzureMachineSpec{
 						AllocatePublicIP: true,
+						AdditionalTags: infrav1.Tags{
+							"b": "b2",
+							"c": "c1",
+						},
 					},
 				},
 			},
@@ -276,12 +290,24 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 				{
 					Name:          "pip-machine-name",
 					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"a":                                  "a1",
+						"b":                                  "b2",
+						"c":                                  "c1",
+						"kubernetes.io_cluster_cluster-name": "owned",
+					},
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// TODO(karuppiah789): Make the tests parallel and still work in case of errors and success with no false results.
+			// Currently when tests run in parallel, if there's an error in the test it doesn't show up in the test result
+			// leading to a false result. Or it shows false errors due to some mix up happening when tests run in parallel.
+			// t.Parallel()
 			if got := tt.machineScope.PublicIPSpecs(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("PublicIPSpecs() = %v, want %v", got, tt.want)
 			}

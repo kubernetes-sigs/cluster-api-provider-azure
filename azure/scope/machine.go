@@ -186,8 +186,11 @@ func (m *MachineScope) PublicIPSpecs() []publicips.PublicIPSpec {
 	var spec []publicips.PublicIPSpec
 	if m.AzureMachine.Spec.AllocatePublicIP {
 		spec = append(spec, publicips.PublicIPSpec{
-			Name: azure.GenerateNodePublicIPName(m.Name()),
-			ResourceGroup: m.ResourceGroup(),
+			Name:           azure.GenerateNodePublicIPName(m.Name()),
+			ResourceGroup:  m.ResourceGroup(),
+			Location:       m.Location(),
+			ClusterName:    m.ClusterName(),
+			AdditionalTags: m.AdditionalTags(),
 		})
 	}
 	return spec
@@ -528,6 +531,7 @@ func (m *MachineScope) Close(ctx context.Context) error {
 	return m.PatchObject(ctx)
 }
 
+// TODO(karuppiah7890): Add a separate small test to test the merge feature.
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachine. If the same key is present in both,
 // the value from AzureMachine takes precedence.
 func (m *MachineScope) AdditionalTags() infrav1.Tags {

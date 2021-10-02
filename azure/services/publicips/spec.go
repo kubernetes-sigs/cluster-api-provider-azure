@@ -21,16 +21,19 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
-	// infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	// "sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
 
 // PublicIPSpec defines the specification for a Public IP.
 type PublicIPSpec struct {
-	Name          string
-	DNSName       string
-	IsIPv6        bool
-	ResourceGroup string
+	Name           string
+	DNSName        string
+	IsIPv6         bool
+	ResourceGroup  string
+	Location       string
+	ClusterName    string
+	AdditionalTags infrav1.Tags
 }
 
 // ResourceName returns the name of the public IP.
