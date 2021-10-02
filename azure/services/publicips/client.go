@@ -150,8 +150,15 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName str
 	return err
 }
 
-// TODO(karuppiah7890): Implement this method
 // IsDone returns true if the long-running operation has completed.
 func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
-	return false, nil
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.IsDone")
+	defer done()
+
+	doneWithContext, err := future.DoneWithContext(ctx, ac.publicips)
+	if err != nil {
+		return false, errors.Wrap(err, "failed checking if the operation was complete")
+	}
+
+	return doneWithContext, nil
 }
