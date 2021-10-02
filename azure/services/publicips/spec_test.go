@@ -43,6 +43,7 @@ func TestParameters(t *testing.T) {
 				AdditionalTags: infrav1.Tags{
 					"foo": "bar",
 				},
+				Zones: []string{"1", "2", "3"},
 			},
 			expectedPublicIPAddress: network.PublicIPAddress{
 				Name:     to.StringPtr("my-publicip"),
@@ -61,7 +62,7 @@ func TestParameters(t *testing.T) {
 						Fqdn:            to.StringPtr("fakedns.mydomain.io"),
 					},
 				},
-				// Zones: to.StringSlicePtr([]string{"1,2,3"}),
+				Zones: to.StringSlicePtr([]string{"1", "2", "3"}),
 			},
 		},
 		{
@@ -74,6 +75,7 @@ func TestParameters(t *testing.T) {
 				AdditionalTags: infrav1.Tags{
 					"foo": "bar",
 				},
+				Zones: []string{"1", "2", "3"},
 			},
 			expectedPublicIPAddress: network.PublicIPAddress{
 				Name:     to.StringPtr("my-publicip-2"),
@@ -88,7 +90,7 @@ func TestParameters(t *testing.T) {
 					PublicIPAddressVersion:   network.IPVersionIPv4,
 					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 				},
-				// Zones: to.StringSlicePtr([]string{"1,2,3"}),
+				Zones: to.StringSlicePtr([]string{"1", "2", "3"}),
 			},
 		},
 		{
@@ -103,6 +105,7 @@ func TestParameters(t *testing.T) {
 				AdditionalTags: infrav1.Tags{
 					"foo": "bar",
 				},
+				Zones: []string{"1", "2", "3"},
 			},
 			expectedPublicIPAddress: network.PublicIPAddress{
 				Name:     to.StringPtr("my-publicip-ipv6"),
@@ -121,7 +124,7 @@ func TestParameters(t *testing.T) {
 						Fqdn:            to.StringPtr("fakename.mydomain.io"),
 					},
 				},
-				// Zones: to.StringSlicePtr([]string{"1,2,3"}),
+				Zones: to.StringSlicePtr([]string{"1", "2", "3"}),
 			},
 		},
 	}

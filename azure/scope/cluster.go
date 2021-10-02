@@ -142,6 +142,7 @@ func (s *ClusterScope) PublicIPSpecs() []publicips.PublicIPSpec {
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
+			Zones:          s.FailureDomains(),
 		}}
 	}
 	publicIPSpecs = append(publicIPSpecs, controlPlaneOutboundIPSpecs...)
@@ -163,6 +164,7 @@ func (s *ClusterScope) PublicIPSpecs() []publicips.PublicIPSpec {
 				Location:       s.Location(),
 				ClusterName:    s.ClusterName(),
 				AdditionalTags: s.AdditionalTags(),
+				Zones:          s.FailureDomains(),
 			})
 		}
 		publicIPSpecs = append(publicIPSpecs, nodeNatGatewayIPSpecs...)
@@ -177,6 +179,7 @@ func (s *ClusterScope) PublicIPSpecs() []publicips.PublicIPSpec {
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
+			Zones:          s.FailureDomains(),
 		}
 		publicIPSpecs = append(publicIPSpecs, azureBastionPublicIP)
 	}
@@ -755,6 +758,7 @@ func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalanc
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
+			Zones:          s.FailureDomains(),
 		})
 	} else {
 		for i := 0; i < int(*loadBalancerNodeOutboundIPs); i++ {
@@ -764,6 +768,7 @@ func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalanc
 				Location:       s.Location(),
 				ClusterName:    s.ClusterName(),
 				AdditionalTags: s.AdditionalTags(),
+				Zones:          s.FailureDomains(),
 			})
 		}
 	}

@@ -191,6 +191,7 @@ func (m *MachineScope) PublicIPSpecs() []publicips.PublicIPSpec {
 			Location:       m.Location(),
 			ClusterName:    m.ClusterName(),
 			AdditionalTags: m.AdditionalTags(),
+			Zones:          m.FailureDomains(),
 		})
 	}
 	return spec

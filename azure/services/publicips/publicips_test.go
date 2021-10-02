@@ -55,6 +55,7 @@ var (
 		Location:       "location",
 		ClusterName:    "cluster-name",
 		AdditionalTags: infrav1.Tags{"foo": "bar"},
+		Zones:          []string{"1", "2", "3"},
 	}
 	ipSpec2 = publicips.PublicIPSpec{
 		Name:           "my-publicip-ipv6",
@@ -64,6 +65,7 @@ var (
 		Location:       "location",
 		ClusterName:    "cluster-name",
 		AdditionalTags: infrav1.Tags{"foo": "bar"},
+		Zones:          []string{"1", "2", "3"},
 	}
 	fakePublicIPSpecs = []publicips.PublicIPSpec{
 		ipSpec1,

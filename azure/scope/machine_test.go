@@ -271,6 +271,19 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 								"b": "b1",
 							},
 						},
+						Status: infrav1.AzureClusterStatus{
+							FailureDomains: clusterv1.FailureDomains{
+								"1": clusterv1.FailureDomainSpec{
+									ControlPlane: true,
+								},
+								"2": clusterv1.FailureDomainSpec{
+									ControlPlane: true,
+								},
+								"3": clusterv1.FailureDomainSpec{
+									ControlPlane: true,
+								},
+							},
+						},
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -298,6 +311,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 						"c":                                  "c1",
 						"kubernetes.io_cluster_cluster-name": "owned",
 					},
+					Zones: []string{"1", "2", "3"},
 				},
 			},
 		},

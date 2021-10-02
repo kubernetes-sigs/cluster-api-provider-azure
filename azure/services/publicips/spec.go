@@ -34,6 +34,7 @@ type PublicIPSpec struct {
 	Location       string
 	ClusterName    string
 	AdditionalTags infrav1.Tags
+	Zones          []string
 }
 
 // ResourceName returns the name of the public IP.
@@ -88,7 +89,6 @@ func (s PublicIPSpec) Parameters(existing interface{}) (interface{}, error) {
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 			DNSSettings:              dnsSettings,
 		},
-		// TODO(karuppiah7890): Add Zones
-		// Zones: s.Zones()
+		Zones: to.StringSlicePtr(s.Zones),
 	}, nil
 }
