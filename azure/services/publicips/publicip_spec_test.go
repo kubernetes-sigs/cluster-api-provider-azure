@@ -27,25 +27,25 @@ import (
 func TestParameters(t *testing.T) {
 	testCases := []struct {
 		name                    string
-		existingPublicIPAddress *network.PublicIPAddress
+		existingPublicIPAddress interface{}
 		publicIPSpec            PublicIPSpec
 		expectedPublicIPAddress network.PublicIPAddress
 	}{
 		{
-			name:                    "ipv4 public ip address with dns",
+			name:                    "public ipv4 address with dns",
 			existingPublicIPAddress: nil,
 			publicIPSpec: PublicIPSpec{
 				Name:    "my-publicip",
 				DNSName: "fakedns.mydomain.io",
 			},
 			expectedPublicIPAddress: network.PublicIPAddress{
-				Name:     to.StringPtr("my-publicip"),
-				Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-				Location: to.StringPtr("testlocation"),
-				Tags: map[string]*string{
-					"Name": to.StringPtr("my-publicip"),
-					"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-				},
+				Name: to.StringPtr("my-publicip"),
+				Sku:  &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+				// Location: to.StringPtr("testlocation"),
+				// Tags: map[string]*string{
+				// 	"Name": to.StringPtr("my-publicip"),
+				// 	"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+				// },
 				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 					PublicIPAddressVersion:   network.IPVersionIPv4,
 					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
@@ -56,17 +56,65 @@ func TestParameters(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:                    "public ipv4 address without dns",
+			existingPublicIPAddress: nil,
+			publicIPSpec: PublicIPSpec{
+				Name: "my-publicip-2",
+			},
+			expectedPublicIPAddress: network.PublicIPAddress{
+				Name: to.StringPtr("my-publicip-2"),
+				Sku:  &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+				// Location: to.StringPtr("testlocation"),
+				// Tags: map[string]*string{
+				// 	"Name": to.StringPtr("my-publicip"),
+				// 	"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+				// },
+				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+					PublicIPAddressVersion:   network.IPVersionIPv4,
+					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
+				},
+			},
+		},
+		{
+			name:                    "public ipv6 address with dns",
+			existingPublicIPAddress: nil,
+			publicIPSpec: PublicIPSpec{
+				Name:    "my-publicip-ipv6",
+				IsIPv6:  true,
+				DNSName: "fakename.mydomain.io",
+			},
+			expectedPublicIPAddress: network.PublicIPAddress{
+				Name: to.StringPtr("my-publicip-ipv6"),
+				Sku:  &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+				// Location: to.StringPtr("testlocation"),
+				// Tags: map[string]*string{
+				// 	"Name": to.StringPtr("my-publicip"),
+				// 	"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+				// },
+				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+					PublicIPAddressVersion:   network.IPVersionIPv6,
+					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
+					DNSSettings: &network.PublicIPAddressDNSSettings{
+						DomainNameLabel: to.StringPtr("fakename"),
+						Fqdn:            to.StringPtr("fakename.mydomain.io"),
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
 			g := NewWithT(t)
 
-			publicIPAddress, err := testCase.publicIPSpec.Parameters(testCase.existingPublicIPAddress)
+			publicIPAddressI, err := testCase.publicIPSpec.Parameters(testCase.existingPublicIPAddress)
 
 			g.Expect(err).To(BeNil())
+
+			publicIPAddress, ok := publicIPAddressI.(network.PublicIPAddress)
+
+			g.Expect(ok).To(BeTrue())
 			g.Expect(publicIPAddress).To(Equal(testCase.expectedPublicIPAddress))
 		})
 	}

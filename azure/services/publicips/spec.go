@@ -17,9 +17,12 @@ limitations under the License.
 package publicips
 
 import (
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
-	// "sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"github.com/Azure/go-autorest/autorest/to"
 	// infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	// "sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
 
 // PublicIPSpec defines the specification for a Public IP.
@@ -49,24 +52,40 @@ func (s PublicIPSpec) ResourceGroupName() string {
 func (s PublicIPSpec) Parameters(existing interface{}) (interface{}, error) {
 	if existing != nil {
 		// public IP already exists
-		// TODO: handle update later
+		// TODO(karuppiah7890): handle update later
 		return nil, nil
 	}
 
+	addressVersion := network.IPVersionIPv4
+	if s.IsIPv6 {
+		addressVersion = network.IPVersionIPv6
+	}
+
+	// only set DNS properties if there is a DNS name specified
+	var dnsSettings *network.PublicIPAddressDNSSettings
+	if s.DNSName != "" {
+		dnsSettings = &network.PublicIPAddressDNSSettings{
+			DomainNameLabel: to.StringPtr(strings.Split(s.DNSName, ".")[0]),
+			Fqdn:            to.StringPtr(s.DNSName),
+		}
+	}
+
 	return network.PublicIPAddress{
+		// TODO(karuppiah7890): Add Tags with Cluster Name and other input
 		// Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-		// ClusterName: s.Scope.ClusterName(),
-		// Lifecycle:   infrav1.ResourceLifecycleOwned,
-		// Name:        to.StringPtr(ip.Name),
-		// Additional:  s.Scope.AdditionalTags(),
+		// 	ClusterName: s.Scope.ClusterName(),
+		// 	Lifecycle: infrav1.ResourceLifecycleOwned,
+		// 	Name:      to.StringPtr(s.Name),
+		// 	Additional:  s.Scope.AdditionalTags(),
 		// })),
-		Sku: &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		// Name:     to.StringPtr(ip.Name),
+		Sku:  &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		Name: to.StringPtr(s.Name),
+		// TODO(karuppiah7890): Add Location
 		// Location: to.StringPtr(s.Scope.Location()),
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			// PublicIPAddressVersion:   addressVersion,
+			PublicIPAddressVersion:   addressVersion,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-			// DNSSettings:              dnsSettings,
+			DNSSettings:              dnsSettings,
 		},
 	}, nil
 }
