@@ -91,7 +91,8 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	// We go through the list of public ip specs to delete each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one
-	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
+	// order of precedence is: error deleting -> error getting management state -> deleting in progress -> deleted (no error)
+	// TODO(karuppiah7890): Is the above precedence okay? Ask maintainers. Accordingly make changes in test and code
 	var result error
 
 	for _, ip := range s.Scope.PublicIPSpecs() {

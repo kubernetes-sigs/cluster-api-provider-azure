@@ -454,6 +454,9 @@ func TestDeletePublicIP(t *testing.T) {
 				)
 			},
 		},
+		// TODO(karuppiah7890): Test for - Return the most pressing error when there's an error when deleting public IP (first) and an error getting public IP management state (second) (pressing error). This test will fail, need to implement this.
+		// For fixing the test, store error-getting-management-state only when result is not public-ip-deletion-failure that is - when result is nil or when result is public IP deletion in progress.
+		// TODO(karuppiah7890): Test for - Return the most pressing error when there's an error getting public IP management state (pressing error) and a public IP deletion is in progress. This should already pass
 	}
 
 	for _, tc := range testcases {
