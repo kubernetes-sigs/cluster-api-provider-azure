@@ -756,3 +756,31 @@ func TestPublicIPSpecs(t *testing.T) {
 		})
 	}
 }
+
+func TestFailureDomains(t *testing.T) {
+	g := NewWithT(t)
+
+	clusterScope := &ClusterScope{
+		AzureCluster: &infrav1.AzureCluster{
+			Status: infrav1.AzureClusterStatus{
+				FailureDomains: clusterv1.FailureDomains{
+					"zone1": clusterv1.FailureDomainSpec{
+						ControlPlane: true,
+					},
+					"zone2": clusterv1.FailureDomainSpec{
+						ControlPlane: true,
+					},
+					"zone3": clusterv1.FailureDomainSpec{
+						ControlPlane: true,
+					},
+				},
+			},
+		},
+	}
+
+	want := []string{"zone1", "zone2", "zone3"}
+
+	got := clusterScope.FailureDomains()
+
+	g.Expect(got).To(ConsistOf(want))
+}

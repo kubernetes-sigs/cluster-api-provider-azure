@@ -25,9 +25,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-// TODO(karuppiah7890): Use just one zone for testing as zone order can vary at times
-// and writing extra test code and complex test code to test zone order in this test is unnecessary.
-// That can instead be tested in FailureDomains method's test.
 func TestParameters(t *testing.T) {
 	testCases := []struct {
 		name                    string
