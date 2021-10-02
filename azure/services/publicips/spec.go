@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	// "sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
 
 // PublicIPSpec defines the specification for a Public IP.
@@ -74,17 +74,15 @@ func (s PublicIPSpec) Parameters(existing interface{}) (interface{}, error) {
 	}
 
 	return network.PublicIPAddress{
-		// TODO(karuppiah7890): Add Tags with Cluster Name and AdditionalTags and other input
-		// Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-		// 	ClusterName: s.Scope.ClusterName(),
-		// 	Lifecycle: infrav1.ResourceLifecycleOwned,
-		// 	Name:      to.StringPtr(s.Name),
-		// 	Additional:  s.Scope.AdditionalTags(),
-		// })),
-		Sku:  &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Name: to.StringPtr(s.Name),
-		// TODO(karuppiah7890): Add Location
-		// Location: to.StringPtr(s.Scope.Location()),
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			ClusterName: s.ClusterName,
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			Name:        to.StringPtr(s.Name),
+			Additional:  s.AdditionalTags,
+		})),
+		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		Name:     to.StringPtr(s.Name),
+		Location: to.StringPtr(s.Location),
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   addressVersion,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
