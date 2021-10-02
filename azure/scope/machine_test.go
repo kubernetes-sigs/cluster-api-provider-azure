@@ -329,6 +329,45 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 	}
 }
 
+func TestMachineScope_AdditionalTags(t *testing.T) {
+	machineScope := MachineScope{
+		ClusterScoper: &ClusterScope{
+			Cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-name",
+				},
+			},
+			AzureCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AdditionalTags: infrav1.Tags{
+						"a": "a1",
+						"b": "b1",
+					},
+				},
+			},
+		},
+		AzureMachine: &infrav1.AzureMachine{
+			Spec: infrav1.AzureMachineSpec{
+				AdditionalTags: infrav1.Tags{
+					"b": "b2",
+					"c": "c1",
+				},
+			},
+		},
+	}
+
+	want := infrav1.Tags{
+		"a":                                  "a1",
+		"b":                                  "b2",
+		"c":                                  "c1",
+		"kubernetes.io_cluster_cluster-name": "owned",
+	}
+
+	if got := machineScope.AdditionalTags(); !reflect.DeepEqual(got, want) {
+		t.Errorf("AdditionalTags() = %v, want %v", got, want)
+	}
+}
+
 func TestMachineScope_InboundNatSpecs(t *testing.T) {
 	tests := []struct {
 		name         string

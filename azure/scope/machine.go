@@ -532,7 +532,6 @@ func (m *MachineScope) Close(ctx context.Context) error {
 	return m.PatchObject(ctx)
 }
 
-// TODO(karuppiah7890): Add a separate small test to test the merge feature.
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachine. If the same key is present in both,
 // the value from AzureMachine takes precedence.
 func (m *MachineScope) AdditionalTags() infrav1.Tags {
