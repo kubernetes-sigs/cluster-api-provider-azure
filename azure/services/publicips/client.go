@@ -66,10 +66,6 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, ipName string
 	return ac.publicips.Get(ctx, resourceGroupName, ipName, "")
 }
 
-// TODO(karuppiah7890): Write tests for this method - one with no existing public IP and another (later) with existing public IP.
-// The test will do a short E2E test with Azure client mocked. It will check if everything is integrated well - Parameters method, the Azure
-// client, the handling of futures. Check what's being done in the code and test what's already not tested. Paramters method is well tested
-// and will be well tested when it's updated with logic to handle existing public IP too
 // CreateOrUpdateAsync creates or updates a static public IP in the specified resource group asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
