@@ -54,6 +54,7 @@ func TestParameters(t *testing.T) {
 						Fqdn:            to.StringPtr("fakedns.mydomain.io"),
 					},
 				},
+				// Zones: to.StringSlicePtr([]string{"1,2,3"}),
 			},
 		},
 		{
@@ -74,6 +75,7 @@ func TestParameters(t *testing.T) {
 					PublicIPAddressVersion:   network.IPVersionIPv4,
 					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 				},
+				// Zones: to.StringSlicePtr([]string{"1,2,3"}),
 			},
 		},
 		{
@@ -100,6 +102,7 @@ func TestParameters(t *testing.T) {
 						Fqdn:            to.StringPtr("fakename.mydomain.io"),
 					},
 				},
+				// Zones: to.StringSlicePtr([]string{"1,2,3"}),
 			},
 		},
 	}

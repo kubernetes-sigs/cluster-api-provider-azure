@@ -71,7 +71,7 @@ func (s PublicIPSpec) Parameters(existing interface{}) (interface{}, error) {
 	}
 
 	return network.PublicIPAddress{
-		// TODO(karuppiah7890): Add Tags with Cluster Name and other input
+		// TODO(karuppiah7890): Add Tags with Cluster Name and AdditionalTags and other input
 		// Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 		// 	ClusterName: s.Scope.ClusterName(),
 		// 	Lifecycle: infrav1.ResourceLifecycleOwned,
@@ -87,5 +87,7 @@ func (s PublicIPSpec) Parameters(existing interface{}) (interface{}, error) {
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 			DNSSettings:              dnsSettings,
 		},
+		// TODO(karuppiah7890): Add Zones
+		// Zones: s.Zones()
 	}, nil
 }
