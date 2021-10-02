@@ -233,6 +233,9 @@ func TestMachineScope_ProviderID(t *testing.T) {
 	}
 }
 
+// TODO(karuppiah7890): Use just one zone for testing as zone order can vary at times
+// and writing extra test code and complex test code to test zone order in this test is unnecessary.
+// That can instead be tested in FailureDomains method's test.
 func TestMachineScope_PublicIPSpecs(t *testing.T) {
 	tests := []struct {
 		name         string

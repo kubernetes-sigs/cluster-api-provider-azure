@@ -21,12 +21,14 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -321,6 +323,436 @@ func TestOutboundLBName(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.OutboundLBName(tc.role)
 			g.Expect(tc.expected).Should(Equal(got))
+		})
+	}
+}
+
+func TestPublicIPSpecs(t *testing.T) {
+	testCases := []struct {
+		name         string
+		clusterScope *ClusterScope
+		want         []publicips.PublicIPSpec
+	}{
+		{
+			name: "public api server",
+			clusterScope: &ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "resource-group",
+						Location:      "location",
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: infrav1.LoadBalancerSpec{
+								Type: infrav1.Public,
+								FrontendIPs: []infrav1.FrontendIP{
+									{
+										Name: "frontend-ip",
+										PublicIP: &infrav1.PublicIPSpec{
+											Name:    "my-publicip",
+											DNSName: "fakename.mydomain.io",
+										},
+									},
+								},
+							},
+						},
+					},
+					Status: infrav1.AzureClusterStatus{
+						FailureDomains: clusterv1.FailureDomains{
+							"1": clusterv1.FailureDomainSpec{
+								ControlPlane: true,
+							},
+						},
+					},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster-name",
+					},
+				},
+			},
+			want: []publicips.PublicIPSpec{
+				{
+					Name:          "my-publicip",
+					DNSName:       "fakename.mydomain.io",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+			},
+		},
+		{
+			name: "private api server with no outbound traffic enabled",
+			clusterScope: &ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: infrav1.LoadBalancerSpec{
+								Type: infrav1.Internal,
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "private api server with control plane outbound traffic enabled with one frontend IP",
+			clusterScope: &ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster-name",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "resource-group",
+						Location:      "location",
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: infrav1.LoadBalancerSpec{
+								Type: infrav1.Internal,
+							},
+							ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+								FrontendIPsCount: to.Int32Ptr(1),
+							},
+						},
+					},
+					Status: infrav1.AzureClusterStatus{
+						FailureDomains: clusterv1.FailureDomains{
+							"1": clusterv1.FailureDomainSpec{
+								ControlPlane: true,
+							},
+						},
+					},
+				},
+			},
+			want: []publicips.PublicIPSpec{
+				{
+					Name:          "pip-cluster-name-controlplane-outbound",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+			},
+		},
+		{
+			name: "private api server with control plane outbound traffic enabled with two frontend IPs",
+			clusterScope: &ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster-name",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "resource-group",
+						Location:      "location",
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: infrav1.LoadBalancerSpec{
+								Type: infrav1.Internal,
+							},
+							ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+								FrontendIPsCount: to.Int32Ptr(2),
+							},
+						},
+					},
+					Status: infrav1.AzureClusterStatus{
+						FailureDomains: clusterv1.FailureDomains{
+							"1": clusterv1.FailureDomainSpec{
+								ControlPlane: true,
+							},
+						},
+					},
+				},
+			},
+			want: []publicips.PublicIPSpec{
+				{
+					Name:          "pip-cluster-name-controlplane-outbound-1",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+				{
+					Name:          "pip-cluster-name-controlplane-outbound-2",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+			},
+		},
+		{
+			name: "private api server with node outbound traffic enabled with one frontend IP",
+			clusterScope: &ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster-name",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "resource-group",
+						Location:      "location",
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: infrav1.LoadBalancerSpec{
+								Type: infrav1.Internal,
+							},
+							NodeOutboundLB: &infrav1.LoadBalancerSpec{
+								FrontendIPsCount: to.Int32Ptr(1),
+							},
+						},
+					},
+					Status: infrav1.AzureClusterStatus{
+						FailureDomains: clusterv1.FailureDomains{
+							"1": clusterv1.FailureDomainSpec{
+								ControlPlane: true,
+							},
+						},
+					},
+				},
+			},
+			want: []publicips.PublicIPSpec{
+				{
+					Name:          "pip-cluster-name-node-outbound",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+			},
+		},
+		{
+			name: "private api server with node outbound traffic enabled with two frontend IPs",
+			clusterScope: &ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster-name",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "resource-group",
+						Location:      "location",
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: infrav1.LoadBalancerSpec{
+								Type: infrav1.Internal,
+							},
+							NodeOutboundLB: &infrav1.LoadBalancerSpec{
+								FrontendIPsCount: to.Int32Ptr(2),
+							},
+						},
+					},
+					Status: infrav1.AzureClusterStatus{
+						FailureDomains: clusterv1.FailureDomains{
+							"1": clusterv1.FailureDomainSpec{
+								ControlPlane: true,
+							},
+						},
+					},
+				},
+			},
+			want: []publicips.PublicIPSpec{
+				{
+					Name:          "pip-cluster-name-node-outbound-1",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+				{
+					Name:          "pip-cluster-name-node-outbound-2",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+			},
+		},
+		{
+			name: "private api server with two node subnets with nat gateway enabled",
+			clusterScope: &ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster-name",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "resource-group",
+						Location:      "location",
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: infrav1.LoadBalancerSpec{
+								Type: infrav1.Internal,
+							},
+							Subnets: infrav1.Subnets{
+								infrav1.SubnetSpec{
+									Role: infrav1.SubnetNode,
+									NatGateway: infrav1.NatGateway{
+										Name: "nat-gateway-1",
+										NatGatewayIP: infrav1.PublicIPSpec{
+											Name:    "nat-ip-1",
+											DNSName: "nat-1.subnet-1.fakedomain.me",
+										},
+									},
+								},
+								infrav1.SubnetSpec{
+									Role: infrav1.SubnetNode,
+									NatGateway: infrav1.NatGateway{
+										Name: "nat-gateway-2",
+										NatGatewayIP: infrav1.PublicIPSpec{
+											Name:    "nat-ip-2",
+											DNSName: "nat-2.subnet-2.fakedomain.me",
+										},
+									},
+								},
+							},
+						},
+					},
+					Status: infrav1.AzureClusterStatus{
+						FailureDomains: clusterv1.FailureDomains{
+							"1": clusterv1.FailureDomainSpec{
+								ControlPlane: true,
+							},
+						},
+					},
+				},
+			},
+			want: []publicips.PublicIPSpec{
+				{
+					Name:          "nat-ip-1",
+					DNSName:       "nat-1.subnet-1.fakedomain.me",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+				{
+					Name:          "nat-ip-2",
+					DNSName:       "nat-2.subnet-2.fakedomain.me",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+			},
+		},
+		{
+			name: "private api server with bastion enabled",
+			clusterScope: &ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster-name",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "resource-group",
+						Location:      "location",
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: infrav1.LoadBalancerSpec{
+								Type: infrav1.Internal,
+							},
+						},
+						BastionSpec: infrav1.BastionSpec{
+							AzureBastion: &infrav1.AzureBastion{
+								PublicIP: infrav1.PublicIPSpec{
+									Name:    "bastion-ip",
+									DNSName: "bastion.my-cluster.fakedomain.me",
+								},
+							},
+						},
+					},
+					Status: infrav1.AzureClusterStatus{
+						FailureDomains: clusterv1.FailureDomains{
+							"1": clusterv1.FailureDomainSpec{
+								ControlPlane: true,
+							},
+						},
+					},
+				},
+			},
+			want: []publicips.PublicIPSpec{
+				{
+					Name:          "bastion-ip",
+					DNSName:       "bastion.my-cluster.fakedomain.me",
+					IsIPv6:        false,
+					ResourceGroup: "resource-group",
+					Location:      "location",
+					ClusterName:   "cluster-name",
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+					Zones: []string{"1"},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			got := testCase.clusterScope.PublicIPSpecs()
+
+			g.Expect(got).To(ConsistOf(testCase.want))
 		})
 	}
 }
