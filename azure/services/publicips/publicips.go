@@ -105,6 +105,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			}
 
 			result = errors.Wrap(err, "could not get management state of test-group/my-publicip public ip")
+			continue
 		}
 
 		if !managed {
