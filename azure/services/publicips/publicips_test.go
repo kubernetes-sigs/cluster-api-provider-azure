@@ -28,6 +28,7 @@ import (
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
@@ -67,9 +68,9 @@ var (
 		AdditionalTags: infrav1.Tags{"foo": "bar"},
 		Zones:          []string{"1", "2", "3"},
 	}
-	fakePublicIPSpecs = []publicips.PublicIPSpec{
-		ipSpec1,
-		ipSpec2,
+	fakePublicIPSpecs = []azure.ResourceSpecGetter{
+		&ipSpec1,
+		&ipSpec2,
 	}
 	errCreate           = errors.New("error creating public IP")
 	errCreate2          = errors.New("different error creating public IP")
@@ -109,9 +110,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, nil),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, nil),
 				)
 			},
@@ -124,9 +125,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errCreate),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errCreate),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip (service: publicips): error creating public IP")),
 				)
 			},
@@ -139,9 +140,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, nil),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(&fakeCreateFuture, errTimeout),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(&fakeCreateFuture, errTimeout),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("transient reconcile error occurred: operation type PUT on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s")),
 				)
@@ -155,9 +156,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errCreate),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errCreate),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(&fakeCreateFuture, errTimeout),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(&fakeCreateFuture, errTimeout),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip (service: publicips): error creating public IP")),
 				)
@@ -171,9 +172,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errCreate),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errCreate),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(nil, errCreate2),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, errCreate2),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip-ipv6 (service: publicips): different error creating public IP")),
 				)
 			},
@@ -233,7 +234,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec1).Return(nil, nil),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil),
 					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{
 						Name: to.StringPtr("my-publicip-ipv6"),
 						Tags: map[string]*string{
@@ -242,7 +243,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
 					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, nil),
 				)
 			},
@@ -271,7 +272,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
 					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, nil),
 				)
 			},
@@ -295,7 +296,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
 					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("could not get management state of test-group/my-publicip public ip: error getting public IP")),
 				)
 			},
@@ -319,7 +320,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
 					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, nil),
 				)
 			},
@@ -342,7 +343,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errDelete),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errDelete),
 					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{
 						Name: to.StringPtr("my-publicip-ipv6"),
 						Tags: map[string]*string{
@@ -351,7 +352,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
 					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to delete resource test-group/my-publicip (service: publicips): error deleting public IP")),
 				)
 			},
@@ -374,7 +375,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec1).Return(nil, nil),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil),
 					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{
 						Name: to.StringPtr("my-publicip-ipv6"),
 						Tags: map[string]*string{
@@ -383,7 +384,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec2).Return(&fakeDeleteFuture, errTimeout),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(&fakeDeleteFuture, errTimeout),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("transient reconcile error occurred: operation type DELETE on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s")),
 				)
@@ -407,7 +408,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errDelete),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errDelete),
 					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{
 						Name: to.StringPtr("my-publicip-ipv6"),
 						Tags: map[string]*string{
@@ -416,7 +417,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec2).Return(&fakeDeleteFuture, errTimeout),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(&fakeDeleteFuture, errTimeout),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to delete resource test-group/my-publicip (service: publicips): error deleting public IP")),
 				)
@@ -440,7 +441,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errDelete),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errDelete),
 					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{
 						Name: to.StringPtr("my-publicip-ipv6"),
 						Tags: map[string]*string{
@@ -449,7 +450,7 @@ func TestDeletePublicIP(t *testing.T) {
 						},
 					}, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), ipSpec2).Return(nil, errDelete2),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, errDelete2),
 					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to delete resource test-group/my-publicip-ipv6 (service: publicips): different error deleting public IP")),
 				)
 			},
