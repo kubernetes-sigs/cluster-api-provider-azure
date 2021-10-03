@@ -150,8 +150,30 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName str
 	return err
 }
 
+// Delete deletes the specified public IP asynchronously. DeleteAsync sends a DELETE
+// request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// progress of the operation.
 func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
-	return nil, nil
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.DeleteAsync")
+	defer done()
+
+	future, err := ac.publicips.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
+	defer cancel()
+
+	err = future.WaitForCompletionRef(ctx, ac.publicips.Client)
+	if err != nil {
+		// if an error occurs, return the future.
+		// this means the long-running operation didn't finish in the specified timeout.
+		return &future, err
+	}
+
+	_, err = future.Result(ac.publicips)
+	return nil, err
 }
 
 // IsDone returns true if the long-running operation has completed.
