@@ -94,8 +94,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	// Ask maintainers what's the precedence for - error getting public IP management state. Is it equal to the error deleting IP or less than or more than that?
 	var result error
 
-	for _, ip := range s.Scope.PublicIPSpecs() {
-		managed, err := s.isIPManaged(ctx, ip.Name)
+	for _, ipSpec := range s.Scope.PublicIPSpecs() {
+		managed, err := s.isIPManaged(ctx, ipSpec.Name)
 		if err != nil {
 			if azure.ResourceNotFound(err) {
 				// public ip already deleted or doesn't exist
@@ -107,11 +107,11 @@ func (s *Service) Delete(ctx context.Context) error {
 		}
 
 		if !managed {
-			s.Scope.V(2).Info("Skipping IP deletion for unmanaged public IP", "public ip", ip.Name)
+			s.Scope.V(2).Info("Skipping IP deletion for unmanaged public IP", "public ip", ipSpec.Name)
 			continue
 		}
 
-		if err = async.DeleteResource(ctx, s.Scope, s.Client, &ip, serviceName); err != nil {
+		if err = async.DeleteResource(ctx, s.Scope, s.Client, &ipSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
