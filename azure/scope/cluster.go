@@ -123,18 +123,18 @@ func (s *ClusterScope) Authorizer() autorest.Authorizer {
 }
 
 // PublicIPSpecs returns the public IP specs.
-func (s *ClusterScope) PublicIPSpecs() []publicips.PublicIPSpec {
-	var publicIPSpecs []publicips.PublicIPSpec
+func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
+	var publicIPSpecs []azure.ResourceSpecGetter
 
 	// Public IP specs for control plane lb
-	var controlPlaneOutboundIPSpecs []publicips.PublicIPSpec
+	var controlPlaneOutboundIPSpecs []azure.ResourceSpecGetter
 	if s.IsAPIServerPrivate() {
 		// Public IP specs for control plane outbound lb
 		if s.ControlPlaneOutboundLB() != nil {
 			controlPlaneOutboundIPSpecs = s.getOutboundLBPublicIPSpecs(s.ControlPlaneOutboundLB(), azure.GenerateControlPlaneOutboundIPName)
 		}
 	} else {
-		controlPlaneOutboundIPSpecs = []publicips.PublicIPSpec{{
+		controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{&publicips.PublicIPSpec{
 			Name:           s.APIServerPublicIP().Name,
 			DNSName:        s.APIServerPublicIP().DNSName,
 			IsIPv6:         false, // currently azure requires a ipv4 lb rule to enable ipv6
@@ -154,10 +154,10 @@ func (s *ClusterScope) PublicIPSpecs() []publicips.PublicIPSpec {
 	}
 
 	// Public IP specs for node nat gateways
-	var nodeNatGatewayIPSpecs []publicips.PublicIPSpec
+	var nodeNatGatewayIPSpecs []azure.ResourceSpecGetter
 	for _, subnet := range s.NodeSubnets() {
 		if subnet.IsNatGatewayEnabled() {
-			nodeNatGatewayIPSpecs = append(nodeNatGatewayIPSpecs, publicips.PublicIPSpec{
+			nodeNatGatewayIPSpecs = append(nodeNatGatewayIPSpecs, &publicips.PublicIPSpec{
 				Name:           subnet.NatGateway.NatGatewayIP.Name,
 				DNSName:        subnet.NatGateway.NatGatewayIP.DNSName,
 				ResourceGroup:  s.ResourceGroup(),
@@ -172,7 +172,7 @@ func (s *ClusterScope) PublicIPSpecs() []publicips.PublicIPSpec {
 
 	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
 		// public IP for Azure Bastion.
-		azureBastionPublicIP := publicips.PublicIPSpec{
+		azureBastionPublicIP := &publicips.PublicIPSpec{
 			Name:           s.AzureCluster.Spec.BastionSpec.AzureBastion.PublicIP.Name,
 			DNSName:        s.AzureCluster.Spec.BastionSpec.AzureBastion.PublicIP.DNSName,
 			ResourceGroup:  s.ResourceGroup(),
@@ -746,13 +746,13 @@ func (s *ClusterScope) SetDNSName() {
 }
 
 // getOutboundLBPublicIPSpecs returns the public ip specs for a LoadBalancerSpec based on the number of frontend ips configured.
-func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalancerSpec, generateOutboundIPName func(string) string) []publicips.PublicIPSpec {
-	var outboundIPSpecs []publicips.PublicIPSpec
+func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalancerSpec, generateOutboundIPName func(string) string) []azure.ResourceSpecGetter {
+	var outboundIPSpecs []azure.ResourceSpecGetter
 	loadBalancerNodeOutboundIPs := outboundLB.FrontendIPsCount
 	if loadBalancerNodeOutboundIPs == nil || *loadBalancerNodeOutboundIPs == 0 {
 		// do nothing
 	} else if *loadBalancerNodeOutboundIPs == 1 {
-		outboundIPSpecs = append(outboundIPSpecs, publicips.PublicIPSpec{
+		outboundIPSpecs = append(outboundIPSpecs, &publicips.PublicIPSpec{
 			Name:           generateOutboundIPName(s.ClusterName()),
 			ResourceGroup:  s.ResourceGroup(),
 			Location:       s.Location(),
@@ -762,7 +762,7 @@ func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalanc
 		})
 	} else {
 		for i := 0; i < int(*loadBalancerNodeOutboundIPs); i++ {
-			outboundIPSpecs = append(outboundIPSpecs, publicips.PublicIPSpec{
+			outboundIPSpecs = append(outboundIPSpecs, &publicips.PublicIPSpec{
 				Name:           azure.WithIndex(generateOutboundIPName(s.ClusterName()), i+1),
 				ResourceGroup:  s.ResourceGroup(),
 				Location:       s.Location(),

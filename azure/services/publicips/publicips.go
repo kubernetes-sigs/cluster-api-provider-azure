@@ -37,7 +37,7 @@ type PublicIPScope interface {
 	logr.Logger
 	azure.ClusterDescriber
 	azure.AsyncStatusUpdater
-	PublicIPSpecs() []PublicIPSpec
+	PublicIPSpecs() []azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
@@ -68,7 +68,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	var result error
 
 	for _, ipSpec := range s.Scope.PublicIPSpecs() {
-		if err := async.CreateResource(ctx, s.Scope, s.Client, &ipSpec, serviceName); err != nil {
+		if err := async.CreateResource(ctx, s.Scope, s.Client, ipSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
@@ -95,7 +95,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	var result error
 
 	for _, ipSpec := range s.Scope.PublicIPSpecs() {
-		managed, err := s.isIPManaged(ctx, ipSpec.Name)
+		managed, err := s.isIPManaged(ctx, ipSpec.ResourceName())
 		if err != nil {
 			if azure.ResourceNotFound(err) {
 				// public ip already deleted or doesn't exist
@@ -107,11 +107,11 @@ func (s *Service) Delete(ctx context.Context) error {
 		}
 
 		if !managed {
-			s.Scope.V(2).Info("Skipping IP deletion for unmanaged public IP", "public ip", ipSpec.Name)
+			s.Scope.V(2).Info("Skipping IP deletion for unmanaged public IP", "public ip", ipSpec.ResourceName())
 			continue
 		}
 
-		if err = async.DeleteResource(ctx, s.Scope, s.Client, &ipSpec, serviceName); err != nil {
+		if err = async.DeleteResource(ctx, s.Scope, s.Client, ipSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}

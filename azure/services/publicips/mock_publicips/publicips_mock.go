@@ -27,8 +27,8 @@ import (
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	publicips "sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
+	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // MockPublicIPScope is a mock of PublicIPScope interface.
@@ -297,10 +297,10 @@ func (mr *MockPublicIPScopeMockRecorder) Location() *gomock.Call {
 }
 
 // PublicIPSpecs mocks base method.
-func (m *MockPublicIPScope) PublicIPSpecs() []publicips.PublicIPSpec {
+func (m *MockPublicIPScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PublicIPSpecs")
-	ret0, _ := ret[0].([]publicips.PublicIPSpec)
+	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
 	return ret0
 }
 

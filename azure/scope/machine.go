@@ -182,10 +182,10 @@ func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
 }
 
 // PublicIPSpecs returns the public IP specs.
-func (m *MachineScope) PublicIPSpecs() []publicips.PublicIPSpec {
-	var spec []publicips.PublicIPSpec
+func (m *MachineScope) PublicIPSpecs() []azure.ResourceSpecGetter {
+	var spec []azure.ResourceSpecGetter
 	if m.AzureMachine.Spec.AllocatePublicIP {
-		spec = append(spec, publicips.PublicIPSpec{
+		spec = append(spec, &publicips.PublicIPSpec{
 			Name:           azure.GenerateNodePublicIPName(m.Name()),
 			ResourceGroup:  m.ResourceGroup(),
 			Location:       m.Location(),
