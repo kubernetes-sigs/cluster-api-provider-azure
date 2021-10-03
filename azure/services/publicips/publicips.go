@@ -79,8 +79,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return result
 }
 
-// TODO(karuppiah7890): Make the delete use async package and delete public IPs asynchronously
-// and not block till the operation is over. Write tests of course
 // Delete deletes the public IP with the provided scope.
 func (s *Service) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Delete")
