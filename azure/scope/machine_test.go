@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	"k8s.io/klog/v2/klogr"
 
 	autorestazure "github.com/Azure/go-autorest/autorest/azure"
@@ -237,7 +238,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		machineScope MachineScope
-		want         []publicips.PublicIPSpec
+		want         []azure.ResourceSpecGetter
 	}{
 		{
 			name: "returns nil if AllocatePublicIP is false",
@@ -276,12 +277,6 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 								"1": clusterv1.FailureDomainSpec{
 									ControlPlane: true,
 								},
-								"2": clusterv1.FailureDomainSpec{
-									ControlPlane: true,
-								},
-								"3": clusterv1.FailureDomainSpec{
-									ControlPlane: true,
-								},
 							},
 						},
 					},
@@ -299,8 +294,8 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []publicips.PublicIPSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
 					Name:          "pip-machine-name",
 					ResourceGroup: "resource-group",
 					Location:      "location",
@@ -311,7 +306,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 						"c":                                  "c1",
 						"kubernetes.io_cluster_cluster-name": "owned",
 					},
-					Zones: []string{"1", "2", "3"},
+					Zones: []string{"1"},
 				},
 			},
 		},
@@ -322,9 +317,9 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 			// Currently when tests run in parallel, if there's an error in the test it doesn't show up in the test result
 			// leading to a false result. Or it shows false errors due to some mix up happening when tests run in parallel.
 			// t.Parallel()
-			if got := tt.machineScope.PublicIPSpecs(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("PublicIPSpecs() = %v, want %v", got, tt.want)
-			}
+			g := NewWithT(t)
+			got := tt.machineScope.PublicIPSpecs()
+			g.Expect(got).To(ConsistOf(tt.want))
 		})
 	}
 }

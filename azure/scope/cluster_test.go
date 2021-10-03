@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -331,7 +332,7 @@ func TestPublicIPSpecs(t *testing.T) {
 	testCases := []struct {
 		name         string
 		clusterScope *ClusterScope
-		want         []publicips.PublicIPSpec
+		want         []azure.ResourceSpecGetter
 	}{
 		{
 			name: "public api server",
@@ -372,8 +373,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []publicips.PublicIPSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
 					Name:          "my-publicip",
 					DNSName:       "fakename.mydomain.io",
 					IsIPv6:        false,
@@ -435,8 +436,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []publicips.PublicIPSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
 					Name:          "pip-cluster-name-controlplane-outbound",
 					IsIPv6:        false,
 					ResourceGroup: "resource-group",
@@ -482,8 +483,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []publicips.PublicIPSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
 					Name:          "pip-cluster-name-controlplane-outbound-1",
 					IsIPv6:        false,
 					ResourceGroup: "resource-group",
@@ -494,7 +495,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					Zones: []string{"1"},
 				},
-				{
+				&publicips.PublicIPSpec{
 					Name:          "pip-cluster-name-controlplane-outbound-2",
 					IsIPv6:        false,
 					ResourceGroup: "resource-group",
@@ -540,8 +541,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []publicips.PublicIPSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
 					Name:          "pip-cluster-name-node-outbound",
 					IsIPv6:        false,
 					ResourceGroup: "resource-group",
@@ -587,8 +588,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []publicips.PublicIPSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
 					Name:          "pip-cluster-name-node-outbound-1",
 					IsIPv6:        false,
 					ResourceGroup: "resource-group",
@@ -599,7 +600,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					Zones: []string{"1"},
 				},
-				{
+				&publicips.PublicIPSpec{
 					Name:          "pip-cluster-name-node-outbound-2",
 					IsIPv6:        false,
 					ResourceGroup: "resource-group",
@@ -664,8 +665,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []publicips.PublicIPSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
 					Name:          "nat-ip-1",
 					DNSName:       "nat-1.subnet-1.fakedomain.me",
 					IsIPv6:        false,
@@ -677,7 +678,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					Zones: []string{"1"},
 				},
-				{
+				&publicips.PublicIPSpec{
 					Name:          "nat-ip-2",
 					DNSName:       "nat-2.subnet-2.fakedomain.me",
 					IsIPv6:        false,
@@ -729,8 +730,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []publicips.PublicIPSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
 					Name:          "bastion-ip",
 					DNSName:       "bastion.my-cluster.fakedomain.me",
 					IsIPv6:        false,
