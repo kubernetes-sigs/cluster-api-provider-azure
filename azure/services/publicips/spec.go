@@ -37,27 +37,23 @@ type PublicIPSpec struct {
 	Zones          []string
 }
 
-// TODO(karuppiah7890): Use pointer receiver
 // ResourceName returns the name of the public IP.
-func (s PublicIPSpec) ResourceName() string {
+func (s *PublicIPSpec) ResourceName() string {
 	return s.Name
 }
 
-// TODO(karuppiah7890): Use pointer receiver
 // OwnerResourceName is a no-op for public IPs.
-func (s PublicIPSpec) OwnerResourceName() string {
+func (s *PublicIPSpec) OwnerResourceName() string {
 	return ""
 }
 
-// TODO(karuppiah7890): Use pointer receiver
 // ResourceGroupName returns the name of the resource group the public IP is in.
-func (s PublicIPSpec) ResourceGroupName() string {
+func (s *PublicIPSpec) ResourceGroupName() string {
 	return s.ResourceGroup
 }
 
-// TODO(karuppiah7890): Use pointer receiver
 // Parameters returns the parameters for the route table.
-func (s PublicIPSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *PublicIPSpec) Parameters(existing interface{}) (interface{}, error) {
 	if existing != nil {
 		// public IP already exists
 		// TODO(karuppiah7890): handle update later

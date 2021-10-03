@@ -68,7 +68,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	var result error
 
 	for _, ipSpec := range s.Scope.PublicIPSpecs() {
-		if err := async.CreateResource(ctx, s.Scope, s.Client, ipSpec, serviceName); err != nil {
+		if err := async.CreateResource(ctx, s.Scope, s.Client, &ipSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
@@ -111,7 +111,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			continue
 		}
 
-		if err = async.DeleteResource(ctx, s.Scope, s.Client, ip, serviceName); err != nil {
+		if err = async.DeleteResource(ctx, s.Scope, s.Client, &ip, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
