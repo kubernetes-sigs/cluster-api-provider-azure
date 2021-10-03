@@ -128,28 +128,6 @@ func (ac *AzureClient) publicIPParams(ctx context.Context, spec azure.ResourceSp
 	return &ip, nil
 }
 
-// TODO(karuppiah7890): Delete this Delete method in favor of Delete Async
-// TODO(karuppiah7890): Rename to DeleteAsync and make the delete logic async to delete public IPs asynchronously
-// and not block till the operation is over.
-// TODO(karuppiah7890): Check all usages and convert it into DeleteAsync and also recreate the mock client logic
-// using the new name and signature. Write tests of course
-// Delete deletes the specified public IP address.
-func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName string) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.Delete")
-	defer done()
-
-	future, err := ac.publicips.Delete(ctx, resourceGroupName, ipName)
-	if err != nil {
-		return err
-	}
-	err = future.WaitForCompletionRef(ctx, ac.publicips.Client)
-	if err != nil {
-		return err
-	}
-	_, err = future.Result(ac.publicips)
-	return err
-}
-
 // Delete deletes the specified public IP asynchronously. DeleteAsync sends a DELETE
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
