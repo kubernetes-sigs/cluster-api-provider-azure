@@ -128,7 +128,7 @@ func (ac *AzureClient) publicIPParams(ctx context.Context, spec azure.ResourceSp
 	return &ip, nil
 }
 
-// Delete deletes the specified public IP asynchronously. DeleteAsync sends a DELETE
+// DeleteAsync deletes the specified public IP asynchronously. DeleteAsync sends a DELETE
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
 func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
