@@ -69,18 +69,18 @@ func (mr *MockClientMockRecorder) CreateOrUpdateAsync(arg0, arg1 interface{}) *g
 }
 
 // DeleteAsync mocks base method.
-func (m *MockClient) DeleteAsync(ctx context.Context, spec azure0.ResourceSpecGetter) (azure.FutureAPI, error) {
+func (m *MockClient) DeleteAsync(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (azure.FutureAPI, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAsync", ctx, spec)
+	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1)
 	ret0, _ := ret[0].(azure.FutureAPI)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DeleteAsync indicates an expected call of DeleteAsync.
-func (mr *MockClientMockRecorder) DeleteAsync(ctx, spec interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) DeleteAsync(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*MockClient)(nil).DeleteAsync), ctx, spec)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*MockClient)(nil).DeleteAsync), arg0, arg1)
 }
 
 // Get mocks base method.
