@@ -44,6 +44,10 @@ func (r *AzureManagedMachinePool) Default(client client.Client) {
 		r.Labels = make(map[string]string)
 	}
 	r.Labels[LabelAgentPoolMode] = r.Spec.Mode
+
+	if r.Spec.Name == nil || *r.Spec.Name == "" {
+		r.Spec.Name = &r.Name
+	}
 }
 
 //+kubebuilder:webhook:verbs=update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedmachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,versions=v1alpha4,name=validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1

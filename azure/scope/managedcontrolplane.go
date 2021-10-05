@@ -487,7 +487,7 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 		}
 
 		ammp := azure.AgentPoolSpec{
-			Name:         pool.Name,
+			Name:         *pool.Spec.Name,
 			SKU:          pool.Spec.SKU,
 			Replicas:     1,
 			OSDiskSizeGB: 0,
@@ -527,7 +527,7 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 	}
 
 	agentPoolSpec := azure.AgentPoolSpec{
-		Name:          s.InfraMachinePool.Name,
+		Name:          *s.InfraMachinePool.Spec.Name,
 		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
 		Cluster:       s.ControlPlane.Name,
 		SKU:           s.InfraMachinePool.Spec.SKU,
