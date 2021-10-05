@@ -104,6 +104,9 @@ func TestReconcile(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: tc.agentpoolSpec.Name,
 						},
+						Spec: infraexpv1.AzureManagedMachinePoolSpec{
+							Name: &tc.agentpoolSpec.Name,
+						},
 					},
 				}
 
@@ -284,6 +287,7 @@ func TestReconcile(t *testing.T) {
 						Name: tc.agentPoolsSpec.Name,
 					},
 					Spec: infraexpv1.AzureManagedMachinePoolSpec{
+						Name:         &tc.agentPoolsSpec.Name,
 						SKU:          tc.agentPoolsSpec.SKU,
 						OSDiskSizeGB: &osDiskSizeGB,
 					},
@@ -377,6 +381,9 @@ func TestDeleteAgentPools(t *testing.T) {
 				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tc.agentPoolsSpec.Name,
+					},
+					Spec: infraexpv1.AzureManagedMachinePoolSpec{
+						Name: &tc.agentPoolsSpec.Name,
 					},
 				},
 			}
