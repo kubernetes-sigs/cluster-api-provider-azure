@@ -125,6 +125,9 @@ func (s *Service) Delete(ctx context.Context) error {
 // isIPManaged returns true if the IP has an owned tag with the cluster name as value,
 // meaning that the IP's lifecycle is managed.
 func (s *Service) isIPManaged(ctx context.Context, ipName string) (bool, error) {
+	// TODO(karuppiah7890): Replace GET public IP API with GET Tags At Scope API call with Public IP
+	// as scope to just get the tags as we want only tag data to check if IP is managed or not.
+	// A GET public IP API is heavier with more data and hence unnecessary.
 	ip, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), ipName)
 	if err != nil {
 		return false, err
