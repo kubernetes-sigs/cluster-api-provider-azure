@@ -29,7 +29,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
-	"sigs.k8s.io/cluster-api-provider-azure/util/system"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterctl "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -231,7 +230,7 @@ func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      identity.GetAzureIdentityName(clusterMeta.Name, clusterMeta.Namespace, azureIdentity.Name),
-			Namespace: system.GetManagerNamespace(),
+			Namespace: clusterMeta.Namespace,
 			Annotations: map[string]string{
 				aadpodv1.BehaviorKey: "namespaced",
 			},
@@ -251,7 +250,7 @@ func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1
 	}
 	err = kubeClient.Create(ctx, copiedIdentity)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
+		return errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, copiedIdentity.Namespace, err)
 	}
 
 	azureIdentityBinding := &aadpodv1.AzureIdentityBinding{
@@ -275,7 +274,7 @@ func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1
 	}
 	err = kubeClient.Create(ctx, azureIdentityBinding)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
+		return errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", azureIdentityBinding.Name, azureIdentityBinding.Namespace, err)
 	}
 
 	return nil
