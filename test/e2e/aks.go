@@ -264,7 +264,7 @@ func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, locatio
 	var latestStableVersionDesired bool
 	// We're not doing much input validation here,
 	// we assume that if the prefix is 'stable-' that the remainder of the string is in the format <Major>.<Minor>
-	if version[:7] == "stable-" && validateStableReleaseString(version) {
+	if isStableVersion, _ := validateStableReleaseString(version); isStableVersion {
 		latestStableVersionDesired = true
 		// Form a fully valid semver version @ the initial patch release (".0")
 		version = fmt.Sprintf("%s.0", version[7:])
