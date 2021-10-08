@@ -88,6 +88,10 @@ RELEASE_NOTES_VER := v0.11.0
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
+KPROMO_VER := v3.3.0-beta.2
+KPROMO_BIN := kpromo
+KPROMO := $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER)
+
 GO_APIDIFF_VER := v0.1.0
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
@@ -99,6 +103,10 @@ GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 KUBECTL_VER := v1.22.2
 KUBECTL_BIN := $(TOOLS_BIN_DIR)/kubectl
 KUBECTL := $(KUBECTL_BIN)-$(KUBECTL_VER)
+
+YQ_VER := v4.14.2
+YQ_BIN := yq
+YQ :=  $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER)
 
 KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
 ETCD=$(TOOLS_BIN_DIR)/etcd
@@ -251,6 +259,9 @@ $(KUSTOMIZE): ## Build kustomize from tools folder.
 $(MOCKGEN): ## Build mockgen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golang/mock/mockgen $(MOCKGEN_BIN) $(MOCKGEN_VER)
 
+$(KPROMO): ## Build kpromo.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/promo-tools/v3/cmd/kpromo $(KPROMO_BIN) $(KPROMO_VER)
+
 $(RELEASE_NOTES): ## Build release notes.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/release/cmd/release-notes $(RELEASE_NOTES_BIN) $(RELEASE_NOTES_VER)
 
@@ -269,6 +280,12 @@ $(KUBECTL): ## Build kubectl
 
 .PHONY: $(KUBECTL_BIN)
 $(KUBECTL_BIN): $(KUBECTL) ## Building kubectl from the tools folder
+
+$(YQ): ## Build yq.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/mikefarah/yq/v4 $(YQ_BIN) $(YQ_VER)
+
+.PHONY: $(YQ_BIN)
+$(YQ_BIN): $(YQ) ## Building yq from the tools folder
 
 ## --------------------------------------
 ## Linting
@@ -435,6 +452,8 @@ GIT_ORG_NAME ?= kubernetes-sigs
 FULL_VERSION := $(RELEASE_TAG:v%=%)
 MINOR_VERSION := $(shell v='$(FULL_VERSION)'; echo "$${v%.*}")
 RELEASE_BRANCH ?= release-$(MINOR_VERSION)
+USER_FORK ?= $(shell git config --get remote.origin.url | cut -d/ -f4)
+IMAGE_REVIEWERS ?= $(shell ./hack/get-project-maintainers.sh)
 
 $(RELEASE_DIR):
 	mkdir -p $(RELEASE_DIR)/
@@ -496,6 +515,10 @@ release-notes: $(RELEASE_NOTES) $(RELEASE_NOTES_DIR)
 	sed 's/\[SIG Cluster Lifecycle\]//g' $(RELEASE_NOTES_DIR)/tmp-release-notes.md > $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md; \
 	rm -f $(RELEASE_NOTES_DIR)/tmp-release-notes.md; \
 	fi
+
+.PHONY: promote-images
+promote-images: $(KPROMO)
+	$(KPROMO) pr --project cluster-api-azure --tag $(RELEASE_TAG) --reviewers "$(IMAGE_REVIEWERS)" --fork $(USER_FORK)
 
 ## --------------------------------------
 ## Development
