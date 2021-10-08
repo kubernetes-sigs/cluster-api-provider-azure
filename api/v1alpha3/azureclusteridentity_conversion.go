@@ -22,22 +22,22 @@ import (
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 const (
 	AzureClusterKind = "AzureCluster"
 )
 
-// ConvertTo converts this AzureCluster to the Hub version (v1alpha4).
+// ConvertTo converts this AzureCluster to the Hub version (v1beta1).
 func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nolint
-	dst := dstRaw.(*infrav1alpha4.AzureClusterIdentity)
-	if err := Convert_v1alpha3_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity(src, dst, nil); err != nil {
+	dst := dstRaw.(*infrav1beta1.AzureClusterIdentity)
+	if err := Convert_v1alpha3_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(src, dst, nil); err != nil {
 		return err
 	}
 
 	// Manually restore data.
-	restored := &infrav1alpha4.AzureClusterIdentity{}
+	restored := &infrav1beta1.AzureClusterIdentity{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
@@ -47,7 +47,7 @@ func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nol
 	}
 
 	if len(src.Spec.AllowedNamespaces) > 0 {
-		dst.Spec.AllowedNamespaces = &infrav1alpha4.AllowedNamespaces{}
+		dst.Spec.AllowedNamespaces = &infrav1beta1.AllowedNamespaces{}
 		for _, ns := range src.Spec.AllowedNamespaces {
 			dst.Spec.AllowedNamespaces.NamespaceList = append(dst.Spec.AllowedNamespaces.NamespaceList, ns)
 		}
@@ -55,12 +55,12 @@ func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nol
 
 	if restored.Spec.AllowedNamespaces != nil && restored.Spec.AllowedNamespaces.Selector != nil {
 		if dst.Spec.AllowedNamespaces == nil {
-			dst.Spec.AllowedNamespaces = &infrav1alpha4.AllowedNamespaces{}
+			dst.Spec.AllowedNamespaces = &infrav1beta1.AllowedNamespaces{}
 		}
 		dst.Spec.AllowedNamespaces.Selector = restored.Spec.AllowedNamespaces.Selector
 	}
 
-	// removing ownerReference for AzureCluster as ownerReference is not required from v1alpha4 onwards.
+	// removing ownerReference for AzureCluster as ownerReference is not required from v1alpha4/v1beta1 onwards.
 	var restoredOwnerReferences []metav1.OwnerReference
 	for _, ownerRef := range dst.OwnerReferences {
 		if ownerRef.Kind != AzureClusterKind {
@@ -72,10 +72,10 @@ func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nol
 	return nil
 }
 
-// ConvertFrom converts from the Hub version (v1alpha4) to this version.
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error { // nolint
-	src := srcRaw.(*infrav1alpha4.AzureClusterIdentity)
-	if err := Convert_v1alpha4_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(src, dst, nil); err != nil {
+	src := srcRaw.(*infrav1beta1.AzureClusterIdentity)
+	if err := Convert_v1beta1_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(src, dst, nil); err != nil {
 		return err
 	}
 
@@ -93,18 +93,18 @@ func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error { // n
 	return nil
 }
 
-// Convert_v1alpha3_AzureClusterIdentitySpec_To_v1alpha4_AzureClusterIdentitySpec.
-func Convert_v1alpha3_AzureClusterIdentitySpec_To_v1alpha4_AzureClusterIdentitySpec(in *AzureClusterIdentitySpec, out *infrav1alpha4.AzureClusterIdentitySpec, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1alpha3_AzureClusterIdentitySpec_To_v1alpha4_AzureClusterIdentitySpec(in, out, s); err != nil {
+// Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec.
+func Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(in *AzureClusterIdentitySpec, out *infrav1beta1.AzureClusterIdentitySpec, s apiconversion.Scope) error { // nolint
+	if err := autoConvert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(in, out, s); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Convert_v1alpha4_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec
-func Convert_v1alpha4_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in *infrav1alpha4.AzureClusterIdentitySpec, out *AzureClusterIdentitySpec, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1alpha4_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in, out, s); err != nil {
+// Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec
+func Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in *infrav1beta1.AzureClusterIdentitySpec, out *AzureClusterIdentitySpec, s apiconversion.Scope) error { // nolint
+	if err := autoConvert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in, out, s); err != nil {
 		return err
 	}
 

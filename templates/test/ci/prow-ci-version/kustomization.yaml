@@ -10,14 +10,14 @@ patchesStrategicMerge:
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
-    version: v1alpha4
+    version: v1beta1
     kind: KubeadmConfigTemplate
     name: .*-md-0
     namespace: default
   path: patches/kubeadm-bootstrap.yaml
 - target:
     group: controlplane.cluster.x-k8s.io
-    version: v1alpha4
+    version: v1beta1
     kind: KubeadmControlPlane
     name: .*-control-plane
   path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml

@@ -18,7 +18,7 @@ package converters
 
 import (
 	"github.com/Azure/go-autorest/autorest/to"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // MapToTags converts a map[string]*string into a infrav1.Tags.

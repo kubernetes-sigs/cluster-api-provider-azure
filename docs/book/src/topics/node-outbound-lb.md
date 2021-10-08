@@ -24,7 +24,7 @@ See [here](https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-ou
 </aside>
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: my-public-cluster
@@ -55,7 +55,7 @@ To create a node outbound load balancer, include the `nodeOutboundLB` section wi
 Here is an example of configuring a node outbound load balancer with 1 front end ip for a private cluster:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: my-private-cluster
@@ -85,7 +85,7 @@ CAPZ will ignore the Nat Gateway configuration in the control plane subnet becau
 </aside>
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-natgw

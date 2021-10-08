@@ -37,7 +37,6 @@ type AzureManagedClusterStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedclusters,scope=Namespaced,categories=cluster-api,shortName=amc
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureManagedCluster is the Schema for the azuremanagedclusters API.

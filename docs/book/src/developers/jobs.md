@@ -37,8 +37,8 @@ To see which test jobs execute which e2e tests, you can click on the links which
        * `GINKGO_FOCUS="Workload cluster creation" GINKGO_SKIP="" ./scripts/ci-e2e.sh`
   - [pull-cluster-api-provider-capi-e2e]
        * `GINKGO_FOCUS="Cluster API E2E tests" GINKGO_SKIP="" ./scripts/ci-e2e.sh`
-  - [pull-cluster-api-provider-azure-conformance-v1alpha4]  `./scripts/ci-conformance.sh`
-  - [pull-cluster-api-provider-azure-upstream-v1alpha4-windows]
+  - [pull-cluster-api-provider-azure-conformance-v1beta1]  `./scripts/ci-conformance.sh`
+  - [pull-cluster-api-provider-azure-upstream-v1beta1-windows]
        * `WINDOWS="true" CONFORMANCE_NODES="4" ./scripts/ci-conformance.sh`
   - [pull-cluster-api-provider-azure-conformance-with-ci-artifacts]
        * `E2E_ARGS="-kubetest.use-ci-artifacts" ./scripts/ci-conformance.sh`
@@ -73,8 +73,8 @@ To see which test jobs execute which e2e tests, you can click on the links which
   
   Prow Periodics:
   
-  - [periodic-cluster-api-provider-azure-conformance-v1alpha4]  `./scripts/ci-conformance.sh`
-  - [periodic-cluster-api-provider-azure-conformance-v1alpha4-with-ci-artifacts]  `./scripts/ci-conformance.sh`
+  - [periodic-cluster-api-provider-azure-conformance-v1beta1]  `./scripts/ci-conformance.sh`
+  - [periodic-cluster-api-provider-azure-conformance-v1beta1-with-ci-artifacts]  `./scripts/ci-conformance.sh`
       * `E2E_ARGS="-kubetest.use-ci-artifacts" ./scripts/ci-conformance.sh`
   - [periodic-cluster-api-provider-azure-capi-e2e]
       * `GINKGO_FOCUS="Cluster API E2E tests" GINKGO_SKIP="" ./scripts/ci-e2e.sh`
@@ -93,14 +93,14 @@ To see which test jobs execute which e2e tests, you can click on the links which
 [pull-cluster-api-provider-azure-coverage]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#pr-coverage
 [pull-cluster-api-provider-e2e-full]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-e2e-full-main
 [pull-cluster-api-provider-capi-e2e]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capi-pr-e2e-main
-[pull-cluster-api-provider-azure-conformance-v1alpha4]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pull-conformance-v1alpha4-main
-[pull-cluster-api-provider-azure-upstream-v1alpha4-windows]:  https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pull-conformance-v1alpha4-main
-[pull-cluster-api-provider-azure-conformance-with-ci-artifacts]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-conformance-v1alpha4-k8s-main
-[pull-cluster-api-provider-azure-windows-upstream-with-ci-artifacts]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-conformance-v1alpha4-k8s-main
+[pull-cluster-api-provider-azure-conformance-v1beta1]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pull-conformance-v1beta1-main
+[pull-cluster-api-provider-azure-upstream-v1beta1-windows]:  https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pull-conformance-v1beta1-main
+[pull-cluster-api-provider-azure-conformance-with-ci-artifacts]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-conformance-v1beta1-k8s-main
+[pull-cluster-api-provider-azure-windows-upstream-with-ci-artifacts]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-conformance-v1beta1-k8s-main
 [post-cluster-api-provider-azure-push-images]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#post-cluster-api-provider-azure-push-images
 [postsubmits-cluster-api-provider-azure-e2e-full-main]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-postsubmit-capi-e2e-full-main
-[periodic-cluster-api-provider-azure-conformance-v1alpha4]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-periodic-conformance-v1alpha4-main
-[periodic-cluster-api-provider-azure-conformance-v1alpha4-with-ci-artifacts]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-periodic-conformance-v1alpha4-k8s-main
+[periodic-cluster-api-provider-azure-conformance-v1beta1]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-periodic-conformance-v1beta1-main
+[periodic-cluster-api-provider-azure-conformance-v1beta1-with-ci-artifacts]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-periodic-conformance-v1beta1-k8s-main
 [periodic-cluster-api-provider-azure-capi-e2e]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-periodic-capi-e2e-main
 [periodic-cluster-api-provider-azure-coverage]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#periodic-cluster-api-provider-azure-coverage
 [periodic-cluster-api-provider-azure-e2e-full]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-periodic-capi-e2e-full-main

@@ -27,7 +27,7 @@ import (
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // MockClient is a mock of Client interface.
@@ -54,10 +54,10 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // CreateOrUpdateAsync mocks base method.
-func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSet) (*v1alpha4.Future, error) {
+func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSet) (*v1beta1.Future, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*v1alpha4.Future)
+	ret0, _ := ret[0].(*v1beta1.Future)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -69,10 +69,10 @@ func (mr *MockClientMockRecorder) CreateOrUpdateAsync(arg0, arg1, arg2, arg3 int
 }
 
 // DeleteAsync mocks base method.
-func (m *MockClient) DeleteAsync(arg0 context.Context, arg1, arg2 string) (*v1alpha4.Future, error) {
+func (m *MockClient) DeleteAsync(arg0 context.Context, arg1, arg2 string) (*v1beta1.Future, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1alpha4.Future)
+	ret0, _ := ret[0].(*v1beta1.Future)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -99,7 +99,7 @@ func (mr *MockClientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call
 }
 
 // GetResultIfDone mocks base method.
-func (m *MockClient) GetResultIfDone(ctx context.Context, future *v1alpha4.Future) (compute.VirtualMachineScaleSet, error) {
+func (m *MockClient) GetResultIfDone(ctx context.Context, future *v1beta1.Future) (compute.VirtualMachineScaleSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetResultIfDone", ctx, future)
 	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
@@ -144,10 +144,10 @@ func (mr *MockClientMockRecorder) ListInstances(arg0, arg1, arg2 interface{}) *g
 }
 
 // UpdateAsync mocks base method.
-func (m *MockClient) UpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSetUpdate) (*v1alpha4.Future, error) {
+func (m *MockClient) UpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSetUpdate) (*v1beta1.Future, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAsync", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*v1alpha4.Future)
+	ret0, _ := ret[0].(*v1beta1.Future)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

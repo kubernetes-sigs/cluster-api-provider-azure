@@ -50,7 +50,7 @@ The first user assigned identity should have the `Contributor` role on the resou
 * In Machines
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -69,7 +69,7 @@ The CAPZ controller will look for `UserAssigned` value in `identity` field under
 * In Machine Pool
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -90,7 +90,7 @@ Alternatively, you can use the `user-assigned-identity`, and `machinepool-user-a
 * In Machines
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -107,7 +107,7 @@ The CAPZ controller will look for `SystemAssigned` value in `identity` field und
 * In Machine Pool
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0

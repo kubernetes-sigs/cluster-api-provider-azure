@@ -16,8 +16,32 @@ limitations under the License.
 
 package v1alpha4
 
-// Hub marks AzureMachine as a conversion hub.
-func (*AzureMachine) Hub() {}
+import (
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+)
 
-// Hub marks AzureMachineList as a conversion hub.
-func (*AzureMachineList) Hub() {}
+// ConvertTo converts this AzureMachine to the Hub version (v1beta1).
+func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*v1beta1.AzureMachine)
+
+	return Convert_v1alpha4_AzureMachine_To_v1beta1_AzureMachine(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureMachine) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*v1beta1.AzureMachine)
+	return Convert_v1beta1_AzureMachine_To_v1alpha4_AzureMachine(src, dst, nil)
+}
+
+// ConvertTo converts this AzureMachineList to the Hub version (v1beta1).
+func (src *AzureMachineList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*v1beta1.AzureMachineList)
+	return Convert_v1alpha4_AzureMachineList_To_v1beta1_AzureMachineList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*v1beta1.AzureMachineList)
+	return Convert_v1beta1_AzureMachineList_To_v1alpha4_AzureMachineList(src, dst, nil)
+}

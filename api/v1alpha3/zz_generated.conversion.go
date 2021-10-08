@@ -27,9 +27,9 @@ import (
 	resource "k8s.io/apimachinery/pkg/api/resource"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	apiv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	apiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	errors "sigs.k8s.io/cluster-api/errors"
 )
 
@@ -40,512 +40,502 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*AddressRecord)(nil), (*v1alpha4.AddressRecord)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AddressRecord_To_v1alpha4_AddressRecord(a.(*AddressRecord), b.(*v1alpha4.AddressRecord), scope)
+	if err := s.AddGeneratedConversionFunc((*AddressRecord)(nil), (*v1beta1.AddressRecord)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AddressRecord_To_v1beta1_AddressRecord(a.(*AddressRecord), b.(*v1beta1.AddressRecord), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AddressRecord)(nil), (*AddressRecord)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AddressRecord_To_v1alpha3_AddressRecord(a.(*v1alpha4.AddressRecord), b.(*AddressRecord), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AddressRecord)(nil), (*AddressRecord)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AddressRecord_To_v1alpha3_AddressRecord(a.(*v1beta1.AddressRecord), b.(*AddressRecord), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureCluster)(nil), (*v1alpha4.AzureCluster)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(a.(*AzureCluster), b.(*v1alpha4.AzureCluster), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureCluster)(nil), (*v1beta1.AzureCluster)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureCluster_To_v1beta1_AzureCluster(a.(*AzureCluster), b.(*v1beta1.AzureCluster), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureCluster)(nil), (*AzureCluster)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(a.(*v1alpha4.AzureCluster), b.(*AzureCluster), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureCluster)(nil), (*AzureCluster)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureCluster_To_v1alpha3_AzureCluster(a.(*v1beta1.AzureCluster), b.(*AzureCluster), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureClusterIdentity)(nil), (*v1alpha4.AzureClusterIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity(a.(*AzureClusterIdentity), b.(*v1alpha4.AzureClusterIdentity), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureClusterIdentity)(nil), (*v1beta1.AzureClusterIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(a.(*AzureClusterIdentity), b.(*v1beta1.AzureClusterIdentity), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureClusterIdentity)(nil), (*AzureClusterIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(a.(*v1alpha4.AzureClusterIdentity), b.(*AzureClusterIdentity), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureClusterIdentity)(nil), (*AzureClusterIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(a.(*v1beta1.AzureClusterIdentity), b.(*AzureClusterIdentity), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureClusterIdentityList)(nil), (*v1alpha4.AzureClusterIdentityList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureClusterIdentityList_To_v1alpha4_AzureClusterIdentityList(a.(*AzureClusterIdentityList), b.(*v1alpha4.AzureClusterIdentityList), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureClusterIdentityList)(nil), (*v1beta1.AzureClusterIdentityList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureClusterIdentityList_To_v1beta1_AzureClusterIdentityList(a.(*AzureClusterIdentityList), b.(*v1beta1.AzureClusterIdentityList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureClusterIdentityList)(nil), (*AzureClusterIdentityList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(a.(*v1alpha4.AzureClusterIdentityList), b.(*AzureClusterIdentityList), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureClusterIdentityList)(nil), (*AzureClusterIdentityList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(a.(*v1beta1.AzureClusterIdentityList), b.(*AzureClusterIdentityList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureClusterIdentityStatus)(nil), (*v1alpha4.AzureClusterIdentityStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureClusterIdentityStatus_To_v1alpha4_AzureClusterIdentityStatus(a.(*AzureClusterIdentityStatus), b.(*v1alpha4.AzureClusterIdentityStatus), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureClusterIdentityStatus)(nil), (*v1beta1.AzureClusterIdentityStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureClusterIdentityStatus_To_v1beta1_AzureClusterIdentityStatus(a.(*AzureClusterIdentityStatus), b.(*v1beta1.AzureClusterIdentityStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureClusterIdentityStatus)(nil), (*AzureClusterIdentityStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(a.(*v1alpha4.AzureClusterIdentityStatus), b.(*AzureClusterIdentityStatus), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureClusterIdentityStatus)(nil), (*AzureClusterIdentityStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(a.(*v1beta1.AzureClusterIdentityStatus), b.(*AzureClusterIdentityStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureClusterList)(nil), (*v1alpha4.AzureClusterList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureClusterList_To_v1alpha4_AzureClusterList(a.(*AzureClusterList), b.(*v1alpha4.AzureClusterList), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureClusterList)(nil), (*v1beta1.AzureClusterList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureClusterList_To_v1beta1_AzureClusterList(a.(*AzureClusterList), b.(*v1beta1.AzureClusterList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureClusterList)(nil), (*AzureClusterList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureClusterList_To_v1alpha3_AzureClusterList(a.(*v1alpha4.AzureClusterList), b.(*AzureClusterList), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureClusterList)(nil), (*AzureClusterList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureClusterList_To_v1alpha3_AzureClusterList(a.(*v1beta1.AzureClusterList), b.(*AzureClusterList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureMachine)(nil), (*v1alpha4.AzureMachine)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMachine_To_v1alpha4_AzureMachine(a.(*AzureMachine), b.(*v1alpha4.AzureMachine), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureMachine)(nil), (*v1beta1.AzureMachine)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMachine_To_v1beta1_AzureMachine(a.(*AzureMachine), b.(*v1beta1.AzureMachine), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMachine)(nil), (*AzureMachine)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachine_To_v1alpha3_AzureMachine(a.(*v1alpha4.AzureMachine), b.(*AzureMachine), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureMachine)(nil), (*AzureMachine)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMachine_To_v1alpha3_AzureMachine(a.(*v1beta1.AzureMachine), b.(*AzureMachine), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureMachineList)(nil), (*v1alpha4.AzureMachineList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMachineList_To_v1alpha4_AzureMachineList(a.(*AzureMachineList), b.(*v1alpha4.AzureMachineList), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureMachineList)(nil), (*v1beta1.AzureMachineList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMachineList_To_v1beta1_AzureMachineList(a.(*AzureMachineList), b.(*v1beta1.AzureMachineList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMachineList)(nil), (*AzureMachineList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachineList_To_v1alpha3_AzureMachineList(a.(*v1alpha4.AzureMachineList), b.(*AzureMachineList), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureMachineList)(nil), (*AzureMachineList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMachineList_To_v1alpha3_AzureMachineList(a.(*v1beta1.AzureMachineList), b.(*AzureMachineList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureMachineTemplate)(nil), (*v1alpha4.AzureMachineTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMachineTemplate_To_v1alpha4_AzureMachineTemplate(a.(*AzureMachineTemplate), b.(*v1alpha4.AzureMachineTemplate), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureMachineTemplate)(nil), (*v1beta1.AzureMachineTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(a.(*AzureMachineTemplate), b.(*v1beta1.AzureMachineTemplate), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMachineTemplate)(nil), (*AzureMachineTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(a.(*v1alpha4.AzureMachineTemplate), b.(*AzureMachineTemplate), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureMachineTemplate)(nil), (*AzureMachineTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(a.(*v1beta1.AzureMachineTemplate), b.(*AzureMachineTemplate), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureMachineTemplateList)(nil), (*v1alpha4.AzureMachineTemplateList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMachineTemplateList_To_v1alpha4_AzureMachineTemplateList(a.(*AzureMachineTemplateList), b.(*v1alpha4.AzureMachineTemplateList), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureMachineTemplateList)(nil), (*v1beta1.AzureMachineTemplateList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMachineTemplateList_To_v1beta1_AzureMachineTemplateList(a.(*AzureMachineTemplateList), b.(*v1beta1.AzureMachineTemplateList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMachineTemplateList)(nil), (*AzureMachineTemplateList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(a.(*v1alpha4.AzureMachineTemplateList), b.(*AzureMachineTemplateList), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureMachineTemplateList)(nil), (*AzureMachineTemplateList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(a.(*v1beta1.AzureMachineTemplateList), b.(*AzureMachineTemplateList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureMachineTemplateResource)(nil), (*v1alpha4.AzureMachineTemplateResource)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(a.(*AzureMachineTemplateResource), b.(*v1alpha4.AzureMachineTemplateResource), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureMachineTemplateResource)(nil), (*v1beta1.AzureMachineTemplateResource)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMachineTemplateResource_To_v1beta1_AzureMachineTemplateResource(a.(*AzureMachineTemplateResource), b.(*v1beta1.AzureMachineTemplateResource), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMachineTemplateResource)(nil), (*AzureMachineTemplateResource)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(a.(*v1alpha4.AzureMachineTemplateResource), b.(*AzureMachineTemplateResource), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureMachineTemplateResource)(nil), (*AzureMachineTemplateResource)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(a.(*v1beta1.AzureMachineTemplateResource), b.(*AzureMachineTemplateResource), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureMachineTemplateSpec)(nil), (*v1alpha4.AzureMachineTemplateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMachineTemplateSpec_To_v1alpha4_AzureMachineTemplateSpec(a.(*AzureMachineTemplateSpec), b.(*v1alpha4.AzureMachineTemplateSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureMachineTemplateSpec)(nil), (*v1beta1.AzureMachineTemplateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMachineTemplateSpec_To_v1beta1_AzureMachineTemplateSpec(a.(*AzureMachineTemplateSpec), b.(*v1beta1.AzureMachineTemplateSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMachineTemplateSpec)(nil), (*AzureMachineTemplateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(a.(*v1alpha4.AzureMachineTemplateSpec), b.(*AzureMachineTemplateSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureMachineTemplateSpec)(nil), (*AzureMachineTemplateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(a.(*v1beta1.AzureMachineTemplateSpec), b.(*AzureMachineTemplateSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureMarketplaceImage)(nil), (*v1alpha4.AzureMarketplaceImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(a.(*AzureMarketplaceImage), b.(*v1alpha4.AzureMarketplaceImage), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureMarketplaceImage)(nil), (*v1beta1.AzureMarketplaceImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(a.(*AzureMarketplaceImage), b.(*v1beta1.AzureMarketplaceImage), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMarketplaceImage)(nil), (*AzureMarketplaceImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(a.(*v1alpha4.AzureMarketplaceImage), b.(*AzureMarketplaceImage), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureMarketplaceImage)(nil), (*AzureMarketplaceImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(a.(*v1beta1.AzureMarketplaceImage), b.(*AzureMarketplaceImage), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureSharedGalleryImage)(nil), (*v1alpha4.AzureSharedGalleryImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureSharedGalleryImage_To_v1alpha4_AzureSharedGalleryImage(a.(*AzureSharedGalleryImage), b.(*v1alpha4.AzureSharedGalleryImage), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureSharedGalleryImage)(nil), (*v1beta1.AzureSharedGalleryImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureSharedGalleryImage_To_v1beta1_AzureSharedGalleryImage(a.(*AzureSharedGalleryImage), b.(*v1beta1.AzureSharedGalleryImage), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*BuildParams)(nil), (*v1alpha4.BuildParams)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_BuildParams_To_v1alpha4_BuildParams(a.(*BuildParams), b.(*v1alpha4.BuildParams), scope)
+	if err := s.AddGeneratedConversionFunc((*BuildParams)(nil), (*v1beta1.BuildParams)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_BuildParams_To_v1beta1_BuildParams(a.(*BuildParams), b.(*v1beta1.BuildParams), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.BuildParams)(nil), (*BuildParams)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_BuildParams_To_v1alpha3_BuildParams(a.(*v1alpha4.BuildParams), b.(*BuildParams), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.BuildParams)(nil), (*BuildParams)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_BuildParams_To_v1alpha3_BuildParams(a.(*v1beta1.BuildParams), b.(*BuildParams), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*DataDisk)(nil), (*v1alpha4.DataDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(a.(*DataDisk), b.(*v1alpha4.DataDisk), scope)
+	if err := s.AddGeneratedConversionFunc((*DataDisk)(nil), (*v1beta1.DataDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_DataDisk_To_v1beta1_DataDisk(a.(*DataDisk), b.(*v1beta1.DataDisk), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.DataDisk)(nil), (*DataDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(a.(*v1alpha4.DataDisk), b.(*DataDisk), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.DataDisk)(nil), (*DataDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_DataDisk_To_v1alpha3_DataDisk(a.(*v1beta1.DataDisk), b.(*DataDisk), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*DiffDiskSettings)(nil), (*v1alpha4.DiffDiskSettings)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_DiffDiskSettings_To_v1alpha4_DiffDiskSettings(a.(*DiffDiskSettings), b.(*v1alpha4.DiffDiskSettings), scope)
+	if err := s.AddGeneratedConversionFunc((*DiffDiskSettings)(nil), (*v1beta1.DiffDiskSettings)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_DiffDiskSettings_To_v1beta1_DiffDiskSettings(a.(*DiffDiskSettings), b.(*v1beta1.DiffDiskSettings), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.DiffDiskSettings)(nil), (*DiffDiskSettings)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_DiffDiskSettings_To_v1alpha3_DiffDiskSettings(a.(*v1alpha4.DiffDiskSettings), b.(*DiffDiskSettings), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.DiffDiskSettings)(nil), (*DiffDiskSettings)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_DiffDiskSettings_To_v1alpha3_DiffDiskSettings(a.(*v1beta1.DiffDiskSettings), b.(*DiffDiskSettings), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*DiskEncryptionSetParameters)(nil), (*v1alpha4.DiskEncryptionSetParameters)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_DiskEncryptionSetParameters_To_v1alpha4_DiskEncryptionSetParameters(a.(*DiskEncryptionSetParameters), b.(*v1alpha4.DiskEncryptionSetParameters), scope)
+	if err := s.AddGeneratedConversionFunc((*DiskEncryptionSetParameters)(nil), (*v1beta1.DiskEncryptionSetParameters)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_DiskEncryptionSetParameters_To_v1beta1_DiskEncryptionSetParameters(a.(*DiskEncryptionSetParameters), b.(*v1beta1.DiskEncryptionSetParameters), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.DiskEncryptionSetParameters)(nil), (*DiskEncryptionSetParameters)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters(a.(*v1alpha4.DiskEncryptionSetParameters), b.(*DiskEncryptionSetParameters), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.DiskEncryptionSetParameters)(nil), (*DiskEncryptionSetParameters)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters(a.(*v1beta1.DiskEncryptionSetParameters), b.(*DiskEncryptionSetParameters), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*FrontendIP)(nil), (*v1alpha4.FrontendIP)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_FrontendIP_To_v1alpha4_FrontendIP(a.(*FrontendIP), b.(*v1alpha4.FrontendIP), scope)
+	if err := s.AddGeneratedConversionFunc((*FrontendIP)(nil), (*v1beta1.FrontendIP)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP(a.(*FrontendIP), b.(*v1beta1.FrontendIP), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.FrontendIP)(nil), (*FrontendIP)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_FrontendIP_To_v1alpha3_FrontendIP(a.(*v1alpha4.FrontendIP), b.(*FrontendIP), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.FrontendIP)(nil), (*FrontendIP)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP(a.(*v1beta1.FrontendIP), b.(*FrontendIP), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*Image)(nil), (*v1alpha4.Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_Image_To_v1alpha4_Image(a.(*Image), b.(*v1alpha4.Image), scope)
+	if err := s.AddGeneratedConversionFunc((*Image)(nil), (*v1beta1.Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_Image_To_v1beta1_Image(a.(*Image), b.(*v1beta1.Image), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.Image)(nil), (*Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_Image_To_v1alpha3_Image(a.(*v1alpha4.Image), b.(*Image), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.Image)(nil), (*Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_Image_To_v1alpha3_Image(a.(*v1beta1.Image), b.(*Image), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*LoadBalancerSpec)(nil), (*v1alpha4.LoadBalancerSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(a.(*LoadBalancerSpec), b.(*v1alpha4.LoadBalancerSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*LoadBalancerSpec)(nil), (*v1beta1.LoadBalancerSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(a.(*LoadBalancerSpec), b.(*v1beta1.LoadBalancerSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*PublicIPSpec)(nil), (*v1alpha4.PublicIPSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(a.(*PublicIPSpec), b.(*v1alpha4.PublicIPSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*PublicIPSpec)(nil), (*v1beta1.PublicIPSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_PublicIPSpec_To_v1beta1_PublicIPSpec(a.(*PublicIPSpec), b.(*v1beta1.PublicIPSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.PublicIPSpec)(nil), (*PublicIPSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_PublicIPSpec_To_v1alpha3_PublicIPSpec(a.(*v1alpha4.PublicIPSpec), b.(*PublicIPSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.PublicIPSpec)(nil), (*PublicIPSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_PublicIPSpec_To_v1alpha3_PublicIPSpec(a.(*v1beta1.PublicIPSpec), b.(*PublicIPSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*RouteTable)(nil), (*v1alpha4.RouteTable)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_RouteTable_To_v1alpha4_RouteTable(a.(*RouteTable), b.(*v1alpha4.RouteTable), scope)
+	if err := s.AddGeneratedConversionFunc((*RouteTable)(nil), (*v1beta1.RouteTable)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_RouteTable_To_v1beta1_RouteTable(a.(*RouteTable), b.(*v1beta1.RouteTable), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.RouteTable)(nil), (*RouteTable)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_RouteTable_To_v1alpha3_RouteTable(a.(*v1alpha4.RouteTable), b.(*RouteTable), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.RouteTable)(nil), (*RouteTable)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_RouteTable_To_v1alpha3_RouteTable(a.(*v1beta1.RouteTable), b.(*RouteTable), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*SecurityProfile)(nil), (*v1alpha4.SecurityProfile)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_SecurityProfile_To_v1alpha4_SecurityProfile(a.(*SecurityProfile), b.(*v1alpha4.SecurityProfile), scope)
+	if err := s.AddGeneratedConversionFunc((*SecurityProfile)(nil), (*v1beta1.SecurityProfile)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_SecurityProfile_To_v1beta1_SecurityProfile(a.(*SecurityProfile), b.(*v1beta1.SecurityProfile), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.SecurityProfile)(nil), (*SecurityProfile)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_SecurityProfile_To_v1alpha3_SecurityProfile(a.(*v1alpha4.SecurityProfile), b.(*SecurityProfile), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.SecurityProfile)(nil), (*SecurityProfile)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_SecurityProfile_To_v1alpha3_SecurityProfile(a.(*v1beta1.SecurityProfile), b.(*SecurityProfile), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*SpotVMOptions)(nil), (*v1alpha4.SpotVMOptions)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_SpotVMOptions_To_v1alpha4_SpotVMOptions(a.(*SpotVMOptions), b.(*v1alpha4.SpotVMOptions), scope)
+	if err := s.AddGeneratedConversionFunc((*SpotVMOptions)(nil), (*v1beta1.SpotVMOptions)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_SpotVMOptions_To_v1beta1_SpotVMOptions(a.(*SpotVMOptions), b.(*v1beta1.SpotVMOptions), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.SpotVMOptions)(nil), (*SpotVMOptions)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_SpotVMOptions_To_v1alpha3_SpotVMOptions(a.(*v1alpha4.SpotVMOptions), b.(*SpotVMOptions), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.SpotVMOptions)(nil), (*SpotVMOptions)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions(a.(*v1beta1.SpotVMOptions), b.(*SpotVMOptions), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*UserAssignedIdentity)(nil), (*v1alpha4.UserAssignedIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_UserAssignedIdentity_To_v1alpha4_UserAssignedIdentity(a.(*UserAssignedIdentity), b.(*v1alpha4.UserAssignedIdentity), scope)
+	if err := s.AddGeneratedConversionFunc((*UserAssignedIdentity)(nil), (*v1beta1.UserAssignedIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_UserAssignedIdentity_To_v1beta1_UserAssignedIdentity(a.(*UserAssignedIdentity), b.(*v1beta1.UserAssignedIdentity), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.UserAssignedIdentity)(nil), (*UserAssignedIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity(a.(*v1alpha4.UserAssignedIdentity), b.(*UserAssignedIdentity), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.UserAssignedIdentity)(nil), (*UserAssignedIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity(a.(*v1beta1.UserAssignedIdentity), b.(*UserAssignedIdentity), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*VM)(nil), (*v1alpha4.VM)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_VM_To_v1alpha4_VM(a.(*VM), b.(*v1alpha4.VM), scope)
+	if err := s.AddGeneratedConversionFunc((*VM)(nil), (*v1beta1.VM)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_VM_To_v1beta1_VM(a.(*VM), b.(*v1beta1.VM), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.VM)(nil), (*VM)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_VM_To_v1alpha3_VM(a.(*v1alpha4.VM), b.(*VM), scope)
+	if err := s.AddGeneratedConversionFunc((*v1beta1.VM)(nil), (*VM)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_VM_To_v1alpha3_VM(a.(*v1beta1.VM), b.(*VM), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*apiv1alpha3.APIEndpoint)(nil), (*apiv1alpha4.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_APIEndpoint_To_v1alpha4_APIEndpoint(a.(*apiv1alpha3.APIEndpoint), b.(*apiv1alpha4.APIEndpoint), scope)
+	if err := s.AddConversionFunc((*AzureClusterIdentitySpec)(nil), (*v1beta1.AzureClusterIdentitySpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(a.(*AzureClusterIdentitySpec), b.(*v1beta1.AzureClusterIdentitySpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*AzureClusterIdentitySpec)(nil), (*v1alpha4.AzureClusterIdentitySpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureClusterIdentitySpec_To_v1alpha4_AzureClusterIdentitySpec(a.(*AzureClusterIdentitySpec), b.(*v1alpha4.AzureClusterIdentitySpec), scope)
+	if err := s.AddConversionFunc((*AzureClusterSpec)(nil), (*v1beta1.AzureClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(a.(*AzureClusterSpec), b.(*v1beta1.AzureClusterSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*AzureClusterSpec)(nil), (*v1alpha4.AzureClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureClusterSpec_To_v1alpha4_AzureClusterSpec(a.(*AzureClusterSpec), b.(*v1alpha4.AzureClusterSpec), scope)
+	if err := s.AddConversionFunc((*AzureClusterStatus)(nil), (*v1beta1.AzureClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(a.(*AzureClusterStatus), b.(*v1beta1.AzureClusterStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*AzureClusterStatus)(nil), (*v1alpha4.AzureClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureClusterStatus_To_v1alpha4_AzureClusterStatus(a.(*AzureClusterStatus), b.(*v1alpha4.AzureClusterStatus), scope)
+	if err := s.AddConversionFunc((*AzureMachineSpec)(nil), (*v1beta1.AzureMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(a.(*AzureMachineSpec), b.(*v1beta1.AzureMachineSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*AzureMachineSpec)(nil), (*v1alpha4.AzureMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(a.(*AzureMachineSpec), b.(*v1alpha4.AzureMachineSpec), scope)
+	if err := s.AddConversionFunc((*AzureMachineStatus)(nil), (*v1beta1.AzureMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_AzureMachineStatus_To_v1beta1_AzureMachineStatus(a.(*AzureMachineStatus), b.(*v1beta1.AzureMachineStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*AzureMachineStatus)(nil), (*v1alpha4.AzureMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_AzureMachineStatus_To_v1alpha4_AzureMachineStatus(a.(*AzureMachineStatus), b.(*v1alpha4.AzureMachineStatus), scope)
+	if err := s.AddConversionFunc((*Future)(nil), (*v1beta1.Future)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_Future_To_v1beta1_Future(a.(*Future), b.(*v1beta1.Future), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*Future)(nil), (*v1alpha4.Future)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_Future_To_v1alpha4_Future(a.(*Future), b.(*v1alpha4.Future), scope)
+	if err := s.AddConversionFunc((*IngressRule)(nil), (*v1beta1.SecurityRule)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule(a.(*IngressRule), b.(*v1beta1.SecurityRule), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*IngressRule)(nil), (*v1alpha4.SecurityRule)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_IngressRule_To_v1alpha4_SecurityRule(a.(*IngressRule), b.(*v1alpha4.SecurityRule), scope)
+	if err := s.AddConversionFunc((*ManagedDisk)(nil), (*v1beta1.ManagedDiskParameters)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_ManagedDisk_To_v1beta1_ManagedDiskParameters(a.(*ManagedDisk), b.(*v1beta1.ManagedDiskParameters), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*ManagedDisk)(nil), (*v1alpha4.ManagedDiskParameters)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskParameters(a.(*ManagedDisk), b.(*v1alpha4.ManagedDiskParameters), scope)
+	if err := s.AddConversionFunc((*NetworkSpec)(nil), (*v1beta1.NetworkSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(a.(*NetworkSpec), b.(*v1beta1.NetworkSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*NetworkSpec)(nil), (*v1alpha4.NetworkSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_NetworkSpec_To_v1alpha4_NetworkSpec(a.(*NetworkSpec), b.(*v1alpha4.NetworkSpec), scope)
+	if err := s.AddConversionFunc((*OSDisk)(nil), (*v1beta1.OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_OSDisk_To_v1beta1_OSDisk(a.(*OSDisk), b.(*v1beta1.OSDisk), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*OSDisk)(nil), (*v1alpha4.OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(a.(*OSDisk), b.(*v1alpha4.OSDisk), scope)
+	if err := s.AddConversionFunc((*SecurityGroup)(nil), (*v1beta1.SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup(a.(*SecurityGroup), b.(*v1beta1.SecurityGroup), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*SecurityGroup)(nil), (*v1alpha4.SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(a.(*SecurityGroup), b.(*v1alpha4.SecurityGroup), scope)
+	if err := s.AddConversionFunc((*SubnetSpec)(nil), (*v1beta1.SubnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(a.(*SubnetSpec), b.(*v1beta1.SubnetSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*SubnetSpec)(nil), (*v1alpha4.SubnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_SubnetSpec_To_v1alpha4_SubnetSpec(a.(*SubnetSpec), b.(*v1alpha4.SubnetSpec), scope)
+	if err := s.AddConversionFunc((*VnetSpec)(nil), (*v1beta1.VnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec(a.(*VnetSpec), b.(*v1beta1.VnetSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*VnetSpec)(nil), (*v1alpha4.VnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_VnetSpec_To_v1alpha4_VnetSpec(a.(*VnetSpec), b.(*v1alpha4.VnetSpec), scope)
+	if err := s.AddConversionFunc((*v1beta1.AzureClusterIdentitySpec)(nil), (*AzureClusterIdentitySpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(a.(*v1beta1.AzureClusterIdentitySpec), b.(*AzureClusterIdentitySpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*apiv1alpha4.APIEndpoint)(nil), (*apiv1alpha3.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_APIEndpoint_To_v1alpha3_APIEndpoint(a.(*apiv1alpha4.APIEndpoint), b.(*apiv1alpha3.APIEndpoint), scope)
+	if err := s.AddConversionFunc((*v1beta1.AzureClusterSpec)(nil), (*AzureClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(a.(*v1beta1.AzureClusterSpec), b.(*AzureClusterSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.AzureClusterIdentitySpec)(nil), (*AzureClusterIdentitySpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(a.(*v1alpha4.AzureClusterIdentitySpec), b.(*AzureClusterIdentitySpec), scope)
+	if err := s.AddConversionFunc((*v1beta1.AzureClusterStatus)(nil), (*AzureClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(a.(*v1beta1.AzureClusterStatus), b.(*AzureClusterStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.AzureClusterSpec)(nil), (*AzureClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(a.(*v1alpha4.AzureClusterSpec), b.(*AzureClusterSpec), scope)
+	if err := s.AddConversionFunc((*v1beta1.AzureMachineSpec)(nil), (*AzureMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(a.(*v1beta1.AzureMachineSpec), b.(*AzureMachineSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.AzureClusterStatus)(nil), (*AzureClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(a.(*v1alpha4.AzureClusterStatus), b.(*AzureClusterStatus), scope)
+	if err := s.AddConversionFunc((*v1beta1.AzureMachineStatus)(nil), (*AzureMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(a.(*v1beta1.AzureMachineStatus), b.(*AzureMachineStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.AzureMachineSpec)(nil), (*AzureMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(a.(*v1alpha4.AzureMachineSpec), b.(*AzureMachineSpec), scope)
+	if err := s.AddConversionFunc((*v1beta1.AzureSharedGalleryImage)(nil), (*AzureSharedGalleryImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(a.(*v1beta1.AzureSharedGalleryImage), b.(*AzureSharedGalleryImage), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.AzureMachineStatus)(nil), (*AzureMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(a.(*v1alpha4.AzureMachineStatus), b.(*AzureMachineStatus), scope)
+	if err := s.AddConversionFunc((*v1beta1.Future)(nil), (*Future)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_Future_To_v1alpha3_Future(a.(*v1beta1.Future), b.(*Future), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.AzureSharedGalleryImage)(nil), (*AzureSharedGalleryImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(a.(*v1alpha4.AzureSharedGalleryImage), b.(*AzureSharedGalleryImage), scope)
+	if err := s.AddConversionFunc((*v1beta1.LoadBalancerSpec)(nil), (*LoadBalancerSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(a.(*v1beta1.LoadBalancerSpec), b.(*LoadBalancerSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.Future)(nil), (*Future)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_Future_To_v1alpha3_Future(a.(*v1alpha4.Future), b.(*Future), scope)
+	if err := s.AddConversionFunc((*v1beta1.ManagedDiskParameters)(nil), (*ManagedDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ManagedDiskParameters_To_v1alpha3_ManagedDisk(a.(*v1beta1.ManagedDiskParameters), b.(*ManagedDisk), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.LoadBalancerSpec)(nil), (*LoadBalancerSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(a.(*v1alpha4.LoadBalancerSpec), b.(*LoadBalancerSpec), scope)
+	if err := s.AddConversionFunc((*v1beta1.NetworkSpec)(nil), (*NetworkSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(a.(*v1beta1.NetworkSpec), b.(*NetworkSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.ManagedDiskParameters)(nil), (*ManagedDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_ManagedDiskParameters_To_v1alpha3_ManagedDisk(a.(*v1alpha4.ManagedDiskParameters), b.(*ManagedDisk), scope)
+	if err := s.AddConversionFunc((*v1beta1.OSDisk)(nil), (*OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_OSDisk_To_v1alpha3_OSDisk(a.(*v1beta1.OSDisk), b.(*OSDisk), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.NetworkSpec)(nil), (*NetworkSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(a.(*v1alpha4.NetworkSpec), b.(*NetworkSpec), scope)
+	if err := s.AddConversionFunc((*v1beta1.SecurityGroup)(nil), (*SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup(a.(*v1beta1.SecurityGroup), b.(*SecurityGroup), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.OSDisk)(nil), (*OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(a.(*v1alpha4.OSDisk), b.(*OSDisk), scope)
+	if err := s.AddConversionFunc((*v1beta1.SecurityRule)(nil), (*IngressRule)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_SecurityRule_To_v1alpha3_IngressRule(a.(*v1beta1.SecurityRule), b.(*IngressRule), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.SecurityGroup)(nil), (*SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(a.(*v1alpha4.SecurityGroup), b.(*SecurityGroup), scope)
+	if err := s.AddConversionFunc((*v1beta1.SubnetSpec)(nil), (*SubnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(a.(*v1beta1.SubnetSpec), b.(*SubnetSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.SecurityRule)(nil), (*IngressRule)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_SecurityRule_To_v1alpha3_IngressRule(a.(*v1alpha4.SecurityRule), b.(*IngressRule), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*v1alpha4.SubnetSpec)(nil), (*SubnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_SubnetSpec_To_v1alpha3_SubnetSpec(a.(*v1alpha4.SubnetSpec), b.(*SubnetSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*v1alpha4.VnetSpec)(nil), (*VnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_VnetSpec_To_v1alpha3_VnetSpec(a.(*v1alpha4.VnetSpec), b.(*VnetSpec), scope)
+	if err := s.AddConversionFunc((*v1beta1.VnetSpec)(nil), (*VnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(a.(*v1beta1.VnetSpec), b.(*VnetSpec), scope)
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1alpha3_AddressRecord_To_v1alpha4_AddressRecord(in *AddressRecord, out *v1alpha4.AddressRecord, s conversion.Scope) error {
+func autoConvert_v1alpha3_AddressRecord_To_v1beta1_AddressRecord(in *AddressRecord, out *v1beta1.AddressRecord, s conversion.Scope) error {
 	out.Hostname = in.Hostname
 	out.IP = in.IP
 	return nil
 }
 
-// Convert_v1alpha3_AddressRecord_To_v1alpha4_AddressRecord is an autogenerated conversion function.
-func Convert_v1alpha3_AddressRecord_To_v1alpha4_AddressRecord(in *AddressRecord, out *v1alpha4.AddressRecord, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AddressRecord_To_v1alpha4_AddressRecord(in, out, s)
+// Convert_v1alpha3_AddressRecord_To_v1beta1_AddressRecord is an autogenerated conversion function.
+func Convert_v1alpha3_AddressRecord_To_v1beta1_AddressRecord(in *AddressRecord, out *v1beta1.AddressRecord, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AddressRecord_To_v1beta1_AddressRecord(in, out, s)
 }
 
-func autoConvert_v1alpha4_AddressRecord_To_v1alpha3_AddressRecord(in *v1alpha4.AddressRecord, out *AddressRecord, s conversion.Scope) error {
+func autoConvert_v1beta1_AddressRecord_To_v1alpha3_AddressRecord(in *v1beta1.AddressRecord, out *AddressRecord, s conversion.Scope) error {
 	out.Hostname = in.Hostname
 	out.IP = in.IP
 	return nil
 }
 
-// Convert_v1alpha4_AddressRecord_To_v1alpha3_AddressRecord is an autogenerated conversion function.
-func Convert_v1alpha4_AddressRecord_To_v1alpha3_AddressRecord(in *v1alpha4.AddressRecord, out *AddressRecord, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AddressRecord_To_v1alpha3_AddressRecord(in, out, s)
+// Convert_v1beta1_AddressRecord_To_v1alpha3_AddressRecord is an autogenerated conversion function.
+func Convert_v1beta1_AddressRecord_To_v1alpha3_AddressRecord(in *v1beta1.AddressRecord, out *AddressRecord, s conversion.Scope) error {
+	return autoConvert_v1beta1_AddressRecord_To_v1alpha3_AddressRecord(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(in *AzureCluster, out *v1alpha4.AzureCluster, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureCluster_To_v1beta1_AzureCluster(in *AzureCluster, out *v1beta1.AzureCluster, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha3_AzureClusterSpec_To_v1alpha4_AzureClusterSpec(&in.Spec, &out.Spec, s); err != nil {
+	if err := Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha3_AzureClusterStatus_To_v1alpha4_AzureClusterStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster is an autogenerated conversion function.
-func Convert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(in *AzureCluster, out *v1alpha4.AzureCluster, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(in, out, s)
+// Convert_v1alpha3_AzureCluster_To_v1beta1_AzureCluster is an autogenerated conversion function.
+func Convert_v1alpha3_AzureCluster_To_v1beta1_AzureCluster(in *AzureCluster, out *v1beta1.AzureCluster, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureCluster_To_v1beta1_AzureCluster(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(in *v1alpha4.AzureCluster, out *AzureCluster, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureCluster_To_v1alpha3_AzureCluster(in *v1beta1.AzureCluster, out *AzureCluster, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha4_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(&in.Spec, &out.Spec, s); err != nil {
+	if err := Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha4_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster is an autogenerated conversion function.
-func Convert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(in *v1alpha4.AzureCluster, out *AzureCluster, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(in, out, s)
+// Convert_v1beta1_AzureCluster_To_v1alpha3_AzureCluster is an autogenerated conversion function.
+func Convert_v1beta1_AzureCluster_To_v1alpha3_AzureCluster(in *v1beta1.AzureCluster, out *AzureCluster, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureCluster_To_v1alpha3_AzureCluster(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity(in *AzureClusterIdentity, out *v1alpha4.AzureClusterIdentity, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(in *AzureClusterIdentity, out *v1beta1.AzureClusterIdentity, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha3_AzureClusterIdentitySpec_To_v1alpha4_AzureClusterIdentitySpec(&in.Spec, &out.Spec, s); err != nil {
+	if err := Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha3_AzureClusterIdentityStatus_To_v1alpha4_AzureClusterIdentityStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_v1alpha3_AzureClusterIdentityStatus_To_v1beta1_AzureClusterIdentityStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha3_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity is an autogenerated conversion function.
-func Convert_v1alpha3_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity(in *AzureClusterIdentity, out *v1alpha4.AzureClusterIdentity, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity(in, out, s)
+// Convert_v1alpha3_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity is an autogenerated conversion function.
+func Convert_v1alpha3_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(in *AzureClusterIdentity, out *v1beta1.AzureClusterIdentity, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(in *v1alpha4.AzureClusterIdentity, out *AzureClusterIdentity, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(in *v1beta1.AzureClusterIdentity, out *AzureClusterIdentity, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha4_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(&in.Spec, &out.Spec, s); err != nil {
+	if err := Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha4_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_v1beta1_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha4_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity is an autogenerated conversion function.
-func Convert_v1alpha4_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(in *v1alpha4.AzureClusterIdentity, out *AzureClusterIdentity, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(in, out, s)
+// Convert_v1beta1_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity is an autogenerated conversion function.
+func Convert_v1beta1_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(in *v1beta1.AzureClusterIdentity, out *AzureClusterIdentity, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureClusterIdentityList_To_v1alpha4_AzureClusterIdentityList(in *AzureClusterIdentityList, out *v1alpha4.AzureClusterIdentityList, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureClusterIdentityList_To_v1beta1_AzureClusterIdentityList(in *AzureClusterIdentityList, out *v1beta1.AzureClusterIdentityList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]v1alpha4.AzureClusterIdentity, len(*in))
+		*out = make([]v1beta1.AzureClusterIdentity, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha3_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1alpha3_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -555,18 +545,18 @@ func autoConvert_v1alpha3_AzureClusterIdentityList_To_v1alpha4_AzureClusterIdent
 	return nil
 }
 
-// Convert_v1alpha3_AzureClusterIdentityList_To_v1alpha4_AzureClusterIdentityList is an autogenerated conversion function.
-func Convert_v1alpha3_AzureClusterIdentityList_To_v1alpha4_AzureClusterIdentityList(in *AzureClusterIdentityList, out *v1alpha4.AzureClusterIdentityList, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureClusterIdentityList_To_v1alpha4_AzureClusterIdentityList(in, out, s)
+// Convert_v1alpha3_AzureClusterIdentityList_To_v1beta1_AzureClusterIdentityList is an autogenerated conversion function.
+func Convert_v1alpha3_AzureClusterIdentityList_To_v1beta1_AzureClusterIdentityList(in *AzureClusterIdentityList, out *v1beta1.AzureClusterIdentityList, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureClusterIdentityList_To_v1beta1_AzureClusterIdentityList(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(in *v1alpha4.AzureClusterIdentityList, out *AzureClusterIdentityList, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(in *v1beta1.AzureClusterIdentityList, out *AzureClusterIdentityList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AzureClusterIdentity, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha4_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1beta1_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -576,58 +566,78 @@ func autoConvert_v1alpha4_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdent
 	return nil
 }
 
-// Convert_v1alpha4_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList is an autogenerated conversion function.
-func Convert_v1alpha4_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(in *v1alpha4.AzureClusterIdentityList, out *AzureClusterIdentityList, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(in, out, s)
+// Convert_v1beta1_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList is an autogenerated conversion function.
+func Convert_v1beta1_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(in *v1beta1.AzureClusterIdentityList, out *AzureClusterIdentityList, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureClusterIdentitySpec_To_v1alpha4_AzureClusterIdentitySpec(in *AzureClusterIdentitySpec, out *v1alpha4.AzureClusterIdentitySpec, s conversion.Scope) error {
-	out.Type = v1alpha4.IdentityType(in.Type)
+func autoConvert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(in *AzureClusterIdentitySpec, out *v1beta1.AzureClusterIdentitySpec, s conversion.Scope) error {
+	out.Type = v1beta1.IdentityType(in.Type)
 	out.ResourceID = in.ResourceID
 	out.ClientID = in.ClientID
 	out.ClientSecret = in.ClientSecret
 	out.TenantID = in.TenantID
-	// WARNING: in.AllowedNamespaces requires manual conversion: inconvertible types ([]string vs *sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4.AllowedNamespaces)
+	// WARNING: in.AllowedNamespaces requires manual conversion: inconvertible types ([]string vs *sigs.k8s.io/cluster-api-provider-azure/api/v1beta1.AllowedNamespaces)
 	return nil
 }
 
-func autoConvert_v1alpha4_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in *v1alpha4.AzureClusterIdentitySpec, out *AzureClusterIdentitySpec, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in *v1beta1.AzureClusterIdentitySpec, out *AzureClusterIdentitySpec, s conversion.Scope) error {
 	out.Type = IdentityType(in.Type)
 	out.ResourceID = in.ResourceID
 	out.ClientID = in.ClientID
 	out.ClientSecret = in.ClientSecret
 	out.TenantID = in.TenantID
-	// WARNING: in.AllowedNamespaces requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4.AllowedNamespaces vs []string)
+	// WARNING: in.AllowedNamespaces requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-azure/api/v1beta1.AllowedNamespaces vs []string)
 	return nil
 }
 
-func autoConvert_v1alpha3_AzureClusterIdentityStatus_To_v1alpha4_AzureClusterIdentityStatus(in *AzureClusterIdentityStatus, out *v1alpha4.AzureClusterIdentityStatus, s conversion.Scope) error {
-	out.Conditions = *(*apiv1alpha4.Conditions)(unsafe.Pointer(&in.Conditions))
+func autoConvert_v1alpha3_AzureClusterIdentityStatus_To_v1beta1_AzureClusterIdentityStatus(in *AzureClusterIdentityStatus, out *v1beta1.AzureClusterIdentityStatus, s conversion.Scope) error {
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(apiv1beta1.Conditions, len(*in))
+		for i := range *in {
+			if err := apiv1alpha3.Convert_v1alpha3_Condition_To_v1beta1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	return nil
 }
 
-// Convert_v1alpha3_AzureClusterIdentityStatus_To_v1alpha4_AzureClusterIdentityStatus is an autogenerated conversion function.
-func Convert_v1alpha3_AzureClusterIdentityStatus_To_v1alpha4_AzureClusterIdentityStatus(in *AzureClusterIdentityStatus, out *v1alpha4.AzureClusterIdentityStatus, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureClusterIdentityStatus_To_v1alpha4_AzureClusterIdentityStatus(in, out, s)
+// Convert_v1alpha3_AzureClusterIdentityStatus_To_v1beta1_AzureClusterIdentityStatus is an autogenerated conversion function.
+func Convert_v1alpha3_AzureClusterIdentityStatus_To_v1beta1_AzureClusterIdentityStatus(in *AzureClusterIdentityStatus, out *v1beta1.AzureClusterIdentityStatus, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureClusterIdentityStatus_To_v1beta1_AzureClusterIdentityStatus(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(in *v1alpha4.AzureClusterIdentityStatus, out *AzureClusterIdentityStatus, s conversion.Scope) error {
-	out.Conditions = *(*apiv1alpha3.Conditions)(unsafe.Pointer(&in.Conditions))
+func autoConvert_v1beta1_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(in *v1beta1.AzureClusterIdentityStatus, out *AzureClusterIdentityStatus, s conversion.Scope) error {
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(apiv1alpha3.Conditions, len(*in))
+		for i := range *in {
+			if err := apiv1alpha3.Convert_v1beta1_Condition_To_v1alpha3_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	return nil
 }
 
-// Convert_v1alpha4_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus is an autogenerated conversion function.
-func Convert_v1alpha4_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(in *v1alpha4.AzureClusterIdentityStatus, out *AzureClusterIdentityStatus, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(in, out, s)
+// Convert_v1beta1_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus is an autogenerated conversion function.
+func Convert_v1beta1_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(in *v1beta1.AzureClusterIdentityStatus, out *AzureClusterIdentityStatus, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureClusterList_To_v1alpha4_AzureClusterList(in *AzureClusterList, out *v1alpha4.AzureClusterList, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureClusterList_To_v1beta1_AzureClusterList(in *AzureClusterList, out *v1beta1.AzureClusterList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]v1alpha4.AzureCluster, len(*in))
+		*out = make([]v1beta1.AzureCluster, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1alpha3_AzureCluster_To_v1beta1_AzureCluster(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -637,18 +647,18 @@ func autoConvert_v1alpha3_AzureClusterList_To_v1alpha4_AzureClusterList(in *Azur
 	return nil
 }
 
-// Convert_v1alpha3_AzureClusterList_To_v1alpha4_AzureClusterList is an autogenerated conversion function.
-func Convert_v1alpha3_AzureClusterList_To_v1alpha4_AzureClusterList(in *AzureClusterList, out *v1alpha4.AzureClusterList, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureClusterList_To_v1alpha4_AzureClusterList(in, out, s)
+// Convert_v1alpha3_AzureClusterList_To_v1beta1_AzureClusterList is an autogenerated conversion function.
+func Convert_v1alpha3_AzureClusterList_To_v1beta1_AzureClusterList(in *AzureClusterList, out *v1beta1.AzureClusterList, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureClusterList_To_v1beta1_AzureClusterList(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureClusterList_To_v1alpha3_AzureClusterList(in *v1alpha4.AzureClusterList, out *AzureClusterList, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureClusterList_To_v1alpha3_AzureClusterList(in *v1beta1.AzureClusterList, out *AzureClusterList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AzureCluster, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1beta1_AzureCluster_To_v1alpha3_AzureCluster(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -658,34 +668,34 @@ func autoConvert_v1alpha4_AzureClusterList_To_v1alpha3_AzureClusterList(in *v1al
 	return nil
 }
 
-// Convert_v1alpha4_AzureClusterList_To_v1alpha3_AzureClusterList is an autogenerated conversion function.
-func Convert_v1alpha4_AzureClusterList_To_v1alpha3_AzureClusterList(in *v1alpha4.AzureClusterList, out *AzureClusterList, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureClusterList_To_v1alpha3_AzureClusterList(in, out, s)
+// Convert_v1beta1_AzureClusterList_To_v1alpha3_AzureClusterList is an autogenerated conversion function.
+func Convert_v1beta1_AzureClusterList_To_v1alpha3_AzureClusterList(in *v1beta1.AzureClusterList, out *AzureClusterList, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureClusterList_To_v1alpha3_AzureClusterList(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureClusterSpec_To_v1alpha4_AzureClusterSpec(in *AzureClusterSpec, out *v1alpha4.AzureClusterSpec, s conversion.Scope) error {
-	if err := Convert_v1alpha3_NetworkSpec_To_v1alpha4_NetworkSpec(&in.NetworkSpec, &out.NetworkSpec, s); err != nil {
+func autoConvert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in *AzureClusterSpec, out *v1beta1.AzureClusterSpec, s conversion.Scope) error {
+	if err := Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(&in.NetworkSpec, &out.NetworkSpec, s); err != nil {
 		return err
 	}
 	out.ResourceGroup = in.ResourceGroup
 	out.SubscriptionID = in.SubscriptionID
 	out.Location = in.Location
-	if err := Convert_v1alpha3_APIEndpoint_To_v1alpha4_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
+	if err := apiv1alpha3.Convert_v1alpha3_APIEndpoint_To_v1beta1_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}
-	out.AdditionalTags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.AdditionalTags))
+	out.AdditionalTags = *(*v1beta1.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.IdentityRef = (*v1.ObjectReference)(unsafe.Pointer(in.IdentityRef))
 	return nil
 }
 
-func autoConvert_v1alpha4_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *v1alpha4.AzureClusterSpec, out *AzureClusterSpec, s conversion.Scope) error {
-	if err := Convert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(&in.NetworkSpec, &out.NetworkSpec, s); err != nil {
+func autoConvert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *v1beta1.AzureClusterSpec, out *AzureClusterSpec, s conversion.Scope) error {
+	if err := Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(&in.NetworkSpec, &out.NetworkSpec, s); err != nil {
 		return err
 	}
 	out.ResourceGroup = in.ResourceGroup
 	out.SubscriptionID = in.SubscriptionID
 	out.Location = in.Location
-	if err := Convert_v1alpha4_APIEndpoint_To_v1alpha3_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
+	if err := apiv1alpha3.Convert_v1beta1_APIEndpoint_To_v1alpha3_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))
@@ -696,60 +706,104 @@ func autoConvert_v1alpha4_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *v1al
 	return nil
 }
 
-func autoConvert_v1alpha3_AzureClusterStatus_To_v1alpha4_AzureClusterStatus(in *AzureClusterStatus, out *v1alpha4.AzureClusterStatus, s conversion.Scope) error {
-	out.FailureDomains = *(*apiv1alpha4.FailureDomains)(unsafe.Pointer(&in.FailureDomains))
+func autoConvert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in *AzureClusterStatus, out *v1beta1.AzureClusterStatus, s conversion.Scope) error {
+	if in.FailureDomains != nil {
+		in, out := &in.FailureDomains, &out.FailureDomains
+		*out = make(apiv1beta1.FailureDomains, len(*in))
+		for key, val := range *in {
+			newVal := new(apiv1beta1.FailureDomainSpec)
+			if err := apiv1alpha3.Convert_v1alpha3_FailureDomainSpec_To_v1beta1_FailureDomainSpec(&val, newVal, s); err != nil {
+				return err
+			}
+			(*out)[key] = *newVal
+		}
+	} else {
+		out.FailureDomains = nil
+	}
 	out.Ready = in.Ready
-	out.Conditions = *(*apiv1alpha4.Conditions)(unsafe.Pointer(&in.Conditions))
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(apiv1beta1.Conditions, len(*in))
+		for i := range *in {
+			if err := apiv1alpha3.Convert_v1alpha3_Condition_To_v1beta1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	return nil
 }
 
-func autoConvert_v1alpha4_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *v1alpha4.AzureClusterStatus, out *AzureClusterStatus, s conversion.Scope) error {
-	out.FailureDomains = *(*apiv1alpha3.FailureDomains)(unsafe.Pointer(&in.FailureDomains))
+func autoConvert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *v1beta1.AzureClusterStatus, out *AzureClusterStatus, s conversion.Scope) error {
+	if in.FailureDomains != nil {
+		in, out := &in.FailureDomains, &out.FailureDomains
+		*out = make(apiv1alpha3.FailureDomains, len(*in))
+		for key, val := range *in {
+			newVal := new(apiv1alpha3.FailureDomainSpec)
+			if err := apiv1alpha3.Convert_v1beta1_FailureDomainSpec_To_v1alpha3_FailureDomainSpec(&val, newVal, s); err != nil {
+				return err
+			}
+			(*out)[key] = *newVal
+		}
+	} else {
+		out.FailureDomains = nil
+	}
 	out.Ready = in.Ready
-	out.Conditions = *(*apiv1alpha3.Conditions)(unsafe.Pointer(&in.Conditions))
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(apiv1alpha3.Conditions, len(*in))
+		for i := range *in {
+			if err := apiv1alpha3.Convert_v1beta1_Condition_To_v1alpha3_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	// WARNING: in.LongRunningOperationStates requires manual conversion: does not exist in peer-type
 	return nil
 }
 
-func autoConvert_v1alpha3_AzureMachine_To_v1alpha4_AzureMachine(in *AzureMachine, out *v1alpha4.AzureMachine, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureMachine_To_v1beta1_AzureMachine(in *AzureMachine, out *v1beta1.AzureMachine, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha3_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(&in.Spec, &out.Spec, s); err != nil {
+	if err := Convert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha3_AzureMachineStatus_To_v1alpha4_AzureMachineStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_v1alpha3_AzureMachineStatus_To_v1beta1_AzureMachineStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha3_AzureMachine_To_v1alpha4_AzureMachine is an autogenerated conversion function.
-func Convert_v1alpha3_AzureMachine_To_v1alpha4_AzureMachine(in *AzureMachine, out *v1alpha4.AzureMachine, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureMachine_To_v1alpha4_AzureMachine(in, out, s)
+// Convert_v1alpha3_AzureMachine_To_v1beta1_AzureMachine is an autogenerated conversion function.
+func Convert_v1alpha3_AzureMachine_To_v1beta1_AzureMachine(in *AzureMachine, out *v1beta1.AzureMachine, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureMachine_To_v1beta1_AzureMachine(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureMachine_To_v1alpha3_AzureMachine(in *v1alpha4.AzureMachine, out *AzureMachine, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureMachine_To_v1alpha3_AzureMachine(in *v1beta1.AzureMachine, out *AzureMachine, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(&in.Spec, &out.Spec, s); err != nil {
+	if err := Convert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha4_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_v1beta1_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha4_AzureMachine_To_v1alpha3_AzureMachine is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMachine_To_v1alpha3_AzureMachine(in *v1alpha4.AzureMachine, out *AzureMachine, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMachine_To_v1alpha3_AzureMachine(in, out, s)
+// Convert_v1beta1_AzureMachine_To_v1alpha3_AzureMachine is an autogenerated conversion function.
+func Convert_v1beta1_AzureMachine_To_v1alpha3_AzureMachine(in *v1beta1.AzureMachine, out *AzureMachine, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureMachine_To_v1alpha3_AzureMachine(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureMachineList_To_v1alpha4_AzureMachineList(in *AzureMachineList, out *v1alpha4.AzureMachineList, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureMachineList_To_v1beta1_AzureMachineList(in *AzureMachineList, out *v1beta1.AzureMachineList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]v1alpha4.AzureMachine, len(*in))
+		*out = make([]v1beta1.AzureMachine, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha3_AzureMachine_To_v1alpha4_AzureMachine(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1alpha3_AzureMachine_To_v1beta1_AzureMachine(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -759,18 +813,18 @@ func autoConvert_v1alpha3_AzureMachineList_To_v1alpha4_AzureMachineList(in *Azur
 	return nil
 }
 
-// Convert_v1alpha3_AzureMachineList_To_v1alpha4_AzureMachineList is an autogenerated conversion function.
-func Convert_v1alpha3_AzureMachineList_To_v1alpha4_AzureMachineList(in *AzureMachineList, out *v1alpha4.AzureMachineList, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureMachineList_To_v1alpha4_AzureMachineList(in, out, s)
+// Convert_v1alpha3_AzureMachineList_To_v1beta1_AzureMachineList is an autogenerated conversion function.
+func Convert_v1alpha3_AzureMachineList_To_v1beta1_AzureMachineList(in *AzureMachineList, out *v1beta1.AzureMachineList, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureMachineList_To_v1beta1_AzureMachineList(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureMachineList_To_v1alpha3_AzureMachineList(in *v1alpha4.AzureMachineList, out *AzureMachineList, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureMachineList_To_v1alpha3_AzureMachineList(in *v1beta1.AzureMachineList, out *AzureMachineList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AzureMachine, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha4_AzureMachine_To_v1alpha3_AzureMachine(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1beta1_AzureMachine_To_v1alpha3_AzureMachine(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -780,36 +834,36 @@ func autoConvert_v1alpha4_AzureMachineList_To_v1alpha3_AzureMachineList(in *v1al
 	return nil
 }
 
-// Convert_v1alpha4_AzureMachineList_To_v1alpha3_AzureMachineList is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMachineList_To_v1alpha3_AzureMachineList(in *v1alpha4.AzureMachineList, out *AzureMachineList, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMachineList_To_v1alpha3_AzureMachineList(in, out, s)
+// Convert_v1beta1_AzureMachineList_To_v1alpha3_AzureMachineList is an autogenerated conversion function.
+func Convert_v1beta1_AzureMachineList_To_v1alpha3_AzureMachineList(in *v1beta1.AzureMachineList, out *AzureMachineList, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureMachineList_To_v1alpha3_AzureMachineList(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *AzureMachineSpec, out *v1alpha4.AzureMachineSpec, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(in *AzureMachineSpec, out *v1beta1.AzureMachineSpec, s conversion.Scope) error {
 	out.ProviderID = (*string)(unsafe.Pointer(in.ProviderID))
 	out.VMSize = in.VMSize
 	out.FailureDomain = (*string)(unsafe.Pointer(in.FailureDomain))
 	// WARNING: in.AvailabilityZone requires manual conversion: does not exist in peer-type
 	if in.Image != nil {
 		in, out := &in.Image, &out.Image
-		*out = new(v1alpha4.Image)
-		if err := Convert_v1alpha3_Image_To_v1alpha4_Image(*in, *out, s); err != nil {
+		*out = new(v1beta1.Image)
+		if err := Convert_v1alpha3_Image_To_v1beta1_Image(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
 		out.Image = nil
 	}
-	out.Identity = v1alpha4.VMIdentity(in.Identity)
-	out.UserAssignedIdentities = *(*[]v1alpha4.UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
+	out.Identity = v1beta1.VMIdentity(in.Identity)
+	out.UserAssignedIdentities = *(*[]v1beta1.UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
 	out.RoleAssignmentName = in.RoleAssignmentName
-	if err := Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
+	if err := Convert_v1alpha3_OSDisk_To_v1beta1_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
 	if in.DataDisks != nil {
 		in, out := &in.DataDisks, &out.DataDisks
-		*out = make([]v1alpha4.DataDisk, len(*in))
+		*out = make([]v1beta1.DataDisk, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1alpha3_DataDisk_To_v1beta1_DataDisk(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -818,23 +872,23 @@ func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *Azur
 	}
 	// WARNING: in.Location requires manual conversion: does not exist in peer-type
 	out.SSHPublicKey = in.SSHPublicKey
-	out.AdditionalTags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.AdditionalTags))
+	out.AdditionalTags = *(*v1beta1.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.AllocatePublicIP = in.AllocatePublicIP
 	out.EnableIPForwarding = in.EnableIPForwarding
 	out.AcceleratedNetworking = (*bool)(unsafe.Pointer(in.AcceleratedNetworking))
-	out.SpotVMOptions = (*v1alpha4.SpotVMOptions)(unsafe.Pointer(in.SpotVMOptions))
-	out.SecurityProfile = (*v1alpha4.SecurityProfile)(unsafe.Pointer(in.SecurityProfile))
+	out.SpotVMOptions = (*v1beta1.SpotVMOptions)(unsafe.Pointer(in.SpotVMOptions))
+	out.SecurityProfile = (*v1beta1.SecurityProfile)(unsafe.Pointer(in.SecurityProfile))
 	return nil
 }
 
-func autoConvert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1alpha4.AzureMachineSpec, out *AzureMachineSpec, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1beta1.AzureMachineSpec, out *AzureMachineSpec, s conversion.Scope) error {
 	out.ProviderID = (*string)(unsafe.Pointer(in.ProviderID))
 	out.VMSize = in.VMSize
 	out.FailureDomain = (*string)(unsafe.Pointer(in.FailureDomain))
 	if in.Image != nil {
 		in, out := &in.Image, &out.Image
 		*out = new(Image)
-		if err := Convert_v1alpha4_Image_To_v1alpha3_Image(*in, *out, s); err != nil {
+		if err := Convert_v1beta1_Image_To_v1alpha3_Image(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
@@ -843,14 +897,14 @@ func autoConvert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1al
 	out.Identity = VMIdentity(in.Identity)
 	out.UserAssignedIdentities = *(*[]UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
 	out.RoleAssignmentName = in.RoleAssignmentName
-	if err := Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
+	if err := Convert_v1beta1_OSDisk_To_v1alpha3_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
 	if in.DataDisks != nil {
 		in, out := &in.DataDisks, &out.DataDisks
 		*out = make([]DataDisk, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1beta1_DataDisk_To_v1alpha3_DataDisk(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -868,60 +922,80 @@ func autoConvert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1al
 	return nil
 }
 
-func autoConvert_v1alpha3_AzureMachineStatus_To_v1alpha4_AzureMachineStatus(in *AzureMachineStatus, out *v1alpha4.AzureMachineStatus, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureMachineStatus_To_v1beta1_AzureMachineStatus(in *AzureMachineStatus, out *v1beta1.AzureMachineStatus, s conversion.Scope) error {
 	out.Ready = in.Ready
 	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))
-	out.VMState = (*v1alpha4.ProvisioningState)(unsafe.Pointer(in.VMState))
+	out.VMState = (*v1beta1.ProvisioningState)(unsafe.Pointer(in.VMState))
 	out.FailureReason = (*errors.MachineStatusError)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
-	out.Conditions = *(*apiv1alpha4.Conditions)(unsafe.Pointer(&in.Conditions))
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(apiv1beta1.Conditions, len(*in))
+		for i := range *in {
+			if err := apiv1alpha3.Convert_v1alpha3_Condition_To_v1beta1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	return nil
 }
 
-func autoConvert_v1alpha4_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(in *v1alpha4.AzureMachineStatus, out *AzureMachineStatus, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(in *v1beta1.AzureMachineStatus, out *AzureMachineStatus, s conversion.Scope) error {
 	out.Ready = in.Ready
 	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))
 	out.VMState = (*VMState)(unsafe.Pointer(in.VMState))
 	out.FailureReason = (*errors.MachineStatusError)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
-	out.Conditions = *(*apiv1alpha3.Conditions)(unsafe.Pointer(&in.Conditions))
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(apiv1alpha3.Conditions, len(*in))
+		for i := range *in {
+			if err := apiv1alpha3.Convert_v1beta1_Condition_To_v1alpha3_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	// WARNING: in.LongRunningOperationStates requires manual conversion: does not exist in peer-type
 	return nil
 }
 
-func autoConvert_v1alpha3_AzureMachineTemplate_To_v1alpha4_AzureMachineTemplate(in *AzureMachineTemplate, out *v1alpha4.AzureMachineTemplate, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(in *AzureMachineTemplate, out *v1beta1.AzureMachineTemplate, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha3_AzureMachineTemplateSpec_To_v1alpha4_AzureMachineTemplateSpec(&in.Spec, &out.Spec, s); err != nil {
+	if err := Convert_v1alpha3_AzureMachineTemplateSpec_To_v1beta1_AzureMachineTemplateSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha3_AzureMachineTemplate_To_v1alpha4_AzureMachineTemplate is an autogenerated conversion function.
-func Convert_v1alpha3_AzureMachineTemplate_To_v1alpha4_AzureMachineTemplate(in *AzureMachineTemplate, out *v1alpha4.AzureMachineTemplate, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureMachineTemplate_To_v1alpha4_AzureMachineTemplate(in, out, s)
+// Convert_v1alpha3_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate is an autogenerated conversion function.
+func Convert_v1alpha3_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(in *AzureMachineTemplate, out *v1beta1.AzureMachineTemplate, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(in *v1alpha4.AzureMachineTemplate, out *AzureMachineTemplate, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(in *v1beta1.AzureMachineTemplate, out *AzureMachineTemplate, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha4_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(&in.Spec, &out.Spec, s); err != nil {
+	if err := Convert_v1beta1_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha4_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(in *v1alpha4.AzureMachineTemplate, out *AzureMachineTemplate, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(in, out, s)
+// Convert_v1beta1_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate is an autogenerated conversion function.
+func Convert_v1beta1_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(in *v1beta1.AzureMachineTemplate, out *AzureMachineTemplate, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureMachineTemplateList_To_v1alpha4_AzureMachineTemplateList(in *AzureMachineTemplateList, out *v1alpha4.AzureMachineTemplateList, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureMachineTemplateList_To_v1beta1_AzureMachineTemplateList(in *AzureMachineTemplateList, out *v1beta1.AzureMachineTemplateList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]v1alpha4.AzureMachineTemplate, len(*in))
+		*out = make([]v1beta1.AzureMachineTemplate, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha3_AzureMachineTemplate_To_v1alpha4_AzureMachineTemplate(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1alpha3_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -931,18 +1005,18 @@ func autoConvert_v1alpha3_AzureMachineTemplateList_To_v1alpha4_AzureMachineTempl
 	return nil
 }
 
-// Convert_v1alpha3_AzureMachineTemplateList_To_v1alpha4_AzureMachineTemplateList is an autogenerated conversion function.
-func Convert_v1alpha3_AzureMachineTemplateList_To_v1alpha4_AzureMachineTemplateList(in *AzureMachineTemplateList, out *v1alpha4.AzureMachineTemplateList, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureMachineTemplateList_To_v1alpha4_AzureMachineTemplateList(in, out, s)
+// Convert_v1alpha3_AzureMachineTemplateList_To_v1beta1_AzureMachineTemplateList is an autogenerated conversion function.
+func Convert_v1alpha3_AzureMachineTemplateList_To_v1beta1_AzureMachineTemplateList(in *AzureMachineTemplateList, out *v1beta1.AzureMachineTemplateList, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureMachineTemplateList_To_v1beta1_AzureMachineTemplateList(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(in *v1alpha4.AzureMachineTemplateList, out *AzureMachineTemplateList, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(in *v1beta1.AzureMachineTemplateList, out *AzureMachineTemplateList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AzureMachineTemplate, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha4_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1beta1_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
@@ -952,60 +1026,60 @@ func autoConvert_v1alpha4_AzureMachineTemplateList_To_v1alpha3_AzureMachineTempl
 	return nil
 }
 
-// Convert_v1alpha4_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(in *v1alpha4.AzureMachineTemplateList, out *AzureMachineTemplateList, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(in, out, s)
+// Convert_v1beta1_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList is an autogenerated conversion function.
+func Convert_v1beta1_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(in *v1beta1.AzureMachineTemplateList, out *AzureMachineTemplateList, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in *AzureMachineTemplateResource, out *v1alpha4.AzureMachineTemplateResource, s conversion.Scope) error {
-	if err := Convert_v1alpha3_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(&in.Spec, &out.Spec, s); err != nil {
+func autoConvert_v1alpha3_AzureMachineTemplateResource_To_v1beta1_AzureMachineTemplateResource(in *AzureMachineTemplateResource, out *v1beta1.AzureMachineTemplateResource, s conversion.Scope) error {
+	if err := Convert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha3_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource is an autogenerated conversion function.
-func Convert_v1alpha3_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in *AzureMachineTemplateResource, out *v1alpha4.AzureMachineTemplateResource, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in, out, s)
+// Convert_v1alpha3_AzureMachineTemplateResource_To_v1beta1_AzureMachineTemplateResource is an autogenerated conversion function.
+func Convert_v1alpha3_AzureMachineTemplateResource_To_v1beta1_AzureMachineTemplateResource(in *AzureMachineTemplateResource, out *v1beta1.AzureMachineTemplateResource, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureMachineTemplateResource_To_v1beta1_AzureMachineTemplateResource(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in *v1alpha4.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s conversion.Scope) error {
-	if err := Convert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(&in.Spec, &out.Spec, s); err != nil {
+func autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in *v1beta1.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s conversion.Scope) error {
+	if err := Convert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha4_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in *v1alpha4.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in, out, s)
+// Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource is an autogenerated conversion function.
+func Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in *v1beta1.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureMachineTemplateSpec_To_v1alpha4_AzureMachineTemplateSpec(in *AzureMachineTemplateSpec, out *v1alpha4.AzureMachineTemplateSpec, s conversion.Scope) error {
-	if err := Convert_v1alpha3_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(&in.Template, &out.Template, s); err != nil {
+func autoConvert_v1alpha3_AzureMachineTemplateSpec_To_v1beta1_AzureMachineTemplateSpec(in *AzureMachineTemplateSpec, out *v1beta1.AzureMachineTemplateSpec, s conversion.Scope) error {
+	if err := Convert_v1alpha3_AzureMachineTemplateResource_To_v1beta1_AzureMachineTemplateResource(&in.Template, &out.Template, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha3_AzureMachineTemplateSpec_To_v1alpha4_AzureMachineTemplateSpec is an autogenerated conversion function.
-func Convert_v1alpha3_AzureMachineTemplateSpec_To_v1alpha4_AzureMachineTemplateSpec(in *AzureMachineTemplateSpec, out *v1alpha4.AzureMachineTemplateSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureMachineTemplateSpec_To_v1alpha4_AzureMachineTemplateSpec(in, out, s)
+// Convert_v1alpha3_AzureMachineTemplateSpec_To_v1beta1_AzureMachineTemplateSpec is an autogenerated conversion function.
+func Convert_v1alpha3_AzureMachineTemplateSpec_To_v1beta1_AzureMachineTemplateSpec(in *AzureMachineTemplateSpec, out *v1beta1.AzureMachineTemplateSpec, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureMachineTemplateSpec_To_v1beta1_AzureMachineTemplateSpec(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(in *v1alpha4.AzureMachineTemplateSpec, out *AzureMachineTemplateSpec, s conversion.Scope) error {
-	if err := Convert_v1alpha4_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(&in.Template, &out.Template, s); err != nil {
+func autoConvert_v1beta1_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(in *v1beta1.AzureMachineTemplateSpec, out *AzureMachineTemplateSpec, s conversion.Scope) error {
+	if err := Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(&in.Template, &out.Template, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Convert_v1alpha4_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(in *v1alpha4.AzureMachineTemplateSpec, out *AzureMachineTemplateSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(in, out, s)
+// Convert_v1beta1_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec is an autogenerated conversion function.
+func Convert_v1beta1_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(in *v1beta1.AzureMachineTemplateSpec, out *AzureMachineTemplateSpec, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureMachineTemplateSpec_To_v1alpha3_AzureMachineTemplateSpec(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1alpha4.AzureMarketplaceImage, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1beta1.AzureMarketplaceImage, s conversion.Scope) error {
 	out.Publisher = in.Publisher
 	out.Offer = in.Offer
 	out.SKU = in.SKU
@@ -1014,12 +1088,12 @@ func autoConvert_v1alpha3_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImag
 	return nil
 }
 
-// Convert_v1alpha3_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage is an autogenerated conversion function.
-func Convert_v1alpha3_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1alpha4.AzureMarketplaceImage, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in, out, s)
+// Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage is an autogenerated conversion function.
+func Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1beta1.AzureMarketplaceImage, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in *v1alpha4.AzureMarketplaceImage, out *AzureMarketplaceImage, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s conversion.Scope) error {
 	out.Publisher = in.Publisher
 	out.Offer = in.Offer
 	out.SKU = in.SKU
@@ -1028,12 +1102,12 @@ func autoConvert_v1alpha4_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImag
 	return nil
 }
 
-// Convert_v1alpha4_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in *v1alpha4.AzureMarketplaceImage, out *AzureMarketplaceImage, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in, out, s)
+// Convert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage is an autogenerated conversion function.
+func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s conversion.Scope) error {
+	return autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in, out, s)
 }
 
-func autoConvert_v1alpha3_AzureSharedGalleryImage_To_v1alpha4_AzureSharedGalleryImage(in *AzureSharedGalleryImage, out *v1alpha4.AzureSharedGalleryImage, s conversion.Scope) error {
+func autoConvert_v1alpha3_AzureSharedGalleryImage_To_v1beta1_AzureSharedGalleryImage(in *AzureSharedGalleryImage, out *v1beta1.AzureSharedGalleryImage, s conversion.Scope) error {
 	out.SubscriptionID = in.SubscriptionID
 	out.ResourceGroup = in.ResourceGroup
 	out.Gallery = in.Gallery
@@ -1042,12 +1116,12 @@ func autoConvert_v1alpha3_AzureSharedGalleryImage_To_v1alpha4_AzureSharedGallery
 	return nil
 }
 
-// Convert_v1alpha3_AzureSharedGalleryImage_To_v1alpha4_AzureSharedGalleryImage is an autogenerated conversion function.
-func Convert_v1alpha3_AzureSharedGalleryImage_To_v1alpha4_AzureSharedGalleryImage(in *AzureSharedGalleryImage, out *v1alpha4.AzureSharedGalleryImage, s conversion.Scope) error {
-	return autoConvert_v1alpha3_AzureSharedGalleryImage_To_v1alpha4_AzureSharedGalleryImage(in, out, s)
+// Convert_v1alpha3_AzureSharedGalleryImage_To_v1beta1_AzureSharedGalleryImage is an autogenerated conversion function.
+func Convert_v1alpha3_AzureSharedGalleryImage_To_v1beta1_AzureSharedGalleryImage(in *AzureSharedGalleryImage, out *v1beta1.AzureSharedGalleryImage, s conversion.Scope) error {
+	return autoConvert_v1alpha3_AzureSharedGalleryImage_To_v1beta1_AzureSharedGalleryImage(in, out, s)
 }
 
-func autoConvert_v1alpha4_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in *v1alpha4.AzureSharedGalleryImage, out *AzureSharedGalleryImage, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in *v1beta1.AzureSharedGalleryImage, out *AzureSharedGalleryImage, s conversion.Scope) error {
 	out.SubscriptionID = in.SubscriptionID
 	out.ResourceGroup = in.ResourceGroup
 	out.Gallery = in.Gallery
@@ -1059,22 +1133,22 @@ func autoConvert_v1alpha4_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGallery
 	return nil
 }
 
-func autoConvert_v1alpha3_BuildParams_To_v1alpha4_BuildParams(in *BuildParams, out *v1alpha4.BuildParams, s conversion.Scope) error {
-	out.Lifecycle = v1alpha4.ResourceLifecycle(in.Lifecycle)
+func autoConvert_v1alpha3_BuildParams_To_v1beta1_BuildParams(in *BuildParams, out *v1beta1.BuildParams, s conversion.Scope) error {
+	out.Lifecycle = v1beta1.ResourceLifecycle(in.Lifecycle)
 	out.ClusterName = in.ClusterName
 	out.ResourceID = in.ResourceID
 	out.Name = (*string)(unsafe.Pointer(in.Name))
 	out.Role = (*string)(unsafe.Pointer(in.Role))
-	out.Additional = *(*v1alpha4.Tags)(unsafe.Pointer(&in.Additional))
+	out.Additional = *(*v1beta1.Tags)(unsafe.Pointer(&in.Additional))
 	return nil
 }
 
-// Convert_v1alpha3_BuildParams_To_v1alpha4_BuildParams is an autogenerated conversion function.
-func Convert_v1alpha3_BuildParams_To_v1alpha4_BuildParams(in *BuildParams, out *v1alpha4.BuildParams, s conversion.Scope) error {
-	return autoConvert_v1alpha3_BuildParams_To_v1alpha4_BuildParams(in, out, s)
+// Convert_v1alpha3_BuildParams_To_v1beta1_BuildParams is an autogenerated conversion function.
+func Convert_v1alpha3_BuildParams_To_v1beta1_BuildParams(in *BuildParams, out *v1beta1.BuildParams, s conversion.Scope) error {
+	return autoConvert_v1alpha3_BuildParams_To_v1beta1_BuildParams(in, out, s)
 }
 
-func autoConvert_v1alpha4_BuildParams_To_v1alpha3_BuildParams(in *v1alpha4.BuildParams, out *BuildParams, s conversion.Scope) error {
+func autoConvert_v1beta1_BuildParams_To_v1alpha3_BuildParams(in *v1beta1.BuildParams, out *BuildParams, s conversion.Scope) error {
 	out.Lifecycle = ResourceLifecycle(in.Lifecycle)
 	out.ClusterName = in.ClusterName
 	out.ResourceID = in.ResourceID
@@ -1084,18 +1158,18 @@ func autoConvert_v1alpha4_BuildParams_To_v1alpha3_BuildParams(in *v1alpha4.Build
 	return nil
 }
 
-// Convert_v1alpha4_BuildParams_To_v1alpha3_BuildParams is an autogenerated conversion function.
-func Convert_v1alpha4_BuildParams_To_v1alpha3_BuildParams(in *v1alpha4.BuildParams, out *BuildParams, s conversion.Scope) error {
-	return autoConvert_v1alpha4_BuildParams_To_v1alpha3_BuildParams(in, out, s)
+// Convert_v1beta1_BuildParams_To_v1alpha3_BuildParams is an autogenerated conversion function.
+func Convert_v1beta1_BuildParams_To_v1alpha3_BuildParams(in *v1beta1.BuildParams, out *BuildParams, s conversion.Scope) error {
+	return autoConvert_v1beta1_BuildParams_To_v1alpha3_BuildParams(in, out, s)
 }
 
-func autoConvert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(in *DataDisk, out *v1alpha4.DataDisk, s conversion.Scope) error {
+func autoConvert_v1alpha3_DataDisk_To_v1beta1_DataDisk(in *DataDisk, out *v1beta1.DataDisk, s conversion.Scope) error {
 	out.NameSuffix = in.NameSuffix
 	out.DiskSizeGB = in.DiskSizeGB
 	if in.ManagedDisk != nil {
 		in, out := &in.ManagedDisk, &out.ManagedDisk
-		*out = new(v1alpha4.ManagedDiskParameters)
-		if err := Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskParameters(*in, *out, s); err != nil {
+		*out = new(v1beta1.ManagedDiskParameters)
+		if err := Convert_v1alpha3_ManagedDisk_To_v1beta1_ManagedDiskParameters(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
@@ -1106,18 +1180,18 @@ func autoConvert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(in *DataDisk, out *v1alp
 	return nil
 }
 
-// Convert_v1alpha3_DataDisk_To_v1alpha4_DataDisk is an autogenerated conversion function.
-func Convert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(in *DataDisk, out *v1alpha4.DataDisk, s conversion.Scope) error {
-	return autoConvert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(in, out, s)
+// Convert_v1alpha3_DataDisk_To_v1beta1_DataDisk is an autogenerated conversion function.
+func Convert_v1alpha3_DataDisk_To_v1beta1_DataDisk(in *DataDisk, out *v1beta1.DataDisk, s conversion.Scope) error {
+	return autoConvert_v1alpha3_DataDisk_To_v1beta1_DataDisk(in, out, s)
 }
 
-func autoConvert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(in *v1alpha4.DataDisk, out *DataDisk, s conversion.Scope) error {
+func autoConvert_v1beta1_DataDisk_To_v1alpha3_DataDisk(in *v1beta1.DataDisk, out *DataDisk, s conversion.Scope) error {
 	out.NameSuffix = in.NameSuffix
 	out.DiskSizeGB = in.DiskSizeGB
 	if in.ManagedDisk != nil {
 		in, out := &in.ManagedDisk, &out.ManagedDisk
 		*out = new(ManagedDisk)
-		if err := Convert_v1alpha4_ManagedDiskParameters_To_v1alpha3_ManagedDisk(*in, *out, s); err != nil {
+		if err := Convert_v1beta1_ManagedDiskParameters_To_v1alpha3_ManagedDisk(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
@@ -1128,76 +1202,76 @@ func autoConvert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(in *v1alpha4.DataDisk, o
 	return nil
 }
 
-// Convert_v1alpha4_DataDisk_To_v1alpha3_DataDisk is an autogenerated conversion function.
-func Convert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(in *v1alpha4.DataDisk, out *DataDisk, s conversion.Scope) error {
-	return autoConvert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(in, out, s)
+// Convert_v1beta1_DataDisk_To_v1alpha3_DataDisk is an autogenerated conversion function.
+func Convert_v1beta1_DataDisk_To_v1alpha3_DataDisk(in *v1beta1.DataDisk, out *DataDisk, s conversion.Scope) error {
+	return autoConvert_v1beta1_DataDisk_To_v1alpha3_DataDisk(in, out, s)
 }
 
-func autoConvert_v1alpha3_DiffDiskSettings_To_v1alpha4_DiffDiskSettings(in *DiffDiskSettings, out *v1alpha4.DiffDiskSettings, s conversion.Scope) error {
+func autoConvert_v1alpha3_DiffDiskSettings_To_v1beta1_DiffDiskSettings(in *DiffDiskSettings, out *v1beta1.DiffDiskSettings, s conversion.Scope) error {
 	out.Option = in.Option
 	return nil
 }
 
-// Convert_v1alpha3_DiffDiskSettings_To_v1alpha4_DiffDiskSettings is an autogenerated conversion function.
-func Convert_v1alpha3_DiffDiskSettings_To_v1alpha4_DiffDiskSettings(in *DiffDiskSettings, out *v1alpha4.DiffDiskSettings, s conversion.Scope) error {
-	return autoConvert_v1alpha3_DiffDiskSettings_To_v1alpha4_DiffDiskSettings(in, out, s)
+// Convert_v1alpha3_DiffDiskSettings_To_v1beta1_DiffDiskSettings is an autogenerated conversion function.
+func Convert_v1alpha3_DiffDiskSettings_To_v1beta1_DiffDiskSettings(in *DiffDiskSettings, out *v1beta1.DiffDiskSettings, s conversion.Scope) error {
+	return autoConvert_v1alpha3_DiffDiskSettings_To_v1beta1_DiffDiskSettings(in, out, s)
 }
 
-func autoConvert_v1alpha4_DiffDiskSettings_To_v1alpha3_DiffDiskSettings(in *v1alpha4.DiffDiskSettings, out *DiffDiskSettings, s conversion.Scope) error {
+func autoConvert_v1beta1_DiffDiskSettings_To_v1alpha3_DiffDiskSettings(in *v1beta1.DiffDiskSettings, out *DiffDiskSettings, s conversion.Scope) error {
 	out.Option = in.Option
 	return nil
 }
 
-// Convert_v1alpha4_DiffDiskSettings_To_v1alpha3_DiffDiskSettings is an autogenerated conversion function.
-func Convert_v1alpha4_DiffDiskSettings_To_v1alpha3_DiffDiskSettings(in *v1alpha4.DiffDiskSettings, out *DiffDiskSettings, s conversion.Scope) error {
-	return autoConvert_v1alpha4_DiffDiskSettings_To_v1alpha3_DiffDiskSettings(in, out, s)
+// Convert_v1beta1_DiffDiskSettings_To_v1alpha3_DiffDiskSettings is an autogenerated conversion function.
+func Convert_v1beta1_DiffDiskSettings_To_v1alpha3_DiffDiskSettings(in *v1beta1.DiffDiskSettings, out *DiffDiskSettings, s conversion.Scope) error {
+	return autoConvert_v1beta1_DiffDiskSettings_To_v1alpha3_DiffDiskSettings(in, out, s)
 }
 
-func autoConvert_v1alpha3_DiskEncryptionSetParameters_To_v1alpha4_DiskEncryptionSetParameters(in *DiskEncryptionSetParameters, out *v1alpha4.DiskEncryptionSetParameters, s conversion.Scope) error {
+func autoConvert_v1alpha3_DiskEncryptionSetParameters_To_v1beta1_DiskEncryptionSetParameters(in *DiskEncryptionSetParameters, out *v1beta1.DiskEncryptionSetParameters, s conversion.Scope) error {
 	out.ID = in.ID
 	return nil
 }
 
-// Convert_v1alpha3_DiskEncryptionSetParameters_To_v1alpha4_DiskEncryptionSetParameters is an autogenerated conversion function.
-func Convert_v1alpha3_DiskEncryptionSetParameters_To_v1alpha4_DiskEncryptionSetParameters(in *DiskEncryptionSetParameters, out *v1alpha4.DiskEncryptionSetParameters, s conversion.Scope) error {
-	return autoConvert_v1alpha3_DiskEncryptionSetParameters_To_v1alpha4_DiskEncryptionSetParameters(in, out, s)
+// Convert_v1alpha3_DiskEncryptionSetParameters_To_v1beta1_DiskEncryptionSetParameters is an autogenerated conversion function.
+func Convert_v1alpha3_DiskEncryptionSetParameters_To_v1beta1_DiskEncryptionSetParameters(in *DiskEncryptionSetParameters, out *v1beta1.DiskEncryptionSetParameters, s conversion.Scope) error {
+	return autoConvert_v1alpha3_DiskEncryptionSetParameters_To_v1beta1_DiskEncryptionSetParameters(in, out, s)
 }
 
-func autoConvert_v1alpha4_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters(in *v1alpha4.DiskEncryptionSetParameters, out *DiskEncryptionSetParameters, s conversion.Scope) error {
+func autoConvert_v1beta1_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters(in *v1beta1.DiskEncryptionSetParameters, out *DiskEncryptionSetParameters, s conversion.Scope) error {
 	out.ID = in.ID
 	return nil
 }
 
-// Convert_v1alpha4_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters is an autogenerated conversion function.
-func Convert_v1alpha4_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters(in *v1alpha4.DiskEncryptionSetParameters, out *DiskEncryptionSetParameters, s conversion.Scope) error {
-	return autoConvert_v1alpha4_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters(in, out, s)
+// Convert_v1beta1_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters is an autogenerated conversion function.
+func Convert_v1beta1_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters(in *v1beta1.DiskEncryptionSetParameters, out *DiskEncryptionSetParameters, s conversion.Scope) error {
+	return autoConvert_v1beta1_DiskEncryptionSetParameters_To_v1alpha3_DiskEncryptionSetParameters(in, out, s)
 }
 
-func autoConvert_v1alpha3_FrontendIP_To_v1alpha4_FrontendIP(in *FrontendIP, out *v1alpha4.FrontendIP, s conversion.Scope) error {
+func autoConvert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP(in *FrontendIP, out *v1beta1.FrontendIP, s conversion.Scope) error {
 	out.Name = in.Name
 	out.PrivateIPAddress = in.PrivateIPAddress
-	out.PublicIP = (*v1alpha4.PublicIPSpec)(unsafe.Pointer(in.PublicIP))
+	out.PublicIP = (*v1beta1.PublicIPSpec)(unsafe.Pointer(in.PublicIP))
 	return nil
 }
 
-// Convert_v1alpha3_FrontendIP_To_v1alpha4_FrontendIP is an autogenerated conversion function.
-func Convert_v1alpha3_FrontendIP_To_v1alpha4_FrontendIP(in *FrontendIP, out *v1alpha4.FrontendIP, s conversion.Scope) error {
-	return autoConvert_v1alpha3_FrontendIP_To_v1alpha4_FrontendIP(in, out, s)
+// Convert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP is an autogenerated conversion function.
+func Convert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP(in *FrontendIP, out *v1beta1.FrontendIP, s conversion.Scope) error {
+	return autoConvert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP(in, out, s)
 }
 
-func autoConvert_v1alpha4_FrontendIP_To_v1alpha3_FrontendIP(in *v1alpha4.FrontendIP, out *FrontendIP, s conversion.Scope) error {
+func autoConvert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP(in *v1beta1.FrontendIP, out *FrontendIP, s conversion.Scope) error {
 	out.Name = in.Name
 	out.PrivateIPAddress = in.PrivateIPAddress
 	out.PublicIP = (*PublicIPSpec)(unsafe.Pointer(in.PublicIP))
 	return nil
 }
 
-// Convert_v1alpha4_FrontendIP_To_v1alpha3_FrontendIP is an autogenerated conversion function.
-func Convert_v1alpha4_FrontendIP_To_v1alpha3_FrontendIP(in *v1alpha4.FrontendIP, out *FrontendIP, s conversion.Scope) error {
-	return autoConvert_v1alpha4_FrontendIP_To_v1alpha3_FrontendIP(in, out, s)
+// Convert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP is an autogenerated conversion function.
+func Convert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP(in *v1beta1.FrontendIP, out *FrontendIP, s conversion.Scope) error {
+	return autoConvert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP(in, out, s)
 }
 
-func autoConvert_v1alpha3_Future_To_v1alpha4_Future(in *Future, out *v1alpha4.Future, s conversion.Scope) error {
+func autoConvert_v1alpha3_Future_To_v1beta1_Future(in *Future, out *v1beta1.Future, s conversion.Scope) error {
 	out.Type = in.Type
 	out.ResourceGroup = in.ResourceGroup
 	out.Name = in.Name
@@ -1205,7 +1279,7 @@ func autoConvert_v1alpha3_Future_To_v1alpha4_Future(in *Future, out *v1alpha4.Fu
 	return nil
 }
 
-func autoConvert_v1alpha4_Future_To_v1alpha3_Future(in *v1alpha4.Future, out *Future, s conversion.Scope) error {
+func autoConvert_v1beta1_Future_To_v1alpha3_Future(in *v1beta1.Future, out *Future, s conversion.Scope) error {
 	out.Type = in.Type
 	out.ResourceGroup = in.ResourceGroup
 	// WARNING: in.ServiceName requires manual conversion: does not exist in peer-type
@@ -1214,32 +1288,32 @@ func autoConvert_v1alpha4_Future_To_v1alpha3_Future(in *v1alpha4.Future, out *Fu
 	return nil
 }
 
-func autoConvert_v1alpha3_Image_To_v1alpha4_Image(in *Image, out *v1alpha4.Image, s conversion.Scope) error {
+func autoConvert_v1alpha3_Image_To_v1beta1_Image(in *Image, out *v1beta1.Image, s conversion.Scope) error {
 	out.ID = (*string)(unsafe.Pointer(in.ID))
 	if in.SharedGallery != nil {
 		in, out := &in.SharedGallery, &out.SharedGallery
-		*out = new(v1alpha4.AzureSharedGalleryImage)
-		if err := Convert_v1alpha3_AzureSharedGalleryImage_To_v1alpha4_AzureSharedGalleryImage(*in, *out, s); err != nil {
+		*out = new(v1beta1.AzureSharedGalleryImage)
+		if err := Convert_v1alpha3_AzureSharedGalleryImage_To_v1beta1_AzureSharedGalleryImage(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
 		out.SharedGallery = nil
 	}
-	out.Marketplace = (*v1alpha4.AzureMarketplaceImage)(unsafe.Pointer(in.Marketplace))
+	out.Marketplace = (*v1beta1.AzureMarketplaceImage)(unsafe.Pointer(in.Marketplace))
 	return nil
 }
 
-// Convert_v1alpha3_Image_To_v1alpha4_Image is an autogenerated conversion function.
-func Convert_v1alpha3_Image_To_v1alpha4_Image(in *Image, out *v1alpha4.Image, s conversion.Scope) error {
-	return autoConvert_v1alpha3_Image_To_v1alpha4_Image(in, out, s)
+// Convert_v1alpha3_Image_To_v1beta1_Image is an autogenerated conversion function.
+func Convert_v1alpha3_Image_To_v1beta1_Image(in *Image, out *v1beta1.Image, s conversion.Scope) error {
+	return autoConvert_v1alpha3_Image_To_v1beta1_Image(in, out, s)
 }
 
-func autoConvert_v1alpha4_Image_To_v1alpha3_Image(in *v1alpha4.Image, out *Image, s conversion.Scope) error {
+func autoConvert_v1beta1_Image_To_v1alpha3_Image(in *v1beta1.Image, out *Image, s conversion.Scope) error {
 	out.ID = (*string)(unsafe.Pointer(in.ID))
 	if in.SharedGallery != nil {
 		in, out := &in.SharedGallery, &out.SharedGallery
 		*out = new(AzureSharedGalleryImage)
-		if err := Convert_v1alpha4_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(*in, *out, s); err != nil {
+		if err := Convert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
@@ -1249,26 +1323,26 @@ func autoConvert_v1alpha4_Image_To_v1alpha3_Image(in *v1alpha4.Image, out *Image
 	return nil
 }
 
-// Convert_v1alpha4_Image_To_v1alpha3_Image is an autogenerated conversion function.
-func Convert_v1alpha4_Image_To_v1alpha3_Image(in *v1alpha4.Image, out *Image, s conversion.Scope) error {
-	return autoConvert_v1alpha4_Image_To_v1alpha3_Image(in, out, s)
+// Convert_v1beta1_Image_To_v1alpha3_Image is an autogenerated conversion function.
+func Convert_v1beta1_Image_To_v1alpha3_Image(in *v1beta1.Image, out *Image, s conversion.Scope) error {
+	return autoConvert_v1beta1_Image_To_v1alpha3_Image(in, out, s)
 }
 
-func autoConvert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(in *LoadBalancerSpec, out *v1alpha4.LoadBalancerSpec, s conversion.Scope) error {
+func autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *LoadBalancerSpec, out *v1beta1.LoadBalancerSpec, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
-	out.SKU = v1alpha4.SKU(in.SKU)
-	out.FrontendIPs = *(*[]v1alpha4.FrontendIP)(unsafe.Pointer(&in.FrontendIPs))
-	out.Type = v1alpha4.LBType(in.Type)
+	out.SKU = v1beta1.SKU(in.SKU)
+	out.FrontendIPs = *(*[]v1beta1.FrontendIP)(unsafe.Pointer(&in.FrontendIPs))
+	out.Type = v1beta1.LBType(in.Type)
 	return nil
 }
 
-// Convert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec is an autogenerated conversion function.
-func Convert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(in *LoadBalancerSpec, out *v1alpha4.LoadBalancerSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(in, out, s)
+// Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec is an autogenerated conversion function.
+func Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *LoadBalancerSpec, out *v1beta1.LoadBalancerSpec, s conversion.Scope) error {
+	return autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in, out, s)
 }
 
-func autoConvert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *v1alpha4.LoadBalancerSpec, out *LoadBalancerSpec, s conversion.Scope) error {
+func autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *v1beta1.LoadBalancerSpec, out *LoadBalancerSpec, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	out.SKU = SKU(in.SKU)
@@ -1279,43 +1353,43 @@ func autoConvert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *v1al
 	return nil
 }
 
-func autoConvert_v1alpha3_NetworkSpec_To_v1alpha4_NetworkSpec(in *NetworkSpec, out *v1alpha4.NetworkSpec, s conversion.Scope) error {
-	if err := Convert_v1alpha3_VnetSpec_To_v1alpha4_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
+func autoConvert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, out *v1beta1.NetworkSpec, s conversion.Scope) error {
+	if err := Convert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
 	if in.Subnets != nil {
 		in, out := &in.Subnets, &out.Subnets
-		*out = make(v1alpha4.Subnets, len(*in))
+		*out = make(v1beta1.Subnets, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha3_SubnetSpec_To_v1alpha4_SubnetSpec(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
 	} else {
 		out.Subnets = nil
 	}
-	if err := Convert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
+	if err := Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(in *v1alpha4.NetworkSpec, out *NetworkSpec, s conversion.Scope) error {
-	if err := Convert_v1alpha4_VnetSpec_To_v1alpha3_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
+func autoConvert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *v1beta1.NetworkSpec, out *NetworkSpec, s conversion.Scope) error {
+	if err := Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
 	if in.Subnets != nil {
 		in, out := &in.Subnets, &out.Subnets
 		*out = make(Subnets, len(*in))
 		for i := range *in {
-			if err := Convert_v1alpha4_SubnetSpec_To_v1alpha3_SubnetSpec(&(*in)[i], &(*out)[i], s); err != nil {
+			if err := Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
 			}
 		}
 	} else {
 		out.Subnets = nil
 	}
-	if err := Convert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
+	if err := Convert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
 	// WARNING: in.NodeOutboundLB requires manual conversion: does not exist in peer-type
@@ -1324,59 +1398,59 @@ func autoConvert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(in *v1alpha4.Netwo
 	return nil
 }
 
-func autoConvert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(in *PublicIPSpec, out *v1alpha4.PublicIPSpec, s conversion.Scope) error {
+func autoConvert_v1alpha3_PublicIPSpec_To_v1beta1_PublicIPSpec(in *PublicIPSpec, out *v1beta1.PublicIPSpec, s conversion.Scope) error {
 	out.Name = in.Name
 	out.DNSName = in.DNSName
 	return nil
 }
 
-// Convert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec is an autogenerated conversion function.
-func Convert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(in *PublicIPSpec, out *v1alpha4.PublicIPSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(in, out, s)
+// Convert_v1alpha3_PublicIPSpec_To_v1beta1_PublicIPSpec is an autogenerated conversion function.
+func Convert_v1alpha3_PublicIPSpec_To_v1beta1_PublicIPSpec(in *PublicIPSpec, out *v1beta1.PublicIPSpec, s conversion.Scope) error {
+	return autoConvert_v1alpha3_PublicIPSpec_To_v1beta1_PublicIPSpec(in, out, s)
 }
 
-func autoConvert_v1alpha4_PublicIPSpec_To_v1alpha3_PublicIPSpec(in *v1alpha4.PublicIPSpec, out *PublicIPSpec, s conversion.Scope) error {
+func autoConvert_v1beta1_PublicIPSpec_To_v1alpha3_PublicIPSpec(in *v1beta1.PublicIPSpec, out *PublicIPSpec, s conversion.Scope) error {
 	out.Name = in.Name
 	out.DNSName = in.DNSName
 	return nil
 }
 
-// Convert_v1alpha4_PublicIPSpec_To_v1alpha3_PublicIPSpec is an autogenerated conversion function.
-func Convert_v1alpha4_PublicIPSpec_To_v1alpha3_PublicIPSpec(in *v1alpha4.PublicIPSpec, out *PublicIPSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha4_PublicIPSpec_To_v1alpha3_PublicIPSpec(in, out, s)
+// Convert_v1beta1_PublicIPSpec_To_v1alpha3_PublicIPSpec is an autogenerated conversion function.
+func Convert_v1beta1_PublicIPSpec_To_v1alpha3_PublicIPSpec(in *v1beta1.PublicIPSpec, out *PublicIPSpec, s conversion.Scope) error {
+	return autoConvert_v1beta1_PublicIPSpec_To_v1alpha3_PublicIPSpec(in, out, s)
 }
 
-func autoConvert_v1alpha3_RouteTable_To_v1alpha4_RouteTable(in *RouteTable, out *v1alpha4.RouteTable, s conversion.Scope) error {
+func autoConvert_v1alpha3_RouteTable_To_v1beta1_RouteTable(in *RouteTable, out *v1beta1.RouteTable, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	return nil
 }
 
-// Convert_v1alpha3_RouteTable_To_v1alpha4_RouteTable is an autogenerated conversion function.
-func Convert_v1alpha3_RouteTable_To_v1alpha4_RouteTable(in *RouteTable, out *v1alpha4.RouteTable, s conversion.Scope) error {
-	return autoConvert_v1alpha3_RouteTable_To_v1alpha4_RouteTable(in, out, s)
+// Convert_v1alpha3_RouteTable_To_v1beta1_RouteTable is an autogenerated conversion function.
+func Convert_v1alpha3_RouteTable_To_v1beta1_RouteTable(in *RouteTable, out *v1beta1.RouteTable, s conversion.Scope) error {
+	return autoConvert_v1alpha3_RouteTable_To_v1beta1_RouteTable(in, out, s)
 }
 
-func autoConvert_v1alpha4_RouteTable_To_v1alpha3_RouteTable(in *v1alpha4.RouteTable, out *RouteTable, s conversion.Scope) error {
+func autoConvert_v1beta1_RouteTable_To_v1alpha3_RouteTable(in *v1beta1.RouteTable, out *RouteTable, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	return nil
 }
 
-// Convert_v1alpha4_RouteTable_To_v1alpha3_RouteTable is an autogenerated conversion function.
-func Convert_v1alpha4_RouteTable_To_v1alpha3_RouteTable(in *v1alpha4.RouteTable, out *RouteTable, s conversion.Scope) error {
-	return autoConvert_v1alpha4_RouteTable_To_v1alpha3_RouteTable(in, out, s)
+// Convert_v1beta1_RouteTable_To_v1alpha3_RouteTable is an autogenerated conversion function.
+func Convert_v1beta1_RouteTable_To_v1alpha3_RouteTable(in *v1beta1.RouteTable, out *RouteTable, s conversion.Scope) error {
+	return autoConvert_v1beta1_RouteTable_To_v1alpha3_RouteTable(in, out, s)
 }
 
-func autoConvert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(in *SecurityGroup, out *v1alpha4.SecurityGroup, s conversion.Scope) error {
+func autoConvert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup(in *SecurityGroup, out *v1beta1.SecurityGroup, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	// WARNING: in.IngressRules requires manual conversion: does not exist in peer-type
-	out.Tags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.Tags))
+	out.Tags = *(*v1beta1.Tags)(unsafe.Pointer(&in.Tags))
 	return nil
 }
 
-func autoConvert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(in *v1alpha4.SecurityGroup, out *SecurityGroup, s conversion.Scope) error {
+func autoConvert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup(in *v1beta1.SecurityGroup, out *SecurityGroup, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	// WARNING: in.SecurityRules requires manual conversion: does not exist in peer-type
@@ -1384,130 +1458,130 @@ func autoConvert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(in *v1alpha4.S
 	return nil
 }
 
-func autoConvert_v1alpha3_SecurityProfile_To_v1alpha4_SecurityProfile(in *SecurityProfile, out *v1alpha4.SecurityProfile, s conversion.Scope) error {
+func autoConvert_v1alpha3_SecurityProfile_To_v1beta1_SecurityProfile(in *SecurityProfile, out *v1beta1.SecurityProfile, s conversion.Scope) error {
 	out.EncryptionAtHost = (*bool)(unsafe.Pointer(in.EncryptionAtHost))
 	return nil
 }
 
-// Convert_v1alpha3_SecurityProfile_To_v1alpha4_SecurityProfile is an autogenerated conversion function.
-func Convert_v1alpha3_SecurityProfile_To_v1alpha4_SecurityProfile(in *SecurityProfile, out *v1alpha4.SecurityProfile, s conversion.Scope) error {
-	return autoConvert_v1alpha3_SecurityProfile_To_v1alpha4_SecurityProfile(in, out, s)
+// Convert_v1alpha3_SecurityProfile_To_v1beta1_SecurityProfile is an autogenerated conversion function.
+func Convert_v1alpha3_SecurityProfile_To_v1beta1_SecurityProfile(in *SecurityProfile, out *v1beta1.SecurityProfile, s conversion.Scope) error {
+	return autoConvert_v1alpha3_SecurityProfile_To_v1beta1_SecurityProfile(in, out, s)
 }
 
-func autoConvert_v1alpha4_SecurityProfile_To_v1alpha3_SecurityProfile(in *v1alpha4.SecurityProfile, out *SecurityProfile, s conversion.Scope) error {
+func autoConvert_v1beta1_SecurityProfile_To_v1alpha3_SecurityProfile(in *v1beta1.SecurityProfile, out *SecurityProfile, s conversion.Scope) error {
 	out.EncryptionAtHost = (*bool)(unsafe.Pointer(in.EncryptionAtHost))
 	return nil
 }
 
-// Convert_v1alpha4_SecurityProfile_To_v1alpha3_SecurityProfile is an autogenerated conversion function.
-func Convert_v1alpha4_SecurityProfile_To_v1alpha3_SecurityProfile(in *v1alpha4.SecurityProfile, out *SecurityProfile, s conversion.Scope) error {
-	return autoConvert_v1alpha4_SecurityProfile_To_v1alpha3_SecurityProfile(in, out, s)
+// Convert_v1beta1_SecurityProfile_To_v1alpha3_SecurityProfile is an autogenerated conversion function.
+func Convert_v1beta1_SecurityProfile_To_v1alpha3_SecurityProfile(in *v1beta1.SecurityProfile, out *SecurityProfile, s conversion.Scope) error {
+	return autoConvert_v1beta1_SecurityProfile_To_v1alpha3_SecurityProfile(in, out, s)
 }
 
-func autoConvert_v1alpha3_SpotVMOptions_To_v1alpha4_SpotVMOptions(in *SpotVMOptions, out *v1alpha4.SpotVMOptions, s conversion.Scope) error {
+func autoConvert_v1alpha3_SpotVMOptions_To_v1beta1_SpotVMOptions(in *SpotVMOptions, out *v1beta1.SpotVMOptions, s conversion.Scope) error {
 	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
 	return nil
 }
 
-// Convert_v1alpha3_SpotVMOptions_To_v1alpha4_SpotVMOptions is an autogenerated conversion function.
-func Convert_v1alpha3_SpotVMOptions_To_v1alpha4_SpotVMOptions(in *SpotVMOptions, out *v1alpha4.SpotVMOptions, s conversion.Scope) error {
-	return autoConvert_v1alpha3_SpotVMOptions_To_v1alpha4_SpotVMOptions(in, out, s)
+// Convert_v1alpha3_SpotVMOptions_To_v1beta1_SpotVMOptions is an autogenerated conversion function.
+func Convert_v1alpha3_SpotVMOptions_To_v1beta1_SpotVMOptions(in *SpotVMOptions, out *v1beta1.SpotVMOptions, s conversion.Scope) error {
+	return autoConvert_v1alpha3_SpotVMOptions_To_v1beta1_SpotVMOptions(in, out, s)
 }
 
-func autoConvert_v1alpha4_SpotVMOptions_To_v1alpha3_SpotVMOptions(in *v1alpha4.SpotVMOptions, out *SpotVMOptions, s conversion.Scope) error {
+func autoConvert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions(in *v1beta1.SpotVMOptions, out *SpotVMOptions, s conversion.Scope) error {
 	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
 	return nil
 }
 
-// Convert_v1alpha4_SpotVMOptions_To_v1alpha3_SpotVMOptions is an autogenerated conversion function.
-func Convert_v1alpha4_SpotVMOptions_To_v1alpha3_SpotVMOptions(in *v1alpha4.SpotVMOptions, out *SpotVMOptions, s conversion.Scope) error {
-	return autoConvert_v1alpha4_SpotVMOptions_To_v1alpha3_SpotVMOptions(in, out, s)
+// Convert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions is an autogenerated conversion function.
+func Convert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions(in *v1beta1.SpotVMOptions, out *SpotVMOptions, s conversion.Scope) error {
+	return autoConvert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions(in, out, s)
 }
 
-func autoConvert_v1alpha3_SubnetSpec_To_v1alpha4_SubnetSpec(in *SubnetSpec, out *v1alpha4.SubnetSpec, s conversion.Scope) error {
-	out.Role = v1alpha4.SubnetRole(in.Role)
+func autoConvert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *v1beta1.SubnetSpec, s conversion.Scope) error {
+	out.Role = v1beta1.SubnetRole(in.Role)
 	out.ID = in.ID
 	out.Name = in.Name
 	// WARNING: in.CidrBlock requires manual conversion: does not exist in peer-type
 	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
 	// WARNING: in.InternalLBIPAddress requires manual conversion: does not exist in peer-type
-	if err := Convert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
+	if err := Convert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha3_RouteTable_To_v1alpha4_RouteTable(&in.RouteTable, &out.RouteTable, s); err != nil {
+	if err := Convert_v1alpha3_RouteTable_To_v1beta1_RouteTable(&in.RouteTable, &out.RouteTable, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1alpha4_SubnetSpec_To_v1alpha3_SubnetSpec(in *v1alpha4.SubnetSpec, out *SubnetSpec, s conversion.Scope) error {
+func autoConvert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in *v1beta1.SubnetSpec, out *SubnetSpec, s conversion.Scope) error {
 	out.Role = SubnetRole(in.Role)
 	out.ID = in.ID
 	out.Name = in.Name
 	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
-	if err := Convert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
+	if err := Convert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha4_RouteTable_To_v1alpha3_RouteTable(&in.RouteTable, &out.RouteTable, s); err != nil {
+	if err := Convert_v1beta1_RouteTable_To_v1alpha3_RouteTable(&in.RouteTable, &out.RouteTable, s); err != nil {
 		return err
 	}
 	// WARNING: in.NatGateway requires manual conversion: does not exist in peer-type
 	return nil
 }
 
-func autoConvert_v1alpha3_UserAssignedIdentity_To_v1alpha4_UserAssignedIdentity(in *UserAssignedIdentity, out *v1alpha4.UserAssignedIdentity, s conversion.Scope) error {
+func autoConvert_v1alpha3_UserAssignedIdentity_To_v1beta1_UserAssignedIdentity(in *UserAssignedIdentity, out *v1beta1.UserAssignedIdentity, s conversion.Scope) error {
 	out.ProviderID = in.ProviderID
 	return nil
 }
 
-// Convert_v1alpha3_UserAssignedIdentity_To_v1alpha4_UserAssignedIdentity is an autogenerated conversion function.
-func Convert_v1alpha3_UserAssignedIdentity_To_v1alpha4_UserAssignedIdentity(in *UserAssignedIdentity, out *v1alpha4.UserAssignedIdentity, s conversion.Scope) error {
-	return autoConvert_v1alpha3_UserAssignedIdentity_To_v1alpha4_UserAssignedIdentity(in, out, s)
+// Convert_v1alpha3_UserAssignedIdentity_To_v1beta1_UserAssignedIdentity is an autogenerated conversion function.
+func Convert_v1alpha3_UserAssignedIdentity_To_v1beta1_UserAssignedIdentity(in *UserAssignedIdentity, out *v1beta1.UserAssignedIdentity, s conversion.Scope) error {
+	return autoConvert_v1alpha3_UserAssignedIdentity_To_v1beta1_UserAssignedIdentity(in, out, s)
 }
 
-func autoConvert_v1alpha4_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity(in *v1alpha4.UserAssignedIdentity, out *UserAssignedIdentity, s conversion.Scope) error {
+func autoConvert_v1beta1_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity(in *v1beta1.UserAssignedIdentity, out *UserAssignedIdentity, s conversion.Scope) error {
 	out.ProviderID = in.ProviderID
 	return nil
 }
 
-// Convert_v1alpha4_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity is an autogenerated conversion function.
-func Convert_v1alpha4_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity(in *v1alpha4.UserAssignedIdentity, out *UserAssignedIdentity, s conversion.Scope) error {
-	return autoConvert_v1alpha4_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity(in, out, s)
+// Convert_v1beta1_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity is an autogenerated conversion function.
+func Convert_v1beta1_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity(in *v1beta1.UserAssignedIdentity, out *UserAssignedIdentity, s conversion.Scope) error {
+	return autoConvert_v1beta1_UserAssignedIdentity_To_v1alpha3_UserAssignedIdentity(in, out, s)
 }
 
-func autoConvert_v1alpha3_VM_To_v1alpha4_VM(in *VM, out *v1alpha4.VM, s conversion.Scope) error {
+func autoConvert_v1alpha3_VM_To_v1beta1_VM(in *VM, out *v1beta1.VM, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	out.AvailabilityZone = in.AvailabilityZone
 	out.VMSize = in.VMSize
-	if err := Convert_v1alpha3_Image_To_v1alpha4_Image(&in.Image, &out.Image, s); err != nil {
+	if err := Convert_v1alpha3_Image_To_v1beta1_Image(&in.Image, &out.Image, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
+	if err := Convert_v1alpha3_OSDisk_To_v1beta1_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
 	out.StartupScript = in.StartupScript
-	out.State = v1alpha4.ProvisioningState(in.State)
-	out.Identity = v1alpha4.VMIdentity(in.Identity)
-	out.Tags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.Tags))
+	out.State = v1beta1.ProvisioningState(in.State)
+	out.Identity = v1beta1.VMIdentity(in.Identity)
+	out.Tags = *(*v1beta1.Tags)(unsafe.Pointer(&in.Tags))
 	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))
 	return nil
 }
 
-// Convert_v1alpha3_VM_To_v1alpha4_VM is an autogenerated conversion function.
-func Convert_v1alpha3_VM_To_v1alpha4_VM(in *VM, out *v1alpha4.VM, s conversion.Scope) error {
-	return autoConvert_v1alpha3_VM_To_v1alpha4_VM(in, out, s)
+// Convert_v1alpha3_VM_To_v1beta1_VM is an autogenerated conversion function.
+func Convert_v1alpha3_VM_To_v1beta1_VM(in *VM, out *v1beta1.VM, s conversion.Scope) error {
+	return autoConvert_v1alpha3_VM_To_v1beta1_VM(in, out, s)
 }
 
-func autoConvert_v1alpha4_VM_To_v1alpha3_VM(in *v1alpha4.VM, out *VM, s conversion.Scope) error {
+func autoConvert_v1beta1_VM_To_v1alpha3_VM(in *v1beta1.VM, out *VM, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	out.AvailabilityZone = in.AvailabilityZone
 	out.VMSize = in.VMSize
-	if err := Convert_v1alpha4_Image_To_v1alpha3_Image(&in.Image, &out.Image, s); err != nil {
+	if err := Convert_v1beta1_Image_To_v1alpha3_Image(&in.Image, &out.Image, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
+	if err := Convert_v1beta1_OSDisk_To_v1alpha3_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
 	out.StartupScript = in.StartupScript
@@ -1518,22 +1592,22 @@ func autoConvert_v1alpha4_VM_To_v1alpha3_VM(in *v1alpha4.VM, out *VM, s conversi
 	return nil
 }
 
-// Convert_v1alpha4_VM_To_v1alpha3_VM is an autogenerated conversion function.
-func Convert_v1alpha4_VM_To_v1alpha3_VM(in *v1alpha4.VM, out *VM, s conversion.Scope) error {
-	return autoConvert_v1alpha4_VM_To_v1alpha3_VM(in, out, s)
+// Convert_v1beta1_VM_To_v1alpha3_VM is an autogenerated conversion function.
+func Convert_v1beta1_VM_To_v1alpha3_VM(in *v1beta1.VM, out *VM, s conversion.Scope) error {
+	return autoConvert_v1beta1_VM_To_v1alpha3_VM(in, out, s)
 }
 
-func autoConvert_v1alpha3_VnetSpec_To_v1alpha4_VnetSpec(in *VnetSpec, out *v1alpha4.VnetSpec, s conversion.Scope) error {
+func autoConvert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec(in *VnetSpec, out *v1beta1.VnetSpec, s conversion.Scope) error {
 	out.ResourceGroup = in.ResourceGroup
 	out.ID = in.ID
 	out.Name = in.Name
 	// WARNING: in.CidrBlock requires manual conversion: does not exist in peer-type
 	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
-	out.Tags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.Tags))
+	out.Tags = *(*v1beta1.Tags)(unsafe.Pointer(&in.Tags))
 	return nil
 }
 
-func autoConvert_v1alpha4_VnetSpec_To_v1alpha3_VnetSpec(in *v1alpha4.VnetSpec, out *VnetSpec, s conversion.Scope) error {
+func autoConvert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in *v1beta1.VnetSpec, out *VnetSpec, s conversion.Scope) error {
 	out.ResourceGroup = in.ResourceGroup
 	out.ID = in.ID
 	out.Name = in.Name

@@ -5,7 +5,7 @@
 To deploy a cluster using a pre-existing vnet, modify the `AzureCluster` spec to include the name and resource group of the existing vnet as follows, as well as the control plane and node subnets as follows:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-byo-vnet
@@ -35,7 +35,7 @@ The pre-existing vnet can be in the same resource group or a different resource 
 It is also possible to customize the vnet to be created without providing an already existing vnet. To do so, simply modify the `AzureCluster` `NetworkSpec` as desired. Here is an illustrative example of a cluster with a customized vnet address space (CIDR) and customized subnets:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-example
@@ -80,7 +80,7 @@ It is the responsibility of the user to supply those rules themselves if using c
 Here is an illustrative example of customizing rules that builds on the one above by adding an egress rule to the control plane nodes:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-example
@@ -145,7 +145,7 @@ The subnet used for the control plane must use the role `control-plane` while th
 
 ```yaml
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-example
@@ -166,7 +166,7 @@ spec:
         - 10.0.0.0/16
   resourceGroup: cluster-example
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: mp1
@@ -189,7 +189,7 @@ spec:
     subnetName: subnet-mp-1
     vmSize: Standard_D2s_v3
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: mp2

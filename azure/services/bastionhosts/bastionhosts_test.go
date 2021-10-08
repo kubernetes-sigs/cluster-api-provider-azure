@@ -23,7 +23,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	mock_bastionhosts "sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts/mocks_bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
@@ -36,7 +36,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func init() {
@@ -64,7 +64,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -87,7 +87,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -112,7 +112,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -139,7 +139,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -165,7 +165,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -195,7 +195,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -223,7 +223,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -296,7 +296,7 @@ func TestDeleteBastionHost(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastionhost",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -318,7 +318,7 @@ func TestDeleteBastionHost(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastionhost",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",
@@ -342,7 +342,7 @@ func TestDeleteBastionHost(t *testing.T) {
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastionhost",
 						VNetName: "my-vnet",
-						SubnetSpec: v1alpha4.SubnetSpec{
+						SubnetSpec: v1beta1.SubnetSpec{
 							Name: "my-subnet",
 						},
 						PublicIPName: "my-publicip",

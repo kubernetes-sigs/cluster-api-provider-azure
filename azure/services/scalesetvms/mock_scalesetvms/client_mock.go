@@ -27,7 +27,7 @@ import (
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // Mockclient is a mock of client interface.
@@ -54,10 +54,10 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 }
 
 // DeleteAsync mocks base method.
-func (m *Mockclient) DeleteAsync(arg0 context.Context, arg1, arg2, arg3 string) (*v1alpha4.Future, error) {
+func (m *Mockclient) DeleteAsync(arg0 context.Context, arg1, arg2, arg3 string) (*v1beta1.Future, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*v1alpha4.Future)
+	ret0, _ := ret[0].(*v1beta1.Future)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -84,7 +84,7 @@ func (mr *MockclientMockRecorder) Get(arg0, arg1, arg2, arg3 interface{}) *gomoc
 }
 
 // GetResultIfDone mocks base method.
-func (m *Mockclient) GetResultIfDone(ctx context.Context, future *v1alpha4.Future) (compute.VirtualMachineScaleSetVM, error) {
+func (m *Mockclient) GetResultIfDone(ctx context.Context, future *v1beta1.Future) (compute.VirtualMachineScaleSetVM, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetResultIfDone", ctx, future)
 	ret0, _ := ret[0].(compute.VirtualMachineScaleSetVM)

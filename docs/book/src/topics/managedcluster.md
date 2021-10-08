@@ -72,7 +72,7 @@ kubectl get cluster-api -o wide
 We'll walk through an example to view available options.
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: my-cluster
@@ -82,15 +82,15 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedControlPlane
     name: my-cluster-control-plane
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedCluster
     name: my-cluster
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlane
 metadata:
   name: my-cluster-control-plane
@@ -104,14 +104,14 @@ spec:
   networkPlugin: azure # or kubenet
   sku: Free # or Paid
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedCluster
 metadata:
   name: my-cluster
 spec:
   subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
 ---
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
   name: agentpool0
@@ -122,13 +122,13 @@ spec:
     spec:
       clusterName: my-cluster
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default
       version: v1.21.2
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
   name: agentpool0
@@ -137,7 +137,7 @@ spec:
   osDiskSizeGB: 512
   sku: Standard_D2s_v3
 ---
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
   name: agentpool1
@@ -148,13 +148,13 @@ spec:
     spec:
       clusterName: my-cluster
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
         name: agentpool1
         namespace: default
       version: v1.21.2
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
   name: agentpool1
@@ -183,7 +183,7 @@ The `AzureClusterIdentity` object is then mapped to a managed cluster through th
 Following is an example configuration:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -194,22 +194,22 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: exp.infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedControlPlane
     name: ${CLUSTER_NAME}
   infrastructureRef:
-    apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: exp.infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: exp.infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
   identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
     name: ${CLUSTER_IDENTITY_NAME}
     namespace: ${CLUSTER_IDENTITY_NAMESPACE}
@@ -229,7 +229,7 @@ and by providing Azure AD GroupObjectId in `AdminGroupObjectIDs` array. The grou
 the cluster to grant cluster admin permissions. You can use an existing Azure AD group, or create a new one. For more documentation about AAD refer [AKS AAD Docs](https://docs.microsoft.com/en-us/azure/aks/managed-aad)
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlane
 metadata:
   name: my-cluster-control-plane
@@ -254,7 +254,7 @@ A public Load Balancer when integrated with AKS serves two purposes:
 For more documentation about public Standard Load Balancer refer [AKS Doc](https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard) and [AKS REST API Doc](https://docs.microsoft.com/en-us/rest/api/aks/managed-clusters/create-or-update)
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlane
 metadata:
   name: my-cluster-control-plane
@@ -327,7 +327,7 @@ Here is an Example:
 
 ```yaml
 # MachinePool deleted 
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
   finalizers:             # remove finalizers once new object is pointing to the AzureManagedMachinePool
@@ -337,7 +337,7 @@ metadata:
   name: agentpool0
   namespace: default
   ownerReferences:
-  - apiVersion: cluster.x-k8s.io/v1alpha4
+  - apiVersion: cluster.x-k8s.io/v1beta1
     kind: Cluster
     name: capz-managed-aks
     uid: 152ecf45-0a02-4635-987c-1ebb89055fa2
@@ -355,7 +355,7 @@ spec:
         dataSecretName: ""
       clusterName: capz-managed-aks
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default
@@ -363,7 +363,7 @@ spec:
 
 ---
 # New Machinepool
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
   finalizers:
@@ -374,7 +374,7 @@ metadata:
   name: agentpool2    # change the name of the machinepool
   namespace: default 
   ownerReferences:
-  - apiVersion: cluster.x-k8s.io/v1alpha4
+  - apiVersion: cluster.x-k8s.io/v1beta1
     kind: Cluster
     name: capz-managed-aks
     uid: 152ecf45-0a02-4635-987c-1ebb89055fa2   
@@ -392,7 +392,7 @@ spec:
         dataSecretName: ""
       clusterName: capz-managed-aks
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default

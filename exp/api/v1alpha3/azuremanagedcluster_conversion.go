@@ -17,21 +17,21 @@ limitations under the License.
 package v1alpha3
 
 import (
-	expv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
-// ConvertTo converts this AzureManagedCluster to the Hub version (v1alpha4).
+// ConvertTo converts this AzureManagedCluster to the Hub version (v1beta1).
 func (src *AzureManagedCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
-	dst := dstRaw.(*expv1alpha4.AzureManagedCluster)
+	dst := dstRaw.(*expv1beta1.AzureManagedCluster)
 
-	if err := Convert_v1alpha3_AzureManagedCluster_To_v1alpha4_AzureManagedCluster(src, dst, nil); err != nil {
+	if err := Convert_v1alpha3_AzureManagedCluster_To_v1beta1_AzureManagedCluster(src, dst, nil); err != nil {
 		return err
 	}
 
 	// Manually restore data.
-	restored := &expv1alpha4.AzureManagedCluster{}
+	restored := &expv1beta1.AzureManagedCluster{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
@@ -39,11 +39,11 @@ func (src *AzureManagedCluster) ConvertTo(dstRaw conversion.Hub) error { // noli
 	return nil
 }
 
-// ConvertFrom converts from the Hub version (v1alpha4) to this version.
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureManagedCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
-	src := srcRaw.(*expv1alpha4.AzureManagedCluster)
+	src := srcRaw.(*expv1beta1.AzureManagedCluster)
 
-	if err := Convert_v1alpha4_AzureManagedCluster_To_v1alpha3_AzureManagedCluster(src, dst, nil); err != nil {
+	if err := Convert_v1beta1_AzureManagedCluster_To_v1alpha3_AzureManagedCluster(src, dst, nil); err != nil {
 		return err
 	}
 

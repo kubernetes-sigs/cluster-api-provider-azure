@@ -27,16 +27,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 )
 
@@ -454,7 +454,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 			},
 			Setup: func(logMock *mock_log.MockLogger) {
 				logMock.EXPECT().V(4).Return(logMock)
-				logMock.EXPECT().Info("attempt to map incorrect type", "type", "*v1alpha4.Cluster")
+				logMock.EXPECT().Info("attempt to map incorrect type", "type", "*v1beta1.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(0))
@@ -524,7 +524,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 			},
 			Setup: func(logMock *mock_log.MockLogger) {
 				logMock.EXPECT().V(4).Return(logMock)
-				logMock.EXPECT().Info("attempt to map incorrect type", "type", "*v1alpha4.Cluster")
+				logMock.EXPECT().Info("attempt to map incorrect type", "type", "*v1beta1.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(0))
@@ -567,7 +567,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				log := mock_log.NewMockLogger(mockCtrl)
 				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
-				log.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1alpha4.MachinePool"), "failed to get AzureCluster")
+				log.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1beta1.MachinePool"), "failed to get AzureCluster")
 
 				return log, mockCtrl, kClient
 			},

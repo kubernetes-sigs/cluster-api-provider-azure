@@ -1,0 +1,144 @@
+---
+# DockerCluster object referenced by the Cluster object
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  additionalTags:
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    vnet:
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+---
+# Cluster object with
+# - No reference to the KubeadmControlPlane object
+# - the label cni=${CLUSTER_NAME}-crs-0, so the cluster can be selected by the ClusterResourceSet.
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  labels:
+    cni: "${CLUSTER_NAME}-crs-0"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/16
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+---
+# DockerMachine referenced by the Machine cp0
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachine
+metadata:
+  name: ${CLUSTER_NAME}-control-plane-0
+spec:
+  dataDisks:
+    - diskSizeGB: 256
+      lun: 0
+      nameSuffix: etcddisk
+  osDisk:
+    diskSizeGB: 128
+    managedDisk:
+      storageAccountType: Premium_LRS
+    osType: Linux
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  vmSize: Standard_D2s_v3
+---
+# KubeadmConfig referenced by the Machine cp0
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-control-plane-0
+spec:
+  initConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
+      name: '{{ ds.meta_data["local_hostname"] }}'
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
+      name: '{{ ds.meta_data["local_hostname"] }}'
+  clusterConfiguration:
+    apiServer:
+      timeoutForControlPlane: 20m
+      extraArgs:
+        cloud-provider: azure
+        cloud-config: /etc/kubernetes/azure.json
+      extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
+    controllerManager:
+      extraArgs:
+        cloud-provider: azure
+        cloud-config: /etc/kubernetes/azure.json
+        allocate-node-cidrs: "false"
+      extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
+    etcd:
+      local:
+        dataDir: /var/lib/etcddisk/etcd
+  diskSetup:
+    filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+          - -E
+          - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+    partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
+  mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
+  files:
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-0-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
+---
+# cp0 Machine
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Machine
+metadata:
+  name: ${CLUSTER_NAME}-control-plane-0
+  labels:
+    cluster.x-k8s.io/control-plane: "true"
+spec:
+  version: ${KUBERNETES_VERSION}
+  clusterName: ${CLUSTER_NAME}
+  bootstrap:
+    configRef:
+      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      kind: KubeadmConfig
+      name: ${CLUSTER_NAME}-control-plane-0
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureMachine
+    name: ${CLUSTER_NAME}-control-plane-0

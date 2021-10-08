@@ -23,7 +23,7 @@ package v1alpha4
 import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	apiv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	cluster_apiapiv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"

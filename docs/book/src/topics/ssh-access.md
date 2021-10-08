@@ -66,7 +66,7 @@ It is enough to set the field's value to the empty object `{}` and the default c
 For example this is an `AzureCluster` CR with the `Azure Bastion` feature enabled:
 
 ```
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: test1
@@ -93,7 +93,7 @@ The default values for the new resources should work for most use cases, but if 
 provide your own values. Here is a detailed example:
 
 ```
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: test1
