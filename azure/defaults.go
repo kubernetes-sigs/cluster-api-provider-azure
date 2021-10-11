@@ -71,8 +71,8 @@ const (
 
 const (
 	// bootstrapExtensionRetries is the number of retries in the BootstrapExtensionCommand.
-	// NOTE: the overall timeout will be number of retries * retry sleep, in this case 240 * 5s = 1200s.
-	bootstrapExtensionRetries = 240
+	// NOTE: the overall timeout will be number of retries * retry sleep, in this case 60 * 5s = 300s.
+	bootstrapExtensionRetries = 60
 	// bootstrapExtensionSleep is the duration in seconds to sleep before each retry in the BootstrapExtensionCommand.
 	bootstrapExtensionSleep = 5
 	// bootstrapSentinelFile is the file written by bootstrap provider on machines to indicate successful bootstrapping,
