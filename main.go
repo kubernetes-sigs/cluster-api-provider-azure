@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
@@ -273,19 +274,20 @@ func main() {
 	restConfig := ctrl.GetConfigOrDie()
 	restConfig.UserAgent = "cluster-api-provider-azure-manager"
 	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
-		Scheme:                  scheme,
-		MetricsBindAddress:      metricsAddr,
-		LeaderElection:          enableLeaderElection,
-		LeaderElectionID:        "controller-leader-election-capz",
-		LeaderElectionNamespace: leaderElectionNamespace,
-		LeaseDuration:           &leaderElectionLeaseDuration,
-		RenewDeadline:           &leaderElectionRenewDeadline,
-		RetryPeriod:             &leaderElectionRetryPeriod,
-		SyncPeriod:              &syncPeriod,
-		Namespace:               watchNamespace,
-		HealthProbeBindAddress:  healthAddr,
-		Port:                    webhookPort,
-		EventBroadcaster:        broadcaster,
+		Scheme:                     scheme,
+		MetricsBindAddress:         metricsAddr,
+		LeaderElection:             enableLeaderElection,
+		LeaderElectionID:           "controller-leader-election-capz",
+		LeaderElectionNamespace:    leaderElectionNamespace,
+		LeaseDuration:              &leaderElectionLeaseDuration,
+		RenewDeadline:              &leaderElectionRenewDeadline,
+		RetryPeriod:                &leaderElectionRetryPeriod,
+		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
+		SyncPeriod:                 &syncPeriod,
+		Namespace:                  watchNamespace,
+		HealthProbeBindAddress:     healthAddr,
+		Port:                       webhookPort,
+		EventBroadcaster:           broadcaster,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
