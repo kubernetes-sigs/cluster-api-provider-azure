@@ -20,7 +20,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
