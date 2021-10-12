@@ -34,7 +34,7 @@ func RegisterMetrics() error {
 		Registry: metrics.Registry.(*crprometheus.Registry), // use the controller runtime metrics registry / gatherer
 	}
 	c := controller.New(
-		processor.New(
+		processor.NewFactory(
 			selector.NewWithHistogramDistribution(
 				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
 			),
