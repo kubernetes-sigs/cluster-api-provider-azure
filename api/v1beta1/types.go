@@ -106,10 +106,27 @@ type VnetSpec struct {
 	// +optional
 	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
 
+	// Peerings defines a list of peerings of the newly created virtual network with existing virtual networks.
+	// +optional
+	Peerings VnetPeerings `json:"peerings,omitempty"`
+
 	// Tags is a collection of tags describing the resource.
 	// +optional
 	Tags Tags `json:"tags,omitempty"`
 }
+
+// VnetPeeringSpec specifies an existing remote virtual network to peer with the AzureCluster's virtual network.
+type VnetPeeringSpec struct {
+	// ResourceGroup is the resource group name of the remote virtual network.
+	// +optional
+	ResourceGroup string `json:"resourceGroup,omitempty"`
+
+	// RemoteVnetName defines name of the remote virtual network.
+	RemoteVnetName string `json:"remoteVnetName"`
+}
+
+// VnetPeerings is a slice of VnetPeering.
+type VnetPeerings []VnetPeeringSpec
 
 // IsManaged returns true if the vnet is managed.
 func (v *VnetSpec) IsManaged(clusterName string) bool {

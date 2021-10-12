@@ -36,18 +36,13 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     subnets:
-    - name: ${CLUSTER_NAME}-controlplane-subnet
+    - name: ${AZURE_CUSTOM_VNET_NAME}-controlplane-subnet
       role: control-plane
-      securityGroup:
-        name: control-plane-nsg
-    - name: ${CLUSTER_NAME}-node-subnet
+    - name: ${AZURE_CUSTOM_VNET_NAME}-node-subnet
       role: node
-      routeTable:
-        name: node-routetable
-      securityGroup:
-        name: node-nsg
     vnet:
-      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+      name: ${AZURE_CUSTOM_VNET_NAME}
+      resourceGroup: ${AZURE_RESOURCE_GROUP}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---

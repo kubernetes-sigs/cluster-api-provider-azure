@@ -297,6 +297,32 @@ func (s *ClusterScope) GroupSpec() azure.ResourceSpecGetter {
 	}
 }
 
+// VnetPeeringSpecs returns the virtual network peering specs.
+func (s *ClusterScope) VnetPeeringSpecs() []azure.VnetPeeringSpec {
+	peeringSpecs := make([]azure.VnetPeeringSpec, 2*len(s.Vnet().Peerings))
+
+	for i, peering := range s.Vnet().Peerings {
+		forwardPeering := azure.VnetPeeringSpec{
+			PeeringName:         azure.GenerateVnetPeeringName(s.Vnet().Name, peering.RemoteVnetName),
+			SourceVnetName:      s.Vnet().Name,
+			SourceResourceGroup: s.Vnet().ResourceGroup,
+			RemoteVnetName:      peering.RemoteVnetName,
+			RemoteResourceGroup: peering.ResourceGroup,
+		}
+		reversePeering := azure.VnetPeeringSpec{
+			PeeringName:         azure.GenerateVnetPeeringName(peering.RemoteVnetName, s.Vnet().Name),
+			SourceVnetName:      peering.RemoteVnetName,
+			SourceResourceGroup: peering.ResourceGroup,
+			RemoteVnetName:      s.Vnet().Name,
+			RemoteResourceGroup: s.Vnet().ResourceGroup,
+		}
+		peeringSpecs[i*2] = forwardPeering
+		peeringSpecs[i*2+1] = reversePeering
+	}
+
+	return peeringSpecs
+}
+
 // VNetSpec returns the virtual network spec.
 func (s *ClusterScope) VNetSpec() azure.VNetSpec {
 	return azure.VNetSpec{
@@ -308,13 +334,24 @@ func (s *ClusterScope) VNetSpec() azure.VNetSpec {
 
 // PrivateDNSSpec returns the private dns zone spec.
 func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
-	var spec *azure.PrivateDNSSpec
+	var specs *azure.PrivateDNSSpec
 	if s.IsAPIServerPrivate() {
-		spec = &azure.PrivateDNSSpec{
-			ZoneName:          s.GetPrivateDNSZoneName(),
+		links := make([]azure.PrivateDNSLinkSpec, 1+len(s.Vnet().Peerings))
+		links[0] = azure.PrivateDNSLinkSpec{
 			VNetName:          s.Vnet().Name,
 			VNetResourceGroup: s.Vnet().ResourceGroup,
 			LinkName:          azure.GenerateVNetLinkName(s.Vnet().Name),
+		}
+		for i, peering := range s.Vnet().Peerings {
+			links[i+1] = azure.PrivateDNSLinkSpec{
+				VNetName:          peering.RemoteVnetName,
+				VNetResourceGroup: peering.ResourceGroup,
+				LinkName:          azure.GenerateVNetLinkName(peering.RemoteVnetName),
+			}
+		}
+		specs = &azure.PrivateDNSSpec{
+			ZoneName: s.GetPrivateDNSZoneName(),
+			Links:    links,
 			Records: []infrav1.AddressRecord{
 				{
 					Hostname: azure.PrivateAPIServerHostname,
@@ -323,7 +360,8 @@ func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
 			},
 		}
 	}
-	return spec
+
+	return specs
 }
 
 // BastionSpec returns the bastion spec.

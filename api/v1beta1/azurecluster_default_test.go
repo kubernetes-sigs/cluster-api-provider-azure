@@ -621,6 +621,124 @@ func TestSubnetDefaults(t *testing.T) {
 	}
 }
 
+func TestVnetPeeringDefaults(t *testing.T) {
+	cases := []struct {
+		name    string
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		{
+			name: "no peering",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{},
+				},
+			},
+		},
+		{
+			name: "peering with resource group",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							Peerings: VnetPeerings{
+								{
+									RemoteVnetName: "my-vnet",
+									ResourceGroup:  "cluster-test",
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							Peerings: VnetPeerings{
+								{
+									RemoteVnetName: "my-vnet",
+									ResourceGroup:  "cluster-test",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "peering without resource group",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							Peerings: VnetPeerings{
+								{
+									RemoteVnetName: "my-vnet",
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							Peerings: VnetPeerings{
+								{
+									RemoteVnetName: "my-vnet",
+									ResourceGroup:  "cluster-test",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.cluster.setVnetPeeringDefaults()
+			if !reflect.DeepEqual(tc.cluster, tc.output) {
+				expected, _ := json.MarshalIndent(tc.output, "", "\t")
+				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}
+
 func TestAPIServerLBDefaults(t *testing.T) {
 	cases := []struct {
 		name    string

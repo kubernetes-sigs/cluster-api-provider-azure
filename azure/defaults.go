@@ -169,6 +169,11 @@ func GenerateDataDiskName(machineName, nameSuffix string) string {
 	return fmt.Sprintf("%s_%s", machineName, nameSuffix)
 }
 
+// GenerateVnetPeeringName generates the name for a peering between two vnets.
+func GenerateVnetPeeringName(sourceVnetName string, remoteVnetName string) string {
+	return fmt.Sprintf("%s-To-%s", sourceVnetName, remoteVnetName)
+}
+
 // GenerateAvailabilitySetName generates the name of a availability set based on the cluster name and the node group.
 // node group identifies the set of nodes that belong to this availability set:
 // For control plane nodes, this will be `control-plane`.

@@ -54,10 +54,14 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
-					ZoneName:          "my-dns-zone",
-					VNetName:          "my-vnet",
-					VNetResourceGroup: "vnet-rg",
-					LinkName:          "my-link",
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link",
+						},
+					},
 					Records: []infrav1.AddressRecord{
 						{
 							Hostname: "hostname-1",
@@ -90,15 +94,78 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			},
 		},
 		{
+			name:          "create multiple ipv4 private dns successfully",
+			expectedError: "",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet-1",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-1",
+						},
+						{
+							VNetName:          "my-vnet-2",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-2",
+						},
+					},
+					Records: []infrav1.AddressRecord{
+						{
+							Hostname: "hostname-1",
+							IP:       "10.0.0.8",
+						},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.SubscriptionID().AnyTimes().Return("123")
+				m.CreateOrUpdateZone(gomockinternal.AContext(), "my-rg", "my-dns-zone", privatedns.PrivateZone{Location: to.StringPtr(azure.Global)})
+				m.CreateOrUpdateLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-1", privatedns.VirtualNetworkLink{
+					VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
+						VirtualNetwork: &privatedns.SubResource{
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet-1"),
+						},
+						RegistrationEnabled: to.BoolPtr(false),
+					},
+					Location: to.StringPtr(azure.Global),
+				})
+				m.CreateOrUpdateLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-2", privatedns.VirtualNetworkLink{
+					VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
+						VirtualNetwork: &privatedns.SubResource{
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet-2"),
+						},
+						RegistrationEnabled: to.BoolPtr(false),
+					},
+					Location: to.StringPtr(azure.Global),
+				})
+				m.CreateOrUpdateRecordSet(gomockinternal.AContext(), "my-rg", "my-dns-zone", privatedns.A, "hostname-1", privatedns.RecordSet{
+					RecordSetProperties: &privatedns.RecordSetProperties{
+						TTL: to.Int64Ptr(300),
+						ARecords: &[]privatedns.ARecord{
+							{
+								Ipv4Address: to.StringPtr("10.0.0.8"),
+							},
+						},
+					},
+				})
+			},
+		},
+		{
 			name:          "create ipv6 private dns successfully",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
-					ZoneName:          "my-dns-zone",
-					VNetName:          "my-vnet",
-					VNetResourceGroup: "vnet-rg",
-					LinkName:          "my-link",
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link",
+						},
+					},
 					Records: []infrav1.AddressRecord{
 						{
 							Hostname: "hostname-2",
@@ -131,15 +198,78 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			},
 		},
 		{
+			name:          "create multiple ipv6 private dns successfully",
+			expectedError: "",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet-1",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-1",
+						},
+						{
+							VNetName:          "my-vnet-2",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-2",
+						},
+					},
+					Records: []infrav1.AddressRecord{
+						{
+							Hostname: "hostname-2",
+							IP:       "2603:1030:805:2::b",
+						},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.SubscriptionID().AnyTimes().Return("123")
+				m.CreateOrUpdateZone(gomockinternal.AContext(), "my-rg", "my-dns-zone", privatedns.PrivateZone{Location: to.StringPtr(azure.Global)})
+				m.CreateOrUpdateLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-1", privatedns.VirtualNetworkLink{
+					VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
+						VirtualNetwork: &privatedns.SubResource{
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet-1"),
+						},
+						RegistrationEnabled: to.BoolPtr(false),
+					},
+					Location: to.StringPtr(azure.Global),
+				})
+				m.CreateOrUpdateLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-2", privatedns.VirtualNetworkLink{
+					VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
+						VirtualNetwork: &privatedns.SubResource{
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet-2"),
+						},
+						RegistrationEnabled: to.BoolPtr(false),
+					},
+					Location: to.StringPtr(azure.Global),
+				})
+				m.CreateOrUpdateRecordSet(gomockinternal.AContext(), "my-rg", "my-dns-zone", privatedns.AAAA, "hostname-2", privatedns.RecordSet{
+					RecordSetProperties: &privatedns.RecordSetProperties{
+						TTL: to.Int64Ptr(300),
+						AaaaRecords: &[]privatedns.AaaaRecord{
+							{
+								Ipv6Address: to.StringPtr("2603:1030:805:2::b"),
+							},
+						},
+					},
+				})
+			},
+		},
+		{
 			name:          "link creation fails",
 			expectedError: "failed to create virtual network link my-link: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
-					ZoneName:          "my-dns-zone",
-					VNetName:          "my-vnet",
-					VNetResourceGroup: "vnet-rg",
-					LinkName:          "my-link",
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link",
+						},
+					},
 					Records: []infrav1.AddressRecord{
 						{
 							Hostname: "hostname-1",
@@ -154,6 +284,60 @@ func TestReconcilePrivateDNS(t *testing.T) {
 					VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
 						VirtualNetwork: &privatedns.SubResource{
 							ID: to.StringPtr("/subscriptions/123/resourceGroups/vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet"),
+						},
+						RegistrationEnabled: to.BoolPtr(false),
+					},
+					Location: to.StringPtr(azure.Global),
+				}).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name:          "creating multiple links fails",
+			expectedError: "failed to create virtual network link my-link-2: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet-1",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-1",
+						},
+						{
+							VNetName:          "my-vnet-2",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-2",
+						},
+						{
+							VNetName:          "my-vnet-3",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-3",
+						},
+					},
+					Records: []infrav1.AddressRecord{
+						{
+							Hostname: "hostname-1",
+							IP:       "10.0.0.8",
+						},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.SubscriptionID().AnyTimes().Return("123")
+				m.CreateOrUpdateZone(gomockinternal.AContext(), "my-rg", "my-dns-zone", privatedns.PrivateZone{Location: to.StringPtr(azure.Global)})
+				m.CreateOrUpdateLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-1", privatedns.VirtualNetworkLink{
+					VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
+						VirtualNetwork: &privatedns.SubResource{
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet-1"),
+						},
+						RegistrationEnabled: to.BoolPtr(false),
+					},
+					Location: to.StringPtr(azure.Global),
+				})
+				m.CreateOrUpdateLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-2", privatedns.VirtualNetworkLink{
+					VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
+						VirtualNetwork: &privatedns.SubResource{
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet-2"),
 						},
 						RegistrationEnabled: to.BoolPtr(false),
 					},
@@ -212,10 +396,14 @@ func TestDeletePrivateDNS(t *testing.T) {
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
-					ZoneName:          "my-dns-zone",
-					VNetName:          "my-vnet",
-					VNetResourceGroup: "vnet-rg",
-					LinkName:          "my-link",
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link",
+						},
+					},
 					Records: []infrav1.AddressRecord{
 						{
 							Hostname: "hostname-1",
@@ -229,15 +417,57 @@ func TestDeletePrivateDNS(t *testing.T) {
 			},
 		},
 		{
+			name:          "delete the dns zone with multiple links",
+			expectedError: "",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet-1",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-1",
+						},
+						{
+							VNetName:          "my-vnet-2",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-2",
+						},
+						{
+							VNetName:          "my-vnet-3",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-3",
+						},
+					},
+					Records: []infrav1.AddressRecord{
+						{
+							Hostname: "hostname-1",
+							IP:       "10.0.0.8",
+						},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-1")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-2")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-3")
+				m.DeleteZone(gomockinternal.AContext(), "my-rg", "my-dns-zone")
+			},
+		},
+		{
 			name:          "link already deleted",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
-					ZoneName:          "my-dns-zone",
-					VNetName:          "my-vnet",
-					VNetResourceGroup: "vnet-rg",
-					LinkName:          "my-link",
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link",
+						},
+					},
 					Records: []infrav1.AddressRecord{
 						{
 							Hostname: "hostname-1",
@@ -252,15 +482,58 @@ func TestDeletePrivateDNS(t *testing.T) {
 			},
 		},
 		{
+			name:          "one link already deleted with multiple links",
+			expectedError: "",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet-1",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-1",
+						},
+						{
+							VNetName:          "my-vnet-2",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-2",
+						},
+						{
+							VNetName:          "my-vnet-3",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-3",
+						},
+					},
+					Records: []infrav1.AddressRecord{
+						{
+							Hostname: "hostname-1",
+							IP:       "10.0.0.8",
+						},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-1")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-2").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-3")
+				m.DeleteZone(gomockinternal.AContext(), "my-rg", "my-dns-zone")
+			},
+		},
+		{
 			name:          "zone already deleted",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
-					ZoneName:          "my-dns-zone",
-					VNetName:          "my-vnet",
-					VNetResourceGroup: "vnet-rg",
-					LinkName:          "my-link",
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link",
+						},
+					},
 					Records: []infrav1.AddressRecord{
 						{
 							Hostname: "hostname-1",
@@ -281,10 +554,14 @@ func TestDeletePrivateDNS(t *testing.T) {
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
-					ZoneName:          "my-dns-zone",
-					VNetName:          "my-vnet",
-					VNetResourceGroup: "vnet-rg",
-					LinkName:          "my-link",
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link",
+						},
+					},
 					Records: []infrav1.AddressRecord{
 						{
 							Hostname: "hostname-1",
@@ -298,15 +575,56 @@ func TestDeletePrivateDNS(t *testing.T) {
 			},
 		},
 		{
-			name:          "error while trying to delete the zone",
+			name:          "error while trying to delete one link with multiple links",
+			expectedError: "failed to delete virtual network link my-vnet-2 with zone my-dns-zone in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet-1",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-1",
+						},
+						{
+							VNetName:          "my-vnet-2",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-2",
+						},
+						{
+							VNetName:          "my-vnet-3",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-3",
+						},
+					},
+					Records: []infrav1.AddressRecord{
+						{
+							Hostname: "hostname-1",
+							IP:       "10.0.0.8",
+						},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-1")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-2").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name:          "error while trying to delete the zone with one link",
 			expectedError: "failed to delete private dns zone my-dns-zone in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
-					ZoneName:          "my-dns-zone",
-					VNetName:          "my-vnet",
-					VNetResourceGroup: "vnet-rg",
-					LinkName:          "my-link",
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link",
+						},
+					},
 					Records: []infrav1.AddressRecord{
 						{
 							Hostname: "hostname-1",
@@ -316,6 +634,45 @@ func TestDeletePrivateDNS(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link")
+				m.DeleteZone(gomockinternal.AContext(), "my-rg", "my-dns-zone").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name:          "error while trying to delete the zone with multiple links",
+			expectedError: "failed to delete private dns zone my-dns-zone in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
+					ZoneName: "my-dns-zone",
+					Links: []azure.PrivateDNSLinkSpec{
+						{
+							VNetName:          "my-vnet-1",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-1",
+						},
+						{
+							VNetName:          "my-vnet-2",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-2",
+						},
+						{
+							VNetName:          "my-vnet-3",
+							VNetResourceGroup: "vnet-rg",
+							LinkName:          "my-link-3",
+						},
+					},
+					Records: []infrav1.AddressRecord{
+						{
+							Hostname: "hostname-1",
+							IP:       "10.0.0.8",
+						},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-1")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-2")
+				m.DeleteLink(gomockinternal.AContext(), "my-rg", "my-dns-zone", "my-link-3")
 				m.DeleteZone(gomockinternal.AContext(), "my-rg", "my-dns-zone").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},

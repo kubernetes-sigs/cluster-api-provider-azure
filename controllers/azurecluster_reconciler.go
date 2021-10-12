@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -52,6 +53,7 @@ type azureClusterService struct {
 	bastionSvc       azure.Reconciler
 	skuCache         *resourceskus.Cache
 	natGatewaySvc    azure.Reconciler
+	peeringsSvc      azure.Reconciler
 }
 
 // newAzureClusterService populates all the services based on input scope.
@@ -74,6 +76,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 		privateDNSSvc:    privatedns.New(scope),
 		bastionSvc:       bastionhosts.New(scope),
 		skuCache:         skuCache,
+		peeringsSvc:      vnetpeerings.New(scope),
 	}, nil
 }
 
@@ -119,6 +122,10 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile subnet")
 	}
 
+	if err := s.peeringsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "failed to reconcile peerings")
+	}
+
 	if err := s.loadBalancerSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile load balancer")
 	}
@@ -151,6 +158,10 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 
 			if err := s.loadBalancerSvc.Delete(ctx); err != nil {
 				return errors.Wrap(err, "failed to delete load balancer")
+			}
+
+			if err := s.peeringsSvc.Delete(ctx); err != nil {
+				return errors.Wrap(err, "failed to delete peerings")
 			}
 
 			if err := s.subnetsSvc.Delete(ctx); err != nil {

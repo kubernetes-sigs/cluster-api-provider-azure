@@ -1931,6 +1931,26 @@ spec:
                       name:
                         description: Name defines a name for the virtual network resource.
                         type: string
+                      peerings:
+                        description: Peerings defines a list of peerings of the newly
+                          created virtual network with existing virtual networks.
+                        items:
+                          description: VnetPeeringSpec specifies an existing remote
+                            virtual network to peer with the AzureCluster's virtual
+                            network.
+                          properties:
+                            remoteVnetName:
+                              description: RemoteVnetName defines name of the remote
+                                virtual network.
+                              type: string
+                            resourceGroup:
+                              description: ResourceGroup is the resource group name
+                                of the remote virtual network.
+                              type: string
+                          required:
+                          - remoteVnetName
+                          type: object
+                        type: array
                       resourceGroup:
                         description: ResourceGroup is the name of the resource group
                           of the existing virtual network or the resource group where

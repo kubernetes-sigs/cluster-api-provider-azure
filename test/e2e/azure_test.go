@@ -141,15 +141,14 @@ var _ = Describe("Workload cluster creation", func() {
 			It("Creates a public management cluster in the same vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
 				Context("Creating a custom virtual network", func() {
-					Expect(os.Setenv(AzureVNetName, "custom-vnet")).NotTo(HaveOccurred())
-					cpCIDR := "10.128.0.0/16"
-					Expect(os.Setenv(AzureCPSubnetCidr, cpCIDR)).NotTo(HaveOccurred())
-					nodeCIDR := "10.129.0.0/16"
-					Expect(os.Setenv(AzureNodeSubnetCidr, nodeCIDR)).NotTo(HaveOccurred())
+					Expect(os.Setenv(AzureCustomVNetName, "custom-vnet")).NotTo(HaveOccurred())
 					additionalCleanup = SetupExistingVNet(ctx,
-						"10.0.0.0/8",
-						map[string]string{fmt.Sprintf("%s-controlplane-subnet", clusterName): "10.0.0.0/16", "private-cp-subnet": cpCIDR},
-						map[string]string{fmt.Sprintf("%s-node-subnet", clusterName): "10.1.0.0/16", "private-node-subnet": nodeCIDR})
+						"10.0.0.0/16",
+						map[string]string{fmt.Sprintf("%s-controlplane-subnet", os.Getenv(AzureCustomVNetName)): "10.0.0.0/24"},
+						map[string]string{fmt.Sprintf("%s-node-subnet", os.Getenv(AzureCustomVNetName)): "10.0.1.0/24"},
+						fmt.Sprintf("%s-azure-bastion-subnet", os.Getenv(AzureCustomVNetName)),
+						"10.0.2.0/24",
+					)
 				})
 
 				clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{

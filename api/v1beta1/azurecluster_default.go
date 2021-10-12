@@ -53,6 +53,7 @@ func (c *AzureCluster) setNetworkSpecDefaults() {
 	c.setVnetDefaults()
 	c.setBastionDefaults()
 	c.setSubnetDefaults()
+	c.setVnetPeeringDefaults()
 	c.setAPIServerLBDefaults()
 	c.setNodeOutboundLBDefaults()
 	c.setControlPlaneOutboundLBDefaults()
@@ -144,6 +145,14 @@ func (c *AzureCluster) setSubnetDefaults() {
 			},
 		}
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
+	}
+}
+
+func (c *AzureCluster) setVnetPeeringDefaults() {
+	for i, peering := range c.Spec.NetworkSpec.Vnet.Peerings {
+		if peering.ResourceGroup == "" {
+			c.Spec.NetworkSpec.Vnet.Peerings[i].ResourceGroup = c.Spec.ResourceGroup
+		}
 	}
 }
 
