@@ -26,7 +26,7 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -54,10 +54,10 @@ func (m *MockVMSSExtensionScope) EXPECT() *MockVMSSExtensionScopeMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockVMSSExtensionScope) AdditionalTags() v1alpha4.Tags {
+func (m *MockVMSSExtensionScope) AdditionalTags() v1beta1.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha4.Tags)
+	ret0, _ := ret[0].(v1beta1.Tags)
 	return ret0
 }
 
@@ -152,10 +152,10 @@ func (mr *MockVMSSExtensionScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockVMSSExtensionScope) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+func (m *MockVMSSExtensionScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -208,6 +208,20 @@ func (mr *MockVMSSExtensionScopeMockRecorder) Error(err, msg interface{}, keysAn
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{err, msg}, keysAndValues...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVMSSExtensionScope)(nil).Error), varargs...)
+}
+
+// FailureDomains mocks base method.
+func (m *MockVMSSExtensionScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockVMSSExtensionScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockVMSSExtensionScope)(nil).FailureDomains))
 }
 
 // HashKey mocks base method.
@@ -326,10 +340,10 @@ func (mr *MockVMSSExtensionScopeMockRecorder) V(level interface{}) *gomock.Call 
 }
 
 // VMSSExtensionSpecs mocks base method.
-func (m *MockVMSSExtensionScope) VMSSExtensionSpecs() []azure.VMSSExtensionSpec {
+func (m *MockVMSSExtensionScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VMSSExtensionSpecs")
-	ret0, _ := ret[0].([]azure.VMSSExtensionSpec)
+	ret0, _ := ret[0].([]azure.ExtensionSpec)
 	return ret0
 }
 

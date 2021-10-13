@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // PublicIPSpec defines the specification for a Public IP.
@@ -107,6 +107,16 @@ type VNetSpec struct {
 	ResourceGroup string
 	Name          string
 	CIDRs         []string
+	Peerings      []infrav1.VnetPeeringSpec
+}
+
+// VnetPeeringSpec defines the specification for a virtual network peering.
+type VnetPeeringSpec struct {
+	SourceResourceGroup string
+	SourceVnetName      string
+	RemoteResourceGroup string
+	RemoteVnetName      string
+	PeeringName         string
 }
 
 // RoleAssignmentSpec defines the specification for a Role Assignment.
@@ -195,11 +205,16 @@ type TagsSpec struct {
 
 // PrivateDNSSpec defines the specification for a private DNS zone.
 type PrivateDNSSpec struct {
-	ZoneName          string
+	ZoneName string
+	Links    []PrivateDNSLinkSpec
+	Records  []infrav1.AddressRecord
+}
+
+// PrivateDNSLinkSpec defines the specification for a virtual network link in a private DNS zone.
+type PrivateDNSLinkSpec struct {
 	VNetName          string
 	VNetResourceGroup string
 	LinkName          string
-	Records           []infrav1.AddressRecord
 }
 
 // AvailabilitySetSpec defines the specification for an availability set.
@@ -207,19 +222,10 @@ type AvailabilitySetSpec struct {
 	Name string
 }
 
-// VMExtensionSpec defines the specification for a VM extension.
-type VMExtensionSpec struct {
+// ExtensionSpec defines the specification for a VM or VMScaleSet extension.
+type ExtensionSpec struct {
 	Name              string
 	VMName            string
-	Publisher         string
-	Version           string
-	ProtectedSettings map[string]string
-}
-
-// VMSSExtensionSpec defines the specification for a VMSS extension.
-type VMSSExtensionSpec struct {
-	Name              string
-	ScaleSetName      string
 	Publisher         string
 	Version           string
 	ProtectedSettings map[string]string
@@ -358,6 +364,15 @@ type ManagedClusterSpec struct {
 
 	// AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
 	AADProfile *AADProfile
+
+	// SKU is the SKU of the AKS to be provisioned.
+	SKU *SKU
+
+	// LoadBalancerProfile is the profile of the cluster load balancer.
+	LoadBalancerProfile *LoadBalancerProfile
+
+	// APIServerAccessProfile is the access profile for AKS API server.
+	APIServerAccessProfile *APIServerAccessProfile
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
@@ -370,6 +385,47 @@ type AADProfile struct {
 
 	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
 	AdminGroupObjectIDs []string
+}
+
+// SKU - AKS SKU.
+type SKU struct {
+	// Tier - Tier of a managed cluster SKU.
+	Tier string
+}
+
+// LoadBalancerProfile - Profile of the cluster load balancer.
+type LoadBalancerProfile struct {
+	// Load balancer profile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs.
+	// By default the AKS cluster automatically creates a public IP in the AKS-managed infrastructure resource group and assigns it to the load balancer outbound pool.
+	// Alternatively, you can assign your own custom public IP or public IP prefix at cluster creation time.
+	// See https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#provide-your-own-outbound-public-ips-or-prefixes
+
+	// ManagedOutboundIPs - Desired managed outbound IPs for the cluster load balancer.
+	ManagedOutboundIPs *int32
+
+	// OutboundIPPrefixes - Desired outbound IP Prefix resources for the cluster load balancer.
+	OutboundIPPrefixes []string
+
+	// OutboundIPs - Desired outbound IP resources for the cluster load balancer.
+	OutboundIPs []string
+
+	// AllocatedOutboundPorts - Desired number of allocated SNAT ports per VM. Allowed values must be in the range of 0 to 64000 (inclusive). The default value is 0 which results in Azure dynamically allocating ports.
+	AllocatedOutboundPorts *int32
+
+	// IdleTimeoutInMinutes - Desired outbound flow idle timeout in minutes. Allowed values must be in the range of 4 to 120 (inclusive). The default value is 30 minutes.
+	IdleTimeoutInMinutes *int32
+}
+
+// APIServerAccessProfile is the access profile for AKS API server.
+type APIServerAccessProfile struct {
+	// AuthorizedIPRanges - Authorized IP Ranges to kubernetes API server.
+	AuthorizedIPRanges []string
+	// EnablePrivateCluster - Whether to create the cluster as a private cluster or not.
+	EnablePrivateCluster *bool
+	// PrivateDNSZone - Private dns zone mode for private cluster.
+	PrivateDNSZone *string
+	// EnablePrivateClusterPublicFQDN - Whether to create additional public FQDN for private cluster or not.
+	EnablePrivateClusterPublicFQDN *bool
 }
 
 // AgentPoolSpec contains agent pool specification details.

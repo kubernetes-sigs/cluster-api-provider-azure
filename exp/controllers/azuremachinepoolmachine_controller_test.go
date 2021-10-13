@@ -31,14 +31,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/mocks"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -46,12 +46,12 @@ import (
 func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 	cases := []struct {
 		Name   string
-		Setup  func(cb *fake.ClientBuilder, reconciler *mocks.MockReconcilerMockRecorder)
+		Setup  func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder)
 		Verify func(g *WithT, result ctrl.Result, err error)
 	}{
 		{
 			Name: "should successfully reconcile",
-			Setup: func(cb *fake.ClientBuilder, reconciler *mocks.MockReconcilerMockRecorder) {
+			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
 				cluster, azCluster, mp, amp, ampm := getAReadyMachinePoolMachineCluster()
 				reconciler.Reconcile(gomock2.AContext()).Return(nil)
 				cb.WithObjects(cluster, azCluster, mp, amp, ampm)
@@ -62,7 +62,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 		},
 		{
 			Name: "should successfully delete",
-			Setup: func(cb *fake.ClientBuilder, reconciler *mocks.MockReconcilerMockRecorder) {
+			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
 				cluster, azCluster, mp, amp, ampm := getAReadyMachinePoolMachineCluster()
 				ampm.DeletionTimestamp = &metav1.Time{
 					Time: time.Now(),
@@ -85,7 +85,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 			var (
 				g          = NewWithT(t)
 				mockCtrl   = gomock.NewController(t)
-				reconciler = mocks.NewMockReconciler(mockCtrl)
+				reconciler = mock_azure.NewMockReconciler(mockCtrl)
 				scheme     = func() *runtime.Scheme {
 					s := runtime.NewScheme()
 					for _, addTo := range []func(s *runtime.Scheme) error{

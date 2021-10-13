@@ -59,8 +59,8 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 
 // Reconcile reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolService.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachinePoolService.Reconcile")
+	defer done()
 
 	if err := s.scope.SetSubnetName(); err != nil {
 		return errors.Wrap(err, "failed defaulting subnet name")
@@ -83,8 +83,8 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 
 // Delete reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolService.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachinePoolService.Delete")
+	defer done()
 
 	if err := s.virtualMachinesScaleSetSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete scale set")

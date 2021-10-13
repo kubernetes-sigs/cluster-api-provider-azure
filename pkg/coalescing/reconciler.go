@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/cache/ttllru"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -90,14 +88,13 @@ func NewReconciler(upstream reconcile.Reconciler, cache ReconcileCacher, log log
 
 // Reconcile sends a request to the upstream reconciler if the request is outside of the debounce window.
 func (rc *reconciler) Reconcile(ctx context.Context, r reconcile.Request) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.reconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", r.Namespace),
-			attribute.String("name", r.Name),
-		))
-	defer span.End()
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.reconciler.Reconcile",
+		tele.KVP("namespace", r.Namespace),
+		tele.KVP("name", r.Name),
+	)
+	defer done()
 
-	log := rc.log.WithValues("request", r.String())
+	log = log.WithValues("request", r.String())
 
 	if expiration, ok := rc.cache.ShouldProcess(r.String()); !ok {
 		log.V(4).Info("not processing", "expiration", expiration, "timeUntil", time.Until(expiration))

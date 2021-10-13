@@ -30,19 +30,20 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capierrors "sigs.k8s.io/cluster-api/errors"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	drain "sigs.k8s.io/cluster-api/third_party/kubernetes-drain"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -173,14 +174,62 @@ func (s *MachinePoolMachineScope) ScaleSetName() string {
 	return s.MachinePoolScope.Name()
 }
 
-// GetLongRunningOperationState gets a future representing the current state of a long-running operation if one exists.
-func (s *MachinePoolMachineScope) GetLongRunningOperationState() *infrav1.Future {
-	return s.AzureMachinePoolMachine.Status.LongRunningOperationState
+// SetLongRunningOperationState will set the future on the AzureMachinePoolMachine status to allow the resource to continue
+// in the next reconciliation.
+func (s *MachinePoolMachineScope) SetLongRunningOperationState(future *infrav1.Future) {
+	futures.Set(s.AzureMachinePoolMachine, future)
 }
 
-// SetLongRunningOperationState sets a future representing the current state of a long-running operation.
-func (s *MachinePoolMachineScope) SetLongRunningOperationState(future *infrav1.Future) {
-	s.AzureMachinePoolMachine.Status.LongRunningOperationState = future
+// GetLongRunningOperationState will get the future on the AzureMachinePoolMachine status.
+func (s *MachinePoolMachineScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
+	return futures.Get(s.AzureMachinePoolMachine, name, service)
+}
+
+// DeleteLongRunningOperationState will delete the future from the AzureMachinePoolMachine status.
+func (s *MachinePoolMachineScope) DeleteLongRunningOperationState(name, service string) {
+	futures.Delete(s.AzureMachinePoolMachine, name, service)
+}
+
+// UpdateDeleteStatus updates a condition on the AzureMachinePoolMachine status after a DELETE operation.
+func (s *MachinePoolMachineScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+	default:
+		conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePutStatus updates a condition on the AzureMachinePoolMachine status after a PUT operation.
+func (s *MachinePoolMachineScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(s.AzureMachinePoolMachine, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+	default:
+		conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePatchStatus updates a condition on the AzureMachinePoolMachine status after a PATCH operation.
+func (s *MachinePoolMachineScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(s.AzureMachinePoolMachine, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+	default:
+		conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+	}
 }
 
 // SetVMSSVM update the scope with the current state of the VMSS VM.
@@ -219,8 +268,11 @@ func (s *MachinePoolMachineScope) ProviderID() string {
 
 // Close updates the state of MachinePoolMachine.
 func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.Close",
+	)
+	defer done()
 
 	return s.patchHelper.Patch(ctx, s.AzureMachinePoolMachine)
 }
@@ -228,8 +280,11 @@ func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 // UpdateStatus updates the node reference for the machine and other status fields. This func should be called at the
 // end of a reconcile request and after updating the scope with the most recent Azure data.
 func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.Get",
+	)
+	defer done()
 
 	var (
 		nodeRef = s.AzureMachinePoolMachine.Status.NodeRef
@@ -274,8 +329,11 @@ func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
 
 // CordonAndDrain will cordon and drain the Kubernetes node associated with this AzureMachinePoolMachine.
 func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.CordonAndDrain")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.CordonAndDrain",
+	)
+	defer done()
 
 	var (
 		nodeRef = s.AzureMachinePoolMachine.Status.NodeRef
@@ -337,8 +395,11 @@ func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
 }
 
 func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.Node) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.drainNode")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.drainNode",
+	)
+	defer done()
 
 	restConfig, err := remote.RESTConfig(ctx, MachinePoolMachineScopeName, s.client, client.ObjectKey{
 		Name:      s.ClusterName(),
@@ -474,8 +535,11 @@ func (np *workloadClusterProxy) GetNodeByObjectReference(ctx context.Context, no
 
 // GetNodeByProviderID will fetch a node from the workload cluster by it's providerID.
 func (np *workloadClusterProxy) GetNodeByProviderID(ctx context.Context, providerID string) (*corev1.Node, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getNode")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.getNode",
+	)
+	defer done()
 
 	workloadClient, err := getWorkloadClient(ctx, np.Client, np.Cluster)
 	if err != nil {
@@ -486,8 +550,11 @@ func (np *workloadClusterProxy) GetNodeByProviderID(ctx context.Context, provide
 }
 
 func getNodeByProviderID(ctx context.Context, workloadClient client.Client, providerID string) (*corev1.Node, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getNodeRefForProviderID")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.getNodeRefForProviderID",
+	)
+	defer done()
 
 	nodeList := corev1.NodeList{}
 	for {
@@ -510,8 +577,11 @@ func getNodeByProviderID(ctx context.Context, workloadClient client.Client, prov
 }
 
 func getWorkloadClient(ctx context.Context, c client.Client, cluster client.ObjectKey) (client.Client, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getWorkloadClient")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.getWorkloadClient",
+	)
+	defer done()
 
 	return remote.NewClusterClient(ctx, MachinePoolMachineScopeName, c, cluster)
 }

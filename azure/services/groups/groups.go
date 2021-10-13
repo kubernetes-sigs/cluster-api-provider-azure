@@ -19,16 +19,18 @@ package groups
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+const serviceName = "group"
 
 // Service provides operations on Azure resources.
 type Service struct {
@@ -39,7 +41,10 @@ type Service struct {
 // GroupScope defines the scope interface for a group service.
 type GroupScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.Authorizer
+	azure.AsyncStatusUpdater
+	GroupSpec() azure.ResourceSpecGetter
+	ClusterName() string
 }
 
 // New creates a new service.
@@ -52,77 +57,58 @@ func New(scope GroupScope) *Service {
 
 // Reconcile gets/creates/updates a resource group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "groups.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Reconcile")
+	defer done()
 
-	if _, err := s.client.Get(ctx, s.Scope.ResourceGroup()); err == nil {
-		// resource group already exists, skip creation
-		return nil
-	} else if !azure.ResourceNotFound(err) {
-		return errors.Wrapf(err, "failed to get resource group %s", s.Scope.ResourceGroup())
-	}
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
 
-	s.Scope.V(2).Info("creating resource group", "resource group", s.Scope.ResourceGroup())
-	group := resources.Group{
-		Location: to.StringPtr(s.Scope.Location()),
-		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-			ClusterName: s.Scope.ClusterName(),
-			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.Scope.ResourceGroup()),
-			Role:        to.StringPtr(infrav1.CommonRole),
-			Additional:  s.Scope.AdditionalTags(),
-		})),
-	}
+	groupSpec := s.Scope.GroupSpec()
 
-	_, err := s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create resource group %s", s.Scope.ResourceGroup())
-	}
-
-	s.Scope.V(2).Info("successfully created resource group", "resource group", s.Scope.ResourceGroup())
-	return nil
+	err := async.CreateResource(ctx, s.Scope, s.client, groupSpec, serviceName)
+	s.Scope.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, serviceName, err)
+	return err
 }
 
-// Delete deletes the resource group with the provided name.
+// Delete deletes the resource group if it is managed by capz.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "groups.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
+	defer done()
 
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
+	groupSpec := s.Scope.GroupSpec()
+
+	// check that the resource group is not BYO.
 	managed, err := s.IsGroupManaged(ctx)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted or doesn't exist
-		return nil
-	}
 	if err != nil {
+		if azure.ResourceNotFound(err) {
+			// already deleted or doesn't exist, cleanup status and return.
+			s.Scope.DeleteLongRunningOperationState(groupSpec.ResourceName(), serviceName)
+			s.Scope.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, nil)
+			return nil
+		}
 		return errors.Wrap(err, "could not get resource group management state")
 	}
-
 	if !managed {
 		s.Scope.V(2).Info("Should not delete resource group in unmanaged mode")
 		return azure.ErrNotOwned
 	}
 
-	s.Scope.V(2).Info("deleting resource group", "resource group", s.Scope.ResourceGroup())
-	err = s.client.Delete(ctx, s.Scope.ResourceGroup())
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.ResourceGroup())
-	}
-
-	s.Scope.V(2).Info("successfully deleted resource group", "resource group", s.Scope.ResourceGroup())
-	return nil
+	err = async.DeleteResource(ctx, s.Scope, s.client, groupSpec, serviceName)
+	s.Scope.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, err)
+	return err
 }
 
 // IsGroupManaged returns true if the resource group has an owned tag with the cluster name as value,
 // meaning that the resource group's lifecycle is managed.
 func (s *Service) IsGroupManaged(ctx context.Context) (bool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "groups.Service.IsGroupManaged")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.IsGroupManaged")
+	defer done()
 
-	group, err := s.client.Get(ctx, s.Scope.ResourceGroup())
+	groupSpec := s.Scope.GroupSpec()
+	group, err := s.client.Get(ctx, groupSpec.ResourceName())
 	if err != nil {
 		return false, err
 	}

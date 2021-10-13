@@ -23,22 +23,23 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+const serviceName = "scalesetvms"
 
 type (
 	// ScaleSetVMScope defines the scope interface for a scale sets service.
 	ScaleSetVMScope interface {
 		logr.Logger
 		azure.ClusterDescriber
+		azure.AsyncStatusUpdater
 		InstanceID() string
 		ScaleSetName() string
 		SetVMSSVM(vmssvm *azure.VMSSVM)
-		GetLongRunningOperationState() *infrav1.Future
-		SetLongRunningOperationState(future *infrav1.Future)
 	}
 
 	// Service provides operations on Azure resources.
@@ -58,8 +59,8 @@ func NewService(scope ScaleSetVMScope) *Service {
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.Reconcile")
+	defer done()
 
 	var (
 		resourceGroup = s.Scope.ResourceGroup()
@@ -82,8 +83,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes a scaleset instance asynchronously returning a future which encapsulates the long-running operation.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.Delete")
+	defer done()
 
 	var (
 		resourceGroup = s.Scope.ResourceGroup()
@@ -101,9 +102,9 @@ func (s *Service) Delete(ctx context.Context) error {
 	}()
 
 	log.V(4).Info("entering delete")
-	future := s.Scope.GetLongRunningOperationState()
+	future := s.Scope.GetLongRunningOperationState(instanceID, serviceName)
 	if future != nil {
-		if future.Type != DeleteFuture {
+		if future.Type != infrav1.DeleteFuture {
 			return azure.WithTransientError(errors.New("attempting to delete, non-delete operation in progress"), 30*time.Second)
 		}
 
@@ -115,7 +116,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 		// there was no error in fetching the result, the future has been completed
 		log.V(4).Info("successfully deleted the instance")
-		s.Scope.SetLongRunningOperationState(nil)
+		s.Scope.DeleteLongRunningOperationState(instanceID, serviceName)
 		return nil
 	}
 
@@ -137,6 +138,6 @@ func (s *Service) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "failed to get result of long running operation")
 	}
 
-	s.Scope.SetLongRunningOperationState(nil)
+	s.Scope.DeleteLongRunningOperationState(instanceID, serviceName)
 	return nil
 }

@@ -18,13 +18,14 @@ package virtualnetworks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -54,8 +55,8 @@ func New(scope VNetScope) *Service {
 
 // Reconcile gets/creates/updates a virtual network.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Reconcile")
+	defer done()
 
 	// Following should be created upstream and provided as an input to NewService
 	// A VNet has following dependencies
@@ -97,7 +98,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				},
 			},
 		}
+
 		err = s.Client.CreateOrUpdate(ctx, vnetSpec.ResourceGroup, vnetSpec.Name, vnetProperties)
+
 		if err != nil {
 			return errors.Wrapf(err, "failed to create virtual network %s", vnetSpec.Name)
 		}
@@ -109,8 +112,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Delete")
+	defer done()
 
 	vnetSpec := s.Scope.VNetSpec()
 	existingVnet, err := s.getExisting(ctx, vnetSpec)
@@ -141,12 +144,13 @@ func (s *Service) Delete(ctx context.Context) error {
 
 // getExisting provides information about an existing virtual network.
 func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav1.VnetSpec, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.getExisting")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.getExisting")
+	defer done()
 
 	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
+			s.Scope.V(2).Info(fmt.Sprintf("Resource not found for VNet %q from resource group %q", spec.Name, spec.ResourceGroup))
 			return nil, err
 		}
 		return nil, errors.Wrapf(err, "failed to get VNet %s", spec.Name)
@@ -155,11 +159,13 @@ func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav
 	if vnet.VirtualNetworkPropertiesFormat != nil && vnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
 		prefixes = to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
 	}
+
 	return &infrav1.VnetSpec{
 		ResourceGroup: spec.ResourceGroup,
 		ID:            to.String(vnet.ID),
 		Name:          to.String(vnet.Name),
 		CIDRBlocks:    prefixes,
+		Peerings:      s.Scope.Vnet().Peerings,
 		Tags:          converters.MapToTags(vnet.Tags),
 	}, nil
 }

@@ -28,9 +28,9 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
-	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -45,7 +45,7 @@ type ManagedClusterScope interface {
 	logr.Logger
 	azure.ClusterDescriber
 	ManagedClusterSpec() (azure.ManagedClusterSpec, error)
-	GetSystemAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
+	GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
 	SetControlPlaneEndpoint(clusterv1.APIEndpoint)
 	MakeEmptyKubeConfigSecret() corev1.Secret
 	GetKubeConfigData() []byte
@@ -58,6 +58,85 @@ type Service struct {
 	Client
 }
 
+func convertToResourceReferences(resources []string) *[]containerservice.ResourceReference {
+	resourceReferences := make([]containerservice.ResourceReference, len(resources))
+	for i := range resources {
+		resourceReferences[i] = containerservice.ResourceReference{ID: &resources[i]}
+	}
+	return &resourceReferences
+}
+
+func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedCluster, existingMC containerservice.ManagedCluster) string {
+	// Normalize properties for the desired (CR spec) and existing managed
+	// cluster, so that we check only those fields that were specified in
+	// the initial CreateOrUpdate request and that can be modified.
+	// Without comparing to normalized properties, we would always get a
+	// difference in desired and existing, which would result in sending
+	// unnecessary Azure API requests.
+	propertiesNormalized := &containerservice.ManagedClusterProperties{
+		KubernetesVersion: managedCluster.ManagedClusterProperties.KubernetesVersion,
+		NetworkProfile:    &containerservice.NetworkProfile{},
+	}
+
+	existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
+		KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
+		NetworkProfile:    &containerservice.NetworkProfile{},
+	}
+
+	if managedCluster.AadProfile != nil {
+		propertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
+			Managed:             managedCluster.AadProfile.Managed,
+			EnableAzureRBAC:     managedCluster.AadProfile.EnableAzureRBAC,
+			AdminGroupObjectIDs: managedCluster.AadProfile.AdminGroupObjectIDs,
+		}
+	}
+
+	if existingMC.AadProfile != nil {
+		existingMCPropertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
+			Managed:             existingMC.AadProfile.Managed,
+			EnableAzureRBAC:     existingMC.AadProfile.EnableAzureRBAC,
+			AdminGroupObjectIDs: existingMC.AadProfile.AdminGroupObjectIDs,
+		}
+	}
+
+	if managedCluster.NetworkProfile != nil {
+		propertiesNormalized.NetworkProfile.LoadBalancerProfile = managedCluster.NetworkProfile.LoadBalancerProfile
+	}
+
+	if existingMC.NetworkProfile != nil {
+		existingMCPropertiesNormalized.NetworkProfile.LoadBalancerProfile = existingMC.NetworkProfile.LoadBalancerProfile
+	}
+
+	if managedCluster.APIServerAccessProfile != nil {
+		propertiesNormalized.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+			AuthorizedIPRanges: managedCluster.APIServerAccessProfile.AuthorizedIPRanges,
+		}
+	}
+
+	if existingMC.APIServerAccessProfile != nil {
+		existingMCPropertiesNormalized.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+			AuthorizedIPRanges: existingMC.APIServerAccessProfile.AuthorizedIPRanges,
+		}
+	}
+
+	clusterNormalized := &containerservice.ManagedCluster{
+		ManagedClusterProperties: propertiesNormalized,
+	}
+	existingMCClusterNormalized := &containerservice.ManagedCluster{
+		ManagedClusterProperties: existingMCPropertiesNormalized,
+	}
+
+	if managedCluster.Sku != nil {
+		clusterNormalized.Sku = managedCluster.Sku
+	}
+	if existingMC.Sku != nil {
+		existingMCClusterNormalized.Sku = existingMC.Sku
+	}
+
+	diff := cmp.Diff(clusterNormalized, existingMCClusterNormalized)
+	return diff
+}
+
 // New creates a new service.
 func New(scope ManagedClusterScope) *Service {
 	return &Service{
@@ -68,8 +147,8 @@ func New(scope ManagedClusterScope) *Service {
 
 // Reconcile idempotently creates or updates a managed cluster, if possible.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Reconcile")
+	defer done()
 
 	managedClusterSpec, err := s.Scope.ManagedClusterSpec()
 	if err != nil {
@@ -84,13 +163,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	// We are creating this cluster for the first time.
-	// Configure the system pool, rest will be handled by machinepool controller
+	// Configure the agent pool, rest will be handled by machinepool controller
 	// We do this here because AKS will only let us mutate agent pools via managed
 	// clusters API at create time, not update.
 	if azure.ResourceNotFound(err) {
 		isCreate = true
 		// Add system agent pool to cluster spec that will be submitted to the API
-		managedClusterSpec.AgentPools, err = s.Scope.GetSystemAgentPoolSpecs(ctx)
+		managedClusterSpec.AgentPools, err = s.Scope.GetAgentPoolSpecs(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get system agent pool specs for managed cluster %s", s.Scope.ClusterName())
 		}
@@ -161,7 +240,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			Count:        &pool.Replicas,
 			Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VnetSubnetID: &managedClusterSpec.VnetSubnetID,
-			Mode:         containerservice.AgentPoolModeSystem,
+			Mode:         containerservice.AgentPoolMode(pool.Mode),
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
@@ -171,6 +250,43 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			Managed:             &managedClusterSpec.AADProfile.Managed,
 			EnableAzureRBAC:     &managedClusterSpec.AADProfile.EnableAzureRBAC,
 			AdminGroupObjectIDs: &managedClusterSpec.AADProfile.AdminGroupObjectIDs,
+		}
+	}
+
+	if managedClusterSpec.SKU != nil {
+		tierName := containerservice.ManagedClusterSKUTier(managedClusterSpec.SKU.Tier)
+		managedCluster.Sku = &containerservice.ManagedClusterSKU{
+			Name: containerservice.ManagedClusterSKUNameBasic,
+			Tier: tierName,
+		}
+	}
+
+	if managedClusterSpec.LoadBalancerProfile != nil {
+		managedCluster.NetworkProfile.LoadBalancerProfile = &containerservice.ManagedClusterLoadBalancerProfile{
+			AllocatedOutboundPorts: managedClusterSpec.LoadBalancerProfile.AllocatedOutboundPorts,
+			IdleTimeoutInMinutes:   managedClusterSpec.LoadBalancerProfile.IdleTimeoutInMinutes,
+		}
+		if managedClusterSpec.LoadBalancerProfile.ManagedOutboundIPs != nil {
+			managedCluster.NetworkProfile.LoadBalancerProfile.ManagedOutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileManagedOutboundIPs{Count: managedClusterSpec.LoadBalancerProfile.ManagedOutboundIPs}
+		}
+		if len(managedClusterSpec.LoadBalancerProfile.OutboundIPPrefixes) > 0 {
+			managedCluster.NetworkProfile.LoadBalancerProfile.OutboundIPPrefixes = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPPrefixes{
+				PublicIPPrefixes: convertToResourceReferences(managedClusterSpec.LoadBalancerProfile.OutboundIPPrefixes),
+			}
+		}
+		if len(managedClusterSpec.LoadBalancerProfile.OutboundIPs) > 0 {
+			managedCluster.NetworkProfile.LoadBalancerProfile.OutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPs{
+				PublicIPs: convertToResourceReferences(managedClusterSpec.LoadBalancerProfile.OutboundIPs),
+			}
+		}
+	}
+
+	if managedClusterSpec.APIServerAccessProfile != nil {
+		managedCluster.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+			AuthorizedIPRanges:             &managedClusterSpec.APIServerAccessProfile.AuthorizedIPRanges,
+			EnablePrivateCluster:           managedClusterSpec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 managedClusterSpec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: managedClusterSpec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
 		}
 	}
 
@@ -187,36 +303,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.New(msg)
 		}
 
-		// Normalize properties for the desired (CR spec) and existing managed
-		// cluster, so that we check only those fields that were specified in
-		// the initial CreateOrUpdate request and that can be modified.
-		// Without comparing to normalized properties, we would always get a
-		// difference in desired and existing, which would result in sending
-		// unnecessary Azure API requests.
-		propertiesNormalized := &containerservice.ManagedClusterProperties{
-			KubernetesVersion: managedCluster.ManagedClusterProperties.KubernetesVersion,
-		}
-		existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
-			KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
-		}
-
-		if managedCluster.AadProfile != nil {
-			propertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
-				Managed:             managedCluster.AadProfile.Managed,
-				EnableAzureRBAC:     managedCluster.AadProfile.EnableAzureRBAC,
-				AdminGroupObjectIDs: managedCluster.AadProfile.AdminGroupObjectIDs,
-			}
-		}
-
-		if existingMC.AadProfile != nil {
-			existingMCPropertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
-				Managed:             existingMC.AadProfile.Managed,
-				EnableAzureRBAC:     existingMC.AadProfile.EnableAzureRBAC,
-				AdminGroupObjectIDs: existingMC.AadProfile.AdminGroupObjectIDs,
-			}
-		}
-
-		diff := cmp.Diff(propertiesNormalized, existingMCPropertiesNormalized)
+		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
 			managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
@@ -248,8 +335,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Delete")
+	defer done()
 
 	klog.V(2).Infof("Deleting managed cluster  %s ", s.Scope.ClusterName())
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), s.Scope.ClusterName())

@@ -25,7 +25,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -53,8 +53,8 @@ func New(scope SubnetScope) *Service {
 
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "subnets.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Reconcile")
+	defer done()
 
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
 		existingSubnet, err := s.getExisting(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec)
@@ -122,8 +122,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the subnet with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "subnets.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Delete")
+	defer done()
 
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
 		if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
@@ -147,8 +147,8 @@ func (s *Service) Delete(ctx context.Context) error {
 
 // getExisting provides information about an existing subnet.
 func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.SubnetSpec) (*infrav1.SubnetSpec, error) {
-	ctx, span := tele.Tracer().Start(ctx, "subnets.Service.getExisting")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.getExisting")
+	defer done()
 
 	subnet, err := s.Client.Get(ctx, rgName, spec.VNetName, spec.Name)
 	if err != nil {

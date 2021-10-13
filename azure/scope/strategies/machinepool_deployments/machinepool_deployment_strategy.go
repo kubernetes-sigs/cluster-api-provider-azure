@@ -24,8 +24,8 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -105,8 +105,11 @@ func (rollingUpdateStrategy *rollingUpdateStrategy) maxUnavailable(desiredReplic
 // SelectMachinesToDelete selects the machines to delete based on the machine state, desired replica count, and
 // the DeletePolicy.
 func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx context.Context, desiredReplicaCount int32, machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) ([]infrav1exp.AzureMachinePoolMachine, error) {
-	ctx, span := tele.Tracer().Start(ctx, "strategies.rollingUpdateStrategy.SelectMachinesToDelete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"strategies.rollingUpdateStrategy.SelectMachinesToDelete",
+	)
+	defer done()
 
 	maxUnavailable, err := rollingUpdateStrategy.maxUnavailable(int(desiredReplicaCount))
 	if err != nil {

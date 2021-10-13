@@ -27,13 +27,13 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capi "sigs.k8s.io/cluster-api/api/v1alpha4"
-	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	capi "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -103,6 +103,9 @@ func TestReconcile(t *testing.T) {
 					InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: tc.agentpoolSpec.Name,
+						},
+						Spec: infraexpv1.AzureManagedMachinePoolSpec{
+							Name: &tc.agentpoolSpec.Name,
 						},
 					},
 				}
@@ -284,6 +287,7 @@ func TestReconcile(t *testing.T) {
 						Name: tc.agentPoolsSpec.Name,
 					},
 					Spec: infraexpv1.AzureManagedMachinePoolSpec{
+						Name:         &tc.agentPoolsSpec.Name,
 						SKU:          tc.agentPoolsSpec.SKU,
 						OSDiskSizeGB: &osDiskSizeGB,
 					},
@@ -377,6 +381,9 @@ func TestDeleteAgentPools(t *testing.T) {
 				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tc.agentPoolsSpec.Name,
+					},
+					Spec: infraexpv1.AzureManagedMachinePoolSpec{
+						Name: &tc.agentPoolsSpec.Name,
 					},
 				},
 			}

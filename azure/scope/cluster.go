@@ -29,13 +29,15 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/net"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -285,6 +287,42 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	return subnetSpecs
 }
 
+// GroupSpec returns the resource group spec.
+func (s *ClusterScope) GroupSpec() azure.ResourceSpecGetter {
+	return &groups.GroupSpec{
+		Name:           s.ResourceGroup(),
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
+	}
+}
+
+// VnetPeeringSpecs returns the virtual network peering specs.
+func (s *ClusterScope) VnetPeeringSpecs() []azure.VnetPeeringSpec {
+	peeringSpecs := make([]azure.VnetPeeringSpec, 2*len(s.Vnet().Peerings))
+
+	for i, peering := range s.Vnet().Peerings {
+		forwardPeering := azure.VnetPeeringSpec{
+			PeeringName:         azure.GenerateVnetPeeringName(s.Vnet().Name, peering.RemoteVnetName),
+			SourceVnetName:      s.Vnet().Name,
+			SourceResourceGroup: s.Vnet().ResourceGroup,
+			RemoteVnetName:      peering.RemoteVnetName,
+			RemoteResourceGroup: peering.ResourceGroup,
+		}
+		reversePeering := azure.VnetPeeringSpec{
+			PeeringName:         azure.GenerateVnetPeeringName(peering.RemoteVnetName, s.Vnet().Name),
+			SourceVnetName:      peering.RemoteVnetName,
+			SourceResourceGroup: peering.ResourceGroup,
+			RemoteVnetName:      s.Vnet().Name,
+			RemoteResourceGroup: s.Vnet().ResourceGroup,
+		}
+		peeringSpecs[i*2] = forwardPeering
+		peeringSpecs[i*2+1] = reversePeering
+	}
+
+	return peeringSpecs
+}
+
 // VNetSpec returns the virtual network spec.
 func (s *ClusterScope) VNetSpec() azure.VNetSpec {
 	return azure.VNetSpec{
@@ -296,13 +334,24 @@ func (s *ClusterScope) VNetSpec() azure.VNetSpec {
 
 // PrivateDNSSpec returns the private dns zone spec.
 func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
-	var spec *azure.PrivateDNSSpec
+	var specs *azure.PrivateDNSSpec
 	if s.IsAPIServerPrivate() {
-		spec = &azure.PrivateDNSSpec{
-			ZoneName:          s.GetPrivateDNSZoneName(),
+		links := make([]azure.PrivateDNSLinkSpec, 1+len(s.Vnet().Peerings))
+		links[0] = azure.PrivateDNSLinkSpec{
 			VNetName:          s.Vnet().Name,
 			VNetResourceGroup: s.Vnet().ResourceGroup,
 			LinkName:          azure.GenerateVNetLinkName(s.Vnet().Name),
+		}
+		for i, peering := range s.Vnet().Peerings {
+			links[i+1] = azure.PrivateDNSLinkSpec{
+				VNetName:          peering.RemoteVnetName,
+				VNetResourceGroup: peering.ResourceGroup,
+				LinkName:          azure.GenerateVNetLinkName(peering.RemoteVnetName),
+			}
+		}
+		specs = &azure.PrivateDNSSpec{
+			ZoneName: s.GetPrivateDNSZoneName(),
+			Links:    links,
 			Records: []infrav1.AddressRecord{
 				{
 					Hostname: azure.PrivateAPIServerHostname,
@@ -311,7 +360,8 @@ func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
 			},
 		}
 	}
-	return spec
+
+	return specs
 }
 
 // BastionSpec returns the bastion spec.
@@ -540,9 +590,7 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 func (s *ClusterScope) PatchObject(ctx context.Context) error {
 	conditions.SetSummary(s.AzureCluster,
 		conditions.WithConditions(
-			infrav1.NetworkInfrastructureReadyCondition,
-		),
-		conditions.WithStepCounterIfOnly(
+			infrav1.ResourceGroupReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
 		),
 	)
@@ -552,6 +600,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 		s.AzureCluster,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
+			infrav1.ResourceGroupReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
 		}})
 }
@@ -592,6 +641,17 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains)
 	}
 	s.AzureCluster.Status.FailureDomains[id] = spec
+}
+
+// FailureDomains returns the failure domains for the cluster.
+func (s *ClusterScope) FailureDomains() []string {
+	fds := make([]string, len(s.AzureCluster.Status.FailureDomains))
+	i := 0
+	for id := range s.AzureCluster.Status.FailureDomains {
+		fds[i] = id
+		i++
+	}
+	return fds
 }
 
 // SetControlPlaneSecurityRules sets the default security rules of the control plane subnet.
@@ -677,4 +737,62 @@ func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalanc
 	}
 
 	return outboundIPSpecs
+}
+
+// SetLongRunningOperationState will set the future on the AzureCluster status to allow the resource to continue
+// in the next reconciliation.
+func (s *ClusterScope) SetLongRunningOperationState(future *infrav1.Future) {
+	futures.Set(s.AzureCluster, future)
+}
+
+// GetLongRunningOperationState will get the future on the AzureCluster status.
+func (s *ClusterScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
+	return futures.Get(s.AzureCluster, name, service)
+}
+
+// DeleteLongRunningOperationState will delete the future from the AzureCluster status.
+func (s *ClusterScope) DeleteLongRunningOperationState(name, service string) {
+	futures.Delete(s.AzureCluster, name, service)
+}
+
+// UpdateDeleteStatus updates a condition on the AzureCluster status after a DELETE operation.
+func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+	default:
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePutStatus updates a condition on the AzureCluster status after a PUT operation.
+func (s *ClusterScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(s.AzureCluster, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+	default:
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePatchStatus updates a condition on the AzureCluster status after a PATCH operation.
+func (s *ClusterScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(s.AzureCluster, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+	default:
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+	}
 }

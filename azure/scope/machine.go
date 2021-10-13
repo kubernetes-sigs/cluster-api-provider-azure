@@ -29,7 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
@@ -37,8 +37,9 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
@@ -169,26 +170,17 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		}
 	}
 
-	// If Nat Gateway is not enabled, then the NIC needs to reference the LB to get outbound traffic.
-	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() {
+	// If Nat Gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
 		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
 	}
-	specs := []azure.NICSpec{spec}
-	if m.AzureMachine.Spec.AllocatePublicIP {
-		specs = append(specs, azure.NICSpec{
-			Name:                  azure.GeneratePublicNICName(m.Name()),
-			MachineName:           m.Name(),
-			VNetName:              m.Vnet().Name,
-			VNetResourceGroup:     m.Vnet().ResourceGroup,
-			SubnetName:            m.AzureMachine.Spec.SubnetName,
-			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
-			VMSize:                m.AzureMachine.Spec.VMSize,
-			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
-		})
+
+	if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
+		spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
 	}
 
-	return specs
+	return []azure.NICSpec{spec}
 }
 
 // NICNames returns the NIC names.
@@ -229,22 +221,15 @@ func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 }
 
 // VMExtensionSpecs returns the vm extension specs.
-func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
-	name, publisher, version := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment())
-	if name != "" {
-		return []azure.VMExtensionSpec{
-			{
-				Name:      name,
-				VMName:    m.Name(),
-				Publisher: publisher,
-				Version:   version,
-				ProtectedSettings: map[string]string{
-					"commandToExecute": azure.BootstrapExtensionCommand(),
-				},
-			},
-		}
+func (m *MachineScope) VMExtensionSpecs() []azure.ExtensionSpec {
+	var extensionSpecs = []azure.ExtensionSpec{}
+	extensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment(), m.Name())
+
+	if extensionSpec != nil {
+		extensionSpecs = append(extensionSpecs, *extensionSpec)
 	}
-	return []azure.VMExtensionSpec{}
+
+	return extensionSpecs
 }
 
 // Subnet returns the machine's subnet.
@@ -560,4 +545,62 @@ func (m *MachineScope) SetSubnetName() error {
 	}
 
 	return nil
+}
+
+// SetLongRunningOperationState will set the future on the AzureMachine status to allow the resource to continue
+// in the next reconciliation.
+func (m *MachineScope) SetLongRunningOperationState(future *infrav1.Future) {
+	futures.Set(m.AzureMachine, future)
+}
+
+// GetLongRunningOperationState will get the future on the AzureMachine status.
+func (m *MachineScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
+	return futures.Get(m.AzureMachine, name, service)
+}
+
+// DeleteLongRunningOperationState will delete the future from the AzureMachine status.
+func (m *MachineScope) DeleteLongRunningOperationState(name, service string) {
+	futures.Delete(m.AzureMachine, name, service)
+}
+
+// UpdateDeleteStatus updates a condition on the AzureMachine status after a DELETE operation.
+func (m *MachineScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+	default:
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePutStatus updates a condition on the AzureMachine status after a PUT operation.
+func (m *MachineScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(m.AzureMachine, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+	default:
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePatchStatus updates a condition on the AzureMachine status after a PATCH operation.
+func (m *MachineScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(m.AzureMachine, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+	default:
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+	}
 }

@@ -10,7 +10,7 @@ patchesStrategicMerge:
 patches:
 - target:
     group: controlplane.cluster.x-k8s.io
-    version: v1alpha4
+    version: v1beta1
     kind: KubeadmControlPlane
     name: .*-control-plane
     namespace: default

@@ -45,7 +45,7 @@ func TestReconcileVMExtension(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",
 						VMName:    "my-vm",
@@ -72,7 +72,7 @@ func TestReconcileVMExtension(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",
 						VMName:    "my-vm",
@@ -99,7 +99,7 @@ func TestReconcileVMExtension(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",
 						VMName:    "my-vm",
@@ -126,7 +126,7 @@ func TestReconcileVMExtension(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",
 						VMName:    "my-vm",
@@ -155,7 +155,7 @@ func TestReconcileVMExtension(t *testing.T) {
 			expectedError: "failed to get vm extension my-extension-1 on vm my-vm: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",
 						VMName:    "my-vm",
@@ -180,7 +180,7 @@ func TestReconcileVMExtension(t *testing.T) {
 			expectedError: "failed to create VM extension my-extension-1 on VM my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",
 						VMName:    "my-vm",

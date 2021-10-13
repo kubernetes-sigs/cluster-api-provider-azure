@@ -30,15 +30,15 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesetvms/mock_scalesetvms"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -65,7 +65,7 @@ func TestNewService(t *testing.T) {
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
-				Location: "test-location",
+				Location:       "test-location",
 				ResourceGroup:  "my-rg",
 				SubscriptionID: "123",
 				NetworkSpec: infrav1.NetworkSpec{
@@ -176,9 +176,9 @@ func TestService_Delete(t *testing.T) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
 				s.ScaleSetName().Return("scaleset")
-				s.GetLongRunningOperationState().Return(nil)
+				s.GetLongRunningOperationState("0", serviceName).Return(nil)
 				future := &infrav1.Future{
-					Type: DeleteFuture,
+					Type: infrav1.DeleteFuture,
 				}
 				m.DeleteAsync(gomock2.AContext(), "rg", "scaleset", "0").Return(future, nil)
 				s.SetLongRunningOperationState(future)
@@ -187,7 +187,7 @@ func TestService_Delete(t *testing.T) {
 			},
 			CheckIsErr: true,
 			Err: errors.Wrap(azure.WithTransientError(azure.NewOperationNotDoneError(&infrav1.Future{
-				Type: DeleteFuture,
+				Type: infrav1.DeleteFuture,
 			}), 15*time.Second), "failed to get result of long running operation"),
 		},
 		{
@@ -197,11 +197,11 @@ func TestService_Delete(t *testing.T) {
 				s.InstanceID().Return("0")
 				s.ScaleSetName().Return("scaleset")
 				future := &infrav1.Future{
-					Type: DeleteFuture,
+					Type: infrav1.DeleteFuture,
 				}
-				s.GetLongRunningOperationState().Return(future)
+				s.GetLongRunningOperationState("0", serviceName).Return(future)
 				m.GetResultIfDone(gomock2.AContext(), future).Return(compute.VirtualMachineScaleSetVM{}, nil)
-				s.SetLongRunningOperationState(nil)
+				s.DeleteLongRunningOperationState("0", serviceName)
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, nil)
 			},
 		},
@@ -211,7 +211,7 @@ func TestService_Delete(t *testing.T) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
 				s.ScaleSetName().Return("scaleset")
-				s.GetLongRunningOperationState().Return(nil)
+				s.GetLongRunningOperationState("0", serviceName).Return(nil)
 				m.DeleteAsync(gomock2.AContext(), "rg", "scaleset", "0").Return(nil, autorest404)
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, nil)
 			},
@@ -222,7 +222,7 @@ func TestService_Delete(t *testing.T) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
 				s.ScaleSetName().Return("scaleset")
-				s.GetLongRunningOperationState().Return(nil)
+				s.GetLongRunningOperationState("0", serviceName).Return(nil)
 				m.DeleteAsync(gomock2.AContext(), "rg", "scaleset", "0").Return(nil, errors.New("boom"))
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, nil)
 			},
@@ -235,9 +235,9 @@ func TestService_Delete(t *testing.T) {
 				s.InstanceID().Return("0")
 				s.ScaleSetName().Return("scaleset")
 				future := &infrav1.Future{
-					Type: DeleteFuture,
+					Type: infrav1.DeleteFuture,
 				}
-				s.GetLongRunningOperationState().Return(future)
+				s.GetLongRunningOperationState("0", serviceName).Return(future)
 				m.GetResultIfDone(gomock2.AContext(), future).Return(compute.VirtualMachineScaleSetVM{}, errors.New("boom"))
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, nil)
 			},

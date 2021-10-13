@@ -49,16 +49,16 @@ func New(scope DiskScope) *Service {
 
 // Reconcile on disk is currently no-op. OS disks should only be deleted and will create with the VM automatically.
 func (s *Service) Reconcile(ctx context.Context) error {
-	_, span := tele.Tracer().Start(ctx, "disks.Service.Reconcile")
-	defer span.End()
+	_, _, done := tele.StartSpanWithLogger(ctx, "disks.Service.Reconcile")
+	defer done()
 
 	return nil
 }
 
 // Delete deletes the disk associated with a VM.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "disks.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "disks.Service.Delete")
+	defer done()
 
 	for _, diskSpec := range s.Scope.DiskSpecs() {
 		s.Scope.V(2).Info("deleting disk", "disk", diskSpec.Name)

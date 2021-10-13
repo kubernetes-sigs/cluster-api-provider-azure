@@ -30,7 +30,7 @@ import (
 type VMSSExtensionScope interface {
 	logr.Logger
 	azure.ClusterDescriber
-	VMSSExtensionSpecs() []azure.VMSSExtensionSpec
+	VMSSExtensionSpecs() []azure.ExtensionSpec
 	SetBootstrapConditions(string, string) error
 }
 
@@ -50,17 +50,17 @@ func New(scope VMSSExtensionScope) *Service {
 
 // Reconcile creates or updates the VMSS extension.
 func (s *Service) Reconcile(ctx context.Context) error {
-	_, span := tele.Tracer().Start(ctx, "vmssextensions.Service.Reconcile")
-	defer span.End()
+	_, _, done := tele.StartSpanWithLogger(ctx, "vmssextensions.Service.Reconcile")
+	defer done()
 
 	for _, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
-		if existing, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.ScaleSetName, extensionSpec.Name); err == nil {
+		if existing, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.VMName, extensionSpec.Name); err == nil {
 			// check the extension status and set the associated conditions.
 			if retErr := s.Scope.SetBootstrapConditions(to.String(existing.ProvisioningState), extensionSpec.Name); retErr != nil {
 				return retErr
 			}
 		} else if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to get vm extension %s on scale set %s", extensionSpec.Name, extensionSpec.ScaleSetName)
+			return errors.Wrapf(err, "failed to get vm extension %s on scale set %s", extensionSpec.Name, extensionSpec.VMName)
 		}
 		//  Nothing else to do here, the extensions are applied to the model as part of the scale set Reconcile.
 		continue

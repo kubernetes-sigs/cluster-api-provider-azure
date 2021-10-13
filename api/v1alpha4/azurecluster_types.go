@@ -96,17 +96,23 @@ type AzureClusterStatus struct {
 	// Conditions defines current service state of the AzureCluster.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
+	// next reconciliation loop.
+	// +optional
+	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this AzureCluster belongs"
-// +kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
+// +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].reason"
+// +kubebuilder:printcolumn:name="Message",type="string",priority=1,JSONPath=".status.conditions[?(@.type=='Ready')].message"
 // +kubebuilder:printcolumn:name="Resource Group",type="string",priority=1,JSONPath=".spec.resourceGroup"
 // +kubebuilder:printcolumn:name="SubscriptionID",type="string",priority=1,JSONPath=".spec.subscriptionID"
 // +kubebuilder:printcolumn:name="Location",type="string",priority=1,JSONPath=".spec.location"
 // +kubebuilder:printcolumn:name="Endpoint",type="string",priority=1,JSONPath=".spec.controlPlaneEndpoint.host",description="Control Plane Endpoint"
 // +kubebuilder:resource:path=azureclusters,scope=Namespaced,categories=cluster-api
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureCluster is the Schema for the azureclusters API.
@@ -135,6 +141,16 @@ func (c *AzureCluster) GetConditions() clusterv1.Conditions {
 // SetConditions will set the given conditions on an AzureCluster object.
 func (c *AzureCluster) SetConditions(conditions clusterv1.Conditions) {
 	c.Status.Conditions = conditions
+}
+
+// GetFutures returns the list of long running operation states for an AzureCluster API object.
+func (c *AzureCluster) GetFutures() Futures {
+	return c.Status.LongRunningOperationStates
+}
+
+// SetFutures will set the given long running operation states on an AzureCluster object.
+func (c *AzureCluster) SetFutures(futures Futures) {
+	c.Status.LongRunningOperationStates = futures
 }
 
 func init() {

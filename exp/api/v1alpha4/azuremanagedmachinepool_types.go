@@ -38,6 +38,10 @@ type NodePoolMode string
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
 
+	// Name - name of the agent pool. If not specified, CAPZ uses the name of the CR as the agent pool name.
+	// +optional
+	Name *string `json:"name,omitempty"`
+
 	// Mode - represents mode of an agent pool. Possible values include: System, User.
 	// +kubebuilder:validation:Enum=System;User
 	Mode string `json:"mode"`
@@ -79,7 +83,6 @@ type AzureManagedMachinePoolStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedmachinepools,scope=Namespaced,categories=cluster-api,shortName=ammp
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureManagedMachinePool is the Schema for the azuremanagedmachinepools API.

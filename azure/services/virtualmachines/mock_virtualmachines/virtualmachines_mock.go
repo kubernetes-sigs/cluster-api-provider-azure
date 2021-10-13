@@ -28,7 +28,7 @@ import (
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -56,10 +56,10 @@ func (m *MockVMScope) EXPECT() *MockVMScopeMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockVMScope) AdditionalTags() v1alpha4.Tags {
+func (m *MockVMScope) AdditionalTags() v1beta1.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha4.Tags)
+	ret0, _ := ret[0].(v1beta1.Tags)
 	return ret0
 }
 
@@ -169,10 +169,10 @@ func (mr *MockVMScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockVMScope) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+func (m *MockVMScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -227,6 +227,20 @@ func (mr *MockVMScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVMScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockVMScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockVMScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockVMScope)(nil).FailureDomains))
+}
+
 // GetBootstrapData mocks base method.
 func (m *MockVMScope) GetBootstrapData(ctx context.Context) (string, error) {
 	m.ctrl.T.Helper()
@@ -243,10 +257,10 @@ func (mr *MockVMScopeMockRecorder) GetBootstrapData(ctx interface{}) *gomock.Cal
 }
 
 // GetVMImage mocks base method.
-func (m *MockVMScope) GetVMImage() (*v1alpha4.Image, error) {
+func (m *MockVMScope) GetVMImage() (*v1beta1.Image, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVMImage")
-	ret0, _ := ret[0].(*v1alpha4.Image)
+	ret0, _ := ret[0].(*v1beta1.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -367,7 +381,7 @@ func (mr *MockVMScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock.Call 
 }
 
 // SetVMState mocks base method.
-func (m *MockVMScope) SetVMState(arg0 v1alpha4.ProvisioningState) {
+func (m *MockVMScope) SetVMState(arg0 v1beta1.ProvisioningState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetVMState", arg0)
 }

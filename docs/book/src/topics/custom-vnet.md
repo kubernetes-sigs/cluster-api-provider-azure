@@ -5,7 +5,7 @@
 To deploy a cluster using a pre-existing vnet, modify the `AzureCluster` spec to include the name and resource group of the existing vnet as follows, as well as the control plane and node subnets as follows:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-byo-vnet
@@ -30,12 +30,48 @@ If providing an existing vnet and subnets with existing network security groups,
 
 The pre-existing vnet can be in the same resource group or a different resource group in the same subscription as the target cluster. When deleting the `AzureCluster`, the vnet and resource group will only be deleted if they are "managed" by capz, ie. they were created during cluster deployment. Pre-existing vnets and resource groups will *not* be deleted.
 
+## Virtual Network Peering
+
+Alternatively, pre-existing vnets can be peered with a cluster's newly created vnets by specifying each vnet by name and resource group.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: cluster-vnet-peering
+  namespace: default
+spec:
+  location: southcentralus
+  networkSpec:
+    vnet:
+      name: my-vnet
+      cidrBlocks: 
+        - 10.255.0.0/16
+      peerings:
+      - resourceGroup: vnet-peering-rg
+        remoteVnetName: existing-vnet-1
+      - resourceGroup: vnet-peering-rg
+        remoteVnetName: existing-vnet-2
+    subnets:
+      - name: my-subnet-cp
+        role: control-plane
+        cidrBlocks: 
+          - 10.255.0.0/24
+      - name: my-subnet-node
+        role: node
+        cidrBlocks: 
+          - 10.255.1.0/24
+  resourceGroup: cluster-vnet-peering
+  ```
+
+Currently, only virtual networks on the same subscription can be peered. Also, note that when creating workload clusters with internal load balancers, the management cluster must be in the same VNet or a peered VNet. See [here](https://capz.sigs.k8s.io/topics/api-server-endpoint.html#warning) for more details.
+
 ## Custom Network Spec
 
 It is also possible to customize the vnet to be created without providing an already existing vnet. To do so, simply modify the `AzureCluster` `NetworkSpec` as desired. Here is an illustrative example of a cluster with a customized vnet address space (CIDR) and customized subnets:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-example
@@ -80,7 +116,7 @@ It is the responsibility of the user to supply those rules themselves if using c
 Here is an illustrative example of customizing rules that builds on the one above by adding an egress rule to the control plane nodes:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-example
@@ -145,7 +181,7 @@ The subnet used for the control plane must use the role `control-plane` while th
 
 ```yaml
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-example
@@ -166,7 +202,7 @@ spec:
         - 10.0.0.0/16
   resourceGroup: cluster-example
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: mp1
@@ -189,7 +225,7 @@ spec:
     subnetName: subnet-mp-1
     vmSize: Standard_D2s_v3
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: mp2

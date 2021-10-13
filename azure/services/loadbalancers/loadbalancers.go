@@ -24,7 +24,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
@@ -63,8 +63,8 @@ func New(scope LBScope) *Service {
 
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.Service.Reconcile")
+	defer done()
 
 	for _, lbSpec := range s.Scope.LBSpecs() {
 		var (
@@ -176,8 +176,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the public load balancer with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.Service.Delete")
+	defer done()
 
 	for _, lbSpec := range s.Scope.LBSpecs() {
 		s.Scope.V(2).Info("deleting load balancer", "load balancer", lbSpec.Name)

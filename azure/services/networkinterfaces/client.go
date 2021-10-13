@@ -55,16 +55,16 @@ func newInterfacesClient(subscriptionID string, baseURI string, authorizer autor
 
 // Get gets information about the specified network interface.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, nicName string) (network.Interface, error) {
-	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.AzureClient.Get")
+	defer done()
 
 	return ac.interfaces.Get(ctx, resourceGroupName, nicName, "")
 }
 
 // CreateOrUpdate creates or updates a network interface.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, nicName string, nic network.Interface) error {
-	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.interfaces.CreateOrUpdate(ctx, resourceGroupName, nicName, nic)
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified network interface.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, nicName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.interfaces.Delete(ctx, resourceGroupName, nicName)
 	if err != nil {

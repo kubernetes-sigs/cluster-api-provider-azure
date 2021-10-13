@@ -61,7 +61,7 @@ which provides the ability to specify delete policy, max surge, and max unavaila
   percentage, or a fixed number.
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: capz-mp-0
@@ -100,7 +100,7 @@ Below is an example of the resources needed to create a pool of Virtual Machines
 a Virtual Machine Scale Set.
 ```yaml
 ---
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
   name: capz-mp-0
@@ -111,17 +111,17 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: KubeadmConfig
           name: capz-mp-0
       clusterName: capz
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureMachinePool
         name: capz-mp-0
       version: v1.22.0
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: capz-mp-0
@@ -142,7 +142,7 @@ spec:
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
     vmSize: Standard_D2s_v3
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfig
 metadata:
   name: capz-mp-0

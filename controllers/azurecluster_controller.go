@@ -21,29 +21,27 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -76,12 +74,20 @@ func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder r
 }
 
 // SetupWithManager initializes this controller with a manager.
-func (r *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
-	log := r.Log.WithValues("controller", "AzureCluster")
+func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options Options) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.SetupWithManager")
+	defer done()
+
+	log := acr.Log.WithValues("controller", "AzureCluster")
+	var r reconcile.Reconciler = acr
+	if options.Cache != nil {
+		r = coalescing.NewReconciler(acr, options.Cache, log)
+	}
+
 	c, err := ctrl.NewControllerManagedBy(mgr).
-		WithOptions(options).
+		WithOptions(options.Options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), acr.WatchFilterValue)).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(ctrl.LoggerFrom(ctx))).
 		Build(r)
 	if err != nil {
@@ -93,7 +99,7 @@ func (r *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureCluster"))),
 		predicates.ClusterUnpaused(log),
-		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue),
+		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), acr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
@@ -108,25 +114,26 @@ func (r *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureclusteridentities;azureclusteridentities/status,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile idempotently gets, creates, and updates a cluster.
-func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(acr.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
+	log := acr.Log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureCluster"),
-		))
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"controllers.AzureClusterReconciler.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureCluster"),
+	)
+	defer done()
 
 	// Fetch the AzureCluster instance
 	azureCluster := &infrav1.AzureCluster{}
-	err := r.Get(ctx, req.NamespacedName, azureCluster)
+	err := acr.Get(ctx, req.NamespacedName, azureCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			r.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "AzureClusterObjectNotFound", err.Error())
+			acr.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "AzureClusterObjectNotFound", err.Error())
 			log.Info("object was not found")
 			return reconcile.Result{}, nil
 		}
@@ -134,12 +141,12 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Fetch the Cluster.
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, azureCluster.ObjectMeta)
+	cluster, err := util.GetOwnerCluster(ctx, acr.Client, azureCluster.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 	if cluster == nil {
-		r.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "OwnerRefNotSet", "Cluster Controller has not yet set OwnerRef")
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "OwnerRefNotSet", "Cluster Controller has not yet set OwnerRef")
 		log.Info("Cluster Controller has not yet set OwnerRef")
 		return reconcile.Result{}, nil
 	}
@@ -148,35 +155,35 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Return early if the object or Cluster is paused.
 	if annotations.IsPaused(cluster, azureCluster) {
-		r.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "ClusterPaused", "AzureCluster or linked Cluster is marked as paused. Won't reconcile")
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "ClusterPaused", "AzureCluster or linked Cluster is marked as paused. Won't reconcile")
 		log.Info("AzureCluster or linked Cluster is marked as paused. Won't reconcile")
 		return ctrl.Result{}, nil
 	}
 
 	if azureCluster.Spec.IdentityRef != nil {
-		identity, err := GetClusterIdentityFromRef(ctx, r.Client, azureCluster.Namespace, azureCluster.Spec.IdentityRef)
+		identity, err := GetClusterIdentityFromRef(ctx, acr.Client, azureCluster.Namespace, azureCluster.Spec.IdentityRef)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		if !scope.IsClusterNamespaceAllowed(ctx, r.Client, identity.Spec.AllowedNamespaces, azureCluster.Namespace) {
+		if !scope.IsClusterNamespaceAllowed(ctx, acr.Client, identity.Spec.AllowedNamespaces, azureCluster.Namespace) {
 			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
 			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 		}
 	} else {
 		log.Info(fmt.Sprintf("WARNING, %s", deprecatedManagerCredsWarning))
-		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", deprecatedManagerCredsWarning)
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", deprecatedManagerCredsWarning)
 	}
 
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
-		Client:       r.Client,
+		Client:       acr.Client,
 		Logger:       log,
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
 	})
 	if err != nil {
 		err = errors.Errorf("failed to create scope: %+v", err)
-		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "CreateClusterScopeFailed", err.Error())
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "CreateClusterScopeFailed", err.Error())
 		return reconcile.Result{}, err
 	}
 
@@ -189,16 +196,16 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Handle deleted clusters
 	if !azureCluster.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, clusterScope)
+		return acr.reconcileDelete(ctx, clusterScope)
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcileNormal(ctx, clusterScope)
+	return acr.reconcileNormal(ctx, clusterScope)
 }
 
-func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.reconcileNormal")
-	defer span.End()
+func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcileNormal")
+	defer done()
 
 	clusterScope.Info("Reconciling AzureCluster")
 	azureCluster := clusterScope.AzureCluster
@@ -210,14 +217,14 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 		return reconcile.Result{}, err
 	}
 
-	acr, err := r.createAzureClusterService(clusterScope)
+	acs, err := acr.createAzureClusterService(clusterScope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create a new AzureClusterReconciler")
 	}
 
-	if err := acr.Reconcile(ctx); err != nil {
+	if err := acs.Reconcile(ctx); err != nil {
 		wrappedErr := errors.Wrap(err, "failed to reconcile cluster services")
-		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerNormalFailed", wrappedErr.Error())
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerNormalFailed", wrappedErr.Error())
 		return reconcile.Result{}, wrappedErr
 	}
 
@@ -234,9 +241,9 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.reconcileDelete")
-	defer span.End()
+func (acr *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcileDelete")
+	defer done()
 
 	clusterScope.Info("Reconciling AzureCluster delete")
 
@@ -246,14 +253,14 @@ func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterSco
 		return reconcile.Result{}, err
 	}
 
-	acr, err := r.createAzureClusterService(clusterScope)
+	acs, err := acr.createAzureClusterService(clusterScope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create a new AzureClusterReconciler")
 	}
 
-	if err := acr.Delete(ctx); err != nil {
+	if err := acs.Delete(ctx); err != nil {
 		wrappedErr := errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
-		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerDeleteFailed", wrappedErr.Error())
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerDeleteFailed", wrappedErr.Error())
 		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
 		return reconcile.Result{}, wrappedErr
 	}

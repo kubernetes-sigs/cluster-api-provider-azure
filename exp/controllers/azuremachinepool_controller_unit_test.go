@@ -25,13 +25,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/mocks"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 func Test_newAzureMachinePoolService(t *testing.T) {
@@ -47,7 +47,7 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 		Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 	}
 
-	clusterMock := mocks.NewMockClusterScoper(mockCtrl)
+	clusterMock := mock_azure.NewMockClusterScoper(mockCtrl)
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().BaseURI().AnyTimes()
 	clusterMock.EXPECT().Authorizer().AnyTimes()

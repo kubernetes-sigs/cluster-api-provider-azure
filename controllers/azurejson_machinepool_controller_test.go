@@ -30,13 +30,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 func TestAzureJSONPoolReconciler(t *testing.T) {
@@ -51,7 +51,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 		Spec: clusterv1.ClusterSpec{
 			InfrastructureRef: &corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha4",
+				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 				Kind:       "AzureCluster",
 				Name:       "my-azure-cluster",
 			},
@@ -63,7 +63,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 			Name: "my-azure-cluster",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: "cluster.x-k8s.io/v1alpha4",
+					APIVersion: "cluster.x-k8s.io/v1beta1",
 					Kind:       "Cluster",
 					Name:       "my-cluster",
 				},
@@ -90,7 +90,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: "cluster.x-k8s.io/v1alpha4",
+					APIVersion: "cluster.x-k8s.io/v1beta1",
 					Kind:       "Cluster",
 					Name:       "my-cluster",
 				},
@@ -103,12 +103,12 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 			Name: "my-azure-machine-pool",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: "cluster.x-k8s.io/v1alpha4",
+					APIVersion: "cluster.x-k8s.io/v1beta1",
 					Kind:       "Cluster",
 					Name:       "my-cluster",
 				},
 				{
-					APIVersion: "cluster.x-k8s.io/v1alpha4",
+					APIVersion: "cluster.x-k8s.io/v1beta1",
 					Kind:       "MachinePool",
 					Name:       "my-machine-pool",
 				},

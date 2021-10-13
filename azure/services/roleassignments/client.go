@@ -61,8 +61,8 @@ func newRoleAssignmentClient(subscriptionID string, baseURI string, authorizer a
 // roleAssignmentName - the name of the role assignment to create. It can be any valid GUID.
 // parameters - parameters for the role assignment.
 func (ac *azureClient) Create(ctx context.Context, scope string, roleAssignmentName string, parameters authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error) {
-	ctx, span := tele.Tracer().Start(ctx, "roleassignments.AzureClient.Create")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "roleassignments.AzureClient.Create")
+	defer done()
 
 	return ac.roleassignments.Create(ctx, scope, roleAssignmentName, parameters)
 }

@@ -31,16 +31,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -433,8 +433,8 @@ func toCloudProviderBackOffConfig(source infrav1.BackOffConfig) BackOffConfig {
 }
 
 func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient client.Client, owner metav1.OwnerReference, new *corev1.Secret, clusterName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.reconcileAzureSecret")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.reconcileAzureSecret")
+	defer done()
 
 	// Fetch previous secret, if it exists
 	key := types.NamespacedName{
@@ -498,8 +498,8 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 
 // GetOwnerMachinePool returns the MachinePool object owning the current resource.
 func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*capiv1exp.MachinePool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.GetOwnerMachinePool")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetOwnerMachinePool")
+	defer done()
 
 	for _, ref := range obj.OwnerReferences {
 		if ref.Kind != "MachinePool" {
@@ -519,8 +519,8 @@ func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 
 // GetOwnerAzureMachinePool returns the AzureMachinePool object owning the current resource.
 func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*infrav1exp.AzureMachinePool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.GetOwnerAzureMachinePool")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetOwnerAzureMachinePool")
+	defer done()
 
 	for _, ref := range obj.OwnerReferences {
 		if ref.Kind != "AzureMachinePool" {
@@ -541,8 +541,8 @@ func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.O
 
 // GetMachinePoolByName finds and return a MachinePool object using the specified params.
 func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.GetMachinePoolByName")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetMachinePoolByName")
+	defer done()
 
 	m := &capiv1exp.MachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
@@ -554,8 +554,8 @@ func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name 
 
 // GetAzureMachinePoolByName finds and return an AzureMachinePool object using the specified params.
 func GetAzureMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*infrav1exp.AzureMachinePool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.GetAzureMachinePoolByName")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetAzureMachinePoolByName")
+	defer done()
 
 	m := &infrav1exp.AzureMachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
@@ -568,8 +568,8 @@ func GetAzureMachinePoolByName(ctx context.Context, c client.Client, namespace, 
 // ShouldDeleteIndividualResources returns false if the resource group is managed and the whole cluster is being deleted
 // meaning that we can rely on a single resource group delete operation as opposed to deleting every individual VM resource.
 func ShouldDeleteIndividualResources(ctx context.Context, clusterScope *scope.ClusterScope) bool {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.ShouldDeleteIndividualResources")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.ShouldDeleteIndividualResources")
+	defer done()
 
 	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
 		return true

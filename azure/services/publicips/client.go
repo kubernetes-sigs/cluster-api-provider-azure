@@ -55,16 +55,16 @@ func newPublicIPAddressesClient(subscriptionID string, baseURI string, authorize
 
 // Get gets the specified public IP address in a specified resource group.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, ipName string) (network.PublicIPAddress, error) {
-	ctx, span := tele.Tracer().Start(ctx, "publicips.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.Get")
+	defer done()
 
 	return ac.publicips.Get(ctx, resourceGroupName, ipName, "")
 }
 
 // CreateOrUpdate creates or updates a static or dynamic public IP address.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, ipName string, ip network.PublicIPAddress) error {
-	ctx, span := tele.Tracer().Start(ctx, "publicips.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.publicips.CreateOrUpdate(ctx, resourceGroupName, ipName, ip)
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified public IP address.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "publicips.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.publicips.Delete(ctx, resourceGroupName, ipName)
 	if err != nil {

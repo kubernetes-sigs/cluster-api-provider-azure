@@ -28,9 +28,9 @@ import (
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1alpha40 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // MockManagedClusterScope is a mock of ManagedClusterScope interface.
@@ -57,10 +57,10 @@ func (m *MockManagedClusterScope) EXPECT() *MockManagedClusterScopeMockRecorder 
 }
 
 // AdditionalTags mocks base method.
-func (m *MockManagedClusterScope) AdditionalTags() v1alpha4.Tags {
+func (m *MockManagedClusterScope) AdditionalTags() v1beta1.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha4.Tags)
+	ret0, _ := ret[0].(v1beta1.Tags)
 	return ret0
 }
 
@@ -155,10 +155,10 @@ func (mr *MockManagedClusterScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockManagedClusterScope) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+func (m *MockManagedClusterScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -213,6 +213,35 @@ func (mr *MockManagedClusterScopeMockRecorder) Error(err, msg interface{}, keysA
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockManagedClusterScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockManagedClusterScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockManagedClusterScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockManagedClusterScope)(nil).FailureDomains))
+}
+
+// GetAgentPoolSpecs mocks base method.
+func (m *MockManagedClusterScope) GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentPoolSpecs", ctx)
+	ret0, _ := ret[0].([]azure.AgentPoolSpec)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentPoolSpecs indicates an expected call of GetAgentPoolSpecs.
+func (mr *MockManagedClusterScopeMockRecorder) GetAgentPoolSpecs(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentPoolSpecs", reflect.TypeOf((*MockManagedClusterScope)(nil).GetAgentPoolSpecs), ctx)
+}
+
 // GetKubeConfigData mocks base method.
 func (m *MockManagedClusterScope) GetKubeConfigData() []byte {
 	m.ctrl.T.Helper()
@@ -225,21 +254,6 @@ func (m *MockManagedClusterScope) GetKubeConfigData() []byte {
 func (mr *MockManagedClusterScopeMockRecorder) GetKubeConfigData() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKubeConfigData", reflect.TypeOf((*MockManagedClusterScope)(nil).GetKubeConfigData))
-}
-
-// GetSystemAgentPoolSpecs mocks base method.
-func (m *MockManagedClusterScope) GetSystemAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSystemAgentPoolSpecs", ctx)
-	ret0, _ := ret[0].([]azure.AgentPoolSpec)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSystemAgentPoolSpecs indicates an expected call of GetSystemAgentPoolSpecs.
-func (mr *MockManagedClusterScopeMockRecorder) GetSystemAgentPoolSpecs(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSystemAgentPoolSpecs", reflect.TypeOf((*MockManagedClusterScope)(nil).GetSystemAgentPoolSpecs), ctx)
 }
 
 // HashKey mocks base method.
@@ -331,7 +345,7 @@ func (mr *MockManagedClusterScopeMockRecorder) ResourceGroup() *gomock.Call {
 }
 
 // SetControlPlaneEndpoint mocks base method.
-func (m *MockManagedClusterScope) SetControlPlaneEndpoint(arg0 v1alpha40.APIEndpoint) {
+func (m *MockManagedClusterScope) SetControlPlaneEndpoint(arg0 v1beta10.APIEndpoint) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetControlPlaneEndpoint", arg0)
 }

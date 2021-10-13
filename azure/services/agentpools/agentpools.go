@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
-	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -59,8 +59,11 @@ func New(scope ManagedMachinePoolScope) *Service {
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "agentpools.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"agentpools.Service.Reconcile",
+	)
+	defer done()
 
 	agentPoolSpec := s.scope.AgentPoolSpec()
 
@@ -135,8 +138,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "agentpools.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"agentpools.Service.Delete",
+	)
+	defer done()
 
 	agentPoolSpec := s.scope.AgentPoolSpec()
 

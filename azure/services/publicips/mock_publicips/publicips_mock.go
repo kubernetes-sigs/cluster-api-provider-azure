@@ -26,7 +26,7 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -54,10 +54,10 @@ func (m *MockPublicIPScope) EXPECT() *MockPublicIPScopeMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockPublicIPScope) AdditionalTags() v1alpha4.Tags {
+func (m *MockPublicIPScope) AdditionalTags() v1beta1.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha4.Tags)
+	ret0, _ := ret[0].(v1beta1.Tags)
 	return ret0
 }
 
@@ -152,10 +152,10 @@ func (mr *MockPublicIPScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockPublicIPScope) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+func (m *MockPublicIPScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -208,6 +208,20 @@ func (mr *MockPublicIPScopeMockRecorder) Error(err, msg interface{}, keysAndValu
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{err, msg}, keysAndValues...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockPublicIPScope)(nil).Error), varargs...)
+}
+
+// FailureDomains mocks base method.
+func (m *MockPublicIPScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockPublicIPScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockPublicIPScope)(nil).FailureDomains))
 }
 
 // HashKey mocks base method.

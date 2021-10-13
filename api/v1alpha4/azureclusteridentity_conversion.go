@@ -16,8 +16,21 @@ limitations under the License.
 
 package v1alpha4
 
-// Hub marks AzureClusterIdentity as a conversion hub.
-func (*AzureClusterIdentity) Hub() {}
+import (
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-// Hub marks AzureClusterIdentityList as a conversion hub.
-func (*AzureClusterIdentityList) Hub() {}
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+)
+
+// ConvertTo converts this AzureCluster to the Hub version (v1beta1).
+func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*infrav1beta1.AzureClusterIdentity)
+
+	return Convert_v1alpha4_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*infrav1beta1.AzureClusterIdentity)
+	return Convert_v1beta1_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity(src, dst, nil)
+}

@@ -26,7 +26,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
@@ -48,7 +48,9 @@ const (
 )
 
 const (
-	// WindowsOS is Windows OS value for OSDisk.
+	// LinuxOS is Linux OS value for OSDisk.OSType.
+	LinuxOS = "Linux"
+	// WindowsOS is Windows OS value for OSDisk.OSType.
 	WindowsOS = "Windows"
 )
 
@@ -69,8 +71,8 @@ const (
 
 const (
 	// bootstrapExtensionRetries is the number of retries in the BootstrapExtensionCommand.
-	// NOTE: the overall timeout will be number of retries * retry sleep, in this case 240 * 5s = 1200s.
-	bootstrapExtensionRetries = 240
+	// NOTE: the overall timeout will be number of retries * retry sleep, in this case 60 * 5s = 300s.
+	bootstrapExtensionRetries = 60
 	// bootstrapExtensionSleep is the duration in seconds to sleep before each retry in the BootstrapExtensionCommand.
 	bootstrapExtensionSleep = 5
 	// bootstrapSentinelFile is the file written by bootstrap provider on machines to indicate successful bootstrapping,
@@ -82,6 +84,14 @@ const (
 	// ProviderIDPrefix will be appended to the beginning of Azure resource IDs to form the Kubernetes Provider ID.
 	// NOTE: this format matches the 2 slashes format used in cloud-provider and cluster-autoscaler.
 	ProviderIDPrefix = "azure://"
+)
+
+var (
+	// LinuxBootstrapExtensionCommand is the command the VM bootstrap extension will execute to verify Linux nodes bootstrap completes successfully.
+	LinuxBootstrapExtensionCommand = fmt.Sprintf("for i in $(seq 1 %d); do test -f %s && break; if [ $i -eq %d ]; then return 1; else sleep %d; fi; done", bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionRetries, bootstrapExtensionSleep)
+	// WindowsBootstrapExtensionCommand is the command the VM bootstrap extension will execute to verify Windows nodes bootstrap completes successfully.
+	WindowsBootstrapExtensionCommand = fmt.Sprintf("powershell.exe -Command \"for ($i = 0; $i -lt %d; $i++) {if (Test-Path '%s') {exit 0} else {Start-Sleep -Seconds %d}} exit -2\"",
+		bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionSleep)
 )
 
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
@@ -157,6 +167,11 @@ func GenerateOSDiskName(machineName string) string {
 // GenerateDataDiskName generates the name of a data disk based on the name of a VM.
 func GenerateDataDiskName(machineName, nameSuffix string) string {
 	return fmt.Sprintf("%s_%s", machineName, nameSuffix)
+}
+
+// GenerateVnetPeeringName generates the name for a peering between two vnets.
+func GenerateVnetPeeringName(sourceVnetName string, remoteVnetName string) string {
+	return fmt.Sprintf("%s-To-%s", sourceVnetName, remoteVnetName)
 }
 
 // GenerateAvailabilitySetName generates the name of a availability set based on the cluster name and the node group.
@@ -299,21 +314,38 @@ func GetDefaultWindowsImage(k8sVersion string) (*infrav1.Image, error) {
 }
 
 // GetBootstrappingVMExtension returns the CAPZ Bootstrapping VM extension.
-// The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux which allows running arbitrary scripts on the VM.
+// The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux for Linux or
+// https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-windows for Windows.
+// This extension allows running arbitrary scripts on the VM.
 // Its role is to detect and report Kubernetes bootstrap failure or success.
-func GetBootstrappingVMExtension(osType string, cloud string) (name, publisher, version string) {
-	// currently, the bootstrap extension is only available for Linux and in AzurePublicCloud.
-	if osType == "Linux" && cloud == azure.PublicCloud.Name {
-		return "CAPZ.Linux.Bootstrapping", "Microsoft.Azure.ContainerUpstream", "1.0"
+func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *ExtensionSpec {
+	// currently, the bootstrap extension is only available in AzurePublicCloud.
+	if osType == LinuxOS && cloud == azure.PublicCloud.Name {
+		// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
+		return &ExtensionSpec{
+			Name:      "CAPZ.Linux.Bootstrapping",
+			VMName:    vmName,
+			Publisher: "Microsoft.Azure.ContainerUpstream",
+			Version:   "1.0",
+			ProtectedSettings: map[string]string{
+				"commandToExecute": LinuxBootstrapExtensionCommand,
+			},
+		}
+	} else if osType == WindowsOS && cloud == azure.PublicCloud.Name {
+		// This command for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between reties.
+		// If the file is not present after the retries are exhausted the extension fails with return code '-2' - ERROR_FILE_NOT_FOUND.
+		return &ExtensionSpec{
+			Name:      "CAPZ.Windows.Bootstrapping",
+			VMName:    vmName,
+			Publisher: "Microsoft.Azure.ContainerUpstream",
+			Version:   "1.0",
+			ProtectedSettings: map[string]string{
+				"commandToExecute": WindowsBootstrapExtensionCommand,
+			},
+		}
 	}
 
-	return "", "", ""
-}
-
-// BootstrapExtensionCommand is the command that runs on the Boostrap VM extension to check for bootstrap success.
-// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
-func BootstrapExtensionCommand() string {
-	return fmt.Sprintf("for i in $(seq 1 %d); do test -f %s && break; if [ $i -eq %d ]; then return 1; else sleep %d; fi; done", bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionRetries, bootstrapExtensionSleep)
+	return nil
 }
 
 // UserAgent specifies a string to append to the agent identifier.
@@ -328,6 +360,13 @@ func SetAutoRestClientDefaults(c *autorest.Client, auth autorest.Authorizer) {
 	// The wrapped Sender should set the x-ms-correlation-request-id on the given
 	// request, then pass the new request to the underlying Sender.
 	c.Sender = autorest.DecorateSender(c.Sender, msCorrelationIDSendDecorator)
+	// The default number of retries is 3. This means the client will attempt to retry operation results like resource
+	// conflicts (HTTP 409). For a reconciling controller, this is undesirable behavior since if the controller runs
+	// into an error reconciling, the controller would be better off to end with an error and try again later.
+	//
+	// Unfortunately, the naming of this field is a bit misleading. This is not actually "retry attempts", it actually
+	// is attempts. Setting this to a value of 0 will cause a panic in Go AutoRest.
+	c.RetryAttempts = 1
 	AutoRestClientAppendUserAgent(c, UserAgent())
 }
 

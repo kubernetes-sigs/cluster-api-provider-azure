@@ -53,8 +53,8 @@ func New(scope TagScope) *Service {
 
 // Reconcile ensures tags are correct.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "tags.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.Service.Reconcile")
+	defer done()
 
 	for _, tagsSpec := range s.Scope.TagsSpecs() {
 		annotation, err := s.Scope.AnnotationJSON(tagsSpec.Annotation)
@@ -96,8 +96,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete is a no-op as the tags get deleted as part of VM deletion.
 func (s *Service) Delete(ctx context.Context) error {
-	_, span := tele.Tracer().Start(ctx, "tags.Service.Delete")
-	defer span.End()
+	_, _, done := tele.StartSpanWithLogger(ctx, "tags.Service.Delete")
+	defer done()
 
 	return nil
 }

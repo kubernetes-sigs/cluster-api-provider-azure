@@ -31,7 +31,7 @@ import (
 type VMExtensionScope interface {
 	logr.Logger
 	azure.ClusterDescriber
-	VMExtensionSpecs() []azure.VMExtensionSpec
+	VMExtensionSpecs() []azure.ExtensionSpec
 	SetBootstrapConditions(string, string) error
 }
 
@@ -51,8 +51,8 @@ func New(scope VMExtensionScope) *Service {
 
 // Reconcile creates or updates the VM extension.
 func (s *Service) Reconcile(ctx context.Context) error {
-	_, span := tele.Tracer().Start(ctx, "vmextensions.Service.Reconcile")
-	defer span.End()
+	_, _, done := tele.StartSpanWithLogger(ctx, "vmextensions.Service.Reconcile")
+	defer done()
 
 	for _, extensionSpec := range s.Scope.VMExtensionSpecs() {
 		if existing, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.VMName, extensionSpec.Name); err == nil {

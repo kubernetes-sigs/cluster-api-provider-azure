@@ -156,7 +156,7 @@ cat <<EOF > tilt-settings.json
       "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
   }
 }
 EOF
@@ -207,7 +207,7 @@ cat <<EOF > tilt-settings.json
       "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
   }
 }
 EOF
@@ -375,21 +375,24 @@ HTTP headers. By propagating span context, it creates a distributed, causal rela
 For tracing, we use [OpenTelemetry](https://github.com/open-telemetry).
 
 Here is an example of staring a span in the beginning of a controller reconcile.
+
 ```go
-ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconcile",
-    trace.WithAttributes(
-        attribute.String("namespace", req.Namespace),
-        attribute.String("name", req.Name),
-        attribute.String("kind", "AzureMachine"),
-    ))
-defer span.End()
+ctx, logger, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineReconciler.Reconcile",
+   tele.KVP("namespace", req.Namespace),
+   tele.KVP("name", req.Name),
+   tele.KVP("kind", "AzureMachine"),
+)
+defer done()
 ```
+
 The code above creates a context with a new span stored in the context.Context value bag. If a span already existed in
 the `ctx` arguement, then the new span would take on the parentID of the existing span, otherwise the new span
 becomes a "root span", one that does not have a parent. The span is also created with labels, or tags, which
 provide metadata about the span and can be used to query in many distributed tracing systems.
 
-You should consider adding tracing if your func accepts a context.
+It also creates a logger that logs messages both to the span and `STDOUT`. The span is not returned directly, but closure of the span is handled by the final `done` value. This is a simple nil-ary function (`func()`) that should be called  as appropriate. Most likely, this should be done in a defer -- as shown in the above code sample -- to ensure that the span is closed at the end of your function or scope.
+
+>Consider adding tracing if your func accepts a context.
 
 #### Metrics
 Metrics provide quantitative data about the operations of the controller. This includes cumulative data like
@@ -442,7 +445,8 @@ You can optionally set the following variables:
 | `SKIP_CREATE_MGMT_CLUSTER` | Skip management cluster creation. If skipping managment cluster creation you must specify `KUBECONFIG` and `SKIP_CLEANUP` | `false`                                                                               |
 | `LOCAL_ONLY`               | Use Kind local registry and run the subset of tests which don't require a remotely pushed controller image.               | `true`                                                                                |
 | `REGISTRY`                 | Registry to push the controller image.                                                                                    | `capzci.azurecr.io/ci-e2e`                                                            |
-| `CLUSTER_NAME`             | Name of an existing workload cluster.  Will run specs against existing workload cluster. Use in conjunction with `SKIP_CREATE_MGMT_CLUSTER`, `GINKGO_FOCUS` and `KUBECONFIG`. Must specify only one e2e spec to run against with `GINKGO_FOCUS` such as `export GINKO_FOCUS=Creating.a.VMSS.cluster.with.a.single.control.plane.node`. |
+| `CLUSTER_NAME`             | Name of an existing workload cluster.  Must be set to run specs against existing workload cluster. Use in conjunction with `SKIP_CREATE_MGMT_CLUSTER`, `GINKGO_FOCUS`, `CLUSTER_NAMESPACE` and `KUBECONFIG`. Must specify **only one** e2e spec to run against with `GINKGO_FOCUS` such as `export GINKO_FOCUS=Creating.a.VMSS.cluster.with.a.single.control.plane.node`. |
+| `CLUSTER_NAMESPACE`        | Namespace of an existing workload cluster.  Must be set to run specs against existing workload cluster. Use in conjunction with `SKIP_CREATE_MGMT_CLUSTER`, `GINKGO_FOCUS`, `CLUSTER_NAME` and `KUBECONFIG`. Must specify **only one** e2e spec to run against with `GINKGO_FOCUS` such as `export GINKO_FOCUS=Creating.a.VMSS.cluster.with.a.single.control.plane.node`. |
 | `KUBECONFIG`               | Used with `SKIP_CREATE_MGMT_CLUSTER` set to true. Location of kubeconfig for the management cluster you would like to use. Use `kind get kubeconfig --name capz-e2e > kubeconfig.capz-e2e` to get the capz e2e kind cluster config | '~/.kube/config'                                                                                    |
 
 You can also customize the configuration of the CAPZ cluster created by the E2E tests (except for `CLUSTER_NAME`, `AZURE_RESOURCE_GROUP`, `AZURE_VNET_NAME`, `CONTROL_PLANE_MACHINE_COUNT`, and `WORKER_MACHINE_COUNT`, since they are generated by individual test cases). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.

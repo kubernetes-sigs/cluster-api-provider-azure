@@ -72,3 +72,6 @@ hack/boilerplate/*.pyc
 
 # Helm chart caching
 .helm/
+
+# release notes
+_releasenotes

@@ -1,5 +1,5 @@
 ---
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
   name: "${CLUSTER_NAME}-mp-1"
@@ -13,14 +13,14 @@ spec:
       bootstrap:
         configRef:
           name: "${CLUSTER_NAME}-mp-1"
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: KubeadmConfig
       infrastructureRef:
         name: "${CLUSTER_NAME}-mp-1"
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureMachinePool
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: "${CLUSTER_NAME}-mp-1"
@@ -42,7 +42,7 @@ spec:
     sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
     subnetName: "${CLUSTER_NAME}-mp-1"
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfig
 metadata:
   name: "${CLUSTER_NAME}-mp-1"

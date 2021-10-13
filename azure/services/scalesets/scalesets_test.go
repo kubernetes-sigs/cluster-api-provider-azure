@@ -33,16 +33,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -225,13 +225,13 @@ func TestGetExistingVMSS(t *testing.T) {
 func TestReconcileVMSS(t *testing.T) {
 	var (
 		putFuture = &infrav1.Future{
-			Type:          PutFuture,
+			Type:          infrav1.PutFuture,
 			ResourceGroup: defaultResourceGroup,
 			Name:          defaultVMSSName,
 		}
 
 		patchFuture = &infrav1.Future{
-			Type:          PatchFuture,
+			Type:          infrav1.PatchFuture,
 			ResourceGroup: defaultResourceGroup,
 			Name:          defaultVMSSName,
 		}
@@ -273,7 +273,7 @@ func TestReconcileVMSS(t *testing.T) {
 				createdVMSS := newDefaultVMSS("VM_SIZE")
 				instances := newDefaultInstances()
 				_ = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
-				s.SetLongRunningOperationState(nil)
+				s.DeleteLongRunningOperationState(defaultSpec.Name, scope.ScalesetsServiceName)
 			},
 		},
 		{
@@ -285,7 +285,7 @@ func TestReconcileVMSS(t *testing.T) {
 				createdVMSS := newDefaultWindowsVMSS()
 				instances := newDefaultInstances()
 				_ = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
-				s.SetLongRunningOperationState(nil)
+				s.DeleteLongRunningOperationState(defaultSpec.Name, scope.ScalesetsServiceName)
 			},
 		},
 		{
@@ -624,11 +624,11 @@ func TestDeleteVMSS(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				future := &infrav1.Future{}
-				s.GetLongRunningOperationState().Return(future)
+				s.GetLongRunningOperationState("my-existing-vmss", scope.ScalesetsServiceName).Return(future)
 				m.GetResultIfDone(gomockinternal.AContext(), future).Return(compute.VirtualMachineScaleSet{}, nil)
 				m.Get(gomockinternal.AContext(), "my-existing-rg", "my-existing-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				s.SetLongRunningOperationState(nil)
+				s.DeleteLongRunningOperationState("my-existing-vmss", scope.ScalesetsServiceName)
 			},
 		},
 		{
@@ -642,7 +642,7 @@ func TestDeleteVMSS(t *testing.T) {
 				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.GetLongRunningOperationState().Return(nil)
+				s.GetLongRunningOperationState(name, scope.ScalesetsServiceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.Get(gomockinternal.AContext(), resourceGroup, name).
@@ -660,7 +660,7 @@ func TestDeleteVMSS(t *testing.T) {
 				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.GetLongRunningOperationState().Return(nil)
+				s.GetLongRunningOperationState(name, scope.ScalesetsServiceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 				m.Get(gomockinternal.AContext(), resourceGroup, name).
@@ -1013,6 +1013,12 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 						DisablePasswordAuthentication: to.BoolPtr(true),
 					},
 				},
+				ScheduledEventsProfile: &compute.ScheduledEventsProfile{
+					TerminateNotificationProfile: &compute.TerminateNotificationProfile{
+						NotBeforeTimeout: to.StringPtr("PT7M"),
+						Enable:           to.BoolPtr(true),
+					},
+				},
 				StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
 					ImageReference: &compute.ImageReference{
 						Publisher: to.StringPtr("fake-publisher"),
@@ -1203,12 +1209,12 @@ func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockS
 	createdVMSS.ProvisioningState = to.StringPtr(string(infrav1.Succeeded))
 	setupDefaultVMSSExpectations(s)
 	future := &infrav1.Future{
-		Type:          PutFuture,
+		Type:          infrav1.PutFuture,
 		ResourceGroup: defaultResourceGroup,
 		Name:          defaultVMSSName,
-		FutureData:    "",
+		Data:          "",
 	}
-	s.GetLongRunningOperationState().Return(future)
+	s.GetLongRunningOperationState(defaultVMSSName, scope.ScalesetsServiceName).Return(future)
 	m.GetResultIfDone(gomockinternal.AContext(), future).Return(createdVMSS, nil).AnyTimes()
 	m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil).AnyTimes()
 	s.MaxSurge().Return(1, nil)
@@ -1219,7 +1225,7 @@ func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockS
 
 func setupDefaultVMSSStartCreatingExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 	setupDefaultVMSSExpectations(s)
-	s.GetLongRunningOperationState().Return(nil)
+	s.GetLongRunningOperationState(defaultVMSSName, scope.ScalesetsServiceName).Return(nil)
 	m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
 		Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 }
@@ -1269,12 +1275,12 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 	s.Location().AnyTimes().Return("test-location")
 	s.ClusterName().Return("my-cluster")
 	s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
-	s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
+	s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
 		{
-			Name:         "someExtension",
-			ScaleSetName: "my-vmss",
-			Publisher:    "somePublisher",
-			Version:      "someVersion",
+			Name:      "someExtension",
+			VMName:    "my-vmss",
+			Publisher: "somePublisher",
+			Version:   "someVersion",
 			ProtectedSettings: map[string]string{
 				"commandToExecute": "echo hello",
 			},
@@ -1285,7 +1291,7 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	setupUpdateVMSSExpectations(s)
 	s.SetProviderID(azure.ProviderIDPrefix + "vmss-id")
-	s.GetLongRunningOperationState().Return(nil)
+	s.GetLongRunningOperationState(defaultVMSSName, scope.ScalesetsServiceName).Return(nil)
 	s.MaxSurge().Return(1, nil)
 	s.SetVMSSState(gomock.Any())
 }

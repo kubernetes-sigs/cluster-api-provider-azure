@@ -40,9 +40,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -128,7 +127,11 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 	By("Creating a private workload cluster")
 	clusterName = fmt.Sprintf("capz-e2e-%s-%s", util.RandomString(6), "private")
-	Expect(os.Setenv(AzureInternalLBIP, "10.128.0.100")).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureVNetName, clusterName+"-vnet")).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureVNetCidr, "10.255.0.0/16")).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureInternalLBIP, "10.255.0.100")).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureCPSubnetCidr, "10.255.0.0/24")).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureNodeSubnetCidr, "10.255.1.0/24")).NotTo(HaveOccurred())
 	result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
 	clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 		ClusterProxy: publicClusterProxy,
@@ -220,7 +223,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 }
 
 // SetupExistingVNet creates a resource group and a VNet to be used by a workload cluster.
-func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, nodeSubnetCidrs map[string]string) func() {
+func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, nodeSubnetCidrs map[string]string, bastionSubnetName, bastionSubnetCidr string) func() {
 	By("creating Azure clients with the workload cluster's subscription")
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
@@ -344,12 +347,12 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	// Create the AzureBastion subnet.
 	subnets = append(subnets, network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-			AddressPrefix: pointer.StringPtr(v1alpha4.DefaultAzureBastionSubnetCIDR),
+			AddressPrefix: pointer.StringPtr(bastionSubnetCidr),
 		},
-		Name: pointer.StringPtr(v1alpha4.DefaultAzureBastionSubnetName),
+		Name: pointer.StringPtr(bastionSubnetName),
 	})
 
-	vnetFuture, err := vnetClient.CreateOrUpdate(ctx, groupName, os.Getenv(AzureVNetName), network.VirtualNetwork{
+	vnetFuture, err := vnetClient.CreateOrUpdate(ctx, groupName, os.Getenv(AzureCustomVNetName), network.VirtualNetwork{
 		Location: pointer.StringPtr(os.Getenv(AzureLocation)),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
@@ -366,8 +369,8 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	Expect(err).To(BeNil())
 
 	return func() {
-		Logf("deleting an existing virtual network %q", os.Getenv(AzureVNetName))
-		vFuture, err := vnetClient.Delete(ctx, groupName, os.Getenv(AzureVNetName))
+		Logf("deleting an existing virtual network %q", os.Getenv(AzureCustomVNetName))
+		vFuture, err := vnetClient.Delete(ctx, groupName, os.Getenv(AzureCustomVNetName))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(vFuture.WaitForCompletionRef(ctx, vnetClient.Client)).ToNot(HaveOccurred())
 

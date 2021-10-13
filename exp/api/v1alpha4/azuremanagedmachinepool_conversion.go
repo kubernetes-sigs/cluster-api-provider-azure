@@ -16,8 +16,21 @@ limitations under the License.
 
 package v1alpha4
 
-// Hub marks AzureManagedMachinePool as a conversion hub.
-func (*AzureManagedMachinePool) Hub() {}
+import (
+	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+)
 
-// Hub marks AzureManagedMachinePoolList as a conversion hub.
-func (*AzureManagedMachinePoolList) Hub() {}
+// ConvertTo converts this AzureManagedMachinePool to the Hub version (v1beta1).
+func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*expv1beta1.AzureManagedMachinePool)
+
+	return Convert_v1alpha4_AzureManagedMachinePool_To_v1beta1_AzureManagedMachinePool(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureManagedMachinePool) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*expv1beta1.AzureManagedMachinePool)
+
+	return Convert_v1beta1_AzureManagedMachinePool_To_v1alpha4_AzureManagedMachinePool(src, dst, nil)
+}

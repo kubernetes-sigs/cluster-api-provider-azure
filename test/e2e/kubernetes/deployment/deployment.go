@@ -24,7 +24,7 @@ import (
 	"log"
 
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

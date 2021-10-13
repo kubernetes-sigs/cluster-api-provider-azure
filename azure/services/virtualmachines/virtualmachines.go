@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets"
@@ -37,11 +37,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-)
-
-const (
-	// UltraSSDStorageAccountType identifies the Ultra disk storage account type.
-	UltraSSDStorageAccountType = "UltraSSD_LRS"
 )
 
 // VMScope defines the scope interface for a virtual machines service.
@@ -84,8 +79,8 @@ func New(scope VMScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.Reconcile")
+	defer done()
 
 	vmSpec := s.Scope.VMSpec()
 	existingVM, err := s.getExisting(ctx, vmSpec.Name)
@@ -199,7 +194,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		for _, dataDisk := range vmSpec.DataDisks {
-			if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType {
+			if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
 				virtualMachine.VirtualMachineProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{
 					UltraSSDEnabled: to.BoolPtr(true),
 				}
@@ -218,8 +213,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual machine with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.Delete")
+	defer done()
 
 	vmSpec := s.Scope.VMSpec()
 	s.Scope.V(2).Info("deleting VM", "vm", vmSpec.Name)
@@ -238,8 +233,8 @@ func (s *Service) Delete(ctx context.Context) error {
 
 // getExisting provides information about a virtual machine.
 func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getExisting")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.getExisting")
+	defer done()
 
 	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), name)
 	if err != nil {
@@ -292,8 +287,8 @@ func (s *Service) generateImagePlan() *compute.Plan {
 }
 
 func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) ([]corev1.NodeAddress, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getAddresses")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.getAddresses")
+	defer done()
 
 	addresses := []corev1.NodeAddress{}
 
@@ -347,8 +342,8 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 
 // getPublicIPAddress will fetch a public ip address resource by name and return a nodeaddresss representation.
 func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName string) (corev1.NodeAddress, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getPublicIPAddress")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.getPublicIPAddress")
+	defer done()
 
 	retAddress := corev1.NodeAddress{}
 	publicIP, err := s.publicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicIPAddressName)
@@ -363,8 +358,8 @@ func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName st
 
 // generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
 func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.StorageProfile, error) {
-	_, span := tele.Tracer().Start(ctx, "virtualmachines.Service.generateStorageProfile")
-	defer span.End()
+	_, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.generateStorageProfile")
+	defer done()
 
 	storageProfile := &compute.StorageProfile{
 		OsDisk: &compute.OSDisk{
@@ -436,7 +431,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 
 			// check the support for ultra disks based on location and vm size
 			location := s.Scope.Location()
-			if disk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, vmSpec.Zone) {
+			if disk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, vmSpec.Zone) {
 				return nil, azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", vmSpec.Size, location))
 			}
 		}

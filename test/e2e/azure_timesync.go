@@ -70,12 +70,13 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 		var testFuncs []func() error
 		for _, s := range sshInfo {
 			Byf("checking that time synchronization is healthy on %s", s.Hostname)
-
+			// must capture for closure
+			machineInfo := s
 			execToStringFn := func(expected, command string, args ...string) func() error {
 				// don't assert in this test func, just return errors
 				return func() error {
 					f := &strings.Builder{}
-					if err := execOnHost(s.Endpoint, s.Hostname, s.Port, f, command, args...); err != nil {
+					if err := execOnHost(machineInfo.Endpoint, machineInfo.Hostname, machineInfo.Port, f, command, args...); err != nil {
 						return err
 					}
 					if !strings.Contains(f.String(), expected) {

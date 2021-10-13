@@ -16,8 +16,21 @@ limitations under the License.
 
 package v1alpha4
 
-// Hub marks AzureManagedCluster as a conversion hub.
-func (*AzureManagedCluster) Hub() {}
+import (
+	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+)
 
-// Hub marks AzureManagedClusterList as a conversion hub.
-func (*AzureManagedClusterList) Hub() {}
+// ConvertTo converts this AzureManagedCluster to the Hub version (v1beta1).
+func (src *AzureManagedCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*expv1beta1.AzureManagedCluster)
+
+	return Convert_v1alpha4_AzureManagedCluster_To_v1beta1_AzureManagedCluster(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureManagedCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*expv1beta1.AzureManagedCluster)
+
+	return Convert_v1beta1_AzureManagedCluster_To_v1alpha4_AzureManagedCluster(src, dst, nil)
+}

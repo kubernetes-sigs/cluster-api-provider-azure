@@ -32,13 +32,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	deployments "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -83,7 +83,7 @@ func AzureMachinePoolDrainSpec(ctx context.Context, inputGetter func() AzureMach
 	Expect(clientset).NotTo(BeNil())
 
 	By(fmt.Sprintf("listing AzureMachinePools in the cluster in namespace %s", input.Namespace.Name))
-	ampList := &v1alpha4.AzureMachinePoolList{}
+	ampList := &v1beta1.AzureMachinePoolList{}
 	Expect(bootstrapClusterProxy.GetClient().List(ctx, ampList, client.InNamespace(input.Namespace.Name), client.MatchingLabels(labels))).ToNot(HaveOccurred())
 	for _, amp := range ampList.Items {
 		testMachinePoolCordonAndDrain(ctx, bootstrapClusterProxy, workloadClusterProxy, amp)
@@ -91,16 +91,16 @@ func AzureMachinePoolDrainSpec(ctx context.Context, inputGetter func() AzureMach
 
 }
 
-func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, workloadClusterProxy framework.ClusterProxy, amp v1alpha4.AzureMachinePool) {
+func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, workloadClusterProxy framework.ClusterProxy, amp v1beta1.AzureMachinePool) {
 	var (
-		isWindows           = amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
-		clientset           = workloadClusterProxy.GetClientSet()
-		owningMachinePool   = func() *clusterv1exp.MachinePool {
+		isWindows         = amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
+		clientset         = workloadClusterProxy.GetClientSet()
+		owningMachinePool = func() *clusterv1exp.MachinePool {
 			mp, err := getOwnerMachinePool(ctx, mgmtClusterProxy.GetClient(), amp.ObjectMeta)
 			Expect(err).ToNot(HaveOccurred())
 			return mp
 		}()
-		
+
 		machinePoolReplicas = func() int32 {
 			Expect(owningMachinePool.Spec.Replicas).ToNot(BeNil(), "owning machine pool replicas must not be nil")
 			Expect(*owningMachinePool.Spec.Replicas).To(BeNumerically(">=", 2), "owning machine pool replicas must be greater than or equal to 2")

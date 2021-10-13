@@ -26,7 +26,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -55,8 +55,8 @@ func New(scope NatGatewayScope) *Service {
 // Reconcile gets/creates/updates a nat gateway.
 // Only when the Nat Gateway 'Name' property is defined we create the Nat Gateway: it's opt-in.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "natgateways.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Reconcile")
+	defer done()
 
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping nat gateways reconcile in custom vnet mode")
@@ -149,8 +149,8 @@ func (s *Service) getExisting(ctx context.Context, spec azure.NatGatewaySpec) (*
 
 // Delete deletes the nat gateway with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "natgateways.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Delete")
+	defer done()
 
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping nat gateway deletion in custom vnet mode")

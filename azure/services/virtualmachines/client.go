@@ -56,16 +56,16 @@ func newVirtualMachinesClient(subscriptionID string, baseURI string, authorizer 
 
 // Get retrieves information about the model view or the instance view of a virtual machine.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vmName string) (compute.VirtualMachine, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Get")
+	defer done()
 
 	return ac.virtualmachines.Get(ctx, resourceGroupName, vmName, "")
 }
 
 // CreateOrUpdate the operation to create or update a virtual machine.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vmName string, vm compute.VirtualMachine) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.virtualmachines.CreateOrUpdate(ctx, resourceGroupName, vmName, vm)
 	if err != nil {
@@ -81,8 +81,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vm
 
 // Delete the operation to delete a virtual machine.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vmName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Delete")
+	defer done()
 
 	// TODO: pass variable to force the deletion or not
 	// now we are not forcing.

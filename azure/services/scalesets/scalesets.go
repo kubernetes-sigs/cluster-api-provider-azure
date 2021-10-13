@@ -30,16 +30,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-)
-
-const (
-	// UltraSSDStorageAccountType identifies the Ultra disk storage account type.
-	UltraSSDStorageAccountType = "UltraSSD_LRS"
 )
 
 type (
@@ -47,15 +43,14 @@ type (
 	ScaleSetScope interface {
 		logr.Logger
 		azure.ClusterDescriber
-		GetBootstrapData(ctx context.Context) (string, error)
-		GetLongRunningOperationState() *infrav1.Future
+		azure.AsyncStatusUpdater
+		GetBootstrapData(context.Context) (string, error)
 		GetVMImage() (*infrav1.Image, error)
 		SaveVMImageToStatus(*infrav1.Image)
 		MaxSurge() (int, error)
 		ScaleSetSpec() azure.ScaleSetSpec
-		VMSSExtensionSpecs() []azure.VMSSExtensionSpec
+		VMSSExtensionSpecs() []azure.ExtensionSpec
 		SetAnnotation(string, string)
-		SetLongRunningOperationState(*infrav1.Future)
 		SetProviderID(string)
 		SetVMSSState(*azure.VMSS)
 	}
@@ -79,8 +74,8 @@ func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) (retErr error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Reconcile")
+	defer done()
 
 	if err := s.validateSpec(ctx); err != nil {
 		// do as much early validation as possible to limit calls to Azure
@@ -93,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 
 	// check if there is an ongoing long running operation
 	var (
-		future      = s.Scope.GetLongRunningOperationState()
+		future      = s.Scope.GetLongRunningOperationState(s.Scope.ScaleSetSpec().Name, scope.ScalesetsServiceName)
 		fetchedVMSS *azure.VMSS
 	)
 
@@ -147,16 +142,16 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		}
 	}
 
-	// if we get to hear, we have completed any long running VMSS operations (creates / updates)
-	s.Scope.SetLongRunningOperationState(nil)
+	// if we get to here, we have completed any long running VMSS operations (creates / updates)
+	s.Scope.DeleteLongRunningOperationState(s.Scope.ScaleSetSpec().Name, scope.ScalesetsServiceName)
 	return nil
 }
 
 // Delete deletes a scale set asynchronously. Delete sends a DELETE request to Azure and if accepted without error,
 // the VMSS will be considered deleted. The actual delete in Azure may take longer, but should eventually complete.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Delete")
+	defer done()
 
 	var err error
 
@@ -175,7 +170,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}()
 
 	// check if there is an ongoing long running operation
-	future := s.Scope.GetLongRunningOperationState()
+	future := s.Scope.GetLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
 	if future != nil {
 		// if the operation is not complete this will return an error
 		_, err := s.GetResultIfDone(ctx, future)
@@ -184,7 +179,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		}
 
 		// ScaleSet has been deleted
-		s.Scope.SetLongRunningOperationState(nil)
+		s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
 		return nil
 	}
 
@@ -208,13 +203,13 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	// future is either nil, or the result of the future is complete
-	s.Scope.SetLongRunningOperationState(nil)
+	s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
 	return nil
 }
 
 func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.createVMSS")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.createVMSS")
+	defer done()
 
 	spec := s.Scope.ScaleSetSpec()
 
@@ -225,7 +220,7 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 
 	future, err := s.Client.CreateOrUpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, vmss)
 	if err != nil {
-		return future, errors.Wrap(err, "cannot create VMSS")
+		return nil, errors.Wrap(err, "cannot create VMSS")
 	}
 
 	s.Scope.V(2).Info("starting to create VMSS", "scale set", spec.Name)
@@ -234,8 +229,8 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 }
 
 func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) (*infrav1.Future, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.patchVMSSIfNeeded")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.patchVMSSIfNeeded")
+	defer done()
 
 	spec := s.Scope.ScaleSetSpec()
 
@@ -273,9 +268,9 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	future, err := s.UpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, patch)
 	if err != nil {
 		if azure.ResourceConflict(err) {
-			return future, azure.WithTransientError(err, 30*time.Second)
+			return nil, azure.WithTransientError(err, 30*time.Second)
 		}
-		return future, errors.Wrap(err, "failed updating VMSS")
+		return nil, errors.Wrap(err, "failed updating VMSS")
 	}
 
 	s.Scope.SetLongRunningOperationState(future)
@@ -289,8 +284,8 @@ func hasModelModifyingDifferences(infraVMSS *azure.VMSS, vmss compute.VirtualMac
 }
 
 func (s *Service) validateSpec(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.validateSpec")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.validateSpec")
+	defer done()
 
 	spec := s.Scope.ScaleSetSpec()
 
@@ -337,7 +332,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 		}
 
 		for _, zone := range zones {
-			if disks.ManagedDisk != nil && disks.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, zone) {
+			if disks.ManagedDisk != nil && disks.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, zone) {
 				return azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", spec.Size, location))
 			}
 		}
@@ -359,8 +354,8 @@ func (s *Service) validateSpec(ctx context.Context) error {
 }
 
 func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSetSpec) (compute.VirtualMachineScaleSet, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.buildVMSSFromSpec")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.buildVMSSFromSpec")
+	defer done()
 
 	sku, err := s.resourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
 	if err != nil {
@@ -482,10 +477,19 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 	}
 
 	for _, dataDisk := range vmssSpec.DataDisks {
-		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType {
+		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
 			vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{
 				UltraSSDEnabled: to.BoolPtr(true),
 			}
+		}
+	}
+
+	if vmssSpec.TerminateNotificationTimeout != nil {
+		vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.ScheduledEventsProfile = &compute.ScheduledEventsProfile{
+			TerminateNotificationProfile: &compute.TerminateNotificationProfile{
+				NotBeforeTimeout: to.StringPtr(fmt.Sprintf("PT%dM", *vmssSpec.TerminateNotificationTimeout)),
+				Enable:           to.BoolPtr(true),
+			},
 		}
 	}
 
@@ -503,8 +507,8 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 // getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances.
 func (s *Service) getVirtualMachineScaleSet(ctx context.Context, vmssName string) (*azure.VMSS, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSet")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.getVirtualMachineScaleSet")
+	defer done()
 
 	vmss, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmssName)
 	if err != nil {
@@ -521,8 +525,8 @@ func (s *Service) getVirtualMachineScaleSet(ctx context.Context, vmssName string
 
 // getVirtualMachineScaleSetIfDone gets a Virtual Machine Scale Set and its instances from Azure if the future is completed.
 func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *infrav1.Future) (*azure.VMSS, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSetIfDone")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.getVirtualMachineScaleSetIfDone")
+	defer done()
 
 	vmss, err := s.GetResultIfDone(ctx, future)
 	if err != nil {

@@ -77,8 +77,8 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *azureMachineService) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.Reconcile")
+	defer done()
 
 	if err := s.scope.SetSubnetName(); err != nil {
 		return errors.Wrap(err, "failed defaulting subnet name")
@@ -121,8 +121,8 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 
 // Delete deletes all the services in a predetermined order.
 func (s *azureMachineService) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.Delete")
+	defer done()
 
 	if err := s.virtualMachinesSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete machine")

@@ -55,16 +55,16 @@ func newSubnetsClient(subscriptionID string, baseURI string, authorizer autorest
 
 // Get gets the specified subnet by virtual network and resource group.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vnetName, snName string) (network.Subnet, error) {
-	ctx, span := tele.Tracer().Start(ctx, "subnets.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.AzureClient.Get")
+	defer done()
 
 	return ac.subnets.Get(ctx, resourceGroupName, vnetName, snName, "")
 }
 
 // CreateOrUpdate creates or updates a subnet in the specified virtual network.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vnetName, snName string, sn network.Subnet) error {
-	ctx, span := tele.Tracer().Start(ctx, "subnets.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.subnets.CreateOrUpdate(ctx, resourceGroupName, vnetName, snName, sn)
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vn
 
 // Delete deletes the specified subnet.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vnetName, snName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "subnets.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.subnets.Delete(ctx, resourceGroupName, vnetName, snName)
 	if err != nil {

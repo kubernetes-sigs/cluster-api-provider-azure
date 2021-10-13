@@ -45,7 +45,7 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 source "${REPO_ROOT}/hack/util.sh"
 
 get_random_region() {
-    local REGIONS=("northcentralus" "westus" "westus2" "canadacentral" "eastus" "eastus2" "westeurope" "uksouth" "northeurope" "francecentral")
+    local REGIONS=("eastus" "eastus2" "northcentralus" "northeurope" "uksouth" "westeurope" "westus2")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 

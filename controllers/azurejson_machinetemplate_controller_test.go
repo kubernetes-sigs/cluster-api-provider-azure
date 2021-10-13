@@ -31,8 +31,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2/klogr"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -49,7 +49,7 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 		},
 		Spec: clusterv1.ClusterSpec{
 			InfrastructureRef: &corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha4",
+				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 				Kind:       "AzureCluster",
 				Name:       "my-azure-cluster",
 			},
@@ -61,7 +61,7 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 			Name: "my-azure-cluster",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: "cluster.x-k8s.io/v1alpha4",
+					APIVersion: "cluster.x-k8s.io/v1beta1",
 					Kind:       "Cluster",
 					Name:       "my-cluster",
 				},
@@ -77,7 +77,7 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 			Name: "my-json-template",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: "cluster.x-k8s.io/v1alpha4",
+					APIVersion: "cluster.x-k8s.io/v1beta1",
 					Kind:       "Cluster",
 					Name:       "my-cluster",
 				},

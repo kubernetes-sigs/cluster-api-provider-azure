@@ -39,10 +39,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
@@ -194,17 +194,17 @@ func TestReconcileAzureSecret(t *testing.T) {
 	}{
 		"azuremachine should reconcile secret successfully": {
 			kind:       "AzureMachine",
-			apiVersion: "infrastructure.cluster.x-k8s.io/v1alpha4",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 			ownerName:  "azureMachineName",
 		},
 		"azuremachinepool should reconcile secret successfully": {
 			kind:       "AzureMachinePool",
-			apiVersion: "infrastructure.cluster.x-k8s.io/v1alpha4",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 			ownerName:  "azureMachinePoolName",
 		},
 		"azuremachinetemplate should reconcile secret successfully": {
 			kind:       "AzureMachineTemplate",
-			apiVersion: "infrastructure.cluster.x-k8s.io/v1alpha4",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 			ownerName:  "azureMachineTemplateName",
 		},
 	}

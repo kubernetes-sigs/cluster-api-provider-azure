@@ -26,7 +26,7 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -82,10 +82,10 @@ func (mr *MockLBScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock
 }
 
 // AdditionalTags mocks base method.
-func (m *MockLBScope) AdditionalTags() v1alpha4.Tags {
+func (m *MockLBScope) AdditionalTags() v1beta1.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha4.Tags)
+	ret0, _ := ret[0].(v1beta1.Tags)
 	return ret0
 }
 
@@ -180,10 +180,10 @@ func (mr *MockLBScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockLBScope) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+func (m *MockLBScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -208,10 +208,10 @@ func (mr *MockLBScopeMockRecorder) ClusterName() *gomock.Call {
 }
 
 // ControlPlaneRouteTable mocks base method.
-func (m *MockLBScope) ControlPlaneRouteTable() v1alpha4.RouteTable {
+func (m *MockLBScope) ControlPlaneRouteTable() v1beta1.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(v1alpha4.RouteTable)
+	ret0, _ := ret[0].(v1beta1.RouteTable)
 	return ret0
 }
 
@@ -222,10 +222,10 @@ func (mr *MockLBScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 }
 
 // ControlPlaneSubnet mocks base method.
-func (m *MockLBScope) ControlPlaneSubnet() v1alpha4.SubnetSpec {
+func (m *MockLBScope) ControlPlaneSubnet() v1beta1.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
+	ret0, _ := ret[0].(v1beta1.SubnetSpec)
 	return ret0
 }
 
@@ -264,6 +264,20 @@ func (mr *MockLBScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{err, msg}, keysAndValues...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockLBScope)(nil).Error), varargs...)
+}
+
+// FailureDomains mocks base method.
+func (m *MockLBScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockLBScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockLBScope)(nil).FailureDomains))
 }
 
 // GetPrivateDNSZoneName mocks base method.
@@ -382,10 +396,10 @@ func (mr *MockLBScopeMockRecorder) Location() *gomock.Call {
 }
 
 // NodeSubnets mocks base method.
-func (m *MockLBScope) NodeSubnets() []v1alpha4.SubnetSpec {
+func (m *MockLBScope) NodeSubnets() []v1beta1.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnets")
-	ret0, _ := ret[0].([]v1alpha4.SubnetSpec)
+	ret0, _ := ret[0].([]v1beta1.SubnetSpec)
 	return ret0
 }
 
@@ -438,7 +452,7 @@ func (mr *MockLBScopeMockRecorder) ResourceGroup() *gomock.Call {
 }
 
 // SetSubnet mocks base method.
-func (m *MockLBScope) SetSubnet(arg0 v1alpha4.SubnetSpec) {
+func (m *MockLBScope) SetSubnet(arg0 v1beta1.SubnetSpec) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetSubnet", arg0)
 }
@@ -450,10 +464,10 @@ func (mr *MockLBScopeMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
 }
 
 // Subnet mocks base method.
-func (m *MockLBScope) Subnet(arg0 string) v1alpha4.SubnetSpec {
+func (m *MockLBScope) Subnet(arg0 string) v1beta1.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subnet", arg0)
-	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
+	ret0, _ := ret[0].(v1beta1.SubnetSpec)
 	return ret0
 }
 
@@ -464,10 +478,10 @@ func (mr *MockLBScopeMockRecorder) Subnet(arg0 interface{}) *gomock.Call {
 }
 
 // Subnets mocks base method.
-func (m *MockLBScope) Subnets() v1alpha4.Subnets {
+func (m *MockLBScope) Subnets() v1beta1.Subnets {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subnets")
-	ret0, _ := ret[0].(v1alpha4.Subnets)
+	ret0, _ := ret[0].(v1beta1.Subnets)
 	return ret0
 }
 
@@ -520,10 +534,10 @@ func (mr *MockLBScopeMockRecorder) V(level interface{}) *gomock.Call {
 }
 
 // Vnet mocks base method.
-func (m *MockLBScope) Vnet() *v1alpha4.VnetSpec {
+func (m *MockLBScope) Vnet() *v1beta1.VnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1alpha4.VnetSpec)
+	ret0, _ := ret[0].(*v1beta1.VnetSpec)
 	return ret0
 }
 

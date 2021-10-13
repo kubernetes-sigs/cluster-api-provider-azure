@@ -28,39 +28,39 @@ import (
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestFuzzyConversion(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()
 	g.Expect(AddToScheme(scheme)).To(Succeed())
-	g.Expect(v1alpha4.AddToScheme(scheme)).To(Succeed())
+	g.Expect(v1beta1.AddToScheme(scheme)).To(Succeed())
 
 	t.Run("for AzureCluster", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
-		Hub:         &v1alpha4.AzureCluster{},
+		Hub:         &v1beta1.AzureCluster{},
 		Spoke:       &AzureCluster{},
 		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedAndRemovedFieldsFuncs, overrideOutboundLBFunc},
 	}))
 
 	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
-		Hub:         &v1alpha4.AzureMachine{},
+		Hub:         &v1beta1.AzureMachine{},
 		Spoke:       &AzureMachine{},
 		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedAndRemovedFieldsFuncs},
 	}))
 
 	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
-		Hub:         &v1alpha4.AzureMachineTemplate{},
+		Hub:         &v1beta1.AzureMachineTemplate{},
 		Spoke:       &AzureMachineTemplate{},
 		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedAndRemovedFieldsFuncs},
 	}))
 
 	t.Run("for AzureClusterIdentity", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
-		Hub:         &v1alpha4.AzureClusterIdentity{},
+		Hub:         &v1beta1.AzureClusterIdentity{},
 		Spoke:       &AzureClusterIdentity{},
 		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedAndRemovedFieldsFuncs},
 	}))
@@ -86,9 +86,9 @@ func overrideDeprecatedAndRemovedFieldsFuncs(codecs runtimeserializer.CodecFacto
 
 func overrideOutboundLBFunc(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
-		func(networkSpec *v1alpha4.NetworkSpec, c fuzz.Continue) {
-			networkSpec.ControlPlaneOutboundLB = &v1alpha4.LoadBalancerSpec{FrontendIPsCount: pointer.Int32Ptr(1)}
-			networkSpec.NodeOutboundLB = &v1alpha4.LoadBalancerSpec{FrontendIPsCount: pointer.Int32Ptr(1)}
+		func(networkSpec *v1beta1.NetworkSpec, c fuzz.Continue) {
+			networkSpec.ControlPlaneOutboundLB = &v1beta1.LoadBalancerSpec{FrontendIPsCount: pointer.Int32Ptr(1)}
+			networkSpec.NodeOutboundLB = &v1beta1.LoadBalancerSpec{FrontendIPsCount: pointer.Int32Ptr(1)}
 		},
 	}
 }

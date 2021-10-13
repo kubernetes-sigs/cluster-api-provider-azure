@@ -46,7 +46,7 @@ To use a custom image, it needs to be referenced in an `image:` section of your 
 To use an image from the [Shared Image Gallery][shared-image-gallery], fill in the `resourceGroup`, `name`, `subscriptionID`, `gallery`, and `version` fields:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: capz-shared-gallery-example
@@ -87,7 +87,7 @@ If the image you want to use is based on an image released by a third party publ
 `Flatcar Linux` by `Kinvolk`, then you need to specify the `publisher`, `offer`, and `sku` fields as well:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: capz-shared-gallery-example
@@ -113,7 +113,7 @@ This will make API calls to create Virtual Machines or Virtual Machine Scale Set
 To use a managed image resource by ID, only the `id` field must be set:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: capz-image-id-example
@@ -133,7 +133,7 @@ Managed images support only 20 simultaneous deployments, so for most use cases S
 To use an image from [Azure Marketplace][azure-marketplace], populate the `publisher`, `offer`, `sku`, and `version` fields and, if this image is published by a third party publisher, set the `thirdPartyImage` flag to `true` so an image Plan can be generated for it. In the case of a third party image, you must accept the license terms with the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/vm/image/terms?view=azure-cli-latest) before consuming it.
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: capz-marketplace-example

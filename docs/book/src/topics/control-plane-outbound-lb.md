@@ -15,7 +15,7 @@ To create a control plane outbound load balancer, include the `controlPlaneOutbo
 Here is an example of configuring a control plane outbound load balancer with 1 front end ip for a private cluster:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: my-private-cluster

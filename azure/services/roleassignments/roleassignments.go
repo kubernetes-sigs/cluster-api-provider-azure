@@ -60,8 +60,8 @@ func New(scope RoleAssignmentScope) *Service {
 
 // Reconcile creates a role assignment.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "roleassignments.Service.Reconcile")
+	defer done()
 
 	for _, roleSpec := range s.Scope.RoleAssignmentSpecs() {
 		switch roleSpec.ResourceType {
@@ -78,8 +78,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 }
 
 func (s *Service) reconcileVM(ctx context.Context, roleSpec azure.RoleAssignmentSpec) error {
-	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.reconcileVM")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "roleassignments.Service.reconcileVM")
+	defer done()
 
 	resultVM, err := s.virtualMachinesClient.Get(ctx, s.Scope.ResourceGroup(), roleSpec.MachineName)
 	if err != nil {
@@ -97,8 +97,8 @@ func (s *Service) reconcileVM(ctx context.Context, roleSpec azure.RoleAssignment
 }
 
 func (s *Service) reconcileVMSS(ctx context.Context, roleSpec azure.RoleAssignmentSpec) error {
-	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.reconcileVMSS")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "roleassignments.Service.reconcileVMSS")
+	defer done()
 
 	resultVMSS, err := s.virtualMachineScaleSetClient.Get(ctx, s.Scope.ResourceGroup(), roleSpec.MachineName)
 	if err != nil {
@@ -116,8 +116,8 @@ func (s *Service) reconcileVMSS(ctx context.Context, roleSpec azure.RoleAssignme
 }
 
 func (s *Service) assignRole(ctx context.Context, roleAssignmentName string, principalID *string) error {
-	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.assignRole")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "roleassignments.Service.assignRole")
+	defer done()
 
 	scope := fmt.Sprintf("/subscriptions/%s/", s.Scope.SubscriptionID())
 	// Azure built-in roles https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
@@ -134,8 +134,8 @@ func (s *Service) assignRole(ctx context.Context, roleAssignmentName string, pri
 
 // Delete is a no-op as the role assignments get deleted as part of VM deletion.
 func (s *Service) Delete(ctx context.Context) error {
-	_, span := tele.Tracer().Start(ctx, "roleassignments.Service.Delete")
-	defer span.End()
+	_, _, done := tele.StartSpanWithLogger(ctx, "roleassignments.Service.Delete")
+	defer done()
 
 	return nil
 }

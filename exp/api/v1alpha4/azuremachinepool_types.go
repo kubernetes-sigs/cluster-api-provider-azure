@@ -282,10 +282,10 @@ type (
 		// +optional
 		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
-		// LongRunningOperationState saves the state for an Azure long-running operations so it can be continued on the
+		// LongRunningOperationStates saves the state for Azure long-running operations so they can be continued on the
 		// next reconciliation loop.
 		// +optional
-		LongRunningOperationState *infrav1.Future `json:"longRunningOperationState,omitempty"`
+		LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
 	}
 
 	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
@@ -319,7 +319,6 @@ type (
 	// +kubebuilder:object:root=true
 	// +kubebuilder:subresource:status
 	// +kubebuilder:resource:path=azuremachinepools,scope=Namespaced,categories=cluster-api,shortName=amp
-	// +kubebuilder:storageversion
 	// +kubebuilder:printcolumn:name="Replicas",type="string",JSONPath=".status.replicas",description="AzureMachinePool replicas count"
 	// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="AzureMachinePool replicas count"
 	// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.provisioningState",description="Azure VMSS provisioning state"
@@ -355,6 +354,16 @@ func (amp *AzureMachinePool) GetConditions() clusterv1.Conditions {
 // SetConditions will set the given conditions on an AzureMachinePool object.
 func (amp *AzureMachinePool) SetConditions(conditions clusterv1.Conditions) {
 	amp.Status.Conditions = conditions
+}
+
+// GetFutures returns the list of long running operation states for an AzureMachinePool API object.
+func (amp *AzureMachinePool) GetFutures() infrav1.Futures {
+	return amp.Status.LongRunningOperationStates
+}
+
+// SetFutures will set the given long running operation states on an AzureMachinePool object.
+func (amp *AzureMachinePool) SetFutures(futures infrav1.Futures) {
+	amp.Status.LongRunningOperationStates = futures
 }
 
 func init() {

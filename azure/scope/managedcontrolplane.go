@@ -29,16 +29,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capiexputil "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 )
 
 // ManagedControlPlaneScopeParams defines the input parameters used to create a new managed
@@ -116,7 +118,7 @@ type ManagedControlPlaneScope struct {
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	PatchTarget      client.Object
 
-	SystemNodePools []infrav1exp.AzureManagedMachinePool
+	AllNodePools []infrav1exp.AzureManagedMachinePool
 }
 
 // ResourceGroup returns the managed control plane's resource group.
@@ -193,6 +195,16 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
 		Name:          s.ControlPlane.Spec.VirtualNetwork.Name,
 		CIDRBlocks:    []string{s.ControlPlane.Spec.VirtualNetwork.CIDRBlock},
+	}
+}
+
+// GroupSpec returns the resource group spec.
+func (s *ManagedControlPlaneScope) GroupSpec() azure.ResourceSpecGetter {
+	return &groups.GroupSpec{
+		Name:           s.ResourceGroup(),
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
 	}
 }
 
@@ -325,6 +337,11 @@ func (s *ManagedControlPlaneScope) CloudProviderConfigOverrides() *infrav1.Cloud
 	return nil
 }
 
+// FailureDomains returns the failure domains for the cluster.
+func (s *ManagedControlPlaneScope) FailureDomains() []string {
+	return []string{}
+}
+
 // ManagedClusterSpec returns the managed cluster spec.
 func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpec, error) {
 	decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(s.ControlPlane.Spec.SSHPublicKey)
@@ -404,16 +421,40 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		}
 	}
 
+	if s.ControlPlane.Spec.SKU != nil {
+		managedClusterSpec.SKU = &azure.SKU{
+			Tier: s.ControlPlane.Spec.SKU.Tier,
+		}
+	}
+
+	if s.ControlPlane.Spec.LoadBalancerProfile != nil {
+		managedClusterSpec.LoadBalancerProfile = &azure.LoadBalancerProfile{
+			ManagedOutboundIPs:     s.ControlPlane.Spec.LoadBalancerProfile.ManagedOutboundIPs,
+			OutboundIPPrefixes:     s.ControlPlane.Spec.LoadBalancerProfile.OutboundIPPrefixes,
+			OutboundIPs:            s.ControlPlane.Spec.LoadBalancerProfile.OutboundIPs,
+			AllocatedOutboundPorts: s.ControlPlane.Spec.LoadBalancerProfile.AllocatedOutboundPorts,
+			IdleTimeoutInMinutes:   s.ControlPlane.Spec.LoadBalancerProfile.IdleTimeoutInMinutes,
+		}
+	}
+
+	if s.ControlPlane.Spec.APIServerAccessProfile != nil {
+		managedClusterSpec.APIServerAccessProfile = &azure.APIServerAccessProfile{
+			AuthorizedIPRanges:             s.ControlPlane.Spec.APIServerAccessProfile.AuthorizedIPRanges,
+			EnablePrivateCluster:           s.ControlPlane.Spec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 s.ControlPlane.Spec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: s.ControlPlane.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+	}
+
 	return managedClusterSpec, nil
 }
 
-// GetSystemAgentPoolSpecs gets a slice of azure.AgentPoolSpec for system agent pools.
-func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
-	if len(s.SystemNodePools) == 0 {
+// GetAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.
+func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
+	if len(s.AllNodePools) == 0 {
 		opt1 := client.InNamespace(s.ControlPlane.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
-			infrav1exp.LabelAgentPoolMode: string(infrav1exp.NodePoolModeSystem),
-			clusterv1.ClusterLabelName:    s.Cluster.Name,
+			clusterv1.ClusterLabelName: s.Cluster.Name,
 		})
 
 		ammpList := &infrav1exp.AzureManagedMachinePoolList{}
@@ -422,16 +463,13 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 			return nil, err
 		}
 
-		if ammpList == nil || len(ammpList.Items) == 0 {
-			return nil, errors.New("failed to fetch azuremanagedMachine pool with mode:System, require at least 1 system node pool")
-		}
-
-		s.SystemNodePools = ammpList.Items
+		s.AllNodePools = ammpList.Items
 	}
 
 	ammps := []azure.AgentPoolSpec{}
 
-	for _, pool := range s.SystemNodePools {
+	foundSystemPool := false
+	for _, pool := range s.AllNodePools {
 		// Fetch the owning MachinePool.
 
 		ownerPool, err := capiexputil.GetOwnerMachinePool(ctx, s.Client, pool.ObjectMeta)
@@ -444,11 +482,16 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 			continue
 		}
 
+		if pool.Spec.Mode == string(infrav1exp.NodePoolModeSystem) {
+			foundSystemPool = true
+		}
+
 		ammp := azure.AgentPoolSpec{
-			Name:         pool.Name,
+			Name:         *pool.Spec.Name,
 			SKU:          pool.Spec.SKU,
 			Replicas:     1,
 			OSDiskSizeGB: 0,
+			Mode:         pool.Spec.Mode,
 		}
 
 		// Set optional values
@@ -461,6 +504,10 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 		}
 
 		ammps = append(ammps, ammp)
+	}
+
+	if !foundSystemPool {
+		return nil, errors.New("failed to fetch azuremanagedMachine pool with mode:System, require at least 1 system node pool")
 	}
 
 	return ammps, nil
@@ -480,7 +527,7 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 	}
 
 	agentPoolSpec := azure.AgentPoolSpec{
-		Name:          s.InfraMachinePool.Name,
+		Name:          *s.InfraMachinePool.Spec.Name,
 		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
 		Cluster:       s.ControlPlane.Name,
 		SKU:           s.InfraMachinePool.Spec.SKU,
@@ -543,4 +590,35 @@ func (s *ManagedControlPlaneScope) GetKubeConfigData() []byte {
 // SetKubeConfigData sets kubeconfig data.
 func (s *ManagedControlPlaneScope) SetKubeConfigData(kubeConfigData []byte) {
 	s.kubeConfigData = kubeConfigData
+}
+
+// SetLongRunningOperationState will set the future on the AzureManagedControlPlane status to allow the resource to continue
+// in the next reconciliation.
+func (s *ManagedControlPlaneScope) SetLongRunningOperationState(future *infrav1.Future) {
+	futures.Set(s.ControlPlane, future)
+}
+
+// GetLongRunningOperationState will get the future on the AzureManagedControlPlane status.
+func (s *ManagedControlPlaneScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
+	return futures.Get(s.ControlPlane, name, service)
+}
+
+// DeleteLongRunningOperationState will delete the future from the AzureManagedControlPlane status.
+func (s *ManagedControlPlaneScope) DeleteLongRunningOperationState(name, service string) {
+	futures.Delete(s.ControlPlane, name, service)
+}
+
+// UpdateDeleteStatus updates a condition on the AzureManagedControlPlane status after a DELETE operation.
+func (s *ManagedControlPlaneScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+	// TODO: add condition to AzureManagedControlPlane status
+}
+
+// UpdatePutStatus updates a condition on the AzureManagedControlPlane status after a PUT operation.
+func (s *ManagedControlPlaneScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+	// TODO: add condition to AzureManagedControlPlane status
+}
+
+// UpdatePatchStatus updates a condition on the AzureManagedControlPlane status after a PATCH operation.
+func (s *ManagedControlPlaneScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+	// TODO: add condition to AzureManagedControlPlane status
 }
