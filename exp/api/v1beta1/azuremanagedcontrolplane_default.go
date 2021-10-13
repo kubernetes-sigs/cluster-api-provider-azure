@@ -59,18 +59,20 @@ func (r *AzureManagedControlPlane) setDefaultVirtualNetwork() {
 	if r.Spec.VirtualNetwork.Name == "" {
 		r.Spec.VirtualNetwork.Name = r.Name
 	}
-	if r.Spec.VirtualNetwork.CIDRBlock == "" {
-		r.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDR
+	if len(r.Spec.VirtualNetwork.CIDRBlocks) == 0 {
+		r.Spec.VirtualNetwork.CIDRBlocks = []string{defaultAKSVnetCIDR}
 	}
 }
 
-// setDefaultSubnet sets the default Subnet for an AzureManagedControlPlane.
-func (r *AzureManagedControlPlane) setDefaultSubnet() {
-	if r.Spec.VirtualNetwork.Subnet.Name == "" {
-		r.Spec.VirtualNetwork.Subnet.Name = r.Name
-	}
-	if r.Spec.VirtualNetwork.Subnet.CIDRBlock == "" {
-		r.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDR
+// setDefaultSubnets sets the default Subnet for an AzureManagedControlPlane.
+func (r *AzureManagedControlPlane) setDefaultSubnets() {
+	if len(r.Spec.VirtualNetwork.Subnets) == 0 {
+		r.Spec.VirtualNetwork.Subnets = []ManagedControlPlaneSubnet{
+			{
+				Name:       r.Name,
+				CIDRBlocks: []string{defaultAKSNodeSubnetCIDR},
+			},
+		}
 	}
 }
 

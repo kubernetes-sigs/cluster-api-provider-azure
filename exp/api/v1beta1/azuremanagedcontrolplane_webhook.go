@@ -79,7 +79,7 @@ func (r *AzureManagedControlPlane) Default() {
 
 	r.setDefaultNodeResourceGroupName()
 	r.setDefaultVirtualNetwork()
-	r.setDefaultSubnet()
+	r.setDefaultSubnets()
 	r.setDefaultSku()
 }
 
@@ -270,6 +270,8 @@ func (r *AzureManagedControlPlane) Validate() error {
 		r.validateSSHKey,
 		r.validateLoadBalancerProfile,
 		r.validateAPIServerAccessProfile,
+		r.validateVnet,
+		r.validateSubnets,
 	}
 
 	var errs []error
@@ -379,6 +381,43 @@ func (r *AzureManagedControlPlane) validateAPIServerAccessProfile() error {
 			azuremanagedcontrolplanelog.Info("Invalid apiServerAccessProfile: %s", agg.Error())
 			return agg
 		}
+	}
+	return nil
+}
+
+// validateVnet validates virtual network.
+func (r *AzureManagedControlPlane) validateVnet() error {
+	var allErrs field.ErrorList
+	for _, cidr := range r.Spec.VirtualNetwork.CIDRBlocks {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "CIDRBlocks"), cidr, "invalid CIDR format"))
+		}
+	}
+	if len(allErrs) > 0 {
+		agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+		azuremanagedcontrolplanelog.Info("Invalid VirtualNetwork: %s", agg.Error())
+		return agg
+	}
+	return nil
+}
+
+// validateSubnets validates subnets.
+func (r *AzureManagedControlPlane) validateSubnets() error {
+	var allErrs field.ErrorList
+	for _, subnet := range r.Spec.VirtualNetwork.Subnets {
+		if len(subnet.CIDRBlocks) == 0 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "Subnets"), subnet, "subnet must have at least one CIDR block"))
+		}
+		for _, cidr := range subnet.CIDRBlocks {
+			if _, _, err := net.ParseCIDR(cidr); err != nil {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "Subnets", "CIDRBlocks"), cidr, "invalid CIDR format"))
+			}
+		}
+	}
+	if len(allErrs) > 0 {
+		agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+		azuremanagedcontrolplanelog.Info("Invalid Subnets: %s", agg.Error())
+		return agg
 	}
 	return nil
 }

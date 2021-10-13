@@ -186,16 +186,16 @@ type APIServerAccessProfile struct {
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
 type ManagedControlPlaneVirtualNetwork struct {
-	Name      string `json:"name"`
-	CIDRBlock string `json:"cidrBlock"`
+	Name       string                      `json:"name"`
+	CIDRBlocks []string                    `json:"cidrBlocks"`
 	// +optional
-	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
+	Subnets    []ManagedControlPlaneSubnet `json:"subnets,omitempty"`
 }
 
 // ManagedControlPlaneSubnet describes a subnet for an AKS cluster.
 type ManagedControlPlaneSubnet struct {
-	Name      string `json:"name"`
-	CIDRBlock string `json:"cidrBlock"`
+	Name       string   `json:"name"`
+	CIDRBlocks []string `json:"cidrBlocks"`
 }
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.
