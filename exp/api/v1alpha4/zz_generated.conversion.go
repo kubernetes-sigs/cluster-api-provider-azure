@@ -1280,7 +1280,7 @@ func Convert_v1beta1_MachineRollingUpdateDeployment_To_v1alpha4_MachineRollingUp
 
 func autoConvert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet(in *ManagedControlPlaneSubnet, out *v1beta1.ManagedControlPlaneSubnet, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
+	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
 	return nil
 }
 
@@ -1291,7 +1291,7 @@ func Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSu
 
 func autoConvert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(in *v1beta1.ManagedControlPlaneSubnet, out *ManagedControlPlaneSubnet, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
+	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
 	return nil
 }
 
@@ -1302,10 +1302,8 @@ func Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSu
 
 func autoConvert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedControlPlaneVirtualNetwork(in *ManagedControlPlaneVirtualNetwork, out *v1beta1.ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
-	if err := Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet(&in.Subnet, &out.Subnet, s); err != nil {
-		return err
-	}
+	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
+	out.Subnets = *(*[]v1beta1.ManagedControlPlaneSubnet)(unsafe.Pointer(&in.Subnets))
 	return nil
 }
 
@@ -1316,10 +1314,8 @@ func Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedContro
 
 func autoConvert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork(in *v1beta1.ManagedControlPlaneVirtualNetwork, out *ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
-	if err := Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(&in.Subnet, &out.Subnet, s); err != nil {
-		return err
-	}
+	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
+	out.Subnets = *(*[]ManagedControlPlaneSubnet)(unsafe.Pointer(&in.Subnets))
 	return nil
 }
 
