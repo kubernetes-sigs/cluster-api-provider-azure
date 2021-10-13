@@ -10,6 +10,37 @@ spec:
 kind: ConfigMap
 apiVersion: v1
 metadata:
+  name: calico-static-rules
+  namespace: kube-system
+  labels:
+    tier: node
+    app: calico
+data:
+  static-rules.json: |
+    {
+      "Provider": "azure",
+      "Version": "0.1",
+      "Rules": [
+        {
+          "Name": "EndpointPolicy",
+          "Rule": {
+              "Id": "wireserver",
+              "Type": "ACL",
+              "Protocol": 6,
+              "Action": "Block",
+              "Direction": "Out",
+              "RemoteAddresses": "168.63.129.16/32",
+              "RemotePorts": "80",
+              "Priority": 200,
+              "RuleType": "Switch"
+            }
+          }
+      ]
+    } 
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
   name: calico-config-windows
   namespace: kube-system
   labels:
@@ -17,6 +48,7 @@ metadata:
     app: calico
 data:
   veth_mtu: "1350"
+  
   cni_network_config: |
     {
       "name": "Calico",
@@ -207,6 +239,9 @@ spec:
         volumeMounts:
         - name: calico-config-windows
           mountPath: /etc/kube-calico-windows/
+        - name: calico-static-rules
+          mountPath: /calico/static-rules.json
+          subPath: static-rules.json
         env:
         - name: POD_NAME
           valueFrom:
@@ -226,6 +261,9 @@ spec:
       - name: calico-config-windows
         configMap:
           name: calico-config-windows
+      - name: calico-static-rules
+        configMap:
+          name: calico-static-rules
       # Used to install CNI.
       - name: cni-bin-dir
         hostPath:
