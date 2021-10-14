@@ -323,6 +323,11 @@ func (m *MachineScope) AvailabilitySet() (string, bool) {
 		return azure.GenerateAvailabilitySetName(m.ClusterName(), mdName), true
 	}
 
+	// if machine deployment name label is not available, use machine set name.
+	if msName, ok := m.Machine.Labels[clusterv1.MachineSetLabelName]; ok {
+		return azure.GenerateAvailabilitySetName(m.ClusterName(), msName), true
+	}
+
 	return "", false
 }
 
