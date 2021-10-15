@@ -423,10 +423,15 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
+  annotations:
+    runtime: dockershim
   name: ${CLUSTER_NAME}-md-win
   namespace: default
 spec:
   template:
+    metadata:
+      annotations:
+        runtime: dockershim
     spec:
       image:
         marketplace:
@@ -502,7 +507,6 @@ spec:
             azure-container-registry-config: c:/k/azure.json
             cloud-config: c:/k/azure.json
             cloud-provider: azure
-            pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:1.4.1
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - nssm set kubelet start SERVICE_AUTO_START
