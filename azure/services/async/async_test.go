@@ -171,7 +171,7 @@ func TestCreateResource(t *testing.T) {
 	}{
 		{
 			name:          "create operation is already in progress",
-			expectedError: "transient reconcile error occurred: operation type PUT on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
+			expectedError: "operation type PUT on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -208,7 +208,7 @@ func TestCreateResource(t *testing.T) {
 		},
 		{
 			name:          "create async exits before completing",
-			expectedError: "transient reconcile error occurred: operation type PUT on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
+			expectedError: "operation type PUT on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -257,7 +257,7 @@ func TestDeleteResource(t *testing.T) {
 	}{
 		{
 			name:          "delete operation is already in progress",
-			expectedError: "transient reconcile error occurred: operation type DELETE on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
+			expectedError: "operation type DELETE on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -293,7 +293,7 @@ func TestDeleteResource(t *testing.T) {
 		},
 		{
 			name:          "delete async exits before completing",
-			expectedError: "transient reconcile error occurred: operation type DELETE on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
+			expectedError: "operation type DELETE on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())

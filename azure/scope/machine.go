@@ -57,10 +57,7 @@ type MachineScopeParams struct {
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
-func NewMachineScope(ctx context.Context, params MachineScopeParams) (*MachineScope, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.machineScope.NewMachineScope")
-	defer done()
-
+func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.Client == nil {
 		return nil, errors.New("client is required when creating a MachineScope")
 	}
@@ -79,7 +76,7 @@ func NewMachineScope(ctx context.Context, params MachineScopeParams) (*MachineSc
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	m := &MachineScope{
+	return &MachineScope{
 		client:        params.Client,
 		Machine:       params.Machine,
 		AzureMachine:  params.AzureMachine,
@@ -87,14 +84,7 @@ func NewMachineScope(ctx context.Context, params MachineScopeParams) (*MachineSc
 		patchHelper:   helper,
 		ClusterScoper: params.ClusterScope,
 		cache:         params.Cache,
-	}
-
-	err = m.initMachineCache(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to init machine scope cache")
-	}
-
-	return m, nil
+	}, nil
 }
 
 // MachineScope defines a scope defined around a machine and its cluster.
@@ -116,8 +106,8 @@ type MachineCache struct {
 	VMSKU         resourceskus.SKU
 }
 
-// initMachineCache sets cached information about the machine to be used in the scope.
-func (m *MachineScope) initMachineCache(ctx context.Context) error {
+// InitMachineCache sets cached information about the machine to be used in the scope.
+func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.machineScope.initMachineCache")
 	defer done()
 
@@ -150,7 +140,7 @@ func (m *MachineScope) initMachineCache(ctx context.Context) error {
 
 // VMSpec returns the VM spec.
 func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
-	return &virtualmachines.VMSpec{
+	spec := &virtualmachines.VMSpec{
 		Name:                   m.Name(),
 		Location:               m.Location(),
 		ResourceGroup:          m.ResourceGroup(),
@@ -168,11 +158,14 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 		SpotVMOptions:          m.AzureMachine.Spec.SpotVMOptions,
 		SecurityProfile:        m.AzureMachine.Spec.SecurityProfile,
 		AdditionalTags:         m.AdditionalTags(),
-		SKU:                    m.cache.VMSKU,
-		Image:                  m.cache.VMImage,
-		BootstrapData:          m.cache.BootstrapData,
 		ProviderID:             m.ProviderID(),
 	}
+	if m.cache != nil {
+		spec.SKU = m.cache.VMSKU
+		spec.Image = m.cache.VMImage
+		spec.BootstrapData = m.cache.BootstrapData
+	}
+	return spec
 }
 
 // TagsSpecs returns the tags for the AzureMachine.

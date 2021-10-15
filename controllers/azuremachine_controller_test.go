@@ -173,7 +173,7 @@ func TestConditions(t *testing.T) {
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
-			machineScope, err := scope.NewMachineScope(context.TODO(), scope.MachineScopeParams{
+			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 				Client:       client,
 				ClusterScope: clusterScope,
 				Machine:      tc.machine,

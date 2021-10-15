@@ -150,7 +150,7 @@ func TestDeleteGroups(t *testing.T) {
 		},
 		{
 			name:          "long running delete operation is not done",
-			expectedError: "transient reconcile error occurred: operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s",
+			expectedError: "operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
@@ -158,7 +158,7 @@ func TestDeleteGroups(t *testing.T) {
 				s.ClusterName().Return("test-cluster")
 				s.GetLongRunningOperationState("test-group", serviceName).Times(2).Return(&fakeFuture)
 				m.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, nil)
-				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, gomockinternal.ErrStrEq("transient reconcile error occurred: operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s"))
+				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, gomockinternal.ErrStrEq("operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s"))
 			},
 		},
 		{
@@ -206,7 +206,7 @@ func TestDeleteGroups(t *testing.T) {
 		},
 		{
 			name:          "context deadline exceeded while deleting resource group",
-			expectedError: "transient reconcile error occurred: operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s",
+			expectedError: "operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
@@ -215,7 +215,7 @@ func TestDeleteGroups(t *testing.T) {
 				s.ClusterName().Return("test-cluster")
 				m.DeleteAsync(gomockinternal.AContext(), &fakeGroupSpec).Return(&azureautorest.Future{}, errCtxExceeded)
 				s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{}))
-				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, gomockinternal.ErrStrEq("transient reconcile error occurred: operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s"))
+				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, gomockinternal.ErrStrEq("operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s"))
 			},
 		},
 		{

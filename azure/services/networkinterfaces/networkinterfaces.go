@@ -167,7 +167,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer done()
 
 	for _, nicSpec := range s.Scope.NICSpecs() {
-		s.Scope.V(2).Info("deleting network interface %s", "network interface", nicSpec.Name)
+		s.Scope.V(2).Info("deleting network interface", "network interface", nicSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		if err != nil && !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete network interface %s in resource group %s", nicSpec.Name, s.Scope.ResourceGroup())

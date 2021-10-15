@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -214,7 +215,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Create the machine scope
-	machineScope, err := scope.NewMachineScope(ctx, scope.MachineScopeParams{
+	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 		Logger:       logger,
 		Client:       amr.Client,
 		Machine:      machine,
@@ -260,6 +261,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		return reconcile.Result{}, err
 	}
 
+	// Make sure the Cluster Infrastructure is ready.
 	if !clusterScope.Cluster.Status.InfrastructureReady {
 		machineScope.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForClusterInfrastructureReason, clusterv1.ConditionSeverityInfo, "")
@@ -271,6 +273,12 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		machineScope.Info("Bootstrap data secret reference is not yet available")
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForBootstrapDataReason, clusterv1.ConditionSeverityInfo, "")
 		return reconcile.Result{}, nil
+	}
+
+	// Initialize the cache to be used by the AzureMachine services.
+	err := machineScope.InitMachineCache(ctx)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to init machine scope cache")
 	}
 
 	ams, err := amr.createAzureMachineService(machineScope)
@@ -304,7 +312,11 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 			}
 
 			if reconcileError.IsTransient() {
-				machineScope.V(2).Info("transient failure to reconcile AzureMachine, retrying", "name", machineScope.Name())
+				if azure.IsOperationNotDoneError(reconcileError) {
+					machineScope.V(2).Info(fmt.Sprintf("AzureMachine reconcile not done: %s", reconcileError.Error()))
+				} else {
+					machineScope.V(2).Info("transient failure to reconcile AzureMachine, retrying")
+				}
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 		}
@@ -317,7 +329,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 	return reconcile.Result{}, nil
 }
 
-func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
+func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineReconciler.reconcileDelete")
 	defer done()
 
@@ -327,29 +339,37 @@ func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineS
 		return reconcile.Result{}, err
 	}
 
-	defer func() {
-		if reterr == nil {
-			machineScope.Info("Removing finalizer from AzureMachine")
-			controllerutil.RemoveFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
-		}
-	}()
-
 	if ShouldDeleteIndividualResources(ctx, clusterScope) {
 		machineScope.Info("Deleting AzureMachine")
 		ams, err := amr.createAzureMachineService(machineScope)
 		if err != nil {
-			reterr = errors.Wrap(err, "failed to create azure machine service")
-			return
+			return reconcile.Result{}, errors.Wrap(err, "failed to create azure machine service")
 		}
 
 		if err := ams.Delete(ctx); err != nil {
-			amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
-			reterr = errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
-			return
+			// Handle transient errors
+			var reconcileError azure.ReconcileError
+			if errors.As(err, &reconcileError) {
+				if reconcileError.IsTransient() {
+					if azure.IsOperationNotDoneError(reconcileError) {
+						machineScope.V(2).Info(fmt.Sprintf("AzureMachine delete not done: %s", reconcileError.Error()))
+					} else {
+						machineScope.V(2).Info("transient failure to delete AzureMachine, retrying")
+					}
+					return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
+				}
+			}
+
+			amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", machineScope.Namespace(), machineScope.Name()).Error())
+			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachine %s/%s", machineScope.Namespace(), machineScope.Name())
 		}
 	} else {
 		machineScope.Info("Skipping AzureMachine Deletion; will delete whole resource group.")
 	}
 
-	return reconcile.Result{}, reterr
+	// we're done deleting this AzureMachine so remove the finalizer.
+	machineScope.Info("Removing finalizer from AzureMachine")
+	controllerutil.RemoveFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
+
+	return reconcile.Result{}, nil
 }
