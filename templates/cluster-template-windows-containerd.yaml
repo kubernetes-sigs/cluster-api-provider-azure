@@ -286,6 +286,9 @@ spec:
         owner: root:root
         path: c:/k/azure.json
         permissions: "0644"
+      - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+        path: C:/defender-exclude-calico.ps1
+        permissions: "0744"
       joinConfiguration:
         nodeRegistration:
           criSocket: npipe:////./pipe/containerd-containerd
@@ -297,6 +300,7 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - nssm set kubelet start SERVICE_AUTO_START
+      - powershell C:/defender-exclude-calico.ps1
       preKubeadmCommands: []
       users:
       - groups: Administrators
