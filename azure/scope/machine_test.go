@@ -312,11 +312,9 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO(karuppiah789): Make the tests parallel and still work in case of errors and success with no false results.
-			// Currently when tests run in parallel, if there's an error in the test it doesn't show up in the test result
-			// leading to a false result. Or it shows false errors due to some mix up happening when tests run in parallel.
-			// t.Parallel()
+			t.Parallel()
 			g := NewWithT(t)
 			got := tt.machineScope.PublicIPSpecs()
 			g.Expect(got).To(ConsistOf(tt.want))

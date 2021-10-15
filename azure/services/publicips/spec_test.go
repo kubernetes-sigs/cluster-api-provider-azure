@@ -130,11 +130,9 @@ func TestParameters(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			// TODO(karuppiah789): Make the tests parallel and still work in case of errors and success with no false results.
-			// Currently when tests run in parallel, if there's an error in the test it doesn't show up in the test result
-			// leading to a false result. Or it shows false errors due to some mix up happening when tests run in parallel.
-			// t.Parallel()
+			t.Parallel()
 			g := NewWithT(t)
 
 			publicIPAddressI, err := testCase.publicIPSpec.Parameters(testCase.existingPublicIPAddress)
