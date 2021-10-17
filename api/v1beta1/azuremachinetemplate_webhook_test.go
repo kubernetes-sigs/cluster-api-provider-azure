@@ -229,6 +229,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 	}
 
 	for _, amt := range tests {
+		amt := amt
 		t.Run(amt.name, func(t *testing.T) {
 			t.Parallel()
 			err := amt.template.ValidateUpdate(amt.oldTemplate)
