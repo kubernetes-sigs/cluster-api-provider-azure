@@ -94,8 +94,8 @@ GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
 KUBECTL_VER := v1.22.2
-KUBECTL_BIN := kubectl
-KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
+KUBECTL_BIN := $(TOOLS_BIN_DIR)/kubectl
+KUBECTL := $(KUBECTL_BIN)-$(KUBECTL_VER)
 
 KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
 ETCD=$(TOOLS_BIN_DIR)/etcd
@@ -261,8 +261,11 @@ $(KUBECTL): ## Build kubectl
 	mkdir -p $(TOOLS_BIN_DIR)
 	rm -f "$(KUBECTL)*"
 	curl --retry $(CURL_RETRIES) -fsL https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VER)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL)
-	ln -sf "$(KUBECTL)" "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)"
-	chmod +x "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)" "$(KUBECTL)"
+	ln -sf "$(KUBECTL)" "$(KUBECTL_BIN)"
+	chmod +x "$(KUBECTL_BIN)" "$(KUBECTL)"
+
+.PHONY: $(KUBECTL_BIN)
+$(KUBECTL_BIN): $(KUBECTL) ## Building kubectl from the tools folder
 
 ## --------------------------------------
 ## Linting
