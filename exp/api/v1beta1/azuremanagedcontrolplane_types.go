@@ -48,9 +48,11 @@ type AzureManagedControlPlaneSpec struct {
 	NodeResourceGroupName string `json:"nodeResourceGroupName,omitempty"`
 
 	// VirtualNetwork describes the vnet for the AKS cluster. Will be created if it does not exist.
+	// +optional
 	VirtualNetwork ManagedControlPlaneVirtualNetwork `json:"virtualNetwork,omitempty"`
 
 	// SubscriptionID is the GUID of the Azure subscription to hold this cluster.
+	// +optional
 	SubscriptionID string `json:"subscriptionID,omitempty"`
 
 	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
@@ -58,7 +60,7 @@ type AzureManagedControlPlaneSpec struct {
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
@@ -174,9 +176,10 @@ type APIServerAccessProfile struct {
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
 type ManagedControlPlaneVirtualNetwork struct {
-	Name      string                    `json:"name"`
-	CIDRBlock string                    `json:"cidrBlock"`
-	Subnet    ManagedControlPlaneSubnet `json:"subnet,omitempty"`
+	Name      string `json:"name"`
+	CIDRBlock string `json:"cidrBlock"`
+	// +optional
+	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
 }
 
 // ManagedControlPlaneSubnet describes a subnet for an AKS cluster.

@@ -34,6 +34,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces/mock_networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
@@ -46,14 +47,14 @@ func TestGetExistingVM(t *testing.T) {
 	testcases := []struct {
 		name          string
 		vmName        string
-		result        *infrav1.VM
+		result        *converters.VM
 		expectedError string
 		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder)
 	}{
 		{
 			name:   "get existing vm",
 			vmName: "my-vm",
-			result: &infrav1.VM{
+			result: &converters.VM{
 				ID:       "my-id",
 				Name:     "my-vm",
 				State:    "Succeeded",
@@ -124,7 +125,7 @@ func TestGetExistingVM(t *testing.T) {
 		{
 			name:          "vm not found",
 			vmName:        "my-vm",
-			result:        &infrav1.VM{},
+			result:        &converters.VM{},
 			expectedError: "#: Not found: StatusCode=404",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -135,7 +136,7 @@ func TestGetExistingVM(t *testing.T) {
 		{
 			name:          "vm retrieval fails",
 			vmName:        "my-vm",
-			result:        &infrav1.VM{},
+			result:        &converters.VM{},
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -146,7 +147,7 @@ func TestGetExistingVM(t *testing.T) {
 		{
 			name:          "get existing vm: error getting public IP",
 			vmName:        "my-vm",
-			result:        &infrav1.VM{},
+			result:        &converters.VM{},
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -195,7 +196,7 @@ func TestGetExistingVM(t *testing.T) {
 		{
 			name:          "get existing vm: public IP not found",
 			vmName:        "my-vm",
-			result:        &infrav1.VM{},
+			result:        &converters.VM{},
 			expectedError: "#: Not Found: StatusCode=404",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")

@@ -34,6 +34,7 @@ const (
 // AzureClusterSpec defines the desired state of AzureCluster.
 type AzureClusterSpec struct {
 	// NetworkSpec encapsulates all things related to Azure network.
+	// +optional
 	NetworkSpec NetworkSpec `json:"networkSpec,omitempty"`
 
 	// +optional
@@ -46,7 +47,7 @@ type AzureClusterSpec struct {
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
@@ -87,6 +88,7 @@ type AzureClusterStatus struct {
 	// the cluster is more resilient to failure.
 	// See: https://docs.microsoft.com/en-us/azure/availability-zones/az-overview
 	// This list will be used by Cluster API to try and spread the machines across the failure domains.
+	// +optional
 	FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
 
 	// Ready is true when the provider resource is ready.
