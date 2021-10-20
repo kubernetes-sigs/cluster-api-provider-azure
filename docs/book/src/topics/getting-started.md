@@ -6,6 +6,7 @@
 
 - A [Microsoft Azure account](https://azure.microsoft.com/en-us/)
 - Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
+- A [supported version](https://github.com/kubernetes-sigs/cluster-api-provider-azure#support-policy) of `clusterctl`
 
 ### Setting up your Azure environment
 
