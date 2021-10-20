@@ -46,24 +46,16 @@ spec:
 END
 )
 
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-cd "${REPO_ROOT}" || exit 1
-
-# Installation of kubectl
-mkdir -p "${REPO_ROOT}/hack/tools/bin"
-KUBECTL=$(realpath hack/tools/bin/kubectl)
-make "${KUBECTL}" &>/dev/null
-
 ## Install cert manager and wait for availability
-"${KUBECTL}" apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.0/cert-manager.yaml
-"${KUBECTL}" wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager
-"${KUBECTL}" wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-cainjector
-"${KUBECTL}" wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-webhook
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.0/cert-manager.yaml
+kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager
+kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-cainjector
+kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-webhook
 
 for _ in {1..6}; do
-  (echo "$TEST_RESOURCE" | ${KUBECTL} apply -f -) && break
+  (echo "$TEST_RESOURCE" | kubectl apply -f -) && break
   sleep 15
 done
 
-"${KUBECTL}" wait --for=condition=Ready --timeout=300s -n cert-manager-test certificate/selfsigned-cert
-echo "$TEST_RESOURCE" | "${KUBECTL}" delete -f -
+kubectl wait --for=condition=Ready --timeout=300s -n cert-manager-test certificate/selfsigned-cert
+echo "$TEST_RESOURCE" | kubectl delete -f -
