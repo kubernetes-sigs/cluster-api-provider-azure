@@ -73,6 +73,10 @@ The capability to set credentials using environment variables is now deprecated 
 
 Check out the [Cluster API Quick Start](https://cluster-api.sigs.k8s.io/user/quick-start.html) to create your first Kubernetes cluster on Azure using Cluster API. Make sure to select the "Azure" tabs.
 
+<h1> Warning </h1> 
+
+Not all versions of clusterctl are supported.  Please see which versions are [currently supported](https://github.com/kubernetes-sigs/cluster-api-provider-azure#support-policy)
+
 ### Documentation
 
 Please see the [CAPZ book](https://capz.sigs.k8s.io) for in-depth user documentation.
