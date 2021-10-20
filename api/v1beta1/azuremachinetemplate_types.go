@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // AzureMachineTemplateSpec defines the desired state of AzureMachineTemplate.
@@ -52,6 +53,8 @@ func init() {
 
 // AzureMachineTemplateResource describes the data needed to create an AzureMachine from a template.
 type AzureMachineTemplateResource struct {
+	// +optional
+	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
 	// Spec is the specification of the desired behavior of the machine.
 	Spec AzureMachineSpec `json:"spec"`
 }
