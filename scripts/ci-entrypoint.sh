@@ -33,7 +33,11 @@ source "${REPO_ROOT}/hack/ensure-kind.sh"
 # building kubectl from tools folder
 mkdir -p "${REPO_ROOT}/hack/tools/bin"
 KUBECTL=$(realpath hack/tools/bin/kubectl)
+# export the variable so it is available in bash -c wait_for_nodes below
+export KUBECTL
 make "${KUBECTL}" &>/dev/null
+echo "KUBECTL is set to ${KUBECTL}"
+
 
 # shellcheck source=hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
