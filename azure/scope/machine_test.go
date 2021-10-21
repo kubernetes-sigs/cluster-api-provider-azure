@@ -1060,7 +1060,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "if no image is specified and os specified is windows, returns windows image",
+			name: "if no image is specified and os specified is windows with version below 1.22, returns windows dockershim image",
 			machineScope: MachineScope{
 				Logger: klogr.New(),
 				Machine: &clusterv1.Machine{
@@ -1083,10 +1083,132 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				},
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.20.1")
+				image, _ := azure.GetDefaultWindowsImage("1.20.1", "dockershim")
 				return image
 			}(),
 			wantErr: false,
+		},
+		{
+			name: "if no image is specified and os specified is windows with version is 1.22+ with no annotation, returns windows containerd image",
+			machineScope: MachineScope{
+				Logger: klogr.New(),
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: clusterv1.MachineSpec{
+						Version: pointer.String("1.22.1"),
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: azure.WindowsOS,
+						},
+					},
+				},
+			},
+			want: func() *infrav1.Image {
+				image, _ := azure.GetDefaultWindowsImage("1.22.1", "containerd")
+				return image
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "if no image is specified and os specified is windows with version is 1.22+ with annotation dockershim, returns windows dockershim image",
+			machineScope: MachineScope{
+				Logger: klogr.New(),
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: clusterv1.MachineSpec{
+						Version: pointer.String("1.22.1"),
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+						Annotations: map[string]string{
+							"runtime": "dockershim",
+						},
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: azure.WindowsOS,
+						},
+					},
+				},
+			},
+			want: func() *infrav1.Image {
+				image, _ := azure.GetDefaultWindowsImage("1.22.1", "dockershim")
+				return image
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "if no image is specified and os specified is windows with version is less and 1.22 with annotation dockershim, returns windows dockershim image",
+			machineScope: MachineScope{
+				Logger: klogr.New(),
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: clusterv1.MachineSpec{
+						Version: pointer.String("1.21.1"),
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+						Annotations: map[string]string{
+							"runtime": "dockershim",
+						},
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: azure.WindowsOS,
+						},
+					},
+				},
+			},
+			want: func() *infrav1.Image {
+				image, _ := azure.GetDefaultWindowsImage("1.21.1", "dockershim")
+				return image
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "if no image is specified and os specified is windows with version is less and 1.22 with annotation containerd, returns error",
+			machineScope: MachineScope{
+				Logger: klogr.New(),
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: clusterv1.MachineSpec{
+						Version: pointer.String("1.21.1"),
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+						Annotations: map[string]string{
+							"runtime": "containerd",
+						},
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: azure.WindowsOS,
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "if no image and OS is specified, returns linux image",

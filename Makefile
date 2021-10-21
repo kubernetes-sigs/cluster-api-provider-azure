@@ -518,7 +518,9 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	# apply CNI ClusterResourceSets
 	kubectl create configmap calico-addon --from-file=templates/addons/calico.yaml
 	kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml
-	kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/
+	kubectl create configmap calico-windows-addon --from-file=templates/addons/windows/calico
+	kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel
+
 	kubectl apply -f templates/addons/calico-resource-set.yaml
 	kubectl apply -f templates/addons/flannel-resource-set.yaml
 

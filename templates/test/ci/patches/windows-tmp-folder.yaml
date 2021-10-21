@@ -1,0 +1,12 @@
+- op: add
+  path: /spec/template/spec/files/-
+  value:
+    content: |
+      # /tmp is assumed created and required for upstream e2e tests to pass
+      New-Item -ItemType Directory -Force -Path C:\tmp\
+    path: C:/create-temp-folder.ps1
+    permissions: "0744"
+- op: add
+  path: /spec/template/spec/preKubeadmCommands/-
+  value:
+    powershell C:/create-temp-folder.ps1

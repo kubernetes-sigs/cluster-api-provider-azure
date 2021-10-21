@@ -1,0 +1,9 @@
+namespace: default
+resources:
+  - ../default
+  - machine-deployment-windows.yaml
+
+patchesStrategicMerge:
+  - ../base-windows-containerd/kubeadm-control-plane.yaml
+  - ../base-windows-containerd/cluster.yaml
+

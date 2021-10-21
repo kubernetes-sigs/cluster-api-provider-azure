@@ -146,14 +146,6 @@ func collectLogsFromNode(ctx context.Context, managementClusterClient client.Cli
 	return kinderrors.AggregateConcurrent(linuxLogs(execToPathFn))
 }
 
-func isAzureMachineWindows(am *v1beta1.AzureMachine) bool {
-	return am.Spec.OSDisk.OSType == azure.WindowsOS
-}
-
-func isAzureMachinePoolWindows(amp *expv1alpha4.AzureMachinePool) bool {
-	return amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
-}
-
 func getHostname(m *clusterv1.Machine, isWindows bool) string {
 	hostname := m.Spec.InfrastructureRef.Name
 	if isWindows {

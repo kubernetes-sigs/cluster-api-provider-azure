@@ -18,7 +18,7 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v1.0.0",
     "cert_manager_version": "v1.1.0",
-    "kubernetes_version": "v1.19.11",
+    "kubernetes_version": "v1.22.2",
     "aks_kubernetes_version": "v1.20.5"
 }
 
@@ -220,7 +220,8 @@ def create_crs():
 
     # need to set version for kube-proxy on windows.
     os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))
-    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/ --dry-run=client -o yaml | " + envsubst_cmd + " | kubectl apply -f -")
+    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel/ --dry-run=client -o yaml | " + envsubst_cmd + " | kubectl apply -f -")
+    local("kubectl create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | kubectl apply -f -")
 
     # set up crs
     local("kubectl apply -f templates/addons/calico-resource-set.yaml")

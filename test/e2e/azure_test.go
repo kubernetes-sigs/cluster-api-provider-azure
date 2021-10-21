@@ -199,7 +199,7 @@ var _ = Describe("Workload cluster creation", func() {
 		fmt.Fprintf(GinkgoWriter, "INFO: skipping test requires pushing container images to external repository")
 	}
 
-	It("With 3 control-plane nodes and 2 worker nodes", func() {
+	It("With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes", func() {
 		clusterName = getClusterName(clusterNamePrefix, "ha")
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: bootstrapClusterProxy,
@@ -262,6 +262,18 @@ var _ = Describe("Workload cluster creation", func() {
 				}
 			})
 		})
+
+		Context("Creating an accessible load balancer for windows", func() {
+			AzureLBSpec(ctx, func() AzureLBSpecInput {
+				return AzureLBSpecInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Namespace:             namespace,
+					ClusterName:           clusterName,
+					SkipCleanup:           skipCleanup,
+					Windows:               true,
+				}
+			})
+		})
 	})
 
 	Context("Creating a ipv6 control-plane cluster", func() {
@@ -311,7 +323,7 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	Context("Creating a VMSS cluster", func() {
-		It("with a single control plane node and an AzureMachinePool with 2 nodes", func() {
+		It("with a single control plane node and an AzureMachinePool with 2 Linux and 2 Windows worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "vmss")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
@@ -349,6 +361,18 @@ var _ = Describe("Workload cluster creation", func() {
 						Namespace:             namespace,
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			Context("Creating an accessible load balancer for windows", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+						Windows:               true,
 					}
 				})
 			})
@@ -490,7 +514,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating a Windows Enabled cluster", func() {
+	Context("Creating a Windows Enabled cluster with dockershim", func() {
 		// Requires 3 control planes due to https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/857
 		It("With 3 control-plane nodes and 1 Linux worker node and 1 Windows worker node", func() {
 			clusterName = getClusterName(clusterNamePrefix, "win-ha")
@@ -538,7 +562,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating a Windows enabled VMSS cluster", func() {
+	Context("Creating a Windows enabled VMSS cluster with dockershim", func() {
 		It("with a single control plane node and an Linux AzureMachinePool with 1 nodes and Windows AzureMachinePool with 1 node", func() {
 			clusterName = getClusterName(clusterNamePrefix, "win-vmss")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{

@@ -62,8 +62,11 @@ func AzureFailureDomainsSpec(ctx context.Context, inputGetter func() AzureFailur
 		By("Ensuring zones match CAPI failure domains")
 
 		// fetch updated cluster object to ensure Status.FailureDomains is up-to-date
-		err := input.BootstrapClusterProxy.GetClient().Get(ctx, apimachinerytypes.NamespacedName{
-			Namespace: input.Namespace.Name, Name: input.ClusterName}, input.Cluster)
+		err := input.BootstrapClusterProxy.GetClient().Get(ctx,
+			apimachinerytypes.NamespacedName{
+				Namespace: input.Namespace.Name,
+				Name:      input.ClusterName,
+			}, input.Cluster)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(input.Cluster.Status.FailureDomains)).To(Equal(len(zones)))
 		for _, z := range zones {

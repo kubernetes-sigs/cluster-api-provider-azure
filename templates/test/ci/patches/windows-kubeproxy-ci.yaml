@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: windows-kubeproxy-ci
+  namespace: kube-system
+data:
+  KUBEPROXY_PATH: "c:/k/kube-proxy.exe"

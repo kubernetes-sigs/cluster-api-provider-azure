@@ -86,17 +86,23 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 				}
 			}
 
-			testFuncs = append(testFuncs,
-				execToStringFn(
-					"✓ chronyd is active",
-					"systemctl", "is-active", "chronyd", "&&",
-					"echo", "✓ chronyd is active",
-				),
-				execToStringFn(
-					"Reference ID",
-					"chronyc", "tracking",
-				),
-			)
+			// May need to break this up on clusters with larger number of nodes.  There is a 10 ssh connection default.
+			if s.IsWindows {
+				//skip for now
+				Logf("Skipping windows time sync check.  TODO: re-enable and check w32t service is running. Issue #1782")
+			} else {
+				testFuncs = append(testFuncs,
+					execToStringFn(
+						"✓ chronyd is active",
+						"systemctl", "is-active", "chronyd", "&&",
+						"echo", "✓ chronyd is active",
+					),
+					execToStringFn(
+						"Reference ID",
+						"chronyc", "tracking",
+					),
+				)
+			}
 		}
 
 		return kinderrors.AggregateConcurrent(testFuncs)
