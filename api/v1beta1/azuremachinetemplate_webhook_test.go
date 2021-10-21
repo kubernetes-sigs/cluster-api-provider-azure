@@ -226,6 +226,49 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "AzureMachineTemplate with default mismatch",
+			oldTemplate: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "",
+							},
+							DataDisks:    []DataDisk{},
+							SSHPublicKey: "",
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "OldTemplate",
+				},
+			},
+			template: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks: []DataDisk{},
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "NewTemplate",
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, amt := range tests {
