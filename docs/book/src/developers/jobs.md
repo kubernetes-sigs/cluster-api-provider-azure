@@ -23,12 +23,12 @@ To see which test jobs execute which e2e tests, you can click on the links which
   Prow Presubmits:
 
   - 🟢 [pull-cluster-api-provider-azure-build]  `./scripts/ci-build.sh`
-  - 🟢 [pull-cluster-api-provider-azure-test]  `./scripts/ci-test.sh` 
+  - 🟢 [pull-cluster-api-provider-azure-test]  `./scripts/ci-test.sh`
   - 🟢 [pull-cluster-api-provider-azure-e2e]
        * `GINKGO_FOCUS="Workload cluster creation" GINKGO_SKIP="Creating a GPU-enabled cluster|.*Windows.*|.*AKS.*|Creating a cluster that uses the external cloud provider" ./scripts/ci-e2e.sh`
   - 🟢 [pull-cluster-api-provider-azure-windows]
        * `GINKGO_FOCUS=".*Windows.*" GINKGO_SKIP="" ./scripts/ci-e2e.sh`
-  - 🟢 [pull-cluster-api-provider-azure-verify]   `make verify`     
+  - 🟢 [pull-cluster-api-provider-azure-verify]   `make verify`
   - [pull-cluster-api-provider-azure-e2e-exp]
        * `GINKGO_FOCUS=".*AKS.*" GINKGO_SKIP="" ./scripts/ci-e2e.sh`
   - [pull-cluster-api-provider-azure-apidiff]  `./scripts/ci-apidiff.sh`
@@ -44,6 +44,8 @@ To see which test jobs execute which e2e tests, you can click on the links which
        * `E2E_ARGS="-kubetest.use-ci-artifacts" ./scripts/ci-conformance.sh`
   - [pull-cluster-api-provider-azure-windows-upstream-with-ci-artifacts]
        * `E2E_ARGS="-kubetest.use-ci-artifacts" WINDOWS="true" CONFORMANCE_NODES="4" ./scripts/ci-conformance.sh`
+  - [pull-cluster-api-provider-azure-ci-entrypoint]
+      * Validates cluster creation with `./scripts/ci-entrypoint.sh` - does not run any tests
 
 
   Github Presubmits Workflows:
@@ -91,6 +93,7 @@ To see which test jobs execute which e2e tests, you can click on the links which
 [pull-cluster-api-provider-azure-e2e-exp]:  https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-e2e-exp-main
 [pull-cluster-api-provider-azure-apidiff]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-apidiff-main
 [pull-cluster-api-provider-azure-coverage]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#pr-coverage
+[pull-cluster-api-provider-azure-ci-entrypoint]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-ci-entrypoint
 [pull-cluster-api-provider-e2e-full]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-e2e-full-main
 [pull-cluster-api-provider-capi-e2e]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capi-pr-e2e-main
 [pull-cluster-api-provider-azure-conformance-v1beta1]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pull-conformance-v1beta1-main
