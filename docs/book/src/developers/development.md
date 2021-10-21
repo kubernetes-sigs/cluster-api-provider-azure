@@ -504,6 +504,7 @@ You can optionally set the following variables:
 | `CI_VERSION`                | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                                              |
 | `TEST_CCM`                  | Build a cluster that uses custom versions of the Azure cloud-provider cloud-controller-manager and node-controller-manager images          |
 | `EXP_MACHINE_POOL`          | Use [Machine Pool](../topics/machinepools.md) for worker machines.                                                                            |
+| `TEST_WINDOWS`                  | Build a cluster that has Windows worker nodes.          |
 | `REGISTRY`                  | Registry to push any custom k8s images or cloud provider images built.                                                                     |
 | `CLUSTER_TEMPLATE`          | Use a custom cluster template. By default, the script will choose the appropriate cluster template based on existing environment variabes. |
 
