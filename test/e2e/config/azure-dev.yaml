@@ -199,6 +199,8 @@ variables:
   INIT_WITH_KUBERNETES_VERSION: "v1.21.2"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
+  SECURITY_SCAN_FAIL_THRESHOLD: "${SECURITY_SCAN_FAIL_THRESHOLD:-8}"
+  SECURITY_SCAN_CONTAINER: "${SECURITY_SCAN_CONTAINER:-quay.io/armosec/kubescape:v1.0.138}"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
