@@ -85,10 +85,20 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	}
 
 	if !reflect.DeepEqual(c.Spec.AzureEnvironment, old.Spec.AzureEnvironment) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec", "AzureEnvironment"),
-				c.Spec.AzureEnvironment, "field is immutable"),
-		)
+		// The equality failure could be because of default mismatch between v1alpha3 and v1beta1. This happens because
+		// the new object `r` will have run through the default webhooks but the old object `old` would not have so.
+		// This means if the old object was in v1alpha3, it would not get the new defaults set in v1beta1 resulting
+		// in object inequality. To workaround this, we set the v1beta1 defaults here so that the old object also gets
+		// the new defaults.
+		old.setAzureEnvironmentDefault()
+
+		// if it's still not equal, return error.
+		if !reflect.DeepEqual(c.Spec.AzureEnvironment, old.Spec.AzureEnvironment) {
+			allErrs = append(allErrs,
+				field.Invalid(field.NewPath("spec", "AzureEnvironment"),
+					c.Spec.AzureEnvironment, "field is immutable"),
+			)
+		}
 	}
 
 	if !reflect.DeepEqual(c.Spec.NetworkSpec.PrivateDNSZoneName, old.Spec.NetworkSpec.PrivateDNSZoneName) {
