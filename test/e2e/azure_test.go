@@ -133,6 +133,9 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
 
+		Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
+		Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
+
 		logCheckpoint(specTimes)
 	})
 
@@ -201,6 +204,11 @@ var _ = Describe("Workload cluster creation", func() {
 
 	It("With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes", func() {
 		clusterName = getClusterName(clusterNamePrefix, "ha")
+
+		// Opt into using windows with prow template
+		Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
+		Expect(os.Setenv("K8S_FEATURE_GATES", "WindowsHostProcessContainers=true")).To(Succeed())
+
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: bootstrapClusterProxy,
 			ConfigCluster: clusterctl.ConfigClusterInput{
@@ -325,6 +333,11 @@ var _ = Describe("Workload cluster creation", func() {
 	Context("Creating a VMSS cluster", func() {
 		It("with a single control plane node and an AzureMachinePool with 2 Linux and 2 Windows worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "vmss")
+
+			// Opt into using windows with prow template
+			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
+			Expect(os.Setenv("K8S_FEATURE_GATES", "WindowsHostProcessContainers=true")).To(Succeed())
+
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
