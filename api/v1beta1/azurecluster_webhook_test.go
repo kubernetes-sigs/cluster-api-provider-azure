@@ -215,20 +215,6 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "azurecluster azureEnvironment is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureEnvironment: "AzureGermanCloud",
-				},
-			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureEnvironment: "AzureChinaCloud",
-				},
-			},
-			wantErr: true,
-		},
-		{
 			name: "control plane outbound lb is immutable",
 			oldCluster: &AzureCluster{
 				Spec: AzureClusterSpec{
