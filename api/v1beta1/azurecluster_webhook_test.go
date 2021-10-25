@@ -107,6 +107,9 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 	}{
 		{
 			name: "azurecluster with pre-existing vnet - valid spec",
+			oldCluster: func() *AzureCluster {
+				return createValidCluster()
+			}(),
 			cluster: func() *AzureCluster {
 				return createValidCluster()
 			}(),
@@ -114,6 +117,11 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster without pre-existing vnet - valid spec",
+			oldCluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
+				return cluster
+			}(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
@@ -123,6 +131,9 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - lack control plane subnet",
+			oldCluster: func() *AzureCluster {
+				return createValidCluster()
+			}(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[1:]
@@ -132,6 +143,9 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - lack node subnet",
+			oldCluster: func() *AzureCluster {
+				return createValidCluster()
+			}(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[:1]
@@ -141,6 +155,9 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - invalid resourcegroup name",
+			oldCluster: func() *AzureCluster {
+				return createValidCluster()
+			}(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = "invalid-name###"
@@ -150,6 +167,9 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - invalid subnet name",
+			oldCluster: func() *AzureCluster {
+				return createValidCluster()
+			}(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
@@ -215,20 +235,6 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "azurecluster azureEnvironment is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureEnvironment: "AzureGermanCloud",
-				},
-			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureEnvironment: "AzureChinaCloud",
-				},
-			},
-			wantErr: true,
-		},
-		{
 			name: "control plane outbound lb is immutable",
 			oldCluster: &AzureCluster{
 				Spec: AzureClusterSpec{
@@ -248,6 +254,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			err := tc.cluster.ValidateUpdate(tc.oldCluster)
