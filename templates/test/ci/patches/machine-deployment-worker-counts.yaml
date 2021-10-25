@@ -1,0 +1,6 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-md-win"
+spec:
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}

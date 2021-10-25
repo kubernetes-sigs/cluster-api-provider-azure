@@ -60,7 +60,7 @@ spec:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
-          feature-gates: WindowsHostProcessContainers=true
+          feature-gates: ${K8S_FEATURE_GATES:-""}
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -235,7 +235,7 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${LINUX_WORKER_MACHINE_COUNT}
+  replicas: ${WORKER_MACHINE_COUNT}
   template:
     spec:
       bootstrap:
@@ -390,7 +390,7 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WINDOWS_WORKER_MACHINE_COUNT}
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
   template:
     spec:
       bootstrap:
