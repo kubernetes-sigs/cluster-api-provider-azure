@@ -2,6 +2,6 @@
   "name": "infrastructure-azure",
   "config": {
     "componentsFile": "infrastructure-components.yaml",
-    "nextVersion": "v0.4.0"
+    "nextVersion": "v1.0.0"
   }
 }
