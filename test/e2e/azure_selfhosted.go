@@ -100,9 +100,12 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
 	})
 
+	// Management clusters do not support Windows nodes becuase of cert manager
+	// We are using the capi specs located in test/e2e/data/infrastructure-azure/v1beta1 that only have linux nodes
+	// to act as the management cluster until Windows nodes are supported for management nodes
+	// Tracking support for cert manager: https://github.com/jetstack/cert-manager/issues/3606
 	It("Should pivot the bootstrap cluster to a self-hosted cluster", func() {
 		By("Creating a workload cluster")
-
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: input.BootstrapClusterProxy,
 			ConfigCluster: clusterctl.ConfigClusterInput{
@@ -110,7 +113,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 				ClusterctlConfigPath:     input.ClusterctlConfigPath,
 				KubeconfigPath:           input.BootstrapClusterProxy.GetKubeconfigPath(),
 				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-				Flavor:                   clusterctl.DefaultFlavor,
+				Flavor:                   "management",
 				Namespace:                namespace.Name,
 				ClusterName:              fmt.Sprintf("%s-%s", specName, util.RandomString(6)),
 				KubernetesVersion:        input.E2EConfig.GetVariable(capi_e2e.KubernetesVersion),

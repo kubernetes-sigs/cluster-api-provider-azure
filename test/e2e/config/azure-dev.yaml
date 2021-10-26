@@ -58,6 +58,8 @@ providers:
     - sourcePath: "../data/shared/v1beta1/metadata.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow.yaml"
       targetName: "cluster-template.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template.yaml"
+      targetName: "cluster-template-management.yaml"
     - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-adoption.yaml"
       targetName: "cluster-template-kcp-adoption.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ipv6.yaml"
