@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -621,4 +622,50 @@ func (s *ManagedControlPlaneScope) UpdatePutStatus(condition clusterv1.Condition
 // UpdatePatchStatus updates a condition on the AzureManagedControlPlane status after a PATCH operation.
 func (s *ManagedControlPlaneScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
 	// TODO: add condition to AzureManagedControlPlane status
+}
+
+// AnnotationJSON returns a map[string]interface from a JSON annotation.
+func (s *ManagedControlPlaneScope) AnnotationJSON(annotation string) (map[string]interface{}, error) {
+	out := map[string]interface{}{}
+	jsonAnnotation := s.ControlPlane.GetAnnotations()[annotation]
+	if len(jsonAnnotation) == 0 {
+		return out, nil
+	}
+	err := json.Unmarshal([]byte(jsonAnnotation), &out)
+	if err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+// UpdateAnnotationJSON updates the `annotation` with
+// `content`. `content` in this case should be a `map[string]interface{}`
+// suitable for turning into JSON. This `content` map will be marshalled into a
+// JSON string before being set as the given `annotation`.
+func (s *ManagedControlPlaneScope) UpdateAnnotationJSON(annotation string, content map[string]interface{}) error {
+	b, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+	s.SetAnnotation(annotation, string(b))
+	return nil
+}
+
+// SetAnnotation sets a key value annotation on the ControlPlane.
+func (s *ManagedControlPlaneScope) SetAnnotation(key, value string) {
+	if s.ControlPlane.Annotations == nil {
+		s.ControlPlane.Annotations = map[string]string{}
+	}
+	s.ControlPlane.Annotations[key] = value
+}
+
+// TagsSpecs returns the tag specs for the ManagedControlPlane.
+func (s *ManagedControlPlaneScope) TagsSpecs() []azure.TagsSpec {
+	return []azure.TagsSpec{
+		{
+			Scope:      azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
+			Tags:       s.AdditionalTags(),
+			Annotation: infrav1.RGTagsLastAppliedAnnotation,
+		},
+	}
 }

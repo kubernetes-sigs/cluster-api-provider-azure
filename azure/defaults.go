@@ -187,6 +187,11 @@ func WithIndex(name string, n int) string {
 	return fmt.Sprintf("%s-%d", name, n)
 }
 
+// ResourceGroupID returns the azure resource ID for a given resource group.
+func ResourceGroupID(subscriptionID, resourceGroup string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionID, resourceGroup)
+}
+
 // VMID returns the azure resource ID for a given VM.
 func VMID(subscriptionID, resourceGroup, vmName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", subscriptionID, resourceGroup, vmName)
