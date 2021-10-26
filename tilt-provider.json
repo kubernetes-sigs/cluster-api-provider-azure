@@ -11,6 +11,8 @@
       "controllers",
       "pkg",
       "exp"
-    ]
+    ],
+    "label": "CAPZ",
+    "manager_name": "capz-controller-manager"
   }
 }
