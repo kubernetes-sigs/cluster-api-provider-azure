@@ -105,6 +105,12 @@ select_cluster_template() {
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
         fi
     fi
+
+    # this requires k8s 1.22+
+    if [[ -n "${TEST_WINDOWS:-}" ]]; then
+        export WINDOWS_WORKER_MACHINE_COUNT="${WINDOWS_WORKER_MACHINE_COUNT:-2}"
+        export K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
+    fi
 }
 
 create_cluster() {
