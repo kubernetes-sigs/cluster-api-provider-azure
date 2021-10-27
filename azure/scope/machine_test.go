@@ -952,7 +952,58 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			wantAvailabilitySetExistence: true,
 		},
 		{
-			name: "returns empty and false if AvailabilitySet is enabled but worker machine is not part of machine deployment",
+			name: "returns AvailabilitySet name and true if AvailabilitySet is enabled for worker machine which is part of machine set",
+			machineScope: MachineScope{
+
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Status: infrav1.AzureClusterStatus{},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							clusterv1.MachineSetLabelName: "foo-machine-set",
+						},
+					},
+				},
+			},
+			wantAvailabilitySetName:      "cluster_foo-machine-set-as",
+			wantAvailabilitySetExistence: true,
+		},
+		{
+			name: "returns AvailabilitySet name and true if AvailabilitySet is enabled for worker machine and machine deployment name takes precedence over machine set name",
+			machineScope: MachineScope{
+
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Status: infrav1.AzureClusterStatus{},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							clusterv1.MachineDeploymentLabelName: "foo-machine-deployment",
+							clusterv1.MachineSetLabelName:        "foo-machine-set",
+						},
+					},
+				},
+			},
+			wantAvailabilitySetName:      "cluster_foo-machine-deployment-as",
+			wantAvailabilitySetExistence: true,
+		},
+		{
+			name: "returns empty and false if AvailabilitySet is enabled but worker machine is not part of machine deployment or machine set",
 			machineScope: MachineScope{
 
 				ClusterScoper: &ClusterScope{

@@ -188,7 +188,7 @@ When cluster api detects that the region has no failure domains, it creates avai
 The availability sets created are as follows:
 
 1. For control plane vms, an availability set will be created and suffixed with the string "control-plane".
-2. For Worker node vms, an availability set will be created for each machine deployment, and suffixed with the machine deployment name.
+2. For worker node vms, an availability set will be created for each machine deployment or machine set, and suffixed with the name of the machine deployment or machine set. Important note: make sure that the machine deployment's `Spec.Template.Labels` field includes the `"cluster.x-k8s.io/deployment-name"` label. It will not have this label by default if the machine deployment was created with a custom `Spec.Selector.MatchLabels` field. A machine set should have a `Spec.Template.Labels` field which includes `"cluster.x-k8s.io/set-name"`.
 
 Consider the following cluster configuration:
 
