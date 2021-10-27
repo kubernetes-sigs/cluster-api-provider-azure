@@ -1311,7 +1311,7 @@ func Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedContro
 }
 
 func autoConvert_v1alpha4_SKU_To_v1beta1_SKU(in *SKU, out *v1beta1.SKU, s conversion.Scope) error {
-	out.Tier = in.Tier
+	out.Tier = v1beta1.AzureManagedControlPlaneSkuTier(in.Tier)
 	return nil
 }
 
@@ -1321,7 +1321,7 @@ func Convert_v1alpha4_SKU_To_v1beta1_SKU(in *SKU, out *v1beta1.SKU, s conversion
 }
 
 func autoConvert_v1beta1_SKU_To_v1alpha4_SKU(in *v1beta1.SKU, out *SKU, s conversion.Scope) error {
-	out.Tier = in.Tier
+	out.Tier = string(in.Tier)
 	return nil
 }
 

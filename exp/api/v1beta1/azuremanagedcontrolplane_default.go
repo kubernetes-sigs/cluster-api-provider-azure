@@ -73,3 +73,11 @@ func (r *AzureManagedControlPlane) setDefaultSubnet() {
 		r.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDR
 	}
 }
+
+func (r *AzureManagedControlPlane) setDefaultSku() {
+	if r.Spec.SKU == nil {
+		r.Spec.SKU = &SKU{
+			Tier: FreeManagedControlPlaneTier,
+		}
+	}
+}
