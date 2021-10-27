@@ -76,6 +76,9 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		Expect(os.Setenv(ClusterIdentitySecretName, IdentitySecretName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, identityNamespace.Name)).NotTo(HaveOccurred())
 
+		// Opt into using windows with prow template
+		Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
+		Expect(os.Setenv("K8S_FEATURE_GATES", "WindowsHostProcessContainers=true")).To(Succeed())
 	})
 
 	AfterEach(func() {
