@@ -49,6 +49,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
+	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -62,6 +63,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.NodeResourceGroupName = "fooNodeRg"
 	amcp.Spec.VirtualNetwork.Name = "fooVnetName"
 	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
+	amcp.Spec.SKU.Tier = PaidManagedControlPlaneTier
 	amcp.Default()
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal(netPlug))
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal(lbSKU))
@@ -71,6 +73,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("fooNodeRg"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
+	g.Expect(amcp.Spec.SKU.Tier).To(Equal(PaidManagedControlPlaneTier))
 }
 
 func TestValidatingWebhook(t *testing.T) {

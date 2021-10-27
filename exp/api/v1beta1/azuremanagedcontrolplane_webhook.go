@@ -80,6 +80,7 @@ func (r *AzureManagedControlPlane) Default() {
 	r.setDefaultNodeResourceGroupName()
 	r.setDefaultVirtualNetwork()
 	r.setDefaultSubnet()
+	r.setDefaultSku()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1beta1,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1

@@ -122,11 +122,21 @@ type AADProfile struct {
 	AdminGroupObjectIDs []string `json:"adminGroupObjectIDs"`
 }
 
+// AzureManagedControlPlaneSkuTier - Tier of a managed cluster SKU.
+// +kubebuilder:validation:Enum=Free;Paid
+type AzureManagedControlPlaneSkuTier string
+
+const (
+	// FreeManagedControlPlaneTier is the free tier of AKS without corresponding SLAs.
+	FreeManagedControlPlaneTier AzureManagedControlPlaneSkuTier = "Free"
+	// PaidManagedControlPlaneTier is the paid tier of AKS with corresponding SLAs.
+	PaidManagedControlPlaneTier AzureManagedControlPlaneSkuTier = "Paid"
+)
+
 // SKU - AKS SKU.
 type SKU struct {
 	// Tier - Tier of a managed cluster SKU.
-	// +kubebuilder:validation:Enum=Free;Paid
-	Tier string `json:"tier"`
+	Tier AzureManagedControlPlaneSkuTier `json:"tier"`
 }
 
 // LoadBalancerProfile - Profile of the cluster load balancer.

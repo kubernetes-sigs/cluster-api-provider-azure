@@ -259,12 +259,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			Name: containerservice.ManagedClusterSKUNameBasic,
 			Tier: tierName,
 		}
-	} else {
-		// Add the default sku so that the diff will match if no sku is specified by the spec.
-		managedCluster.Sku = &containerservice.ManagedClusterSKU{
-			Name: containerservice.ManagedClusterSKUNameBasic,
-			Tier: containerservice.ManagedClusterSKUTierFree,
-		}
 	}
 
 	if managedClusterSpec.LoadBalancerProfile != nil {
