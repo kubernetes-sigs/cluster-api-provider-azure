@@ -406,6 +406,7 @@ spec:
                         create, delete, etc.
                       type: string
                   required:
+                  - data
                   - name
                   - serviceName
                   - type

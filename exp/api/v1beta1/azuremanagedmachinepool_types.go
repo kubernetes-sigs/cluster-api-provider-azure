@@ -51,6 +51,7 @@ type AzureManagedMachinePoolSpec struct {
 
 	// OSDiskSizeGB is the disk size for every machine in this agent pool.
 	// If you specify 0, it will apply the default osDisk size according to the vmSize specified.
+	// +optional
 	OSDiskSizeGB *int32 `json:"osDiskSizeGB,omitempty"`
 
 	// ProviderIDList is the unique identifier as specified by the cloud provider.

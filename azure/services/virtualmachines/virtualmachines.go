@@ -232,7 +232,7 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 // getExisting provides information about a virtual machine.
-func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, error) {
+func (s *Service) getExisting(ctx context.Context, name string) (*converters.VM, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.getExisting")
 	defer done()
 

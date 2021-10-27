@@ -1336,8 +1336,8 @@ spec:
                               type: string
                             type: array
                           id:
-                            description: ID defines a unique identifier to reference
-                              this resource.
+                            description: ID is the Azure resource ID of the subnet.
+                              READ-ONLY
                             type: string
                           name:
                             description: Name defines a name for the subnet resource.
@@ -1346,6 +1346,8 @@ spec:
                             description: NatGateway associated with this subnet.
                             properties:
                               id:
+                                description: ID is the Azure resource ID of the nat
+                                  gateway. READ-ONLY
                                 type: string
                               ip:
                                 description: PublicIPSpec defines the inputs to create
@@ -1360,6 +1362,8 @@ spec:
                                 type: object
                               name:
                                 type: string
+                            required:
+                            - name
                             type: object
                           role:
                             description: Role defines the subnet role (eg. Node, ControlPlane)
@@ -1369,15 +1373,21 @@ spec:
                               be attached to this subnet.
                             properties:
                               id:
+                                description: ID is the Azure resource ID of the route
+                                  table. READ-ONLY
                                 type: string
                               name:
                                 type: string
+                            required:
+                            - name
                             type: object
                           securityGroup:
                             description: SecurityGroup defines the NSG (network security
                               group) that should be attached to this subnet.
                             properties:
                               id:
+                                description: ID is the Azure resource ID of the security
+                                  group. READ-ONLY
                                 type: string
                               name:
                                 type: string
@@ -1463,9 +1473,12 @@ spec:
                                   type: string
                                 description: Tags defines a map of tags.
                                 type: object
+                            required:
+                            - name
                             type: object
                         required:
                         - name
+                        - role
                         type: object
                     type: object
                 type: object
@@ -1555,6 +1568,8 @@ spec:
                           - virtualMachineSizesRateLimit
                           - availabilitySetRateLimit
                           type: string
+                      required:
+                      - name
                       type: object
                     type: array
                 type: object
@@ -1651,6 +1666,8 @@ spec:
                         format: int32
                         type: integer
                       id:
+                        description: ID is the Azure resource ID of the load balancer.
+                          READ-ONLY
                         type: string
                       idleTimeoutInMinutes:
                         description: IdleTimeoutInMinutes specifies the timeout for
@@ -1703,6 +1720,8 @@ spec:
                         format: int32
                         type: integer
                       id:
+                        description: ID is the Azure resource ID of the load balancer.
+                          READ-ONLY
                         type: string
                       idleTimeoutInMinutes:
                         description: IdleTimeoutInMinutes specifies the timeout for
@@ -1753,6 +1772,8 @@ spec:
                         format: int32
                         type: integer
                       id:
+                        description: ID is the Azure resource ID of the load balancer.
+                          READ-ONLY
                         type: string
                       idleTimeoutInMinutes:
                         description: IdleTimeoutInMinutes specifies the timeout for
@@ -1785,8 +1806,8 @@ spec:
                             type: string
                           type: array
                         id:
-                          description: ID defines a unique identifier to reference
-                            this resource.
+                          description: ID is the Azure resource ID of the subnet.
+                            READ-ONLY
                           type: string
                         name:
                           description: Name defines a name for the subnet resource.
@@ -1795,6 +1816,8 @@ spec:
                           description: NatGateway associated with this subnet.
                           properties:
                             id:
+                              description: ID is the Azure resource ID of the nat
+                                gateway. READ-ONLY
                               type: string
                             ip:
                               description: PublicIPSpec defines the inputs to create
@@ -1809,6 +1832,8 @@ spec:
                               type: object
                             name:
                               type: string
+                          required:
+                          - name
                           type: object
                         role:
                           description: Role defines the subnet role (eg. Node, ControlPlane)
@@ -1818,15 +1843,21 @@ spec:
                             be attached to this subnet.
                           properties:
                             id:
+                              description: ID is the Azure resource ID of the route
+                                table. READ-ONLY
                               type: string
                             name:
                               type: string
+                          required:
+                          - name
                           type: object
                         securityGroup:
                           description: SecurityGroup defines the NSG (network security
                             group) that should be attached to this subnet.
                           properties:
                             id:
+                              description: ID is the Azure resource ID of the security
+                                group. READ-ONLY
                               type: string
                             name:
                               type: string
@@ -1909,9 +1940,12 @@ spec:
                                 type: string
                               description: Tags defines a map of tags.
                               type: object
+                          required:
+                          - name
                           type: object
                       required:
                       - name
+                      - role
                       type: object
                     type: array
                   vnet:
@@ -1925,8 +1959,8 @@ spec:
                           type: string
                         type: array
                       id:
-                        description: ID is the identifier of the virtual network this
-                          provider should use to create resources.
+                        description: ID is the Azure resource ID of the virtual network.
+                          READ-ONLY
                         type: string
                       name:
                         description: Name defines a name for the virtual network resource.
@@ -2077,6 +2111,7 @@ spec:
                         create, delete, etc.
                       type: string
                   required:
+                  - data
                   - name
                   - serviceName
                   - type

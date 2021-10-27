@@ -19,12 +19,33 @@ package converters
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
+	corev1 "k8s.io/api/core/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
+// VM describes an Azure virtual machine.
+type VM struct {
+	ID               string `json:"id,omitempty"`
+	Name             string `json:"name,omitempty"`
+	AvailabilityZone string `json:"availabilityZone,omitempty"`
+	// Hardware profile
+	VMSize string `json:"vmSize,omitempty"`
+	// Storage profile
+	Image         infrav1.Image  `json:"image,omitempty"`
+	OSDisk        infrav1.OSDisk `json:"osDisk,omitempty"`
+	StartupScript string         `json:"startupScript,omitempty"`
+	// State - The provisioning state, which only appears in the response.
+	State    infrav1.ProvisioningState `json:"vmState,omitempty"`
+	Identity infrav1.VMIdentity        `json:"identity,omitempty"`
+	Tags     infrav1.Tags              `json:"tags,omitempty"`
+
+	// Addresses contains the addresses associated with the Azure VM.
+	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
+}
+
 // SDKToVM converts an Azure SDK VirtualMachine to the CAPZ VM type.
-func SDKToVM(v compute.VirtualMachine) (*infrav1.VM, error) {
-	vm := &infrav1.VM{
+func SDKToVM(v compute.VirtualMachine) (*VM, error) {
+	vm := &VM{
 		ID:    to.String(v.ID),
 		Name:  to.String(v.Name),
 		State: infrav1.ProvisioningState(to.String(v.ProvisioningState)),

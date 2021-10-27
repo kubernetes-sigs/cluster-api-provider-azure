@@ -18,7 +18,6 @@ package v1beta1
 
 import (
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -59,7 +58,7 @@ type Future struct {
 	Name string `json:"name"`
 
 	// Data is the base64 url encoded json Azure AutoRest Future.
-	Data string `json:"data,omitempty"`
+	Data string `json:"data"`
 }
 
 // NetworkSpec specifies what the Azure networking resources should look like.
@@ -94,9 +93,12 @@ type NetworkSpec struct {
 type VnetSpec struct {
 	// ResourceGroup is the name of the resource group of the existing virtual network
 	// or the resource group where a managed virtual network should be created.
+	// +optional
 	ResourceGroup string `json:"resourceGroup,omitempty"`
 
-	// ID is the identifier of the virtual network this provider should use to create resources.
+	// ID is the Azure resource ID of the virtual network.
+	// READ-ONLY
+	// +optional
 	ID string `json:"id,omitempty"`
 
 	// Name defines a name for the virtual network resource.
@@ -138,23 +140,35 @@ type Subnets []SubnetSpec
 
 // SecurityGroup defines an Azure security group.
 type SecurityGroup struct {
-	ID            string        `json:"id,omitempty"`
-	Name          string        `json:"name,omitempty"`
+	// ID is the Azure resource ID of the security group.
+	// READ-ONLY
+	// +optional
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name"`
+	// +optional
 	SecurityRules SecurityRules `json:"securityRules,omitempty"`
-	Tags          Tags          `json:"tags,omitempty"`
+	// +optional
+	Tags Tags `json:"tags,omitempty"`
 }
 
 // RouteTable defines an Azure route table.
 type RouteTable struct {
+	// ID is the Azure resource ID of the route table.
+	// READ-ONLY
+	// +optional
 	ID   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 }
 
 // NatGateway defines an Azure Nat Gateway.
 // NAT gateway resources are part of Vnet NAT and provide outbound Internet connectivity for subnets of a virtual network.
 type NatGateway struct {
-	ID           string       `json:"id,omitempty"`
-	Name         string       `json:"name,omitempty"`
+	// ID is the Azure resource ID of the nat gateway.
+	// READ-ONLY
+	// +optional
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name"`
+	// +optional
 	NatGatewayIP PublicIPSpec `json:"ip,omitempty"`
 }
 
@@ -196,14 +210,19 @@ type SecurityRule struct {
 	// +kubebuilder:validation:Enum=Inbound;Outbound
 	Direction SecurityRuleDirection `json:"direction"`
 	// Priority is a number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
+	// +optional
 	Priority int32 `json:"priority,omitempty"`
 	// SourcePorts specifies source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+	// +optional
 	SourcePorts *string `json:"sourcePorts,omitempty"`
 	// DestinationPorts specifies the destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+	// +optional
 	DestinationPorts *string `json:"destinationPorts,omitempty"`
 	// Source specifies the CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
+	// +optional
 	Source *string `json:"source,omitempty"`
 	// Destination is the destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
+	// +optional
 	Destination *string `json:"destination,omitempty"`
 }
 
@@ -212,14 +231,23 @@ type SecurityRules []SecurityRule
 
 // LoadBalancerSpec defines an Azure load balancer.
 type LoadBalancerSpec struct {
-	ID          string       `json:"id,omitempty"`
-	Name        string       `json:"name,omitempty"`
-	SKU         SKU          `json:"sku,omitempty"`
+	// ID is the Azure resource ID of the load balancer.
+	// READ-ONLY
+	// +optional
+	ID string `json:"id,omitempty"`
+	// +optional
+	Name string `json:"name,omitempty"`
+	// +optional
+	SKU SKU `json:"sku,omitempty"`
+	// +optional
 	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
-	Type        LBType       `json:"type,omitempty"`
+	// +optional
+	Type LBType `json:"type,omitempty"`
 	// FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
+	// +optional
 	FrontendIPsCount *int32 `json:"frontendIPsCount,omitempty"`
 	// IdleTimeoutInMinutes specifies the timeout for the TCP idle connection.
+	// +optional
 	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
 }
 
@@ -284,26 +312,6 @@ const (
 	// NOTE: This state is specific to capz, and does not have corresponding mapping in Azure API (https://docs.microsoft.com/en-us/azure/virtual-machines/states-billing#provisioning-states)
 	Deleted ProvisioningState = "Deleted"
 )
-
-// VM describes an Azure virtual machine.
-type VM struct {
-	ID               string `json:"id,omitempty"`
-	Name             string `json:"name,omitempty"`
-	AvailabilityZone string `json:"availabilityZone,omitempty"`
-	// Hardware profile
-	VMSize string `json:"vmSize,omitempty"`
-	// Storage profile
-	Image         Image  `json:"image,omitempty"`
-	OSDisk        OSDisk `json:"osDisk,omitempty"`
-	StartupScript string `json:"startupScript,omitempty"`
-	// State - The provisioning state, which only appears in the response.
-	State    ProvisioningState `json:"vmState,omitempty"`
-	Identity VMIdentity        `json:"identity,omitempty"`
-	Tags     Tags              `json:"tags,omitempty"`
-
-	// Addresses contains the addresses associated with the Azure VM.
-	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
-}
 
 // Image defines information about the image to use for VM creation.
 // There are three ways to specify an image: by ID, Marketplace Image or SharedImageGallery
@@ -445,8 +453,9 @@ type OSDisk struct {
 	DiskSizeGB *int32 `json:"diskSizeGB,omitempty"`
 	// ManagedDisk specifies the Managed Disk parameters for the OS disk.
 	// +optional
-	ManagedDisk      *ManagedDiskParameters `json:"managedDisk,omitempty"`
-	DiffDiskSettings *DiffDiskSettings      `json:"diffDiskSettings,omitempty"`
+	ManagedDisk *ManagedDiskParameters `json:"managedDisk,omitempty"`
+	// +optional
+	DiffDiskSettings *DiffDiskSettings `json:"diffDiskSettings,omitempty"`
 	// CachingType specifies the caching requirements.
 	// +optional
 	// +kubebuilder:validation:Enum=None;ReadOnly;ReadWrite
@@ -465,6 +474,7 @@ type DataDisk struct {
 	ManagedDisk *ManagedDiskParameters `json:"managedDisk,omitempty"`
 	// Lun Specifies the logical unit number of the data disk. This value is used to identify data disks within the VM and therefore must be unique for each data disk attached to a VM.
 	// The value must be between 0 and 63.
+	// +optional
 	Lun *int32 `json:"lun,omitempty"`
 	// CachingType specifies the caching requirements.
 	// +optional
@@ -483,6 +493,7 @@ type ManagedDiskParameters struct {
 // DiskEncryptionSetParameters defines disk encryption options.
 type DiskEncryptionSetParameters struct {
 	// ID defines resourceID for diskEncryptionSet resource. It must be in the same subscription
+	// +optional
 	ID string `json:"id,omitempty"`
 }
 
@@ -508,9 +519,10 @@ const (
 // SubnetSpec configures an Azure subnet.
 type SubnetSpec struct {
 	// Role defines the subnet role (eg. Node, ControlPlane)
-	Role SubnetRole `json:"role,omitempty"`
+	Role SubnetRole `json:"role"`
 
-	// ID defines a unique identifier to reference this resource.
+	// ID is the Azure resource ID of the subnet.
+	// READ-ONLY
 	// +optional
 	ID string `json:"id,omitempty"`
 
@@ -573,6 +585,7 @@ type SecurityProfile struct {
 	// This field indicates whether Host Encryption should be enabled
 	// or disabled for a virtual machine or virtual machine scale
 	// set. Default is disabled.
+	// +optional
 	EncryptionAtHost *bool `json:"encryptionAtHost,omitempty"`
 }
 
@@ -584,17 +597,24 @@ type AddressRecord struct {
 
 // CloudProviderConfigOverrides represents the fields that can be overridden in azure cloud provider config.
 type CloudProviderConfigOverrides struct {
+	// +optional
 	RateLimits []RateLimitSpec `json:"rateLimits,omitempty"`
-	BackOffs   BackOffConfig   `json:"backOffs,omitempty"`
+	// +optional
+	BackOffs BackOffConfig `json:"backOffs,omitempty"`
 }
 
 // BackOffConfig indicates the back-off config options.
 type BackOffConfig struct {
-	CloudProviderBackoff         bool               `json:"cloudProviderBackoff,omitempty"`
-	CloudProviderBackoffRetries  int                `json:"cloudProviderBackoffRetries,omitempty"`
+	// +optional
+	CloudProviderBackoff bool `json:"cloudProviderBackoff,omitempty"`
+	// +optional
+	CloudProviderBackoffRetries int `json:"cloudProviderBackoffRetries,omitempty"`
+	// +optional
 	CloudProviderBackoffExponent *resource.Quantity `json:"cloudProviderBackoffExponent,omitempty"`
-	CloudProviderBackoffDuration int                `json:"cloudProviderBackoffDuration,omitempty"`
-	CloudProviderBackoffJitter   *resource.Quantity `json:"cloudProviderBackoffJitter,omitempty"`
+	// +optional
+	CloudProviderBackoffDuration int `json:"cloudProviderBackoffDuration,omitempty"`
+	// +optional
+	CloudProviderBackoffJitter *resource.Quantity `json:"cloudProviderBackoffJitter,omitempty"`
 }
 
 // RateLimitSpec represents the rate limit configuration for a particular kind of resource.
@@ -606,17 +626,23 @@ type BackOffConfig struct {
 type RateLimitSpec struct {
 	// Name is the name of the rate limit spec.
 	// +kubebuilder:validation:Enum=defaultRateLimit;routeRateLimit;subnetsRateLimit;interfaceRateLimit;routeTableRateLimit;loadBalancerRateLimit;publicIPAddressRateLimit;securityGroupRateLimit;virtualMachineRateLimit;storageAccountRateLimit;diskRateLimit;snapshotRateLimit;virtualMachineScaleSetRateLimit;virtualMachineSizesRateLimit;availabilitySetRateLimit
-	Name   string          `json:"name,omitempty"`
+	Name string `json:"name"`
+	// +optional
 	Config RateLimitConfig `json:"config,omitempty"`
 }
 
 // RateLimitConfig indicates the rate limit config options.
 type RateLimitConfig struct {
-	CloudProviderRateLimit            bool               `json:"cloudProviderRateLimit,omitempty"`
-	CloudProviderRateLimitQPS         *resource.Quantity `json:"cloudProviderRateLimitQPS,omitempty"`
-	CloudProviderRateLimitBucket      int                `json:"cloudProviderRateLimitBucket,omitempty"`
-	CloudProviderRateLimitQPSWrite    *resource.Quantity `json:"cloudProviderRateLimitQPSWrite,omitempty"`
-	CloudProviderRateLimitBucketWrite int                `json:"cloudProviderRateLimitBucketWrite,omitempty"`
+	// +optional
+	CloudProviderRateLimit bool `json:"cloudProviderRateLimit,omitempty"`
+	// +optional
+	CloudProviderRateLimitQPS *resource.Quantity `json:"cloudProviderRateLimitQPS,omitempty"`
+	// +optional
+	CloudProviderRateLimitBucket int `json:"cloudProviderRateLimitBucket,omitempty"`
+	// +optional
+	CloudProviderRateLimitQPSWrite *resource.Quantity `json:"cloudProviderRateLimitQPSWrite,omitempty"`
+	// +optional
+	CloudProviderRateLimitBucketWrite int `json:"cloudProviderRateLimitBucketWrite,omitempty"`
 }
 
 const (

@@ -40,6 +40,7 @@ type AzureMachineSpec struct {
 
 	// FailureDomain is the failure domain unique identifier this Machine should be attached to,
 	// as defined in Cluster API. This relates to an Azure Availability Zone
+	// +optional
 	FailureDomain *string `json:"failureDomain,omitempty"`
 
 	// Image is used to provide details of an image to use during VM creation.
@@ -74,6 +75,7 @@ type AzureMachineSpec struct {
 	OSDisk OSDisk `json:"osDisk"`
 
 	// DataDisk specifies the parameters that are used to add one or more data disks to the machine
+	// +optional
 	DataDisks []DataDisk `json:"dataDisks,omitempty"`
 
 	SSHPublicKey string `json:"sshPublicKey"`
@@ -128,6 +130,7 @@ type AzureMachineStatus struct {
 	Ready bool `json:"ready"`
 
 	// Addresses contains the Azure instance associated addresses.
+	// +optional
 	Addresses []v1.NodeAddress `json:"addresses,omitempty"`
 
 	// VMState is the provisioning state of the Azure virtual machine.
