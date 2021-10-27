@@ -236,9 +236,8 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${LINUX_WORKER_MACHINE_COUNT:-1}
-  selector:
-    matchLabels: null
+  replicas: ${WORKER_MACHINE_COUNT:-1}
+  selector: {}
   template:
     spec:
       bootstrap:
@@ -346,9 +345,8 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
-  selector:
-    matchLabels: null
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-2}
+  selector: {}
   template:
     spec:
       bootstrap:
