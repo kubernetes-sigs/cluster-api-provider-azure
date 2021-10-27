@@ -1376,6 +1376,14 @@ spec:
                   meaning that the node can be drained without any time limitations.
                   NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`'
                 type: string
+              orchestrationMode:
+                default: Flexible
+                description: OrchestrationMode specifies the orchestration mode for
+                  the Virtual Machine Scale Set
+                enum:
+                - Flexible
+                - Uniform
+                type: string
               providerID:
                 description: ProviderID is the identification ID of the Virtual Machine
                   Scale Set
@@ -1994,7 +2002,7 @@ spec:
                 type: array
               longRunningOperationStates:
                 description: LongRunningOperationStates saves the state for Azure
-                  long-running operations so they can be continued on the next reconciliation
+                  long-running operations, so they can be continued on the next reconciliation
                   loop.
                 items:
                   description: Future contains the data needed for an Azure long-running

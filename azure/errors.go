@@ -23,7 +23,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // ErrNotOwned is returned when a resource can't be deleted because it isn't owned.
@@ -128,11 +128,11 @@ func WithTerminalError(err error) ReconcileError {
 
 // OperationNotDoneError is used to represent a long-running operation that is not yet complete.
 type OperationNotDoneError struct {
-	Future *infrav1.Future
+	Future *infrav1beta1.Future
 }
 
 // NewOperationNotDoneError returns a new OperationNotDoneError wrapping a Future.
-func NewOperationNotDoneError(future *infrav1.Future) OperationNotDoneError {
+func NewOperationNotDoneError(future *infrav1beta1.Future) OperationNotDoneError {
 	return OperationNotDoneError{
 		Future: future,
 	}

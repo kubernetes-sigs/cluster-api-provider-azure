@@ -17,7 +17,7 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -59,6 +59,37 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 	}
 
 	return vmss
+}
+
+func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine) *azure.VMSSVM {
+	instance := azure.VMSSVM{
+		ID: to.String(sdkInstance.ID),
+	}
+
+	if sdkInstance.VirtualMachineProperties == nil {
+		return &instance
+	}
+
+	instance.State = infrav1.Creating
+	if sdkInstance.ProvisioningState != nil {
+		instance.State = infrav1.ProvisioningState(to.String(sdkInstance.ProvisioningState))
+	}
+
+	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
+		instance.Name = *sdkInstance.OsProfile.ComputerName
+	}
+
+	if sdkInstance.StorageProfile != nil && sdkInstance.StorageProfile.ImageReference != nil {
+		imageRef := sdkInstance.StorageProfile.ImageReference
+		instance.Image = SDKImageToImage(imageRef, sdkInstance.Plan != nil)
+	}
+
+	if sdkInstance.Zones != nil && len(*sdkInstance.Zones) > 0 {
+		// an instance should only have 1 zone, so we select the first item of the slice
+		instance.AvailabilityZone = to.StringSlice(sdkInstance.Zones)[0]
+	}
+
+	return &instance
 }
 
 // SDKToVMSSVM converts an Azure SDK VirtualMachineScaleSetVM into an infrav1exp.VMSSVM.

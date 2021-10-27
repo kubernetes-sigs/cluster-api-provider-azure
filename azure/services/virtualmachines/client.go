@@ -18,9 +18,12 @@ package virtualmachines
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -31,10 +34,36 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureClient contains the Azure go-sdk Client.
-type AzureClient struct {
-	virtualmachines compute.VirtualMachinesClient
+const serviceName = "virtualmachines"
+
+// Client wraps go-sdk.
+type (
+	Client interface {
+		Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
+		GetByID(context.Context, string) (compute.VirtualMachine, error)
+		CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
+		DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error)
+		IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error)
+		Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error)
+		GetResultIfDone(ctx context.Context, future *infrav1.Future) (compute.VirtualMachine, error)
+	}
+
+	// AzureClient contains the Azure go-sdk Client.
+	AzureClient struct {
+		virtualmachines compute.VirtualMachinesClient
+	}
+)
+
+type genericVMFuture interface {
+	DoneWithContext(ctx context.Context, sender autorest.Sender) (done bool, err error)
+	Result(client compute.VirtualMachinesClient) (vm compute.VirtualMachine, err error)
 }
+
+type deleteFutureAdapter struct {
+	compute.VirtualMachinesDeleteFuture
+}
+
+var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
 func NewClient(auth azure.Authorizer) *AzureClient {
@@ -55,6 +84,21 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	defer done()
 
 	return ac.virtualmachines.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+}
+
+// GetByID retrieves information about the model view or the instance view of a virtual machine.
+func (ac *AzureClient) GetByID(ctx context.Context, resourceID string) (compute.VirtualMachine, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.GetByID")
+	defer done()
+
+	parsed, err := azureautorest.ParseResourceID(resourceID)
+	if err != nil {
+		return compute.VirtualMachine{}, errors.Wrap(err, fmt.Sprintf("failed parsing the resource id %q", resourceID))
+	}
+
+	log.Info("parsed resourceID", "parsed", parsed)
+
+	return ac.virtualmachines.Get(ctx, parsed.ResourceGroup, parsed.ResourceName, "")
 }
 
 // CreateOrUpdateAsync creates or updates a virtual machine asynchronously.
@@ -174,4 +218,53 @@ func (ac *AzureClient) Result(ctx context.Context, future azureautorest.FutureAP
 	default:
 		return nil, errors.Errorf("unknown future type %q", futureType)
 	}
+}
+
+// GetResultIfDone fetches the result of a long-running operation future if it is done.
+func (ac *AzureClient) GetResultIfDone(ctx context.Context, future *infrav1.Future) (compute.VirtualMachine, error) {
+	ctx, _, spanDone := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.GetResultIfDone")
+	defer spanDone()
+
+	var genericFuture genericVMFuture
+	futureData, err := base64.URLEncoding.DecodeString(future.Data)
+	if err != nil {
+		return compute.VirtualMachine{}, errors.Wrapf(err, "failed to base64 decode future data")
+	}
+
+	switch future.Type {
+	case infrav1.DeleteFuture:
+		var future compute.VirtualMachinesDeleteFuture
+		if err := json.Unmarshal(futureData, &future); err != nil {
+			return compute.VirtualMachine{}, errors.Wrap(err, "failed to unmarshal future data")
+		}
+
+		genericFuture = &deleteFutureAdapter{
+			VirtualMachinesDeleteFuture: future,
+		}
+	default:
+		return compute.VirtualMachine{}, errors.Errorf("unknown furture type %q", future.Type)
+	}
+
+	done, err := genericFuture.DoneWithContext(ctx, ac.virtualmachines)
+	if err != nil {
+		return compute.VirtualMachine{}, errors.Wrapf(err, "failed checking if the operation was complete")
+	}
+
+	if !done {
+		return compute.VirtualMachine{}, azure.WithTransientError(azure.NewOperationNotDoneError(future), 15*time.Second)
+	}
+
+	vm, err := genericFuture.Result(ac.virtualmachines)
+	if err != nil {
+		return vm, errors.Wrapf(err, "failed fetching the result of operation for vm")
+	}
+
+	return vm, nil
+}
+
+// Result wraps the delete result so that we can treat it generically. The only thing we care about is if the delete
+// was successful. If it wasn't, an error will be returned.
+func (da *deleteFutureAdapter) Result(client compute.VirtualMachinesClient) (compute.VirtualMachine, error) {
+	_, err := da.VirtualMachinesDeleteFuture.Result(client)
+	return compute.VirtualMachine{}, err
 }

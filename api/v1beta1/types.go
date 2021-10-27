@@ -678,3 +678,16 @@ type AzureBastion struct {
 func IsTerminalProvisioningState(state ProvisioningState) bool {
 	return state == Failed || state == Succeeded
 }
+
+// OrchestrationModeType are the orchestration modes for the Virtual Machine Scale Set backing the AzureMachinePool
+// +kubebuilder:validation:Enum=Flexible;Uniform
+type OrchestrationModeType string
+
+const (
+	// FlexibleOrchestrationMode is the Flexible Virtual Machine Scale Set mode which treats VMs individually rather
+	// than in a uniform manner.
+	FlexibleOrchestrationMode OrchestrationModeType = "Flexible"
+	// UniformOrchestrationMode is the Uniform Virtual Machine Scale Set mode which treats VMs as sub-resources of the
+	// Virtual Machine Scale Set rather than as individual resources.
+	UniformOrchestrationMode OrchestrationModeType = "Uniform"
+)

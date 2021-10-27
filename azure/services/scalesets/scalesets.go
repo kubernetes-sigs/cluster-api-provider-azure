@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -407,11 +407,9 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		Zones: to.StringSlicePtr(vmssSpec.FailureDomains),
 		Plan:  s.generateImagePlan(ctx),
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-			SinglePlacementGroup: to.BoolPtr(false),
-			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.UpgradeModeManual,
-			},
-			Overprovision: to.BoolPtr(false),
+			OrchestrationMode:        getOrchestrationMode(s.Scope.ScaleSetSpec().OrchestrationMode),
+			PlatformFaultDomainCount: to.Int32Ptr(3),
+			SinglePlacementGroup:     to.BoolPtr(false),
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile:       osProfile,
 				StorageProfile:  storageProfile,
@@ -422,6 +420,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 					},
 				},
 				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
+					NetworkAPIVersion: compute.NetworkAPIVersionTwoZeroTwoZeroHyphenMinusOneOneHyphenMinusZeroOne,
 					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 						{
 							Name: to.StringPtr(vmssSpec.Name + "-netconfig"),
@@ -734,4 +733,11 @@ func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*com
 	return &compute.SecurityProfile{
 		EncryptionAtHost: to.BoolPtr(*vmssSpec.SecurityProfile.EncryptionAtHost),
 	}, nil
+}
+
+func getOrchestrationMode(modeType infrav1.OrchestrationModeType) compute.OrchestrationMode {
+	if modeType == infrav1.FlexibleOrchestrationMode {
+		return compute.OrchestrationModeFlexible
+	}
+	return compute.OrchestrationModeUniform
 }

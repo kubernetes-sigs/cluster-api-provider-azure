@@ -494,6 +494,7 @@ func autoConvert_v1beta1_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(i
 	out.RoleAssignmentName = in.RoleAssignmentName
 	// WARNING: in.Strategy requires manual conversion: does not exist in peer-type
 	// WARNING: in.NodeDrainTimeout requires manual conversion: does not exist in peer-type
+	// WARNING: in.OrchestrationMode requires manual conversion: does not exist in peer-type
 	return nil
 }
 

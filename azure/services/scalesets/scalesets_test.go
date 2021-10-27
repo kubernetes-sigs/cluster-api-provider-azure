@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -983,11 +983,9 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 		},
 		Zones: &[]string{"1", "3"},
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-			SinglePlacementGroup: to.BoolPtr(false),
-			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.UpgradeModeManual,
-			},
-			Overprovision: to.BoolPtr(false),
+			PlatformFaultDomainCount: to.Int32Ptr(3),
+			SinglePlacementGroup:     to.BoolPtr(false),
+			OrchestrationMode:        compute.OrchestrationModeUniform,
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 					ComputerNamePrefix: to.StringPtr(defaultVMSSName),
@@ -1034,6 +1032,7 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 					},
 				},
 				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
+					NetworkAPIVersion: "2020-11-01",
 					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 						{
 							Name: to.StringPtr("my-vmss-netconfig"),

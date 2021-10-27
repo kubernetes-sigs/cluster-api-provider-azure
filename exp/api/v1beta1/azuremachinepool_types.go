@@ -42,6 +42,7 @@ const (
 )
 
 type (
+
 	// AzureMachinePoolMachineTemplate defines the template for an AzureMachine.
 	AzureMachinePoolMachineTemplate struct {
 		// VMSize is the size of the Virtual Machine to build.
@@ -143,6 +144,10 @@ type (
 		// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
 		// +optional
 		NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
+
+		// OrchestrationMode specifies the orchestration mode for the Virtual Machine Scale Set
+		// +kubebuilder:default=Flexible
+		OrchestrationMode infrav1.OrchestrationModeType `json:"orchestrationMode,omitempty"`
 	}
 
 	// AzureMachinePoolDeploymentStrategyType is the type of deployment strategy employed to rollout a new version of
@@ -281,7 +286,7 @@ type (
 		// +optional
 		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
-		// LongRunningOperationStates saves the state for Azure long-running operations so they can be continued on the
+		// LongRunningOperationStates saves the state for Azure long-running operations, so they can be continued on the
 		// next reconciliation loop.
 		// +optional
 		LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`

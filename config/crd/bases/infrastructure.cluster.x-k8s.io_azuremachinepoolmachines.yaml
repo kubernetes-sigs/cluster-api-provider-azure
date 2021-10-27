@@ -295,7 +295,6 @@ spec:
                   Scale Set
                 type: string
             required:
-            - instanceID
             - providerID
             type: object
           status:
@@ -457,8 +456,6 @@ spec:
               version:
                 description: Version defines the Kubernetes version for the VM Instance
                 type: string
-            required:
-            - latestModelApplied
             type: object
         type: object
     served: true

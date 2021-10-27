@@ -18,6 +18,7 @@ package azure
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -76,6 +77,7 @@ type ScaleSetSpec struct {
 	SecurityProfile              *infrav1.SecurityProfile
 	SpotVMOptions                *infrav1.SpotVMOptions
 	FailureDomains               []string
+	OrchestrationMode            infrav1.OrchestrationModeType
 }
 
 // TagsSpec defines the specification for a set of tags.
@@ -159,6 +161,14 @@ func (vmss VMSS) InstancesByProviderID() map[string]VMSSVM {
 
 // ProviderID returns the K8s provider ID for the VMSS instance.
 func (vm VMSSVM) ProviderID() string {
+	if vm.InstanceID == "" {
+		// build providerID a bit differently for VMSS Flex
+		splitOnSlash := strings.Split(vm.ID, "/")
+		lastSplit := splitOnSlash[len(splitOnSlash)-1]
+		vmIDWithoutEnd := strings.TrimRight(vm.ID, lastSplit)
+		splitsOnUnderscore := strings.Split(lastSplit, "_")
+		return ProviderIDPrefix + vmIDWithoutEnd + splitsOnUnderscore[len(splitsOnUnderscore)-1]
+	}
 	return ProviderIDPrefix + vm.ID
 }
 

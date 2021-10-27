@@ -26,7 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesetvms"
@@ -190,7 +190,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
 
-	azureCluster := &infrav1.AzureCluster{}
+	azureCluster := &infrav1beta1.AzureCluster{}
 	if err := ampmr.Client.Get(ctx, azureClusterName, azureCluster); err != nil {
 		logger.Info("AzureCluster is not available yet")
 		return reconcile.Result{}, nil
@@ -275,11 +275,11 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 
 	state := machineScope.ProvisioningState()
 	switch state {
-	case infrav1.Failed:
+	case infrav1beta1.Failed:
 		ampmr.Recorder.Eventf(machineScope.AzureMachinePoolMachine, corev1.EventTypeWarning, "FailedVMState", "Azure scale set VM is in failed state")
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
 		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", state))
-	case infrav1.Deleting:
+	case infrav1beta1.Deleting:
 		if err := ampmr.Client.Delete(ctx, machineScope.AzureMachinePoolMachine); err != nil {
 			return reconcile.Result{}, errors.Wrap(err, "machine pool machine failed to be deleted when deleting")
 		}
@@ -287,7 +287,7 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 
 	log.V(2).Info(fmt.Sprintf("Scale Set VM is %s", state), "id", machineScope.ProviderID())
 
-	if !infrav1.IsTerminalProvisioningState(state) || !machineScope.IsReady() {
+	if !infrav1beta1.IsTerminalProvisioningState(state) || !machineScope.IsReady() {
 		log.V(2).Info("Requeuing", "state", state, "ready", machineScope.IsReady())
 		// we are in a non-terminal state, retry in a bit
 		return reconcile.Result{

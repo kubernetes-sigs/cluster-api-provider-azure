@@ -18,11 +18,12 @@ package v1alpha3
 
 import (
 	convert "k8s.io/apimachinery/pkg/conversion"
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
-	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).
@@ -82,6 +83,7 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		}
 	}
 
+	dst.Spec.OrchestrationMode = restored.Spec.OrchestrationMode
 	return nil
 }
 

@@ -19,9 +19,11 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"strings"
 	"time"
 
+	azure2 "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -125,6 +127,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		SpotVMOptions:                m.AzureMachinePool.Spec.Template.SpotVMOptions,
 		FailureDomains:               m.MachinePool.Spec.FailureDomains,
 		TerminateNotificationTimeout: m.AzureMachinePool.Spec.Template.TerminateNotificationTimeout,
+		OrchestrationMode:            m.AzureMachinePool.Spec.OrchestrationMode,
 	}
 }
 
@@ -326,17 +329,14 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 }
 
 func (m *MachinePoolScope) createMachine(ctx context.Context, machine azure.VMSSVM) error {
-	if machine.InstanceID == "" {
-		return errors.New("machine.InstanceID must not be empty")
-	}
-
-	if machine.Name == "" {
-		return errors.New("machine.Name must not be empty")
+	parsed, err := azure2.ParseResourceID(machine.ID)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to parse resource id %q", machine.ID))
 	}
 
 	ampm := infrav1exp.AzureMachinePoolMachine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      strings.Join([]string{m.AzureMachinePool.Name, machine.InstanceID}, "-"),
+			Name:      strings.Replace(parsed.ResourceName, "_", "-", -1),
 			Namespace: m.AzureMachinePool.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
