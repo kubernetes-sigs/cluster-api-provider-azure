@@ -8,6 +8,7 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/cluster-cni-windows.yaml
   - ../patches/controller-manager.yaml
+  - patches/machine-deployment-worker-counts.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
