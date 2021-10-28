@@ -56,4 +56,10 @@ func TestFuzzyConversion(t *testing.T) {
 		Spoke:  &AzureManagedMachinePool{},
 	}))
 
+	t.Run("for AzureMachinePoolMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
+		Scheme: scheme,
+		Hub:    &v1beta1.AzureMachinePoolMachine{},
+		Spoke:  &AzureMachinePoolMachine{},
+	}))
+
 }
