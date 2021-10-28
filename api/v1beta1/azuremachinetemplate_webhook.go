@@ -64,9 +64,19 @@ func (r *AzureMachineTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 	old := oldRaw.(*AzureMachineTemplate)
 
 	if !reflect.DeepEqual(r.Spec.Template.Spec, old.Spec.Template.Spec) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec"), r, AzureMachineTemplateImmutableMsg),
-		)
+		// The equality failure could be because of default mismatch between v1alpha3 and v1beta1. This happens because
+		// the new object `r` will have run through the default webhooks but the old object `old` would not have so.
+		// This means if the old object was in v1alpha3, it would not get the new defaults set in v1beta1 resulting
+		// in object inequality. To workaround this, we set the v1beta1 defaults here so that the old object also gets
+		// the new defaults.
+		old.Default()
+
+		// if it's still not equal, return error.
+		if !reflect.DeepEqual(r.Spec.Template.Spec, old.Spec.Template.Spec) {
+			allErrs = append(allErrs,
+				field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec"), r, AzureMachineTemplateImmutableMsg),
+			)
+		}
 	}
 
 	if len(allErrs) == 0 {
@@ -83,5 +93,7 @@ func (r *AzureMachineTemplate) ValidateDelete() error {
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) Default() {
 	machinetemplatelog.Info("default", "name", r.Name)
-	r.Spec.Template.Spec.SetDefaults(machinetemplatelog)
+	r.Spec.Template.Spec.SetDefaultCachingType()
+	r.Spec.Template.Spec.SetDataDisksDefaults()
+	r.Spec.Template.Spec.SetIdentityDefaults()
 }

@@ -235,6 +235,16 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:       "azurecluster azureEnvironment default mismatch",
+			oldCluster: createValidCluster(),
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.AzureEnvironment = "AzurePublicCloud"
+				return cluster
+			}(),
+			wantErr: false,
+		},
+		{
 			name: "control plane outbound lb is immutable",
 			oldCluster: &AzureCluster{
 				Spec: AzureClusterSpec{
