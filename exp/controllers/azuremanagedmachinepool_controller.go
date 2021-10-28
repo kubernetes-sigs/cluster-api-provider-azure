@@ -242,6 +242,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 
 	if err := ammpr.createAzureManagedMachinePoolService(scope).Reconcile(ctx); err != nil {
 		if IsAgentPoolVMSSNotFoundError(err) {
+			log.V(2).Info(fmt.Sprintf("unable to find agent pool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name))
 			// if the underlying VMSS is not yet created, requeue for 30s in the future
 			return reconcile.Result{
 				RequeueAfter: 30 * time.Second,

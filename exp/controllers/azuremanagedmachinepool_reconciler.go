@@ -103,16 +103,21 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to list vmss in resource group %s", nodeResourceGroup)
 	}
 
+	log := s.scope.WithValues("agentPoolName", agentPoolName).V(2)
+
 	var match *compute.VirtualMachineScaleSet
 	for _, ss := range vmss {
 		ss := ss
+		log.Info("found vmss", "vmssName", ss.Name, "tags", ss.Tags)
 		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == agentPoolName {
 			match = &ss
+			log.Info("found match")
 			break
 		}
 	}
 
 	if match == nil {
+		log.Info("no match found")
 		return NewAgentPoolVMSSNotFoundError(nodeResourceGroup, agentPoolName)
 	}
 
