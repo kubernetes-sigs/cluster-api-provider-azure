@@ -90,20 +90,20 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedMachinePoolService.Reconcile")
 	defer done()
 
-	s.scope.Info("reconciling machine pool")
 	agentPoolName := s.scope.AgentPoolSpec().Name
+	log := s.scope.WithValues("agentPoolName", agentPoolName).V(2)
+	log.Info("reconciling machine pool")
 
 	if err := s.agentPoolsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)
 	}
 
 	nodeResourceGroup := s.scope.NodeResourceGroup()
+	log = log.WithValues("nodeResourceGroup", nodeResourceGroup)
 	vmss, err := s.scaleSetsSvc.List(ctx, nodeResourceGroup)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list vmss in resource group %s", nodeResourceGroup)
 	}
-
-	log := s.scope.WithValues("agentPoolName", agentPoolName).V(2)
 
 	var match *compute.VirtualMachineScaleSet
 	for _, ss := range vmss {
