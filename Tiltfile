@@ -19,7 +19,7 @@ settings = {
     "capi_version": "v1.0.0",
     "cert_manager_version": "v1.1.0",
     "kubernetes_version": "v1.22.2",
-    "aks_kubernetes_version": "v1.20.5"
+    "aks_kubernetes_version": "v1.22.1"
 }
 
 keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]
