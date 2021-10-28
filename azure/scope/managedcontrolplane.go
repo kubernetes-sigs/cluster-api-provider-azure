@@ -172,7 +172,7 @@ func (s *ManagedControlPlaneScope) SubscriptionID() string {
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
 func (s *ManagedControlPlaneScope) BaseURI() string {
-	return s.AzureClients.ResourceManagerEndpoint
+	return fmt.Sprintf("https://%s.management.azure.com", s.Location())
 }
 
 // Authorizer returns the Azure client Authorizer.
