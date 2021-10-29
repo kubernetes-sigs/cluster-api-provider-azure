@@ -17,6 +17,15 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
+    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/core-components.yaml"
+      type: "url"
+      contract: v1alpha4
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8080
+      files:
+        - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
     - name: v1.0.0
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.0/core-components.yaml
       type: url
@@ -39,6 +48,15 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
+    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/bootstrap-components.yaml"
+      type: "url"
+      contract: v1alpha4
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8080
+      files:
+        - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
     - name: v1.0.0
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.0/bootstrap-components.yaml
       type: url
@@ -60,6 +78,15 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
+    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/control-plane-components.yaml"
+      type: "url"
+      contract: v1alpha4
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8080
+      files:
+        - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
     - name: v1.0.0
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.0/control-plane-components.yaml
       type: url
@@ -79,6 +106,17 @@ providers:
       files:
       - sourcePath: "../data/shared/v1alpha3_provider/metadata.yaml"
       - sourcePath: "../data/infrastructure-azure/v1alpha3/cluster-template-prow.yaml"
+        targetName: "cluster-template.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+    - name: v0.5.3 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v0.5.3/infrastructure-components.yaml
+      type: url
+      contract: v1alpha4
+      files:
+      - sourcePath: "../data/shared/v1alpha4_provider/metadata.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
