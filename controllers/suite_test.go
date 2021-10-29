@@ -48,11 +48,10 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func(done Done) {
 	By("bootstrapping test environment")
 	testEnv = env.NewTestEnvironment()
-
-	Expect(NewAzureClusterReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.DefaultLoopTimeout, "").
+	Expect(NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.DefaultLoopTimeout, "").
 		SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
-	Expect(NewAzureMachineReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout, "").
+	Expect(NewAzureMachineReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout, "").
 		SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme

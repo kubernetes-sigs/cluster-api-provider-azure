@@ -78,7 +78,6 @@ func TestNewService(t *testing.T) {
 
 	mpms, err := scope.NewMachinePoolMachineScope(scope.MachinePoolMachineScopeParams{
 		Client:                  client,
-		Logger:                  s.Logger,
 		MachinePool:             new(clusterv1exp.MachinePool),
 		AzureMachinePool:        new(infrav1exp.AzureMachinePool),
 		AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
@@ -258,9 +257,6 @@ func TestService_Delete(t *testing.T) {
 			scopeMock.EXPECT().SubscriptionID().Return("subID")
 			scopeMock.EXPECT().BaseURI().Return("https://localhost/")
 			scopeMock.EXPECT().Authorizer().Return(nil)
-			scopeMock.EXPECT().WithValues(gomock.Any()).Return(scopeMock)
-			scopeMock.EXPECT().V(gomock.Any()).Return(scopeMock).AnyTimes()
-			scopeMock.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 
 			service := NewService(scopeMock)
 			service.Client = clientMock

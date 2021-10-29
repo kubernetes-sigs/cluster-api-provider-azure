@@ -21,19 +21,11 @@ import (
 	"fmt"
 	"time"
 
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/feature"
-
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	"sigs.k8s.io/cluster-api-provider-azure/util/system"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -43,12 +35,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/system"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // AzureIdentityReconciler reconciles Azure identity objects.
 type AzureIdentityReconciler struct {
 	client.Client
-	Log              logr.Logger
 	Recorder         record.EventRecorder
 	ReconcileTimeout time.Duration
 	WatchFilterValue string
@@ -56,11 +54,16 @@ type AzureIdentityReconciler struct {
 
 // SetupWithManager initializes this controller with a manager.
 func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
-	log := r.Log.WithValues("controller", "AzureIdentity")
+	_, log, done := tele.StartSpanWithLogger(ctx,
+		"controllers.AzureIdentityReconciler.SetupWithManager",
+		tele.KVP("controller", "AzureIdentity"),
+	)
+	defer done()
+
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue)).
 		Build(r)
 	if err != nil {
 		return errors.Wrap(err, "error creating controller")
@@ -71,7 +74,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 		if err = c.Watch(
 			&source.Kind{Type: &infraexpv1.AzureManagedControlPlane{}},
 			&handler.EnqueueRequestForObject{},
-			predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue),
+			predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),
 		); err != nil {
 			return errors.Wrap(err, "failed adding a watch for ready clusters")
 		}
@@ -82,7 +85,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureCluster"))),
 		predicates.ClusterUnpaused(log),
-		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue),
+		predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
@@ -99,9 +102,8 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "identityOwner", req.Name)
 
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureIdentityReconciler.Reconcile",
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureIdentityReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
 		tele.KVP("kind", "AzureCluster"),
@@ -146,7 +148,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
-	bindingsToDelete := []aadpodv1.AzureIdentityBinding{}
+	var bindingsToDelete []aadpodv1.AzureIdentityBinding
 	for _, b := range bindings.Items {
 		log = log.WithValues("azureidentitybinding", b.Name)
 

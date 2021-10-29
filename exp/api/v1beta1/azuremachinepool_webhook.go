@@ -25,15 +25,10 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
-
-// log is for logging in this package.
-var azuremachinepoollog = logf.Log.WithName("azuremachinepool-resource")
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (amp *AzureMachinePool) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -48,11 +43,9 @@ var _ webhook.Defaulter = &AzureMachinePool{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (amp *AzureMachinePool) Default() {
-	azuremachinepoollog.Info("default", "name", amp.Name)
-
 	err := amp.SetDefaultSSHPublicKey()
 	if err != nil {
-		azuremachinepoollog.Error(err, "SetDefaultSshPublicKey failed")
+		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "SetDefaultSshPublicKey failed")
 	}
 	amp.SetIdentityDefaults()
 }
@@ -63,19 +56,16 @@ var _ webhook.Validator = &AzureMachinePool{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (amp *AzureMachinePool) ValidateCreate() error {
-	azuremachinepoollog.Info("validate create", "name", amp.Name)
 	return amp.Validate(nil)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (amp *AzureMachinePool) ValidateUpdate(old runtime.Object) error {
-	azuremachinepoollog.Info("validate update", "name", amp.Name)
 	return amp.Validate(old)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (amp *AzureMachinePool) ValidateDelete() error {
-	azuremachinepoollog.Info("validate delete", "name", amp.Name)
 	return nil
 }
 
@@ -106,7 +96,6 @@ func (amp *AzureMachinePool) ValidateImage() error {
 		image := amp.Spec.Template.Image
 		if errs := infrav1.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
 			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
-			azuremachinepoollog.Info("Invalid image: %s", agg.Error())
 			return agg
 		}
 	}
@@ -136,7 +125,6 @@ func (amp *AzureMachinePool) ValidateSSHKey() error {
 		sshKey := amp.Spec.Template.SSHPublicKey
 		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
 			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
-			azuremachinepoollog.Info("Invalid sshKey: %s", agg.Error())
 			return agg
 		}
 	}

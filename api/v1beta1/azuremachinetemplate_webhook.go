@@ -23,15 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // AzureMachineTemplateImmutableMsg ...
 const AzureMachineTemplateImmutableMsg = "AzureMachineTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/change-machine-template.html"
-
-// log is for logging in this package.
-var machinetemplatelog = logf.Log.WithName("azuremachinetemplate-resource")
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *AzureMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -48,7 +44,6 @@ var _ webhook.Validator = &AzureMachineTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) ValidateCreate() error {
-	machinetemplatelog.Info("validate create", "name", r.Name)
 	spec := r.Spec.Template.Spec
 
 	if allErrs := ValidateAzureMachineSpec(spec); len(allErrs) > 0 {
@@ -59,7 +54,6 @@ func (r *AzureMachineTemplate) ValidateCreate() error {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) ValidateUpdate(oldRaw runtime.Object) error {
-	machinetemplatelog.Info("validate update", "name", r.Name)
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureMachineTemplate)
 
@@ -98,6 +92,5 @@ func (r *AzureMachineTemplate) ValidateDelete() error {
 
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) Default() {
-	machinetemplatelog.Info("default", "name", r.Name)
-	r.Spec.Template.Spec.SetDefaults(machinetemplatelog)
+	r.Spec.Template.Spec.SetDefaults()
 }

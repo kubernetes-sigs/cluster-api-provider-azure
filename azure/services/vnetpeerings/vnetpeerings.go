@@ -19,8 +19,6 @@ package vnetpeerings
 import (
 	"context"
 
-	"github.com/go-logr/logr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
@@ -32,7 +30,6 @@ const serviceName = "vnetpeerings"
 
 // VnetPeeringScope defines the scope interface for a subnet service.
 type VnetPeeringScope interface {
-	logr.Logger
 	azure.Authorizer
 	azure.AsyncStatusUpdater
 	VnetPeeringSpecs() []azure.ResourceSpecGetter
@@ -54,8 +51,8 @@ func New(scope VnetPeeringScope) *Service {
 
 // Reconcile gets/creates/updates a peering.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "vnetpeerings.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.Service.Reconcile")
+	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
@@ -78,8 +75,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the peering with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "vnetpeerings.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.Service.Delete")
+	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()

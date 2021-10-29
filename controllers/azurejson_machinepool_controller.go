@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -45,7 +44,6 @@ import (
 // AzureJSONMachinePoolReconciler reconciles Azure json secrets for AzureMachinePool objects.
 type AzureJSONMachinePoolReconciler struct {
 	client.Client
-	Log              logr.Logger
 	Recorder         record.EventRecorder
 	ReconcileTimeout time.Duration
 	WatchFilterValue string
@@ -53,9 +51,15 @@ type AzureJSONMachinePoolReconciler struct {
 
 // SetupWithManager initializes this controller with a manager.
 func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+	_, log, done := tele.StartSpanWithLogger(ctx,
+		"controllers.AzureJSONMachinePoolReconciler.SetupWithManager",
+	)
+	defer done()
+
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&expv1.AzureMachinePool{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue)).
 		Owns(&corev1.Secret{}).
 		Complete(r)
 }
@@ -137,7 +141,6 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       r.Client,
-		Logger:       log,
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
 	})
@@ -171,7 +174,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, errors.Wrap(err, "failed to create cloud provider config")
 	}
 
-	if err := reconcileAzureSecret(ctx, log, r.Client, owner, newSecret, clusterScope.ClusterName()); err != nil {
+	if err := reconcileAzureSecret(ctx, r.Client, owner, newSecret, clusterScope.ClusterName()); err != nil {
 		r.Recorder.Eventf(azureMachinePool, corev1.EventTypeWarning, "Error reconciling cloud provider secret for AzureMachinePool", err.Error())
 		return ctrl.Result{}, errors.Wrap(err, "failed to reconcile azure secret")
 	}

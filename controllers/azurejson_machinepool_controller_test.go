@@ -22,21 +22,18 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2/klogr"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 func TestAzureJSONPoolReconciler(t *testing.T) {
@@ -150,7 +147,6 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 
 			reconciler := &AzureJSONMachinePoolReconciler{
 				Client:   client,
-				Log:      klogr.New(),
 				Recorder: record.NewFakeRecorder(128),
 			}
 

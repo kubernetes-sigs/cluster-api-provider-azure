@@ -26,9 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules/mock_inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers/mock_loadbalancers"
@@ -57,7 +55,6 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-lb"),
@@ -99,7 +96,6 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-public-lb").
 						Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
@@ -119,7 +115,6 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-public-lb"),
@@ -181,7 +176,6 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-public-lb"),
@@ -273,7 +267,6 @@ func TestDeleteNetworkInterface(t *testing.T) {
 						LoadBalancerName: "my-public-lb",
 					},
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(gomockinternal.AContext(), "my-rg", "my-public-lb", "azure-md-0")
 			},
@@ -290,7 +283,6 @@ func TestDeleteNetworkInterface(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Delete(gomockinternal.AContext(), "my-rg", "my-public-lb", "azure-md-1").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
@@ -306,7 +298,6 @@ func TestDeleteNetworkInterface(t *testing.T) {
 						LoadBalancerName: "my-public-lb",
 					},
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(gomockinternal.AContext(), "my-rg", "my-public-lb", "azure-md-2").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
@@ -374,7 +365,6 @@ func TestNatRuleExists(t *testing.T) {
 			expectedResult: true,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
 			},
 		},
 		{
@@ -435,7 +425,7 @@ func TestNatRuleExists(t *testing.T) {
 			}
 
 			ports := make(map[int32]struct{})
-			exists := s.natRuleExists(ports)(tc.existingRules, tc.ruleName)
+			exists := s.natRuleExists(ports)(context.TODO(), tc.existingRules, tc.ruleName)
 			g.Expect(exists).To(Equal(tc.expectedResult))
 			if !exists {
 				g.Expect(ports).To(Equal(tc.expectedPorts))
@@ -460,7 +450,6 @@ func TestGetAvailablePort(t *testing.T) {
 			expectedPortResult: 22,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
 			},
 		},
 		{
@@ -472,7 +461,6 @@ func TestGetAvailablePort(t *testing.T) {
 			expectedPortResult: 2201,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
 			},
 		},
 		{
@@ -487,7 +475,6 @@ func TestGetAvailablePort(t *testing.T) {
 			expectedPortResult: 2203,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
 			},
 		},
 		{
@@ -520,7 +507,7 @@ func TestGetAvailablePort(t *testing.T) {
 				loadBalancersClient: loadBalancerMock,
 			}
 
-			res, err := s.getAvailablePort(tc.portsInput)
+			res, err := s.getAvailablePort(context.TODO(), tc.portsInput)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

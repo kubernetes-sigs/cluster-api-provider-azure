@@ -26,8 +26,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers/mock_loadbalancers"
@@ -294,7 +292,6 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			name:          "successfully delete an existing load balancer",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name: "my-internallb",
@@ -312,7 +309,6 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			name:          "load balancer already deleted",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name: "my-publiclb",
@@ -327,7 +323,6 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			name:          "load balancer deletion fails",
 			expectedError: "failed to delete load balancer my-publiclb in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name: "my-publiclb",
@@ -554,7 +549,6 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 }
 
 func setupDefaultLBExpectations(s *mock_loadbalancers.MockLBScopeMockRecorder) {
-	s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 	s.SubscriptionID().AnyTimes().Return("123")
 	s.ResourceGroup().AnyTimes().Return("my-rg")
 	s.Location().AnyTimes().Return("testlocation")

@@ -21,16 +21,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmssextensions/mock_vmssextensions"
-
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmssextensions/mock_vmssextensions"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -44,7 +41,6 @@ func TestReconcileVMSSExtension(t *testing.T) {
 			name:          "extension already exists",
 			expectedError: "",
 			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",
@@ -64,14 +60,13 @@ func TestReconcileVMSSExtension(t *testing.T) {
 					},
 					ID: to.StringPtr("some/fake/id"),
 				}, nil)
-				s.SetBootstrapConditions(string(compute.ProvisioningStateSucceeded), "my-extension-1")
+				s.SetBootstrapConditions(gomockinternal.AContext(), string(compute.ProvisioningStateSucceeded), "my-extension-1")
 			},
 		},
 		{
 			name:          "extension does not exist",
 			expectedError: "",
 			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",
@@ -98,7 +93,6 @@ func TestReconcileVMSSExtension(t *testing.T) {
 			name:          "error getting the extension",
 			expectedError: "failed to get vm extension my-extension-1 on scale set my-vmss: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
 						Name:      "my-extension-1",

@@ -27,13 +27,11 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables/mock_routetables"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func init() {
@@ -60,7 +58,6 @@ func TestReconcileRouteTables(t *testing.T) {
 					ID:   "1234",
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 			},
 		},
@@ -76,7 +73,6 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
@@ -116,7 +112,6 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().AnyTimes().Return([]azure.RouteTableSpec{
 					{
@@ -176,7 +171,6 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
 					Name: "my-cp-routetable",
@@ -204,7 +198,6 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
 					Name: "my-cp-routetable",
@@ -271,7 +264,6 @@ func TestDeleteRouteTable(t *testing.T) {
 					ID:   "1234",
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 			},
 		},
@@ -287,7 +279,6 @@ func TestDeleteRouteTable(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
@@ -324,7 +315,6 @@ func TestDeleteRouteTable(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
@@ -361,7 +351,6 @@ func TestDeleteRouteTable(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
 					Name: "my-cp-routetable",

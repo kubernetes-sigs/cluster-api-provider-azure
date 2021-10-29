@@ -17,10 +17,9 @@ limitations under the License.
 package scope
 
 import (
+	"context"
 	"reflect"
 	"testing"
-
-	"k8s.io/klog/v2/klogr"
 
 	autorestazure "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -28,11 +27,11 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func TestMachineScope_Name(t *testing.T) {
@@ -1115,7 +1114,6 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows with version below 1.22, returns windows dockershim image",
 			machineScope: MachineScope{
-				Logger: klogr.New(),
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1144,7 +1142,6 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows with version is 1.22+ with no annotation, returns windows containerd image",
 			machineScope: MachineScope{
-				Logger: klogr.New(),
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1173,7 +1170,6 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows with version is 1.22+ with annotation dockershim, returns windows dockershim image",
 			machineScope: MachineScope{
-				Logger: klogr.New(),
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1205,7 +1201,6 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows with version is less and 1.22 with annotation dockershim, returns windows dockershim image",
 			machineScope: MachineScope{
-				Logger: klogr.New(),
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1237,7 +1232,6 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows with version is less and 1.22 with annotation containerd, returns error",
 			machineScope: MachineScope{
-				Logger: klogr.New(),
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1266,7 +1260,6 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image and OS is specified, returns linux image",
 			machineScope: MachineScope{
-				Logger: klogr.New(),
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1290,7 +1283,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotImage, err := tt.machineScope.GetVMImage()
+			gotImage, err := tt.machineScope.GetVMImage(context.TODO())
 			gotError := false
 			if err != nil {
 				gotError = true

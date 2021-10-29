@@ -26,8 +26,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags/mock_tags"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -44,7 +42,6 @@ func TestReconcileTags(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.ClusterName().AnyTimes().Return("test-cluster")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					s.TagsSpecs().Return([]azure.TagsSpec{
 						{
@@ -104,7 +101,6 @@ func TestReconcileTags(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.ClusterName().AnyTimes().Return("test-cluster")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
 						Scope: "/sub/123/fake/scope",
@@ -123,7 +119,6 @@ func TestReconcileTags(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.ClusterName().AnyTimes().Return("test-cluster")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					s.TagsSpecs().Return([]azure.TagsSpec{
 						{
@@ -159,7 +154,6 @@ func TestReconcileTags(t *testing.T) {
 			expectedError: "failed to get existing tags: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.ClusterName().AnyTimes().Return("test-cluster")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
 						Scope: "/sub/123/fake/scope",
@@ -178,7 +172,6 @@ func TestReconcileTags(t *testing.T) {
 			expectedError: "cannot update tags: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.ClusterName().AnyTimes().Return("test-cluster")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
 						Scope: "/sub/123/fake/scope",
@@ -209,7 +202,6 @@ func TestReconcileTags(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.ClusterName().AnyTimes().Return("test-cluster")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
 						Scope: "/sub/123/fake/scope",

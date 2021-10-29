@@ -24,7 +24,6 @@ import (
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
-	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -235,37 +234,6 @@ func (mr *MockNSGScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockNSGScope)(nil).ControlPlaneSubnet))
 }
 
-// Enabled mocks base method.
-func (m *MockNSGScope) Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Enabled indicates an expected call of Enabled.
-func (mr *MockNSGScopeMockRecorder) Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockNSGScope)(nil).Enabled))
-}
-
-// Error mocks base method.
-func (m *MockNSGScope) Error(err error, msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockNSGScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockNSGScope)(nil).Error), varargs...)
-}
-
 // FailureDomains mocks base method.
 func (m *MockNSGScope) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -306,23 +274,6 @@ func (m *MockNSGScope) HashKey() string {
 func (mr *MockNSGScopeMockRecorder) HashKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockNSGScope)(nil).HashKey))
-}
-
-// Info mocks base method.
-func (m *MockNSGScope) Info(msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockNSGScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockNSGScope)(nil).Info), varargs...)
 }
 
 // IsAPIServerPrivate mocks base method.
@@ -519,20 +470,6 @@ func (mr *MockNSGScopeMockRecorder) TenantID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockNSGScope)(nil).TenantID))
 }
 
-// V mocks base method.
-func (m *MockNSGScope) V(level int) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// V indicates an expected call of V.
-func (mr *MockNSGScopeMockRecorder) V(level interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockNSGScope)(nil).V), level)
-}
-
 // Vnet mocks base method.
 func (m *MockNSGScope) Vnet() *v1beta1.VnetSpec {
 	m.ctrl.T.Helper()
@@ -545,36 +482,4 @@ func (m *MockNSGScope) Vnet() *v1beta1.VnetSpec {
 func (mr *MockNSGScopeMockRecorder) Vnet() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockNSGScope)(nil).Vnet))
-}
-
-// WithName mocks base method.
-func (m *MockNSGScope) WithName(name string) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", name)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithName indicates an expected call of WithName.
-func (mr *MockNSGScopeMockRecorder) WithName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockNSGScope)(nil).WithName), name)
-}
-
-// WithValues mocks base method.
-func (m *MockNSGScope) WithValues(keysAndValues ...interface{}) logr.Logger {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "WithValues", varargs...)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithValues indicates an expected call of WithValues.
-func (mr *MockNSGScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockNSGScope)(nil).WithValues), keysAndValues...)
 }

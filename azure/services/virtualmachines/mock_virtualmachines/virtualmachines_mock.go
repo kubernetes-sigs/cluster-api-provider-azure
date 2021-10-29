@@ -24,7 +24,6 @@ import (
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
-	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -137,37 +136,6 @@ func (mr *MockVMScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockVMScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
 }
 
-// Enabled mocks base method.
-func (m *MockVMScope) Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Enabled indicates an expected call of Enabled.
-func (mr *MockVMScopeMockRecorder) Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockVMScope)(nil).Enabled))
-}
-
-// Error mocks base method.
-func (m *MockVMScope) Error(err error, msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockVMScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVMScope)(nil).Error), varargs...)
-}
-
 // GetLongRunningOperationState mocks base method.
 func (m *MockVMScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
@@ -194,23 +162,6 @@ func (m *MockVMScope) HashKey() string {
 func (mr *MockVMScopeMockRecorder) HashKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockVMScope)(nil).HashKey))
-}
-
-// Info mocks base method.
-func (m *MockVMScope) Info(msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockVMScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockVMScope)(nil).Info), varargs...)
 }
 
 // SetAddresses mocks base method.
@@ -337,20 +288,6 @@ func (mr *MockVMScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockVMScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
 
-// V mocks base method.
-func (m *MockVMScope) V(level int) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// V indicates an expected call of V.
-func (mr *MockVMScopeMockRecorder) V(level interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockVMScope)(nil).V), level)
-}
-
 // VMSpec mocks base method.
 func (m *MockVMScope) VMSpec() azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
@@ -363,36 +300,4 @@ func (m *MockVMScope) VMSpec() azure.ResourceSpecGetter {
 func (mr *MockVMScopeMockRecorder) VMSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSpec", reflect.TypeOf((*MockVMScope)(nil).VMSpec))
-}
-
-// WithName mocks base method.
-func (m *MockVMScope) WithName(name string) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", name)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithName indicates an expected call of WithName.
-func (mr *MockVMScopeMockRecorder) WithName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockVMScope)(nil).WithName), name)
-}
-
-// WithValues mocks base method.
-func (m *MockVMScope) WithValues(keysAndValues ...interface{}) logr.Logger {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "WithValues", varargs...)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithValues indicates an expected call of WithValues.
-func (mr *MockVMScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockVMScope)(nil).WithValues), keysAndValues...)
 }

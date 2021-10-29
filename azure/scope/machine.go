@@ -24,11 +24,9 @@ import (
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -49,7 +47,6 @@ import (
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
 	Client       client.Client
-	Logger       logr.Logger
 	ClusterScope azure.ClusterScoper
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
@@ -68,9 +65,6 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.AzureMachine == nil {
 		return nil, errors.New("azure machine is required when creating a MachineScope")
 	}
-	if params.Logger == nil {
-		params.Logger = klogr.New()
-	}
 
 	helper, err := patch.NewHelper(params.AzureMachine, params.Client)
 	if err != nil {
@@ -81,7 +75,6 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		client:        params.Client,
 		Machine:       params.Machine,
 		AzureMachine:  params.AzureMachine,
-		Logger:        params.Logger,
 		patchHelper:   helper,
 		ClusterScoper: params.ClusterScope,
 		cache:         params.Cache,
@@ -90,7 +83,6 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 
 // MachineScope defines a scope defined around a machine and its cluster.
 type MachineScope struct {
-	logr.Logger
 	client      client.Client
 	patchHelper *patch.Helper
 
@@ -121,7 +113,7 @@ func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 			return err
 		}
 
-		m.cache.VMImage, err = m.GetVMImage()
+		m.cache.VMImage, err = m.GetVMImage(ctx)
 		if err != nil {
 			return err
 		}
@@ -442,18 +434,21 @@ func (m *MachineScope) SetFailureReason(v capierrors.MachineStatusError) {
 }
 
 // SetBootstrapConditions sets the AzureMachine BootstrapSucceeded condition based on the extension provisioning states.
-func (m *MachineScope) SetBootstrapConditions(provisioningState string, extensionName string) error {
+func (m *MachineScope) SetBootstrapConditions(ctx context.Context, provisioningState string, extensionName string) error {
+	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.SetBootstrapConditions")
+	defer done()
+
 	switch infrav1.ProvisioningState(provisioningState) {
 	case infrav1.Succeeded:
-		m.V(4).Info("extension provisioning state is succeeded", "vm extension", extensionName, "virtual machine", m.Name())
+		log.V(4).Info("extension provisioning state is succeeded", "vm extension", extensionName, "virtual machine", m.Name())
 		conditions.MarkTrue(m.AzureMachine, infrav1.BootstrapSucceededCondition)
 		return nil
 	case infrav1.Creating:
-		m.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "virtual machine", m.Name())
+		log.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "virtual machine", m.Name())
 		conditions.MarkFalse(m.AzureMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "")
 		return azure.WithTransientError(errors.New("extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM"), 30*time.Second)
 	case infrav1.Failed:
-		m.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "virtual machine", m.Name())
+		log.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "virtual machine", m.Name())
 		conditions.MarkFalse(m.AzureMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityError, "")
 		return azure.WithTerminalError(errors.New("extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more"))
 	default:
@@ -542,6 +537,9 @@ func (m *MachineScope) AdditionalTags() infrav1.Tags {
 
 // GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
 func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.GetBootstrapData")
+	defer done()
+
 	if m.Machine.Spec.Bootstrap.DataSecretName == nil {
 		return "", errors.New("error retrieving bootstrap data: linked Machine's bootstrap.dataSecretName is nil")
 	}
@@ -559,7 +557,10 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 }
 
 // GetVMImage returns the image from the machine configuration, or a default one.
-func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
+func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
+	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.GetVMImage")
+	defer done()
+
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if m.AzureMachine.Spec.Image != nil {
 		return m.AzureMachine.Spec.Image, nil
@@ -567,11 +568,11 @@ func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 
 	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS {
 		runtime := m.AzureMachine.Annotations["runtime"]
-		m.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName(), "runtime", runtime)
+		log.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName(), "runtime", runtime)
 		return azure.GetDefaultWindowsImage(to.String(m.Machine.Spec.Version), runtime)
 	}
 
-	m.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
+	log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
 }
 

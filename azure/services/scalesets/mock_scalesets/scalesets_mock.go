@@ -25,7 +25,6 @@ import (
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
-	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -193,37 +192,6 @@ func (mr *MockScaleSetScopeMockRecorder) DeleteLongRunningOperationState(arg0, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
 }
 
-// Enabled mocks base method.
-func (m *MockScaleSetScope) Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Enabled indicates an expected call of Enabled.
-func (mr *MockScaleSetScopeMockRecorder) Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockScaleSetScope)(nil).Enabled))
-}
-
-// Error mocks base method.
-func (m *MockScaleSetScope) Error(err error, msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockScaleSetScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockScaleSetScope)(nil).Error), varargs...)
-}
-
 // FailureDomains mocks base method.
 func (m *MockScaleSetScope) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -268,18 +236,18 @@ func (mr *MockScaleSetScopeMockRecorder) GetLongRunningOperationState(arg0, arg1
 }
 
 // GetVMImage mocks base method.
-func (m *MockScaleSetScope) GetVMImage() (*v1beta1.Image, error) {
+func (m *MockScaleSetScope) GetVMImage(arg0 context.Context) (*v1beta1.Image, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetVMImage")
+	ret := m.ctrl.Call(m, "GetVMImage", arg0)
 	ret0, _ := ret[0].(*v1beta1.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVMImage indicates an expected call of GetVMImage.
-func (mr *MockScaleSetScopeMockRecorder) GetVMImage() *gomock.Call {
+func (mr *MockScaleSetScopeMockRecorder) GetVMImage(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVMImage", reflect.TypeOf((*MockScaleSetScope)(nil).GetVMImage))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVMImage", reflect.TypeOf((*MockScaleSetScope)(nil).GetVMImage), arg0)
 }
 
 // HashKey mocks base method.
@@ -294,23 +262,6 @@ func (m *MockScaleSetScope) HashKey() string {
 func (mr *MockScaleSetScopeMockRecorder) HashKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockScaleSetScope)(nil).HashKey))
-}
-
-// Info mocks base method.
-func (m *MockScaleSetScope) Info(msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockScaleSetScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockScaleSetScope)(nil).Info), varargs...)
 }
 
 // Location mocks base method.
@@ -494,20 +445,6 @@ func (mr *MockScaleSetScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockScaleSetScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
 
-// V mocks base method.
-func (m *MockScaleSetScope) V(level int) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// V indicates an expected call of V.
-func (mr *MockScaleSetScopeMockRecorder) V(level interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockScaleSetScope)(nil).V), level)
-}
-
 // VMSSExtensionSpecs mocks base method.
 func (m *MockScaleSetScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
 	m.ctrl.T.Helper()
@@ -520,36 +457,4 @@ func (m *MockScaleSetScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
 func (mr *MockScaleSetScopeMockRecorder) VMSSExtensionSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSSExtensionSpecs", reflect.TypeOf((*MockScaleSetScope)(nil).VMSSExtensionSpecs))
-}
-
-// WithName mocks base method.
-func (m *MockScaleSetScope) WithName(name string) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", name)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithName indicates an expected call of WithName.
-func (mr *MockScaleSetScopeMockRecorder) WithName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockScaleSetScope)(nil).WithName), name)
-}
-
-// WithValues mocks base method.
-func (m *MockScaleSetScope) WithValues(keysAndValues ...interface{}) logr.Logger {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "WithValues", varargs...)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithValues indicates an expected call of WithValues.
-func (mr *MockScaleSetScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockScaleSetScope)(nil).WithValues), keysAndValues...)
 }

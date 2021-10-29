@@ -24,22 +24,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
-
-// log is for logging in this package.
-var azuremanagedmachinepoollog = logf.Log.WithName("azuremanagedmachinepool-resource")
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,verbs=create;update,versions=v1beta1,name=default.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (r *AzureManagedMachinePool) Default(client client.Client) {
-	azuremanagedmachinepoollog.Info("default", "name", r.Name)
-
 	if r.Labels == nil {
 		r.Labels = make(map[string]string)
 	}
@@ -54,7 +46,6 @@ func (r *AzureManagedMachinePool) Default(client client.Client) {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
-	azuremanagedmachinepoollog.Info("validate create", "name", r.Name)
 	return nil
 }
 
@@ -117,8 +108,6 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedMachinePool) ValidateDelete(client client.Client) error {
-	azuremanagedmachinepoollog.Info("validate delete", "name", r.Name)
-
 	if r.Spec.Mode != string(NodePoolModeSystem) {
 		return nil
 	}

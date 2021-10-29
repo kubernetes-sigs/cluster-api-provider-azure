@@ -23,12 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
-
-// log is for logging in this package.
-var machinelog = logf.Log.WithName("azuremachine-resource")
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (m *AzureMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -44,8 +40,6 @@ var _ webhook.Validator = &AzureMachine{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureMachine) ValidateCreate() error {
-	machinelog.Info("validate create", "name", m.Name)
-
 	if allErrs := ValidateAzureMachineSpec(m.Spec); len(allErrs) > 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
 	}
@@ -55,7 +49,6 @@ func (m *AzureMachine) ValidateCreate() error {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
-	machinelog.Info("validate update", "name", m.Name)
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureMachine)
 
@@ -151,13 +144,10 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureMachine) ValidateDelete() error {
-	machinelog.Info("validate delete", "name", m.Name)
-
 	return nil
 }
 
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
 func (m *AzureMachine) Default() {
-	machinelog.Info("default", "name", m.Name)
-	m.Spec.SetDefaults(machinelog)
+	m.Spec.SetDefaults()
 }

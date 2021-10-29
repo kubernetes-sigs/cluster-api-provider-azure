@@ -31,7 +31,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/klog/v2/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -154,9 +153,8 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 			state, name := c.Setup()
 			s := &MachinePoolScope{
 				AzureMachinePool: &infrav1exp.AzureMachinePool{},
-				Logger:           klogr.New(),
 			}
-			err := s.SetBootstrapConditions(state, name)
+			err := s.SetBootstrapConditions(context.TODO(), state, name)
 			c.Verify(g, s.AzureMachinePool, err)
 		})
 	}
@@ -255,7 +253,6 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 			s := &MachinePoolScope{
 				MachinePool:      mp,
 				AzureMachinePool: amp,
-				Logger:           klogr.New(),
 			}
 			surge, err := s.MaxSurge()
 			c.Verify(g, surge, err)
@@ -282,7 +279,6 @@ func TestMachinePoolScope_SaveVMImageToStatus(t *testing.T) {
 		}
 		s = &MachinePoolScope{
 			AzureMachinePool: amp,
-			Logger:           klogr.New(),
 		}
 		image = &infrav1.Image{
 			Marketplace: &infrav1.AzureMarketplaceImage{
@@ -391,9 +387,8 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 			s := &MachinePoolScope{
 				MachinePool:      mp,
 				AzureMachinePool: amp,
-				Logger:           klogr.New(),
 			}
-			image, err := s.GetVMImage()
+			image, err := s.GetVMImage(context.TODO())
 			c.Verify(g, amp, image, err)
 		})
 	}
@@ -513,7 +508,6 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 				vmssState:        vmssState,
 				MachinePool:      mp,
 				AzureMachinePool: amp,
-				Logger:           klogr.New(),
 			}
 			c.Verify(g, s.NeedsRequeue())
 		})
@@ -619,7 +613,6 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 					Cluster: cluster,
 				},
 				AzureMachinePool: amp,
-				Logger:           klogr.New(),
 			}
 			err := s.updateReplicasAndProviderIDs(context.TODO())
 			c.Verify(g, s.AzureMachinePool, err)

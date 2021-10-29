@@ -21,7 +21,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -29,10 +28,9 @@ import (
 
 // VMExtensionScope defines the scope interface for a vm extension service.
 type VMExtensionScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	VMExtensionSpecs() []azure.ExtensionSpec
-	SetBootstrapConditions(string, string) error
+	SetBootstrapConditions(context.Context, string, string) error
 }
 
 // Service provides operations on Azure resources.
@@ -51,13 +49,13 @@ func New(scope VMExtensionScope) *Service {
 
 // Reconcile creates or updates the VM extension.
 func (s *Service) Reconcile(ctx context.Context) error {
-	_, _, done := tele.StartSpanWithLogger(ctx, "vmextensions.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "vmextensions.Service.Reconcile")
 	defer done()
 
 	for _, extensionSpec := range s.Scope.VMExtensionSpecs() {
 		if existing, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.VMName, extensionSpec.Name); err == nil {
 			// check the extension status and set the associated conditions.
-			if retErr := s.Scope.SetBootstrapConditions(to.String(existing.ProvisioningState), extensionSpec.Name); retErr != nil {
+			if retErr := s.Scope.SetBootstrapConditions(ctx, to.String(existing.ProvisioningState), extensionSpec.Name); retErr != nil {
 				return retErr
 			}
 			// if the extension already exists, do not update it.
@@ -66,7 +64,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get vm extension %s on vm %s", extensionSpec.Name, extensionSpec.VMName)
 		}
 
-		s.Scope.V(2).Info("creating VM extension", "vm extension", extensionSpec.Name)
+		log.V(2).Info("creating VM extension", "vm extension", extensionSpec.Name)
 		err := s.client.CreateOrUpdateAsync(
 			ctx,
 			s.Scope.ResourceGroup(),
@@ -86,7 +84,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to create VM extension %s on VM %s in resource group %s", extensionSpec.Name, extensionSpec.VMName, s.Scope.ResourceGroup())
 		}
-		s.Scope.V(2).Info("successfully created VM extension", "vm extension", extensionSpec.Name)
+		log.V(2).Info("successfully created VM extension", "vm extension", extensionSpec.Name)
 	}
 	return nil
 }

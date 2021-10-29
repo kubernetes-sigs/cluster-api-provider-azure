@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog/v2/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	mock_scope "sigs.k8s.io/cluster-api-provider-azure/azure/scope/mocks"
@@ -398,7 +397,6 @@ func TestMachinePoolMachineScope_CordonAndDrain(t *testing.T) {
 			s, err := NewMachinePoolMachineScope(params)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(s).ToNot(BeNil())
-			s.Logger = klogr.New()
 			s.workloadNodeGetter = mockClient
 
 			err = s.CordonAndDrain(context.TODO())

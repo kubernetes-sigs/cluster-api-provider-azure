@@ -19,9 +19,9 @@ package v1beta1
 import (
 	"encoding/base64"
 
-	"github.com/go-logr/logr"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
@@ -85,10 +85,10 @@ func (s *AzureMachineSpec) SetIdentityDefaults() {
 }
 
 // SetDefaults sets to the defaults for the AzureMachineSpec.
-func (s *AzureMachineSpec) SetDefaults(log logr.Logger) {
+func (s *AzureMachineSpec) SetDefaults() {
 	err := s.SetDefaultSSHPublicKey()
 	if err != nil {
-		log.Error(err, "SetDefaultSshPublicKey failed")
+		ctrl.Log.WithName("SetDefault").Error(err, "SetDefaultSshPublicKey failed")
 	}
 	s.SetDefaultCachingType()
 	s.SetDataDisksDefaults()

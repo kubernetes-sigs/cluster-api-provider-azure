@@ -27,13 +27,11 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways/mock_natgateways"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 func init() {
@@ -60,7 +58,6 @@ func TestReconcileNatGateways(t *testing.T) {
 					ID:   "1234",
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 			},
 		},
@@ -76,7 +73,6 @@ func TestReconcileNatGateways(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
@@ -119,7 +115,6 @@ func TestReconcileNatGateways(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
@@ -170,7 +165,6 @@ func TestReconcileNatGateways(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
@@ -223,7 +217,6 @@ func TestReconcileNatGateways(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
@@ -251,7 +244,6 @@ func TestReconcileNatGateways(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
@@ -319,7 +311,6 @@ func TestDeleteNatGateway(t *testing.T) {
 					ID:   "1234",
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 			},
 		},
@@ -335,7 +326,6 @@ func TestDeleteNatGateway(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
@@ -362,7 +352,6 @@ func TestDeleteNatGateway(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
@@ -391,7 +380,6 @@ func TestDeleteNatGateway(t *testing.T) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{

@@ -22,13 +22,11 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/klogr"
 	kubedrain "k8s.io/kubectl/pkg/drain"
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -69,7 +67,6 @@ type (
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		Client                  client.Client
 		ClusterScope            azure.ClusterScoper
-		Logger                  logr.Logger
 		MachinePool             *capiv1exp.MachinePool
 
 		// workloadNodeGetter is only used for testing purposes and provides a way for mocking requests to the workload cluster
@@ -79,7 +76,6 @@ type (
 	// MachinePoolMachineScope defines a scope defined around a machine pool machine.
 	MachinePoolMachineScope struct {
 		azure.ClusterScoper
-		logr.Logger
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		AzureMachinePool        *infrav1exp.AzureMachinePool
 		MachinePool             *capiv1exp.MachinePool
@@ -126,13 +122,8 @@ func NewMachinePoolMachineScope(params MachinePoolMachineScopeParams) (*MachineP
 		)
 	}
 
-	if params.Logger == nil {
-		params.Logger = klogr.New()
-	}
-
 	mpScope, err := NewMachinePoolScope(MachinePoolScopeParams{
 		Client:           params.Client,
-		Logger:           params.Logger,
 		MachinePool:      params.MachinePool,
 		AzureMachinePool: params.AzureMachinePool,
 		ClusterScope:     params.ClusterScope,
@@ -150,7 +141,6 @@ func NewMachinePoolMachineScope(params MachinePoolMachineScopeParams) (*MachineP
 		AzureMachinePool:        params.AzureMachinePool,
 		AzureMachinePoolMachine: params.AzureMachinePoolMachine,
 		ClusterScoper:           params.ClusterScope,
-		Logger:                  params.Logger,
 		MachinePool:             params.MachinePool,
 		MachinePoolScope:        mpScope,
 		client:                  params.Client,
@@ -315,7 +305,7 @@ func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
 	}
 
 	if s.instance != nil {
-		hasLatestModel, err := s.hasLatestModelApplied()
+		hasLatestModel, err := s.hasLatestModelApplied(ctx)
 		if err != nil {
 			return errors.Wrap(err, "failed to determine if the VMSS instance has the latest model")
 		}
@@ -329,7 +319,7 @@ func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
 
 // CordonAndDrain will cordon and drain the Kubernetes node associated with this AzureMachinePoolMachine.
 func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
+	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
 		"scope.MachinePoolMachineScope.CordonAndDrain",
 	)
@@ -365,7 +355,7 @@ func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
 			return errors.Wrap(err, "failed to build a patchHelper when draining node")
 		}
 
-		s.V(4).Info("Draining node", "node", node.Name)
+		log.V(4).Info("Draining node", "node", node.Name)
 		// The DrainingSucceededCondition never exists before the node is drained for the first time,
 		// so its transition time can be used to record the first time draining.
 		// This `if` condition prevents the transition time to be changed more than once.
@@ -395,7 +385,7 @@ func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
 }
 
 func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.Node) error {
-	ctx, _, done := tele.StartSpanWithLogger(
+	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
 		"scope.MachinePoolMachineScope.drainNode",
 	)
@@ -407,13 +397,13 @@ func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.No
 	})
 
 	if err != nil {
-		s.Error(err, "Error creating a remote client while deleting Machine, won't retry")
+		log.Error(err, "Error creating a remote client while deleting Machine, won't retry")
 		return nil
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		s.Error(err, "Error creating a remote client while deleting Machine, won't retry")
+		log.Error(err, "Error creating a remote client while deleting Machine, won't retry")
 		return nil
 	}
 
@@ -432,7 +422,7 @@ func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.No
 			if usingEviction {
 				verbStr = "Evicted"
 			}
-			s.V(4).Info(fmt.Sprintf("%s pod from Node", verbStr),
+			log.V(4).Info(fmt.Sprintf("%s pod from Node", verbStr),
 				"pod", fmt.Sprintf("%s/%s", pod.Name, pod.Namespace))
 		},
 		Out:    writer{klog.Info},
@@ -454,7 +444,7 @@ func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.No
 		return azure.WithTransientError(errors.Wrap(err, "Drain failed, retry in 20s"), 20*time.Second)
 	}
 
-	s.V(4).Info("Drain successful")
+	log.V(4).Info("Drain successful")
 	return nil
 }
 
@@ -491,12 +481,18 @@ func (s *MachinePoolMachineScope) nodeDrainTimeoutExceeded() bool {
 	return diff.Seconds() >= s.AzureMachinePool.Spec.NodeDrainTimeout.Seconds()
 }
 
-func (s *MachinePoolMachineScope) hasLatestModelApplied() (bool, error) {
+func (s *MachinePoolMachineScope) hasLatestModelApplied(ctx context.Context) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.hasLatestModelApplied",
+	)
+	defer done()
+
 	if s.instance == nil {
 		return false, errors.New("instance must not be nil")
 	}
 
-	image, err := s.MachinePoolScope.GetVMImage()
+	image, err := s.MachinePoolScope.GetVMImage(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to build vm image information from MachinePoolScope")
 	}

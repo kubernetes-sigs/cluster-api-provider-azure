@@ -21,9 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -31,7 +29,6 @@ import (
 
 // TagScope defines the scope interface for a tags service.
 type TagScope interface {
-	logr.Logger
 	azure.Authorizer
 	ClusterName() string
 	TagsSpecs() []azure.TagsSpec
@@ -55,7 +52,7 @@ func New(scope TagScope) *Service {
 
 // Reconcile ensures tags are correct.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "tags.Service.Reconcile")
 	defer done()
 
 	for _, tagsSpec := range s.Scope.TagsSpecs() {
@@ -69,7 +66,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		if !s.isResourceManaged(tags) {
-			s.Scope.V(4).Info("Skipping tags reconcile for not managed resource")
+			log.V(4).Info("Skipping tags reconcile for not managed resource")
 			continue
 		}
 
@@ -79,7 +76,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 		changed, createdOrUpdated, deleted, newAnnotation := tagsChanged(lastAppliedTags, tagsSpec.Tags, tags)
 		if changed {
-			s.Scope.V(2).Info("Updating tags")
+			log.V(2).Info("Updating tags")
 			if len(createdOrUpdated) > 0 {
 				createdOrUpdatedTags := make(map[string]*string)
 				for k, v := range createdOrUpdated {
@@ -106,7 +103,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if err = s.Scope.UpdateAnnotationJSON(tagsSpec.Annotation, newAnnotation); err != nil {
 				return err
 			}
-			s.Scope.V(2).Info("successfully updated tags")
+			log.V(2).Info("successfully updated tags")
 		}
 	}
 	return nil

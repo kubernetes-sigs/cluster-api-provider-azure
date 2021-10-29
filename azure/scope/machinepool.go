@@ -25,18 +25,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	machinepool "sigs.k8s.io/cluster-api-provider-azure/azure/scope/strategies/machinepool_deployments"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -45,6 +38,12 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	machinepool "sigs.k8s.io/cluster-api-provider-azure/azure/scope/strategies/machinepool_deployments"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // ScalesetsServiceName is the name of the scalesets service.
@@ -56,7 +55,6 @@ type (
 	// MachinePoolScopeParams defines the input parameters used to create a new MachinePoolScope.
 	MachinePoolScopeParams struct {
 		Client           client.Client
-		Logger           logr.Logger
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		ClusterScope     azure.ClusterScoper
@@ -65,7 +63,6 @@ type (
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
 	MachinePoolScope struct {
 		azure.ClusterScoper
-		logr.Logger
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		MachinePool      *capiv1exp.MachinePool
 		client           client.Client
@@ -95,10 +92,6 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		return nil, errors.New("azure machine pool is required when creating a MachinePoolScope")
 	}
 
-	if params.Logger == nil {
-		params.Logger = klogr.New()
-	}
-
 	helper, err := patch.NewHelper(params.AzureMachinePool, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
@@ -108,7 +101,6 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		client:           params.Client,
 		MachinePool:      params.MachinePool,
 		AzureMachinePool: params.AzureMachinePool,
-		Logger:           params.Logger,
 		patchHelper:      helper,
 		ClusterScoper:    params.ClusterScope,
 	}, nil
@@ -235,10 +227,7 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 }
 
 func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav1exp.AzureMachinePoolMachine, error) {
-	ctx, _, done := tele.StartSpanWithLogger(
-		ctx,
-		"scope.MachinePoolScope.getMachinePoolMachines",
-	)
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.getMachinePoolMachines")
 	defer done()
 
 	labels := map[string]string{
@@ -254,14 +243,11 @@ func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav
 }
 
 func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
-		ctx,
-		"scope.MachinePoolScope.applyAzureMachinePoolMachines",
-	)
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.applyAzureMachinePoolMachines")
 	defer done()
 
 	if m.vmssState == nil {
-		m.Info("vmssState is nil")
+		log.Info("vmssState is nil")
 		return nil
 	}
 
@@ -283,7 +269,7 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 	azureMachinesByProviderID := m.vmssState.InstancesByProviderID()
 	for key, val := range azureMachinesByProviderID {
 		if _, ok := existingMachinesByProviderID[key]; !ok {
-			m.V(4).Info("creating AzureMachinePoolMachine", "providerID", key)
+			log.V(4).Info("creating AzureMachinePoolMachine", "providerID", key)
 			if err := m.createMachine(ctx, val); err != nil {
 				return errors.Wrap(err, "failed creating AzureMachinePoolMachine")
 			}
@@ -297,7 +283,7 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 		machine := machine
 		if _, ok := azureMachinesByProviderID[key]; !ok {
 			deleted = true
-			m.V(4).Info("deleting AzureMachinePoolMachine because it no longer exists in the VMSS", "providerID", key)
+			log.V(4).Info("deleting AzureMachinePoolMachine because it no longer exists in the VMSS", "providerID", key)
 			delete(existingMachinesByProviderID, key)
 			if err := m.client.Delete(ctx, &machine); err != nil {
 				return errors.Wrap(err, "failed deleting AzureMachinePoolMachine to reduce replica count")
@@ -306,20 +292,20 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 	}
 
 	if deleted {
-		m.V(4).Info("exiting early due to finding AzureMachinePoolMachine(s) that were deleted because they no longer exist in the VMSS")
+		log.V(4).Info("exiting early due to finding AzureMachinePoolMachine(s) that were deleted because they no longer exist in the VMSS")
 		// exit early to be less greedy about delete
 		return nil
 	}
 
 	if futures.Has(m.AzureMachinePool, m.Name(), ScalesetsServiceName) {
-		m.V(4).Info("exiting early due an in-progress long running operation on the ScaleSet")
+		log.V(4).Info("exiting early due an in-progress long running operation on the ScaleSet")
 		// exit early to be less greedy about delete
 		return nil
 	}
 
 	deleteSelector := m.getDeploymentStrategy()
 	if deleteSelector == nil {
-		m.V(4).Info("can not select AzureMachinePoolMachines to delete because no deployment strategy is specified")
+		log.V(4).Info("can not select AzureMachinePoolMachines to delete because no deployment strategy is specified")
 		return nil
 	}
 
@@ -331,13 +317,13 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 
 	for _, machine := range toDelete {
 		machine := machine
-		m.Info("deleting selected AzureMachinePoolMachine", "providerID", machine.Spec.ProviderID)
+		log.Info("deleting selected AzureMachinePoolMachine", "providerID", machine.Spec.ProviderID)
 		if err := m.client.Delete(ctx, &machine); err != nil {
 			return errors.Wrap(err, "failed deleting AzureMachinePoolMachine to reduce replica count")
 		}
 	}
 
-	m.V(4).Info("done reconciling AzureMachinePoolMachine(s)")
+	log.V(4).Info("done reconciling AzureMachinePoolMachine(s)")
 	return nil
 }
 
@@ -456,18 +442,21 @@ func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 }
 
 // SetBootstrapConditions sets the AzureMachinePool BootstrapSucceeded condition based on the extension provisioning states.
-func (m *MachinePoolScope) SetBootstrapConditions(provisioningState string, extensionName string) error {
+func (m *MachinePoolScope) SetBootstrapConditions(ctx context.Context, provisioningState string, extensionName string) error {
+	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.SetBootstrapConditions")
+	defer done()
+
 	switch infrav1.ProvisioningState(provisioningState) {
 	case infrav1.Succeeded:
-		m.V(4).Info("extension provisioning state is succeeded", "vm extension", extensionName, "scale set", m.Name())
+		log.V(4).Info("extension provisioning state is succeeded", "vm extension", extensionName, "scale set", m.Name())
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.BootstrapSucceededCondition)
 		return nil
 	case infrav1.Creating:
-		m.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "scale set", m.Name())
+		log.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "scale set", m.Name())
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "")
 		return azure.WithTransientError(errors.New("extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM"), 30*time.Second)
 	case infrav1.Failed:
-		m.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "scale set", m.Name())
+		log.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "scale set", m.Name())
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityError, "")
 		return azure.WithTerminalError(errors.New("extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more"))
 	default:
@@ -499,10 +488,7 @@ func (m *MachinePoolScope) SetAnnotation(key, value string) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
-		ctx,
-		"scope.MachinePoolScope.PatchObject",
-	)
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.PatchObject")
 	defer done()
 
 	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
@@ -510,12 +496,12 @@ func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 
 // Close the MachineScope by updating the machine spec, machine status.
 func (m *MachinePoolScope) Close(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.Close")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.Close")
 	defer done()
 
 	if m.vmssState != nil {
 		if err := m.applyAzureMachinePoolMachines(ctx); err != nil {
-			m.Error(err, "failed to apply changes to the AzureMachinePoolMachines")
+			log.Error(err, "failed to apply changes to the AzureMachinePoolMachines")
 			return errors.Wrap(err, "failed to apply changes to AzureMachinePoolMachines")
 		}
 
@@ -530,10 +516,7 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 
 // GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
 func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error) {
-	ctx, _, done := tele.StartSpanWithLogger(
-		ctx,
-		"scope.MachinePoolScope.GetBootstrapData",
-	)
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.GetBootstrapData")
 	defer done()
 
 	dataSecretName := m.MachinePool.Spec.Template.Spec.Bootstrap.DataSecretName
@@ -554,7 +537,10 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 }
 
 // GetVMImage picks an image from the machine configuration, or uses a default one.
-func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
+func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
+	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.GetVMImage")
+	defer done()
+
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if m.AzureMachinePool.Spec.Template.Image != nil {
 		return m.AzureMachinePool.Spec.Template.Image, nil
@@ -566,7 +552,7 @@ func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	)
 	if m.AzureMachinePool.Spec.Template.OSDisk.OSType == azure.WindowsOS {
 		runtime := m.AzureMachinePool.Annotations["runtime"]
-		m.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName(), "runtime", runtime)
+		log.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName(), "runtime", runtime)
 		defaultImage, err = azure.GetDefaultWindowsImage(to.String(m.MachinePool.Spec.Template.Spec.Version), runtime)
 	} else {
 		defaultImage, err = azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))

@@ -22,7 +22,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
@@ -41,7 +40,6 @@ const serviceName = "virtualmachine"
 
 // VMScope defines the scope interface for a virtual machines service.
 type VMScope interface {
-	logr.Logger
 	azure.Authorizer
 	azure.AsyncStatusUpdater
 	VMSpec() azure.ResourceSpecGetter
@@ -80,7 +78,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	vmSpec := s.Scope.VMSpec()
-
 	result, err := async.CreateResource(ctx, s.Scope, s.Client, vmSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
 	// Set the DiskReady condition here since the disk gets created with the VM.
@@ -117,7 +114,6 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	vmSpec := s.Scope.VMSpec()
-
 	err := async.DeleteResource(ctx, s.Scope, s.Client, vmSpec, serviceName)
 	if err != nil {
 		s.Scope.SetVMState(infrav1.Deleting)
@@ -132,8 +128,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.getAddresses")
 	defer done()
 
-	addresses := []corev1.NodeAddress{}
-
+	var addresses []corev1.NodeAddress
 	if vm.NetworkProfile.NetworkInterfaces == nil {
 		return addresses, nil
 	}

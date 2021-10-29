@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -28,10 +27,9 @@ import (
 
 // VMSSExtensionScope defines the scope interface for a vmss extension service.
 type VMSSExtensionScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	VMSSExtensionSpecs() []azure.ExtensionSpec
-	SetBootstrapConditions(string, string) error
+	SetBootstrapConditions(context.Context, string, string) error
 }
 
 // Service provides operations on Azure resources.
@@ -56,7 +54,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	for _, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
 		if existing, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.VMName, extensionSpec.Name); err == nil {
 			// check the extension status and set the associated conditions.
-			if retErr := s.Scope.SetBootstrapConditions(to.String(existing.ProvisioningState), extensionSpec.Name); retErr != nil {
+			if retErr := s.Scope.SetBootstrapConditions(ctx, to.String(existing.ProvisioningState), extensionSpec.Name); retErr != nil {
 				return retErr
 			}
 		} else if !azure.ResourceNotFound(err) {

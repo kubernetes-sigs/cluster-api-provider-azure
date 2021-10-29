@@ -35,6 +35,10 @@ func (c *compositeLogger) Enabled() bool {
 
 func (c *compositeLogger) iter(fn func(l logr.Logger)) {
 	for _, l := range c.loggers {
+		// the callDepthLogger interface allows us to change the depth of the stack so that we can get the real
+		// line where the log statement was called. We need to do this because the composite logger adds to the
+		// call stack due to wrapping the internal logger.
+		l = logr.WithCallDepth(l, 3)
 		fn(l)
 	}
 }
@@ -52,19 +56,34 @@ func (c *compositeLogger) Error(err error, msg string, keysAndValues ...interfac
 }
 
 func (c *compositeLogger) V(level int) logr.Logger {
-	return c
+	var loggers = make([]logr.Logger, len(c.loggers))
+	for i, l := range c.loggers {
+		loggers[i] = l.V(level)
+	}
+
+	return &compositeLogger{
+		loggers: loggers,
+	}
 }
 
 func (c *compositeLogger) WithValues(keysAndValues ...interface{}) logr.Logger {
+	var loggers = make([]logr.Logger, len(c.loggers))
 	for i, l := range c.loggers {
-		c.loggers[i] = l.WithValues(keysAndValues...)
+		loggers[i] = l.WithValues(keysAndValues...)
 	}
-	return c
+
+	return &compositeLogger{
+		loggers: loggers,
+	}
 }
 
 func (c *compositeLogger) WithName(name string) logr.Logger {
+	var loggers = make([]logr.Logger, len(c.loggers))
 	for i, l := range c.loggers {
-		c.loggers[i] = l.WithName(name)
+		loggers[i] = l.WithName(name)
 	}
-	return c
+
+	return &compositeLogger{
+		loggers: loggers,
+	}
 }

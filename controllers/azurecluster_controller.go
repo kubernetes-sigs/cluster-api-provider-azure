@@ -23,7 +23,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -50,7 +49,6 @@ import (
 // AzureClusterReconciler reconciles an AzureCluster object.
 type AzureClusterReconciler struct {
 	client.Client
-	Log                       logr.Logger
 	Recorder                  record.EventRecorder
 	ReconcileTimeout          time.Duration
 	WatchFilterValue          string
@@ -60,10 +58,9 @@ type AzureClusterReconciler struct {
 type azureClusterServiceCreator func(clusterScope *scope.ClusterScope) (*azureClusterService, error)
 
 // NewAzureClusterReconciler returns a new AzureClusterReconciler instance.
-func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureClusterReconciler {
+func NewAzureClusterReconciler(client client.Client, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureClusterReconciler {
 	acr := &AzureClusterReconciler{
 		Client:           client,
-		Log:              log,
 		Recorder:         recorder,
 		ReconcileTimeout: reconcileTimeout,
 		WatchFilterValue: watchFilterValue,
@@ -76,10 +73,12 @@ func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder r
 
 // SetupWithManager initializes this controller with a manager.
 func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options Options) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.SetupWithManager")
+	_, log, done := tele.StartSpanWithLogger(ctx,
+		"controllers.AzureClusterReconciler.SetupWithManager",
+		tele.KVP("controller", "AzureCluster"),
+	)
 	defer done()
 
-	log := acr.Log.WithValues("controller", "AzureCluster")
 	var r reconcile.Reconciler = acr
 	if options.Cache != nil {
 		r = coalescing.NewReconciler(acr, options.Cache, log)
@@ -88,8 +87,8 @@ func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctr
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), acr.WatchFilterValue)).
-		WithEventFilter(predicates.ResourceIsNotExternallyManaged(ctrl.LoggerFrom(ctx))).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, acr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceIsNotExternallyManaged(log)).
 		Build(r)
 	if err != nil {
 		return errors.Wrap(err, "error creating controller")
@@ -100,7 +99,7 @@ func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctr
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureCluster"))),
 		predicates.ClusterUnpaused(log),
-		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), acr.WatchFilterValue),
+		predicates.ResourceNotPausedAndHasFilterLabel(log, acr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
@@ -118,9 +117,8 @@ func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctr
 func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(acr.ReconcileTimeout))
 	defer cancel()
-	log := acr.Log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
 
-	ctx, _, done := tele.StartSpanWithLogger(
+	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
 		"controllers.AzureClusterReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
@@ -178,7 +176,6 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       acr.Client,
-		Logger:       log,
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
 	})
@@ -205,10 +202,10 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcileNormal")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcileNormal")
 	defer done()
 
-	clusterScope.Info("Reconciling AzureCluster")
+	log.Info("Reconciling AzureCluster")
 	azureCluster := clusterScope.AzureCluster
 
 	// If the AzureCluster doesn't have our finalizer, add it.
@@ -229,9 +226,9 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 		if errors.As(err, &reconcileError) {
 			if reconcileError.IsTransient() {
 				if azure.IsOperationNotDoneError(reconcileError) {
-					clusterScope.V(2).Info(fmt.Sprintf("AzureCluster reconcile not done: %s", reconcileError.Error()))
+					log.V(2).Info(fmt.Sprintf("AzureCluster reconcile not done: %s", reconcileError.Error()))
 				} else {
-					clusterScope.V(2).Info("transient failure to reconcile AzureCluster, retrying")
+					log.V(2).Info("transient failure to reconcile AzureCluster, retrying")
 				}
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
@@ -256,10 +253,10 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 }
 
 func (acr *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcileDelete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcileDelete")
 	defer done()
 
-	clusterScope.Info("Reconciling AzureCluster delete")
+	log.Info("Reconciling AzureCluster delete")
 
 	azureCluster := clusterScope.AzureCluster
 	conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletedReason, clusterv1.ConditionSeverityInfo, "")
@@ -278,9 +275,9 @@ func (acr *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterS
 		if errors.As(err, &reconcileError) {
 			if reconcileError.IsTransient() {
 				if azure.IsOperationNotDoneError(reconcileError) {
-					clusterScope.V(2).Info(fmt.Sprintf("AzureCluster delete not done: %s", reconcileError.Error()))
+					log.V(2).Info(fmt.Sprintf("AzureCluster delete not done: %s", reconcileError.Error()))
 				} else {
-					clusterScope.V(2).Info("transient failure to delete AzureCluster, retrying")
+					log.V(2).Info("transient failure to delete AzureCluster, retrying")
 				}
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}

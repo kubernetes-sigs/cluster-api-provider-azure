@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,15 +29,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2/klogr"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 func TestUnclonedMachinesPredicate(t *testing.T) {
@@ -180,7 +177,6 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 
 			reconciler := &AzureJSONMachineReconciler{
 				Client:   client,
-				Log:      klogr.New(),
 				Recorder: record.NewFakeRecorder(128),
 			}
 

@@ -26,8 +26,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks/mock_virtualnetworks"
@@ -44,7 +42,6 @@ func TestReconcileVnet(t *testing.T) {
 			name:          "managed vnet exists",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
 				s.VNetSpec().Return(azure.VNetSpec{
@@ -73,7 +70,6 @@ func TestReconcileVnet(t *testing.T) {
 			name:          "managed ipv6 vnet exists",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
 				s.VNetSpec().Return(azure.VNetSpec{
@@ -105,7 +101,6 @@ func TestReconcileVnet(t *testing.T) {
 			name:          "vnet created successufuly",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
@@ -125,7 +120,6 @@ func TestReconcileVnet(t *testing.T) {
 			name:          "ipv6 vnet created successufuly",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
@@ -160,7 +154,6 @@ func TestReconcileVnet(t *testing.T) {
 			name:          "unmanaged vnet exists",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
@@ -188,7 +181,6 @@ func TestReconcileVnet(t *testing.T) {
 			name:          "custom vnet not found",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
@@ -208,7 +200,6 @@ func TestReconcileVnet(t *testing.T) {
 			name:          "failed to fetch vnet",
 			expectedError: "failed to get VNet custom-vnet: failed to get VNet custom-vnet: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.VNetSpec().Return(azure.VNetSpec{
 					ResourceGroup: "custom-vnet-rg",
@@ -223,7 +214,6 @@ func TestReconcileVnet(t *testing.T) {
 			name:          "fail to create vnet",
 			expectedError: "failed to create virtual network custom-vnet: #: Internal Server Honk: StatusCode=500",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
@@ -280,7 +270,6 @@ func TestDeleteVnet(t *testing.T) {
 			name:          "managed vnet exists",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{
@@ -316,7 +305,6 @@ func TestDeleteVnet(t *testing.T) {
 			name:          "managed vnet already deleted",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{
@@ -338,7 +326,6 @@ func TestDeleteVnet(t *testing.T) {
 			name:          "unmanaged vnet",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
@@ -367,7 +354,6 @@ func TestDeleteVnet(t *testing.T) {
 			name:          "fail to delete vnet",
 			expectedError: "failed to delete VNet vnet-exists in resource group my-rg: #: Internal Honk Server: StatusCode=500",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{

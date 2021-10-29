@@ -25,7 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks/mock_disks"
@@ -62,7 +62,6 @@ func TestDeleteDisk(t *testing.T) {
 			name:          "delete the disk",
 			expectedError: "",
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-disk-1", serviceName),
@@ -77,7 +76,6 @@ func TestDeleteDisk(t *testing.T) {
 			name:          "disk already deleted",
 			expectedError: "",
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-disk-1", serviceName),
@@ -92,7 +90,6 @@ func TestDeleteDisk(t *testing.T) {
 			name:          "error while trying to delete the disk",
 			expectedError: "failed to delete resource my-group/my-disk-1 (service: disks): #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-disk-1", serviceName),

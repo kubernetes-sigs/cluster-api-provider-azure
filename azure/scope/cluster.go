@@ -26,9 +26,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/net"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -47,7 +45,6 @@ import (
 type ClusterScopeParams struct {
 	AzureClients
 	Client       client.Client
-	Logger       logr.Logger
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
 }
@@ -63,10 +60,6 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 	}
 	if params.AzureCluster == nil {
 		return nil, errors.New("failed to generate new scope from nil AzureCluster")
-	}
-
-	if params.Logger == nil {
-		params.Logger = klogr.New()
 	}
 
 	if params.AzureCluster.Spec.IdentityRef == nil {
@@ -91,7 +84,6 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 	}
 
 	return &ClusterScope{
-		Logger:       params.Logger,
 		Client:       params.Client,
 		AzureClients: params.AzureClients,
 		Cluster:      params.Cluster,
@@ -102,7 +94,6 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
-	logr.Logger
 	Client      client.Client
 	patchHelper *patch.Helper
 
@@ -219,7 +210,7 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 
 // RouteTableSpecs returns the node route table.
 func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
-	routetables := []azure.RouteTableSpec{}
+	var routetables []azure.RouteTableSpec
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		if subnet.RouteTable.Name != "" {
 			routetables = append(routetables, azure.RouteTableSpec{Name: subnet.RouteTable.Name, Subnet: subnet})
@@ -231,7 +222,7 @@ func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 
 // NatGatewaySpecs returns the node nat gateway.
 func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
-	natGateways := []azure.NatGatewaySpec{}
+	var natGateways []azure.NatGatewaySpec
 
 	// We ignore the control plane nat gateway, as we will always use a LB to enable egress on the control plane.
 	for _, subnet := range s.NodeSubnets() {
@@ -251,12 +242,12 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
 
 // NSGSpecs returns the security group specs.
 func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
-	nsgspecs := []azure.NSGSpec{}
-	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		nsgspecs = append(nsgspecs, azure.NSGSpec{
+	nsgspecs := make([]azure.NSGSpec, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
+	for i, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		nsgspecs[i] = azure.NSGSpec{
 			Name:          subnet.SecurityGroup.Name,
 			SecurityRules: subnet.SecurityGroup.SecurityRules,
-		})
+		}
 	}
 
 	return nsgspecs
@@ -264,7 +255,12 @@ func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 
 // SubnetSpecs returns the subnets specs.
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
-	subnetSpecs := []azure.SubnetSpec{}
+	numberOfSubnets := len(s.AzureCluster.Spec.NetworkSpec.Subnets)
+	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
+		numberOfSubnets++
+	}
+
+	subnetSpecs := make([]azure.SubnetSpec, 0, numberOfSubnets)
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		subnetSpec := azure.SubnetSpec{
 			Name:              subnet.Name,
