@@ -177,7 +177,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 								DiskSizeGB: to.Int32Ptr(11),
 							},
 							DataDisks:    []DataDisk{},
-							SSHPublicKey: "",
+							SSHPublicKey: "fake ssh key",
 						},
 					},
 				},
@@ -197,7 +197,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 								DiskSizeGB: to.Int32Ptr(11),
 							},
 							DataDisks:    []DataDisk{},
-							SSHPublicKey: "",
+							SSHPublicKey: "fake ssh key",
 						},
 					},
 				},
@@ -216,7 +216,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 								DiskSizeGB: to.Int32Ptr(11),
 							},
 							DataDisks:    []DataDisk{},
-							SSHPublicKey: "",
+							SSHPublicKey: "fake ssh key",
 						},
 					},
 				},
@@ -259,7 +259,8 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 								DiskSizeGB:  to.Int32Ptr(11),
 								CachingType: "None",
 							},
-							DataDisks: []DataDisk{},
+							DataDisks:    []DataDisk{},
+							SSHPublicKey: "fake ssh key",
 						},
 					},
 				},
@@ -268,6 +269,50 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "AzureMachineTemplate ssh key removed",
+			oldTemplate: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks:    []DataDisk{},
+							SSHPublicKey: "some key",
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "OldTemplate",
+				},
+			},
+			template: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks:    []DataDisk{},
+							SSHPublicKey: "",
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "NewTemplate",
+				},
+			},
+			wantErr: true,
 		},
 	}
 

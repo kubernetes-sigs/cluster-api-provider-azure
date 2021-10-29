@@ -69,6 +69,12 @@ func (r *AzureMachineTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 		// This means if the old object was in v1alpha3, it would not get the new defaults set in v1alpha4 resulting
 		// in object inequality. To workaround this, we set the v1alpha4 defaults here so that the old object also gets
 		// the new defaults.
+
+		// We need to set ssh key explicitly, otherwise Default() will create a new one.
+		if old.Spec.Template.Spec.SSHPublicKey == "" {
+			old.Spec.Template.Spec.SSHPublicKey = r.Spec.Template.Spec.SSHPublicKey
+		}
+
 		old.Default()
 
 		// if it's still not equal, return error.
@@ -93,7 +99,5 @@ func (r *AzureMachineTemplate) ValidateDelete() error {
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) Default() {
 	machinetemplatelog.Info("default", "name", r.Name)
-	r.Spec.Template.Spec.SetDefaultCachingType()
-	r.Spec.Template.Spec.SetDataDisksDefaults()
-	r.Spec.Template.Spec.SetIdentityDefaults()
+	r.Spec.Template.Spec.SetDefaults(machinetemplatelog)
 }
