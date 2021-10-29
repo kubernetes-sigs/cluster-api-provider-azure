@@ -13,6 +13,7 @@
     - [Custom Images](./topics/custom-images.md)
     - [Data Disks](./topics/data-disks.md)
     - [OS Disk](./topics/os-disk.md)
+    - [Externally managed Azure infrastructure](./topics/externally-managed-azure-infrastructure.md)
     - [Failure Domains](./topics/failure-domains.md)
     - [Flannel](./topics/flannel.md)
     - [GPU-enabled Clusters](./topics/gpu.md)
