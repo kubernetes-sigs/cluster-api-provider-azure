@@ -122,7 +122,7 @@ PULL_POLICY ?= Always
 # Allow overriding the e2e configurations
 GINKGO_FOCUS ?= Workload cluster creation
 GINKGO_SKIP ?= Creating a GPU-enabled cluster
-GINKGO_NODES ?= 3
+GINKGO_NODES ?= 5
 GINKGO_NOCOLOR ?= false
 GINKGO_ARGS ?=
 ARTIFACTS ?= $(ROOT_DIR)/_artifacts
