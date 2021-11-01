@@ -219,6 +219,17 @@ spec:
                 items:
                   type: string
                 type: array
+              scaling:
+                description: Scaling specifies the autoscaling parameters for the
+                  node pool.
+                properties:
+                  maxSize:
+                    format: int32
+                    type: integer
+                  minSize:
+                    format: int32
+                    type: integer
+                type: object
               sku:
                 description: SKU is the size of the VMs in the node pool.
                 type: string

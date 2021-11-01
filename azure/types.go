@@ -434,4 +434,13 @@ type AgentPoolSpec struct {
 
 	// Mode represents mode of an agent pool. Possible values include: 'System', 'User'.
 	Mode string
+
+	//  Maximum number of nodes for auto-scaling
+	MaxCount *int32 `json:"maxCount,omitempty"`
+
+	// Minimum number of nodes for auto-scaling
+	MinCount *int32 `json:"minCount,omitempty"`
+
+	// EnableAutoScaling - Whether to enable auto-scaler
+	EnableAutoScaling *bool `json:"enableAutoScaling,omitempty"`
 }
