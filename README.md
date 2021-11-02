@@ -29,28 +29,25 @@ See the [flavors documentation][flavors_doc] to know which cluster templates are
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|  | Cluster API `v1alpha2` (`v0.2.x`) | Cluster API `v1alpha3` (`v0.3.x`) | Cluster API `v1alpha4` (`v0.4.x`) |
+| | Cluster API `v1alpha3` (`v0.3.x`) | Cluster API `v1alpha4` (`v0.4.x`) | Cluster API `v1beta1` (`v1.0.x`) |
 |---|---|---|---|
-|Azure Provider `v0.3.x` | ✓ |  |  |
-|Azure Provider `v0.4.x` |  | ✓ |  |
-|Azure Provider `v0.5.x` |  |  | ✓ |
+|Azure Provider `v0.4.x` | ✓ |  |  |
+|Azure Provider `v0.5.x` |  | ✓ |  |
+|Azure Provider `v1.0.x` |  |  | ✓ |
 
 This provider's versions are able to install and manage the following versions of Kubernetes:
 
-|  | Azure Provider `v0.3.x` | Azure Provider `v0.4.x` | Azure Provider `v0.5.x` |
+|  | Azure Provider `v0.4.x` | Azure Provider `v0.5.x` | Azure Provider `v1.0.x` |
 |---|---|---|---|
-| Kubernetes 1.15 | ✓ |  |  |
-| Kubernetes 1.16 | ✓ | ✓ |  |
-| Kubernetes 1.17 |  | ✓ |  |
-| Kubernetes 1.18 |  | ✓ | ✓ |
-| Kubernetes 1.19 |  | ✓ | ✓ |
-| Kubernetes 1.20 |  | ✓ | ✓ |
-| Kubernetes 1.21 |  | ✓ | ✓ |
-| Kubernetes 1.22 |  |   | ✓ |
+| Kubernetes 1.16 | ✓ |  |  |
+| Kubernetes 1.17 | ✓ |  |  |
+| Kubernetes 1.18 | ✓ | ✓ | ✓ |
+| Kubernetes 1.19 | ✓ | ✓ | ✓ |
+| Kubernetes 1.20 | ✓ | ✓ | ✓ |
+| Kubernetes 1.21 | ✓ | ✓ | ✓ |
+| Kubernetes 1.22 |   | ✓ | ✓ |
 
-Each version of Cluster API for Azure will attempt to support at least two Kubernetes versions e.g., Cluster API for Azure `v0.1` may support Kubernetes 1.13 and Kubernetes 1.14.
-
-**NOTE:** As the versioning for this project is tied to the versioning of Cluster API, future modifications to this policy may be made to more closely align with other providers in the Cluster API ecosystem.
+For more information on Kubernetes version support, see the [Cluster API book](https://cluster-api.sigs.k8s.io/reference/versions.html).
 
 ------
 
