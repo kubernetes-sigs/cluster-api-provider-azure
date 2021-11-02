@@ -27,32 +27,20 @@ make "${KUBECTL}" &>/dev/null
 
 # desired cluster name; default is "kind"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
-export KIND_EXPERIMENTAL_DOCKER_NETWORK="bridge"
 
 if [[ "$(kind get clusters)" =~ .*"${KIND_CLUSTER_NAME}".* ]]; then
   echo "cluster already exists, moving on"
   exit 0
 fi
 
-# create registry container unless it already exists
-kind_network='kind'
 reg_name='kind-registry'
-reg_port='5000'
-kind_network='bridge'
+reg_port="${KIND_REGISTRY_PORT:-5000}"
 
 # create registry container unless it already exists
 running="$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)"
 if [ "${running}" != 'true' ]; then
-  docker run \
-    -d --restart=always -p "${reg_port}:5000" --name "${reg_name}" \
-    registry:2
+  docker run -d --restart=always -p "127.0.0.1:${reg_port}:5000" --name "${reg_name}" registry:2
 fi
-
-reg_host="${reg_name}"
-if [ "${kind_network}" = "bridge" ]; then
-    reg_host="$(docker inspect -f '{{.NetworkSettings.IPAddress}}' "${reg_name}")"
-fi
-echo "Registry Host: ${reg_host}"
 
 # create a cluster with the local registry enabled in containerd
 cat <<EOF | kind create cluster --name "${KIND_CLUSTER_NAME}" --config=-
@@ -61,45 +49,25 @@ apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
-    endpoint = ["http://${reg_host}:${reg_port}"]
-nodes:
-- role: control-plane
-  kubeadmConfigPatches:
-  - |
-    kind: InitConfiguration
-    nodeRegistration:
-      kubeletExtraArgs:
-        node-labels: "ingress-ready=true"
-  extraPortMappings:
-  - containerPort: 80
-    hostPort: 8080
-    protocol: TCP
-  - containerPort: 443
-    hostPort: 8443
-    protocol: TCP
+    endpoint = ["http://${reg_name}:5000"]
 EOF
 
-for node in $(kind get nodes --name "${KIND_CLUSTER_NAME}"); do
-  "${KUBECTL}" annotate node "${node}" tilt.dev/registry=localhost:${reg_port};
-done
+# connect the registry to the cluster network
+# (the network may already be connected)
+docker network connect "kind" "${reg_name}" || true
 
-if [ "${kind_network}" != "bridge" ]; then
-  containers=$(docker network inspect ${kind_network} -f "{{range .Containers}}{{.Name}} {{end}}")
-  needs_connect="true"
-  for c in $containers; do
-    if [ "$c" = "${reg_name}" ]; then
-      needs_connect="false"
-    fi
-  done
-  if [ "${needs_connect}" = "true" ]; then               
-    docker network connect "${kind_network}" "${reg_name}" || true
-  fi
-fi
+# Document the local registry
+# https://github.com/kubernetes/enhancements/tree/master/keps/sig-cluster-lifecycle/generic/1755-communicating-a-local-registry
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: local-registry-hosting
+  namespace: kube-public
+data:
+  localRegistryHosting.v1: |
+    host: "localhost:${reg_port}"
+    help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
+EOF
 
-# add ingress
-"${KUBECTL}" apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.0.0/deploy/static/provider/kind/deploy.yaml
 "${KUBECTL}" wait node "${KIND_CLUSTER_NAME}-control-plane" --for=condition=ready --timeout=90s
-"${KUBECTL}" wait --namespace ingress-nginx \
-  --for=condition=ready pod \
-  --selector=app.kubernetes.io/component=controller \
-  --timeout=120s
