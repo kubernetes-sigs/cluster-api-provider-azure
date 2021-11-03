@@ -89,7 +89,7 @@ curl <EXTERNAL-IP>
 
 ## Details
 
-See the CAPI proposal for implementation details: https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/proposals/20200804-windows-support.md
+See the CAPI proposal for implementation details: https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20200804-windows-support.md
 
 ### VM and VMSS naming
 
