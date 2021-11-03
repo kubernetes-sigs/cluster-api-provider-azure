@@ -95,7 +95,7 @@ To see which test jobs execute which e2e tests, you can click on the links which
 [pull-cluster-api-provider-azure-coverage]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#pr-coverage
 [pull-cluster-api-provider-azure-ci-entrypoint]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-ci-entrypoint
 [pull-cluster-api-provider-e2e-full]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-e2e-full-main
-[pull-cluster-api-provider-capi-e2e]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capi-pr-e2e-main
+[pull-cluster-api-provider-capi-e2e]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-capi-e2e-main
 [pull-cluster-api-provider-azure-conformance-v1beta1]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pull-conformance-v1beta1-main
 [pull-cluster-api-provider-azure-upstream-v1beta1-windows]:  https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pull-conformance-v1beta1-main
 [pull-cluster-api-provider-azure-conformance-with-ci-artifacts]: https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#capz-pr-conformance-v1beta1-k8s-main
