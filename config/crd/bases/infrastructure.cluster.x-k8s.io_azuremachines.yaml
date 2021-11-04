@@ -990,9 +990,15 @@ spec:
     subresources:
       status: {}
   - additionalPrinterColumns:
-    - description: AzureMachine ready status
-      jsonPath: .status.ready
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Ready')].reason
+      name: Reason
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Ready')].message
+      name: Message
+      priority: 1
       type: string
     - description: Azure VM provisioning state
       jsonPath: .status.vmState

@@ -34,12 +34,14 @@ type FutureScope interface {
 type FutureHandler interface {
 	// IsDone returns true if the operation is complete.
 	IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error)
+	// Result returns the result of the operation.
+	Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (interface{}, error)
 }
 
 // Creator is a client that can create or update a resource asynchronously.
 type Creator interface {
 	FutureHandler
-	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
+	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error)
 }
 
 // Deleter is a client that can delete a resource asynchronously.

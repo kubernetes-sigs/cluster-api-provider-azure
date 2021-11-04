@@ -89,7 +89,7 @@ func (t ReconcileError) Error() string {
 	}
 	switch t.errorType {
 	case TransientErrorType:
-		return fmt.Sprintf("transient reconcile error occurred: %s. Object will be requeued after %s", errStr, t.requestAfter.String())
+		return fmt.Sprintf("%s. Object will be requeued after %s", errStr, t.requestAfter.String())
 	case TerminalErrorType:
 		return fmt.Sprintf("reconcile error that cannot be recovered occurred: %s. Object will not be requeued", errStr)
 	default:

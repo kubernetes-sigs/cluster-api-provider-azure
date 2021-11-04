@@ -119,7 +119,7 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 				return string(infrav1.Creating), "bazz"
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).To(MatchError("transient reconcile error occurred: extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM. Object will be requeued after 30s"))
+				g.Expect(err).To(MatchError("extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM. Object will be requeued after 30s"))
 				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
 				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapInProgressReason))
 				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)

@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -223,6 +224,19 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 	}
 
 	if err := acs.Reconcile(ctx); err != nil {
+		// Handle transient errors
+		var reconcileError azure.ReconcileError
+		if errors.As(err, &reconcileError) {
+			if reconcileError.IsTransient() {
+				if azure.IsOperationNotDoneError(reconcileError) {
+					clusterScope.V(2).Info(fmt.Sprintf("AzureCluster reconcile not done: %s", reconcileError.Error()))
+				} else {
+					clusterScope.V(2).Info("transient failure to reconcile AzureCluster, retrying")
+				}
+				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
+			}
+		}
+
 		wrappedErr := errors.Wrap(err, "failed to reconcile cluster services")
 		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerNormalFailed", wrappedErr.Error())
 		return reconcile.Result{}, wrappedErr
@@ -259,6 +273,19 @@ func (acr *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterS
 	}
 
 	if err := acs.Delete(ctx); err != nil {
+		// Handle transient errors
+		var reconcileError azure.ReconcileError
+		if errors.As(err, &reconcileError) {
+			if reconcileError.IsTransient() {
+				if azure.IsOperationNotDoneError(reconcileError) {
+					clusterScope.V(2).Info(fmt.Sprintf("AzureCluster delete not done: %s", reconcileError.Error()))
+				} else {
+					clusterScope.V(2).Info("transient failure to delete AzureCluster, retrying")
+				}
+				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
+			}
+		}
+
 		wrappedErr := errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
 		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerDeleteFailed", wrappedErr.Error())
 		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())

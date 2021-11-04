@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -66,4 +67,28 @@ func specificImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	return &compute.ImageReference{
 		ID: image.ID,
 	}, nil
+}
+
+// ImageToPlan converts a CAPZ Image to an Azure Compute Plan.
+func ImageToPlan(image *infrav1.Image) *compute.Plan {
+	// Plan is needed when using a Shared Gallery image with Plan details.
+	if image.SharedGallery != nil && image.SharedGallery.Publisher != nil && image.SharedGallery.SKU != nil && image.SharedGallery.Offer != nil {
+		return &compute.Plan{
+			Publisher: image.SharedGallery.Publisher,
+			Name:      image.SharedGallery.SKU,
+			Product:   image.SharedGallery.Offer,
+		}
+	}
+
+	// Plan is needed for third party Marketplace images.
+	if image.Marketplace != nil && image.Marketplace.ThirdPartyImage {
+		return &compute.Plan{
+			Publisher: to.StringPtr(image.Marketplace.Publisher),
+			Name:      to.StringPtr(image.Marketplace.SKU),
+			Product:   to.StringPtr(image.Marketplace.Offer),
+		}
+	}
+
+	// Otherwise return nil.
+	return nil
 }

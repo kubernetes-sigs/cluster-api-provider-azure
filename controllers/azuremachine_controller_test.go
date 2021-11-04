@@ -178,6 +178,7 @@ func TestConditions(t *testing.T) {
 				ClusterScope: clusterScope,
 				Machine:      tc.machine,
 				AzureMachine: tc.azureMachine,
+				Cache:        &scope.MachineCache{},
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

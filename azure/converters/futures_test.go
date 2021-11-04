@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -76,7 +76,7 @@ func Test_SDKToFuture(t *testing.T) {
 		service      string
 		resourceName string
 		rgName       string
-		expect       func(*gomega.GomegaWithT, *infrav1.Future, error)
+		expect       func(*GomegaWithT, *infrav1.Future, error)
 	}{
 		{
 			name:         "valid future",
@@ -85,9 +85,9 @@ func Test_SDKToFuture(t *testing.T) {
 			service:      "test-service",
 			resourceName: "test-resource",
 			rgName:       "test-group",
-			expect: func(g *gomega.GomegaWithT, f *infrav1.Future, err error) {
-				g.Expect(err).Should(gomega.BeNil())
-				g.Expect(f).Should(gomega.BeEquivalentTo(&infrav1.Future{
+			expect: func(g *GomegaWithT, f *infrav1.Future, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(f).Should(BeEquivalentTo(&infrav1.Future{
 					Type:          infrav1.DeleteFuture,
 					ServiceName:   "test-service",
 					Name:          "test-resource",
@@ -102,7 +102,7 @@ func Test_SDKToFuture(t *testing.T) {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			g := gomega.NewGomegaWithT(t)
+			g := NewGomegaWithT(t)
 			result, err := SDKToFuture(c.future, c.futureType, c.service, c.resourceName, c.rgName)
 			c.expect(g, result, err)
 		})
@@ -113,35 +113,35 @@ func Test_FutureToSDK(t *testing.T) {
 	cases := []struct {
 		name   string
 		future infrav1.Future
-		expect func(*gomega.GomegaWithT, azureautorest.FutureAPI, error)
+		expect func(*GomegaWithT, azureautorest.FutureAPI, error)
 	}{
 		{
 			name:   "data is empty",
 			future: emptyDataFuture,
-			expect: func(g *gomega.GomegaWithT, f azureautorest.FutureAPI, err error) {
-				g.Expect(err.Error()).Should(gomega.ContainSubstring("failed to unmarshal future data"))
+			expect: func(g *GomegaWithT, f azureautorest.FutureAPI, err error) {
+				g.Expect(err.Error()).Should(ContainSubstring("failed to unmarshal future data"))
 			},
 		},
 		{
 			name:   "data is not base64 encoded",
 			future: decodedDataFuture,
-			expect: func(g *gomega.GomegaWithT, f azureautorest.FutureAPI, err error) {
-				g.Expect(err.Error()).Should(gomega.ContainSubstring("failed to base64 decode future data"))
+			expect: func(g *GomegaWithT, f azureautorest.FutureAPI, err error) {
+				g.Expect(err.Error()).Should(ContainSubstring("failed to base64 decode future data"))
 			},
 		},
 		{
 			name:   "base64 data is not a valid future",
 			future: invalidFuture,
-			expect: func(g *gomega.GomegaWithT, f azureautorest.FutureAPI, err error) {
-				g.Expect(err.Error()).Should(gomega.ContainSubstring("failed to unmarshal future data"))
+			expect: func(g *GomegaWithT, f azureautorest.FutureAPI, err error) {
+				g.Expect(err.Error()).Should(ContainSubstring("failed to unmarshal future data"))
 			},
 		},
 		{
 			name:   "valid future data",
 			future: validFuture,
-			expect: func(g *gomega.GomegaWithT, f azureautorest.FutureAPI, err error) {
-				g.Expect(err).Should(gomega.BeNil())
-				g.Expect(f).Should(gomega.BeAssignableToTypeOf(&azureautorest.Future{}))
+			expect: func(g *GomegaWithT, f azureautorest.FutureAPI, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(f).Should(BeAssignableToTypeOf(&azureautorest.Future{}))
 			},
 		},
 	}
@@ -150,7 +150,7 @@ func Test_FutureToSDK(t *testing.T) {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			g := gomega.NewGomegaWithT(t)
+			g := NewGomegaWithT(t)
 			result, err := FutureToSDK(c.future)
 			c.expect(g, result, err)
 		})
