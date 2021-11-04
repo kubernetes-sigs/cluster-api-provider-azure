@@ -14,7 +14,6 @@ Add one of the following kinds:
 /kind documentation
 /kind failing-test
 /kind flake
-/kind other
 -->
 
 **What this PR does / why we need it**:
