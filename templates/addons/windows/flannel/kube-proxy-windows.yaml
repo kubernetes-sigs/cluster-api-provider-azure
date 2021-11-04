@@ -62,7 +62,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-nanoserver
+        image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION}-nanoserver
         name: kube-proxy
         volumeMounts:
         - name: wins

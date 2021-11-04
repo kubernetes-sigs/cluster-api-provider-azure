@@ -220,8 +220,8 @@ def create_crs():
 
     # need to set version for kube-proxy on windows.
     os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))
-    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel/ --dry-run=client -o yaml | " + envsubst_cmd + " | kubectl apply -f -")
-    local("kubectl create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | kubectl apply -f -")
+    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel/ --dry-run=client -o yaml | " + envsubst_cmd + " \$KUBERNETES_VERSION | kubectl apply -f -")
+    local("kubectl create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " \$KUBERNETES_VERSION | kubectl apply -f -")
 
     # set up crs
     local("kubectl apply -f templates/addons/calico-resource-set.yaml")

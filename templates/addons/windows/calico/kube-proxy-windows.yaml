@@ -21,7 +21,7 @@ spec:
           runAsUserName: "NT AUTHORITY\\system"
       hostNetwork: true
       containers:
-      - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess
+      - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION}-calico-hostprocess
         args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1"]
         workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/"
         name: kube-proxy
