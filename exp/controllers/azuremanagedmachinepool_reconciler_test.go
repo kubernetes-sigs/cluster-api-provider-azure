@@ -56,7 +56,7 @@ func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)
-			g.Expect(IsAgentPoolVMSSNotFoundError(c.Err)).To(gomega.Equal(c.Expected))
+			g.Expect(errors.Is(c.Err, NewAgentPoolVMSSNotFoundError("foo", "baz"))).To(gomega.Equal(c.Expected))
 		})
 	}
 }

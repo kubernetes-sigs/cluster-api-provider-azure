@@ -19,6 +19,7 @@ package agentpools
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 	"github.com/go-logr/logr"
@@ -90,7 +91,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	isCreate := azure.ResourceNotFound(err)
 	if isCreate {
 		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
-		if err != nil {
+		if err != nil && azure.ResourceNotFound(err) {
+			return azure.WithTransientError(errors.Wrap(err, "agent pool dependent resource does not exist yet"), 20*time.Second)
+		} else if err != nil {
 			return errors.Wrap(err, "failed to create or update agent pool")
 		}
 	} else {
@@ -98,7 +101,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if ps != string(infrav1alpha4.Canceled) && ps != string(infrav1alpha4.Failed) && ps != string(infrav1alpha4.Succeeded) {
 			msg := fmt.Sprintf("Unable to update existing agent pool in non terminal state. Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
 			log.V(2).Info(msg)
-			return errors.New(msg)
+			return azure.WithTransientError(errors.New(msg), 20*time.Second)
 		}
 
 		// Normalize individual agent pools to diff in case we need to update

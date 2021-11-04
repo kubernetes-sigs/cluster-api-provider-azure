@@ -36,8 +36,6 @@ mkdir -p "${REPO_ROOT}/hack/tools/bin"
 KUBECTL=$(realpath hack/tools/bin/kubectl)
 make "${KUBECTL}" &>/dev/null
 
-# shellcheck source=hack/ensure-kustomize.sh
-source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 # shellcheck source=hack/ensure-tags.sh
 source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=hack/parse-prow-creds.sh

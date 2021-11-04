@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/pkg/errors"
@@ -50,10 +51,6 @@ type (
 		ListInstances(context.Context, string, string) ([]compute.VirtualMachineScaleSetVM, error)
 		List(context.Context, string) ([]compute.VirtualMachineScaleSet, error)
 	}
-)
-
-var (
-	notFoundErr = new(AgentPoolVMSSNotFoundError)
 )
 
 // NewAgentPoolVMSSNotFoundError creates a new AgentPoolVMSSNotFoundError.
@@ -113,7 +110,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	}
 
 	if match == nil {
-		return NewAgentPoolVMSSNotFoundError(nodeResourceGroup, agentPoolName)
+		return azure.WithTransientError(NewAgentPoolVMSSNotFoundError(nodeResourceGroup, agentPoolName), 20*time.Second)
 	}
 
 	instances, err := s.scaleSetsSvc.ListInstances(ctx, nodeResourceGroup, *match.Name)
@@ -144,9 +141,4 @@ func (s *azureManagedMachinePoolService) Delete(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// IsAgentPoolVMSSNotFoundError returns true if the error is an AgentPoolVMSSNotFoundError.
-func IsAgentPoolVMSSNotFoundError(err error) bool {
-	return errors.Is(err, notFoundErr)
 }

@@ -52,6 +52,9 @@ KUBETEST_WINDOWS_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/upstream-window
 KUBETEST_REPO_LIST_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/)
 AZURE_TEMPLATES := $(E2E_DATA_DIR)/infrastructure-azure
 
+# use the project local tool binaries first
+export PATH := $(TOOLS_BIN_DIR):$(PATH)
+
 # set --output-base used for conversion-gen which needs to be different for in GOPATH and outside GOPATH dev
 ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure)
   OUTPUT_BASE := --output-base=$(ROOT_DIR)
@@ -169,7 +172,7 @@ test-cover: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run tests with cod
 	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: test-e2e-run
-test-e2e-run: generate-e2e-templates $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
+test-e2e-run: generate-e2e-templates $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(GINKGO) ## Run e2e tests
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
     $(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) $(GINKGO_ARGS) ./test/e2e -- \
     	-e2e.artifacts-folder="$(ARTIFACTS)" \

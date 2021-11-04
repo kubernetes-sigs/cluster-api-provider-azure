@@ -87,7 +87,7 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 			}
 
 			// May need to break this up on clusters with larger number of nodes.  There is a 10 ssh connection default.
-			if s.IsWindows {
+			if machineInfo.IsWindows {
 				//skip for now
 				Logf("Skipping windows time sync check.  TODO: re-enable and check w32t service is running. Issue #1782")
 			} else {
@@ -199,6 +199,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		nsenterCmd := []string{"nsenter", "--target", "1", "--mount=/proc/1/ns/mnt", "--", "/bin/sh", "-c"}
 		var testFuncs []func() error
 		for key := range execInfo {
+			key := key
 			s := execInfo[key]
 			Byf("checking that time synchronization is healthy on %s", s.Hostname)
 			execToStringFn := func(expected, command string) func() error {
