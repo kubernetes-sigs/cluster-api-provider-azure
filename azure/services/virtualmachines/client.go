@@ -78,15 +78,29 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.CreateOrUpdate")
 	defer done()
 
-	vm, err := ac.vmParams(ctx, spec)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get desired parameters for virtual machine %s", spec.ResourceName())
-	} else if vm == nil {
-		// nothing to do here.
-		return nil, nil, nil
+	var existingVM interface{}
+
+	if existing, err := ac.Get(ctx, spec.ResourceGroupName(), spec.ResourceName()); err != nil && !azure.ResourceNotFound(err) {
+		return nil, nil, errors.Wrapf(err, "failed to get virtual machine %s in %s", spec.ResourceName(), spec.ResourceGroupName())
+	} else if err == nil {
+		existingVM = existing
 	}
 
-	future, err := ac.virtualmachines.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), *vm)
+	params, err := spec.Parameters(existingVM)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get desired parameters for virtual machine %s", spec.ResourceName())
+	}
+
+	vm, ok := params.(compute.VirtualMachine)
+	if !ok {
+		if params == nil {
+			// nothing to do here.
+			return existingVM, nil, nil
+		}
+		return nil, nil, errors.Errorf("%T is not a compute.VirtualMachine", params)
+	}
+
+	future, err := ac.virtualmachines.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vm)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -185,36 +199,4 @@ func (ac *AzureClient) Result(ctx context.Context, futureData azureautorest.Futu
 	}
 
 	return result(ac.virtualmachines)
-}
-
-// vmParams creates a VirtualMachine object from the given spec.
-func (ac *AzureClient) vmParams(ctx context.Context, spec azure.ResourceSpecGetter) (*compute.VirtualMachine, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.AzureClient.vmParams")
-	defer span.End()
-
-	var params interface{}
-	var existing interface{}
-
-	if existingVM, err := ac.Get(ctx, spec.ResourceGroupName(), spec.ResourceName()); err != nil && !azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "failed to get virtual machine %s in %s", spec.ResourceName(), spec.ResourceGroupName())
-	} else if err == nil {
-		// virtual machine already exists
-		existing = existingVM
-	}
-
-	params, err := spec.Parameters(existing)
-	if err != nil {
-		return nil, err
-	}
-
-	vm, ok := params.(compute.VirtualMachine)
-	if !ok {
-		if params == nil {
-			// nothing to do here.
-			return nil, nil
-		}
-		return nil, errors.Errorf("%T is not a compute.VirtualMachine", params)
-	}
-
-	return &vm, nil
 }
