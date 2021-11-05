@@ -38,6 +38,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -303,23 +304,24 @@ func (s *ClusterScope) GroupSpec() azure.ResourceSpecGetter {
 }
 
 // VnetPeeringSpecs returns the virtual network peering specs.
-func (s *ClusterScope) VnetPeeringSpecs() []azure.VnetPeeringSpec {
-	peeringSpecs := make([]azure.VnetPeeringSpec, 2*len(s.Vnet().Peerings))
-
+func (s *ClusterScope) VnetPeeringSpecs() []azure.ResourceSpecGetter {
+	peeringSpecs := make([]azure.ResourceSpecGetter, 2*len(s.Vnet().Peerings))
 	for i, peering := range s.Vnet().Peerings {
-		forwardPeering := azure.VnetPeeringSpec{
+		forwardPeering := &vnetpeerings.VnetPeeringSpec{
 			PeeringName:         azure.GenerateVnetPeeringName(s.Vnet().Name, peering.RemoteVnetName),
 			SourceVnetName:      s.Vnet().Name,
 			SourceResourceGroup: s.Vnet().ResourceGroup,
 			RemoteVnetName:      peering.RemoteVnetName,
 			RemoteResourceGroup: peering.ResourceGroup,
+			SubscriptionID:      s.SubscriptionID(),
 		}
-		reversePeering := azure.VnetPeeringSpec{
+		reversePeering := &vnetpeerings.VnetPeeringSpec{
 			PeeringName:         azure.GenerateVnetPeeringName(peering.RemoteVnetName, s.Vnet().Name),
 			SourceVnetName:      peering.RemoteVnetName,
 			SourceResourceGroup: peering.ResourceGroup,
 			RemoteVnetName:      s.Vnet().Name,
 			RemoteResourceGroup: s.Vnet().ResourceGroup,
+			SubscriptionID:      s.SubscriptionID(),
 		}
 		peeringSpecs[i*2] = forwardPeering
 		peeringSpecs[i*2+1] = reversePeering
@@ -597,6 +599,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 		conditions.WithConditions(
 			infrav1.ResourceGroupReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
+			infrav1.VnetPeeringReadyCondition,
 		),
 	)
 
@@ -607,6 +610,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			clusterv1.ReadyCondition,
 			infrav1.ResourceGroupReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
+			infrav1.VnetPeeringReadyCondition,
 		}})
 }
 

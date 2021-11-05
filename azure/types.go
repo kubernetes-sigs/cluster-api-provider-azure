@@ -110,15 +110,6 @@ type VNetSpec struct {
 	Peerings      []infrav1.VnetPeeringSpec
 }
 
-// VnetPeeringSpec defines the specification for a virtual network peering.
-type VnetPeeringSpec struct {
-	SourceResourceGroup string
-	SourceVnetName      string
-	RemoteResourceGroup string
-	RemoteVnetName      string
-	PeeringName         string
-}
-
 // RoleAssignmentSpec defines the specification for a Role Assignment.
 type RoleAssignmentSpec struct {
 	MachineName  string
