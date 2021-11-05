@@ -54,7 +54,7 @@ type Authorizer interface {
 // NetworkDescriber is an interface which can get common Azure Cluster Networking information.
 type NetworkDescriber interface {
 	Vnet() *infrav1.VnetSpec
-	IsVnetManaged() bool
+	IsVnetManaged(context.Context) (bool, error)
 	ControlPlaneSubnet() infrav1.SubnetSpec
 	Subnets() infrav1.Subnets
 	Subnet(string) infrav1.SubnetSpec

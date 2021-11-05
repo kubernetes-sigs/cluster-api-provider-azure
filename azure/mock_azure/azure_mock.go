@@ -404,17 +404,18 @@ func (mr *MockNetworkDescriberMockRecorder) IsIPv6Enabled() *gomock.Call {
 }
 
 // IsVnetManaged mocks base method.
-func (m *MockNetworkDescriber) IsVnetManaged() bool {
+func (m *MockNetworkDescriber) IsVnetManaged(arg0 context.Context) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged")
+	ret := m.ctrl.Call(m, "IsVnetManaged", arg0)
 	ret0, _ := ret[0].(bool)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockNetworkDescriberMockRecorder) IsVnetManaged() *gomock.Call {
+func (mr *MockNetworkDescriberMockRecorder) IsVnetManaged(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockNetworkDescriber)(nil).IsVnetManaged))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockNetworkDescriber)(nil).IsVnetManaged), arg0)
 }
 
 // NodeSubnets mocks base method.
@@ -1119,17 +1120,18 @@ func (mr *MockClusterScoperMockRecorder) IsIPv6Enabled() *gomock.Call {
 }
 
 // IsVnetManaged mocks base method.
-func (m *MockClusterScoper) IsVnetManaged() bool {
+func (m *MockClusterScoper) IsVnetManaged(arg0 context.Context) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged")
+	ret := m.ctrl.Call(m, "IsVnetManaged", arg0)
 	ret0, _ := ret[0].(bool)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockClusterScoperMockRecorder) IsVnetManaged() *gomock.Call {
+func (mr *MockClusterScoperMockRecorder) IsVnetManaged(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockClusterScoper)(nil).IsVnetManaged))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockClusterScoper)(nil).IsVnetManaged), arg0)
 }
 
 // Location mocks base method.

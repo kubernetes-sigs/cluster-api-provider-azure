@@ -54,7 +54,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Reconcile")
 	defer done()
 
-	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
+	managed, err := s.Scope.IsVnetManaged(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to check if vnet is managed")
+	} else if !managed {
 		log.V(4).Info("Skipping route tables reconcile in custom vnet mode")
 		return nil
 	}
@@ -98,7 +101,10 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Delete")
 	defer done()
 
-	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
+	managed, err := s.Scope.IsVnetManaged(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to check if vnet is managed")
+	} else if !managed {
 		log.V(4).Info("Skipping route table deletion in custom vnet mode")
 		return nil
 	}

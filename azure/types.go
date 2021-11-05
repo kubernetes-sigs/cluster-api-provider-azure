@@ -97,14 +97,6 @@ type SubnetSpec struct {
 	NatGatewayName    string
 }
 
-// VNetSpec defines the specification for a Virtual Network.
-type VNetSpec struct {
-	ResourceGroup string
-	Name          string
-	CIDRs         []string
-	Peerings      []infrav1.VnetPeeringSpec
-}
-
 // RoleAssignmentSpec defines the specification for a Role Assignment.
 type RoleAssignmentSpec struct {
 	MachineName  string
@@ -124,12 +116,6 @@ const (
 	// VirtualMachineScaleSet ...
 	VirtualMachineScaleSet = "VirtualMachineScaleSet"
 )
-
-// NSGSpec defines the specification for a Security Group.
-type NSGSpec struct {
-	Name          string
-	SecurityRules infrav1.SecurityRules
-}
 
 // BastionSpec defines the specification for the generic bastion feature.
 type BastionSpec struct {

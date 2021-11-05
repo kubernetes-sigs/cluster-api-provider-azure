@@ -21,6 +21,7 @@ limitations under the License.
 package mock_routetables
 
 import (
+	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -305,17 +306,18 @@ func (mr *MockRouteTableScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 }
 
 // IsVnetManaged mocks base method.
-func (m *MockRouteTableScope) IsVnetManaged() bool {
+func (m *MockRouteTableScope) IsVnetManaged(arg0 context.Context) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged")
+	ret := m.ctrl.Call(m, "IsVnetManaged", arg0)
 	ret0, _ := ret[0].(bool)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockRouteTableScopeMockRecorder) IsVnetManaged() *gomock.Call {
+func (mr *MockRouteTableScopeMockRecorder) IsVnetManaged(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockRouteTableScope)(nil).IsVnetManaged))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockRouteTableScope)(nil).IsVnetManaged), arg0)
 }
 
 // Location mocks base method.

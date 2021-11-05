@@ -18,18 +18,56 @@ package virtualnetworks
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks/mock_virtualnetworks"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+)
+
+var (
+	fakeVNetSpec = VNetSpec{
+		ResourceGroup:  "test-group",
+		Name:           "test-vnet",
+		CIDRs:          []string{"10.0.0.0/8"},
+		Location:       "test-location",
+		ClusterName:    "test-cluster",
+		AdditionalTags: map[string]string{"foo": "bar"},
+	}
+	fakeCreateFuture = infrav1.Future{
+		Type:          infrav1.PutFuture,
+		ServiceName:   serviceName,
+		Name:          "test-vnet",
+		ResourceGroup: "test-group",
+		Data:          "eyJtZXRob2QiOiJQVVQiLCJwb2xsaW5nTWV0aG9kIjoiTG9jYXRpb24iLCJscm9TdGF0ZSI6IkluUHJvZ3Jlc3MifQ==",
+	}
+	managedVnet = network.VirtualNetwork{
+		ID:   to.StringPtr("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
+		Name: to.StringPtr("test-vnet"),
+		Tags: map[string]*string{
+			"foo": to.StringPtr("bar"),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+		},
+	}
+	customVnet = network.VirtualNetwork{
+		ID:   to.StringPtr("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
+		Name: to.StringPtr("test-vnet"),
+		Tags: map[string]*string{
+			"foo":       to.StringPtr("bar"),
+			"something": to.StringPtr("else"),
+		},
+	}
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	notFoundError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")
 )
 
 func TestReconcileVnet(t *testing.T) {
@@ -39,194 +77,37 @@ func TestReconcileVnet(t *testing.T) {
 		expect        func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder)
 	}{
 		{
-			name:          "managed vnet exists",
+			name:          "create vnet succeeds, should not return an error",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "vnet-exists",
-					CIDRs:         []string{"10.0.0.0/8"},
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "vnet-exists").
-					Return(network.VirtualNetwork{
-						ID:   to.StringPtr("azure/fake/id"),
-						Name: to.StringPtr("vnet-exists"),
-						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-							AddressSpace: &network.AddressSpace{
-								AddressPrefixes: to.StringSlicePtr([]string{"10.0.0.0/8"}),
-							},
-						},
-						Tags: map[string]*string{
-							"Name": to.StringPtr("vnet-exists"),
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr("owned"),
-							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("common"),
-						},
-					}, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				s.GetLongRunningOperationState("test-vnet", serviceName).Return(nil)
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeVNetSpec).Return(managedVnet, nil, nil)
+				s.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, nil)
+				s.Vnet().Return(&infrav1.VnetSpec{})
 			},
 		},
 		{
-			name:          "managed ipv6 vnet exists",
-			expectedError: "",
+			name:          "create vnet fails, should return an error",
+			expectedError: "failed to create resource test-group/test-vnet (service: virtualnetwork): #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "ipv6-vnet-exists",
-					CIDRs:         []string{"10.0.0.0/8", "2001:1234:5678:9a00::/56"},
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "ipv6-vnet-exists").
-					Return(network.VirtualNetwork{
-						ID:   to.StringPtr("azure/fake/id"),
-						Name: to.StringPtr("ipv6-vnet-exists"),
-						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-							AddressSpace: &network.AddressSpace{
-								AddressPrefixes: to.StringSlicePtr([]string{
-									"10.0.0.0/8",
-									"2001:1234:5678:9a00::/56",
-								}),
-							},
-						},
-						Tags: map[string]*string{
-							"Name": to.StringPtr("ipv6-vnet-exists"),
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr("owned"),
-							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("common"),
-						},
-					}, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				s.GetLongRunningOperationState("test-vnet", serviceName).Return(nil)
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeVNetSpec).Return(nil, nil, internalError)
+				s.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, gomockinternal.ErrStrEq(fmt.Sprintf("failed to create resource test-group/test-vnet (service: virtualnetwork): %s", internalError.Error())))
 			},
 		},
 		{
-			name:          "vnet created successufuly",
-			expectedError: "",
+			name:          "create vnet operation is already in progress, should check on the existing operation",
+			expectedError: "operation type PUT on Azure resource test-group/test-vnet is not done. Object will be requeued after 15s",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-new"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "vnet-new",
-					CIDRs:         []string{"10.0.0.0/8"},
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "vnet-new").
-					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "vnet-new", gomock.AssignableToTypeOf(network.VirtualNetwork{}))
-			},
-		},
-		{
-			name:          "ipv6 vnet created successufuly",
-			expectedError: "",
-			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-new"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "vnet-ipv6-new",
-					CIDRs:         []string{"10.0.0.0/8", "2001:1234:5678:9a00::/56"},
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "vnet-ipv6-new").
-					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "vnet-ipv6-new", gomockinternal.DiffEq(network.VirtualNetwork{
-					Tags: map[string]*string{
-						"Name": to.StringPtr("vnet-ipv6-new"),
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr(string(infrav1.ResourceLifecycleOwned)),
-						"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr(infrav1.CommonRole),
-					},
-					Location: to.StringPtr("fake-location"),
-					VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-						AddressSpace: &network.AddressSpace{
-							AddressPrefixes: to.StringSlicePtr([]string{
-								"10.0.0.0/8",
-								"2001:1234:5678:9a00::/56",
-							}),
-						},
-					},
-				}))
-			},
-		},
-		{
-			name:          "unmanaged vnet exists",
-			expectedError: "",
-			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "custom-vnet-rg",
-					Name:          "custom-vnet",
-					CIDRs:         []string{"10.0.0.0/16"},
-				})
-				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet").
-					Return(network.VirtualNetwork{
-						ID:   to.StringPtr("azure/custom-vnet/id"),
-						Name: to.StringPtr("custom-vnet"),
-						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-							AddressSpace: &network.AddressSpace{
-								AddressPrefixes: to.StringSlicePtr([]string{"10.0.0.0/16"}),
-							},
-						},
-						Tags: map[string]*string{
-							"Name": to.StringPtr("my-custom-vnet"),
-						},
-					}, nil)
-			},
-		},
-		{
-			name:          "custom vnet not found",
-			expectedError: "",
-			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "custom-vnet-rg",
-					Name:          "custom-vnet",
-					CIDRs:         []string{"10.0.0.0/16"},
-				})
-				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet").
-					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-
-				m.CreateOrUpdate(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet", gomock.AssignableToTypeOf(network.VirtualNetwork{}))
-			},
-		},
-		{
-			name:          "failed to fetch vnet",
-			expectedError: "failed to get VNet custom-vnet: failed to get VNet custom-vnet: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "custom-vnet-rg",
-					Name:          "custom-vnet",
-					CIDRs:         []string{"10.0.0.0/16"},
-				})
-				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet").
-					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-			},
-		},
-		{
-			name:          "fail to create vnet",
-			expectedError: "failed to create virtual network custom-vnet: #: Internal Server Honk: StatusCode=500",
-			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "custom-vnet-rg",
-					Name:          "custom-vnet",
-					CIDRs:         []string{"10.0.0.0/16"},
-				})
-				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet").
-					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-
-				m.CreateOrUpdate(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet", gomock.AssignableToTypeOf(network.VirtualNetwork{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Honk"))
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				s.GetLongRunningOperationState("test-vnet", serviceName).Times(2).Return(&fakeCreateFuture)
+				m.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, nil)
+				s.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, gomockinternal.ErrStrEq("operation type PUT on Azure resource test-group/test-vnet is not done. Object will be requeued after 15s"))
 			},
 		},
 	}
@@ -252,7 +133,7 @@ func TestReconcileVnet(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -267,123 +148,59 @@ func TestDeleteVnet(t *testing.T) {
 		expect        func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder)
 	}{
 		{
-			name:          "managed vnet exists",
+			name:          "delete vnet succeeds, should not return an error",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{
-					"Name": "vnet-exists",
-					"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
-					"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-				})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "vnet-exists",
-					CIDRs:         []string{"10.0.0.0/16"},
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "vnet-exists").
-					Return(network.VirtualNetwork{
-						ID:   to.StringPtr("azure/fake/id"),
-						Name: to.StringPtr("vnet-exists"),
-						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-							AddressSpace: &network.AddressSpace{
-								AddressPrefixes: to.StringSlicePtr([]string{"10.0.0.0/8"}),
-							},
-						},
-						Tags: map[string]*string{
-							"Name": to.StringPtr("vnet-exists"),
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr("owned"),
-							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("common"),
-						},
-					}, nil)
-				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.GetLongRunningOperationState("test-vnet", serviceName).Return(nil)
+				m.DeleteAsync(gomockinternal.AContext(), &fakeVNetSpec).Return(nil, nil)
+				s.UpdateDeleteStatus(infrav1.VNetReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "managed vnet already deleted",
-			expectedError: "",
+			name:          "delete vnet fails, should return an error",
+			expectedError: "failed to delete resource test-group/test-vnet (service: virtualnetwork): #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{
-					"Name": "vnet-exists",
-					"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
-					"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-				})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "vnet-exists",
-					CIDRs:         []string{"10.0.0.0/16"},
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "vnet-exists").
-					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.GetLongRunningOperationState("test-vnet", serviceName).Return(nil)
+				m.DeleteAsync(gomockinternal.AContext(), &fakeVNetSpec).Return(nil, internalError)
+				s.UpdateDeleteStatus(infrav1.VNetReadyCondition, serviceName, gomockinternal.ErrStrEq(fmt.Sprintf("failed to delete resource test-group/test-vnet (service: virtualnetwork): %s", internalError.Error())))
 			},
 		},
 		{
-			name:          "unmanaged vnet",
-			expectedError: "",
+			name:          "delete vnet operation is already in progress, should check on the existing operation",
+			expectedError: "operation type PUT on Azure resource test-group/test-vnet is not done. Object will be requeued after 15s",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "my-rg", Name: "my-vnet", ID: "azure/custom-vnet/id"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "my-vnet",
-					CIDRs:         []string{"10.0.0.0/16"},
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vnet").
-					Return(network.VirtualNetwork{
-						ID:   to.StringPtr("azure/custom-vnet/id"),
-						Name: to.StringPtr("my-vnet"),
-						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-							AddressSpace: &network.AddressSpace{
-								AddressPrefixes: to.StringSlicePtr([]string{"10.0.0.0/16"}),
-							},
-						},
-						Tags: map[string]*string{
-							"Name": to.StringPtr("my-vnet"),
-						},
-					}, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.GetLongRunningOperationState("test-vnet", serviceName).Times(2).Return(&fakeCreateFuture)
+				m.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, nil)
+				s.UpdateDeleteStatus(infrav1.VNetReadyCondition, serviceName, gomockinternal.ErrStrEq("operation type PUT on Azure resource test-group/test-vnet is not done. Object will be requeued after 15s"))
 			},
 		},
 		{
-			name:          "fail to delete vnet",
-			expectedError: "failed to delete VNet vnet-exists in resource group my-rg: #: Internal Honk Server: StatusCode=500",
+			name:          "vnet already deleted, do nothing",
+			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.Location().AnyTimes().Return("fake-location")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{
-					"Name": "vnet-exists",
-					"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
-					"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-				})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpec().Return(azure.VNetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "vnet-exists",
-					CIDRs:         []string{"10.0.0.0/16"},
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "vnet-exists").
-					Return(network.VirtualNetwork{
-						ID:   to.StringPtr("azure/fake/id"),
-						Name: to.StringPtr("vnet-exists"),
-						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-							AddressSpace: &network.AddressSpace{
-								AddressPrefixes: to.StringSlicePtr([]string{"10.0.0.0/8"}),
-							},
-						},
-						Tags: map[string]*string{
-							"Name": to.StringPtr("vnet-exists"),
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr("owned"),
-							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("common"),
-						},
-					}, nil)
-				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Honk Server"))
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(false, notFoundError)
+				s.DeleteLongRunningOperationState("test-vnet", serviceName)
+				s.UpdateDeleteStatus(infrav1.VNetReadyCondition, serviceName, nil)
+			},
+		},
+		{
+			name:          "vnet is not managed, do nothing",
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
 			},
 		},
 	}
@@ -411,6 +228,110 @@ func TestDeleteVnet(t *testing.T) {
 				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestIsVnetManaged(t *testing.T) {
+	testcases := []struct {
+		name          string
+		expectedError string
+		result        bool
+		expect        func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder)
+	}{
+		{
+			name:          "managed vnet returns true",
+			result:        true,
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				m.Get(gomockinternal.AContext(), "test-group", "test-vnet").Return(managedVnet, nil)
+				s.ClusterName().Return("test-cluster")
+			},
+		},
+		{
+			name:          "custom vnet returns false",
+			result:        false,
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				m.Get(gomockinternal.AContext(), "test-group", "test-vnet").Return(customVnet, nil)
+				s.ClusterName().Return("test-cluster")
+			},
+		},
+		{
+			name:          "GET fails returns an error",
+			expectedError: internalError.Error(),
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				m.Get(gomockinternal.AContext(), "test-group", "test-vnet").Return(network.VirtualNetwork{}, internalError)
+			},
+		},
+		{
+			name:          "vnet not found, spec has owned tag",
+			result:        true,
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				m.Get(gomockinternal.AContext(), "test-group", "test-vnet").Return(network.VirtualNetwork{}, notFoundError)
+				s.Vnet().Times(2).Return(&infrav1.VnetSpec{ID: "my/vnet/id", Name: "test-vnet", Tags: infrav1.Tags{"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned"}})
+				s.ClusterName().Return("test-cluster")
+			},
+		},
+		{
+			name:          "vnet not found, spec doesn't have owned tag",
+			result:        false,
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				m.Get(gomockinternal.AContext(), "test-group", "test-vnet").Return(network.VirtualNetwork{}, notFoundError)
+				s.Vnet().Times(2).Return(&infrav1.VnetSpec{ID: "my/vnet/id", Name: "test-vnet", Tags: infrav1.Tags{"foo": "bar"}})
+				s.ClusterName().Return("test-cluster")
+			},
+		},
+		{
+			name:          "vnet not found, spec doesn't ID yet",
+			result:        false,
+			expectedError: notFoundError.Error(),
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VNetSpec().Return(&fakeVNetSpec)
+				m.Get(gomockinternal.AContext(), "test-group", "test-vnet").Return(network.VirtualNetwork{}, notFoundError)
+				s.Vnet().Return(&infrav1.VnetSpec{Name: "test-vnet"})
+			},
+		},
+	}
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			scopeMock := mock_virtualnetworks.NewMockVNetScope(mockCtrl)
+			clientMock := mock_virtualnetworks.NewMockClient(mockCtrl)
+
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+
+			s := &Service{
+				Scope:  scopeMock,
+				Client: clientMock,
+			}
+
+			result, err := s.IsManaged(context.TODO())
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(result).To(Equal(tc.result))
 			}
 		})
 	}

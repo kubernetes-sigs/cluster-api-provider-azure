@@ -130,11 +130,6 @@ type VnetPeeringSpec struct {
 // VnetPeerings is a slice of VnetPeering.
 type VnetPeerings []VnetPeeringSpec
 
-// IsManaged returns true if the vnet is managed.
-func (v *VnetSpec) IsManaged(clusterName string) bool {
-	return v.ID == "" || v.Tags.HasOwned(clusterName)
-}
-
 // Subnets is a slice of Subnet.
 type Subnets []SubnetSpec
 

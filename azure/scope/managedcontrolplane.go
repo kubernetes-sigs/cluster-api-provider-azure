@@ -39,6 +39,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -99,6 +100,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		InfraMachinePool: params.InfraMachinePool,
 		PatchTarget:      params.PatchTarget,
 		patchHelper:      helper,
+		cache:            &clusterCache{},
 	}, nil
 }
 
@@ -114,6 +116,7 @@ type ManagedControlPlaneScope struct {
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	PatchTarget      client.Object
+	cache            *clusterCache
 
 	AllNodePools []infrav1exp.AzureManagedMachinePool
 }
@@ -212,11 +215,14 @@ func (s *ManagedControlPlaneScope) GroupSpec() azure.ResourceSpecGetter {
 }
 
 // VNetSpec returns the virtual network spec.
-func (s *ManagedControlPlaneScope) VNetSpec() azure.VNetSpec {
-	return azure.VNetSpec{
-		ResourceGroup: s.Vnet().ResourceGroup,
-		Name:          s.Vnet().Name,
-		CIDRs:         s.Vnet().CIDRBlocks,
+func (s *ManagedControlPlaneScope) VNetSpec() azure.ResourceSpecGetter {
+	return &virtualnetworks.VNetSpec{
+		ResourceGroup:  s.Vnet().ResourceGroup,
+		Name:           s.Vnet().Name,
+		CIDRs:          s.Vnet().CIDRBlocks,
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
 	}
 }
 
@@ -298,8 +304,16 @@ func (s *ManagedControlPlaneScope) IsIPv6Enabled() bool {
 }
 
 // IsVnetManaged returns true if the vnet is managed.
-func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
-	return true
+func (s *ManagedControlPlaneScope) IsVnetManaged(ctx context.Context) (bool, error) {
+	if s.cache.IsVnetManaged != nil {
+		return to.Bool(s.cache.IsVnetManaged), nil
+	}
+	vnetSvc := virtualnetworks.New(s)
+	managed, err := vnetSvc.IsManaged(ctx)
+	if err == nil {
+		s.cache.IsVnetManaged = to.BoolPtr(managed)
+	}
+	return managed, err
 }
 
 // APIServerLBName returns the API Server LB name.

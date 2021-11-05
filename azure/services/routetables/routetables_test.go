@@ -27,6 +27,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables/mock_routetables"
@@ -41,39 +42,23 @@ func init() {
 func TestReconcileRouteTables(t *testing.T) {
 	testcases := []struct {
 		name          string
-		tags          infrav1.Tags
 		expectedError string
 		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder)
 	}{
 		{
-			name: "route tables in custom vnet mode",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "shared",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "route tables in custom vnet mode",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					ID:   "1234",
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 			},
 		},
 		{
-			name: "route table create successfully",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "route table create successfully",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
 						Name: "my-cp-routetable",
@@ -101,18 +86,11 @@ func TestReconcileRouteTables(t *testing.T) {
 			},
 		},
 		{
-			name: "do not create route table if already exists",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "do not create route table if already exists",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.RouteTableSpecs().AnyTimes().Return([]azure.RouteTableSpec{
 					{
 						Name: "my-cp-routetable",
@@ -160,18 +138,11 @@ func TestReconcileRouteTables(t *testing.T) {
 			},
 		},
 		{
-			name: "fail when getting existing route table",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "fail when getting existing route table",
 			expectedError: "failed to get route table my-cp-routetable in my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
 					Name: "my-cp-routetable",
 					Subnet: infrav1.SubnetSpec{
@@ -187,18 +158,11 @@ func TestReconcileRouteTables(t *testing.T) {
 			},
 		},
 		{
-			name: "fail to create a route table",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "fail to create a route table",
 			expectedError: "failed to create route table my-cp-routetable in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
 					Name: "my-cp-routetable",
 					Subnet: infrav1.SubnetSpec{
@@ -247,39 +211,23 @@ func TestReconcileRouteTables(t *testing.T) {
 func TestDeleteRouteTable(t *testing.T) {
 	testcases := []struct {
 		name          string
-		tags          infrav1.Tags
 		expectedError string
 		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder)
 	}{
 		{
-			name: "route tables in custom vnet mode",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "shared",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "route tables in custom vnet mode",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					ID:   "1234",
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 			},
 		},
 		{
-			name: "route table deleted successfully",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "route table deleted successfully",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
 						Name: "my-cp-routetable",
@@ -304,18 +252,11 @@ func TestDeleteRouteTable(t *testing.T) {
 			},
 		},
 		{
-			name: "route table already deleted",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "route table already deleted",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
 						Name: "my-cp-routetable",
@@ -340,18 +281,11 @@ func TestDeleteRouteTable(t *testing.T) {
 			},
 		},
 		{
-			name: "route table deletion fails",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "route table deletion fails",
 			expectedError: "failed to delete route table my-cp-routetable in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
 					Name: "my-cp-routetable",
 					Subnet: infrav1.SubnetSpec{

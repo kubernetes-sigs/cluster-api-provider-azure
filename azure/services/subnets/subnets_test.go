@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets/mock_subnets"
@@ -57,7 +58,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.IsIPv6Enabled().AnyTimes().Return(false)
-				s.IsVnetManaged().Return(true)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "", "my-vnet", "my-subnet", gomockinternal.DiffEq(network.Subnet{
@@ -87,7 +88,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.SubscriptionID().AnyTimes().Return("123")
-				s.IsVnetManaged().Return(true)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-ipv6-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vnet", "my-ipv6-subnet", gomockinternal.DiffEq(network.Subnet{
@@ -121,7 +122,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.IsIPv6Enabled().AnyTimes().Return(false)
-				s.IsVnetManaged().Return(true)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "", "my-vnet", "my-subnet", gomock.AssignableToTypeOf(network.Subnet{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
@@ -171,7 +172,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("custom-vnet-rg")
-				s.IsVnetManaged().Return(false)
+				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
 				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
@@ -523,6 +524,7 @@ func TestDeleteSubnets(t *testing.T) {
 						Role:              infrav1.SubnetControlPlane,
 					},
 				})
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -544,6 +546,7 @@ func TestDeleteSubnets(t *testing.T) {
 						Role:              infrav1.SubnetNode,
 					},
 				})
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -573,6 +576,7 @@ func TestDeleteSubnets(t *testing.T) {
 						Role:              infrav1.SubnetControlPlane,
 					},
 				})
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -585,19 +589,8 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "skip delete if vnet is managed",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.SubnetSpecs().Return([]azure.SubnetSpec{
-					{
-						Name:              "my-subnet",
-						CIDRs:             []string{"10.0.0.0/16"},
-						VNetName:          "custom-vnet",
-						RouteTableName:    "my-subnet_route_table",
-						SecurityGroupName: "my-sg",
-						Role:              infrav1.SubnetNode,
-					},
-				})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1"})
-				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
 			},
 		},
 		{
@@ -614,6 +607,7 @@ func TestDeleteSubnets(t *testing.T) {
 						Role:              infrav1.SubnetNode,
 					},
 				})
+				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")

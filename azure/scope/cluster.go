@@ -36,6 +36,8 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -89,6 +91,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		Cluster:      params.Cluster,
 		AzureCluster: params.AzureCluster,
 		patchHelper:  helper,
+		cache:        &clusterCache{},
 	}, nil
 }
 
@@ -100,6 +103,12 @@ type ClusterScope struct {
 	AzureClients
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
+	cache        *clusterCache
+}
+
+// clusterCache stores common cluster information so we don't have to hit the API multiple times within the same reconcile loop.
+type clusterCache struct {
+	IsVnetManaged *bool
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
@@ -241,15 +250,15 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
 }
 
 // NSGSpecs returns the security group specs.
-func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
+func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
 	nsgspecs := make([]azure.NSGSpec, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
 	for i, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		nsgspecs[i] = azure.NSGSpec{
+		nsgspecs[i] = &azure.NSGSpec{
 			Name:          subnet.SecurityGroup.Name,
 			SecurityRules: subnet.SecurityGroup.SecurityRules,
+			ResourceGroup: s.ResourceGroup(),
+			Location:      s.Location(),
 		}
-	}
-
 	return nsgspecs
 }
 
@@ -327,11 +336,14 @@ func (s *ClusterScope) VnetPeeringSpecs() []azure.ResourceSpecGetter {
 }
 
 // VNetSpec returns the virtual network spec.
-func (s *ClusterScope) VNetSpec() azure.VNetSpec {
-	return azure.VNetSpec{
-		ResourceGroup: s.Vnet().ResourceGroup,
-		Name:          s.Vnet().Name,
-		CIDRs:         s.Vnet().CIDRBlocks,
+func (s *ClusterScope) VNetSpec() azure.ResourceSpecGetter {
+	return &virtualnetworks.VNetSpec{
+		ResourceGroup:  s.Vnet().ResourceGroup,
+		Name:           s.Vnet().Name,
+		CIDRs:          s.Vnet().CIDRBlocks,
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
 	}
 }
 
@@ -388,8 +400,15 @@ func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 }
 
 // IsVnetManaged returns true if the vnet is managed.
-func (s *ClusterScope) IsVnetManaged() bool {
-	return s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
+func (s *ClusterScope) IsVnetManaged(ctx context.Context) (bool, error) {
+	var err error
+	if s.cache.IsVnetManaged == nil {
+		vnetSvc := virtualnetworks.New(s)
+		if managed, err := vnetSvc.IsManaged(ctx); err == nil {
+			s.cache.IsVnetManaged = to.BoolPtr(managed)
+		}
+	}
+	return to.Bool(s.cache.IsVnetManaged), err
 }
 
 // IsIPv6Enabled returns true if IPv6 is enabled.
@@ -597,6 +616,8 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.NetworkInfrastructureReadyCondition,
 			infrav1.VnetPeeringReadyCondition,
 			infrav1.DisksReadyCondition,
+			infrav1.VNetReadyCondition,
+			infrav1.SecurityGroupsReadyCondition,
 		),
 	)
 
@@ -609,6 +630,8 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.NetworkInfrastructureReadyCondition,
 			infrav1.VnetPeeringReadyCondition,
 			infrav1.DisksReadyCondition,
+			infrav1.VNetReadyCondition,
+			infrav1.SecurityGroupsReadyCondition,
 		}})
 }
 

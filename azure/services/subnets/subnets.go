@@ -55,6 +55,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
 		existingSubnet, err := s.getExisting(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec)
+
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):
 			return errors.Wrapf(err, "failed to get subnet %s", subnetSpec.Name)
@@ -62,11 +63,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			// subnet already exists, update the spec and skip creation
 			s.Scope.SetSubnet(*existingSubnet)
 			continue
-
-		case !s.Scope.IsVnetManaged():
-			return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
-
 		default:
+			managed, err := s.Scope.IsVnetManaged(ctx)
+			if err != nil {
+				return errors.Wrap(err, "failed to check if vnet is managed")
+			} else if !managed {
+				return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
+			}
 
 			subnetProperties := network.SubnetPropertiesFormat{
 				AddressPrefixes: &subnetSpec.CIDRs,
@@ -122,14 +125,22 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Delete")
 	defer done()
 
+	managed, err := s.Scope.IsVnetManaged(ctx)
+	if azure.ResourceNotFound(err) {
+		// if the vnet doesn't exist, then we don't need to delete the subnets
+		// since subnets are a sub resource of the vnet, they must have been already deleted as well.
+		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if vnet is managed")
+	} else if !managed {
+		log.V(4).Info("Skipping subnets deletion in custom vnet mode")
+		return nil
+	}
+
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
-		if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
-			log.V(4).Info("Skipping subnets deletion in custom vnet mode")
-			continue
-		}
 		log.V(2).Info("deleting subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
-		err := s.Client.Delete(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec.VNetName, subnetSpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
+		err = s.Client.Delete(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec.VNetName, subnetSpec.Name)
+		if azure.ResourceNotFound(err) {
 			// already deleted
 			continue
 		}
