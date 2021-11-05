@@ -85,16 +85,14 @@ func CreateResource(ctx context.Context, scope FutureScope, client Creator, spec
 	// No long running operation is active, so create the resource.
 	scope.V(2).Info("creating resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	result, sdkFuture, err := client.CreateOrUpdateAsync(ctx, spec)
-	if err != nil {
-		if sdkFuture != nil {
-			future, err := converters.SDKToFuture(sdkFuture, infrav1.PutFuture, serviceName, resourceName, rgName)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to create resource %s/%s (service: %s)", rgName, resourceName, serviceName)
-			}
-			scope.SetLongRunningOperationState(future)
-			return nil, azure.WithTransientError(azure.NewOperationNotDoneError(future), retryAfter(sdkFuture))
+	if sdkFuture != nil {
+		future, err := converters.SDKToFuture(sdkFuture, infrav1.PutFuture, serviceName, resourceName, rgName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 		}
-
+		scope.SetLongRunningOperationState(future)
+		return nil, azure.WithTransientError(azure.NewOperationNotDoneError(future), retryAfter(sdkFuture))
+	} else if err != nil {
 		return nil, errors.Wrapf(err, "failed to create resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	}
 
@@ -120,19 +118,18 @@ func DeleteResource(ctx context.Context, scope FutureScope, client Deleter, spec
 	// No long running operation is active, so delete the resource.
 	scope.V(2).Info("deleting resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	sdkFuture, err := client.DeleteAsync(ctx, spec)
-	if err != nil {
+	if sdkFuture != nil {
+		future, err := converters.SDKToFuture(sdkFuture, infrav1.DeleteFuture, serviceName, resourceName, rgName)
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
+		}
+		scope.SetLongRunningOperationState(future)
+		return azure.WithTransientError(azure.NewOperationNotDoneError(future), retryAfter(sdkFuture))
+	} else if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
 			return nil
-		} else if sdkFuture != nil {
-			future, err := converters.SDKToFuture(sdkFuture, infrav1.DeleteFuture, serviceName, resourceName, rgName)
-			if err != nil {
-				return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
-			}
-			scope.SetLongRunningOperationState(future)
-			return azure.WithTransientError(azure.NewOperationNotDoneError(future), retryAfter(sdkFuture))
 		}
-
 		return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	}
 
