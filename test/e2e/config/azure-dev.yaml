@@ -136,6 +136,10 @@ providers:
       replacements:
       - old: "--v=0"
         new: "--v=2"
+      - old: "--azurecluster-concurrency=10"
+        new: "--azurecluster-concurrency=20"
+      - old: "--azuremachine-concurrency=10"
+        new: "--azuremachine-concurrency=20"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.22.1}"
