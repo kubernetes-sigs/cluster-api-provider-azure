@@ -20,18 +20,20 @@ set -o pipefail
 
 GOPATH_BIN="$(go env GOPATH)/bin/"
 MINIMUM_KUSTOMIZE_VERSION=3.1.0
+goarch="$(go env GOARCH)"
+goos="$(go env GOOS)"
 
 # Ensure the kustomize tool exists and is a viable version, or installs it
 verify_kustomize_version() {
 
   # If kustomize is not available on the path, get it
   if ! [ -x "$(command -v kustomize)" ]; then
-    if [[ "${OSTYPE}" == "linux-gnu" ]]; then
+    if [ "$goos" == "linux" ] || [ "$goos" == "darwin" ]; then
       echo 'kustomize not found, installing'
       if ! [ -d "${GOPATH_BIN}" ]; then
         mkdir -p "${GOPATH_BIN}"
       fi
-      curl -sLo "${GOPATH_BIN}/kustomize" https://github.com/kubernetes-sigs/kustomize/releases/download/v${MINIMUM_KUSTOMIZE_VERSION}/kustomize_${MINIMUM_KUSTOMIZE_VERSION}_linux_amd64
+      curl -sLo "${GOPATH_BIN}/kustomize" "https://github.com/kubernetes-sigs/kustomize/releases/download/v${MINIMUM_KUSTOMIZE_VERSION}/kustomize_${MINIMUM_KUSTOMIZE_VERSION}_${goos}_${goarch}"
       chmod +x "${GOPATH_BIN}/kustomize"
     else
       echo "Missing required binary in path: kustomize"
