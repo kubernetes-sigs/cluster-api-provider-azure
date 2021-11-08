@@ -39,6 +39,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -252,16 +253,20 @@ func (m *MachineScope) NICIDs() []string {
 }
 
 // DiskSpecs returns the disk specs.
-func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
-	disks := make([]azure.DiskSpec, 1+len(m.AzureMachine.Spec.DataDisks))
-	disks[0] = azure.DiskSpec{
-		Name: azure.GenerateOSDiskName(m.Name()),
+func (m *MachineScope) DiskSpecs() []azure.ResourceSpecGetter {
+	diskSpecs := make([]azure.ResourceSpecGetter, 1+len(m.AzureMachine.Spec.DataDisks))
+	diskSpecs[0] = &disks.DiskSpec{
+		Name:          azure.GenerateOSDiskName(m.Name()),
+		ResourceGroup: m.ResourceGroup(),
 	}
 
 	for i, dd := range m.AzureMachine.Spec.DataDisks {
-		disks[i+1] = azure.DiskSpec{Name: azure.GenerateDataDiskName(m.Name(), dd.NameSuffix)}
+		diskSpecs[i+1] = &disks.DiskSpec{
+			Name:          azure.GenerateDataDiskName(m.Name(), dd.NameSuffix),
+			ResourceGroup: m.ResourceGroup(),
+		}
 	}
-	return disks
+	return diskSpecs
 }
 
 // RoleAssignmentSpecs returns the role assignment specs.

@@ -96,6 +96,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
 				s.SetProviderID("azure://test-vm-id")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
 				mnic.Get(gomockinternal.AContext(), "test-group", "nic-1").Return(network.Interface{
@@ -139,6 +140,7 @@ func TestReconcileVM(t *testing.T) {
 				s.GetLongRunningOperationState("test-vm", serviceName)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeVMSpec).Return(nil, nil, internalError)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomockinternal.ErrStrEq(fmt.Sprintf("failed to create resource test-group/test-vm (service: virtualmachine): %s", internalError.Error())))
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomockinternal.ErrStrEq(fmt.Sprintf("failed to create resource test-group/test-vm (service: virtualmachine): %s", internalError.Error())))
 			},
 		},
 	}

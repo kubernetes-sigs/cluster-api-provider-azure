@@ -18,6 +18,7 @@ package disks
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -25,9 +26,30 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/v2/klogr"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks/mock_disks"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+)
+
+var (
+	diskSpec1 = DiskSpec{
+		Name:          "my-disk-1",
+		ResourceGroup: "my-group",
+	}
+
+	diskSpec2 = DiskSpec{
+		Name:          "my-disk-2",
+		ResourceGroup: "my-group",
+	}
+
+	fakeDiskSpecs = []azure.ResourceSpecGetter{
+		&diskSpec1,
+		&diskSpec2,
+	}
+
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	notFoundError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")
 )
 
 func TestDeleteDisk(t *testing.T) {
@@ -41,17 +63,14 @@ func TestDeleteDisk(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.DiskSpecs().Return([]azure.DiskSpec{
-					{
-						Name: "my-disk-1",
-					},
-					{
-						Name: "honk-disk",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-disk-1")
-				m.Delete(gomockinternal.AContext(), "my-rg", "honk-disk")
+				s.DiskSpecs().Return(fakeDiskSpecs)
+				gomock.InOrder(
+					s.GetLongRunningOperationState("my-disk-1", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &diskSpec1).Return(nil, nil),
+					s.GetLongRunningOperationState("my-disk-2", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &diskSpec2).Return(nil, nil),
+					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, nil),
+				)
 			},
 		},
 		{
@@ -59,34 +78,29 @@ func TestDeleteDisk(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.DiskSpecs().Return([]azure.DiskSpec{
-					{
-						Name: "my-disk-1",
-					},
-					{
-						Name: "my-disk-2",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-disk-2").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				s.DiskSpecs().Return(fakeDiskSpecs)
+				gomock.InOrder(
+					s.GetLongRunningOperationState("my-disk-1", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &diskSpec1).Return(nil, notFoundError),
+					s.GetLongRunningOperationState("my-disk-2", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &diskSpec2).Return(nil, nil),
+					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, nil),
+				)
 			},
 		},
 		{
 			name:          "error while trying to delete the disk",
-			expectedError: "failed to delete disk my-disk-1 in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expectedError: "failed to delete resource my-group/my-disk-1 (service: disks): #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.DiskSpecs().Return([]azure.DiskSpec{
-					{
-						Name: "my-disk-1",
-					},
-					{
-						Name: "my-disk-2",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				s.DiskSpecs().Return(fakeDiskSpecs)
+				gomock.InOrder(
+					s.GetLongRunningOperationState("my-disk-1", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &diskSpec1).Return(nil, internalError),
+					s.GetLongRunningOperationState("my-disk-2", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &diskSpec2).Return(nil, nil),
+					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, gomockinternal.ErrStrEq(fmt.Sprintf("failed to delete resource my-group/my-disk-1 (service: disks): %s", internalError.Error()))),
+				)
 			},
 		},
 	}
