@@ -28,6 +28,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -400,4 +401,12 @@ func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClust
 	if bootstrapClusterProvider != nil {
 		bootstrapClusterProvider.Dispose(context.TODO())
 	}
+}
+
+// validateStableReleaseString validates the string format that declares "get be the latest stable release for this <Major>.<Minor>"
+// it should be called wherever we process a stable version string expression like "stable-1.22"
+func validateStableReleaseString(stableVersion string) bool {
+	stableReleaseFormat := regexp.MustCompile(`^stable-(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
+	matches := stableReleaseFormat.FindStringSubmatch(stableVersion)
+	return len(matches) > 0
 }

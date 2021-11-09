@@ -225,41 +225,13 @@ func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfi
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := settings.GetAuthorizer()
+	maxVersion, err := GetWorkingAKSKubernetesVersion(ctx, subscriptionID, location, e2eAKSVersion)
 	Expect(err).NotTo(HaveOccurred())
-	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
-	containerServiceClient.Authorizer = authorizer
-
-	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
-	if err != nil {
-		return "", err
-	}
-
-	// For 1.19 release this will be 1.19.0
-	baseVersion := fmt.Sprintf("%s.0", semver.MajorMinor(e2eAKSVersion))
-	maxVersion := fmt.Sprintf("%s.0", semver.MajorMinor(e2eAKSVersion))
-	for _, o := range *result.Orchestrators {
-		orchVersion := fmt.Sprintf("v%s", *o.OrchestratorVersion)
-		// test k8s version matches with one of  the supported aks versions.
-		if orchVersion == e2eAKSVersion {
-			return e2eAKSVersion, nil
-		}
-
-		// find the highest aks version for a given major.minor
-		if semver.MajorMinor(orchVersion) == semver.MajorMinor(maxVersion) && semver.Compare(orchVersion, maxVersion) > 0 {
-			maxVersion = orchVersion
-		}
-	}
-
-	// This means there is no version supported by AKS for this major.minor
-	if semver.Compare(maxVersion, baseVersion) == 0 {
-		return "", errors.New(fmt.Sprintf("No AKS versions found for %s", semver.MajorMinor(baseVersion)))
-	}
 
 	return maxVersion, nil
 }
 
-// byClusterOptions returns a set of ListOptions that allows to identify all the objects belonging to a Cluster.
+// byClusterOptions returns a set of ListOptions that will identify all the objects belonging to a Cluster.
 func byClusterOptions(name, namespace string) []client.ListOption {
 	return []client.ListOption{
 		client.InNamespace(namespace),
@@ -267,4 +239,67 @@ func byClusterOptions(name, namespace string) []client.ListOption {
 			clusterv1.ClusterLabelName: name,
 		},
 	}
+}
+
+// GetWorkingAKSKubernetesVersion returns an available Kubernetes version of AKS given a desired semver version, if possible.
+// If the desired version is available, we return it.
+// If the desired version is not available, we check for any available patch version using desired version's Major.Minor semver release.
+// If no versions are available in the desired version's Major.Minor semver release, we return an error.
+func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, location, version string) (string, error) {
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return "", err
+	}
+	authorizer, err := settings.GetAuthorizer()
+	if err != nil {
+		return "", err
+	}
+	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
+	containerServiceClient.Authorizer = authorizer
+	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
+	if err != nil {
+		return "", err
+	}
+
+	var latestStableVersionDesired bool
+	// We're not doing much input validation here,
+	// we assume that if the prefix is 'stable-' that the remainder of the string is in the format <Major>.<Minor>
+	if version[:7] == "stable-" && validateStableReleaseString(version) {
+		latestStableVersionDesired = true
+		// Form a fully valid semver version @ the initial patch release (".0")
+		version = fmt.Sprintf("%s.0", version[7:])
+	}
+
+	// semver comparisons below require a "v" prefix
+	if version[:1] != "v" {
+		version = fmt.Sprintf("v%s", version)
+	}
+	// Create a var of the patch ".0" equivalent of the inputted version
+	baseVersion := fmt.Sprintf("%s.0", semver.MajorMinor(version))
+	maxVersion := fmt.Sprintf("%s.0", semver.MajorMinor(version))
+	var foundWorkingVersion bool
+	for _, o := range *result.Orchestrators {
+		orchVersion := *o.OrchestratorVersion
+		// semver comparisons require a "v" prefix
+		if orchVersion[:1] != "v" {
+			orchVersion = fmt.Sprintf("v%s", *o.OrchestratorVersion)
+		}
+		// if the inputted version matches with an available AKS version we can return immediately
+		if orchVersion == version && !latestStableVersionDesired {
+			return version, nil
+		}
+
+		// or, keep track of the highest aks version for a given major.minor
+		if semver.MajorMinor(orchVersion) == semver.MajorMinor(maxVersion) && semver.Compare(orchVersion, maxVersion) >= 0 {
+			maxVersion = orchVersion
+			foundWorkingVersion = true
+		}
+	}
+
+	// This means there is no version supported by AKS for this major.minor
+	if !foundWorkingVersion {
+		return "", errors.New(fmt.Sprintf("No AKS versions found for %s", semver.MajorMinor(baseVersion)))
+	}
+
+	return maxVersion, nil
 }
