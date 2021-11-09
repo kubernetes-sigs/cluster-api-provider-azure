@@ -402,6 +402,7 @@ const (
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
 }`
+	//nolint:gosec
 	spWorkerNodeCloudConfig = `{
     "cloud": "AzurePublicCloud",
     "tenantId": "fooTenant",
