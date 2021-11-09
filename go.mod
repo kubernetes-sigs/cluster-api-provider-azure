@@ -25,14 +25,14 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/pflag v1.0.5
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.25.0
-	go.opentelemetry.io/otel v1.0.1
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.0.1
+	go.opentelemetry.io/otel v1.1.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.1.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.24.0
 	go.opentelemetry.io/otel/metric v0.24.0
-	go.opentelemetry.io/otel/sdk v1.0.1
+	go.opentelemetry.io/otel/sdk v1.1.0
 	go.opentelemetry.io/otel/sdk/export/metric v0.24.0
 	go.opentelemetry.io/otel/sdk/metric v0.24.0
-	go.opentelemetry.io/otel/trace v1.0.1
+	go.opentelemetry.io/otel/trace v1.1.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/mod v0.5.1
 	k8s.io/api v0.22.2
