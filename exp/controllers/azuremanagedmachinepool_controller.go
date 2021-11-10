@@ -55,7 +55,7 @@ type AzureManagedMachinePoolReconciler struct {
 	createAzureManagedMachinePoolService azureManagedMachinePoolServiceCreator
 }
 
-type azureManagedMachinePoolServiceCreator func(managedControlPlaneScope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolService
+type azureManagedMachinePoolServiceCreator func(managedControlPlaneScope *scope.ManagedControlPlaneScope) (*azureManagedMachinePoolService, error)
 
 // NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance.
 func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureManagedMachinePoolReconciler {
@@ -239,7 +239,12 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 		return reconcile.Result{}, err
 	}
 
-	if err := ammpr.createAzureManagedMachinePoolService(scope).Reconcile(ctx); err != nil {
+	svc, err := ammpr.createAzureManagedMachinePoolService(scope)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create an AzureManageMachinePoolService")
+	}
+
+	if err := svc.Reconcile(ctx); err != nil {
 		if IsAgentPoolVMSSNotFoundError(err) {
 			// if the underlying VMSS is not yet created, requeue for 30s in the future
 			return reconcile.Result{
@@ -266,7 +271,12 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Cont
 		// So, remove the finalizer.
 		controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
 	} else {
-		if err := ammpr.createAzureManagedMachinePoolService(scope).Delete(ctx); err != nil {
+		svc, err := ammpr.createAzureManagedMachinePoolService(scope)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "failed to create an AzureManageMachinePoolService")
+		}
+
+		if err := svc.Delete(ctx); err != nil {
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 		}
 		// Machine pool successfully deleted, remove the finalizer.
