@@ -24,7 +24,7 @@ set -o pipefail
 export TIMESTAMP="${TIMESTAMP:-$(date -u '+%Y-%m-%dT%H:%M:%SZ')}"
 export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-e2e"}"
 if [[ -n "${REPO_OWNER:-}" ]] && [[ -n "${REPO_NAME:-}" ]] && [[ -n "${PULL_BASE_SHA:-}" ]]; then
-    export BUILD_PROVENANCE="${REPO_OWNER:-}/${REPO_NAME:-}:${PULL_BASE_SHA:-}"
+    export BUILD_PROVENANCE="https://github.com/${REPO_OWNER:-}/${REPO_NAME:-}/pull/${PULL_NUMBER:-}/commits/${PULL_PULL_SHA:-}"
 else
     export BUILD_PROVENANCE="canary"
 fi
