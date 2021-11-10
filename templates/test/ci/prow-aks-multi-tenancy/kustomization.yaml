@@ -5,3 +5,4 @@ resources:
   - ../../../flavors/aks-multi-tenancy
 patchesStrategicMerge:
   - ../patches/tags-aks.yaml
+  - ./patch_location.yaml
