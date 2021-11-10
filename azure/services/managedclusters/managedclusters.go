@@ -37,8 +37,8 @@ import (
 )
 
 var (
-	defaultUser     string = "azureuser"
-	managedIdentity string = "msi"
+	defaultUser     = "azureuser"
+	managedIdentity = "msi"
 )
 
 // ManagedClusterScope defines the scope interface for a managed cluster.

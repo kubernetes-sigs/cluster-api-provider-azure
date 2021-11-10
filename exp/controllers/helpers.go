@@ -477,19 +477,19 @@ func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Lo
 
 // AzureClusterToAzureMachinePoolsFunc is a handler.MapFunc to be used to enqueue
 // requests for reconciliation of AzureMachinePools.
-func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, kClient client.Client, log logr.Logger) handler.MapFunc {
+func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, c client.Client, log logr.Logger) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
-		c, ok := o.(*infrav1.AzureCluster)
+		ac, ok := o.(*infrav1.AzureCluster)
 		if !ok {
 			log.Error(errors.Errorf("expected a AzureCluster but got a %T", o), "failed to get AzureCluster")
 			return nil
 		}
-		logWithValues := log.WithValues("AzureCluster", c.Name, "Namespace", c.Namespace)
+		logWithValues := log.WithValues("AzureCluster", ac.Name, "Namespace", ac.Namespace)
 
-		cluster, err := util.GetOwnerCluster(ctx, kClient, c.ObjectMeta)
+		cluster, err := util.GetOwnerCluster(ctx, c, ac.ObjectMeta)
 		switch {
 		case apierrors.IsNotFound(err) || cluster == nil:
 			logWithValues.V(4).Info("owning cluster not found")
@@ -501,7 +501,7 @@ func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, kClient client.Cli
 
 		labels := map[string]string{clusterv1.ClusterLabelName: cluster.Name}
 		ampl := &infrav1exp.AzureMachinePoolList{}
-		if err := kClient.List(ctx, ampl, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
+		if err := c.List(ctx, ampl, client.InNamespace(ac.Namespace), client.MatchingLabels(labels)); err != nil {
 			logWithValues.Error(err, "failed to list AzureMachinePools")
 			return nil
 		}
@@ -522,7 +522,7 @@ func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, kClient client.Cli
 
 // AzureMachinePoolToAzureMachinePoolMachines maps an AzureMachinePool to its child AzureMachinePoolMachines through
 // Cluster and MachinePool labels.
-func AzureMachinePoolToAzureMachinePoolMachines(ctx context.Context, kClient client.Client, log logr.Logger) handler.MapFunc {
+func AzureMachinePoolToAzureMachinePoolMachines(ctx context.Context, c client.Client, log logr.Logger) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
@@ -539,7 +539,7 @@ func AzureMachinePoolToAzureMachinePoolMachines(ctx context.Context, kClient cli
 			infrav1exp.MachinePoolNameLabel: amp.Name,
 		}
 		ampml := &infrav1exp.AzureMachinePoolMachineList{}
-		if err := kClient.List(ctx, ampml, client.InNamespace(amp.Namespace), client.MatchingLabels(labels)); err != nil {
+		if err := c.List(ctx, ampml, client.InNamespace(amp.Namespace), client.MatchingLabels(labels)); err != nil {
 			logWithValues.Error(err, "failed to list AzureMachinePoolMachines")
 			return nil
 		}
