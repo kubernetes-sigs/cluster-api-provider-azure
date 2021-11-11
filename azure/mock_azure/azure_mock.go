@@ -305,6 +305,20 @@ func (m *MockNetworkDescriber) EXPECT() *MockNetworkDescriberMockRecorder {
 	return m.recorder
 }
 
+// APIServerLB mocks base method.
+func (m *MockNetworkDescriber) APIServerLB() *v1beta1.LoadBalancerSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLB")
+	ret0, _ := ret[0].(*v1beta1.LoadBalancerSpec)
+	return ret0
+}
+
+// APIServerLB indicates an expected call of APIServerLB.
+func (mr *MockNetworkDescriberMockRecorder) APIServerLB() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLB", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLB))
+}
+
 // APIServerLBName mocks base method.
 func (m *MockNetworkDescriber) APIServerLBName() string {
 	m.ctrl.T.Helper()
@@ -864,6 +878,20 @@ func NewMockClusterScoper(ctrl *gomock.Controller) *MockClusterScoper {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClusterScoper) EXPECT() *MockClusterScoperMockRecorder {
 	return m.recorder
+}
+
+// APIServerLB mocks base method.
+func (m *MockClusterScoper) APIServerLB() *v1beta1.LoadBalancerSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLB")
+	ret0, _ := ret[0].(*v1beta1.LoadBalancerSpec)
+	return ret0
+}
+
+// APIServerLB indicates an expected call of APIServerLB.
+func (mr *MockClusterScoperMockRecorder) APIServerLB() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLB", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLB))
 }
 
 // APIServerLBName mocks base method.

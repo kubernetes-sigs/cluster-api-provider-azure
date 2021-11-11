@@ -18,7 +18,9 @@ package scope
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	autorestazure "github.com/Azure/go-autorest/autorest/azure"
@@ -32,7 +34,19 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 )
+
+func specArrayToString(specs []azure.ResourceSpecGetter) string {
+	var sb strings.Builder
+	sb.WriteString("[ ")
+	for _, spec := range specs {
+		sb.WriteString(fmt.Sprintf("%+v ", spec))
+	}
+	sb.WriteString("]")
+
+	return sb.String()
+}
 
 func TestMachineScope_Name(t *testing.T) {
 	tests := []struct {
@@ -283,7 +297,7 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		machineScope MachineScope
-		want         []azure.InboundNatSpec
+		want         []azure.ResourceSpecGetter
 	}{
 		{
 			name: "returns empty when infra is not control plane",
@@ -295,7 +309,7 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.InboundNatSpec{},
+			want: []azure.ResourceSpecGetter{},
 		},
 		{
 			name: "returns InboundNatSpec when infra is control plane",
@@ -313,29 +327,48 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup:  "my-rg",
+							SubscriptionID: "123",
 							NetworkSpec: infrav1.NetworkSpec{
 								APIServerLB: infrav1.LoadBalancerSpec{
 									Name: "foo-loadbalancer",
+									FrontendIPs: []infrav1.FrontendIP{
+										{
+											Name: "foo-frontend-ip",
+										},
+									},
 								},
 							},
 						},
 					},
 				},
 			},
-			want: []azure.InboundNatSpec{
-				{
-					Name:             "machine-name",
-					LoadBalancerName: "foo-loadbalancer",
+			want: []azure.ResourceSpecGetter{
+				&inboundnatrules.InboundNatSpec{
+					Name:                      "machine-name",
+					LoadBalancerName:          "foo-loadbalancer",
+					ResourceGroup:             "my-rg",
+					FrontendIPConfigurationID: to.StringPtr(azure.FrontendIPConfigID("123", "my-rg", "foo-loadbalancer", "foo-frontend-ip")),
+					PortsInUse:                make(map[int32]struct{}),
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.machineScope.InboundNatSpecs(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("InboundNatSpecs() = %v, want %v", got, tt.want)
+			t.Parallel()
+			if got := tt.machineScope.InboundNatSpecs(make(map[int32]struct{})); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("InboundNatSpecs() = %s, want %s", specArrayToString(got), specArrayToString(tt.want))
 			}
 		})
 	}
