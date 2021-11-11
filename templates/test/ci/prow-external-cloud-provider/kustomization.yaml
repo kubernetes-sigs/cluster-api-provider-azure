@@ -8,6 +8,7 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/cluster-cni.yaml
+  - ../patches/apiserver.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:
