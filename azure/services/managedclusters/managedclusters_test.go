@@ -51,6 +51,7 @@ func TestReconcile(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 					Fqdn:              pointer.String("my-managedcluster-fqdn"),
 					ProvisioningState: &provisioningstate,
+					NetworkProfile:    &containerservice.NetworkProfile{},
 				}}, nil)
 				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Times(1)
 				s.ClusterName().AnyTimes().Return("my-managedcluster")
@@ -102,7 +103,7 @@ func TestReconcile(t *testing.T) {
 				err := s.Reconcile(context.TODO())
 				if tc.expectedError != "" {
 					g.Expect(err).To(HaveOccurred())
-					g.Expect(err.Error()).To(HavePrefix(tc.expectedError))
+					g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 					g.Expect(err.Error()).To(ContainSubstring(provisioningstate))
 				} else {
 					g.Expect(err).NotTo(HaveOccurred())

@@ -22,8 +22,17 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -35,14 +44,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // AzureManagedMachinePoolReconciler reconciles an AzureManagedMachinePool object.
@@ -188,10 +189,10 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 		return reconcile.Result{}, err
 	}
 
-	// For non-system node pools, we wait for the control plane to be
-	// initialized, otherwise Azure API will return an error for node pool
-	// CreateOrUpdate request.
-	if infraPool.Spec.Mode != string(infrav1exp.NodePoolModeSystem) && !controlPlane.Status.Initialized {
+	// Upon first create of an AKS service, the node pools are provided to the CreateOrUpdate call. After the initial
+	// create of the control plane and node pools, the control plane will transition to initialized. After the control
+	// plane is initialized, we can proceed to reconcile managed machine pools.
+	if !controlPlane.Status.Initialized {
 		log.Info("AzureManagedControlPlane is not initialized")
 		return reconcile.Result{}, nil
 	}
@@ -240,18 +241,29 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 	}
 
 	if err := ammpr.createAzureManagedMachinePoolService(scope).Reconcile(ctx); err != nil {
-		if IsAgentPoolVMSSNotFoundError(err) {
-			// if the underlying VMSS is not yet created, requeue for 30s in the future
-			return reconcile.Result{
-				RequeueAfter: 30 * time.Second,
-			}, nil
+		// Handle transient and terminal errors
+		log := scope.WithValues("name", scope.InfraMachinePool.Name, "namespace", scope.InfraMachinePool.Namespace)
+		var reconcileError azure.ReconcileError
+		if errors.As(err, &reconcileError) {
+			if reconcileError.IsTerminal() {
+				log.Error(err, "failed to reconcile AzureManagedMachinePool")
+				return reconcile.Result{}, nil
+			}
+
+			if reconcileError.IsTransient() {
+				log.V(4).Info("requeuing due to transient transient failure", "error", err)
+				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
+			}
+
+			return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureManagedMachinePool")
 		}
+
 		return reconcile.Result{}, errors.Wrapf(err, "error creating AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 	}
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	scope.InfraMachinePool.Status.Ready = true
-
+	ammpr.Recorder.Eventf(scope.InfraMachinePool, corev1.EventTypeNormal, "AzureManagedMachinePool available", "agent pool successfully reconciled")
 	return reconcile.Result{}, nil
 }
 

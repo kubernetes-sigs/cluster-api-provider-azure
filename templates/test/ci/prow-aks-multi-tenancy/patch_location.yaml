@@ -1,0 +1,11 @@
+# TODO(@devigned) remove this patch once the AKS / VMSS list issue from
+# https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1800
+
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  location: northcentralus

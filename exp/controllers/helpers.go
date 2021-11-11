@@ -414,7 +414,7 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(ctx context.Context, c client.
 		ammp := &infrav1exp.AzureManagedMachinePool{}
 		key := types.NamespacedName{Namespace: infraMachinePoolRef.Namespace, Name: infraMachinePoolRef.Name}
 		if err := c.Get(ctx, key, ammp); err != nil {
-			log.Error(err, "failed to fetch azure managed machine pool for Machinepool: %s", infraMachinePoolRef.Name)
+			log.Error(err, fmt.Sprintf("failed to fetch azure managed machine pool for Machinepool: %s", infraMachinePoolRef.Name))
 			// If we get here, we might want to reconcile but aren't sure.
 			// Do it anyway to be safe. Worst case we reconcile a few extra times with no-ops.
 			return []reconcile.Request{

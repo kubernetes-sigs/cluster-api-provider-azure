@@ -19,13 +19,12 @@ package agentpools
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -59,7 +58,7 @@ func New(scope ManagedMachinePoolScope) *Service {
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
+	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
 		"agentpools.Service.Reconcile",
 	)
@@ -92,15 +91,17 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	isCreate := azure.ResourceNotFound(err)
 	if isCreate {
 		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
-		if err != nil {
+		if err != nil && azure.ResourceNotFound(err) {
+			return azure.WithTransientError(errors.Wrap(err, "agent pool dependent resource does not exist yet"), 20*time.Second)
+		} else if err != nil {
 			return errors.Wrap(err, "failed to create or update agent pool")
 		}
 	} else {
 		ps := *existingPool.ManagedClusterAgentPoolProfileProperties.ProvisioningState
 		if ps != string(infrav1alpha4.Canceled) && ps != string(infrav1alpha4.Failed) && ps != string(infrav1alpha4.Succeeded) {
 			msg := fmt.Sprintf("Unable to update existing agent pool in non terminal state. Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
-			klog.V(2).Infof(msg)
-			return errors.New(msg)
+			log.V(2).Info(msg)
+			return azure.WithTransientError(errors.New(msg), 20*time.Second)
 		}
 
 		// Normalize individual agent pools to diff in case we need to update
@@ -123,13 +124,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// Diff and check if we require an update
 		diff := cmp.Diff(existingProfile, normalizedProfile)
 		if diff != "" {
-			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
+			log.V(2).Info(fmt.Sprintf("Update required (+new -old):\n%s", diff))
 			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
 			if err != nil {
 				return errors.Wrap(err, "failed to create or update agent pool")
 			}
 		} else {
-			klog.V(2).Infof("Normalized and desired agent pool matched, no update needed")
+			log.V(2).Info("Normalized and desired agent pool matched, no update needed")
 		}
 	}
 
@@ -138,7 +139,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
+	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
 		"agentpools.Service.Delete",
 	)
@@ -146,7 +147,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	agentPoolSpec := s.scope.AgentPoolSpec()
 
-	klog.V(2).Infof("deleting agent pool  %s ", agentPoolSpec.Name)
+	log.V(2).Info(fmt.Sprintf("deleting agent pool  %s ", agentPoolSpec.Name))
 	err := s.Client.Delete(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
@@ -156,6 +157,6 @@ func (s *Service) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete agent pool %s in resource group %s", agentPoolSpec.Name, agentPoolSpec.ResourceGroup)
 	}
 
-	klog.V(2).Infof("Successfully deleted agent pool %s ", agentPoolSpec.Name)
+	log.V(2).Info(fmt.Sprintf("Successfully deleted agent pool %s ", agentPoolSpec.Name))
 	return nil
 }
