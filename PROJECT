@@ -20,3 +20,12 @@ resources:
 - group: infrastructure
   version: v1alpha4
   kind: AzureMachineTemplate
+- group: infrastructure
+  version: v1beta1
+  kind: AzureMachine
+- group: infrastructure
+  version: v1beta1
+  kind: AzureCluster
+- group: infrastructure
+  version: v1beta1
+  kind: AzureMachineTemplate
