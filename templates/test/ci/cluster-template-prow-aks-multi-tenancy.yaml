@@ -32,7 +32,7 @@ spec:
     kind: AzureClusterIdentity
     name: ${CLUSTER_IDENTITY_NAME}
     namespace: ${CLUSTER_IDENTITY_NAMESPACE}
-  location: northcentralus
+  location: ${AZURE_LOCATION}
   resourceGroupName: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}

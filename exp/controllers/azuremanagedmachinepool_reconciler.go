@@ -74,12 +74,21 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 }
 
 // newAzureManagedMachinePoolService populates all the services based on input scope.
-func newAzureManagedMachinePoolService(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolService {
+func newAzureManagedMachinePoolService(scope *scope.ManagedControlPlaneScope) (*azureManagedMachinePoolService, error) {
+	var authorizer azure.Authorizer = scope
+	if scope.Location() != "" {
+		regionalAuthorizer, err := azure.WithRegionalBaseURI(scope, scope.Location())
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create a regional authorizer")
+		}
+		authorizer = regionalAuthorizer
+	}
+
 	return &azureManagedMachinePoolService{
 		scope:         scope,
 		agentPoolsSvc: agentpools.New(scope),
-		scaleSetsSvc:  scalesets.NewClient(scope),
-	}
+		scaleSetsSvc:  scalesets.NewClient(authorizer),
+	}, nil
 }
 
 // Reconcile reconciles all the services in a predetermined order.
