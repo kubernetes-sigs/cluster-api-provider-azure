@@ -18,100 +18,101 @@ package availabilitysets
 
 import (
 	"context"
-	"errors"
+	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/pkg/errors"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+)
+
+var (
+	fakeFaultDomainCount = 3
+	fakeSku              = resourceskus.SKU{
+		Capabilities: &[]compute.ResourceSkuCapabilities{
+			{
+				Name:  to.StringPtr(resourceskus.MaximumPlatformFaultDomainCount),
+				Value: to.StringPtr(strconv.Itoa(fakeFaultDomainCount)),
+			},
+		},
+	}
+	fakeSetSpec = AvailabilitySetSpec{
+		Name:           "test-as",
+		ResourceGroup:  "test-rg",
+		ClusterName:    "test-cluster",
+		Location:       "test-location",
+		SKU:            &fakeSku,
+		AdditionalTags: map[string]string{},
+	}
+	fakeSetSpecMissing = AvailabilitySetSpec{
+		Name:           "test-as",
+		ResourceGroup:  "test-rg",
+		ClusterName:    "test-cluster",
+		Location:       "test-location",
+		SKU:            nil,
+		AdditionalTags: map[string]string{},
+	}
+	internalError  = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	parameterError = errors.Errorf("some error with parameters")
+	notFoundError  = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")
+	fakeSetWithVMs = compute.AvailabilitySet{
+		AvailabilitySetProperties: &compute.AvailabilitySetProperties{
+			VirtualMachines: &[]compute.SubResource{
+				{ID: to.StringPtr("vm-id")},
+			},
+		},
+	}
 )
 
 func TestReconcileAvailabilitySets(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder)
-		setupSKUs     func(svc *Service)
+		expect        func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "create or update availability set",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", true)
-				s.ResourceGroup().Return("my-rg")
-				s.ClusterName().Return("cl-name")
-				s.AdditionalTags().Return(map[string]string{})
-				s.Location().Return("test-location")
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "as-name",
-					compute.AvailabilitySet{
-						Sku: &compute.Sku{Name: to.StringPtr("Aligned")},
-						AvailabilitySetProperties: &compute.AvailabilitySetProperties{
-							PlatformFaultDomainCount: pointer.Int32Ptr(3),
-						},
-						Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_cl-name": to.StringPtr("owned"),
-							"sigs.k8s.io_cluster-api-provider-azure_role": to.StringPtr("common"), "Name": to.StringPtr("as-name")},
-						Location: to.StringPtr("test-location"),
-					}).Return(compute.AvailabilitySet{}, nil)
-			},
-			setupSKUs: func(svc *Service) {
-				skus := []compute.ResourceSku{
-					{
-						Name: to.StringPtr("Aligned"),
-						Kind: to.StringPtr(string(resourceskus.AvailabilitySets)),
-						Capabilities: &[]compute.ResourceSkuCapabilities{
-							{
-								Name:  to.StringPtr(resourceskus.MaximumPlatformFaultDomainCount),
-								Value: to.StringPtr("3"),
-							},
-						},
-					},
-				}
-				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
-				svc.resourceSKUCache = resourceSkusCache
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpec)
+				r.CreateResource(gomockinternal.AContext(), &fakeSetSpec, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "noop if the machine does not need to be assigned an availability set (machines without a deployment)",
+			name:          "noop if no availability set spec is found",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", false)
-			},
-			setupSKUs: func(svc *Service) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(nil)
+				s.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "return error",
-			expectedError: "failed to create availability set as-name: something went wrong",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", true)
-				s.ResourceGroup().Return("my-rg")
-				s.ClusterName().Return("cl-name")
-				s.AdditionalTags().Return(map[string]string{})
-				s.Location().Return("test-location")
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "as-name",
-					gomock.AssignableToTypeOf(compute.AvailabilitySet{})).Return(compute.AvailabilitySet{}, errors.New("something went wrong"))
+			name:          "missing required value in availability set spec",
+			expectedError: "some error with parameters",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpecMissing)
+				r.CreateResource(gomockinternal.AContext(), &fakeSetSpecMissing, serviceName).Return(nil, parameterError)
+				s.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, parameterError)
 			},
-			setupSKUs: func(svc *Service) {
-				skus := []compute.ResourceSku{
-					{
-						Name: to.StringPtr("Aligned"),
-						Kind: to.StringPtr(string(resourceskus.AvailabilitySets)),
-						Capabilities: &[]compute.ResourceSkuCapabilities{
-							{
-								Name:  to.StringPtr(resourceskus.MaximumPlatformFaultDomainCount),
-								Value: to.StringPtr("3"),
-							},
-						},
-					},
-				}
-				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
-				svc.resourceSKUCache = resourceSkusCache
+		},
+		{
+			name:          "error in creating availability set",
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpec)
+				r.CreateResource(gomockinternal.AContext(), &fakeSetSpec, serviceName).Return(nil, internalError)
+				s.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, internalError)
 			},
 		},
 	}
@@ -124,15 +125,14 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_availabilitysets.NewMockAvailabilitySetScope(mockCtrl)
-			clientMock := mock_availabilitysets.NewMockClient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				Client: clientMock,
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
-			tc.setupSKUs(s)
 
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
@@ -149,75 +149,94 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder)
+		expect        func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "deletes availability set",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", true)
-				s.ResourceGroup().Return("my-rg").Times(2)
-				m.Get(gomockinternal.AContext(), "my-rg", "as-name").
-					Return(compute.AvailabilitySet{AvailabilitySetProperties: &compute.AvailabilitySetProperties{}}, nil)
-				m.Delete(gomockinternal.AContext(), "my-rg", "as-name").Return(nil)
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpec)
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(compute.AvailabilitySet{}, nil),
+					r.DeleteResource(gomockinternal.AContext(), &fakeSetSpec, serviceName).Return(nil),
+					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil),
+				)
 			},
 		},
 		{
-			name:          "noop if AvailabilitySet returns false",
+			name:          "noop if AvailabilitySetSpec returns nil",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", false)
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(nil)
+				s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil)
+			},
+		},
+		{
+			name:          "delete proceeds with missing required value in availability set spec",
+			expectedError: "",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpecMissing)
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), &fakeSetSpecMissing).Return(compute.AvailabilitySet{}, nil),
+					r.DeleteResource(gomockinternal.AContext(), &fakeSetSpecMissing, serviceName).Return(nil),
+					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil),
+				)
 			},
 		},
 		{
 			name:          "noop if availability set has vms",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", true)
-				s.ResourceGroup().Return("my-rg")
-				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{
-					AvailabilitySetProperties: &compute.AvailabilitySetProperties{VirtualMachines: &[]compute.SubResource{
-						{ID: to.StringPtr("vm-id")}}}}, nil)
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpec)
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(fakeSetWithVMs, nil),
+					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil),
+				)
 			},
 		},
 		{
-			name:          "noop if availability set is already deleted - get returns 404",
+			name:          "availability set not found",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", true)
-				s.ResourceGroup().Return("my-rg")
-				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{},
-					autorest.DetailedError{StatusCode: 404})
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpec)
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(nil, notFoundError),
+					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil),
+				)
 			},
 		},
 		{
-			name:          "noop if availability set is already deleted - delete returns 404",
-			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", true)
-				s.ResourceGroup().Return("my-rg").Times(2)
-				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{}, nil)
-				m.Delete(gomockinternal.AContext(), "my-rg", "as-name").Return(autorest.DetailedError{StatusCode: 404})
+			name:          "error in getting availability set",
+			expectedError: "failed to get availability set test-as in resource group test-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpec)
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(nil, internalError),
+					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to get availability set test-as in resource group test-rg: #: Internal Server Error: StatusCode=500")),
+				)
 			},
 		},
 		{
-			name:          "returns error when availability set get fails",
-			expectedError: "failed to get availability set as-name in resource group my-rg: something went wrong",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", true)
-				s.ResourceGroup().Return("my-rg").Times(2)
-				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{},
-					errors.New("something went wrong"))
+			name:          "availability set get result is not an availability set",
+			expectedError: "string is not a compute.AvailabilitySet",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpec)
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return("not an availability set", nil),
+					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, gomockinternal.ErrStrEq("string is not a compute.AvailabilitySet")),
+				)
 			},
 		},
 		{
-			name:          "returns error when delete fails",
-			expectedError: "failed to delete availability set as-name in resource group my-rg: something went wrong",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySet().Return("as-name", true)
-				s.ResourceGroup().Return("my-rg").Times(3)
-				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{}, nil)
-				m.Delete(gomockinternal.AContext(), "my-rg", "as-name").Return(errors.New("something went wrong"))
+			name:          "error in deleting availability set",
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.AvailabilitySetSpec().Return(&fakeSetSpec)
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(compute.AvailabilitySet{}, nil),
+					r.DeleteResource(gomockinternal.AContext(), &fakeSetSpec, serviceName).Return(internalError),
+					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, internalError),
+				)
 			},
 		},
 	}
@@ -231,12 +250,14 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			defer mockCtrl.Finish()
 			scopeMock := mock_availabilitysets.NewMockAvailabilitySetScope(mockCtrl)
 			clientMock := mock_availabilitysets.NewMockClient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				Client: clientMock,
+				Scope:      scopeMock,
+				Client:     clientMock,
+				Reconciler: asyncMock,
 			}
 
 			err := s.Delete(context.TODO())

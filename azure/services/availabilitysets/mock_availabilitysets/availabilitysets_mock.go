@@ -26,6 +26,8 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // MockAvailabilitySetScope is a mock of AvailabilitySetScope interface.
@@ -79,21 +81,6 @@ func (mr *MockAvailabilitySetScopeMockRecorder) Authorizer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockAvailabilitySetScope)(nil).Authorizer))
 }
 
-// AvailabilitySet mocks base method.
-func (m *MockAvailabilitySetScope) AvailabilitySet() (string, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySet")
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// AvailabilitySet indicates an expected call of AvailabilitySet.
-func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySet", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySet))
-}
-
 // AvailabilitySetEnabled mocks base method.
 func (m *MockAvailabilitySetScope) AvailabilitySetEnabled() bool {
 	m.ctrl.T.Helper()
@@ -106,6 +93,20 @@ func (m *MockAvailabilitySetScope) AvailabilitySetEnabled() bool {
 func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySetEnabled))
+}
+
+// AvailabilitySetSpec mocks base method.
+func (m *MockAvailabilitySetScope) AvailabilitySetSpec() azure.ResourceSpecGetter {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetSpec")
+	ret0, _ := ret[0].(azure.ResourceSpecGetter)
+	return ret0
+}
+
+// AvailabilitySetSpec indicates an expected call of AvailabilitySetSpec.
+func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySetSpec() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetSpec", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySetSpec))
 }
 
 // BaseURI mocks base method.
@@ -192,6 +193,18 @@ func (mr *MockAvailabilitySetScopeMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockAvailabilitySetScope)(nil).ClusterName))
 }
 
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockAvailabilitySetScope) DeleteLongRunningOperationState(arg0, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockAvailabilitySetScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockAvailabilitySetScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+}
+
 // FailureDomains mocks base method.
 func (m *MockAvailabilitySetScope) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -204,6 +217,20 @@ func (m *MockAvailabilitySetScope) FailureDomains() []string {
 func (mr *MockAvailabilitySetScopeMockRecorder) FailureDomains() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockAvailabilitySetScope)(nil).FailureDomains))
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockAvailabilitySetScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret0, _ := ret[0].(*v1beta1.Future)
+	return ret0
+}
+
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockAvailabilitySetScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockAvailabilitySetScope)(nil).GetLongRunningOperationState), arg0, arg1)
 }
 
 // HashKey mocks base method.
@@ -248,6 +275,18 @@ func (mr *MockAvailabilitySetScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockAvailabilitySetScope)(nil).ResourceGroup))
 }
 
+// SetLongRunningOperationState mocks base method.
+func (m *MockAvailabilitySetScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockAvailabilitySetScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockAvailabilitySetScope)(nil).SetLongRunningOperationState), arg0)
+}
+
 // SubscriptionID mocks base method.
 func (m *MockAvailabilitySetScope) SubscriptionID() string {
 	m.ctrl.T.Helper()
@@ -274,4 +313,40 @@ func (m *MockAvailabilitySetScope) TenantID() string {
 func (mr *MockAvailabilitySetScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockAvailabilitySetScope)(nil).TenantID))
+}
+
+// UpdateDeleteStatus mocks base method.
+func (m *MockAvailabilitySetScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
+}
+
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockAvailabilitySetScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockAvailabilitySetScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockAvailabilitySetScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockAvailabilitySetScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockAvailabilitySetScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockAvailabilitySetScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockAvailabilitySetScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockAvailabilitySetScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }

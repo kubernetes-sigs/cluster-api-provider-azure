@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +38,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
@@ -94,9 +96,10 @@ type MachineScope struct {
 
 // MachineCache stores common machine information so we don't have to hit the API multiple times within the same reconcile loop.
 type MachineCache struct {
-	BootstrapData string
-	VMImage       *infrav1.Image
-	VMSKU         resourceskus.SKU
+	BootstrapData      string
+	VMImage            *infrav1.Image
+	VMSKU              resourceskus.SKU
+	availabilitySetSKU resourceskus.SKU
 }
 
 // InitMachineCache sets cached information about the machine to be used in the scope.
@@ -122,9 +125,16 @@ func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
 		m.cache.VMSKU, err = skuCache.Get(ctx, m.AzureMachine.Spec.VMSize, resourceskus.VirtualMachines)
 		if err != nil {
-			return azure.WithTerminalError(errors.Wrapf(err, "failed to get SKU %s in compute api", m.AzureMachine.Spec.VMSize))
+			return azure.WithTerminalError(errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachine.Spec.VMSize))
+		}
+
+		m.cache.availabilitySetSKU, err = skuCache.Get(ctx, string(compute.AvailabilitySetSkuTypesAligned), resourceskus.AvailabilitySets)
+		if err != nil {
+			// TODO: verify error message
+			return azure.WithTerminalError(errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(compute.AvailabilitySetSkuTypesAligned)))
 		}
 	}
 
@@ -361,6 +371,29 @@ func (m *MachineScope) ProviderID() string {
 		return ""
 	}
 	return parsed.String()
+}
+
+// AvailabilitySet returns the availability set for this machine if available.
+func (m *MachineScope) AvailabilitySetSpec() azure.ResourceSpecGetter {
+	availabilitySetName, ok := m.AvailabilitySet()
+	if !ok {
+		return nil
+	}
+
+	spec := &availabilitysets.AvailabilitySetSpec{
+		Name:           availabilitySetName,
+		ResourceGroup:  m.ResourceGroup(),
+		ClusterName:    m.ClusterName(),
+		Location:       m.Location(),
+		SKU:            nil,
+		AdditionalTags: m.AdditionalTags(),
+	}
+
+	if m.cache != nil {
+		spec.SKU = &m.cache.availabilitySetSKU
+	}
+
+	return spec
 }
 
 // AvailabilitySet returns the availability set for this machine if available.
