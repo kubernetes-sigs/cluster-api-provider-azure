@@ -21,7 +21,6 @@ aliases:
     - devigned
     - nader-ziada
   cluster-api-azure-reviewers:
-    - cpanato
     - juan-lee
     - mboersma
     - shysank
