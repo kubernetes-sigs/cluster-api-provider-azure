@@ -231,7 +231,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		}
 	}
 
-	// If Nat Gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+	// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
 	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
 		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))

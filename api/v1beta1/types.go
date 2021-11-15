@@ -160,10 +160,10 @@ type RouteTable struct {
 	Name string `json:"name"`
 }
 
-// NatGateway defines an Azure Nat Gateway.
+// NatGateway defines an Azure NAT gateway.
 // NAT gateway resources are part of Vnet NAT and provide outbound Internet connectivity for subnets of a virtual network.
 type NatGateway struct {
-	// ID is the Azure resource ID of the nat gateway.
+	// ID is the Azure resource ID of the NAT gateway.
 	// READ-ONLY
 	// +optional
 	ID   string `json:"id,omitempty"`
@@ -574,7 +574,7 @@ func (n *NetworkSpec) UpdateNodeSubnet(subnet SubnetSpec) {
 	}
 }
 
-// IsNatGatewayEnabled returns whether or not a Nat Gateway is enabled on the subnet.
+// IsNatGatewayEnabled returns whether or not a NAT gateway is enabled on the subnet.
 func (s SubnetSpec) IsNatGatewayEnabled() bool {
 	return s.NatGateway.Name != ""
 }

@@ -36,6 +36,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -138,7 +139,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 		publicIPSpecs = append(publicIPSpecs, nodeOutboundIPSpecs...)
 	}
 
-	// Public IP specs for node nat gateways
+	// Public IP specs for node NAT gateways
 	var nodeNatGatewayIPSpecs []azure.PublicIPSpec
 	for _, subnet := range s.NodeSubnets() {
 		if subnet.IsNatGatewayEnabled() {
@@ -220,20 +221,26 @@ func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	return routetables
 }
 
-// NatGatewaySpecs returns the node nat gateway.
-func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
-	var natGateways []azure.NatGatewaySpec
+// NatGatewaySpecs returns the node NAT gateway.
+func (s *ClusterScope) NatGatewaySpecs() []azure.ResourceSpecGetter {
+	natGatewaySet := make(map[string]struct{})
+	var natGateways []azure.ResourceSpecGetter
 
-	// We ignore the control plane nat gateway, as we will always use a LB to enable egress on the control plane.
+	// We ignore the control plane NAT gateway, as we will always use a LB to enable egress on the control plane.
 	for _, subnet := range s.NodeSubnets() {
 		if subnet.IsNatGatewayEnabled() {
-			natGateways = append(natGateways, azure.NatGatewaySpec{
-				Name: subnet.NatGateway.Name,
-				NatGatewayIP: infrav1.PublicIPSpec{
-					Name: subnet.NatGateway.NatGatewayIP.Name,
-				},
-				Subnet: subnet,
-			})
+			if _, ok := natGatewaySet[subnet.NatGateway.Name]; !ok {
+				natGatewaySet[subnet.NatGateway.Name] = struct{}{} // empty struct to represent hash set
+				natGateways = append(natGateways, &natgateways.NatGatewaySpec{
+					Name:           subnet.NatGateway.Name,
+					ResourceGroup:  s.ResourceGroup(),
+					SubscriptionID: s.SubscriptionID(),
+					Location:       s.Location(),
+					NatGatewayIP: infrav1.PublicIPSpec{
+						Name: subnet.NatGateway.NatGatewayIP.Name,
+					},
+				})
+			}
 		}
 	}
 
@@ -446,6 +453,15 @@ func (s *ClusterScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
 	}
 }
 
+func (s *ClusterScope) SetNatGatewayIDInSubnets(name string, id string) {
+	for _, subnet := range s.Subnets() {
+		if subnet.NatGateway.Name == name {
+			subnet.NatGateway.ID = id
+			s.SetSubnet(subnet)
+		}
+	}
+}
+
 // ControlPlaneRouteTable returns the cluster controlplane routetable.
 func (s *ClusterScope) ControlPlaneRouteTable() infrav1.RouteTable {
 	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
@@ -597,6 +613,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.NetworkInfrastructureReadyCondition,
 			infrav1.VnetPeeringReadyCondition,
 			infrav1.DisksReadyCondition,
+			infrav1.NATGatewaysReadyCondition,
 		),
 	)
 
@@ -609,6 +626,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.NetworkInfrastructureReadyCondition,
 			infrav1.VnetPeeringReadyCondition,
 			infrav1.DisksReadyCondition,
+			infrav1.NATGatewaysReadyCondition,
 		}})
 }
 

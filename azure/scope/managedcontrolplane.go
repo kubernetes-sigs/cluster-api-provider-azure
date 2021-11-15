@@ -230,7 +230,7 @@ func (s *ManagedControlPlaneScope) NodeRouteTable() infrav1.RouteTable {
 	return infrav1.RouteTable{}
 }
 
-// NodeNatGateway returns the cluster node nat gateway.
+// NodeNatGateway returns the cluster node NAT gateway.
 func (s *ManagedControlPlaneScope) NodeNatGateway() infrav1.NatGateway {
 	return infrav1.NatGateway{}
 }

@@ -69,10 +69,10 @@ spec:
       frontendIPsCount: 1
 ```
 
-## Node Outbound Nat Gateway
+## Node Outbound NAT gateway
 
-You can configure a [Nat Gateway](https://docs.microsoft.com/en-us/azure/virtual-network/nat-gateway-resource) in a subnet to enable outbound traffic in the cluster nodes by setting the Nat Gateway's name in the subnet configuration.
-A Public IP will also be created for the Nat Gateway.
+You can configure a [NAT gateway](https://docs.microsoft.com/en-us/azure/virtual-network/nat-gateway-resource) in a subnet to enable outbound traffic in the cluster nodes by setting the NAT gateway's name in the subnet configuration.
+A Public IP will also be created for the NAT gateway.
 
 Using this configuration, [a Load Balancer for the nodes outbound traffic](./node-outbound-lb.md) won't be created.
 
@@ -80,7 +80,7 @@ Using this configuration, [a Load Balancer for the nodes outbound traffic](./nod
 
 <h1> Warning </h1>
 
-CAPZ will ignore the Nat Gateway configuration in the control plane subnet because we always create a load balancer for the control plane, which we use for outbound traffic.
+CAPZ will ignore the NAT gateway configuration in the control plane subnet because we always create a load balancer for the control plane, which we use for outbound traffic.
 
 </aside>
 
@@ -107,5 +107,5 @@ spec:
   resourceGroup: cluster-natgw
   ```
 
-You can also define the Public IP name that should be used when creating the Public IP for the Nat Gateway.
+You can also define the Public IP name that should be used when creating the Public IP for the NAT gateway.
 If you don't specify it, CAPZ will automatically generate a name for it.

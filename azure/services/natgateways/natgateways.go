@@ -18,156 +18,112 @@ package natgateways
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-	autorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// NatGatewayScope defines the scope interface for nat gateway service.
+const serviceName = "natgateways"
+
+// NatGatewayScope defines the scope interface for NAT gateway service.
 type NatGatewayScope interface {
 	azure.ClusterScoper
-	NatGatewaySpecs() []azure.NatGatewaySpec
+	azure.AsyncStatusUpdater
+	SetNatGatewayIDInSubnets(natGatewayName string, natGatewayID string)
+	NatGatewaySpecs() []azure.ResourceSpecGetter
 }
 
 // Service provides operations on azure resources.
 type Service struct {
 	Scope NatGatewayScope
-	client
+	async.Reconciler
 }
 
 // New creates a new service.
 func New(scope NatGatewayScope) *Service {
+	client := newClient(scope)
 	return &Service{
-		Scope:  scope,
-		client: newClient(scope),
+		Scope:      scope,
+		Reconciler: async.New(scope, client, client),
 	}
 }
 
-// Reconcile gets/creates/updates a nat gateway.
-// Only when the Nat Gateway 'Name' property is defined we create the Nat Gateway: it's opt-in.
+// Reconcile gets/creates/updates a NAT gateway.
+// Only when the NAT gateway 'Name' property is defined we create the NAT gateway: it's opt-in.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Reconcile")
 	defer done()
 
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		log.V(4).Info("Skipping nat gateways reconcile in custom vnet mode")
+
+		s.Scope.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 		return nil
 	}
 
+	// We go through the list of NatGatewaySpecs to reconcile each one, independently of the resultingErr of the previous one.
+	// If multiple errors occur, we return the most pressing one
+	// order of precedence is: error creating -> creating in progress -> created (no error)
+	var resultingErr error
 	for _, natGatewaySpec := range s.Scope.NatGatewaySpecs() {
-		existingNatGateway, err := s.getExisting(ctx, natGatewaySpec)
-
-		switch {
-		case err != nil && !azure.ResourceNotFound(err):
-			return errors.Wrapf(err, "failed to get nat gateway %s in %s", natGatewaySpec.Name, s.Scope.ResourceGroup())
-		case err == nil:
-			// nat gateway already exists
-			log.V(4).Info("nat gateway already exists", "nat gateway", natGatewaySpec.Name)
-			natGatewaySpec.Subnet.NatGateway.ID = existingNatGateway.ID
-
-			if existingNatGateway.NatGatewayIP.Name == natGatewaySpec.NatGatewayIP.Name {
-				// Skip update for Nat Gateway as it exists with expected values
-				log.V(4).Info("Nat Gateway exists with expected values, skipping update", "nat gateway", natGatewaySpec.Name)
-				natGatewaySpec.Subnet.NatGateway = *existingNatGateway
-				s.Scope.SetSubnet(natGatewaySpec.Subnet)
-				continue
-			} else {
-				log.V(2).Info("updating NAT gateway IP name to match the spec", "old name", existingNatGateway.NatGatewayIP.Name, "desired name", natGatewaySpec.NatGatewayIP.Name)
-			}
-		default:
-			// nat gateway doesn't exist but its name was specified in the subnet, let's create it
-			log.V(2).Info("nat gateway doesn't exist yet, creating it", "nat gateway", natGatewaySpec.Name)
-		}
-
-		natGatewayToCreate := network.NatGateway{
-			Location: to.StringPtr(s.Scope.Location()),
-			Sku:      &network.NatGatewaySku{Name: network.Standard},
-			NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{
-				PublicIPAddresses: &[]network.SubResource{
-					{
-						ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), natGatewaySpec.NatGatewayIP.Name)),
-					},
-				},
-			},
-		}
-		err = s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), natGatewaySpec.Name, natGatewayToCreate)
+		result, err := s.CreateResource(ctx, natGatewaySpec, serviceName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create nat gateway %s in resource group %s", natGatewaySpec.Name, s.Scope.ResourceGroup())
+			if !azure.IsOperationNotDoneError(err) || resultingErr == nil {
+				resultingErr = err
+			}
 		}
-		log.V(2).Info("successfully created nat gateway", "nat gateway", natGatewaySpec.Name)
-		natGateway := infrav1.NatGateway{
-			ID:   azure.NatGatewayID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), natGatewaySpec.Name),
-			Name: natGatewaySpec.Name,
-			NatGatewayIP: infrav1.PublicIPSpec{
-				Name: natGatewaySpec.NatGatewayIP.Name,
-			},
+		if err == nil {
+			natGateway, ok := result.(network.NatGateway)
+			if !ok {
+				// Return out of loop since this would be an unexepcted fatal error
+				resultingErr = errors.Errorf("created resource %T is not a network.NatGateway", result)
+				break
+			}
+
+			// TODO: ideally we wouldn't need to set the subnet spec based on the result of the create operation
+			s.Scope.SetNatGatewayIDInSubnets(natGatewaySpec.ResourceName(), *natGateway.ID)
 		}
-		natGatewaySpec.Subnet.NatGateway = natGateway
-		s.Scope.SetSubnet(natGatewaySpec.Subnet)
 	}
-	return nil
+
+	s.Scope.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, resultingErr)
+	return resultingErr
 }
 
-func (s *Service) getExisting(ctx context.Context, spec azure.NatGatewaySpec) (*infrav1.NatGateway, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.getExisting")
-	defer done()
-
-	existingNatGateway, err := s.Get(ctx, s.Scope.ResourceGroup(), spec.Name)
-	if err != nil {
-		return nil, err
-	}
-	// We must have a non-nil, non-"empty" PublicIPAddresses
-	if !(existingNatGateway.PublicIPAddresses != nil && len(*existingNatGateway.PublicIPAddresses) > 0) {
-		return nil, errors.Wrap(err, "failed to parse PublicIPAddresses")
-	}
-	// TODO do we want to eventually handle NatGateway resources w/ more than one public IP address?
-	// For now we assume the first one is the significant one
-	publicIPAddressID := to.String((*existingNatGateway.PublicIPAddresses)[0].ID)
-	resource, err := autorest.ParseResourceID(publicIPAddressID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse Resource ID from PublicIPAddresses ID")
-	}
-	// We depend upon a non-empty ResourceName string
-	if resource.ResourceName == "" {
-		return nil, errors.Wrap(err, fmt.Sprintf("got unexpected ResourceName value from NatGateway PublicIpAddress, ResourceName=%s", resource.ResourceName))
-	}
-
-	return &infrav1.NatGateway{
-		ID:   to.String(existingNatGateway.ID),
-		Name: to.String(existingNatGateway.Name),
-		NatGatewayIP: infrav1.PublicIPSpec{
-			Name: resource.ResourceName,
-		},
-	}, nil
-}
-
-// Delete deletes the nat gateway with the provided name.
+// Delete deletes the NAT gateway with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Delete")
 	defer done()
 
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		log.V(4).Info("Skipping nat gateway deletion in custom vnet mode")
+
+		s.Scope.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 		return nil
 	}
-	for _, natGatewaySpec := range s.Scope.NatGatewaySpecs() {
-		log.V(2).Info("deleting nat gateway", "nat gateway", natGatewaySpec.Name)
-		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), natGatewaySpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
-			// already deleted
-			continue
-		}
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete nat gateway %s in resource group %s", natGatewaySpec.Name, s.Scope.ResourceGroup())
-		}
 
-		log.V(2).Info("successfully deleted nat gateway", "nat gateway", natGatewaySpec.Name)
+	var resultingErr error
+
+	// We go through the list of NatGatewaySpecs to delete each one, independently of the resultingErr of the previous one.
+	// If multiple errors occur, we return the most pressing one
+	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
+	for _, natGatewaySpec := range s.Scope.NatGatewaySpecs() {
+		if err := s.DeleteResource(ctx, natGatewaySpec, serviceName); err != nil {
+			if !azure.IsOperationNotDoneError(err) || resultingErr == nil {
+				resultingErr = err
+			}
+		}
 	}
-	return nil
+	s.Scope.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, resultingErr)
+	return resultingErr
 }

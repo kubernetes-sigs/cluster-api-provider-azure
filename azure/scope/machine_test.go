@@ -1306,7 +1306,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 		want         []azure.NICSpec
 	}{
 		{
-			name: "Node Machine with no nat gateway and no public IP address",
+			name: "Node Machine with no NAT gateway and no public IP address",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					Cluster: &clusterv1.Cluster{
@@ -1385,7 +1385,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			},
 		},
 		{
-			name: "Node Machine with nat gateway",
+			name: "Node Machine with NAT gateway",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					Cluster: &clusterv1.Cluster{
