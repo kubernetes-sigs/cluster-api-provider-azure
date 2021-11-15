@@ -96,7 +96,7 @@ func (s *Service) ensureAzureBastionDeleted(ctx context.Context, azureBastionSpe
 	log.V(2).Info("deleting bastion host", "bastion", azureBastionSpec.Name)
 
 	err := s.client.Delete(ctx, s.Scope.ResourceGroup(), azureBastionSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
+	if azure.ResourceNotFound(err) {
 		// Resource already deleted, all good.
 	} else if err != nil {
 		return errors.Wrapf(err, "failed to delete Azure Bastion %s in resource group %s", azureBastionSpec.Name, s.Scope.ResourceGroup())

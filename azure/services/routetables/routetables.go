@@ -111,7 +111,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	for _, routeTableSpec := range s.Scope.RouteTableSpecs() {
 		log.V(2).Info("deleting route table", "route table", routeTableSpec.Name)
 		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
+		if azure.ResourceNotFound(err) {
 			// already deleted
 			continue
 		}

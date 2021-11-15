@@ -156,7 +156,11 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer done()
 
 	managed, err := s.Scope.IsVnetManaged(ctx)
-	if err != nil {
+	if azure.ResourceNotFound(err) {
+		// if the vnet doesn't exist, then we don't need to delete the nat gateways
+		// since nat gateways are a sub resource of the vnet, they must have been already deleted as well.
+		return nil
+	} else if err != nil {
 		return errors.Wrap(err, "failed to check if vnet is managed")
 	} else if !managed {
 		log.V(4).Info("Skipping nat gateway deletion in custom vnet mode")
@@ -165,7 +169,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	for _, natGatewaySpec := range s.Scope.NatGatewaySpecs() {
 		log.V(2).Info("deleting nat gateway", "nat gateway", natGatewaySpec.Name)
 		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), natGatewaySpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
+		if azure.ResourceNotFound(err) {
 			// already deleted
 			continue
 		}

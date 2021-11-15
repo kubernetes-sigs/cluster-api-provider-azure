@@ -73,10 +73,11 @@ func (s *Service) Delete(ctx context.Context) error {
 	// If multiple errors occur, we return the most pressing one
 	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
 	for _, diskSpec := range s.Scope.DiskSpecs() {
-		if err := s.DeleteResource(ctx, diskSpec, serviceName); err != nil {
-			if !azure.IsOperationNotDoneError(err) || result == nil {
-				result = err
-			}
+		s.Scope.V(2).Info("deleting disk", "disk", diskSpec.Name)
+		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), diskSpec.Name)
+		if azure.ResourceNotFound(err) {
+			// already deleted
+			continue
 		}
 	}
 	s.Scope.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, result)

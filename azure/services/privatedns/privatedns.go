@@ -129,7 +129,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		// Delete the private DNS zone, which also deletes all records.
 		log.V(2).Info("deleting private dns zone", "private dns zone", zoneSpec.ZoneName)
 		err := s.client.DeleteZone(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName)
-		if err != nil && azure.ResourceNotFound(err) {
+		if azure.ResourceNotFound(err) {
 			// already deleted
 			return nil
 		}

@@ -179,7 +179,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	for _, lbSpec := range s.Scope.LBSpecs() {
 		log.V(2).Info("deleting load balancer", "load balancer", lbSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), lbSpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
+		if azure.ResourceNotFound(err) {
 			// already deleted
 			continue
 		}

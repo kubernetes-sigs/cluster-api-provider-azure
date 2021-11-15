@@ -120,7 +120,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	as, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), availabilitySetName)
-	if err != nil && azure.ResourceNotFound(err) {
+	if azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
@@ -136,7 +136,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	log.V(2).Info("deleting availability set", "availability set", availabilitySetName)
 	err = s.Client.Delete(ctx, s.Scope.ResourceGroup(), availabilitySetName)
-	if err != nil && azure.ResourceNotFound(err) {
+	if azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}

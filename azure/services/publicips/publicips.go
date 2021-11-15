@@ -123,7 +123,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 		log.V(2).Info("deleting public IP", "public ip", ip.Name)
 		err = s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)
-		if err != nil && azure.ResourceNotFound(err) {
+		if azure.ResourceNotFound(err) {
 			// already deleted
 			continue
 		}
