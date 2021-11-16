@@ -90,6 +90,10 @@ fi
 AZURE_SSH_PUBLIC_KEY_B64=$(base64 "${AZURE_SSH_PUBLIC_KEY_FILE}" | tr -d '\r\n')
 export AZURE_SSH_PUBLIC_KEY_B64
 
+# Windows sets the public key via cloudbase-init which take the raw text as input
+AZURE_SSH_PUBLIC_KEY=$(< "${AZURE_SSH_PUBLIC_KEY_FILE}" tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY
+
 cleanup() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
 }
