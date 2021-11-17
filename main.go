@@ -21,7 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof" //nolint
+	_ "net/http/pprof"
 	"os"
 	"time"
 

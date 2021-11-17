@@ -22,13 +22,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/env"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	// +kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -65,7 +64,7 @@ var _ = BeforeSuite(func(done Done) {
 	}()
 
 	Eventually(func() bool {
-		nodes := &v1.NodeList{}
+		nodes := &corev1.NodeList{}
 		if err := testEnv.Client.List(context.Background(), nodes); err != nil {
 			return false
 		}

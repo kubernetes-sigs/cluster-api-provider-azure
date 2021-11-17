@@ -280,8 +280,9 @@ func TestMSCorrelationIDSendDecorator(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	req = req.WithContext(ctx)
-	_, err = newSender.Do(req)
+	rsp, err := newSender.Do(req)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(rsp.Body.Close()).To(Succeed())
 	wg.Wait()
 	g.Expect(len(receivedReqs)).To(Equal(1))
 	receivedReq := receivedReqs[0]

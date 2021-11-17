@@ -18,7 +18,6 @@ package v1alpha3
 
 import (
 	apimachineryconversion "k8s.io/apimachinery/pkg/conversion"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -93,7 +92,7 @@ func Convert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage
 	return nil
 }
 
-func Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in *v1beta1.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s apimachineryconversion.Scope) error {
+func Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in *infrav1beta1.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s apimachineryconversion.Scope) error {
 	if err := autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in, out, s); err != nil {
 		return err
 	}
