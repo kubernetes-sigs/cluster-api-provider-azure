@@ -23,7 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -101,7 +101,7 @@ func TestConditions(t *testing.T) {
 			},
 			expectedConditions: []clusterv1.Condition{{
 				Type:     "VMRunning",
-				Status:   v1.ConditionFalse,
+				Status:   corev1.ConditionFalse,
 				Severity: clusterv1.ConditionSeverityInfo,
 				Reason:   "WaitingForClusterInfrastructure",
 			}},
@@ -133,7 +133,7 @@ func TestConditions(t *testing.T) {
 			},
 			expectedConditions: []clusterv1.Condition{{
 				Type:     "VMRunning",
-				Status:   v1.ConditionFalse,
+				Status:   corev1.ConditionFalse,
 				Severity: clusterv1.ConditionSeverityInfo,
 				Reason:   "WaitingForBootstrapData",
 			}},

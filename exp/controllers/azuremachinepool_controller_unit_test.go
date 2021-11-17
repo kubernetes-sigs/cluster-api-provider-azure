@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -114,7 +114,7 @@ func newAzureMachinePool(clusterName, poolName string) *infrav1exp.AzureMachineP
 
 func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv1exp.MachinePool {
 	m := newMachinePool(clusterName, poolName)
-	m.Spec.Template.Spec.InfrastructureRef = v1.ObjectReference{
+	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{
 		Kind:       "AzureMachinePool",
 		Namespace:  m.Namespace,
 		Name:       "azure" + poolName,
@@ -125,7 +125,7 @@ func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv
 
 func newManagedMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv1exp.MachinePool {
 	m := newMachinePool(clusterName, poolName)
-	m.Spec.Template.Spec.InfrastructureRef = v1.ObjectReference{
+	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{
 		Kind:       "AzureManagedMachinePool",
 		Namespace:  m.Namespace,
 		Name:       "azure" + poolName,

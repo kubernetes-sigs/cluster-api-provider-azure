@@ -29,16 +29,16 @@ func nowStamp() string {
 	return time.Now().Format(time.StampMilli)
 }
 
-func log(level string, format string, args ...interface{}) {
+func logf(level string, format string, args ...interface{}) {
 	fmt.Fprintf(ginkgo.GinkgoWriter, nowStamp()+": "+level+": "+format+"\n", args...)
 }
 
 // Logf prints info logs with a timestamp and formatting.
 func Logf(format string, args ...interface{}) {
-	log("INFO", format, args...)
+	logf("INFO", format, args...)
 }
 
 // Log prints info logs with a timestamp.
 func Log(message string) {
-	log("INFO", message)
+	logf("INFO", message)
 }

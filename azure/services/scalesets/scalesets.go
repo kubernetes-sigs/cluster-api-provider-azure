@@ -544,6 +544,7 @@ func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *i
 func (s *Service) generateExtensions() []compute.VirtualMachineScaleSetExtension {
 	extensions := make([]compute.VirtualMachineScaleSetExtension, len(s.Scope.VMSSExtensionSpecs()))
 	for i, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
+		extensionSpec := extensionSpec
 		extensions[i] = compute.VirtualMachineScaleSetExtension{
 			Name: &extensionSpec.Name,
 			VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
