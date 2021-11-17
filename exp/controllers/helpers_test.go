@@ -566,10 +566,10 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)
 				log := mock_log.NewMockLogger(mockCtrl)
-				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
+				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
 				log.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1beta1.MachinePool"), "failed to get AzureCluster")
 
-				return log, mockCtrl, kClient
+				return log, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(0))
@@ -583,11 +583,11 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)
 				log := mock_log.NewMockLogger(mockCtrl)
-				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
+				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
 				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(log)
 				log.EXPECT().V(4).Return(log)
 				log.EXPECT().Info("owning cluster not found")
-				return log, mockCtrl, kClient
+				return log, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(0))
@@ -607,9 +607,9 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 					newCluster(clusterName),
 					newAzureCluster(clusterName),
 				}
-				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
+				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
 				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(logWithValues)
-				return log, mockCtrl, kClient
+				return log, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(0))
@@ -631,9 +631,9 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 					newMachinePool(clusterName, "pool1"),
 					newMachinePool(clusterName, "pool2"),
 				}
-				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
+				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
 				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(logWithValues)
-				return log, mockCtrl, kClient
+				return log, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(0))
@@ -656,9 +656,9 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 					newAzureMachinePool(clusterName, "azurepool2"),
 					newMachinePoolWithInfrastructureRef(clusterName, "pool2"),
 				}
-				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
+				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
 				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(logWithValues)
-				return log, mockCtrl, kClient
+				return log, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(1))
@@ -677,10 +677,10 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
-			log, mockctrl, kClient := c.Setup(g, t)
+			log, mockctrl, fakeClient := c.Setup(g, t)
 			defer mockctrl.Finish()
 
-			f := AzureClusterToAzureMachinePoolsFunc(context.Background(), kClient, log)
+			f := AzureClusterToAzureMachinePoolsFunc(context.Background(), fakeClient, log)
 			reqs := f(c.MapObjectFactory(g))
 			c.Expect(g, reqs)
 		})
