@@ -65,6 +65,8 @@ const (
 	Timestamp                      = "TIMESTAMP"
 	AKSKubernetesVersion           = "AKS_KUBERNETES_VERSION"
 	ManagedClustersResourceType    = "managedClusters"
+	capiImagePublisher             = "cncf-upstream"
+	capiOfferName                  = "capi"
 )
 
 func Byf(format string, a ...interface{}) {
