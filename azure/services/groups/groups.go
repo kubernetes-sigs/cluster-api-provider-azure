@@ -19,6 +19,7 @@ package groups
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -33,6 +34,7 @@ const serviceName = "group"
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope GroupScope
+	async.Reconciler
 	client
 }
 
@@ -46,9 +48,11 @@ type GroupScope interface {
 
 // New creates a new service.
 func New(scope GroupScope) *Service {
+	client := newClient(scope)
 	return &Service{
-		Scope:  scope,
-		client: newClient(scope),
+		Scope:      scope,
+		client:     client,
+		Reconciler: async.New(scope, client, client),
 	}
 }
 
@@ -62,7 +66,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	groupSpec := s.Scope.GroupSpec()
 
-	_, err := async.CreateResource(ctx, s.Scope, s.client, groupSpec, serviceName)
+	_, err := s.CreateResource(ctx, groupSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, serviceName, err)
 	return err
 }
@@ -93,7 +97,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		return azure.ErrNotOwned
 	}
 
-	err = async.DeleteResource(ctx, s.Scope, s.client, groupSpec, serviceName)
+	err = s.DeleteResource(ctx, groupSpec, serviceName)
 	s.Scope.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, err)
 	return err
 }
@@ -105,10 +109,15 @@ func (s *Service) IsGroupManaged(ctx context.Context) (bool, error) {
 	defer done()
 
 	groupSpec := s.Scope.GroupSpec()
-	group, err := s.client.Get(ctx, groupSpec.ResourceName())
+	groupIface, err := s.client.Get(ctx, groupSpec)
 	if err != nil {
 		return false, err
 	}
+	group, ok := groupIface.(resources.Group)
+	if !ok {
+		return false, errors.Errorf("%T is not a resources.Group", groupIface)
+	}
+
 	tags := converters.MapToTags(group.Tags)
 	return tags.HasOwned(s.Scope.ClusterName()), nil
 }

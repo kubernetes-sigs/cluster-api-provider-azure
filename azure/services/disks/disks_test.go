@@ -18,7 +18,6 @@ package disks
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -28,6 +27,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks/mock_disks"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -49,25 +49,22 @@ var (
 	}
 
 	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
-	notFoundError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")
 )
 
 func TestDeleteDisk(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder)
+		expect        func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "delete the disk",
 			expectedError: "",
-			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
+			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
-					s.GetLongRunningOperationState("my-disk-1", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), &diskSpec1).Return(nil, nil),
-					s.GetLongRunningOperationState("my-disk-2", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), &diskSpec2).Return(nil, nil),
+					r.DeleteResource(gomockinternal.AContext(), &diskSpec1, serviceName).Return(nil),
+					r.DeleteResource(gomockinternal.AContext(), &diskSpec2, serviceName).Return(nil),
 					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, nil),
 				)
 			},
@@ -75,28 +72,24 @@ func TestDeleteDisk(t *testing.T) {
 		{
 			name:          "disk already deleted",
 			expectedError: "",
-			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
+			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
-					s.GetLongRunningOperationState("my-disk-1", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), &diskSpec1).Return(nil, notFoundError),
-					s.GetLongRunningOperationState("my-disk-2", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), &diskSpec2).Return(nil, nil),
+					r.DeleteResource(gomockinternal.AContext(), &diskSpec1, serviceName).Return(nil),
+					r.DeleteResource(gomockinternal.AContext(), &diskSpec2, serviceName).Return(nil),
 					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, nil),
 				)
 			},
 		},
 		{
 			name:          "error while trying to delete the disk",
-			expectedError: "failed to delete resource my-group/my-disk-1 (service: disks): #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockclientMockRecorder) {
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
-					s.GetLongRunningOperationState("my-disk-1", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), &diskSpec1).Return(nil, internalError),
-					s.GetLongRunningOperationState("my-disk-2", serviceName),
-					m.DeleteAsync(gomockinternal.AContext(), &diskSpec2).Return(nil, nil),
-					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, gomockinternal.ErrStrEq(fmt.Sprintf("failed to delete resource my-group/my-disk-1 (service: disks): %s", internalError.Error()))),
+					r.DeleteResource(gomockinternal.AContext(), &diskSpec1, serviceName).Return(internalError),
+					r.DeleteResource(gomockinternal.AContext(), &diskSpec2, serviceName).Return(nil),
+					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, internalError),
 				)
 			},
 		},
@@ -111,13 +104,13 @@ func TestDeleteDisk(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_disks.NewMockDiskScope(mockCtrl)
-			clientMock := mock_disks.NewMockclient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				client: clientMock,
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
 
 			err := s.Delete(context.TODO())

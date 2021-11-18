@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 
@@ -79,9 +80,18 @@ func (s *Service) reconcileVM(ctx context.Context, roleSpec azure.RoleAssignment
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "roleassignments.Service.reconcileVM")
 	defer done()
 
-	resultVM, err := s.virtualMachinesClient.Get(ctx, s.Scope.ResourceGroup(), roleSpec.MachineName)
+	spec := &virtualmachines.VMSpec{
+		Name:          roleSpec.MachineName,
+		ResourceGroup: s.Scope.ResourceGroup(),
+	}
+
+	resultVMIface, err := s.virtualMachinesClient.Get(ctx, spec)
 	if err != nil {
 		return errors.Wrap(err, "cannot get VM to assign role to system assigned identity")
+	}
+	resultVM, ok := resultVMIface.(compute.VirtualMachine)
+	if !ok {
+		return errors.Errorf("%T is not a compute.VirtualMachine", resultVMIface)
 	}
 
 	err = s.assignRole(ctx, roleSpec.Name, resultVM.Identity.PrincipalID)

@@ -205,9 +205,9 @@ func (m *MockCreator) EXPECT() *MockCreatorMockRecorder {
 }
 
 // CreateOrUpdateAsync mocks base method.
-func (m *MockCreator) CreateOrUpdateAsync(ctx context.Context, spec azure0.ResourceSpecGetter) (interface{}, azure.FutureAPI, error) {
+func (m *MockCreator) CreateOrUpdateAsync(ctx context.Context, spec azure0.ResourceSpecGetter, existingResource interface{}) (interface{}, azure.FutureAPI, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec)
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec, existingResource)
 	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(azure.FutureAPI)
 	ret2, _ := ret[2].(error)
@@ -215,9 +215,24 @@ func (m *MockCreator) CreateOrUpdateAsync(ctx context.Context, spec azure0.Resou
 }
 
 // CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
-func (mr *MockCreatorMockRecorder) CreateOrUpdateAsync(ctx, spec interface{}) *gomock.Call {
+func (mr *MockCreatorMockRecorder) CreateOrUpdateAsync(ctx, spec, existingResource interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockCreator)(nil).CreateOrUpdateAsync), ctx, spec)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockCreator)(nil).CreateOrUpdateAsync), ctx, spec, existingResource)
+}
+
+// Get mocks base method.
+func (m *MockCreator) Get(ctx context.Context, spec azure0.ResourceSpecGetter) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, spec)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockCreatorMockRecorder) Get(ctx, spec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCreator)(nil).Get), ctx, spec)
 }
 
 // IsDone mocks base method.
@@ -316,4 +331,56 @@ func (m *MockDeleter) Result(ctx context.Context, future azure.FutureAPI, future
 func (mr *MockDeleterMockRecorder) Result(ctx, future, futureType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Result", reflect.TypeOf((*MockDeleter)(nil).Result), ctx, future, futureType)
+}
+
+// MockReconciler is a mock of Reconciler interface.
+type MockReconciler struct {
+	ctrl     *gomock.Controller
+	recorder *MockReconcilerMockRecorder
+}
+
+// MockReconcilerMockRecorder is the mock recorder for MockReconciler.
+type MockReconcilerMockRecorder struct {
+	mock *MockReconciler
+}
+
+// NewMockReconciler creates a new mock instance.
+func NewMockReconciler(ctrl *gomock.Controller) *MockReconciler {
+	mock := &MockReconciler{ctrl: ctrl}
+	mock.recorder = &MockReconcilerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockReconciler) EXPECT() *MockReconcilerMockRecorder {
+	return m.recorder
+}
+
+// CreateResource mocks base method.
+func (m *MockReconciler) CreateResource(ctx context.Context, spec azure0.ResourceSpecGetter, serviceName string) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateResource", ctx, spec, serviceName)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateResource indicates an expected call of CreateResource.
+func (mr *MockReconcilerMockRecorder) CreateResource(ctx, spec, serviceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResource", reflect.TypeOf((*MockReconciler)(nil).CreateResource), ctx, spec, serviceName)
+}
+
+// DeleteResource mocks base method.
+func (m *MockReconciler) DeleteResource(ctx context.Context, spec azure0.ResourceSpecGetter, serviceName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteResource", ctx, spec, serviceName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteResource indicates an expected call of DeleteResource.
+func (mr *MockReconcilerMockRecorder) DeleteResource(ctx, spec, serviceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResource", reflect.TypeOf((*MockReconciler)(nil).DeleteResource), ctx, spec, serviceName)
 }

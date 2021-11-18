@@ -24,7 +24,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	resources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	azure "github.com/Azure/go-autorest/autorest/azure"
 	gomock "github.com/golang/mock/gomock"
 	azure0 "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -54,9 +53,9 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 }
 
 // CreateOrUpdateAsync mocks base method.
-func (m *Mockclient) CreateOrUpdateAsync(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (interface{}, azure.FutureAPI, error) {
+func (m *Mockclient) CreateOrUpdateAsync(arg0 context.Context, arg1 azure0.ResourceSpecGetter, arg2 interface{}) (interface{}, azure.FutureAPI, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2)
 	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(azure.FutureAPI)
 	ret2, _ := ret[2].(error)
@@ -64,9 +63,9 @@ func (m *Mockclient) CreateOrUpdateAsync(arg0 context.Context, arg1 azure0.Resou
 }
 
 // CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
-func (mr *MockclientMockRecorder) CreateOrUpdateAsync(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockclientMockRecorder) CreateOrUpdateAsync(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateAsync), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateAsync), arg0, arg1, arg2)
 }
 
 // DeleteAsync mocks base method.
@@ -85,10 +84,10 @@ func (mr *MockclientMockRecorder) DeleteAsync(arg0, arg1 interface{}) *gomock.Ca
 }
 
 // Get mocks base method.
-func (m *Mockclient) Get(arg0 context.Context, arg1 string) (resources.Group, error) {
+func (m *Mockclient) Get(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
-	ret0, _ := ret[0].(resources.Group)
+	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

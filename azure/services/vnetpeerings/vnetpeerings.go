@@ -38,14 +38,15 @@ type VnetPeeringScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope VnetPeeringScope
-	Client
+	async.Reconciler
 }
 
 // New creates a new service.
 func New(scope VnetPeeringScope) *Service {
+	Client := NewClient(scope)
 	return &Service{
-		Scope:  scope,
-		Client: NewClient(scope),
+		Scope:      scope,
+		Reconciler: async.New(scope, Client, Client),
 	}
 }
 
@@ -62,7 +63,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// order of precedence is: error creating -> creating in progress -> created (no error)
 	var result error
 	for _, peeringSpec := range s.Scope.VnetPeeringSpecs() {
-		if _, err := async.CreateResource(ctx, s.Scope, s.Client, peeringSpec, serviceName); err != nil {
+		if _, err := s.CreateResource(ctx, peeringSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
@@ -87,7 +88,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	// If multiple errors occur, we return the most pressing one
 	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
 	for _, peeringSpec := range s.Scope.VnetPeeringSpecs() {
-		if err := async.DeleteResource(ctx, s.Scope, s.Client, peeringSpec, serviceName); err != nil {
+		if err := s.DeleteResource(ctx, peeringSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
