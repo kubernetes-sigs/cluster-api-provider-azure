@@ -64,7 +64,7 @@ test/e2e/logs/*
 _artifacts
 
 # E2E test templates
-test/e2e/data/infrastructure-azure/v1alpha4/cluster-template*.yaml
+test/e2e/data/infrastructure-azure/v1beta1/cluster-template*.yaml
 
 # boilerplate_test output
 hack/boilerplate/__pycache__

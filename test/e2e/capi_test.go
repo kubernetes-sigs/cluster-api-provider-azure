@@ -30,6 +30,7 @@ import (
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	clusterctl "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
+	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 )
 
@@ -230,32 +231,83 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	if os.Getenv("LOCAL_ONLY") != "true" {
-		Context("upgrade from v1alpha3 to v1beta1, and scale workload clusters created in v1alpha3", func() {
-			BeforeEach(func() {
-				// Unset resource group and vnet env variables, since we capi test creates 2 clusters,
-				// and will result in both the clusters using the same vnet and resource group.
-				Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
-				Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
+		Context("API Version Upgrade", func() {
+			Context("upgrade from v1alpha3 to v1beta1, and scale workload clusters created in v1alpha3 ", func() {
+				BeforeEach(func() {
+					// Unset resource group and vnet env variables, since we capi test creates 2 clusters,
+					// and will result in both the clusters using the same vnet and resource group.
+					Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
+					Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
 
-				// Set base64 encoded values for v1alpha3 cluster.
-				Expect(os.Setenv("AZURE_CLIENT_ID_B64", base64.StdEncoding.EncodeToString([]byte(os.Getenv(AzureClientId))))).To(Succeed())
-				Expect(os.Setenv("AZURE_CLIENT_SECRET_B64", base64.StdEncoding.EncodeToString([]byte(os.Getenv(AzureClientSecret))))).To(Succeed())
-				Expect(os.Setenv("AZURE_SUBSCRIPTION_ID_B64", base64.StdEncoding.EncodeToString([]byte(os.Getenv("AZURE_SUBSCRIPTION_ID"))))).To(Succeed())
-				Expect(os.Setenv("AZURE_TENANT_ID_B64", base64.StdEncoding.EncodeToString([]byte(os.Getenv("AZURE_TENANT_ID"))))).To(Succeed())
+					// Set base64 encoded values for v1alpha3 cluster.
+					Expect(os.Setenv("AZURE_CLIENT_ID_B64", base64.StdEncoding.EncodeToString([]byte(os.Getenv(AzureClientId))))).To(Succeed())
+					Expect(os.Setenv("AZURE_CLIENT_SECRET_B64", base64.StdEncoding.EncodeToString([]byte(os.Getenv(AzureClientSecret))))).To(Succeed())
+					Expect(os.Setenv("AZURE_SUBSCRIPTION_ID_B64", base64.StdEncoding.EncodeToString([]byte(os.Getenv("AZURE_SUBSCRIPTION_ID"))))).To(Succeed())
+					Expect(os.Setenv("AZURE_TENANT_ID_B64", base64.StdEncoding.EncodeToString([]byte(os.Getenv("AZURE_TENANT_ID"))))).To(Succeed())
 
-				// Unset windows specific variables
-				Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
-				Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
+					// Unset windows specific variables
+					Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
+					Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
+				})
+				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
+					return capi_e2e.ClusterctlUpgradeSpecInput{
+						E2EConfig:             e2eConfig,
+						ClusterctlConfigPath:  clusterctlConfigPath,
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						ArtifactFolder:        artifactFolder,
+						SkipCleanup:           skipCleanup,
+					}
+				})
 			})
-			capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
-				return capi_e2e.ClusterctlUpgradeSpecInput{
-					E2EConfig:             e2eConfig,
-					ClusterctlConfigPath:  clusterctlConfigPath,
-					BootstrapClusterProxy: bootstrapClusterProxy,
-					ArtifactFolder:        artifactFolder,
-					SkipCleanup:           skipCleanup,
-				}
+
+			Context("upgrade from v1alpha4 to v1beta1, and scale workload clusters created in v1alpha4", func() {
+				BeforeEach(func() {
+					// Unset resource group and vnet env variables, since we capi test creates 2 clusters,
+					// and will result in both the clusters using the same vnet and resource group.
+					Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
+					Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
+
+					// Unset windows specific variables
+					Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
+					Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
+				})
+				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
+					return capi_e2e.ClusterctlUpgradeSpecInput{
+						E2EConfig:                 e2eConfig,
+						ClusterctlConfigPath:      clusterctlConfigPath,
+						BootstrapClusterProxy:     bootstrapClusterProxy,
+						ArtifactFolder:            artifactFolder,
+						SkipCleanup:               skipCleanup,
+						InitWithProvidersContract: "v1alpha4",
+						InitWithBinary:            "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/clusterctl-{OS}-{ARCH}",
+						PreInit:                   getPreInitFunc(ctx),
+					}
+				})
 			})
 		})
 	}
 })
+
+func getPreInitFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
+	return func(clusterProxy framework.ClusterProxy) {
+		spClientSecret := os.Getenv(AzureClientSecret)
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      IdentitySecretName,
+				Namespace: "default",
+				Labels: map[string]string{
+					clusterctl.ClusterctlMoveHierarchyLabelName: "true",
+				},
+			},
+			Type: corev1.SecretTypeOpaque,
+			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
+		}
+		err := clusterProxy.GetClient().Create(ctx, secret)
+		Expect(err).ToNot(HaveOccurred())
+
+		identityName := e2eConfig.GetVariable(ClusterIdentityName)
+		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentitySecretName, IdentitySecretName)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentitySecretNamespace, "default")).NotTo(HaveOccurred())
+	}
+}
