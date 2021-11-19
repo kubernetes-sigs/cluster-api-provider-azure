@@ -482,6 +482,7 @@ func parseImageSkuNames(skus []string) semver.Versions {
 func getLatestSkuForMinor(version string, skus semver.Versions) string {
 	isStable, match := validateStableReleaseString(version)
 	if isStable {
+		// if the version is in the format "stable-1.21", we find the latest 1.21.x version.
 		major, err := strconv.ParseUint(match[1], 10, 64)
 		Expect(err).NotTo(HaveOccurred())
 		minor, err := strconv.ParseUint(match[2], 10, 64)
@@ -493,11 +494,11 @@ func getLatestSkuForMinor(version string, skus semver.Versions) string {
 				break
 			}
 		}
-	} else {
-		v, err := semver.ParseTolerant(version)
-		Expect(err).NotTo(HaveOccurred())
+	} else if v, err := semver.ParseTolerant(version); err == nil {
+		// if the version is in the format "v1.21.2", we make sure we have an existing image for it.
 		Expect(skus).To(ContainElement(v), fmt.Sprintf("Provided Kubernetes version %s does not have a corresponding VM image in the capi offer", version))
 	}
+	// otherwise, we just return the version as-is. This allows for versions in other formats, such as "latest" or "latest-1.21".
 	return version
 }
 
