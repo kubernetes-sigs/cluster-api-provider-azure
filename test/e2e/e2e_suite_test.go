@@ -25,6 +25,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -33,6 +34,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/kubectl/pkg/describe"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
@@ -139,6 +142,11 @@ func (acp *AzureClusterProxy) CollectWorkloadClusterLogs(ctx context.Context, na
 	start = time.Now()
 	acp.collectActivityLogs(ctx, aboveMachinesPath)
 	Byf("Fetching activity logs took %s", time.Since(start).String())
+
+	Byf("Dumping workload cluster %s/%s Node info log", namespace, name)
+	start = time.Now()
+	acp.nodeInfo(ctx, namespace, name, outputPath)
+	Byf("Fetching node info  took %s", time.Since(start).String())
 }
 
 func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace string, name string, aboveMachinesPath string) {
@@ -186,6 +194,27 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 				}
 			}(pod, container)
 		}
+
+	}
+}
+
+func (acp *AzureClusterProxy) nodeInfo(ctx context.Context, namespace string, name string, outputLocation string) {
+	workload := acp.GetWorkloadCluster(ctx, namespace, name)
+	nodes := &corev1.NodeList{}
+	Expect(workload.GetClient().List(ctx, nodes)).To(Succeed())
+
+	for _, n := range nodes.Items {
+		nd := describe.NodeDescriber{Interface: workload.GetClientSet()}
+		nDescription, err := nd.Describe(metav1.NamespaceAll, n.Name, describe.DescriberSettings{ShowEvents: true})
+		if err != nil {
+			// best effort
+			Logf("unable to get node description for node ", n.Name)
+			return
+		}
+
+		logFile := path.Join(outputLocation, n.Name+"-describe.log")
+		Expect(os.MkdirAll(filepath.Dir(outputLocation), 0755)).To(Succeed())
+		Expect(ioutil.WriteFile(logFile, []byte(nDescription), 0644)).To(Succeed())
 	}
 }
 

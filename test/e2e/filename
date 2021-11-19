@@ -1,0 +1,60 @@
+Name:         local-path-provisioner-85494db59d-8867x
+Namespace:    local-path-storage
+Priority:     0
+Node:         capz-e2e-control-plane/172.18.0.3
+Start Time:   Tue, 16 Nov 2021 16:17:08 -0800
+Labels:       app=local-path-provisioner
+              pod-template-hash=85494db59d
+Annotations:  <none>
+Status:       Running
+IP:           10.244.0.5
+IPs:
+  IP:           10.244.0.5
+Controlled By:  ReplicaSet/local-path-provisioner-85494db59d
+Containers:
+  local-path-provisioner:
+    Container ID:  containerd://17d026bb134831d1c4ef35dda6776a06aa0c9485f2cceb8b076e705cd5860af2
+    Image:         docker.io/rancher/local-path-provisioner:v0.0.14
+    Image ID:      sha256:e422121c9c5f97623245b7e600eeb5e223ee623f21fa04da985ae71057d8d70b
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      local-path-provisioner
+      --debug
+      start
+      --helper-image
+      k8s.gcr.io/build-image/debian-base:buster-v1.7.2
+      --config
+      /etc/config/config.json
+    State:          Running
+      Started:      Tue, 16 Nov 2021 16:17:11 -0800
+    Ready:          True
+    Restart Count:  0
+    Environment:
+      POD_NAMESPACE:  local-path-storage (v1:metadata.namespace)
+    Mounts:
+      /etc/config/ from config-volume (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-97qgg (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  config-volume:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      local-path-config
+    Optional:  false
+  kube-api-access-97qgg:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              kubernetes.io/os=linux
+Tolerations:                 node-role.kubernetes.io/master:NoSchedule
+                             node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>

@@ -27,6 +27,9 @@ import (
 	"path"
 	"path/filepath"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubectl/pkg/describe"
+
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo"
@@ -132,6 +135,25 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	} else {
 		Byf("Dumping logs from the %q workload cluster", input.Cluster.Name)
 		input.ClusterProxy.CollectWorkloadClusterLogs(ctx, input.Cluster.Namespace, input.Cluster.Name, filepath.Join(input.ArtifactFolder, "clusters", input.Cluster.Name))
+	}
+
+	Byf("Taking snapshot of the pods in management cluster")
+	pods, err := input.ClusterProxy.GetClientSet().CoreV1().Pods(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	Expect(err).To(Succeed())
+
+	for _, p := range pods.Items {
+		pd := describe.PodDescriber{Interface: input.ClusterProxy.GetClientSet()}
+		pDescription, err := pd.Describe(p.Namespace, p.Name, describe.DescriberSettings{ShowEvents: true})
+		if err != nil {
+			// best effort
+			Logf("unable to get node description for pod ", p.Name)
+			return
+		}
+
+		bootstrapPath := filepath.Join(input.ArtifactFolder, "clusters", "bootstrap", "snapshot")
+		logFile := path.Join(bootstrapPath, "after-"+input.SpecName+"-"+p.Name+".log")
+		Expect(os.MkdirAll(filepath.Dir(bootstrapPath), 0755)).To(Succeed())
+		Expect(ioutil.WriteFile(logFile, []byte(pDescription), 0644)).To(Succeed())
 	}
 
 	Byf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
