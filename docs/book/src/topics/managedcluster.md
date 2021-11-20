@@ -245,6 +245,24 @@ spec:
     - 917056a9-8eb5-439c-g679-b34901ade75h # fake admin groupId
 ```
 
+### AKS Cluster Autoscaler
+
+Azure Kubernetes Service can be configured to use cluster autoscaler by specifying `scaling` spec in the `AzureManagedMachinePool`
+
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: System
+  osDiskSizeGB: 512
+  sku: Standard_D2s_v3
+  scaling:
+    minSize: 2
+    maxSize: 10
+```
+
 ### Use a public Standard Load Balancer
 
 A public Load Balancer when integrated with AKS serves two purposes:

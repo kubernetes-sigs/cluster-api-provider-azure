@@ -38,6 +38,7 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error { // 
 	}
 
 	dst.Spec.Name = restored.Spec.Name
+	dst.Spec.Scaling = restored.Spec.Scaling
 
 	return nil
 }

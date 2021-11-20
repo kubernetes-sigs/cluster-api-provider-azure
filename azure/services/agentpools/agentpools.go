@@ -76,6 +76,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			OrchestratorVersion: agentPoolSpec.Version,
 			VnetSubnetID:        &agentPoolSpec.VnetSubnetID,
 			Mode:                containerservice.AgentPoolMode(agentPoolSpec.Mode),
+			EnableAutoScaling:   agentPoolSpec.EnableAutoScaling,
+			MaxCount:            agentPoolSpec.MaxCount,
+			MinCount:            agentPoolSpec.MinCount,
 		},
 	}
 
@@ -110,6 +113,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Count:               existingPool.Count,
 				OrchestratorVersion: existingPool.OrchestratorVersion,
 				Mode:                existingPool.Mode,
+				EnableAutoScaling:   existingPool.EnableAutoScaling,
+				MinCount:            existingPool.MinCount,
+				MaxCount:            existingPool.MaxCount,
 			},
 		}
 
@@ -118,6 +124,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Count:               profile.Count,
 				OrchestratorVersion: profile.OrchestratorVersion,
 				Mode:                profile.Mode,
+				EnableAutoScaling:   profile.EnableAutoScaling,
+				MinCount:            profile.MinCount,
+				MaxCount:            profile.MaxCount,
 			},
 		}
 

@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -488,7 +489,7 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 		}
 
 		ammp := azure.AgentPoolSpec{
-			Name:         *pool.Spec.Name,
+			Name:         to.String(pool.Spec.Name),
 			SKU:          pool.Spec.SKU,
 			Replicas:     1,
 			OSDiskSizeGB: 0,
@@ -528,7 +529,7 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 	}
 
 	agentPoolSpec := azure.AgentPoolSpec{
-		Name:          *s.InfraMachinePool.Spec.Name,
+		Name:          to.String(s.InfraMachinePool.Spec.Name),
 		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
 		Cluster:       s.ControlPlane.Name,
 		SKU:           s.InfraMachinePool.Spec.SKU,
@@ -545,6 +546,12 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 
 	if s.InfraMachinePool.Spec.OSDiskSizeGB != nil {
 		agentPoolSpec.OSDiskSizeGB = *s.InfraMachinePool.Spec.OSDiskSizeGB
+	}
+
+	if s.InfraMachinePool.Spec.Scaling != nil {
+		agentPoolSpec.EnableAutoScaling = to.BoolPtr(true)
+		agentPoolSpec.MaxCount = s.InfraMachinePool.Spec.Scaling.MaxSize
+		agentPoolSpec.MinCount = s.InfraMachinePool.Spec.Scaling.MinSize
 	}
 
 	return agentPoolSpec

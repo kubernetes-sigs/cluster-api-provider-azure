@@ -879,6 +879,7 @@ func autoConvert_v1beta1_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMac
 	out.SKU = in.SKU
 	out.OSDiskSizeGB = (*int32)(unsafe.Pointer(in.OSDiskSizeGB))
 	out.ProviderIDList = *(*[]string)(unsafe.Pointer(&in.ProviderIDList))
+	// WARNING: in.Scaling requires manual conversion: does not exist in peer-type
 	return nil
 }
 
