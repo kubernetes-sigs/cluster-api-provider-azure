@@ -61,6 +61,9 @@ func TestManagedControlPlaneScope_Autoscaling(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+							Subnets: []infrav1.ManagedControlPlaneSubnet{{}},
+						},
 					},
 				},
 				MachinePool:      getMachinePool("pool0"),
@@ -96,6 +99,9 @@ func TestManagedControlPlaneScope_Autoscaling(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+							Subnets: []infrav1.ManagedControlPlaneSubnet{{}},
+						},
 					},
 				},
 				MachinePool:      getMachinePool("pool1"),
