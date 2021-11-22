@@ -90,6 +90,14 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
+	if !ensureStringSlicesAreEqual(r.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "AvailabilityZones"),
+				r.Spec.AvailabilityZones,
+				"field is immutable"))
+	}
+
 	if r.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Mode == string(NodePoolModeSystem) {
 		// validate for last system node pool
 		if err := r.validateLastSystemNodePool(client); err != nil {
@@ -161,4 +169,22 @@ func (r *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 		return errors.New("AKS Cluster must have at least one system pool")
 	}
 	return nil
+}
+
+func ensureStringSlicesAreEqual(a []string, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	m := map[string]bool{}
+	for _, v := range a {
+		m[v] = true
+	}
+
+	for _, v := range b {
+		if _, ok := m[v]; !ok {
+			return false
+		}
+	}
+	return true
 }

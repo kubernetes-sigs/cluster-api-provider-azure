@@ -196,6 +196,12 @@ spec:
             description: AzureManagedMachinePoolSpec defines the desired state of
               AzureManagedMachinePool.
             properties:
+              availabilityZones:
+                description: AvailabilityZones - Availability zones for nodes. Must
+                  use VirtualMachineScaleSets AgentPoolType.
+                items:
+                  type: string
+                type: array
               mode:
                 description: 'Mode - represents mode of an agent pool. Possible values
                   include: System, User.'

@@ -760,6 +760,11 @@ func (in *AzureManagedMachinePoolSpec) DeepCopyInto(out *AzureManagedMachinePool
 		*out = new(int32)
 		**out = **in
 	}
+	if in.AvailabilityZones != nil {
+		in, out := &in.AvailabilityZones, &out.AvailabilityZones
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.ProviderIDList != nil {
 		in, out := &in.ProviderIDList, &out.ProviderIDList
 		*out = make([]string, len(*in))

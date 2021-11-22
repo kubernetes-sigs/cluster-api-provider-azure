@@ -489,11 +489,12 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 		}
 
 		ammp := azure.AgentPoolSpec{
-			Name:         to.String(pool.Spec.Name),
-			SKU:          pool.Spec.SKU,
-			Replicas:     1,
-			OSDiskSizeGB: 0,
-			Mode:         pool.Spec.Mode,
+			Name:              to.String(pool.Spec.Name),
+			SKU:               pool.Spec.SKU,
+			Replicas:          1,
+			OSDiskSizeGB:      0,
+			Mode:              pool.Spec.Mode,
+			AvailabilityZones: pool.Spec.AvailabilityZones,
 		}
 
 		// Set optional values
@@ -541,7 +542,8 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 			s.ControlPlane.Spec.VirtualNetwork.Name,
 			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
-		Mode: s.InfraMachinePool.Spec.Mode,
+		Mode:              s.InfraMachinePool.Spec.Mode,
+		AvailabilityZones: s.InfraMachinePool.Spec.AvailabilityZones,
 	}
 
 	if s.InfraMachinePool.Spec.OSDiskSizeGB != nil {

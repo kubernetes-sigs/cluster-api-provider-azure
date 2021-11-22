@@ -235,13 +235,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	for i := range managedClusterSpec.AgentPools {
 		pool := managedClusterSpec.AgentPools[i]
 		profile := containerservice.ManagedClusterAgentPoolProfile{
-			Name:         &pool.Name,
-			VMSize:       &pool.SKU,
-			OsDiskSizeGB: &pool.OSDiskSizeGB,
-			Count:        &pool.Replicas,
-			Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
-			VnetSubnetID: &managedClusterSpec.VnetSubnetID,
-			Mode:         containerservice.AgentPoolMode(pool.Mode),
+			Name:              &pool.Name,
+			VMSize:            &pool.SKU,
+			OsDiskSizeGB:      &pool.OSDiskSizeGB,
+			Count:             &pool.Replicas,
+			Type:              containerservice.AgentPoolTypeVirtualMachineScaleSets,
+			VnetSubnetID:      &managedClusterSpec.VnetSubnetID,
+			Mode:              containerservice.AgentPoolMode(pool.Mode),
+			AvailabilityZones: &pool.AvailabilityZones,
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}

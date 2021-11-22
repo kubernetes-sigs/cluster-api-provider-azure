@@ -39,6 +39,7 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error { // 
 
 	dst.Spec.Name = restored.Spec.Name
 	dst.Spec.Scaling = restored.Spec.Scaling
+	dst.Spec.AvailabilityZones = restored.Spec.AvailabilityZones
 
 	return nil
 }

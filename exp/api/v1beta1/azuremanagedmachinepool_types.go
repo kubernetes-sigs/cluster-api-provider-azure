@@ -54,6 +54,10 @@ type AzureManagedMachinePoolSpec struct {
 	// +optional
 	OSDiskSizeGB *int32 `json:"osDiskSizeGB,omitempty"`
 
+	// AvailabilityZones - Availability zones for nodes. Must use VirtualMachineScaleSets AgentPoolType.
+	// +optional
+	AvailabilityZones []string `json:"availabilityZones,omitempty"`
+
 	// ProviderIDList is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderIDList []string `json:"providerIDList,omitempty"`
