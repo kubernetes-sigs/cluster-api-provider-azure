@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -289,20 +290,25 @@ func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 }
 
 // SubnetSpecs returns the subnets specs.
-func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
+func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 	numberOfSubnets := len(s.AzureCluster.Spec.NetworkSpec.Subnets)
 	if s.IsAzureBastionEnabled() {
 		numberOfSubnets++
 	}
 
-	subnetSpecs := make([]azure.SubnetSpec, 0, numberOfSubnets)
+	subnetSpecs := make([]azure.ResourceSpecGetter, 0, numberOfSubnets)
+
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		subnetSpec := azure.SubnetSpec{
+		subnetSpec := &subnets.SubnetSpec{
 			Name:              subnet.Name,
+			ResourceGroup:     s.ResourceGroup(),
+			SubscriptionID:    s.SubscriptionID(),
 			CIDRs:             subnet.CIDRBlocks,
 			VNetName:          s.Vnet().Name,
-			SecurityGroupName: subnet.SecurityGroup.Name,
+			VNetResourceGroup: s.Vnet().ResourceGroup,
+			IsVNetManaged:     s.IsVnetManaged(),
 			RouteTableName:    subnet.RouteTable.Name,
+			SecurityGroupName: subnet.SecurityGroup.Name,
 			Role:              subnet.Role,
 			NatGatewayName:    subnet.NatGateway.Name,
 		}
@@ -311,10 +317,14 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 
 	if s.IsAzureBastionEnabled() {
 		azureBastionSubnet := s.AzureCluster.Spec.BastionSpec.AzureBastion.Subnet
-		subnetSpecs = append(subnetSpecs, azure.SubnetSpec{
+		subnetSpecs = append(subnetSpecs, &subnets.SubnetSpec{
 			Name:              azureBastionSubnet.Name,
+			ResourceGroup:     s.ResourceGroup(),
+			SubscriptionID:    s.SubscriptionID(),
 			CIDRs:             azureBastionSubnet.CIDRBlocks,
 			VNetName:          s.Vnet().Name,
+			VNetResourceGroup: s.Vnet().ResourceGroup,
+			IsVNetManaged:     s.IsVnetManaged(),
 			SecurityGroupName: azureBastionSubnet.SecurityGroup.Name,
 			RouteTableName:    azureBastionSubnet.RouteTable.Name,
 			Role:              azureBastionSubnet.Role,
@@ -507,6 +517,20 @@ func (s *ClusterScope) SetNatGatewayIDInSubnets(name string, id string) {
 	}
 }
 
+// UpdateSubnetCIDRs updates the subnet CIDRs for the subnet with the same name.
+func (s *ClusterScope) UpdateSubnetCIDRs(name string, cidrBlocks []string) {
+	subnetSpecInfra := s.Subnet(name)
+	subnetSpecInfra.CIDRBlocks = cidrBlocks
+	s.SetSubnet(subnetSpecInfra)
+}
+
+// UpdateSubnetIDs updates the subnet IDs for the subnet with the same name.
+func (s *ClusterScope) UpdateSubnetID(name string, id string) {
+	subnetSpecInfra := s.Subnet(name)
+	subnetSpecInfra.ID = id
+	s.SetSubnet(subnetSpecInfra)
+}
+
 // ControlPlaneRouteTable returns the cluster controlplane routetable.
 func (s *ClusterScope) ControlPlaneRouteTable() infrav1.RouteTable {
 	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
@@ -666,6 +690,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.LoadBalancersReadyCondition,
 			infrav1.BastionHostReadyCondition,
 			infrav1.VNetReadyCondition,
+			infrav1.SubnetsReadyCondition,
 		),
 	)
 
@@ -683,6 +708,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.LoadBalancersReadyCondition,
 			infrav1.BastionHostReadyCondition,
 			infrav1.VNetReadyCondition,
+			infrav1.SubnetsReadyCondition,
 		}})
 }
 

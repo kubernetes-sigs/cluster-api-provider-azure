@@ -33,6 +33,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -255,12 +256,17 @@ func (s *ManagedControlPlaneScope) NodeNatGateway() infrav1.NatGateway {
 }
 
 // SubnetSpecs returns the subnets specs.
-func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
-	return []azure.SubnetSpec{
-		{
-			Name:     s.NodeSubnet().Name,
-			CIDRs:    s.NodeSubnet().CIDRBlocks,
-			VNetName: s.Vnet().Name,
+func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.ResourceSpecGetter {
+	return []azure.ResourceSpecGetter{
+		&subnets.SubnetSpec{
+			Name:              s.NodeSubnet().Name,
+			ResourceGroup:     s.ResourceGroup(),
+			SubscriptionID:    s.SubscriptionID(),
+			CIDRs:             s.NodeSubnet().CIDRBlocks,
+			VNetName:          s.Vnet().Name,
+			VNetResourceGroup: s.Vnet().ResourceGroup,
+			IsVNetManaged:     s.IsVnetManaged(),
+			Role:              infrav1.SubnetNode,
 		},
 	}
 }
@@ -283,6 +289,18 @@ func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
 // SetSubnet sets the passed subnet spec into the scope.
 // This is not used when using a managed control plane.
 func (s *ManagedControlPlaneScope) SetSubnet(_ infrav1.SubnetSpec) {
+	// no-op
+}
+
+// UpdateSubnetCIDRs updates the subnet CIDRs for the subnet with the same name.
+// This is not used when using a managed control plane.
+func (s *ManagedControlPlaneScope) UpdateSubnetCIDRs(_ string, _ []string) {
+	// no-op
+}
+
+// UpdateSubnetIDs updates the subnet IDs for the subnet with the same name.
+// This is not used when using a managed control plane.
+func (s *ManagedControlPlaneScope) UpdateSubnetID(_ string, _ string) {
 	// no-op
 }
 
