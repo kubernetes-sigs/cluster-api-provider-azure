@@ -148,7 +148,7 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 	var spt *adal.ServicePrincipalToken
 	switch p.Identity.Spec.Type {
 	case infrav1.ServicePrincipal:
-		if err := createAzureIdentityWithBindings(ctx, p.Identity, clusterMeta, p.Client); err != nil {
+		if err := createAzureIdentityWithBindings(ctx, p.Identity, resourceManagerEndpoint, activeDirectoryEndpoint, clusterMeta, p.Client); err != nil {
 			return nil, err
 		}
 
@@ -212,7 +212,7 @@ func (p *AzureCredentialsProvider) GetTenantID() string {
 	return p.Identity.Spec.TenantID
 }
 
-func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1.AzureClusterIdentity, clusterMeta metav1.ObjectMeta,
+func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1.AzureClusterIdentity, resourceManagerEndpoint, activeDirectoryEndpoint string, clusterMeta metav1.ObjectMeta,
 	kubeClient client.Client) error {
 	azureIdentityType, err := getAzureIdentityType(azureIdentity)
 	if err != nil {
@@ -247,6 +247,8 @@ func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1
 			ClientID:       azureIdentity.Spec.ClientID,
 			ClientPassword: azureIdentity.Spec.ClientSecret,
 			ResourceID:     azureIdentity.Spec.ResourceID,
+			ADResourceID:   resourceManagerEndpoint,
+			ADEndpoint:     activeDirectoryEndpoint,
 		},
 	}
 	err = kubeClient.Create(ctx, copiedIdentity)
