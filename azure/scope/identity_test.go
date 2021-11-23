@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	. "github.com/onsi/gomega"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,6 +28,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -130,6 +132,136 @@ func TestAllowedNamespaces(t *testing.T) {
 
 			actual := IsClusterNamespaceAllowed(context.TODO(), fakeClient, tc.identity.Spec.AllowedNamespaces, tc.clusterNamespace)
 			g.Expect(actual).To(Equal(tc.expected))
+		})
+	}
+}
+
+func TestCreateAzureIdentityWithBindings(t *testing.T) {
+	g := NewWithT(t)
+	scheme := runtime.NewScheme()
+	_ = infrav1.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+	_ = aadpodv1.AddToScheme(scheme)
+
+	tests := []struct {
+		name                    string
+		identity                *infrav1.AzureClusterIdentity
+		identityType            aadpodv1.IdentityType
+		resourceManagerEndpoint string
+		activeDirectoryEndpoint string
+		clusterMeta             metav1.ObjectMeta
+		copiedIdentity          metav1.ObjectMeta
+		binding                 metav1.ObjectMeta
+		expectedErr             bool
+	}{
+		{
+			name: "create service principal identity",
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-identity",
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:         infrav1.ServicePrincipal,
+					ResourceID:   "my-resource-id",
+					ClientID:     "my-client-id",
+					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					TenantID:     "my-tenant-id",
+				},
+			},
+			identityType:            aadpodv1.ServicePrincipal,
+			resourceManagerEndpoint: "public-cloud-endpoint",
+			activeDirectoryEndpoint: "active-directory-endpoint",
+			clusterMeta: metav1.ObjectMeta{
+				Name:      "cluster-name",
+				Namespace: "my-namespace",
+			},
+			copiedIdentity: metav1.ObjectMeta{
+				Name:      "cluster-name-my-namespace-test-identity",
+				Namespace: "capz-system",
+			},
+			binding: metav1.ObjectMeta{
+				Name:      "cluster-name-my-namespace-test-identity-binding",
+				Namespace: "capz-system",
+			},
+		},
+		{
+			name: "create UAMI identity",
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-identity",
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:         infrav1.UserAssignedMSI,
+					ResourceID:   "my-resource-id",
+					ClientID:     "my-client-id",
+					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					TenantID:     "my-tenant-id",
+				},
+			},
+			identityType:            aadpodv1.UserAssignedMSI,
+			resourceManagerEndpoint: "public-cloud-endpoint",
+			activeDirectoryEndpoint: "active-directory-endpoint",
+			clusterMeta: metav1.ObjectMeta{
+				Name:      "cluster-name",
+				Namespace: "my-namespace",
+			},
+			copiedIdentity: metav1.ObjectMeta{
+				Name:      "cluster-name-my-namespace-test-identity",
+				Namespace: "capz-system",
+			},
+			binding: metav1.ObjectMeta{
+				Name:      "cluster-name-my-namespace-test-identity-binding",
+				Namespace: "capz-system",
+			},
+		},
+		{
+			name: "invalid identity type",
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-identity",
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:         "fooIdentity",
+					ResourceID:   "my-resource-id",
+					ClientID:     "my-client-id",
+					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					TenantID:     "my-tenant-id",
+				},
+			},
+			identityType: 0,
+			expectedErr:  true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			initObjects := []runtime.Object{tc.identity}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+			err := createAzureIdentityWithBindings(context.TODO(), tc.identity, tc.resourceManagerEndpoint, tc.activeDirectoryEndpoint, tc.clusterMeta, fakeClient)
+			if !tc.expectedErr {
+				g.Expect(err).To(BeNil())
+
+				resultIdentity := &aadpodv1.AzureIdentity{}
+				key := client.ObjectKey{Name: tc.copiedIdentity.Name, Namespace: tc.copiedIdentity.Namespace}
+				g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity)).To(Succeed())
+				g.Expect(resultIdentity.Spec.Type).To(Equal(tc.identityType))
+				g.Expect(resultIdentity.Spec.ResourceID).To(Equal(tc.identity.Spec.ResourceID))
+				g.Expect(resultIdentity.Spec.ClientID).To(Equal(tc.identity.Spec.ClientID))
+				g.Expect(resultIdentity.Spec.ClientPassword).To(Equal(tc.identity.Spec.ClientSecret))
+				g.Expect(resultIdentity.Spec.TenantID).To(Equal(tc.identity.Spec.TenantID))
+				g.Expect(resultIdentity.Spec.ADResourceID).To(Equal(tc.resourceManagerEndpoint))
+				g.Expect(resultIdentity.Spec.ADEndpoint).To(Equal(tc.activeDirectoryEndpoint))
+
+				resultIdentityBinding := &aadpodv1.AzureIdentityBinding{}
+				key = client.ObjectKey{Name: tc.binding.Name, Namespace: tc.binding.Namespace}
+				g.Expect(fakeClient.Get(context.TODO(), key, resultIdentityBinding)).To(Succeed())
+
+				// no error if identity already exists
+				err = createAzureIdentityWithBindings(context.TODO(), tc.identity, tc.resourceManagerEndpoint, tc.activeDirectoryEndpoint, tc.clusterMeta, fakeClient)
+				g.Expect(err).To(BeNil())
+			} else {
+				g.Expect(err).ToNot(BeNil())
+			}
 		})
 	}
 }
