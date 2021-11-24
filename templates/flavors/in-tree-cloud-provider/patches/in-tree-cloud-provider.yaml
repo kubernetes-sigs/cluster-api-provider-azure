@@ -4,7 +4,8 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    cni: "calico"
+    cni: calico
+    ccm: none
 ---
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -26,7 +27,9 @@ spec:
           azure-container-registry-config: /etc/kubernetes/azure.json
     clusterConfiguration:
       apiServer:
-        timeoutForControlPlane: 20m
+        extraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
       controllerManager:
         extraArgs:
           cloud-provider: azure

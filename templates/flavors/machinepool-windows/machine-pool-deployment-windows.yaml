@@ -55,7 +55,7 @@ spec:
     nodeRegistration:
       name: '{{ ds.meta_data["local_hostname"] }}'
       kubeletExtraArgs:
-        cloud-provider: azure
+        cloud-provider: external
         cloud-config: 'c:/k/azure.json'
         azure-container-registry-config: 'c:/k/azure.json'
         pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:1.4.1"

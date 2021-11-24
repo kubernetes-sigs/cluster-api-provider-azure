@@ -1,0 +1,17 @@
+namespace: default
+resources:
+  - ccm-resource-set.yaml
+
+configMapGenerator:
+  - name: cloud-controller-manager-addon
+    files:
+      - cloud-controller-manager.yaml
+  - name: cloud-node-manager-addon
+    files:
+      - cloud-node-manager.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated

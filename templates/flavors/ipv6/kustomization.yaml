@@ -2,6 +2,7 @@ namespace: default
 resources:
   - ../base
   - ../../azure-cluster-identity
+  - ../../cloud-provider-azure
   - machine-deployment.yaml
 
 patchesStrategicMerge:

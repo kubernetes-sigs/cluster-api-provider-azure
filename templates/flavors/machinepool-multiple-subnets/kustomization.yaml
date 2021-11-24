@@ -1,7 +1,0 @@
-namespace: default
-resources:
-  - ../machinepool
-  - machine-pool-deployment.yaml
-patchesStrategicMerge:
-  - patches/machine-pool-subnet.yaml
-  - patches/azurecluster-subnets.yaml
