@@ -451,7 +451,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	// ci-e2e.sh and Prow CI skip this test by default.
 	// To include this test, set `GINKGO_SKIP=""`.
-	Context("Creating a cluster that uses the external cloud provider", func() {
+	Context("Creating a cluster that uses the in-tree cloud provider", func() {
 		It("with a 1 control plane nodes and 2 worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "oot")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
@@ -461,7 +461,7 @@ var _ = Describe("Workload cluster creation", func() {
 					ClusterctlConfigPath:     clusterctlConfigPath,
 					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
 					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-					Flavor:                   "external-cloud-provider",
+					Flavor:                   "in-tree-cloud-provider",
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
