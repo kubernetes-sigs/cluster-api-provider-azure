@@ -31,6 +31,116 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+func TestAPIServerHost(t *testing.T) {
+	fakeSubscriptionID := "123"
+
+	tests := []struct {
+		name         string
+		azureCluster infrav1.AzureCluster
+		want         string
+	}{
+		{
+			name: "public apiserver lb (user-defined dns)",
+			azureCluster: infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: fakeSubscriptionID,
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Type: infrav1.Public,
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									PublicIP: &infrav1.PublicIPSpec{
+										DNSName: "my-cluster-apiserver.example.com",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "my-cluster-apiserver.example.com",
+		},
+		{
+			name: "private apiserver lb (default private dns zone)",
+			azureCluster: infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: fakeSubscriptionID,
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Type: infrav1.Public,
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									PublicIP: &infrav1.PublicIPSpec{
+										DNSName: "my-cluster-apiserver.capz.io",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "my-cluster-apiserver.capz.io",
+		},
+		{
+			name: "private apiserver (user-defined private dns zone)",
+			azureCluster: infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: fakeSubscriptionID,
+					NetworkSpec: infrav1.NetworkSpec{
+						PrivateDNSZoneName: "example.private",
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Type: infrav1.Internal,
+						},
+					},
+				},
+			},
+			want: "apiserver.example.private",
+		},
+	}
+
+	for _, tc := range tests {
+		g := NewWithT(t)
+		scheme := runtime.NewScheme()
+		_ = clusterv1.AddToScheme(scheme)
+		_ = infrav1.AddToScheme(scheme)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-cluster",
+				Namespace: "default",
+			},
+		}
+		cluster.Default()
+
+		tc.azureCluster.ObjectMeta = metav1.ObjectMeta{
+			Name: cluster.Name,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "cluster.x-k8s.io/v1beta1",
+					Kind:       "Cluster",
+					Name:       "my-cluster",
+				},
+			},
+		}
+		tc.azureCluster.Default()
+
+		initObjects := []runtime.Object{cluster, &tc.azureCluster}
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+		clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+			AzureClients: AzureClients{
+				Authorizer: autorest.NullAuthorizer{},
+			},
+			Cluster:      cluster,
+			AzureCluster: &tc.azureCluster,
+			Client:       fakeClient,
+		})
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(clusterScope.APIServerHost()).Should(Equal(tc.want))
+	}
+}
+
 func TestGettingSecurityRules(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()

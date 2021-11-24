@@ -139,9 +139,9 @@ func GeneratePrivateDNSZoneName(clusterName string) string {
 	return fmt.Sprintf("%s.capz.io", clusterName)
 }
 
-// GeneratePrivateFQDN generates FQDN for a private API Server.
-func GeneratePrivateFQDN(clusterName string) string {
-	return fmt.Sprintf("%s.%s", PrivateAPIServerHostname, GeneratePrivateDNSZoneName(clusterName))
+// GeneratePrivateFQDN generates the FQDN for a private API Server based on the private DNS zone name.
+func GeneratePrivateFQDN(zoneName string) string {
+	return fmt.Sprintf("%s.%s", PrivateAPIServerHostname, zoneName)
 }
 
 // GenerateVNetLinkName generates the name of a virtual network link name based on the vnet name.
