@@ -76,7 +76,7 @@ func TestGettingEnvironment(t *testing.T) {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(test.expectedErrorMessage))
 			} else {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(c.ResourceManagerEndpoint).To(Equal(test.expectedEndpoint))
 				g.Expect(c.ResourceManagerVMDNSSuffix).To(Equal(test.expectedDNSSuffix))
 			}

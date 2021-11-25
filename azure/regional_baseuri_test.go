@@ -68,7 +68,7 @@ func TestWithRegionalBaseURI(t *testing.T) {
 			defer mockCtrl.Finish()
 			authMock := mock_azure.NewMockAuthorizer(mockCtrl)
 			regionalAuth, err := WithRegionalBaseURI(c.AuthorizerFactory(authMock), c.Region)
-			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(regionalAuth.BaseURI()).To(Equal(c.Result))
 		})
 	}

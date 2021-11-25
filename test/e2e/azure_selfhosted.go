@@ -75,7 +75,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		var err error
 		namespace, cancelWatches, err = setupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 		clusterResources = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
 		spClientSecret := os.Getenv(AzureClientSecret)
@@ -91,7 +91,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
 		}
 		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		identityName := input.E2EConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())

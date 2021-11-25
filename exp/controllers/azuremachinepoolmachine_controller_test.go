@@ -57,7 +57,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				cb.WithObjects(cluster, azCluster, mp, amp, ampm)
 			},
 			Verify: func(g *WithT, result ctrl.Result, err error) {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 		{
@@ -71,7 +71,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				cb.WithObjects(cluster, azCluster, mp, amp, ampm)
 			},
 			Verify: func(g *WithT, result ctrl.Result, err error) {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 	}

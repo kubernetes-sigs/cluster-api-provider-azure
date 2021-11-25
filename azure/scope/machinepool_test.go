@@ -109,7 +109,7 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 				return string(infrav1.Succeeded), "foo"
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(conditions.IsTrue(amp, infrav1.BootstrapSucceededCondition))
 			},
 		},
@@ -172,7 +172,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 			Name: "default surge should be 1 if no deployment strategy is set",
 			Verify: func(g *WithT, surge int, err error) {
 				g.Expect(surge).To(Equal(1))
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 		{
@@ -182,7 +182,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 			},
 			Verify: func(g *WithT, surge int, err error) {
 				g.Expect(surge).To(Equal(1))
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 		{
@@ -199,7 +199,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 			},
 			Verify: func(g *WithT, surge int, err error) {
 				g.Expect(surge).To(Equal(2))
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 		{
@@ -216,7 +216,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 			},
 			Verify: func(g *WithT, surge int, err error) {
 				g.Expect(surge).To(Equal(2))
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 	}
@@ -312,7 +312,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 				mp.Spec.Template.Spec.Version = to.StringPtr("v1.19.11")
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, vmImage *infrav1.Image, err error) {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				image := &infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher:       "cncf-upstream",
@@ -341,7 +341,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 				}
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, vmImage *infrav1.Image, err error) {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				image := &infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher:       "cncf-upstream",
@@ -539,7 +539,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 				}
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(amp.Status.Replicas).To(BeEquivalentTo(3))
 				g.Expect(amp.Spec.ProviderIDList).To(ConsistOf("/foo/ampm0", "/foo/ampm1", "/foo/ampm2"))
 			},
@@ -555,7 +555,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 				}
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(amp.Status.Replicas).To(BeEquivalentTo(2))
 			},
 		},
@@ -570,7 +570,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 				}
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(amp.Status.Replicas).To(BeEquivalentTo(2))
 			},
 		},

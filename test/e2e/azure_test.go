@@ -99,7 +99,7 @@ var _ = Describe("Workload cluster creation", func() {
 		if err != nil {
 			Logf("Creating cluster identity secret", secret.Name)
 			err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		} else {
 			Logf("Using existing cluster identity secret")
 		}
