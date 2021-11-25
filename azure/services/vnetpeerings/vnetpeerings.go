@@ -61,7 +61,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	// We go through the list of VnetPeeringSpecs to reconcile each one, independently of the result of the previous one.
-	// If multiple erros occur, we return the most pressing one
+	// If multiple errors occur, we return the most pressing one
 	// order of precedence is: error creating -> creating in progress -> created (no error)
 	var result error
 	for _, peeringSpec := range s.Scope.VnetPeeringSpecs() {
@@ -87,7 +87,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	var result error
 
 	// We go through the list of VnetPeeringSpecs to delete each one, independently of the result of the previous one.
-	// If multiple erros occur, we return the most pressing one
+	// If multiple errors occur, we return the most pressing one
 	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
 	for _, peeringSpec := range s.Scope.VnetPeeringSpecs() {
 		if err := async.DeleteResource(ctx, s.Scope, s.Client, peeringSpec, serviceName); err != nil {
