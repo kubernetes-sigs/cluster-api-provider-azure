@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -509,6 +510,14 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 
 		if ownerPool.Spec.Replicas != nil {
 			ammp.Replicas = *ownerPool.Spec.Replicas
+		}
+
+		if ownerPool.Spec.Template.Spec.Version != nil {
+			version := *ownerPool.Spec.Template.Spec.Version
+			if semver.Compare(version, s.ControlPlane.Spec.Version) > 0 {
+				return nil, errors.New("MachinePool version cannot be greater than the AzureManagedControlPlane version")
+			}
+			ammp.Version = to.StringPtr(strings.TrimPrefix(version, "v"))
 		}
 
 		ammps = append(ammps, ammp)
