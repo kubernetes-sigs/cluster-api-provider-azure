@@ -297,7 +297,7 @@ CLUSTER_NAME=<my-capz-cluster-name> ./hack/create-dev-cluster.sh
    2.2. Push to your custom image registry:
 
    ```bash
-   REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-push
+   REGISTRY=${REGISTRY} MANAGER_IMAGE_TAG=${MANAGER_IMAGE_TAG:="dev"} make docker-push
    ```
 
    NOTE: `make create-cluster` will fetch the manager image locally and load it onto the kind cluster if it is present.
@@ -325,6 +325,11 @@ export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 export WORKER_MACHINE_COUNT=2
 export KUBERNETES_VERSION="v1.22.1"
+
+# Identity secret.
+export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret" 
+export CLUSTER_IDENTITY_NAME="cluster-identity" 
+export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
 
 # Generate SSH key.
 # If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY_B64 to your existing file.
