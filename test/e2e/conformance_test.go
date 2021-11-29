@@ -90,7 +90,7 @@ var _ = Describe("Conformance Tests", func() {
 			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
 		}
 		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())

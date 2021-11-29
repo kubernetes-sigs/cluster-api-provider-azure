@@ -116,7 +116,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
 	}
 	err := publicClusterProxy.GetClient().Create(ctx, secret)
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	identityName := e2eConfig.GetVariable(ClusterIdentityName)
 	os.Setenv("CLUSTER_IDENTITY_NAME", identityName)

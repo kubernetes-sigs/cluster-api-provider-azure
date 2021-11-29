@@ -65,7 +65,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		ns := fmt.Sprintf("capz-e2e-identity-%s", util.RandomString(6))
 
 		identityNamespace, err = e2e_namespace.Create(ctx, clientset, ns, map[string]string{})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		spClientSecret := os.Getenv(AzureClientSecret)
 		secret := &corev1.Secret{
@@ -80,7 +80,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
 		}
 		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
@@ -309,7 +309,7 @@ func getPreInitFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
 			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
 		}
 		err := clusterProxy.GetClient().Create(ctx, secret)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())

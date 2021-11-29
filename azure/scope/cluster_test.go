@@ -81,12 +81,12 @@ func TestGettingSecurityRules(t *testing.T) {
 		AzureCluster: azureCluster,
 		Client:       fakeClient,
 	})
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).NotTo(HaveOccurred())
 
 	clusterScope.SetControlPlaneSecurityRules()
 
 	subnet, err := clusterScope.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(len(subnet.SecurityGroup.SecurityRules)).To(Equal(2))
 }
 
@@ -208,7 +208,7 @@ func TestOutboundLBName(t *testing.T) {
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
 			})
-			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.OutboundLBName(tc.role)
 			g.Expect(tc.expected).Should(Equal(got))
 		})

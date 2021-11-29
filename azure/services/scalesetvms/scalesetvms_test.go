@@ -74,7 +74,7 @@ func TestNewService(t *testing.T) {
 			},
 		},
 	})
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).NotTo(HaveOccurred())
 
 	mpms, err := scope.NewMachinePoolMachineScope(scope.MachinePoolMachineScopeParams{
 		Client:                  client,
@@ -84,7 +84,7 @@ func TestNewService(t *testing.T) {
 		AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
 		ClusterScope:            s,
 	})
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).NotTo(HaveOccurred())
 	actual := NewService(mpms)
 	g.Expect(actual).ToNot(BeNil())
 }
