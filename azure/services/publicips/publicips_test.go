@@ -134,7 +134,7 @@ func TestReconcilePublicIP(t *testing.T) {
 		},
 		{
 			name:          "second public IP creation is in progress and not done",
-			expectedError: "transient reconcile error occurred: operation type PUT on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s",
+			expectedError: "operation type PUT on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
@@ -144,7 +144,7 @@ func TestReconcilePublicIP(t *testing.T) {
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
 					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, &fakeCreateFuture, errTimeout),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
-					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("transient reconcile error occurred: operation type PUT on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s")),
+					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("operation type PUT on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s")),
 				)
 			},
 		},
@@ -359,7 +359,7 @@ func TestDeletePublicIP(t *testing.T) {
 		},
 		{
 			name:          "second public IP deletion is in progress and not done",
-			expectedError: "transient reconcile error occurred: operation type DELETE on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s",
+			expectedError: "operation type DELETE on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
@@ -386,7 +386,7 @@ func TestDeletePublicIP(t *testing.T) {
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
 					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(&fakeDeleteFuture, errTimeout),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
-					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("transient reconcile error occurred: operation type DELETE on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s")),
+					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("operation type DELETE on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s")),
 				)
 			},
 		},
