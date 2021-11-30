@@ -18,12 +18,14 @@ package publicips
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -32,9 +34,10 @@ import (
 // Client wraps go-sdk.
 type Client interface {
 	Get(context.Context, string, string) (network.PublicIPAddress, error)
-	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
+	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error)
 	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
+	Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
 }
 
 // AzureClient contains the Azure go-sdk Client.
@@ -68,21 +71,21 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, ipName string
 // CreateOrUpdateAsync creates or updates a static public IP in the specified resource group asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.CreateOrUpdateAsync")
 	defer done()
 
 	ip, err := ac.publicIPParams(ctx, spec)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get desired parameters for group %s", spec.ResourceName())
+		return nil, nil, errors.Wrapf(err, "failed to get desired parameters for group %s", spec.ResourceName())
 	} else if ip == nil {
 		// nothing to do here
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	future, err := ac.publicips.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), *ip)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
@@ -92,11 +95,11 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	if err != nil {
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return &future, err
+		return nil, &future, err
 	}
 
-	_, err = future.Result(ac.publicips)
-	return nil, err
+	result, err := future.Result(ac.publicips)
+	return result, nil, err
 }
 
 func (ac *AzureClient) publicIPParams(ctx context.Context, spec azure.ResourceSpecGetter) (*network.PublicIPAddress, error) {
@@ -165,4 +168,34 @@ func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 	}
 
 	return doneWithContext, nil
+}
+
+// Result returns the result of the operation.
+func (ac *AzureClient) Result(ctx context.Context, futureData azureautorest.FutureAPI, futureType string) (interface{}, error) {
+	if futureData == nil {
+		return nil, errors.Errorf("cannot get result from nil future")
+	}
+	var result func(client network.PublicIPAddressesClient) (publicIp network.PublicIPAddress, err error)
+
+	switch futureType {
+	case infrav1.PutFuture:
+		var future *network.PublicIPAddressesCreateOrUpdateFuture
+		jsonData, err := futureData.MarshalJSON()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal future")
+		}
+		if err := json.Unmarshal(jsonData, &future); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal future data")
+		}
+		result = (*future).Result
+
+	case infrav1.DeleteFuture:
+		// TODO(karuppiah7890): Check with maintainers on how to handle this
+		return nil, nil
+
+	default:
+		return nil, errors.Errorf("unknown future type %q", futureType)
+	}
+
+	return result(ac.publicips)
 }

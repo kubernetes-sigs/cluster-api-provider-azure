@@ -110,9 +110,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil, nil),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, nil),
 				)
 			},
@@ -125,9 +125,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errCreate),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil, errCreate),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil, nil),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip (service: publicips): error creating public IP")),
 				)
 			},
@@ -140,9 +140,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil, nil),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(&fakeCreateFuture, errTimeout),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, &fakeCreateFuture, errTimeout),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("transient reconcile error occurred: operation type PUT on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s")),
 				)
@@ -156,9 +156,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errCreate),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil, errCreate),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(&fakeCreateFuture, errTimeout),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, &fakeCreateFuture, errTimeout),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip (service: publicips): error creating public IP")),
 				)
@@ -172,9 +172,9 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
 					s.GetLongRunningOperationState("my-publicip", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errCreate),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, nil, errCreate),
 					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
-					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, errCreate2),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, nil, errCreate2),
 					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip-ipv6 (service: publicips): different error creating public IP")),
 				)
 			},
