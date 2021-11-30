@@ -639,7 +639,7 @@ func (s *ClusterScope) APIServerPort() int32 {
 // APIServerHost returns the hostname used to reach the API server.
 func (s *ClusterScope) APIServerHost() string {
 	if s.IsAPIServerPrivate() {
-		return azure.GeneratePrivateFQDN(s.ClusterName())
+		return azure.GeneratePrivateFQDN(s.GetPrivateDNSZoneName())
 	}
 	return s.APIServerPublicIP().DNSName
 }
