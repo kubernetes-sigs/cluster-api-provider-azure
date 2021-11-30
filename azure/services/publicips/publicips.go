@@ -18,6 +18,7 @@ package publicips
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -89,9 +90,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	// We go through the list of public ip specs to delete each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one
-	// order of precedence is: error deleting -> error getting management state -> deleting in progress -> deleted (no error)
-	// TODO(karuppiah7890): Is the above precedence okay? Ask maintainers. Accordingly make changes in test and code.
-	// Ask maintainers what's the precedence for - error getting public IP management state. Is it equal to the error deleting IP or less than or more than that?
+	// order of precedence is: error getting management state, error deleting -> deleting in progress -> deleted (no error)
 	var result error
 
 	for _, ipSpec := range s.Scope.PublicIPSpecs() {
@@ -102,7 +101,7 @@ func (s *Service) Delete(ctx context.Context) error {
 				continue
 			}
 
-			result = errors.Wrap(err, "could not get management state of test-group/my-publicip public ip")
+			result = errors.Wrap(err, fmt.Sprintf("could not get management state of %s/%s public ip", ipSpec.ResourceGroupName(), ipSpec.ResourceName()))
 			continue
 		}
 

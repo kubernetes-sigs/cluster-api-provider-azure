@@ -455,9 +455,104 @@ func TestDeletePublicIP(t *testing.T) {
 				)
 			},
 		},
-		// TODO(karuppiah7890): Write this test after checking error precedence with maintainers. Test for - Return the most pressing error when there's an error when deleting public IP (first) and an error getting public IP management state (second) (pressing error). This test will fail, need to implement this.
-		// For fixing the test, store error-getting-management-state only when result is not public-ip-deletion-failure that is - when result is nil or when result is public IP deletion in progress.
-		// TODO(karuppiah7890): Write this test after checking error precedence with maintainers. Test for - Return the most pressing error when there's an error getting public IP management state (pressing error) and a public IP deletion is in progress. This should already pass
+		{
+			name:          "return the last most pressing error when first public IP deletion fails with some error and there is an error getting second public IP management state",
+			expectedError: "could not get management state of test-group/my-publicip-ipv6 public ip: error getting public IP",
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
+				s.ResourceGroup().AnyTimes().Return("test-group")
+				s.ClusterName().AnyTimes().Return("cluster-name")
+
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), "test-group", "my-publicip").Return(network.PublicIPAddress{
+						Name: to.StringPtr("my-publicip"),
+						Tags: map[string]*string{
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster-name": to.StringPtr("owned"),
+							"foo": to.StringPtr("bar"),
+						},
+					}, nil),
+					s.GetLongRunningOperationState("my-publicip", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec1).Return(nil, errDelete),
+					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{}, errGet),
+					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("could not get management state of test-group/my-publicip-ipv6 public ip: error getting public IP")),
+				)
+			},
+		},
+		{
+			name:          "return the last most pressing error when there is an error getting first public IP management state and second public IP deletion fails with some error",
+			expectedError: "failed to delete resource test-group/my-publicip-ipv6 (service: publicips): different error deleting public IP",
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
+				s.ResourceGroup().AnyTimes().Return("test-group")
+				s.ClusterName().AnyTimes().Return("cluster-name")
+
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), "test-group", "my-publicip").Return(network.PublicIPAddress{}, errGet),
+					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{
+						Name: to.StringPtr("my-publicip-ipv6"),
+						Tags: map[string]*string{
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster-name": to.StringPtr("owned"),
+							"foo": to.StringPtr("buzz"),
+						},
+					}, nil),
+					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(nil, errDelete2),
+					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to delete resource test-group/my-publicip-ipv6 (service: publicips): different error deleting public IP")),
+				)
+			},
+		},
+		{
+			name:          "return the most pressing error when there is an error getting first public IP management state and second public IP deletion is in progress and not done",
+			expectedError: "could not get management state of test-group/my-publicip public ip: error getting public IP",
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
+				s.ResourceGroup().AnyTimes().Return("test-group")
+				s.ClusterName().AnyTimes().Return("cluster-name")
+
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), "test-group", "my-publicip").Return(network.PublicIPAddress{}, errGet),
+					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{
+						Name: to.StringPtr("my-publicip-ipv6"),
+						Tags: map[string]*string{
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster-name": to.StringPtr("owned"),
+							"foo": to.StringPtr("buzz"),
+						},
+					}, nil),
+					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec2).Return(&fakeDeleteFuture, errTimeout),
+					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
+					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("could not get management state of test-group/my-publicip public ip: error getting public IP")),
+				)
+			},
+		},
+		{
+			name:          "return the most pressing error when first public IP deletion is in progress and not done and there is an error in getting second public IP management state",
+			expectedError: "could not get management state of test-group/my-publicip-ipv6 public ip: error getting public IP",
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
+				s.ResourceGroup().AnyTimes().Return("test-group")
+				s.ClusterName().AnyTimes().Return("cluster-name")
+
+				gomock.InOrder(
+					m.Get(gomockinternal.AContext(), "test-group", "my-publicip").Return(network.PublicIPAddress{
+						Name: to.StringPtr("my-publicip"),
+						Tags: map[string]*string{
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster-name": to.StringPtr("owned"),
+							"foo": to.StringPtr("bar"),
+						},
+					}, nil),
+					s.GetLongRunningOperationState("my-publicip", serviceName),
+					m.DeleteAsync(gomockinternal.AContext(), &ipSpec1).Return(&fakeDeleteFuture, errTimeout),
+					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
+					m.Get(gomockinternal.AContext(), "test-group", "my-publicip-ipv6").Return(network.PublicIPAddress{}, errGet),
+					s.UpdateDeleteStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("could not get management state of test-group/my-publicip-ipv6 public ip: error getting public IP")),
+				)
+			},
+		},
 	}
 
 	for _, tc := range testcases {
