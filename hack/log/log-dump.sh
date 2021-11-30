@@ -18,16 +18,13 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/../..
-cd "${REPO_ROOT}" || exit 1
+KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
 
 # shellcheck source=hack/ensure-kind.sh
 source "${REPO_ROOT}/hack/ensure-kind.sh"
-
-# installation of kubectl
-mkdir -p "${REPO_ROOT}/hack/tools/bin"
-KUBECTL=$(realpath hack/tools/bin/kubectl)
-make "${KUBECTL}" &>/dev/null
 
 export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/management-cluster" "${ARTIFACTS}/workload-cluster"

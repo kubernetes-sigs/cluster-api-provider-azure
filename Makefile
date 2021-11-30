@@ -69,8 +69,9 @@ CONVERSION_GEN_VER := v0.22.2
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
+ENVSUBST_VER := v2.0.0-20210730161058-179042472c46
 ENVSUBST_BIN := envsubst
-ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-drone
+ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
 
 GOLANGCI_LINT_VER := v1.43.0
 GOLANGCI_LINT_BIN := golangci-lint
@@ -97,8 +98,8 @@ GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
 KUBECTL_VER := v1.22.4
-KUBECTL_BIN := $(TOOLS_BIN_DIR)/kubectl
-KUBECTL := $(KUBECTL_BIN)-$(KUBECTL_VER)
+KUBECTL_BIN := kubectl
+KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
 KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
 ETCD=$(TOOLS_BIN_DIR)/etcd
@@ -235,12 +236,7 @@ $(CONVERSION_GEN): ## Build conversion-gen.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen $(CONVERSION_GEN_BIN) $(CONVERSION_GEN_VER)
 
 $(ENVSUBST): ## Build envsubst from tools folder.
-	rm -f $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)*
-	mkdir -p $(TOOLS_DIR) && cd $(TOOLS_DIR) && go build -tags=tools -o $(ENVSUBST) github.com/drone/envsubst/v2/cmd/envsubst
-	ln -sf $(ENVSUBST) $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)
-
-.PHONY: $(ENVSUBST_BIN)
-$(ENVSUBST_BIN): $(ENVSUBST) ## Build envsubst from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/drone/envsubst/v2/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
 
 $(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
@@ -262,13 +258,19 @@ $(GINKGO): ## Build ginkgo.
 
 $(KUBECTL): ## Build kubectl
 	mkdir -p $(TOOLS_BIN_DIR)
-	rm -f "$(KUBECTL)*"
+	rm -f "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)*"
 	curl --retry $(CURL_RETRIES) -fsL https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VER)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL)
-	ln -sf "$(KUBECTL)" "$(KUBECTL_BIN)"
-	chmod +x "$(KUBECTL_BIN)" "$(KUBECTL)"
+	ln -sf $(KUBECTL) $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)
+	chmod +x $(KUBECTL) $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)
+
+.PHONY: $(ENVSUBST_BIN)
+$(ENVSUBST_BIN): $(ENVSUBST)
 
 .PHONY: $(KUBECTL_BIN)
-$(KUBECTL_BIN): $(KUBECTL) ## Building kubectl from the tools folder
+$(KUBECTL_BIN): $(KUBECTL)
+
+.PHONY: $(GO_APIDIFF_BIN)
+$(GO_APIDIFF_BIN): $(GO_APIDIFF)
 
 ## --------------------------------------
 ## Linting
