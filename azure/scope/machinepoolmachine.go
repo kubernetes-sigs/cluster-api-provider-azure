@@ -29,13 +29,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
+	kubedrain "k8s.io/kubectl/pkg/drain"
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	drain "sigs.k8s.io/cluster-api/third_party/kubernetes-drain"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -417,11 +417,12 @@ func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.No
 		return nil
 	}
 
-	drainer := &drain.Helper{
+	drainer := &kubedrain.Helper{
 		Client:              kubeClient,
+		Ctx:                 ctx,
 		Force:               true,
 		IgnoreAllDaemonSets: true,
-		DeleteLocalData:     true,
+		DeleteEmptyDirData:  true,
 		GracePeriodSeconds:  -1,
 		// If a pod is not evicted in 20 seconds, retry the eviction next time the
 		// machine gets reconciled again (to allow other machines to be reconciled).
@@ -436,7 +437,6 @@ func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.No
 		},
 		Out:    writer{klog.Info},
 		ErrOut: writer{klog.Error},
-		DryRun: false,
 	}
 
 	if noderefutil.IsNodeUnreachable(node) {
@@ -444,12 +444,12 @@ func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.No
 		drainer.SkipWaitForDeleteTimeoutSeconds = 60 * 5 // 5 minutes
 	}
 
-	if err := drain.RunCordonOrUncordon(ctx, drainer, node, true); err != nil {
+	if err := kubedrain.RunCordonOrUncordon(drainer, node, true); err != nil {
 		// Machine will be re-reconciled after a cordon failure.
 		return azure.WithTransientError(errors.Errorf("unable to cordon node %s: %v", node.Name, err), 20*time.Second)
 	}
 
-	if err := drain.RunNodeDrain(ctx, drainer, node.Name); err != nil {
+	if err := kubedrain.RunNodeDrain(drainer, node.Name); err != nil {
 		// Machine will be re-reconciled after a drain failure.
 		return azure.WithTransientError(errors.Wrap(err, "Drain failed, retry in 20s"), 20*time.Second)
 	}
