@@ -51,11 +51,6 @@ type NICSpec struct {
 	EnableIPForwarding        bool
 }
 
-// DiskSpec defines the specification for a Disk.
-type DiskSpec struct {
-	Name string
-}
-
 // LBSpec defines the specification for a Load Balancer.
 type LBSpec struct {
 	Name                 string

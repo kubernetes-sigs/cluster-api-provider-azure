@@ -20,17 +20,22 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+const serviceName = "disks"
 
 // DiskScope defines the scope interface for a disk service.
 type DiskScope interface {
 	logr.Logger
 	azure.ClusterDescriber
-	DiskSpecs() []azure.DiskSpec
+	azure.AsyncStatusUpdater
+	DiskSpecs() []azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
@@ -52,6 +57,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	_, _, done := tele.StartSpanWithLogger(ctx, "disks.Service.Reconcile")
 	defer done()
 
+	// DisksReadyCondition is set in the VM service.
 	return nil
 }
 
@@ -60,18 +66,21 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "disks.Service.Delete")
 	defer done()
 
-	for _, diskSpec := range s.Scope.DiskSpecs() {
-		s.Scope.V(2).Info("deleting disk", "disk", diskSpec.Name)
-		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), diskSpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
-			// already deleted
-			continue
-		}
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete disk %s in resource group %s", diskSpec.Name, s.Scope.ResourceGroup())
-		}
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
 
-		s.Scope.V(2).Info("successfully deleted disk", "disk", diskSpec.Name)
+	var result error
+
+	// We go through the list of DiskSpecs to delete each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one
+	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
+	for _, diskSpec := range s.Scope.DiskSpecs() {
+		if err := async.DeleteResource(ctx, s.Scope, s.client, diskSpec, serviceName); err != nil {
+			if !azure.IsOperationNotDoneError(err) || result == nil {
+				result = err
+			}
+		}
 	}
-	return nil
+	s.Scope.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, result)
+	return result
 }

@@ -106,6 +106,8 @@ const (
 	AvailabilitySetReadyCondition clusterv1.ConditionType = "AvailabilitySetReady"
 	// RoleAssignmentReadyCondition means the role assignment exists and is ready to be used.
 	RoleAssignmentReadyCondition clusterv1.ConditionType = "RoleAssignmentReady"
+	// DisksReadyCondition means the disks exist and are ready to be used.
+	DisksReadyCondition clusterv1.ConditionType = "DisksReady"
 
 	// CreatingReason means the resource is being created.
 	CreatingReason = "Creating"

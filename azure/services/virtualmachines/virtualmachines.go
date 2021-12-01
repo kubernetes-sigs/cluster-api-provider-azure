@@ -83,6 +83,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	result, err := async.CreateResource(ctx, s.Scope, s.Client, vmSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
+	// Set the DiskReady condition here since the disk gets created with the VM.
+	s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)
 	if err == nil && result != nil {
 		vm, ok := result.(compute.VirtualMachine)
 		if !ok {

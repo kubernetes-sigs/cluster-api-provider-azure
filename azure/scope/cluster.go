@@ -600,6 +600,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.ResourceGroupReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
 			infrav1.VnetPeeringReadyCondition,
+			infrav1.DisksReadyCondition,
 		),
 	)
 
@@ -611,6 +612,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.ResourceGroupReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
 			infrav1.VnetPeeringReadyCondition,
+			infrav1.DisksReadyCondition,
 		}})
 }
 

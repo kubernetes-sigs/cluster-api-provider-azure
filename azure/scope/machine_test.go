@@ -25,11 +25,13 @@ import (
 	autorestazure "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -1731,7 +1733,7 @@ func TestDiskSpecs(t *testing.T) {
 	testcases := []struct {
 		name         string
 		machineScope MachineScope
-		want         []azure.DiskSpec
+		want         []azure.ResourceSpecGetter
 	}{
 		{
 			name: "only os disk",
@@ -1745,6 +1747,9 @@ func TestDiskSpecs(t *testing.T) {
 					AzureCluster: &infrav1.AzureCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
 						},
 					},
 				},
@@ -1765,9 +1770,10 @@ func TestDiskSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.DiskSpec{
-				{
-					Name: "my-azure-machine_OSDisk",
+			want: []azure.ResourceSpecGetter{
+				&disks.DiskSpec{
+					Name:          "my-azure-machine_OSDisk",
+					ResourceGroup: "my-rg",
 				},
 			},
 		},
@@ -1783,6 +1789,9 @@ func TestDiskSpecs(t *testing.T) {
 					AzureCluster: &infrav1.AzureCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
 						},
 					},
 				},
@@ -1808,12 +1817,14 @@ func TestDiskSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.DiskSpec{
-				{
-					Name: "my-azure-machine_OSDisk",
+			want: []azure.ResourceSpecGetter{
+				&disks.DiskSpec{
+					Name:          "my-azure-machine_OSDisk",
+					ResourceGroup: "my-rg",
 				},
-				{
-					Name: "my-azure-machine_etcddisk",
+				&disks.DiskSpec{
+					Name:          "my-azure-machine_etcddisk",
+					ResourceGroup: "my-rg",
 				},
 			},
 		}, {
@@ -1828,6 +1839,9 @@ func TestDiskSpecs(t *testing.T) {
 					AzureCluster: &infrav1.AzureCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
 						},
 					},
 				},
@@ -1856,15 +1870,18 @@ func TestDiskSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.DiskSpec{
-				{
-					Name: "my-azure-machine_OSDisk",
+			want: []azure.ResourceSpecGetter{
+				&disks.DiskSpec{
+					Name:          "my-azure-machine_OSDisk",
+					ResourceGroup: "my-rg",
 				},
-				{
-					Name: "my-azure-machine_etcddisk",
+				&disks.DiskSpec{
+					Name:          "my-azure-machine_etcddisk",
+					ResourceGroup: "my-rg",
 				},
-				{
-					Name: "my-azure-machine_otherdisk",
+				&disks.DiskSpec{
+					Name:          "my-azure-machine_otherdisk",
+					ResourceGroup: "my-rg",
 				},
 			},
 		},
@@ -1873,11 +1890,11 @@ func TestDiskSpecs(t *testing.T) {
 	for _, tt := range testcases {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			t.Parallel()
 			result := tt.machineScope.DiskSpecs()
-			if !reflect.DeepEqual(result, tt.want) {
-				t.Errorf("DiskSpecs(), DiskSpecs = %v, want %v", result, tt.want)
-			}
+			g.Expect(result).To(BeEquivalentTo(tt.want))
 		})
 	}
 }
