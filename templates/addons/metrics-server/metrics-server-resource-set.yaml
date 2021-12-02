@@ -1,0 +1,14 @@
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: metrics-server-${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      metrics-server: enabled
+  resources:
+  - kind: ConfigMap
+    name: metrics-server-${CLUSTER_NAME}
+  strategy: ApplyOnce
