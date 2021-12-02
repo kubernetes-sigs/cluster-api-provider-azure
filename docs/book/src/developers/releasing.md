@@ -25,10 +25,13 @@ This will automatically trigger a [Github Action](https://github.com/kubernetes-
 
 ## Promote image to prod repo
 
-- Images are built by the [post push images job](https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#post-cluster-api-provider-azure-push-images)
-- Create a PR in https://github.com/kubernetes/k8s.io to add the image and tag
-  - Example PR: https://github.com/kubernetes/k8s.io/pull/1030/files
-- Location of image: https://console.cloud.google.com/gcr/images/k8s-staging-cluster-api-azure/GLOBAL/cluster-api-azure-controller?rImageListsize=30
+- Images are built by the [post push images job](https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#post-cluster-api-provider-azure-push-images). This will push the image to a [staging repository](https://console.cloud.google.com/gcr/images/k8s-staging-cluster-api-azure/GLOBAL/cluster-api-azure-controller?rImageListsize=30).
+- If you don't have a GitHub token, create one by going to your GitHub settings, in [Personal access tokens](https://github.com/settings/tokens). Make sure you give the token the `repo` scope.
+- Wait for the above job to complete for the tag commit and for the image to exist in the staging directory, then create a PR to promote the image and tag:
+  - `export GITHUB_TOKEN=<your GH token>`
+  - `make promote-images`
+
+This will automatically create a PR in [k8s.io](https://github.com/kubernetes/k8s.io) and assign the CAPZ maintainers. Example PR: https://github.com/kubernetes/k8s.io/pull/3007.
 
 ## Release in GitHub
 
