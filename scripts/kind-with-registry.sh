@@ -17,13 +17,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-cd "${REPO_ROOT}" || exit 1
-
-# building kubectl from tools folder
-mkdir -p "${REPO_ROOT}/hack/tools/bin"
-KUBECTL=$(realpath hack/tools/bin/kubectl)
-make "${KUBECTL}" &>/dev/null
+KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
 
 # desired cluster name; default is "kind"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"

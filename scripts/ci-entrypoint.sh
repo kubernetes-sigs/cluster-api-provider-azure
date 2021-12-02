@@ -22,23 +22,17 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-cd "${REPO_ROOT}" || exit 1
+KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
+# export the variable so it is available in bash -c wait_for_nodes below
+export KUBECTL
 
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=hack/ensure-kind.sh
 source "${REPO_ROOT}/hack/ensure-kind.sh"
-
-# building kubectl from tools folder
-mkdir -p "${REPO_ROOT}/hack/tools/bin"
-KUBECTL=$(realpath hack/tools/bin/kubectl)
-# export the variable so it is available in bash -c wait_for_nodes below
-export KUBECTL
-make "${KUBECTL}" &>/dev/null
-echo "KUBECTL is set to ${KUBECTL}"
-
-
 # shellcheck source=hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 # shellcheck source=hack/ensure-tags.sh

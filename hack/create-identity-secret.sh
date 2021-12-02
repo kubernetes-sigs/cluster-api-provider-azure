@@ -18,13 +18,10 @@ set -o nounset
 set -o pipefail
 set +o xtrace
 
+# Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-cd "${REPO_ROOT}" || exit 1
-
-# Installation of kubectl
-mkdir -p "${REPO_ROOT}/hack/tools/bin"
-KUBECTL=$(realpath hack/tools/bin/kubectl)
-make "${KUBECTL}" &>/dev/null
+KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
 
 # shellcheck source=hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
