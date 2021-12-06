@@ -48,7 +48,7 @@ source "${REPO_ROOT}/hack/util.sh"
 : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
 get_random_region() {
-    local REGIONS=("eastus" "eastus2" "northcentralus" "northeurope" "uksouth" "westeurope" "westus2")
+    local REGIONS=("canadacentral" "eastus" "eastus2" "northcentralus" "northeurope" "southeastasia" "uksouth" "westeurope" "westus" "westus2")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
