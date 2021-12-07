@@ -20,13 +20,11 @@ import (
 	"context"
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/go-logr/logr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // FutureScope is a scope that can perform store futures and conditions in Status.
 type FutureScope interface {
-	logr.Logger
 	azure.AsyncStatusUpdater
 }
 

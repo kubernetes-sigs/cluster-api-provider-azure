@@ -26,7 +26,6 @@ import (
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings/mock_vnetpeerings"
@@ -97,11 +96,9 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			name:          "create one peering",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:1])
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil, nil)
-
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
 			},
 		},
@@ -109,7 +106,6 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			name:          "create no peerings",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:0])
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
 			},
@@ -118,14 +114,11 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			name:          "create even number of peerings",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:2])
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil, nil)
-
 				p.GetLongRunningOperationState("vnet2-to-vnet1", serviceName).Return(nil)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakePeering2To1).Return(nil, nil, nil)
-
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
 			},
 		},
@@ -133,7 +126,6 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			name:          "create odd number of peerings",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringExtraSpecs)
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil, nil)
@@ -151,7 +143,6 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			name:          "create multiple peerings on one vnet",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil, nil)
@@ -172,7 +163,6 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			name:          "error in creating peering",
 			expectedError: "failed to create resource group1/vnet1-to-vnet3 (service: vnetpeerings): this is an error",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil, nil)
@@ -193,7 +183,6 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			name:          "error in creating peering which is not done",
 			expectedError: "failed to create resource group1/vnet1-to-vnet3 (service: vnetpeerings): this is an error",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil, nil)
@@ -252,7 +241,6 @@ func TestDeleteVnetPeerings(t *testing.T) {
 			name:          "delete one peering",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:1])
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil)
@@ -264,7 +252,6 @@ func TestDeleteVnetPeerings(t *testing.T) {
 			name:          "delete no peerings",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:0])
 				p.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
 			},
@@ -273,7 +260,6 @@ func TestDeleteVnetPeerings(t *testing.T) {
 			name:          "delete even number of peerings",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:2])
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil)
@@ -288,7 +274,6 @@ func TestDeleteVnetPeerings(t *testing.T) {
 			name:          "delete odd number of peerings",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringExtraSpecs)
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil)
@@ -306,7 +291,6 @@ func TestDeleteVnetPeerings(t *testing.T) {
 			name:          "delete multiple peerings on one vnet",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil)
@@ -327,7 +311,6 @@ func TestDeleteVnetPeerings(t *testing.T) {
 			name:          "error in deleting peering",
 			expectedError: "failed to delete resource group1/vnet1-to-vnet3 (service: vnetpeerings): this is an error",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil)
@@ -348,7 +331,6 @@ func TestDeleteVnetPeerings(t *testing.T) {
 			name:          "error in deleting peering which is not done",
 			expectedError: "failed to delete resource group1/vnet1-to-vnet3 (service: vnetpeerings): this is an error",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, m *mock_vnetpeerings.MockClientMockRecorder) {
-				p.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				p.GetLongRunningOperationState("vnet1-to-vnet2", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakePeering1To2).Return(nil, nil)

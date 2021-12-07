@@ -31,8 +31,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog/v2/klogr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces/mock_networkinterfaces"
@@ -79,7 +77,6 @@ func TestReconcileVM(t *testing.T) {
 			name:          "create vm succeeds",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSpec().Return(&fakeVMSpec)
 				s.GetLongRunningOperationState("test-vm", serviceName)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
@@ -135,7 +132,6 @@ func TestReconcileVM(t *testing.T) {
 			name:          "create vm fails",
 			expectedError: "failed to create resource test-group/test-vm (service: virtualmachine): #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSpec().Return(&fakeVMSpec)
 				s.GetLongRunningOperationState("test-vm", serviceName)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeVMSpec).Return(nil, nil, internalError)
@@ -190,7 +186,6 @@ func TestDeleteVM(t *testing.T) {
 			name:          "long running delete operation is done",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				s.GetLongRunningOperationState("test-vm", serviceName).Times(2).Return(&fakeFuture)
 				m.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
@@ -204,7 +199,6 @@ func TestDeleteVM(t *testing.T) {
 			name:          "long running delete operation is not done",
 			expectedError: "operation type DELETE on Azure resource test-group/test-vm is not done. Object will be requeued after 15s",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				s.GetLongRunningOperationState("test-vm", serviceName).Times(2).Return(&fakeFuture)
 				m.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, nil)
@@ -216,7 +210,6 @@ func TestDeleteVM(t *testing.T) {
 			name:          "vm doesn't exist",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				s.GetLongRunningOperationState("test-vm", serviceName)
 				m.DeleteAsync(gomockinternal.AContext(), &fakeVMSpec).Return(nil, notFoundError)
@@ -228,7 +221,6 @@ func TestDeleteVM(t *testing.T) {
 			name:          "error occurs when deleting vm",
 			expectedError: "failed to delete resource test-group/test-vm (service: virtualmachine): #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				s.GetLongRunningOperationState("test-vm", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakeVMSpec).Return(nil, internalError)
@@ -240,7 +232,6 @@ func TestDeleteVM(t *testing.T) {
 			name:          "context deadline exceeded while deleting vm",
 			expectedError: "operation type DELETE on Azure resource test-group/test-vm is not done. Object will be requeued after 15s",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				s.GetLongRunningOperationState("test-vm", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakeVMSpec).Return(&azureautorest.Future{}, errCtxExceeded)
@@ -253,7 +244,6 @@ func TestDeleteVM(t *testing.T) {
 			name:          "delete the vm successfully",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				s.GetLongRunningOperationState("test-vm", serviceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), &fakeVMSpec).Return(nil, nil)

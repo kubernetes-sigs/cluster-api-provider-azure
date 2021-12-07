@@ -19,9 +19,7 @@ package groups
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -40,7 +38,6 @@ type Service struct {
 
 // GroupScope defines the scope interface for a group service.
 type GroupScope interface {
-	logr.Logger
 	azure.Authorizer
 	azure.AsyncStatusUpdater
 	GroupSpec() azure.ResourceSpecGetter
@@ -72,7 +69,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the resource group if it is managed by capz.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
@@ -92,7 +89,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "could not get resource group management state")
 	}
 	if !managed {
-		s.Scope.V(2).Info("Should not delete resource group in unmanaged mode")
+		log.V(2).Info("Should not delete resource group in unmanaged mode")
 		return azure.ErrNotOwned
 	}
 

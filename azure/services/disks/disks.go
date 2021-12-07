@@ -19,8 +19,6 @@ package disks
 import (
 	"context"
 
-	"github.com/go-logr/logr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
@@ -32,7 +30,6 @@ const serviceName = "disks"
 
 // DiskScope defines the scope interface for a disk service.
 type DiskScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	azure.AsyncStatusUpdater
 	DiskSpecs() []azure.ResourceSpecGetter

@@ -21,9 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -39,7 +37,6 @@ const (
 
 // LBScope defines the scope interface for a load balancer service.
 type LBScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	azure.NetworkDescriber
 	LBSpecs() []azure.LBSpec
@@ -63,7 +60,7 @@ func New(scope LBScope) *Service {
 
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "loadbalancers.Service.Reconcile")
 	defer done()
 
 	for _, lbSpec := range s.Scope.LBSpecs() {
@@ -83,7 +80,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get LB %s in %s", lbSpec.Name, s.Scope.ResourceGroup())
 		case err == nil:
 			// LB already exists
-			s.Scope.V(2).Info("found existing load balancer, checking if updates are needed", "load balancer", lbSpec.Name)
+			log.V(2).Info("found existing load balancer, checking if updates are needed", "load balancer", lbSpec.Name)
 			// We append the existing LB etag to the header to ensure we only apply the updates if the LB has not been modified.
 			etag = existingLB.Etag
 			update := false
@@ -132,11 +129,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 			if !update {
 				// Skip update for LB as the required defaults are present
-				s.Scope.V(2).Info("LB exists and no defaults are missing, skipping update", "load balancer", lbSpec.Name)
+				log.V(2).Info("LB exists and no defaults are missing, skipping update", "load balancer", lbSpec.Name)
 				continue
 			}
 		default:
-			s.Scope.V(2).Info("creating load balancer", "load balancer", lbSpec.Name)
+			log.V(2).Info("creating load balancer", "load balancer", lbSpec.Name)
 			frontendIPConfigs, frontendIDs = s.getFrontendIPConfigs(lbSpec)
 			loadBalancingRules = s.getLoadBalancingRules(lbSpec, frontendIDs)
 			backendAddressPools = s.getBackendAddressPools(lbSpec)
@@ -169,18 +166,18 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to create load balancer \"%s\"", lbSpec.Name)
 		}
 
-		s.Scope.V(2).Info("successfully created load balancer", "load balancer", lbSpec.Name)
+		log.V(2).Info("successfully created load balancer", "load balancer", lbSpec.Name)
 	}
 	return nil
 }
 
 // Delete deletes the public load balancer with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "loadbalancers.Service.Delete")
 	defer done()
 
 	for _, lbSpec := range s.Scope.LBSpecs() {
-		s.Scope.V(2).Info("deleting load balancer", "load balancer", lbSpec.Name)
+		log.V(2).Info("deleting load balancer", "load balancer", lbSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), lbSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
@@ -190,7 +187,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete load balancer %s in resource group %s", lbSpec.Name, s.Scope.ResourceGroup())
 		}
 
-		s.Scope.V(2).Info("deleted public load balancer", "load balancer", lbSpec.Name)
+		log.V(2).Info("deleted public load balancer", "load balancer", lbSpec.Name)
 	}
 	return nil
 }

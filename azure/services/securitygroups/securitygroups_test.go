@@ -26,8 +26,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups/mock_securitygroups"
@@ -78,7 +76,6 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				s.IsVnetManaged().Return(true)
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(gomockinternal.AContext(), "my-rg", "nsg-one").Return(network.SecurityGroup{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "nsg-one", gomockinternal.DiffEq(network.SecurityGroup{
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
@@ -153,7 +150,6 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				s.IsVnetManaged().AnyTimes().Return(true)
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(gomockinternal.AContext(), "my-rg", "nsg-one").Return(network.SecurityGroup{
 					Response: autorest.Response{},
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
@@ -228,7 +224,6 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			name: "skipping network security group reconcile in custom VNet mode",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.IsVnetManaged().Return(false)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 			},
 		},
 	}
@@ -286,7 +281,6 @@ func TestDeleteSecurityGroups(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.IsVnetManaged().Return(true)
 				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-one")
 				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-two")
@@ -306,7 +300,6 @@ func TestDeleteSecurityGroups(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.IsVnetManaged().Return(true)
 				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-one").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -317,7 +310,6 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			name: "skipping network security group delete in custom VNet mode",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.IsVnetManaged().Return(false)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 			},
 		},
 	}

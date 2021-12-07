@@ -22,17 +22,14 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	"github.com/Azure/go-autorest/autorest/to"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns/mock_privatedns"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-
-	"k8s.io/klog/v2/klogr"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns/mock_privatedns"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcilePrivateDNS(t *testing.T) {
@@ -52,7 +49,6 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			name:          "create ipv4 private dns successfully",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -97,7 +93,6 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			name:          "create multiple ipv4 private dns successfully",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -156,7 +151,6 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			name:          "create ipv6 private dns successfully",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -201,7 +195,6 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			name:          "create multiple ipv6 private dns successfully",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -260,7 +253,6 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			name:          "link creation fails",
 			expectedError: "failed to create virtual network link my-link: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -295,7 +287,6 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			name:          "creating multiple links fails",
 			expectedError: "failed to create virtual network link my-link-2: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -386,7 +377,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "no private dns",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(nil)
 			},
 		},
@@ -394,7 +384,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "delete the dns zone",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -420,7 +409,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "delete the dns zone with multiple links",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -458,7 +446,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "link already deleted",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -485,7 +472,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "one link already deleted with multiple links",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -524,7 +510,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "zone already deleted",
 			expectedError: "",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -552,7 +537,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "error while trying to delete the link",
 			expectedError: "failed to delete virtual network link my-vnet with zone my-dns-zone in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -578,7 +562,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "error while trying to delete one link with multiple links",
 			expectedError: "failed to delete virtual network link my-vnet-2 with zone my-dns-zone in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -615,7 +598,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "error while trying to delete the zone with one link",
 			expectedError: "failed to delete private dns zone my-dns-zone in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{
@@ -642,7 +624,6 @@ func TestDeletePrivateDNS(t *testing.T) {
 			name:          "error while trying to delete the zone with multiple links",
 			expectedError: "failed to delete private dns zone my-dns-zone in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_privatedns.MockScopeMockRecorder, m *mock_privatedns.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.PrivateDNSSpec().Return(&azure.PrivateDNSSpec{
 					ZoneName: "my-dns-zone",
 					Links: []azure.PrivateDNSLinkSpec{

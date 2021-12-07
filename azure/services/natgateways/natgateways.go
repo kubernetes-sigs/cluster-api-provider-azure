@@ -23,9 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	autorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -33,7 +31,6 @@ import (
 
 // NatGatewayScope defines the scope interface for nat gateway service.
 type NatGatewayScope interface {
-	logr.Logger
 	azure.ClusterScoper
 	NatGatewaySpecs() []azure.NatGatewaySpec
 }
@@ -55,11 +52,11 @@ func New(scope NatGatewayScope) *Service {
 // Reconcile gets/creates/updates a nat gateway.
 // Only when the Nat Gateway 'Name' property is defined we create the Nat Gateway: it's opt-in.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Reconcile")
 	defer done()
 
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
-		s.Scope.V(4).Info("Skipping nat gateways reconcile in custom vnet mode")
+		log.V(4).Info("Skipping nat gateways reconcile in custom vnet mode")
 		return nil
 	}
 
@@ -71,21 +68,21 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get nat gateway %s in %s", natGatewaySpec.Name, s.Scope.ResourceGroup())
 		case err == nil:
 			// nat gateway already exists
-			s.Scope.V(4).Info("nat gateway already exists", "nat gateway", natGatewaySpec.Name)
+			log.V(4).Info("nat gateway already exists", "nat gateway", natGatewaySpec.Name)
 			natGatewaySpec.Subnet.NatGateway.ID = existingNatGateway.ID
 
 			if existingNatGateway.NatGatewayIP.Name == natGatewaySpec.NatGatewayIP.Name {
 				// Skip update for Nat Gateway as it exists with expected values
-				s.Scope.V(4).Info("Nat Gateway exists with expected values, skipping update", "nat gateway", natGatewaySpec.Name)
+				log.V(4).Info("Nat Gateway exists with expected values, skipping update", "nat gateway", natGatewaySpec.Name)
 				natGatewaySpec.Subnet.NatGateway = *existingNatGateway
 				s.Scope.SetSubnet(natGatewaySpec.Subnet)
 				continue
 			} else {
-				s.Scope.V(2).Info("updating NAT gateway IP name to match the spec", "old name", existingNatGateway.NatGatewayIP.Name, "desired name", natGatewaySpec.NatGatewayIP.Name)
+				log.V(2).Info("updating NAT gateway IP name to match the spec", "old name", existingNatGateway.NatGatewayIP.Name, "desired name", natGatewaySpec.NatGatewayIP.Name)
 			}
 		default:
 			// nat gateway doesn't exist but its name was specified in the subnet, let's create it
-			s.Scope.V(2).Info("nat gateway doesn't exist yet, creating it", "nat gateway", natGatewaySpec.Name)
+			log.V(2).Info("nat gateway doesn't exist yet, creating it", "nat gateway", natGatewaySpec.Name)
 		}
 
 		natGatewayToCreate := network.NatGateway{
@@ -103,7 +100,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to create nat gateway %s in resource group %s", natGatewaySpec.Name, s.Scope.ResourceGroup())
 		}
-		s.Scope.V(2).Info("successfully created nat gateway", "nat gateway", natGatewaySpec.Name)
+		log.V(2).Info("successfully created nat gateway", "nat gateway", natGatewaySpec.Name)
 		natGateway := infrav1.NatGateway{
 			ID:   azure.NatGatewayID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), natGatewaySpec.Name),
 			Name: natGatewaySpec.Name,
@@ -118,6 +115,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 }
 
 func (s *Service) getExisting(ctx context.Context, spec azure.NatGatewaySpec) (*infrav1.NatGateway, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.getExisting")
+	defer done()
+
 	existingNatGateway, err := s.Get(ctx, s.Scope.ResourceGroup(), spec.Name)
 	if err != nil {
 		return nil, err
@@ -149,15 +149,15 @@ func (s *Service) getExisting(ctx context.Context, spec azure.NatGatewaySpec) (*
 
 // Delete deletes the nat gateway with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Delete")
 	defer done()
 
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
-		s.Scope.V(4).Info("Skipping nat gateway deletion in custom vnet mode")
+		log.V(4).Info("Skipping nat gateway deletion in custom vnet mode")
 		return nil
 	}
 	for _, natGatewaySpec := range s.Scope.NatGatewaySpecs() {
-		s.Scope.V(2).Info("deleting nat gateway", "nat gateway", natGatewaySpec.Name)
+		log.V(2).Info("deleting nat gateway", "nat gateway", natGatewaySpec.Name)
 		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), natGatewaySpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
@@ -167,7 +167,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete nat gateway %s in resource group %s", natGatewaySpec.Name, s.Scope.ResourceGroup())
 		}
 
-		s.Scope.V(2).Info("successfully deleted nat gateway", "nat gateway", natGatewaySpec.Name)
+		log.V(2).Info("successfully deleted nat gateway", "nat gateway", natGatewaySpec.Name)
 	}
 	return nil
 }

@@ -19,11 +19,8 @@ package bastionhosts
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -31,7 +28,6 @@ import (
 
 // BastionScope defines the scope interface for a bastion host service.
 type BastionScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	azure.NetworkDescriber
 	BastionSpec() azure.BastionSpec
@@ -57,10 +53,7 @@ func New(scope BastionScope) *Service {
 
 // Reconcile gets/creates/updates a bastion host.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
-		ctx,
-		"bastionhosts.Service.Reconcile",
-	)
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "bastionhosts.Service.Reconcile")
 	defer done()
 
 	azureBastionSpec := s.Scope.BastionSpec().AzureBastion

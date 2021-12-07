@@ -21,19 +21,15 @@ import (
 	"net/http"
 	"testing"
 
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-
-	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets/mock_subnets"
-
-	"github.com/golang/mock/gomock"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/gomega"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets/mock_subnets"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcileSubnets(t *testing.T) {
@@ -46,7 +42,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "subnet does not exist",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -78,7 +73,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "subnet ipv6 does not exist",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-ipv6-subnet",
@@ -112,7 +106,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "fail to create subnet",
 			expectedError: "failed to create subnet my-subnet in resource group : #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -138,7 +131,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "fail to get existing subnet",
 			expectedError: "failed to get subnet my-subnet: failed to fetch subnet named my-vnet in vnet my-subnet: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -161,7 +153,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "vnet was provided but subnet is missing",
 			expectedError: "vnet was provided but subnet my-subnet is missing",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -189,7 +180,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "vnet was provided and subnet exists",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
 					ID:         "subnet-id",
 					Name:       "my-subnet",
@@ -274,7 +264,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "vnet for ipv6 is provided",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.Subnet("my-ipv6-subnet").AnyTimes().Return(infrav1.SubnetSpec{
 					ID:         "subnet-id",
 					Name:       "my-ipv6-subnet",
@@ -366,7 +355,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "doesn't overwrite existing NAT Gateway",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
 					ID:         "subnet-id",
 					Name:       "my-subnet",
@@ -432,7 +420,6 @@ func TestReconcileSubnets(t *testing.T) {
 			name:          "spec has empty CIDR and ID data but GET from Azure has the values",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
 					ID:         "",
 					Name:       "my-subnet",
@@ -518,7 +505,6 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "subnet deleted successfully",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -548,7 +534,6 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "subnet already deleted",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -570,7 +555,6 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "node subnet already deleted and controlplane subnet deleted successfully",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -601,7 +585,6 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "skip delete if vnet is managed",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -621,7 +604,6 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "fail delete subnet",
 			expectedError: "failed to delete subnet my-subnet in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",

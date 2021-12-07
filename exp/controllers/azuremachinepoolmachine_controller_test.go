@@ -30,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
@@ -81,6 +80,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 	os.Setenv(auth.TenantID, "fooTenant")
 
 	for _, c := range cases {
+		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			var (
 				g          = NewWithT(t)
@@ -104,7 +104,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			c.Setup(cb, reconciler.EXPECT())
-			controller := NewAzureMachinePoolMachineController(cb.Build(), klogr.New(), nil, 30*time.Second, "foo")
+			controller := NewAzureMachinePoolMachineController(cb.Build(), nil, 30*time.Second, "foo")
 			controller.reconcilerFactory = func(_ *scope.MachinePoolMachineScope) azure.Reconciler {
 				return reconciler
 			}

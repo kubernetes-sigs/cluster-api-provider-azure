@@ -22,9 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -33,7 +31,6 @@ import (
 
 // VNetScope defines the scope interface for a virtual network service.
 type VNetScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	Vnet() *infrav1.VnetSpec
 	VNetSpec() azure.VNetSpec
@@ -55,7 +52,7 @@ func New(scope VNetScope) *Service {
 
 // Reconcile gets/creates/updates a virtual network.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Reconcile")
 	defer done()
 
 	// Following should be created upstream and provided as an input to NewService
@@ -76,12 +73,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	case err == nil:
 		// vnet already exists, cannot update since it's immutable
 		if !existingVnet.IsManaged(s.Scope.ClusterName()) {
-			s.Scope.V(2).Info("Working on custom VNet", "vnet-id", existingVnet.ID)
+			log.V(2).Info("Working on custom VNet", "vnet-id", existingVnet.ID)
 		}
 		existingVnet.DeepCopyInto(s.Scope.Vnet())
 
 	default:
-		s.Scope.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
+		log.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
 
 		vnetProperties := network.VirtualNetwork{
 			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
@@ -104,7 +101,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to create virtual network %s", vnetSpec.Name)
 		}
-		s.Scope.V(2).Info("successfully created VNet", "VNet", vnetSpec.Name)
+		log.V(2).Info("successfully created VNet", "VNet", vnetSpec.Name)
 	}
 
 	return nil
@@ -112,7 +109,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Delete")
 	defer done()
 
 	vnetSpec := s.Scope.VNetSpec()
@@ -123,11 +120,11 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	if !existingVnet.IsManaged(s.Scope.ClusterName()) {
-		s.Scope.V(4).Info("Skipping VNet deletion in custom vnet mode")
+		log.V(4).Info("Skipping VNet deletion in custom vnet mode")
 		return nil
 	}
 
-	s.Scope.V(2).Info("deleting VNet", "VNet", vnetSpec.Name)
+	log.V(2).Info("deleting VNet", "VNet", vnetSpec.Name)
 	err = s.Client.Delete(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
 	if err != nil {
 		if azure.ResourceGroupNotFound(err) || azure.ResourceNotFound(err) {
@@ -138,19 +135,19 @@ func (s *Service) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete VNet %s in resource group %s", vnetSpec.Name, vnetSpec.ResourceGroup)
 	}
 
-	s.Scope.V(2).Info("successfully deleted VNet", "VNet", vnetSpec.Name)
+	log.V(2).Info("successfully deleted VNet", "VNet", vnetSpec.Name)
 	return nil
 }
 
 // getExisting provides information about an existing virtual network.
 func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav1.VnetSpec, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.getExisting")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.getExisting")
 	defer done()
 
 	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
-			s.Scope.V(2).Info(fmt.Sprintf("Resource not found for VNet %q from resource group %q", spec.Name, spec.ResourceGroup))
+			log.V(2).Info(fmt.Sprintf("Resource not found for VNet %q from resource group %q", spec.Name, spec.ResourceGroup))
 			return nil, err
 		}
 		return nil, errors.Wrapf(err, "failed to get VNet %s", spec.Name)

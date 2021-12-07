@@ -26,11 +26,9 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capiexputil "sigs.k8s.io/cluster-api/exp/util"
@@ -43,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // ManagedControlPlaneScopeParams defines the input parameters used to create a new managed
@@ -50,7 +49,6 @@ import (
 type ManagedControlPlaneScopeParams struct {
 	AzureClients
 	Client           client.Client
-	Logger           logr.Logger
 	Cluster          *clusterv1.Cluster
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
@@ -61,16 +59,15 @@ type ManagedControlPlaneScopeParams struct {
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
 func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlaneScopeParams) (*ManagedControlPlaneScope, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.NewManagedControlPlaneScope")
+	defer done()
+
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
 
 	if params.ControlPlane == nil {
 		return nil, errors.New("failed to generate new scope from nil ControlPlane")
-	}
-
-	if params.Logger == nil {
-		params.Logger = klogr.New()
 	}
 
 	if params.ControlPlane.Spec.IdentityRef == nil {
@@ -94,7 +91,6 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 	}
 
 	return &ManagedControlPlaneScope{
-		Logger:           params.Logger,
 		Client:           params.Client,
 		AzureClients:     params.AzureClients,
 		Cluster:          params.Cluster,
@@ -108,7 +104,6 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 
 // ManagedControlPlaneScope defines the basic context for an actuator to operate upon.
 type ManagedControlPlaneScope struct {
-	logr.Logger
 	Client         client.Client
 	patchHelper    *patch.Helper
 	kubeConfigData []byte
@@ -183,11 +178,17 @@ func (s *ManagedControlPlaneScope) Authorizer() autorest.Authorizer {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.PatchObject")
+	defer done()
+
 	return s.patchHelper.Patch(ctx, s.PatchTarget)
 }
 
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ManagedControlPlaneScope) Close(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.Close")
+	defer done()
+
 	return s.PatchObject(ctx)
 }
 
@@ -260,7 +261,7 @@ func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
 
 // SetSubnet sets the passed subnet spec into the scope.
 // This is not used when using a managed control plane.
-func (s *ManagedControlPlaneScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
+func (s *ManagedControlPlaneScope) SetSubnet(_ infrav1.SubnetSpec) {
 	// no-op
 }
 
@@ -307,7 +308,7 @@ func (s *ManagedControlPlaneScope) APIServerLBName() string {
 }
 
 // APIServerLBPoolName returns the API Server LB backend pool name.
-func (s *ManagedControlPlaneScope) APIServerLBPoolName(loadBalancerName string) string {
+func (s *ManagedControlPlaneScope) APIServerLBPoolName(_ string) string {
 	return "" // does not apply for AKS
 }
 
@@ -378,25 +379,25 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		managedClusterSpec.LoadBalancerSKU = *s.ControlPlane.Spec.LoadBalancerSKU
 	}
 
-	if net := s.Cluster.Spec.ClusterNetwork; net != nil {
-		if net.Services != nil {
+	if clusterNetwork := s.Cluster.Spec.ClusterNetwork; clusterNetwork != nil {
+		if clusterNetwork.Services != nil {
 			// A user may provide zero or one CIDR blocks. If they provide an empty array,
 			// we ignore it and use the default. AKS doesn't support > 1 Service/Pod CIDR.
-			if len(net.Services.CIDRBlocks) > 1 {
+			if len(clusterNetwork.Services.CIDRBlocks) > 1 {
 				return azure.ManagedClusterSpec{}, errors.New("managed control planes only allow one service cidr")
 			}
-			if len(net.Services.CIDRBlocks) == 1 {
-				managedClusterSpec.ServiceCIDR = net.Services.CIDRBlocks[0]
+			if len(clusterNetwork.Services.CIDRBlocks) == 1 {
+				managedClusterSpec.ServiceCIDR = clusterNetwork.Services.CIDRBlocks[0]
 			}
 		}
-		if net.Pods != nil {
+		if clusterNetwork.Pods != nil {
 			// A user may provide zero or one CIDR blocks. If they provide an empty array,
 			// we ignore it and use the default. AKS doesn't support > 1 Service/Pod CIDR.
-			if len(net.Pods.CIDRBlocks) > 1 {
+			if len(clusterNetwork.Pods.CIDRBlocks) > 1 {
 				return azure.ManagedClusterSpec{}, errors.New("managed control planes only allow one service cidr")
 			}
-			if len(net.Pods.CIDRBlocks) == 1 {
-				managedClusterSpec.PodCIDR = net.Pods.CIDRBlocks[0]
+			if len(clusterNetwork.Pods.CIDRBlocks) == 1 {
+				managedClusterSpec.PodCIDR = clusterNetwork.Pods.CIDRBlocks[0]
 			}
 		}
 	}
@@ -453,6 +454,9 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 
 // GetAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.
 func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.GetAgentPoolSpecs")
+	defer done()
+
 	if len(s.AllNodePools) == 0 {
 		opt1 := client.InNamespace(s.ControlPlane.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
@@ -468,19 +472,20 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 		s.AllNodePools = ammpList.Items
 	}
 
-	ammps := []azure.AgentPoolSpec{}
-
-	foundSystemPool := false
+	var (
+		ammps           = make([]azure.AgentPoolSpec, 0, len(s.AllNodePools))
+		foundSystemPool = false
+	)
 	for _, pool := range s.AllNodePools {
 		// Fetch the owning MachinePool.
 
 		ownerPool, err := capiexputil.GetOwnerMachinePool(ctx, s.Client, pool.ObjectMeta)
 		if err != nil {
-			s.Logger.Error(err, "failed to fetch owner ref for system pool: %s", pool.Name)
+			log.Error(err, "failed to fetch owner ref for system pool: %s", pool.Name)
 			continue
 		}
 		if ownerPool == nil {
-			s.Logger.Info("failed to fetch owner ref for system pool")
+			log.Info("failed to fetch owner ref for system pool")
 			continue
 		}
 

@@ -24,28 +24,24 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
-	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
-	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
+	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 type (
 	// ScaleSetScope defines the scope interface for a scale sets service.
 	ScaleSetScope interface {
-		logr.Logger
 		azure.ClusterDescriber
 		azure.AsyncStatusUpdater
 		GetBootstrapData(context.Context) (string, error)
-		GetVMImage() (*infrav1.Image, error)
+		GetVMImage(context.Context) (*infrav1.Image, error)
 		SaveVMImageToStatus(*infrav1.Image)
 		MaxSurge() (int, error)
 		ScaleSetSpec() azure.ScaleSetSpec
@@ -74,7 +70,7 @@ func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) (retErr error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Reconcile")
 	defer done()
 
 	if err := s.validateSpec(ctx); err != nil {
@@ -97,7 +93,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		if fetchedVMSS == nil {
 			fetchedVMSS, err = s.getVirtualMachineScaleSet(ctx, scaleSetSpec.Name)
 			if err != nil && !azure.ResourceNotFound(err) {
-				s.Scope.Error(err, "failed to get vmss in deferred update")
+				log.Error(err, "failed to get vmss in deferred update")
 			}
 		}
 
@@ -150,7 +146,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 // Delete deletes a scale set asynchronously. Delete sends a DELETE request to Azure and if accepted without error,
 // the VMSS will be considered deleted. The actual delete in Azure may take longer, but should eventually complete.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Delete")
 	defer done()
 
 	var err error
@@ -161,7 +157,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		// save the updated state of the VMSS for the MachinePoolScope to use for updating K8s state
 		fetchedVMSS, err := s.getVirtualMachineScaleSet(ctx, vmssSpec.Name)
 		if err != nil && !azure.ResourceNotFound(err) {
-			s.Scope.Error(err, "failed to get vmss in deferred update")
+			log.Error(err, "failed to get vmss in deferred update")
 		}
 
 		if fetchedVMSS != nil {
@@ -184,7 +180,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	// no long running delete operation is active, so delete the ScaleSet
-	s.Scope.V(2).Info("deleting VMSS", "scale set", vmssSpec.Name)
+	log.V(2).Info("deleting VMSS", "scale set", vmssSpec.Name)
 	future, err = s.Client.DeleteAsync(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
@@ -208,7 +204,7 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.createVMSS")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.createVMSS")
 	defer done()
 
 	spec := s.Scope.ScaleSetSpec()
@@ -223,13 +219,13 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 		return nil, errors.Wrap(err, "cannot create VMSS")
 	}
 
-	s.Scope.V(2).Info("starting to create VMSS", "scale set", spec.Name)
+	log.V(2).Info("starting to create VMSS", "scale set", spec.Name)
 	s.Scope.SetLongRunningOperationState(future)
 	return future, err
 }
 
 func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) (*infrav1.Future, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.patchVMSSIfNeeded")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.patchVMSSIfNeeded")
 	defer done()
 
 	spec := s.Scope.ScaleSetSpec()
@@ -253,18 +249,18 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	if maxSurge > 0 && (hasModelChanges || !infraVMSS.HasEnoughLatestModelOrNotMixedModel()) {
 		// surge capacity with the intention of lowering during instance reconciliation
 		surge := spec.Capacity + int64(maxSurge)
-		s.Scope.V(4).Info("surging...", "surge", surge)
+		log.V(4).Info("surging...", "surge", surge)
 		patch.Sku.Capacity = to.Int64Ptr(surge)
 	}
 
 	// If there are no model changes and no increase in the replica count, do not update the VMSS.
 	// Decreases in replica count is handled by deleting AzureMachinePoolMachine instances in the MachinePoolScope
 	if *patch.Sku.Capacity <= infraVMSS.Capacity && !hasModelChanges {
-		s.Scope.V(4).Info("nothing to update on vmss", "scale set", spec.Name, "newReplicas", *patch.Sku.Capacity, "oldReplicas", infraVMSS.Capacity, "hasChanges", hasModelChanges)
+		log.V(4).Info("nothing to update on vmss", "scale set", spec.Name, "newReplicas", *patch.Sku.Capacity, "oldReplicas", infraVMSS.Capacity, "hasChanges", hasModelChanges)
 		return nil, nil
 	}
 
-	s.Scope.V(4).Info("patching vmss", "scale set", spec.Name, "patch", patch)
+	log.V(4).Info("patching vmss", "scale set", spec.Name, "patch", patch)
 	future, err := s.UpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, patch)
 	if err != nil {
 		if azure.ResourceConflict(err) {
@@ -274,7 +270,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	}
 
 	s.Scope.SetLongRunningOperationState(future)
-	s.Scope.V(2).Info("successfully started to update vmss", "scale set", spec.Name)
+	log.V(2).Info("successfully started to update vmss", "scale set", spec.Name)
 	return future, err
 }
 
@@ -370,7 +366,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 	extensions := s.generateExtensions()
 
-	storageProfile, err := s.generateStorageProfile(vmssSpec, sku)
+	storageProfile, err := s.generateStorageProfile(ctx, vmssSpec, sku)
 	if err != nil {
 		return compute.VirtualMachineScaleSet{}, err
 	}
@@ -409,7 +405,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 			Capacity: to.Int64Ptr(vmssSpec.Capacity),
 		},
 		Zones: to.StringSlicePtr(vmssSpec.FailureDomains),
-		Plan:  s.generateImagePlan(),
+		Plan:  s.generateImagePlan(ctx),
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 			SinglePlacementGroup: to.BoolPtr(false),
 			UpgradePolicy: &compute.UpgradePolicy{
@@ -560,7 +556,10 @@ func (s *Service) generateExtensions() []compute.VirtualMachineScaleSetExtension
 }
 
 // generateStorageProfile generates a pointer to a compute.VirtualMachineScaleSetStorageProfile which can utilized for VM creation.
-func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*compute.VirtualMachineScaleSetStorageProfile, error) {
+func (s *Service) generateStorageProfile(ctx context.Context, vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*compute.VirtualMachineScaleSetStorageProfile, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.generateStorageProfile")
+	defer done()
+
 	storageProfile := &compute.VirtualMachineScaleSetStorageProfile{
 		OsDisk: &compute.VirtualMachineScaleSetOSDisk{
 			OsType:       compute.OperatingSystemTypes(vmssSpec.OSDisk.OSType),
@@ -611,7 +610,7 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 	}
 	storageProfile.DataDisks = &dataDisks
 
-	image, err := s.Scope.GetVMImage()
+	image, err := s.Scope.GetVMImage(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get VM image")
 	}
@@ -674,10 +673,13 @@ func (s *Service) generateOSProfile(ctx context.Context, vmssSpec azure.ScaleSet
 	return osProfile, nil
 }
 
-func (s *Service) generateImagePlan() *compute.Plan {
-	image, err := s.Scope.GetVMImage()
+func (s *Service) generateImagePlan(ctx context.Context) *compute.Plan {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.generateImagePlan")
+	defer done()
+
+	image, err := s.Scope.GetVMImage(ctx)
 	if err != nil {
-		s.Scope.Error(err, "failed to get vm image, disabling Plan")
+		log.Error(err, "failed to get vm image, disabling Plan")
 		return nil
 	}
 

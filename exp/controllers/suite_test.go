@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/env"
 )
@@ -50,26 +51,29 @@ var _ = BeforeSuite(func(done Done) {
 	By("bootstrapping test environment")
 	testEnv = env.NewTestEnvironment()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ctx = log.IntoContext(ctx, testEnv.Log)
+
 	Expect((&AzureManagedClusterReconciler{
 		Client:   testEnv,
-		Log:      testEnv.Log,
 		Recorder: testEnv.GetEventRecorderFor("azuremanagedcluster-reconciler"),
-	}).SetupWithManager(context.Background(), testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+	}).SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	Expect((&AzureManagedControlPlaneReconciler{
 		Client:   testEnv,
-		Log:      testEnv.Log,
 		Recorder: testEnv.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
-	}).SetupWithManager(context.Background(), testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+	}).SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
-	Expect(NewAzureManagedMachinePoolReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremanagedmachinepool-reconciler"),
-		reconciler.DefaultLoopTimeout, "").SetupWithManager(context.Background(), testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+	Expect(NewAzureManagedMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremanagedmachinepool-reconciler"),
+		reconciler.DefaultLoopTimeout, "").SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
-	Expect(NewAzureMachinePoolReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachinepool-reconciler"),
-		reconciler.DefaultLoopTimeout, "").SetupWithManager(context.Background(), testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+	Expect(NewAzureMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachinepool-reconciler"),
+		reconciler.DefaultLoopTimeout, "").SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
-	Expect(NewAzureMachinePoolMachineController(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachinepoolmachine-reconciler"),
-		reconciler.DefaultLoopTimeout, "").SetupWithManager(context.Background(), testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+	Expect(NewAzureMachinePoolMachineController(testEnv, testEnv.GetEventRecorderFor("azuremachinepoolmachine-reconciler"),
+		reconciler.DefaultLoopTimeout, "").SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 
@@ -81,7 +85,7 @@ var _ = BeforeSuite(func(done Done) {
 
 	Eventually(func() bool {
 		nodes := &corev1.NodeList{}
-		if err := testEnv.Client.List(context.Background(), nodes); err != nil {
+		if err := testEnv.Client.List(ctx, nodes); err != nil {
 			return false
 		}
 		return true

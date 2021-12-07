@@ -27,6 +27,7 @@ import (
 
 	// +kubebuilder:scaffold:imports
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,7 +37,6 @@ import (
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
@@ -47,8 +47,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
-
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -58,6 +56,7 @@ import (
 	infrav1beta1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/webhook"
@@ -252,6 +251,8 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
+	ctrl.SetLogger(klogr.New())
+
 	if watchNamespace != "" {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
 	}
@@ -262,8 +263,6 @@ func main() {
 			setupLog.Error(http.ListenAndServe(profilerAddress, nil), "listen and serve error")
 		}()
 	}
-
-	ctrl.SetLogger(klogr.New())
 
 	// Machine and cluster operations can create enough events to trigger the event recorder spam filter
 	// Setting the burst size higher ensures all events will be recorded and submitted to the API
@@ -329,7 +328,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 	if err != nil {
 		setupLog.Error(err, "failed to build machineCache ReconcileCache")
 	}
-	if err := controllers.NewAzureMachineReconciler(mgr.GetClient(), ctrl.Log.WithName("controllers").WithName("AzureMachine"),
+	if err := controllers.NewAzureMachineReconciler(mgr.GetClient(),
 		mgr.GetEventRecorderFor("azuremachine-reconciler"),
 		reconcileTimeout,
 		watchFilterValue,
@@ -344,7 +343,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 	}
 	if err := controllers.NewAzureClusterReconciler(
 		mgr.GetClient(),
-		ctrl.Log.WithName("controllers").WithName("AzureCluster"),
 		mgr.GetEventRecorderFor("azurecluster-reconciler"),
 		reconcileTimeout,
 		watchFilterValue,
@@ -355,7 +353,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 	if err := (&controllers.AzureJSONTemplateReconciler{
 		Client:           mgr.GetClient(),
-		Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONTemplate"),
 		Recorder:         mgr.GetEventRecorderFor("azurejsontemplate-reconciler"),
 		ReconcileTimeout: reconcileTimeout,
 		WatchFilterValue: watchFilterValue,
@@ -366,7 +363,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 	if err := (&controllers.AzureJSONMachineReconciler{
 		Client:           mgr.GetClient(),
-		Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachine"),
 		Recorder:         mgr.GetEventRecorderFor("azurejsonmachine-reconciler"),
 		ReconcileTimeout: reconcileTimeout,
 		WatchFilterValue: watchFilterValue,
@@ -377,7 +373,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 	if err := (&controllers.AzureIdentityReconciler{
 		Client:           mgr.GetClient(),
-		Log:              ctrl.Log.WithName("controllers").WithName("AzureIdentity"),
 		Recorder:         mgr.GetEventRecorderFor("azureidentity-reconciler"),
 		ReconcileTimeout: reconcileTimeout,
 		WatchFilterValue: watchFilterValue,
@@ -396,7 +391,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 		if err := infrav1controllersexp.NewAzureMachinePoolReconciler(
 			mgr.GetClient(),
-			ctrl.Log.WithName("controllers").WithName("AzureMachinePool"),
 			mgr.GetEventRecorderFor("azuremachinepool-reconciler"),
 			reconcileTimeout,
 			watchFilterValue,
@@ -412,7 +406,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 		if err := infrav1controllersexp.NewAzureMachinePoolMachineController(
 			mgr.GetClient(),
-			ctrl.Log.WithName("controllers").WithName("AzureMachinePoolMachine"),
 			mgr.GetEventRecorderFor("azuremachinepoolmachine-reconciler"),
 			reconcileTimeout,
 			watchFilterValue,
@@ -423,7 +416,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 		if err := (&controllers.AzureJSONMachinePoolReconciler{
 			Client:           mgr.GetClient(),
-			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachinePool"),
 			Recorder:         mgr.GetEventRecorderFor("azurejsonmachinepool-reconciler"),
 			ReconcileTimeout: reconcileTimeout,
 			WatchFilterValue: watchFilterValue,
@@ -440,7 +432,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 			if err := infrav1controllersexp.NewAzureManagedMachinePoolReconciler(
 				mgr.GetClient(),
-				ctrl.Log.WithName("controllers").WithName("AzureManagedMachinePool"),
 				mgr.GetEventRecorderFor("azuremanagedmachinepoolmachine-reconciler"),
 				reconcileTimeout,
 				watchFilterValue,
@@ -456,7 +447,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 			if err := (&infrav1controllersexp.AzureManagedClusterReconciler{
 				Client:           mgr.GetClient(),
-				Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedCluster"),
 				Recorder:         mgr.GetEventRecorderFor("azuremanagedcluster-reconciler"),
 				ReconcileTimeout: reconcileTimeout,
 				WatchFilterValue: watchFilterValue,
@@ -472,7 +462,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 			if err := (&infrav1controllersexp.AzureManagedControlPlaneReconciler{
 				Client:           mgr.GetClient(),
-				Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedControlPlane"),
 				Recorder:         mgr.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
 				ReconcileTimeout: reconcileTimeout,
 				WatchFilterValue: watchFilterValue,

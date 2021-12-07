@@ -22,9 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -33,7 +31,6 @@ import (
 
 // PublicIPScope defines the scope interface for a public IP service.
 type PublicIPScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	PublicIPSpecs() []azure.PublicIPSpec
 }
@@ -54,11 +51,11 @@ func New(scope PublicIPScope) *Service {
 
 // Reconcile gets/creates/updates a public ip.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Reconcile")
 	defer done()
 
 	for _, ip := range s.Scope.PublicIPSpecs() {
-		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
+		log.V(2).Info("creating public IP", "public ip", ip.Name)
 
 		// only set DNS properties if there is a DNS name specified
 		addressVersion := network.IPVersionIPv4
@@ -102,7 +99,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrap(err, "cannot create public IP")
 		}
 
-		s.Scope.V(2).Info("successfully created public IP", "public ip", ip.Name)
+		log.V(2).Info("successfully created public IP", "public ip", ip.Name)
 	}
 
 	return nil
@@ -110,7 +107,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the public IP with the provided scope.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Delete")
 	defer done()
 
 	for _, ip := range s.Scope.PublicIPSpecs() {
@@ -120,11 +117,11 @@ func (s *Service) Delete(ctx context.Context) error {
 		}
 
 		if !managed {
-			s.Scope.V(2).Info("Skipping IP deletion for unmanaged public IP", "public ip", ip.Name)
+			log.V(2).Info("Skipping IP deletion for unmanaged public IP", "public ip", ip.Name)
 			continue
 		}
 
-		s.Scope.V(2).Info("deleting public IP", "public ip", ip.Name)
+		log.V(2).Info("deleting public IP", "public ip", ip.Name)
 		err = s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
@@ -134,7 +131,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete public IP %s in resource group %s", ip.Name, s.Scope.ResourceGroup())
 		}
 
-		s.Scope.V(2).Info("deleted public IP", "public ip", ip.Name)
+		log.V(2).Info("deleted public IP", "public ip", ip.Name)
 	}
 	return nil
 }
@@ -142,6 +139,9 @@ func (s *Service) Delete(ctx context.Context) error {
 // isIPManaged returns true if the IP has an owned tag with the cluster name as value,
 // meaning that the IP's lifecycle is managed.
 func (s *Service) isIPManaged(ctx context.Context, ipName string) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.isIPManaged")
+	defer done()
+
 	ip, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), ipName)
 	if err != nil {
 		return false, err

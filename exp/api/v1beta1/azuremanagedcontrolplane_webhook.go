@@ -27,15 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
-
-// log is for logging in this package.
-var azuremanagedcontrolplanelog = logf.Log.WithName("azuremanagedcontrolplane-resource")
 
 var kubeSemver = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
 
@@ -52,8 +47,6 @@ var _ webhook.Defaulter = &AzureManagedControlPlane{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (r *AzureManagedControlPlane) Default() {
-	azuremanagedcontrolplanelog.Info("default", "name", r.Name)
-
 	if r.Spec.NetworkPlugin == nil {
 		networkPlugin := "azure"
 		r.Spec.NetworkPlugin = &networkPlugin
@@ -74,7 +67,7 @@ func (r *AzureManagedControlPlane) Default() {
 
 	err := r.setDefaultSSHPublicKey()
 	if err != nil {
-		azuremanagedcontrolplanelog.Error(err, "SetDefaultSshPublicKey failed")
+		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "SetDefaultSshPublicKey failed")
 	}
 
 	r.setDefaultNodeResourceGroupName()
@@ -89,14 +82,11 @@ var _ webhook.Validator = &AzureManagedControlPlane{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedControlPlane) ValidateCreate() error {
-	azuremanagedcontrolplanelog.Info("validate create", "name", r.Name)
-
 	return r.Validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
-	azuremanagedcontrolplanelog.Info("validate update", "name", r.Name)
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureManagedControlPlane)
 
@@ -257,8 +247,6 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedControlPlane) ValidateDelete() error {
-	azuremanagedcontrolplanelog.Info("validate delete", "name", r.Name)
-
 	return nil
 }
 
@@ -306,9 +294,7 @@ func (r *AzureManagedControlPlane) validateSSHKey() error {
 	if r.Spec.SSHPublicKey != "" {
 		sshKey := r.Spec.SSHPublicKey
 		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
-			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
-			azuremachinepoollog.Info("Invalid sshKey: %s", agg.Error())
-			return agg
+			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 	}
 
@@ -355,7 +341,6 @@ func (r *AzureManagedControlPlane) validateLoadBalancerProfile() error {
 
 		if len(allErrs) > 0 {
 			agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
-			azuremanagedcontrolplanelog.Info("Invalid loadBalancerProfile: %s", agg.Error())
 			errs = append(errs, agg)
 		}
 
@@ -375,9 +360,7 @@ func (r *AzureManagedControlPlane) validateAPIServerAccessProfile() error {
 			}
 		}
 		if len(allErrs) > 0 {
-			agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
-			azuremanagedcontrolplanelog.Info("Invalid apiServerAccessProfile: %s", agg.Error())
-			return agg
+			return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
 		}
 	}
 	return nil

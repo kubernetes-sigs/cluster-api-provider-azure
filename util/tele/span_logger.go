@@ -44,7 +44,7 @@ func (s *spanLogger) Enabled() bool {
 }
 
 func (s *spanLogger) kvsToAttrs(keysAndValues ...interface{}) []attribute.KeyValue {
-	ret := []attribute.KeyValue{}
+	var ret []attribute.KeyValue
 	for i := 0; i < len(keysAndValues); i += 2 {
 		kv1 := fmt.Sprintf("%s", keysAndValues[i])
 		kv2 := fmt.Sprintf("%s", keysAndValues[i+1])
@@ -158,7 +158,13 @@ func StartSpanWithLogger(
 	endFn := func() {
 		span.End()
 	}
-	lggr := log.FromContext(ctx).WithName(spanName)
+
+	kvs := make([]interface{}, 0, 2*len(cfg.KVPs))
+	for k, v := range cfg.KVPs {
+		kvs = append(kvs, k, v)
+	}
+
+	lggr := log.FromContext(ctx, kvs...).WithName(spanName)
 	return ctx, &compositeLogger{
 		loggers: []logr.Logger{
 			corrIDLogger(ctx, lggr),

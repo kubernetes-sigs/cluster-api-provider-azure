@@ -21,8 +21,6 @@ import (
 	"net/http"
 	"testing"
 
-	"k8s.io/utils/pointer"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -32,11 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -44,6 +38,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 const (
@@ -88,7 +85,6 @@ func TestNewService(t *testing.T) {
 
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
 		Client:           client,
-		Logger:           s.Logger,
 		MachinePool:      new(clusterv1exp.MachinePool),
 		AzureMachinePool: new(infrav1exp.AzureMachinePool),
 		ClusterScope:     s,
@@ -113,7 +109,6 @@ func TestGetExistingVMSS(t *testing.T) {
 			expectedError: "failed to get existing vmss: #: Not found: StatusCode=404",
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
@@ -141,7 +136,6 @@ func TestGetExistingVMSS(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
 					ID:   to.StringPtr("my-id"),
 					Name: to.StringPtr("my-vmss"),
@@ -177,7 +171,6 @@ func TestGetExistingVMSS(t *testing.T) {
 			expectedError: "failed to list instances: #: Not found: StatusCode=404",
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
 					ID:   to.StringPtr("my-id"),
 					Name: to.StringPtr("my-vmss"),
@@ -622,7 +615,6 @@ func TestDeleteVMSS(t *testing.T) {
 					Capacity: 3,
 				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				future := &infrav1.Future{}
 				s.GetLongRunningOperationState("my-existing-vmss", scope.ScalesetsServiceName).Return(future)
 				m.GetResultIfDone(gomockinternal.AContext(), future).Return(compute.VirtualMachineScaleSet{}, nil)
@@ -641,7 +633,6 @@ func TestDeleteVMSS(t *testing.T) {
 					Capacity: 3,
 				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState(name, scope.ScalesetsServiceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -659,7 +650,6 @@ func TestDeleteVMSS(t *testing.T) {
 					Capacity: 3,
 				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState(name, scope.ScalesetsServiceName).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
@@ -1249,7 +1239,7 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 			Version:   "1.0",
 		},
 	}
-	s.GetVMImage().Return(image, nil).AnyTimes()
+	s.GetVMImage(gomockinternal.AContext()).Return(image, nil).AnyTimes()
 	s.SaveVMImageToStatus(image)
 }
 
@@ -1263,14 +1253,13 @@ func setupUpdateVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder
 			Version:   "2.0",
 		},
 	}
-	s.GetVMImage().Return(image, nil).AnyTimes()
+	s.GetVMImage(gomockinternal.AContext()).Return(image, nil).AnyTimes()
 	s.SaveVMImageToStatus(image)
 }
 
 func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	s.SubscriptionID().AnyTimes().Return(defaultSubscriptionID)
 	s.ResourceGroup().AnyTimes().Return(defaultResourceGroup)
-	s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 	s.AdditionalTags()
 	s.Location().AnyTimes().Return("test-location")
 	s.ClusterName().Return("my-cluster")

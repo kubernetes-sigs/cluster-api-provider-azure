@@ -28,8 +28,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -78,7 +76,6 @@ func TestProcessOngoingOperation(t *testing.T) {
 			resourceName:  "test-resource",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
 			},
 		},
@@ -88,7 +85,6 @@ func TestProcessOngoingOperation(t *testing.T) {
 			resourceName:  "test-resource",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(&invalidFuture)
 				s.DeleteLongRunningOperationState("test-resource", "test-service")
 			},
@@ -99,7 +95,6 @@ func TestProcessOngoingOperation(t *testing.T) {
 			resourceName:  "test-resource",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, fakeError)
 			},
@@ -110,7 +105,6 @@ func TestProcessOngoingOperation(t *testing.T) {
 			resourceName:  "test-resource",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, nil)
 			},
@@ -122,7 +116,6 @@ func TestProcessOngoingOperation(t *testing.T) {
 			resourceName:   "test-resource",
 			serviceName:    "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
 				s.DeleteLongRunningOperationState("test-resource", "test-service")
@@ -174,7 +167,6 @@ func TestCreateResource(t *testing.T) {
 			expectedError: "operation type PUT on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service").Times(2).Return(&validCreateFuture)
@@ -187,7 +179,6 @@ func TestCreateResource(t *testing.T) {
 			expectedResult: "test-resource",
 			serviceName:    "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
@@ -199,7 +190,6 @@ func TestCreateResource(t *testing.T) {
 			expectedError: "failed to create resource test-group/test-resource (service: test-service)",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
@@ -211,7 +201,6 @@ func TestCreateResource(t *testing.T) {
 			expectedError: "operation type PUT on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
@@ -260,7 +249,6 @@ func TestDeleteResource(t *testing.T) {
 			expectedError: "operation type DELETE on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service").Times(2).Return(&validDeleteFuture)
@@ -272,7 +260,6 @@ func TestDeleteResource(t *testing.T) {
 			expectedError: "",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
@@ -284,7 +271,6 @@ func TestDeleteResource(t *testing.T) {
 			expectedError: "failed to delete resource test-group/test-resource (service: test-service)",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
@@ -296,7 +282,6 @@ func TestDeleteResource(t *testing.T) {
 			expectedError: "operation type DELETE on Azure resource test-group/test-resource is not done. Object will be requeued after 15s",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)

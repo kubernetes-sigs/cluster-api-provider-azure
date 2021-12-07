@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -45,7 +44,6 @@ import (
 // AzureJSONTemplateReconciler reconciles Azure json secrets for AzureMachineTemplate objects.
 type AzureJSONTemplateReconciler struct {
 	client.Client
-	Log              logr.Logger
 	Recorder         record.EventRecorder
 	ReconcileTimeout time.Duration
 	WatchFilterValue string
@@ -53,10 +51,15 @@ type AzureJSONTemplateReconciler struct {
 
 // SetupWithManager initializes this controller with a manager.
 func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+	_, log, done := tele.StartSpanWithLogger(ctx,
+		"controllers.AzureJSONTemplateReconciler.SetupWithManager",
+	)
+	defer done()
+
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureMachineTemplate{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue)).
 		Owns(&corev1.Secret{}).
 		Complete(r)
 }
@@ -72,8 +75,6 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		tele.KVP("kind", "AzureMachineTemplate"),
 	)
 	defer done()
-
-	log = log.WithValues("namespace", req.Namespace, "azureMachineTemplate", req.Name)
 
 	// Fetch the AzureMachineTemplate instance
 	azureMachineTemplate := &infrav1.AzureMachineTemplate{}
@@ -125,7 +126,6 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       r.Client,
-		Logger:       log,
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
 	})
@@ -165,7 +165,7 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, errors.Wrap(err, "failed to create cloud provider config")
 	}
 
-	if err := reconcileAzureSecret(ctx, log, r.Client, owner, newSecret, clusterScope.ClusterName()); err != nil {
+	if err := reconcileAzureSecret(ctx, r.Client, owner, newSecret, clusterScope.ClusterName()); err != nil {
 		r.Recorder.Eventf(azureMachineTemplate, corev1.EventTypeWarning, "Error reconciling cloud provider secret for AzureMachineTemplate", err.Error())
 		return ctrl.Result{}, errors.Wrap(err, "failed to reconcile azure secret")
 	}

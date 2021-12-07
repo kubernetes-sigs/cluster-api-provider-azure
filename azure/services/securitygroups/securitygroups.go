@@ -22,9 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -32,7 +30,6 @@ import (
 
 // NSGScope defines the scope interface for a security groups service.
 type NSGScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	azure.NetworkDescriber
 	NSGSpecs() []azure.NSGSpec
@@ -54,11 +51,11 @@ func New(scope NSGScope) *Service {
 
 // Reconcile gets/creates/updates a network security group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.Reconcile")
 	defer done()
 
 	if !s.Scope.IsVnetManaged() {
-		s.Scope.V(4).Info("Skipping network security group reconcile in custom VNet mode")
+		log.V(4).Info("Skipping network security group reconcile in custom VNet mode")
 		return nil
 	}
 
@@ -86,11 +83,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 			if !update {
 				// Skip update for NSG as the required default rules are present
-				s.Scope.V(2).Info("security group exists and no default rules are missing, skipping update", "security group", nsgSpec.Name)
+				log.V(2).Info("security group exists and no default rules are missing, skipping update", "security group", nsgSpec.Name)
 				continue
 			}
 		default:
-			s.Scope.V(2).Info("creating security group", "security group", nsgSpec.Name)
+			log.V(2).Info("creating security group", "security group", nsgSpec.Name)
 			for _, rule := range nsgSpec.SecurityRules {
 				securityRules = append(securityRules, converters.SecurityRuleToSDK(rule))
 			}
@@ -107,7 +104,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to create or update security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 		}
 
-		s.Scope.V(2).Info("successfully created or updated security group", "security group", nsgSpec.Name)
+		log.V(2).Info("successfully created or updated security group", "security group", nsgSpec.Name)
 	}
 	return nil
 }
@@ -137,16 +134,16 @@ func ruleExists(rules []network.SecurityRule, rule network.SecurityRule) bool {
 
 // Delete deletes the network security group with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.Delete")
 	defer done()
 
 	if !s.Scope.IsVnetManaged() {
-		s.Scope.V(4).Info("Skipping network security group delete in custom VNet mode")
+		log.V(4).Info("Skipping network security group delete in custom VNet mode")
 		return nil
 	}
 
 	for _, nsgSpec := range s.Scope.NSGSpecs() {
-		s.Scope.V(2).Info("deleting security group", "security group", nsgSpec.Name)
+		log.V(2).Info("deleting security group", "security group", nsgSpec.Name)
 		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
@@ -156,7 +153,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 		}
 
-		s.Scope.V(2).Info("successfully deleted security group", "security group", nsgSpec.Name)
+		log.V(2).Info("successfully deleted security group", "security group", nsgSpec.Name)
 	}
 	return nil
 }

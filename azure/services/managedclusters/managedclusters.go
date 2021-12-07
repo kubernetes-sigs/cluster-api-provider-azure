@@ -24,7 +24,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -43,7 +42,6 @@ var (
 
 // ManagedClusterScope defines the scope interface for a managed cluster.
 type ManagedClusterScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	ManagedClusterSpec() (azure.ManagedClusterSpec, error)
 	GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)

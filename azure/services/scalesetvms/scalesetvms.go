@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -34,7 +33,6 @@ const serviceName = "scalesetvms"
 type (
 	// ScaleSetVMScope defines the scope interface for a scale sets service.
 	ScaleSetVMScope interface {
-		logr.Logger
 		azure.ClusterDescriber
 		azure.AsyncStatusUpdater
 		InstanceID() string
@@ -83,16 +81,20 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes a scaleset instance asynchronously returning a future which encapsulates the long-running operation.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.Delete")
-	defer done()
-
 	var (
 		resourceGroup = s.Scope.ResourceGroup()
 		vmssName      = s.Scope.ScaleSetName()
 		instanceID    = s.Scope.InstanceID()
 	)
 
-	log := s.Scope.WithValues("resourceGroup", resourceGroup, "scaleset", vmssName, "instanceID", instanceID)
+	ctx, log, done := tele.StartSpanWithLogger(
+		ctx,
+		"scalesetvms.Service.Delete",
+		tele.KVP("resourceGroup", resourceGroup),
+		tele.KVP("scaleset", vmssName),
+		tele.KVP("instanceID", instanceID),
+	)
+	defer done()
 
 	defer func() {
 		if instance, err := s.Client.Get(ctx, resourceGroup, vmssName, instanceID); err == nil && instance.VirtualMachineScaleSetVMProperties != nil {

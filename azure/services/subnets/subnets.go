@@ -22,9 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -32,7 +30,6 @@ import (
 
 // SubnetScope defines the scope interface for a subnet service.
 type SubnetScope interface {
-	logr.Logger
 	azure.ClusterScoper
 	SubnetSpecs() []azure.SubnetSpec
 }
@@ -53,7 +50,7 @@ func New(scope SubnetScope) *Service {
 
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Reconcile")
 	defer done()
 
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
@@ -100,7 +97,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			}
 
-			s.Scope.V(2).Info("creating subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
+			log.V(2).Info("creating subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 			err = s.Client.CreateOrUpdate(
 				ctx,
 				s.Scope.Vnet().ResourceGroup,
@@ -114,7 +111,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.Vnet().ResourceGroup)
 			}
 
-			s.Scope.V(2).Info("successfully created subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
+			log.V(2).Info("successfully created subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 		}
 	}
 	return nil
@@ -122,15 +119,15 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the subnet with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Delete")
 	defer done()
 
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
 		if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
-			s.Scope.V(4).Info("Skipping subnets deletion in custom vnet mode")
+			log.V(4).Info("Skipping subnets deletion in custom vnet mode")
 			continue
 		}
-		s.Scope.V(2).Info("deleting subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
+		log.V(2).Info("deleting subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 		err := s.Client.Delete(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec.VNetName, subnetSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
@@ -140,7 +137,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete subnet %s in resource group %s", subnetSpec.Name, s.Scope.Vnet().ResourceGroup)
 		}
 
-		s.Scope.V(2).Info("successfully deleted subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
+		log.V(2).Info("successfully deleted subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 	}
 	return nil
 }

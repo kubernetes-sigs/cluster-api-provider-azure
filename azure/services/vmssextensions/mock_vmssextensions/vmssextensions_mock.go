@@ -21,10 +21,10 @@ limitations under the License.
 package mock_vmssextensions
 
 import (
+	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
-	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -179,37 +179,6 @@ func (mr *MockVMSSExtensionScopeMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockVMSSExtensionScope)(nil).ClusterName))
 }
 
-// Enabled mocks base method.
-func (m *MockVMSSExtensionScope) Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Enabled indicates an expected call of Enabled.
-func (mr *MockVMSSExtensionScopeMockRecorder) Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockVMSSExtensionScope)(nil).Enabled))
-}
-
-// Error mocks base method.
-func (m *MockVMSSExtensionScope) Error(err error, msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockVMSSExtensionScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVMSSExtensionScope)(nil).Error), varargs...)
-}
-
 // FailureDomains mocks base method.
 func (m *MockVMSSExtensionScope) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -236,23 +205,6 @@ func (m *MockVMSSExtensionScope) HashKey() string {
 func (mr *MockVMSSExtensionScopeMockRecorder) HashKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockVMSSExtensionScope)(nil).HashKey))
-}
-
-// Info mocks base method.
-func (m *MockVMSSExtensionScope) Info(msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockVMSSExtensionScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockVMSSExtensionScope)(nil).Info), varargs...)
 }
 
 // Location mocks base method.
@@ -284,17 +236,17 @@ func (mr *MockVMSSExtensionScopeMockRecorder) ResourceGroup() *gomock.Call {
 }
 
 // SetBootstrapConditions mocks base method.
-func (m *MockVMSSExtensionScope) SetBootstrapConditions(arg0, arg1 string) error {
+func (m *MockVMSSExtensionScope) SetBootstrapConditions(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetBootstrapConditions", arg0, arg1)
+	ret := m.ctrl.Call(m, "SetBootstrapConditions", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetBootstrapConditions indicates an expected call of SetBootstrapConditions.
-func (mr *MockVMSSExtensionScopeMockRecorder) SetBootstrapConditions(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockVMSSExtensionScopeMockRecorder) SetBootstrapConditions(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBootstrapConditions", reflect.TypeOf((*MockVMSSExtensionScope)(nil).SetBootstrapConditions), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBootstrapConditions", reflect.TypeOf((*MockVMSSExtensionScope)(nil).SetBootstrapConditions), arg0, arg1, arg2)
 }
 
 // SubscriptionID mocks base method.
@@ -325,20 +277,6 @@ func (mr *MockVMSSExtensionScopeMockRecorder) TenantID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockVMSSExtensionScope)(nil).TenantID))
 }
 
-// V mocks base method.
-func (m *MockVMSSExtensionScope) V(level int) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// V indicates an expected call of V.
-func (mr *MockVMSSExtensionScopeMockRecorder) V(level interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockVMSSExtensionScope)(nil).V), level)
-}
-
 // VMSSExtensionSpecs mocks base method.
 func (m *MockVMSSExtensionScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
 	m.ctrl.T.Helper()
@@ -351,36 +289,4 @@ func (m *MockVMSSExtensionScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
 func (mr *MockVMSSExtensionScopeMockRecorder) VMSSExtensionSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSSExtensionSpecs", reflect.TypeOf((*MockVMSSExtensionScope)(nil).VMSSExtensionSpecs))
-}
-
-// WithName mocks base method.
-func (m *MockVMSSExtensionScope) WithName(name string) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", name)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithName indicates an expected call of WithName.
-func (mr *MockVMSSExtensionScopeMockRecorder) WithName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockVMSSExtensionScope)(nil).WithName), name)
-}
-
-// WithValues mocks base method.
-func (m *MockVMSSExtensionScope) WithValues(keysAndValues ...interface{}) logr.Logger {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "WithValues", varargs...)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithValues indicates an expected call of WithValues.
-func (mr *MockVMSSExtensionScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockVMSSExtensionScope)(nil).WithValues), keysAndValues...)
 }

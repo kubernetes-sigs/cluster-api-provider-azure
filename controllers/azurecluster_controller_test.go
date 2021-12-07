@@ -18,10 +18,7 @@ package controllers
 
 import (
 	"context"
-	"time"
 
-	"github.com/go-logr/logr"
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,8 +27,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 var _ = Describe("AzureClusterReconciler", func() {
@@ -39,59 +35,20 @@ var _ = Describe("AzureClusterReconciler", func() {
 	AfterEach(func() {})
 
 	Context("Reconcile an AzureCluster", func() {
-		It("should reconcile and exit early due to the cluster not having an OwnerRef", func() {
-			ctx := context.TODO()
-			logListener := record.NewListener(testEnv.LogRecorder)
-			del := logListener.Listen()
-			defer del()
-
-			randName := test.RandomName("foo", 10)
-			instance := &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Name: randName, Namespace: "default"}}
-			Expect(testEnv.Create(ctx, instance)).To(Succeed())
-			defer func() {
-				err := testEnv.Delete(ctx, instance)
-				Expect(err).NotTo(HaveOccurred())
-			}()
-
-			// Make sure the Cluster exists.
-			Eventually(logListener.GetEntries, 10*time.Second).
-				Should(ContainElement(record.LogEntry{
-					LogFunc: "Info",
-					Values: []interface{}{
-						"namespace",
-						instance.Namespace,
-						"azureCluster",
-						randName,
-						"msg",
-						"Cluster Controller has not yet set OwnerRef",
-					},
-				}))
-		})
-
-		It("should fail with context timeout error if context expires", func() {
-			ctx := context.TODO()
-			mockCtrl := gomock.NewController(GinkgoT())
-			defer mockCtrl.Finish()
-
-			log := mock_log.NewMockLogger(mockCtrl)
-			log.EXPECT().WithValues(gomock.Any()).DoAndReturn(func(args ...interface{}) logr.Logger {
-				time.Sleep(3 * time.Second)
-				return log
-			})
-
-			c, err := client.New(testEnv.Config, client.Options{Scheme: testEnv.GetScheme()})
-			Expect(err).NotTo(HaveOccurred())
-			reconciler := NewAzureClusterReconciler(c, log, testEnv.GetEventRecorderFor("azurecluster-reconciler"), 1*time.Second, "")
-
-			instance := &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
-			_, err = reconciler.Reconcile(ctx, ctrl.Request{
+		It("should not error with minimal set up", func() {
+			reconciler := NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.DefaultLoopTimeout, "")
+			By("Calling reconcile")
+			name := test.RandomName("foo", 10)
+			instance := &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}}
+			result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
 				NamespacedName: client.ObjectKey{
 					Namespace: instance.Namespace,
 					Name:      instance.Name,
 				},
 			})
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Or(Equal("context deadline exceeded"), Equal("rate: Wait(n=1) would exceed context deadline")))
+
+			Expect(err).To(BeNil())
+			Expect(result.RequeueAfter).To(BeZero())
 		})
 	})
 })

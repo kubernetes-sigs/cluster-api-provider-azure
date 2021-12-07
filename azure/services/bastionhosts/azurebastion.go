@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -31,19 +32,22 @@ import (
 )
 
 func (s *Service) ensureAzureBastion(ctx context.Context, azureBastionSpec azure.AzureBastionSpec) error {
-	s.Scope.V(2).Info("getting azure bastion public IP", "publicIP", azureBastionSpec.PublicIPName)
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "bastionhosts.Service.ensureAzureBastion")
+	defer done()
+
+	log.V(2).Info("getting azure bastion public IP", "publicIP", azureBastionSpec.PublicIPName)
 	publicIP, err := s.publicIPsClient.Get(ctx, s.Scope.ResourceGroup(), azureBastionSpec.PublicIPName)
 	if err != nil {
 		return errors.Wrap(err, "failed to get public IP for azure bastion")
 	}
 
-	s.Scope.V(2).Info("getting azure bastion subnet", "subnet", azureBastionSpec.SubnetSpec)
+	log.V(2).Info("getting azure bastion subnet", "subnet", azureBastionSpec.SubnetSpec)
 	subnet, err := s.subnetsClient.Get(ctx, s.Scope.ResourceGroup(), azureBastionSpec.VNetName, azureBastionSpec.SubnetSpec.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to get subnet for azure bastion")
 	}
 
-	s.Scope.V(2).Info("creating bastion host", "bastion", azureBastionSpec.Name)
+	log.V(2).Info("creating bastion host", "bastion", azureBastionSpec.Name)
 	bastionHostIPConfigName := fmt.Sprintf("%s-%s", azureBastionSpec.Name, "bastionIP")
 	err = s.client.CreateOrUpdate(
 		ctx,
@@ -81,12 +85,15 @@ func (s *Service) ensureAzureBastion(ctx context.Context, azureBastionSpec azure
 		return errors.Wrap(err, "cannot create Azure Bastion")
 	}
 
-	s.Scope.V(2).Info("successfully created bastion host", "bastion", azureBastionSpec.Name)
+	log.V(2).Info("successfully created bastion host", "bastion", azureBastionSpec.Name)
 	return nil
 }
 
 func (s *Service) ensureAzureBastionDeleted(ctx context.Context, azureBastionSpec azure.AzureBastionSpec) error {
-	s.Scope.V(2).Info("deleting bastion host", "bastion", azureBastionSpec.Name)
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "bastionhosts.Service.ensureAzureBastionDeleted")
+	defer done()
+
+	log.V(2).Info("deleting bastion host", "bastion", azureBastionSpec.Name)
 
 	err := s.client.Delete(ctx, s.Scope.ResourceGroup(), azureBastionSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
@@ -95,7 +102,7 @@ func (s *Service) ensureAzureBastionDeleted(ctx context.Context, azureBastionSpe
 		return errors.Wrapf(err, "failed to delete Azure Bastion %s in resource group %s", azureBastionSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	s.Scope.V(2).Info("successfully deleted bastion host", "bastion", azureBastionSpec.Name)
+	log.V(2).Info("successfully deleted bastion host", "bastion", azureBastionSpec.Name)
 
 	return nil
 }

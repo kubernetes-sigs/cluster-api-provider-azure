@@ -21,7 +21,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -31,7 +30,6 @@ import (
 
 // RouteTableScope defines the scope interface for route table service.
 type RouteTableScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	azure.NetworkDescriber
 	RouteTableSpecs() []azure.RouteTableSpec
@@ -53,11 +51,11 @@ func New(scope *scope.ClusterScope) *Service {
 
 // Reconcile gets/creates/updates a route table.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Reconcile")
 	defer done()
 
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
-		s.Scope.V(4).Info("Skipping route tables reconcile in custom vnet mode")
+		log.V(4).Info("Skipping route tables reconcile in custom vnet mode")
 		return nil
 	}
 
@@ -77,7 +75,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			continue
 		}
 
-		s.Scope.V(2).Info("creating Route Table", "route table", routeTableSpec.Name)
+		log.V(2).Info("creating Route Table", "route table", routeTableSpec.Name)
 		err = s.client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
@@ -90,22 +88,22 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
 		}
-		s.Scope.V(2).Info("successfully created route table", "route table", routeTableSpec.Name)
+		log.V(2).Info("successfully created route table", "route table", routeTableSpec.Name)
 	}
 	return nil
 }
 
 // Delete deletes the route table with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Delete")
 	defer done()
 
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
-		s.Scope.V(4).Info("Skipping route table deletion in custom vnet mode")
+		log.V(4).Info("Skipping route table deletion in custom vnet mode")
 		return nil
 	}
 	for _, routeTableSpec := range s.Scope.RouteTableSpecs() {
-		s.Scope.V(2).Info("deleting route table", "route table", routeTableSpec.Name)
+		log.V(2).Info("deleting route table", "route table", routeTableSpec.Name)
 		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
@@ -115,7 +113,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
 		}
 
-		s.Scope.V(2).Info("successfully deleted route table", "route table", routeTableSpec.Name)
+		log.V(2).Info("successfully deleted route table", "route table", routeTableSpec.Name)
 	}
 	return nil
 }

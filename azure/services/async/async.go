@@ -22,6 +22,7 @@ import (
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -32,12 +33,12 @@ import (
 // processOngoingOperation is a helper function that will process an ongoing operation to check if it is done.
 // If it is not done, it will return a transient error.
 func processOngoingOperation(ctx context.Context, scope FutureScope, client FutureHandler, resourceName string, serviceName string) (interface{}, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "async.Service.processOngoingOperation")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.processOngoingOperation")
 	defer done()
 
 	future := scope.GetLongRunningOperationState(resourceName, serviceName)
 	if future == nil {
-		scope.V(2).Info("no long running operation found", "service", serviceName, "resource", resourceName)
+		log.V(2).Info("no long running operation found", "service", serviceName, "resource", resourceName)
 		return nil, nil
 	}
 	sdkFuture, err := converters.FutureToSDK(*future)
@@ -48,6 +49,7 @@ func processOngoingOperation(ctx context.Context, scope FutureScope, client Futu
 		scope.DeleteLongRunningOperationState(resourceName, serviceName)
 		return nil, errors.Wrap(err, "could not decode future data, resetting long-running operation state")
 	}
+
 	isDone, err := client.IsDone(ctx, sdkFuture)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed checking if the operation was complete")
@@ -55,12 +57,12 @@ func processOngoingOperation(ctx context.Context, scope FutureScope, client Futu
 
 	if !isDone {
 		// Operation is still in progress, update conditions and requeue.
-		scope.V(2).Info("long running operation is still ongoing", "service", serviceName, "resource", resourceName)
+		log.V(2).Info("long running operation is still ongoing", "service", serviceName, "resource", resourceName)
 		return nil, azure.WithTransientError(azure.NewOperationNotDoneError(future), retryAfter(sdkFuture))
 	}
 
 	// Resource has been created/deleted/updated.
-	scope.V(2).Info("long running operation has completed", "service", serviceName, "resource", resourceName)
+	log.V(2).Info("long running operation has completed", "service", serviceName, "resource", resourceName)
 	result, err := client.Result(ctx, sdkFuture, future.Type)
 	if err == nil {
 		scope.DeleteLongRunningOperationState(resourceName, serviceName)
@@ -70,7 +72,7 @@ func processOngoingOperation(ctx context.Context, scope FutureScope, client Futu
 
 // CreateResource implements the logic for creating a resource Asynchronously.
 func CreateResource(ctx context.Context, scope FutureScope, client Creator, spec azure.ResourceSpecGetter, serviceName string) (interface{}, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "async.Service.CreateResource")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.CreateResource")
 	defer done()
 
 	resourceName := spec.ResourceName()
@@ -83,7 +85,7 @@ func CreateResource(ctx context.Context, scope FutureScope, client Creator, spec
 	}
 
 	// No long running operation is active, so create the resource.
-	scope.V(2).Info("creating resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+	log.V(2).Info("creating resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	result, sdkFuture, err := client.CreateOrUpdateAsync(ctx, spec)
 	if sdkFuture != nil {
 		future, err := converters.SDKToFuture(sdkFuture, infrav1.PutFuture, serviceName, resourceName, rgName)
@@ -96,13 +98,13 @@ func CreateResource(ctx context.Context, scope FutureScope, client Creator, spec
 		return nil, errors.Wrapf(err, "failed to create resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	}
 
-	scope.V(2).Info("successfully created resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+	log.V(2).Info("successfully created resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return result, nil
 }
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.
 func DeleteResource(ctx context.Context, scope FutureScope, client Deleter, spec azure.ResourceSpecGetter, serviceName string) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "async.Service.DeleteResource")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.DeleteResource")
 	defer done()
 
 	resourceName := spec.ResourceName()
@@ -116,7 +118,7 @@ func DeleteResource(ctx context.Context, scope FutureScope, client Deleter, spec
 	}
 
 	// No long running operation is active, so delete the resource.
-	scope.V(2).Info("deleting resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+	log.V(2).Info("deleting resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	sdkFuture, err := client.DeleteAsync(ctx, spec)
 	if sdkFuture != nil {
 		future, err := converters.SDKToFuture(sdkFuture, infrav1.DeleteFuture, serviceName, resourceName, rgName)
@@ -133,7 +135,7 @@ func DeleteResource(ctx context.Context, scope FutureScope, client Deleter, spec
 		return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	}
 
-	scope.V(2).Info("successfully deleted resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+	log.V(2).Info("successfully deleted resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return nil
 }
 

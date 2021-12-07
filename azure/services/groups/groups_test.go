@@ -29,8 +29,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2/klogr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups/mock_groups"
@@ -78,7 +76,6 @@ func TestReconcileGroups(t *testing.T) {
 			name:          "create group succeeds",
 			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().Return(&fakeGroupSpec)
 				s.GetLongRunningOperationState("test-group", serviceName)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeGroupSpec).Return(nil, nil, nil)
@@ -89,7 +86,6 @@ func TestReconcileGroups(t *testing.T) {
 			name:          "create resource group fails",
 			expectedError: "failed to create resource test-group/test-group (service: group): #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().Return(&fakeGroupSpec)
 				s.GetLongRunningOperationState("test-group", serviceName)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeGroupSpec).Return(nil, nil, internalError)
@@ -137,7 +133,6 @@ func TestDeleteGroups(t *testing.T) {
 			name:          "long running delete operation is done",
 			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), "test-group").Return(sampleManagedGroup, nil)
 				s.ClusterName().Return("test-cluster")
@@ -152,7 +147,6 @@ func TestDeleteGroups(t *testing.T) {
 			name:          "long running delete operation is not done",
 			expectedError: "operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), "test-group").Return(sampleManagedGroup, nil)
 				s.ClusterName().Return("test-cluster")
@@ -165,7 +159,6 @@ func TestDeleteGroups(t *testing.T) {
 			name:          "resource group is not managed by capz",
 			expectedError: azure.ErrNotOwned.Error(),
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), "test-group").Return(sampleBYOGroup, nil)
 				s.ClusterName().Return("test-cluster")
@@ -175,7 +168,6 @@ func TestDeleteGroups(t *testing.T) {
 			name:          "fail to check if resource group is managed",
 			expectedError: "could not get resource group management state",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), "test-group").Return(resources.Group{}, internalError)
 			},
@@ -184,7 +176,6 @@ func TestDeleteGroups(t *testing.T) {
 			name:          "resource group doesn't exist",
 			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), "test-group").Return(resources.Group{}, notFoundError)
 				s.DeleteLongRunningOperationState("test-group", serviceName)
@@ -195,7 +186,6 @@ func TestDeleteGroups(t *testing.T) {
 			name:          "error occurs when deleting resource group",
 			expectedError: "failed to delete resource test-group/test-group (service: group): #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				s.GetLongRunningOperationState("test-group", serviceName).Return(nil)
 				m.Get(gomockinternal.AContext(), "test-group").Return(sampleManagedGroup, nil)
@@ -208,7 +198,6 @@ func TestDeleteGroups(t *testing.T) {
 			name:          "context deadline exceeded while deleting resource group",
 			expectedError: "operation type DELETE on Azure resource test-group/test-group is not done. Object will be requeued after 15s",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				s.GetLongRunningOperationState("test-group", serviceName).Return(nil)
 				m.Get(gomockinternal.AContext(), "test-group").Return(sampleManagedGroup, nil)
@@ -222,7 +211,6 @@ func TestDeleteGroups(t *testing.T) {
 			name:          "delete the resource group successfully",
 			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				s.GetLongRunningOperationState("test-group", serviceName).Return(nil)
 				m.Get(gomockinternal.AContext(), "test-group").Return(sampleManagedGroup, nil)

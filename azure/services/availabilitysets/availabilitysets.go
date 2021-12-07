@@ -22,9 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -34,7 +32,6 @@ import (
 
 // AvailabilitySetScope defines the scope interface for a availability sets service.
 type AvailabilitySetScope interface {
-	logr.Logger
 	azure.ClusterDescriber
 	AvailabilitySet() (string, bool)
 }
@@ -57,7 +54,7 @@ func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile creates or updates availability sets.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
+	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
 		"availabilitysets.Service.Reconcile",
 	)
@@ -83,7 +80,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to determine max fault domain count")
 	}
 
-	s.Scope.V(2).Info("creating availability set", "availability set", availabilitySetName)
+	log.V(2).Info("creating availability set", "availability set", availabilitySetName)
 
 	asParams := compute.AvailabilitySet{
 		Sku: &compute.Sku{
@@ -107,14 +104,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to create availability set %s", availabilitySetName)
 	}
 
-	s.Scope.V(2).Info("successfully created availability set", "availability set", availabilitySetName)
+	log.V(2).Info("successfully created availability set", "availability set", availabilitySetName)
 
 	return nil
 }
 
 // Delete deletes availability sets.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitysets.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "availabilitysets.Service.Delete")
 	defer done()
 
 	availabilitySetName, ok := s.Scope.AvailabilitySet()
@@ -137,7 +134,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		return nil
 	}
 
-	s.Scope.V(2).Info("deleting availability set", "availability set", availabilitySetName)
+	log.V(2).Info("deleting availability set", "availability set", availabilitySetName)
 	err = s.Client.Delete(ctx, s.Scope.ResourceGroup(), availabilitySetName)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -148,7 +145,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete availability set %s in resource group %s", availabilitySetName, s.Scope.ResourceGroup())
 	}
 
-	s.Scope.V(2).Info("successfully delete availability set", "availability set", availabilitySetName)
+	log.V(2).Info("successfully delete availability set", "availability set", availabilitySetName)
 
 	return nil
 }

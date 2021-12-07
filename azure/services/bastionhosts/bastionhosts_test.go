@@ -21,21 +21,17 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	mock_bastionhosts "sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts/mocks_bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets/mock_subnets"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/golang/mock/gomock"
-
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -59,7 +55,6 @@ func TestReconcileBastionHosts(t *testing.T) {
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.BastionSpec().Return(azure.BastionSpec{
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
@@ -81,7 +76,6 @@ func TestReconcileBastionHosts(t *testing.T) {
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.BastionSpec().Return(azure.BastionSpec{
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
@@ -107,7 +101,6 @@ func TestReconcileBastionHosts(t *testing.T) {
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.BastionSpec().Return(azure.BastionSpec{
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
@@ -135,7 +128,6 @@ func TestReconcileBastionHosts(t *testing.T) {
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.BastionSpec().Return(azure.BastionSpec{
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastion",
@@ -207,7 +199,6 @@ func TestDeleteBastionHost(t *testing.T) {
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.BastionSpec().Return(azure.BastionSpec{
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastionhost",
@@ -230,7 +221,6 @@ func TestDeleteBastionHost(t *testing.T) {
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.BastionSpec().Return(azure.BastionSpec{
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastionhost",
@@ -254,7 +244,6 @@ func TestDeleteBastionHost(t *testing.T) {
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.BastionSpec().Return(azure.BastionSpec{
 					AzureBastion: &azure.AzureBastionSpec{
 						Name:     "my-bastionhost",

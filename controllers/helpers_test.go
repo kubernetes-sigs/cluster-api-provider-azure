@@ -22,27 +22,22 @@ import (
 	"os"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/api/resource"
-
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
-
-	"github.com/golang/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
@@ -209,9 +204,6 @@ func TestReconcileAzureSecret(t *testing.T) {
 		},
 	}
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
-	testLog := ctrl.Log.WithName("reconcileAzureSecret")
-
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("foo", "bar")
 
@@ -242,7 +234,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cloudConfig.Data).NotTo(BeNil())
 
-			if err := reconcileAzureSecret(context.Background(), testLog, kubeclient, owner, cloudConfig, azureCluster.ClusterName); err != nil {
+			if err := reconcileAzureSecret(context.Background(), kubeclient, owner, cloudConfig, azureCluster.ClusterName); err != nil {
 				t.Error(err)
 			}
 
