@@ -457,7 +457,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 
 	tag, exists := old.Labels[clusterName]
 
-	if exists && tag != string(infrav1.ResourceLifecycleOwned) {
+	if !exists || tag != string(infrav1.ResourceLifecycleOwned) {
 		log.V(2).Info("returning early from json reconcile, user provided secret already exists")
 		return nil
 	}

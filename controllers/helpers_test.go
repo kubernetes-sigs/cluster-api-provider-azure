@@ -183,9 +183,11 @@ func TestReconcileAzureSecret(t *testing.T) {
 	g := NewWithT(t)
 
 	cases := map[string]struct {
-		kind       string
-		apiVersion string
-		ownerName  string
+		kind             string
+		apiVersion       string
+		ownerName        string
+		existingSecret   *corev1.Secret
+		expectedNoChange bool
 	}{
 		"azuremachine should reconcile secret successfully": {
 			kind:       "AzureMachine",
@@ -202,6 +204,52 @@ func TestReconcileAzureSecret(t *testing.T) {
 			apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 			ownerName:  "azureMachineTemplateName",
 		},
+		"should not replace the content of the pre-existing unowned secret": {
+			kind:       "AzureMachine",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			ownerName:  "azureMachineName",
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "azureMachineName-azure-json",
+					Namespace: "default",
+					Labels:    map[string]string{"testCluster": "foo"},
+				},
+				Data: map[string][]byte{
+					"azure.json": []byte("foobar"),
+				},
+			},
+			expectedNoChange: true,
+		},
+		"should not replace the content of the pre-existing unowned secret without the label": {
+			kind:       "AzureMachine",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			ownerName:  "azureMachineName",
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "azureMachineName-azure-json",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"azure.json": []byte("foobar"),
+				},
+			},
+			expectedNoChange: true,
+		},
+		"should replace the content of the pre-existing owned secret": {
+			kind:       "AzureMachine",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			ownerName:  "azureMachineName",
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "azureMachineName-azure-json",
+					Namespace: "default",
+					Labels:    map[string]string{"testCluster": string(infrav1.ResourceLifecycleOwned)},
+				},
+				Data: map[string][]byte{
+					"azure.json": []byte("foobar"),
+				},
+			},
+		},
 	}
 
 	cluster := newCluster("foo")
@@ -209,6 +257,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 
 	cluster.Default()
 	azureCluster.Default()
+	azureCluster.ClusterName = "testCluster"
 
 	scheme := setupScheme(g)
 	kubeclient := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -225,6 +274,14 @@ func TestReconcileAzureSecret(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			if tc.existingSecret != nil {
+				_ = kubeclient.Delete(context.Background(), tc.existingSecret)
+				_ = kubeclient.Create(context.Background(), tc.existingSecret)
+				defer func() {
+					_ = kubeclient.Delete(context.Background(), tc.existingSecret)
+				}()
+			}
+
 			owner := metav1.OwnerReference{
 				APIVersion: tc.apiVersion,
 				Kind:       tc.kind,
@@ -246,8 +303,13 @@ func TestReconcileAzureSecret(t *testing.T) {
 			if err := kubeclient.Get(context.Background(), key, found); err != nil {
 				t.Error(err)
 			}
-			g.Expect(cloudConfig.Data).To(Equal(found.Data))
-			g.Expect(found.OwnerReferences).To(Equal(cloudConfig.OwnerReferences))
+
+			if tc.expectedNoChange {
+				g.Expect(cloudConfig.Data).NotTo(Equal(found.Data))
+			} else {
+				g.Expect(cloudConfig.Data).To(Equal(found.Data))
+				g.Expect(found.OwnerReferences).To(Equal(cloudConfig.OwnerReferences))
+			}
 		})
 	}
 }
