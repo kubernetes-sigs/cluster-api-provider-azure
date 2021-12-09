@@ -31,8 +31,8 @@ import (
 
 // client wraps go-sdk.
 type client interface {
-	Get(context.Context, string) (resources.Group, error)
-	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error)
+	Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
+	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, interface{}) (interface{}, azureautorest.FutureAPI, error)
 	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
 	Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
@@ -61,28 +61,25 @@ func newGroupsClient(subscriptionID string, baseURI string, authorizer autorest.
 }
 
 // Get gets a resource group.
-func (ac *azureClient) Get(ctx context.Context, name string) (resources.Group, error) {
+func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.Get")
 	defer done()
 
-	return ac.groups.Get(ctx, name)
+	return ac.groups.Get(ctx, spec.ResourceName())
 }
 
 // CreateOrUpdateAsync creates or updates a resource group.
 // Creating a resource group is not a long running operation, so we don't ever return a future.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (interface{}, azureautorest.FutureAPI, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.CreateOrUpdate")
 	defer done()
 
-	group, err := ac.resourceGroupParams(ctx, spec)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get desired parameters for group %s", spec.ResourceName())
-	} else if group == nil {
-		// nothing to do here
-		return nil, nil, nil
+	group, ok := parameters.(resources.Group)
+	if !ok {
+		return nil, nil, errors.Errorf("%T is not a resources.Group", parameters)
 	}
 
-	result, err := ac.groups.CreateOrUpdate(ctx, spec.ResourceName(), *group)
+	result, err := ac.groups.CreateOrUpdate(ctx, spec.ResourceName(), group)
 	return result, nil, err
 }
 
@@ -131,40 +128,4 @@ func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 func (ac *azureClient) Result(ctx context.Context, futureData azureautorest.FutureAPI, futureType string) (interface{}, error) {
 	// Result is a no-op for resource groups as only Delete operations return a future.
 	return nil, nil
-}
-
-// resourceGroupParams returns the desired resource group parameters from the given spec.
-func (ac *azureClient) resourceGroupParams(ctx context.Context, spec azure.ResourceSpecGetter) (*resources.Group, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.resourceGroupParams")
-	defer done()
-
-	var params interface{}
-
-	existingRG, err := ac.Get(ctx, spec.ResourceName())
-	if azure.ResourceNotFound(err) {
-		// rg doesn't exist, create it from scratch.
-		params, err = spec.Parameters(nil)
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		return nil, errors.Wrapf(err, "failed to get RG %s", spec.ResourceName())
-	} else {
-		// rg already exists
-		params, err = spec.Parameters(existingRG)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	rg, ok := params.(resources.Group)
-	if !ok {
-		if params == nil {
-			// nothing to do here.
-			return nil, nil
-		}
-		return nil, errors.Errorf("%T is not a resources.Group", params)
-	}
-
-	return &rg, nil
 }

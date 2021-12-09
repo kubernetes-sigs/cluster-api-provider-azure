@@ -52,7 +52,7 @@ type VMScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope VMScope
-	Client
+	async.Reconciler
 	interfacesClient       networkinterfaces.Client
 	publicIPsClient        publicips.Client
 	availabilitySetsClient availabilitysets.Client
@@ -60,12 +60,13 @@ type Service struct {
 
 // New creates a new service.
 func New(scope VMScope) *Service {
+	Client := NewClient(scope)
 	return &Service{
 		Scope:                  scope,
-		Client:                 NewClient(scope),
 		interfacesClient:       networkinterfaces.NewClient(scope),
 		publicIPsClient:        publicips.NewClient(scope),
 		availabilitySetsClient: availabilitysets.NewClient(scope),
+		Reconciler:             async.New(scope, Client, Client),
 	}
 }
 
@@ -78,7 +79,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	vmSpec := s.Scope.VMSpec()
-	result, err := async.CreateResource(ctx, s.Scope, s.Client, vmSpec, serviceName)
+
+	result, err := s.CreateResource(ctx, vmSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
 	// Set the DiskReady condition here since the disk gets created with the VM.
 	s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)
@@ -114,7 +116,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	vmSpec := s.Scope.VMSpec()
-	err := async.DeleteResource(ctx, s.Scope, s.Client, vmSpec, serviceName)
+
+	err := s.DeleteResource(ctx, vmSpec, serviceName)
 	if err != nil {
 		s.Scope.SetVMState(infrav1.Deleting)
 	} else {

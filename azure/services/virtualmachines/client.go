@@ -35,8 +35,8 @@ import (
 // Client wraps go-sdk.
 type (
 	Client interface {
-		Get(context.Context, string, string) (compute.VirtualMachine, error)
-		CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error)
+		Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
+		CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, interface{}) (interface{}, azureautorest.FutureAPI, error)
 		DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 		IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
 		Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
@@ -64,40 +64,23 @@ func newVirtualMachinesClient(subscriptionID string, baseURI string, authorizer 
 }
 
 // Get retrieves information about the model view or the instance view of a virtual machine.
-func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vmName string) (compute.VirtualMachine, error) {
+func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Get")
 	defer done()
 
-	return ac.virtualmachines.Get(ctx, resourceGroupName, vmName, "")
+	return ac.virtualmachines.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
 }
 
 // CreateOrUpdateAsync creates or updates a virtual machine asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error) {
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (interface{}, azureautorest.FutureAPI, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.CreateOrUpdate")
 	defer done()
 
-	var existingVM interface{}
-
-	if existing, err := ac.Get(ctx, spec.ResourceGroupName(), spec.ResourceName()); err != nil && !azure.ResourceNotFound(err) {
-		return nil, nil, errors.Wrapf(err, "failed to get virtual machine %s in %s", spec.ResourceName(), spec.ResourceGroupName())
-	} else if err == nil {
-		existingVM = existing
-	}
-
-	params, err := spec.Parameters(existingVM)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get desired parameters for virtual machine %s", spec.ResourceName())
-	}
-
-	vm, ok := params.(compute.VirtualMachine)
+	vm, ok := parameters.(compute.VirtualMachine)
 	if !ok {
-		if params == nil {
-			// nothing to do here.
-			return existingVM, nil, nil
-		}
-		return nil, nil, errors.Errorf("%T is not a compute.VirtualMachine", params)
+		return nil, nil, errors.Errorf("%T is not a compute.VirtualMachine", parameters)
 	}
 
 	future, err := ac.virtualmachines.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vm)
@@ -149,19 +132,22 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 
 // IsDone returns true if the long-running operation has completed.
 func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.AzureClient.IsDone")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.IsDone")
+	defer done()
 
-	done, err := future.DoneWithContext(ctx, ac.virtualmachines)
+	isDone, err := future.DoneWithContext(ctx, ac.virtualmachines)
 	if err != nil {
 		return false, errors.Wrap(err, "failed checking if the operation was complete")
 	}
 
-	return done, nil
+	return isDone, nil
 }
 
 // Result fetches the result of a long-running operation future.
 func (ac *AzureClient) Result(ctx context.Context, futureData azureautorest.FutureAPI, futureType string) (interface{}, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Result")
+	defer done()
+
 	if futureData == nil {
 		return nil, errors.Errorf("cannot get result from nil future")
 	}

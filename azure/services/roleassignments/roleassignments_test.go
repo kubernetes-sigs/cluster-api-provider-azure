@@ -30,8 +30,16 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments/mock_roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines/mock_virtualmachines"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+)
+
+var (
+	fakeVMSpec = virtualmachines.VMSpec{
+		Name:          "test-vm",
+		ResourceGroup: "my-rg",
+	}
 )
 
 func TestReconcileRoleAssignmentsVM(t *testing.T) {
@@ -52,7 +60,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						ResourceType: azure.VirtualMachine,
 					},
 				})
-				v.Get(gomockinternal.AContext(), "my-rg", "test-vm").Return(compute.VirtualMachine{
+				v.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
 					Identity: &compute.VirtualMachineIdentity{
 						PrincipalID: to.StringPtr("000"),
 					},
@@ -77,7 +85,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						ResourceType: azure.VirtualMachine,
 					},
 				})
-				v.Get(gomockinternal.AContext(), "my-rg", "test-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				v.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -92,7 +100,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						ResourceType: azure.VirtualMachine,
 					},
 				})
-				v.Get(gomockinternal.AContext(), "my-rg", "test-vm").Return(compute.VirtualMachine{
+				v.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
 					Identity: &compute.VirtualMachineIdentity{
 						PrincipalID: to.StringPtr("000"),
 					},

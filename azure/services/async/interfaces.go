@@ -39,11 +39,18 @@ type FutureHandler interface {
 // Creator is a client that can create or update a resource asynchronously.
 type Creator interface {
 	FutureHandler
-	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error)
+	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, existingResource interface{}) (interface{}, azureautorest.FutureAPI, error)
+	Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error)
 }
 
 // Deleter is a client that can delete a resource asynchronously.
 type Deleter interface {
 	FutureHandler
 	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
+}
+
+// Reconciler is a generic interface used to perform asynchronous reconciliation of Azure resources.
+type Reconciler interface {
+	CreateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (interface{}, error)
+	DeleteResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) error
 }

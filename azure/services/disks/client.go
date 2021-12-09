@@ -29,21 +29,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// client wraps go-sdk.
-type client interface {
-	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
-	Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
-	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
-}
-
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	disks compute.DisksClient
 }
 
-var _ client = (*azureClient)(nil)
-
-// newClient creates a new VM Client from subscription ID.
+// newClient creates a new disk Client from subscription ID.
 func newClient(auth azure.Authorizer) *azureClient {
 	c := NewDisksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &azureClient{c}
