@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CHART_RELEASE=${CHART_RELEASE:-0.5.11}
+CHART_RELEASE=${CHART_RELEASE:-0.8.1}
 OTEL_ROOT=$(dirname "${BASH_SOURCE[0]}")
 CHART_ROOT=$OTEL_ROOT/chart
 
