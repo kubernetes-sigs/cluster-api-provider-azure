@@ -19,9 +19,11 @@ package v1beta1
 import (
 	"context"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -46,7 +48,18 @@ func (r *AzureManagedMachinePool) Default(client client.Client) {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
-	return nil
+	validators := []func() error{
+		r.validateMaxPods,
+	}
+
+	var errs []error
+	for _, validator := range validators {
+		if err := validator(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return kerrors.NewAggregate(errs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -96,6 +109,25 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 				field.NewPath("Spec", "Mode"),
 				r.Spec.Mode,
 				"Last system node pool cannot be mutated to user node pool"))
+		}
+	}
+
+	if old.Spec.MaxPods != nil {
+		// Prevent MaxPods modification if it was already set to some value
+		if r.Spec.MaxPods == nil {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "MaxPods"),
+					r.Spec.MaxPods,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.MaxPods != *old.Spec.MaxPods {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "MaxPods"),
+					*r.Spec.MaxPods,
+					"field is immutable"))
 		}
 	}
 
@@ -157,6 +189,14 @@ func (r *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 	if len(ammpList.Items) <= 1 {
 		return errors.New("AKS Cluster must have at least one system pool")
 	}
+	return nil
+}
+
+func (r *AzureManagedMachinePool) validateMaxPods() error {
+	if to.Int32(r.Spec.MaxPods) < 10 || to.Int32(r.Spec.MaxPods) > 250 {
+		return errors.New("MaxPods must be between 10 and 250")
+	}
+
 	return nil
 }
 

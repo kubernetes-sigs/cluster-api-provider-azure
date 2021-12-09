@@ -202,6 +202,11 @@ spec:
                 items:
                   type: string
                 type: array
+              maxPods:
+                description: MaxPods specifies the kubelet --max-pods configuration
+                  for the node pool.
+                format: int32
+                type: integer
               mode:
                 description: 'Mode - represents mode of an agent pool. Possible values
                   include: System, User.'

@@ -561,6 +561,10 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 		agentPoolSpec.MinCount = s.InfraMachinePool.Spec.Scaling.MinSize
 	}
 
+	if s.InfraMachinePool.Spec.MaxPods != nil {
+		agentPoolSpec.MaxPods = s.InfraMachinePool.Spec.MaxPods
+	}
+
 	return agentPoolSpec
 }
 

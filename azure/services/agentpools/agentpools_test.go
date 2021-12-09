@@ -158,6 +158,7 @@ func TestReconcile(t *testing.T) {
 				Version:       to.StringPtr("9.99.9999"),
 				Replicas:      2,
 				OSDiskSizeGB:  100,
+				MaxPods:       to.Int32Ptr(12),
 			},
 			expectedError: "failed to get existing agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -174,6 +175,7 @@ func TestReconcile(t *testing.T) {
 				Version:       to.StringPtr("9.99.9999"),
 				Replicas:      2,
 				OSDiskSizeGB:  100,
+				MaxPods:       to.Int32Ptr(12),
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -191,6 +193,7 @@ func TestReconcile(t *testing.T) {
 				Version:       to.StringPtr("9.99.9999"),
 				Replicas:      2,
 				OSDiskSizeGB:  100,
+				MaxPods:       to.Int32Ptr(12),
 			},
 			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -208,6 +211,7 @@ func TestReconcile(t *testing.T) {
 				Version:       to.StringPtr("9.99.9999"),
 				Replicas:      2,
 				OSDiskSizeGB:  100,
+				MaxPods:       to.Int32Ptr(12),
 			},
 			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -233,6 +237,7 @@ func TestReconcile(t *testing.T) {
 				Version:       to.StringPtr("9.99.9999"),
 				Replicas:      2,
 				OSDiskSizeGB:  100,
+				MaxPods:       to.Int32Ptr(12),
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -245,6 +250,7 @@ func TestReconcile(t *testing.T) {
 						OrchestratorVersion: to.StringPtr("9.99.9999"),
 						ProvisioningState:   to.StringPtr("Succeeded"),
 						VnetSubnetID:        to.StringPtr(""),
+						MaxPods:             to.Int32Ptr(12),
 					},
 				}, nil)
 			},
@@ -291,6 +297,7 @@ func TestReconcile(t *testing.T) {
 						Name:         &tc.agentPoolsSpec.Name,
 						SKU:          tc.agentPoolsSpec.SKU,
 						OSDiskSizeGB: &osDiskSizeGB,
+						MaxPods:      to.Int32Ptr(12),
 					},
 				},
 			}

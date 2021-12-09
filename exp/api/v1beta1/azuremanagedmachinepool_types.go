@@ -65,6 +65,10 @@ type AzureManagedMachinePoolSpec struct {
 	// Scaling specifies the autoscaling parameters for the node pool.
 	// +optional
 	Scaling *ManagedMachinePoolScaling `json:"scaling,omitempty"`
+
+	// MaxPods specifies the kubelet --max-pods configuration for the node pool.
+	// +optional
+	MaxPods *int32 `json:"maxPods,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.
