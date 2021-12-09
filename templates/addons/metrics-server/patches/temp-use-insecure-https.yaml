@@ -1,0 +1,14 @@
+# As there is a proposal to address this long term in CAPI 
+# we are enabling the metric server flag --kubelet-insecure-tls 
+# for the e2e tests with the plan to enable this customers 
+# longer term with the CAPI solution. It is possible to write 
+# a controller that would auto enable the CSR signing but would 
+# be not relevant once the CAPI work is in place.
+#
+# capi proposal: https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210222-kubelet-authentication.md#changes-to-cluster-api-bootstrap-provider-kubeadm
+# docs on enabling securely with kubeadm https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/#kubelet-serving-certs
+# tracking issue: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/1125
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value:
+    --kubelet-insecure-tls
