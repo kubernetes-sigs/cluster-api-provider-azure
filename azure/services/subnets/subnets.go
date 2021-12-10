@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -32,6 +33,7 @@ import (
 type SubnetScope interface {
 	azure.ClusterScoper
 	SubnetSpecs() []azure.SubnetSpec
+	virtualnetworks.VNetScope
 }
 
 // Service provides operations on Azure resources.
@@ -64,9 +66,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.SetSubnet(*existingSubnet)
 			continue
 		default:
-			managed, err := s.Scope.IsVnetManaged(ctx)
+			managed, err := s.IsManaged(ctx)
 			if err != nil {
-				return errors.Wrap(err, "failed to check if vnet is managed")
+				return errors.Wrap(err, "failed to check if subnet is managed")
 			} else if !managed {
 				return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
 			}
@@ -125,13 +127,13 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Delete")
 	defer done()
 
-	managed, err := s.Scope.IsVnetManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if azure.ResourceNotFound(err) {
 		// if the vnet doesn't exist, then we don't need to delete the subnets
 		// since subnets are a sub resource of the vnet, they must have been already deleted as well.
 		return nil
 	} else if err != nil {
-		return errors.Wrap(err, "failed to check if vnet is managed")
+		return err
 	} else if !managed {
 		log.V(4).Info("Skipping subnets deletion in custom vnet mode")
 		return nil
@@ -151,6 +153,16 @@ func (s *Service) Delete(ctx context.Context) error {
 		log.V(2).Info("successfully deleted subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 	}
 	return nil
+}
+
+// IsManaged returns true if the associated virtual network is managed,
+// meaning that the subnet's lifecycle is managed, and caches the result in scope so that other services that depend on the vnet can check if it is managed.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.IsManaged")
+	defer done()
+
+	vnetSvc := virtualnetworks.New(s.Scope)
+	return vnetSvc.IsManaged(ctx)
 }
 
 // getExisting provides information about an existing subnet.

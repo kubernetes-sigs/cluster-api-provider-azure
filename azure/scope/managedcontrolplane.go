@@ -195,6 +195,16 @@ func (s *ManagedControlPlaneScope) Close(ctx context.Context) error {
 	return s.PatchObject(ctx)
 }
 
+// GetVnetManagedCache gets the value of VNet management in the cluster cache.
+func (s *ManagedControlPlaneScope) GetVnetManagedCache() *bool {
+	return s.cache.IsVnetManaged
+}
+
+// SetVnetManagedCache stores the value of VNet management in the cluster cache so it can be accessed later in the reconcile.
+func (s *ManagedControlPlaneScope) SetVnetManagedCache(managed bool) {
+	s.cache.IsVnetManaged = &managed
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 	return &infrav1.VnetSpec{
@@ -301,19 +311,6 @@ func (s *ManagedControlPlaneScope) Subnet(name string) infrav1.SubnetSpec {
 // Currently always false as managed control planes do not currently implement ipv6.
 func (s *ManagedControlPlaneScope) IsIPv6Enabled() bool {
 	return false
-}
-
-// IsVnetManaged returns true if the vnet is managed.
-func (s *ManagedControlPlaneScope) IsVnetManaged(ctx context.Context) (bool, error) {
-	if s.cache.IsVnetManaged != nil {
-		return to.Bool(s.cache.IsVnetManaged), nil
-	}
-	vnetSvc := virtualnetworks.New(s)
-	managed, err := vnetSvc.IsManaged(ctx)
-	if err == nil {
-		s.cache.IsVnetManaged = to.BoolPtr(managed)
-	}
-	return managed, err
 }
 
 // APIServerLBName returns the API Server LB name.

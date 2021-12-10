@@ -38,19 +38,25 @@ type VNetScope interface {
 	azure.AsyncStatusUpdater
 	Vnet() *infrav1.VnetSpec
 	VNetSpec() azure.ResourceSpecGetter
+	ClusterName() string
+	GetVnetManagedCache() *bool
+	SetVnetManagedCache(bool)
 }
 
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope VNetScope
+	async.Reconciler
 	Client
 }
 
 // New creates a new service.
 func New(scope VNetScope) *Service {
+	client := NewClient(scope)
 	return &Service{
-		Scope:  scope,
-		Client: NewClient(scope),
+		Scope:      scope,
+		Client:     client,
+		Reconciler: async.New(scope, client, client),
 	}
 }
 
@@ -63,7 +69,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	vnetSpec := s.Scope.VNetSpec()
 
-	result, err := async.CreateResource(ctx, s.Scope, s.Client, vnetSpec, serviceName)
+	result, err := s.CreateResource(ctx, vnetSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, err)
 	if err == nil && result != nil {
 		existingVnet, ok := result.(network.VirtualNetwork)
@@ -94,7 +100,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	vnetSpec := s.Scope.VNetSpec()
 
 	// Check that the vnet is not BYO.
-	managed, err := s.Scope.IsVnetManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted or doesn't exist, cleanup status and return.
@@ -105,11 +111,11 @@ func (s *Service) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "could not get VNet management state")
 	}
 	if !managed {
-		s.Scope.V(4).Info("Skipping VNet deletion in custom vnet mode")
+		log.Info("Skipping VNet deletion in custom vnet mode")
 		return nil
 	}
 
-	err = async.DeleteResource(ctx, s.Scope, s.Client, vnetSpec, serviceName)
+	err = s.DeleteResource(ctx, vnetSpec, serviceName)
 	s.Scope.UpdateDeleteStatus(infrav1.VNetReadyCondition, serviceName, err)
 	return err
 }
@@ -120,8 +126,11 @@ func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.IsManaged")
 	defer done()
 
-	vnetSpec := s.Scope.VNetSpec()
-	vnet, err := s.Client.Get(ctx, vnetSpec.ResourceGroupName(), vnetSpec.ResourceName())
+	if s.Scope.GetVnetManagedCache() != nil {
+		return *s.Scope.GetVnetManagedCache(), nil
+	}
+
+	vnetIface, err := s.Client.Get(ctx, s.Scope.VNetSpec())
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// if the vnet was already deleted, attempt to get previous management state from the spec.
@@ -131,6 +140,12 @@ func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 		}
 		return false, err
 	}
+	vnet, ok := vnetIface.(network.VirtualNetwork)
+	if !ok {
+		return false, errors.Errorf("%T is not a network.VirtualNetwork", vnetIface)
+	}
 	tags := converters.MapToTags(vnet.Tags)
-	return tags.HasOwned(s.Scope.ClusterName()), nil
+	managed := tags.HasOwned(s.Scope.ClusterName())
+	s.Scope.SetVnetManagedCache(managed)
+	return managed, nil
 }

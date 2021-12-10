@@ -24,6 +24,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -35,20 +36,23 @@ type NSGScope interface {
 	azure.Authorizer
 	azure.AsyncStatusUpdater
 	NSGSpecs() []azure.ResourceSpecGetter
-	IsVnetManaged(context.Context) (bool, error)
+	virtualnetworks.VNetScope
 }
 
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope NSGScope
+	async.Reconciler
 	client
 }
 
 // New creates a new service.
 func New(scope NSGScope) *Service {
+	client := newClient(scope)
 	return &Service{
-		Scope:  scope,
-		client: newClient(scope),
+		Scope:      scope,
+		client:     client,
+		Reconciler: async.New(scope, client, client),
 	}
 }
 
@@ -61,8 +65,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	// Only create the NSGs if their lifecycle is managed by this controller.
-	// NSGs are managed if and only if the vnet is managed.
-	managed, err := s.Scope.IsVnetManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to determine if network security groups are managed")
 	} else if !managed {
@@ -76,7 +79,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	var resErr error
 
 	for _, nsgSpec := range s.Scope.NSGSpecs() {
-		if _, err := async.CreateResource(ctx, s.Scope, s.client, nsgSpec, serviceName); err != nil {
+		if _, err := s.CreateResource(ctx, nsgSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resErr == nil {
 				resErr = err
 			}
@@ -96,8 +99,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	// Only delete the NSG if its lifecycle is managed by this controller.
-	// NSGs are managed if and only if the vnet is managed.
-	managed, err := s.Scope.IsVnetManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to determine if network security groups are managed")
 	} else if !managed {
@@ -111,7 +113,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	// If multiple erros occur, we return the most pressing one
 	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
 	for _, nsgSpec := range s.Scope.NSGSpecs() {
-		if err := async.DeleteResource(ctx, s.Scope, s.client, nsgSpec, serviceName); err != nil {
+		if err := s.DeleteResource(ctx, nsgSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
@@ -120,4 +122,14 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	s.Scope.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, result)
 	return result
+}
+
+// IsManaged returns true if the security groups are managed.
+// NSGs are managed if and only if the vnet is managed.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.IsManaged")
+	defer done()
+
+	vnetSvc := virtualnetworks.New(s.Scope)
+	return vnetSvc.IsManaged(ctx)
 }

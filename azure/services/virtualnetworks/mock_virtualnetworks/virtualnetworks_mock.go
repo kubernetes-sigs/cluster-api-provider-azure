@@ -21,6 +21,7 @@ limitations under the License.
 package mock_virtualnetworks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -123,6 +124,20 @@ func (mr *MockVNetScopeMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockVNetScope)(nil).CloudEnvironment))
 }
 
+// ClusterName mocks base method.
+func (m *MockVNetScope) ClusterName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClusterName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockVNetScopeMockRecorder) ClusterName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockVNetScope)(nil).ClusterName))
+}
+
 // DeleteLongRunningOperationState mocks base method.
 func (m *MockVNetScope) DeleteLongRunningOperationState(arg0, arg1 string) {
 	m.ctrl.T.Helper()
@@ -161,6 +176,21 @@ func (m *MockVNetScope) HashKey() string {
 func (mr *MockVNetScopeMockRecorder) HashKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockVNetScope)(nil).HashKey))
+}
+
+// IsVnetManaged mocks base method.
+func (m *MockVNetScope) IsVnetManaged(ctx context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsVnetManaged", ctx)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsVnetManaged indicates an expected call of IsVnetManaged.
+func (mr *MockVNetScopeMockRecorder) IsVnetManaged(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockVNetScope)(nil).IsVnetManaged), ctx)
 }
 
 // SetLongRunningOperationState mocks base method.

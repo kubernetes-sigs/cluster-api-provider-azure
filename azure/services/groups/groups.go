@@ -82,7 +82,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	groupSpec := s.Scope.GroupSpec()
 
 	// check that the resource group is not BYO.
-	managed, err := s.IsGroupManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted or doesn't exist, cleanup status and return.
@@ -102,10 +102,10 @@ func (s *Service) Delete(ctx context.Context) error {
 	return err
 }
 
-// IsGroupManaged returns true if the resource group has an owned tag with the cluster name as value,
+// IsManaged returns true if the resource group has an owned tag with the cluster name as value,
 // meaning that the resource group's lifecycle is managed.
-func (s *Service) IsGroupManaged(ctx context.Context) (bool, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.IsGroupManaged")
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.IsManaged")
 	defer done()
 
 	groupSpec := s.Scope.GroupSpec()

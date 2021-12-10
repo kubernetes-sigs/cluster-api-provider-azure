@@ -55,7 +55,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Reconcile")
 	defer done()
 
-	managed, err := s.Scope.IsVnetManaged(ctx)
+	managed, err := s.Scope.IsManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if vnet is managed")
 	} else if !managed {

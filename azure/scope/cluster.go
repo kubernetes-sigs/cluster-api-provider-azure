@@ -111,6 +111,16 @@ type clusterCache struct {
 	IsVnetManaged *bool
 }
 
+// GetVnetManagedCache gets the value of VNet management in the cluster cache.
+func (s *ClusterScope) GetVnetManagedCache() *bool {
+	return s.cache.IsVnetManaged
+}
+
+// SetVnetManagedCache stores the value of VNet management in the cluster cache so it can be accessed later in the reconcile.
+func (s *ClusterScope) SetVnetManagedCache(managed bool) {
+	s.cache.IsVnetManaged = &managed
+}
+
 // BaseURI returns the Azure ResourceManagerEndpoint.
 func (s *ClusterScope) BaseURI() string {
 	return s.ResourceManagerEndpoint
@@ -251,14 +261,15 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
 
 // NSGSpecs returns the security group specs.
 func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
-	nsgspecs := make([]azure.NSGSpec, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
+	nsgspecs := make([]azure.ResourceSpecGetter, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
 	for i, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		nsgspecs[i] = &azure.NSGSpec{
+		nsgspecs[i] = &securitygroups.NSGSpec{
 			Name:          subnet.SecurityGroup.Name,
 			SecurityRules: subnet.SecurityGroup.SecurityRules,
 			ResourceGroup: s.ResourceGroup(),
 			Location:      s.Location(),
 		}
+	}
 	return nsgspecs
 }
 
@@ -397,18 +408,6 @@ func (s *ClusterScope) BastionSpec() azure.BastionSpec {
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet
-}
-
-// IsVnetManaged returns true if the vnet is managed.
-func (s *ClusterScope) IsVnetManaged(ctx context.Context) (bool, error) {
-	var err error
-	if s.cache.IsVnetManaged == nil {
-		vnetSvc := virtualnetworks.New(s)
-		if managed, err := vnetSvc.IsManaged(ctx); err == nil {
-			s.cache.IsVnetManaged = to.BoolPtr(managed)
-		}
-	}
-	return to.Bool(s.cache.IsVnetManaged), err
 }
 
 // IsIPv6Enabled returns true if IPv6 is enabled.

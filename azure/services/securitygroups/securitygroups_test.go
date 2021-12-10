@@ -33,6 +33,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups/mock_securitygroups"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -73,88 +74,61 @@ var (
 		SecurityRules: infrav1.SecurityRules{},
 		ResourceGroup: "test-group",
 	}
-	fakeNSGSpecs     = []azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2}
-	fakePutFuture, _ = azureautorest.NewFutureFromResponse(&http.Response{
-		Status:     "200 OK",
-		StatusCode: 200,
-		Request: &http.Request{
-			Method: http.MethodPut,
-			URL:    &url.URL{},
-		},
-	})
-	fakeDeleteFuture, _ = azureautorest.NewFutureFromResponse(&http.Response{
-		Status:     "200 OK",
-		StatusCode: 200,
-		Request: &http.Request{
-			Method: http.MethodDelete,
-		},
-	})
 	errFake = errors.New("this is an error")
 	errFoo  = errors.New("foo")
+	notDoneError          = azure.NewOperationNotDoneError(&infrav1.Future{})
 )
 
 func TestReconcileSecurityGroups(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder)
+		expect        func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "create multiple security groups succeeds, should return no error",
 			expectedError: "",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.NSGSpecs().Return(fakeNSGSpecs)
-				s.GetLongRunningOperationState("test-nsg", serviceName).Return(nil)
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeNSG).Return(nil, nil, nil)
-				s.GetLongRunningOperationState("test-nsg-2", serviceName).Return(nil)
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeNSG2).Return(nil, nil, nil)
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, nil)
+				r.CreateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "first security groups create fails, should return error",
 			expectedError: "failed to create resource test-group/test-nsg (service: securitygroups): this is an error",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.NSGSpecs().Return(fakeNSGSpecs)
-				s.GetLongRunningOperationState("test-nsg", serviceName).Return(nil)
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeNSG).Return(nil, nil, errFake)
-				s.GetLongRunningOperationState("test-nsg-2", serviceName).Return(nil)
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeNSG2).Return(nil, nil, nil)
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, errFake)
+				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/test-nsg (service: securitygroups): this is an error"))
 			},
 		},
 		{
 			name:          "first sg create fails, second sg create not done, should return create error",
 			expectedError: "failed to create resource test-group/test-nsg (service: securitygroups): this is an error",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.NSGSpecs().Return(fakeNSGSpecs)
-				s.GetLongRunningOperationState("test-nsg", serviceName).Return(nil)
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeNSG).Return(nil, nil, errFake)
-				s.GetLongRunningOperationState("test-nsg-2", serviceName).Return(nil)
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeNSG2).Return(nil, &fakePutFuture, errFoo)
-				s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{}))
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, errFake)
+				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, notDoneError)			
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/test-nsg (service: securitygroups): this is an error"))
 			},
 		},
 		{
 			name:          "vnet is not managed, should skip reconcile",
 			expectedError: "",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
 			},
 		},
 		{
 			name:          "fail to check if vnet is managed, should return an error",
 			expectedError: "failed to determine if network security groups are managed: this is an error",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged(gomockinternal.AContext()).Return(false, errFake)
 			},
 		},
@@ -169,12 +143,14 @@ func TestReconcileSecurityGroups(t *testing.T) {
 
 			scopeMock := mock_securitygroups.NewMockNSGScope(mockCtrl)
 			clientMock := mock_securitygroups.NewMockclient(mockCtrl)
+			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), reconcilerMock.EXPECT())
 
 			s := &Service{
 				Scope:  scopeMock,
 				client: clientMock,
+				Reconciler: reconcilerMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -192,48 +168,38 @@ func TestDeleteSecurityGroups(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder)
+		expect        func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "delete multiple security groups succeeds, should return no error",
 			expectedError: "",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.NSGSpecs().Return(fakeNSGSpecs)
-				s.GetLongRunningOperationState("test-nsg", serviceName).Return(nil)
-				m.DeleteAsync(gomockinternal.AContext(), &fakeNSG).Return(nil, nil)
-				s.GetLongRunningOperationState("test-nsg-2", serviceName).Return(nil)
-				m.DeleteAsync(gomockinternal.AContext(), &fakeNSG2).Return(nil, nil)
+				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil)
+				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "first security groups delete fails, should return an error",
 			expectedError: "failed to delete resource test-group/test-nsg (service: securitygroups): this is an error",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.NSGSpecs().Return(fakeNSGSpecs)
-				s.GetLongRunningOperationState("test-nsg", serviceName).Return(nil)
-				m.DeleteAsync(gomockinternal.AContext(), &fakeNSG).Return(nil, errFake)
-				s.GetLongRunningOperationState("test-nsg-2", serviceName).Return(nil)
-				m.DeleteAsync(gomockinternal.AContext(), &fakeNSG2).Return(nil, nil)
+				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(errFake)
+				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to delete resource test-group/test-nsg (service: securitygroups): this is an error"))
 			},
 		},
 		{
 			name:          "first security groups delete fails and second security groups create not done, should return an error",
 			expectedError: "failed to delete resource test-group/test-nsg (service: securitygroups): this is an error",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.NSGSpecs().Return(fakeNSGSpecs)
-				s.GetLongRunningOperationState("test-nsg", serviceName).Return(nil)
-				m.DeleteAsync(gomockinternal.AContext(), &fakeNSG).Return(nil, errFake)
-				s.GetLongRunningOperationState("test-nsg-2", serviceName).Return(nil)
-				m.DeleteAsync(gomockinternal.AContext(), &fakeNSG2).Return(&fakeDeleteFuture, errFoo)
-				s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{}))
+				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(errFake)
+				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(notDoneError)
 				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to delete resource test-group/test-nsg (service: securitygroups): this is an error"))
 			},
 		},
@@ -241,7 +207,6 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			name:          "vnet is not managed, should skip delete",
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
 			},
 		},
@@ -249,7 +214,6 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			name:          "fail to check if vnet is managed, should return an error",
 			expectedError: "failed to determine if network security groups are managed: this is an error",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.IsVnetManaged(gomockinternal.AContext()).Return(false, errFake)
 			},
 		},

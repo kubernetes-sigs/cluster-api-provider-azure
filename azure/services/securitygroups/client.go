@@ -33,8 +33,8 @@ import (
 
 // client wraps go-sdk.
 type client interface {
-	Get(context.Context, string, string) (network.SecurityGroup, error)
-	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error)
+	Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
+	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, interface{}) (interface{}, azureautorest.FutureAPI, error)
 	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
 	Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
@@ -61,40 +61,23 @@ func newSecurityGroupsClient(subscriptionID string, baseURI string, authorizer a
 }
 
 // Get gets the specified network security group.
-func (ac *azureClient) Get(ctx context.Context, resourceGroupName, sgName string) (network.SecurityGroup, error) {
+func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.AzureClient.Get")
 	defer done()
 
-	return ac.securitygroups.Get(ctx, resourceGroupName, sgName, "")
+	return ac.securitygroups.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
 }
 
 // CreateOrUpdateAsync creates or updates a network security group in the specified resource group.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (interface{}, azureautorest.FutureAPI, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.AzureClient.CreateOrUpdate")
 	defer done()
 
-	var existingNSG interface{}
-
-	if existing, err := ac.Get(ctx, spec.ResourceGroupName(), spec.ResourceName()); err != nil && !azure.ResourceNotFound(err) {
-		return nil, nil, errors.Wrapf(err, "failed to get NSG %s in %s", spec.ResourceName(), spec.ResourceGroupName())
-	} else if err == nil {
-		existingNSG = existing
-	}
-
-	params, err := spec.Parameters(existingNSG)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get desired parameters for security group %s", spec.ResourceName())
-	}
-
-	sg, ok := params.(network.SecurityGroup)
+	sg, ok := parameters.(network.SecurityGroup)
 	if !ok {
-		if params == nil {
-			// nothing to do here.
-			return existingNSG, nil, nil
-		}
-		return nil, nil, errors.Errorf("%T is not a network.SecurityGroup", params)
+		return nil, nil, errors.Errorf("%T is not a network.SecurityGroup", parameters)
 	}
 
 	var etag string

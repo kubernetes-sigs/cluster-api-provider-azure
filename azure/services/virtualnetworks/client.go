@@ -33,8 +33,8 @@ import (
 
 // Client wraps go-sdk.
 type Client interface {
-	Get(context.Context, string, string) (network.VirtualNetwork, error)
-	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error)
+	Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
+	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, interface{}) (interface{}, azureautorest.FutureAPI, error)
 	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 	CheckIPAddressAvailability(context.Context, string, string, string) (network.IPAddressAvailabilityResult, error)
 	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
@@ -63,41 +63,24 @@ func newVirtualNetworksClient(subscriptionID string, baseURI string, authorizer 
 	return vnetsClient
 }
 
-// Get gets the specified virtual network by resource group.
-func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vnetName string) (network.VirtualNetwork, error) {
+// Get gets the specified virtual network.
+func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.AzureClient.Get")
 	defer done()
 
-	return ac.virtualnetworks.Get(ctx, resourceGroupName, vnetName, "")
+	return ac.virtualnetworks.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
 }
 
 // CreateOrUpdateAsync creates or updates a virtual network in the specified resource group asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error) {
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (interface{}, azureautorest.FutureAPI, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.AzureClient.CreateOrUpdateAsync")
 	defer done()
 
-	var existingVnet interface{}
-
-	if existing, err := ac.Get(ctx, spec.ResourceGroupName(), spec.ResourceName()); err != nil && !azure.ResourceNotFound(err) {
-		return nil, nil, errors.Wrapf(err, "failed to get VNet %s in %s", spec.ResourceName(), spec.ResourceGroupName())
-	} else if err == nil {
-		existingVnet = existing
-	}
-
-	params, err := spec.Parameters(existingVnet)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get desired parameters for virtual network %s", spec.ResourceName())
-	}
-
-	vn, ok := params.(network.VirtualNetwork)
+	vn, ok := parameters.(network.VirtualNetwork)
 	if !ok {
-		if params == nil {
-			// nothing to do here.
-			return existingVnet, nil, nil
-		}
-		return nil, nil, errors.Errorf("%T is not a network.VirtualNetwork", params)
+		return nil, nil, errors.Errorf("%T is not a network.VirtualNetwork", parameters)
 	}
 
 	future, err := ac.virtualnetworks.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vn)

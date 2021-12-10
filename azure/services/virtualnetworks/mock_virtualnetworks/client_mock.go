@@ -69,9 +69,9 @@ func (mr *MockClientMockRecorder) CheckIPAddressAvailability(arg0, arg1, arg2, a
 }
 
 // CreateOrUpdateAsync mocks base method.
-func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (interface{}, azure.FutureAPI, error) {
+func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1 azure0.ResourceSpecGetter, arg2 interface{}) (interface{}, azure.FutureAPI, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2)
 	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(azure.FutureAPI)
 	ret2, _ := ret[2].(error)
@@ -79,9 +79,9 @@ func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1 azure0.Resou
 }
 
 // CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
-func (mr *MockClientMockRecorder) CreateOrUpdateAsync(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CreateOrUpdateAsync(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), arg0, arg1, arg2)
 }
 
 // DeleteAsync mocks base method.
@@ -100,18 +100,18 @@ func (mr *MockClientMockRecorder) DeleteAsync(arg0, arg1 interface{}) *gomock.Ca
 }
 
 // Get mocks base method.
-func (m *MockClient) Get(arg0 context.Context, arg1, arg2 string) (network.VirtualNetwork, error) {
+func (m *MockClient) Get(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (interface{}, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
-	ret0, _ := ret[0].(network.VirtualNetwork)
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockClientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1)
 }
 
 // IsDone mocks base method.
