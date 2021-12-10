@@ -12,6 +12,7 @@ patchesStrategicMerge:
   - patches/machine-deployment-ci-version.yaml
   - patches/machine-deployment-ci-version-windows.yaml
   - ../patches/metrics-server-enabled-cluster.yaml
+  - patches/controller-manager-featuregates.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
