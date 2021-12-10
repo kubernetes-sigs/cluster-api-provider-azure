@@ -6,4 +6,3 @@ resources:
 patchesStrategicMerge:
   - ../patches/tags-aks.yaml
   - patches/maxpods-aks-agentpool0.yaml
-  - patches/maxpods-aks-agentpool1.yaml
