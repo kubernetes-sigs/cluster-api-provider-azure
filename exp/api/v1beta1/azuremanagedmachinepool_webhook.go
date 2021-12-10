@@ -193,8 +193,10 @@ func (r *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 }
 
 func (r *AzureManagedMachinePool) validateMaxPods() error {
-	if to.Int32(r.Spec.MaxPods) < 10 || to.Int32(r.Spec.MaxPods) > 250 {
-		return errors.New("MaxPods must be between 10 and 250")
+	if r.Spec.MaxPods != nil {
+		if to.Int32(r.Spec.MaxPods) < 10 || to.Int32(r.Spec.MaxPods) > 250 {
+			return errors.New("MaxPods must be between 10 and 250")
+		}
 	}
 
 	return nil

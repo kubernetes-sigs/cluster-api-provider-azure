@@ -258,6 +258,13 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid - optional configuration not present",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			wantErr: false,
+		},
+		{
 			name: "too many MaxPods",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
