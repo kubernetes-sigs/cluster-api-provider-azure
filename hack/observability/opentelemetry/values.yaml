@@ -3,11 +3,18 @@ config:
     azuremonitor: {}
     jaeger:
       endpoint: jaeger-all-in-one:14250
-      insecure: true
+      tls:
+        insecure: true
+  extensions:
+    health_check: {}
+    memory_ballast: {}
   receivers:
     jaeger: null
     zipkin: null
   service:
+    extensions:
+      - health_check
+      - memory_ballast
     pipelines:
       traces:
         exporters:
@@ -20,7 +27,7 @@ config:
 image:
   repository: otel/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
-  tag: 0.29.0
+  tag: 0.40.0
 command:
   name: otelcontribcol
 

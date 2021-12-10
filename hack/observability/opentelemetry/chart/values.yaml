@@ -10,6 +10,7 @@ config:
     logging: {}
   extensions:
     health_check: {}
+    memory_ballast: {}
   processors:
     batch: {}
     # If set to null, will be overridden with values based on k8s resource limits
@@ -21,10 +22,14 @@ config:
           endpoint: 0.0.0.0:14250
         thrift_http:
           endpoint: 0.0.0.0:14268
+        thrift_compact:
+          endpoint: 0.0.0.0:6831
     otlp:
       protocols:
-        grpc: null
-        http: null
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
     prometheus:
       config:
         scrape_configs:
@@ -38,6 +43,7 @@ config:
   service:
     extensions:
       - health_check
+      - memory_ballast
     pipelines:
       logs:
         exporters:
@@ -71,8 +77,8 @@ config:
 # Can be overridden here or for any component independently using the same keys.
 
 image:
-  # If you want to use the contrib image `otel/opentelemetry-collector-contrib`, you also need to change `command.name` value to `otelcontribcol`.
-  repository: otel/opentelemetry-collector
+  # If you want to use the core image `otel/opentelemetry-collector`, you also need to change `command.name` value to `otelcol`.
+  repository: otel/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -80,7 +86,7 @@ imagePullSecrets: []
 
 # OpenTelemetry Collector executable
 command:
-  name: otelcol
+  name: otelcontribcol
   extraArgs: []
 
 serviceAccount:
@@ -91,6 +97,33 @@ serviceAccount:
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
+
+clusterRole:
+  # Specifies whether a clusterRole should be created
+  create: false
+  # Annotations to add to the clusterRole
+  annotations: {}
+  # The name of the clusterRole to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  # A set of rules as documented here : https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+  rules: []
+  # - apiGroups:
+  #   - ''
+  #   resources:
+  #   - 'pods'
+  #   - 'nodes'
+  #   verbs:
+  #   - 'get'
+  #   - 'list'
+  #   - 'watch'
+
+  clusterRoleBinding:
+    # Annotations to add to the clusterRoleBinding
+    annotations: {}
+    # The name of the clusterRoleBinding to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
 
 podSecurityContext: {}
 securityContext: {}
@@ -117,6 +150,18 @@ ports:
     servicePort: 4317
     hostPort: 4317
     protocol: TCP
+  otlp-http:
+    enabled: true
+    containerPort: 4318
+    servicePort: 4318
+    hostPort: 4318
+    protocol: TCP
+  jaeger-compact:
+    enabled: true
+    containerPort: 6831
+    servicePort: 6831
+    hostPort: 6831
+    protocol: UDP
   jaeger-thrift:
     enabled: true
     containerPort: 14268
@@ -149,6 +194,8 @@ agentCollector:
       memory: 512Mi
 
   podAnnotations: {}
+
+  podLabels: {}
 
   # Configuration override that will be merged into the agent's default config
   configOverride: {}
@@ -218,6 +265,8 @@ standaloneCollector:
       memory: 2Gi
 
   podAnnotations: {}
+
+  podLabels: {}
 
   annotations: {}
 
