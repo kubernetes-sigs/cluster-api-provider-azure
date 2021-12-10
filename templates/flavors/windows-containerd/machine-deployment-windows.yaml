@@ -76,3 +76,4 @@ spec:
         permissions: "0744"
         content: |-
           Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+          Set-ItemProperty -Path "HKLM:SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Type DWord -Name NoAutoUpdate -Value 1
