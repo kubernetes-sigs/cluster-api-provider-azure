@@ -241,6 +241,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			VnetSubnetID:      &managedClusterSpec.VnetSubnetID,
 			Mode:              containerservice.AgentPoolMode(pool.Mode),
 			AvailabilityZones: &pool.AvailabilityZones,
+			MaxPods:           pool.MaxPods,
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}

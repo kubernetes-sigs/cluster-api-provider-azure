@@ -263,6 +263,24 @@ spec:
     maxSize: 10
 ```
 
+### AKS Node Pool MaxPods configuration
+
+You can configure the `MaxPods` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec (see [here](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#configure-maximum---new-clusters) for the official AKS documentation). This corresponds to the kubelet `--max-pods` configuration (official kubelet configuration documentation can be found [here](https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/)).
+
+Below an example `maxPods` configuration is assigned to `agentpool0`, specifying that each node in the pool will enforce a maximum of 24 scheduled pods:
+
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: System
+  osDiskSizeGB: 512
+  sku: Standard_D2s_v3
+  maxPods: 24
+```
+
 ### Use a public Standard Load Balancer
 
 A public Load Balancer when integrated with AKS serves two purposes:

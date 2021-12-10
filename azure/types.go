@@ -441,4 +441,7 @@ type AgentPoolSpec struct {
 
 	// AvailabilityZones represents the Availability zones for nodes in the AgentPool.
 	AvailabilityZones []string
+
+	// MaxPods specifies the kubelet --max-pods configuration for the agent pool.
+	MaxPods *int32 `json:"maxPods,omitempty"`
 }
