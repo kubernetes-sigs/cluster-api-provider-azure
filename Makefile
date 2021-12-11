@@ -51,6 +51,7 @@ KUBETEST_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/conformance.yaml)
 KUBETEST_WINDOWS_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/upstream-windows.yaml)
 KUBETEST_REPO_LIST_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/)
 AZURE_TEMPLATES := $(E2E_DATA_DIR)/infrastructure-azure
+ADDONS_DIR := templates/addons
 
 # use the project local tool binaries first
 export PATH := $(TOOLS_BIN_DIR):$(PATH)
@@ -318,6 +319,7 @@ generate: ## Generate code
 	$(MAKE) generate-manifests
 	$(MAKE) generate-flavors
 	$(MAKE) generate-e2e-templates
+	$(MAKE) generate-addons
 
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets
@@ -379,6 +381,10 @@ generate-e2e-templates: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-node-drain --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-node-drain.yaml
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-upgrades --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-upgrades.yaml
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in.yaml
+
+.PHONY: generate-addons
+generate-addons:
+	$(KUSTOMIZE) build $(ADDONS_DIR)/metrics-server > $(ADDONS_DIR)/metrics-server/metrics-server.yaml
 
 ## --------------------------------------
 ## Docker

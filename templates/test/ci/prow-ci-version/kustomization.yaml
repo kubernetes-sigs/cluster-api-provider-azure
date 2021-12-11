@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ../prow
+  - ../../../addons/metrics-server/metrics-server-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
@@ -10,6 +11,7 @@ patchesStrategicMerge:
   - ../patches/machine-deployment-worker-counts.yaml
   - patches/machine-deployment-ci-version.yaml
   - patches/machine-deployment-ci-version-windows.yaml
+  - ../patches/metrics-server-enabled-cluster.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
@@ -36,3 +38,12 @@ configMapGenerator:
     behavior: merge
     files:
       - kube-proxy-patch=../patches/windows-kubeproxy-ci.yaml
+  - name: metrics-server-${CLUSTER_NAME}
+    files:
+      - metrics-server=../../../addons/metrics-server/metrics-server.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated
