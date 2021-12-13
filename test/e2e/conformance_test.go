@@ -146,7 +146,7 @@ var _ = Describe("Conformance Tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 			if v.GTE(v122) {
 				// Opt into using WindowsHostProcessContainers
-				Expect(os.Setenv("K8S_FEATURE_GATES", "WindowsHostProcessContainers=true")).To(Succeed())
+				Expect(os.Setenv("K8S_FEATURE_GATES", "WindowsHostProcessContainers=true,HPAContainerMetrics=true")).To(Succeed())
 			}
 		}
 
