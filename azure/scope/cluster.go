@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
@@ -277,12 +278,14 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.ResourceSpecGetter {
 }
 
 // NSGSpecs returns the security group specs.
-func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
-	nsgspecs := make([]azure.NSGSpec, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
+func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
+	nsgspecs := make([]azure.ResourceSpecGetter, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
 	for i, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		nsgspecs[i] = azure.NSGSpec{
+		nsgspecs[i] = &securitygroups.NSGSpec{
 			Name:          subnet.SecurityGroup.Name,
 			SecurityRules: subnet.SecurityGroup.SecurityRules,
+			ResourceGroup: s.ResourceGroup(),
+			Location:      s.Location(),
 		}
 	}
 
@@ -696,6 +699,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.BastionHostReadyCondition,
 			infrav1.VNetReadyCondition,
 			infrav1.SubnetsReadyCondition,
+			infrav1.SecurityGroupsReadyCondition,
 		}})
 }
 

@@ -50,12 +50,6 @@ const (
 	VirtualMachineScaleSet = "VirtualMachineScaleSet"
 )
 
-// NSGSpec defines the specification for a Security Group.
-type NSGSpec struct {
-	Name          string
-	SecurityRules infrav1.SecurityRules
-}
-
 // ScaleSetSpec defines the specification for a Scale Set.
 type ScaleSetSpec struct {
 	Name                         string
