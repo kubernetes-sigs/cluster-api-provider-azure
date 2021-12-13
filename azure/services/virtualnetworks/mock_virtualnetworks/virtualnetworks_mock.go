@@ -21,7 +21,6 @@ limitations under the License.
 package mock_virtualnetworks
 
 import (
-	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -164,6 +163,20 @@ func (mr *MockVNetScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockVNetScope)(nil).GetLongRunningOperationState), arg0, arg1)
 }
 
+// GetVnetManagedCache mocks base method.
+func (m *MockVNetScope) GetVnetManagedCache() *bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVnetManagedCache")
+	ret0, _ := ret[0].(*bool)
+	return ret0
+}
+
+// GetVnetManagedCache indicates an expected call of GetVnetManagedCache.
+func (mr *MockVNetScopeMockRecorder) GetVnetManagedCache() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVnetManagedCache", reflect.TypeOf((*MockVNetScope)(nil).GetVnetManagedCache))
+}
+
 // HashKey mocks base method.
 func (m *MockVNetScope) HashKey() string {
 	m.ctrl.T.Helper()
@@ -178,21 +191,6 @@ func (mr *MockVNetScopeMockRecorder) HashKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockVNetScope)(nil).HashKey))
 }
 
-// IsVnetManaged mocks base method.
-func (m *MockVNetScope) IsVnetManaged(ctx context.Context) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged", ctx)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockVNetScopeMockRecorder) IsVnetManaged(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockVNetScope)(nil).IsVnetManaged), ctx)
-}
-
 // SetLongRunningOperationState mocks base method.
 func (m *MockVNetScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 	m.ctrl.T.Helper()
@@ -203,6 +201,18 @@ func (m *MockVNetScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 func (mr *MockVNetScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockVNetScope)(nil).SetLongRunningOperationState), arg0)
+}
+
+// SetVnetManagedCache mocks base method.
+func (m *MockVNetScope) SetVnetManagedCache(arg0 bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetVnetManagedCache", arg0)
+}
+
+// SetVnetManagedCache indicates an expected call of SetVnetManagedCache.
+func (mr *MockVNetScopeMockRecorder) SetVnetManagedCache(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVnetManagedCache", reflect.TypeOf((*MockVNetScope)(nil).SetVnetManagedCache), arg0)
 }
 
 // SubscriptionID mocks base method.

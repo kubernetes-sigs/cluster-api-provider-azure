@@ -21,13 +21,13 @@ limitations under the License.
 package mock_natgateways
 
 import (
-	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // MockNatGatewayScope is a mock of NatGatewayScope interface.
@@ -235,6 +235,18 @@ func (mr *MockNatGatewayScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockNatGatewayScope)(nil).ControlPlaneSubnet))
 }
 
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockNatGatewayScope) DeleteLongRunningOperationState(arg0, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockNatGatewayScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockNatGatewayScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+}
+
 // FailureDomains mocks base method.
 func (m *MockNatGatewayScope) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -249,6 +261,20 @@ func (mr *MockNatGatewayScopeMockRecorder) FailureDomains() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockNatGatewayScope)(nil).FailureDomains))
 }
 
+// GetLongRunningOperationState mocks base method.
+func (m *MockNatGatewayScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret0, _ := ret[0].(*v1beta1.Future)
+	return ret0
+}
+
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockNatGatewayScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockNatGatewayScope)(nil).GetLongRunningOperationState), arg0, arg1)
+}
+
 // GetPrivateDNSZoneName mocks base method.
 func (m *MockNatGatewayScope) GetPrivateDNSZoneName() string {
 	m.ctrl.T.Helper()
@@ -261,6 +287,20 @@ func (m *MockNatGatewayScope) GetPrivateDNSZoneName() string {
 func (mr *MockNatGatewayScopeMockRecorder) GetPrivateDNSZoneName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivateDNSZoneName", reflect.TypeOf((*MockNatGatewayScope)(nil).GetPrivateDNSZoneName))
+}
+
+// GetVnetManagedCache mocks base method.
+func (m *MockNatGatewayScope) GetVnetManagedCache() *bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVnetManagedCache")
+	ret0, _ := ret[0].(*bool)
+	return ret0
+}
+
+// GetVnetManagedCache indicates an expected call of GetVnetManagedCache.
+func (mr *MockNatGatewayScopeMockRecorder) GetVnetManagedCache() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVnetManagedCache", reflect.TypeOf((*MockNatGatewayScope)(nil).GetVnetManagedCache))
 }
 
 // HashKey mocks base method.
@@ -303,21 +343,6 @@ func (m *MockNatGatewayScope) IsIPv6Enabled() bool {
 func (mr *MockNatGatewayScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockNatGatewayScope)(nil).IsIPv6Enabled))
-}
-
-// IsVnetManaged mocks base method.
-func (m *MockNatGatewayScope) IsVnetManaged(arg0 context.Context) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged", arg0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockNatGatewayScopeMockRecorder) IsVnetManaged(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockNatGatewayScope)(nil).IsVnetManaged), arg0)
 }
 
 // Location mocks base method.
@@ -404,6 +429,18 @@ func (mr *MockNatGatewayScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockNatGatewayScope)(nil).ResourceGroup))
 }
 
+// SetLongRunningOperationState mocks base method.
+func (m *MockNatGatewayScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockNatGatewayScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockNatGatewayScope)(nil).SetLongRunningOperationState), arg0)
+}
+
 // SetSubnet mocks base method.
 func (m *MockNatGatewayScope) SetSubnet(arg0 v1beta1.SubnetSpec) {
 	m.ctrl.T.Helper()
@@ -414,6 +451,18 @@ func (m *MockNatGatewayScope) SetSubnet(arg0 v1beta1.SubnetSpec) {
 func (mr *MockNatGatewayScopeMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockNatGatewayScope)(nil).SetSubnet), arg0)
+}
+
+// SetVnetManagedCache mocks base method.
+func (m *MockNatGatewayScope) SetVnetManagedCache(arg0 bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetVnetManagedCache", arg0)
+}
+
+// SetVnetManagedCache indicates an expected call of SetVnetManagedCache.
+func (mr *MockNatGatewayScopeMockRecorder) SetVnetManagedCache(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVnetManagedCache", reflect.TypeOf((*MockNatGatewayScope)(nil).SetVnetManagedCache), arg0)
 }
 
 // Subnet mocks base method.
@@ -470,6 +519,56 @@ func (m *MockNatGatewayScope) TenantID() string {
 func (mr *MockNatGatewayScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockNatGatewayScope)(nil).TenantID))
+}
+
+// UpdateDeleteStatus mocks base method.
+func (m *MockNatGatewayScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
+}
+
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockNatGatewayScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockNatGatewayScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockNatGatewayScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockNatGatewayScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockNatGatewayScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockNatGatewayScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockNatGatewayScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockNatGatewayScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
+}
+
+// VNetSpec mocks base method.
+func (m *MockNatGatewayScope) VNetSpec() azure.ResourceSpecGetter {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VNetSpec")
+	ret0, _ := ret[0].(azure.ResourceSpecGetter)
+	return ret0
+}
+
+// VNetSpec indicates an expected call of VNetSpec.
+func (mr *MockNatGatewayScopeMockRecorder) VNetSpec() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VNetSpec", reflect.TypeOf((*MockNatGatewayScope)(nil).VNetSpec))
 }
 
 // Vnet mocks base method.

@@ -33,20 +33,21 @@ import (
 type SubnetScope interface {
 	azure.ClusterScoper
 	SubnetSpecs() []azure.SubnetSpec
-	virtualnetworks.VNetScope
 }
 
 // Service provides operations on Azure resources.
 type Service struct {
-	Scope SubnetScope
+	Scope     SubnetScope
+	VNetScope virtualnetworks.VNetScope
 	Client
 }
 
 // New creates a new service.
-func New(scope SubnetScope) *Service {
+func New(scope SubnetScope, vnetScope virtualnetworks.VNetScope) *Service {
 	return &Service{
-		Scope:  scope,
-		Client: NewClient(scope),
+		Scope:     scope,
+		VNetScope: vnetScope,
+		Client:    NewClient(scope),
 	}
 }
 
@@ -161,7 +162,7 @@ func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.IsManaged")
 	defer done()
 
-	vnetSvc := virtualnetworks.New(s.Scope)
+	vnetSvc := virtualnetworks.New(s.VNetScope)
 	return vnetSvc.IsManaged(ctx)
 }
 

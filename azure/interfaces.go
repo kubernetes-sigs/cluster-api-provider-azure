@@ -32,6 +32,15 @@ type Reconciler interface {
 	Delete(ctx context.Context) error
 }
 
+// SharedReconciler is a generic interface used by components offering a type of service.
+// Example: virtualnetworks service would offer Reconcile/Delete methods.
+// TODO: remove this.
+type SharedReconciler interface {
+	Reconcile(ctx context.Context) error
+	Delete(ctx context.Context) error
+	IsManaged(ctx context.Context, spec ResourceSpecGetter) (bool, error)
+}
+
 // CredentialGetter is a Service which knows how to retrieve credentials for an Azure
 // resource in a resource group.
 type CredentialGetter interface {

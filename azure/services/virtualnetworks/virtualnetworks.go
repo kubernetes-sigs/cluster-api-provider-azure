@@ -100,7 +100,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	vnetSpec := s.Scope.VNetSpec()
 
 	// Check that the vnet is not BYO.
-	managed, err := s.IsManaged(ctx)
+	managed, err := s.IsManaged(ctx, vnetSpec)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted or doesn't exist, cleanup status and return.
@@ -122,7 +122,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 // IsManaged returns true if the virtual network has an owned tag with the cluster name as value,
 // meaning that the vnet's lifecycle is managed, and caches the result in scope so that other services that depend on the vnet can check if it is managed.
-func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+func (s *Service) IsManaged(ctx context.Context, spec azure.ResourceSpecGetter) (bool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.IsManaged")
 	defer done()
 
@@ -130,7 +130,7 @@ func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 		return *s.Scope.GetVnetManagedCache(), nil
 	}
 
-	vnetIface, err := s.Client.Get(ctx, s.Scope.VNetSpec())
+	vnetIface, err := s.Client.Get(ctx, spec)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// if the vnet was already deleted, attempt to get previous management state from the spec.

@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -33,6 +34,7 @@ type RouteTableScope interface {
 	azure.ClusterDescriber
 	azure.NetworkDescriber
 	RouteTableSpecs() []azure.RouteTableSpec
+	virtualnetworks.VNetScope
 }
 
 // Service provides operations on azure resources.
@@ -54,7 +56,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Reconcile")
 	defer done()
 
-	managed, err := s.Scope.IsVnetManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if vnet is managed")
 	} else if !managed {
@@ -101,7 +103,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Delete")
 	defer done()
 
-	managed, err := s.Scope.IsVnetManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if vnet is managed")
 	} else if !managed {
@@ -122,4 +124,14 @@ func (s *Service) Delete(ctx context.Context) error {
 		log.V(2).Info("successfully deleted route table", "route table", routeTableSpec.Name)
 	}
 	return nil
+}
+
+// IsManaged returns true if the route tables are managed.
+// Route tables are managed if and only if the vnet is managed.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.Service.IsManaged")
+	defer done()
+
+	vnetSvc := virtualnetworks.New(s.Scope)
+	return vnetSvc.IsManaged(ctx)
 }

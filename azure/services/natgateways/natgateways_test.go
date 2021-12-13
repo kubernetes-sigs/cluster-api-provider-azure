@@ -27,10 +27,10 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways/mock_natgateways"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
@@ -49,16 +49,13 @@ func TestReconcileNatGateways(t *testing.T) {
 			name:          "nat gateways in custom vnet mode",
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				//s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
 			},
 		},
 		{
 			name:          "nat gateway create successfully",
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
 						Name: "my-node-natgateway",
@@ -92,8 +89,6 @@ func TestReconcileNatGateways(t *testing.T) {
 			name:          "update nat gateway if actual state does not match desired state",
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
 						Name: "my-node-natgateway",
@@ -135,8 +130,6 @@ func TestReconcileNatGateways(t *testing.T) {
 			name:          "nat gateway is not updated if it's up to date",
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
 						Name: "my-node-natgateway",
@@ -180,8 +173,6 @@ func TestReconcileNatGateways(t *testing.T) {
 			name:          "fail when getting existing nat gateway",
 			expectedError: "failed to get nat gateway my-node-natgateway in my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
 						Name: "my-node-natgateway",
@@ -200,8 +191,6 @@ func TestReconcileNatGateways(t *testing.T) {
 			name:          "fail to create a nat gateway",
 			expectedError: "failed to create nat gateway my-node-natgateway in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
 						Name: "my-node-natgateway",
@@ -228,13 +217,15 @@ func TestReconcileNatGateways(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_natgateways.NewMockNatGatewayScope(mockCtrl)
+			vnetScopeMock := mock_virtualnetworks.NewMockVirtualNetworkScope(mockCtrl)
 			clientMock := mock_natgateways.NewMockclient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				client: clientMock,
+				Scope:   scopeMock,
+				VNetSvc: virtualnetworks.New(vnetScopeMock),
+				client:  clientMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -258,16 +249,13 @@ func TestDeleteNatGateway(t *testing.T) {
 			name:          "nat gateways in custom vnet mode",
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				// s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
 			},
 		},
 		{
 			name:          "nat gateway deleted successfully",
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
 						Name: "my-node-natgateway",
@@ -285,8 +273,6 @@ func TestDeleteNatGateway(t *testing.T) {
 			name:          "nat gateway already deleted",
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
 						Name: "my-node-natgateway",
@@ -306,8 +292,6 @@ func TestDeleteNatGateway(t *testing.T) {
 			name:          "nat gateway deletion fails",
 			expectedError: "failed to delete nat gateway my-node-natgateway in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
 					{
 						Name: "my-node-natgateway",

@@ -26,7 +26,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets/mock_subnets"
@@ -476,13 +475,15 @@ func TestReconcileSubnets(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_subnets.NewMockSubnetScope(mockCtrl)
+			vnetScopeMock := mock_vnets.NewMockVnetScope(mockCtrl)
 			clientMock := mock_subnets.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				Client: clientMock,
+				Scope:     scopeMock,
+				VNetScope: scopeMock,
+				Client:    clientMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -524,7 +525,6 @@ func TestDeleteSubnets(t *testing.T) {
 						Role:              infrav1.SubnetControlPlane,
 					},
 				})
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -546,7 +546,6 @@ func TestDeleteSubnets(t *testing.T) {
 						Role:              infrav1.SubnetNode,
 					},
 				})
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -576,7 +575,6 @@ func TestDeleteSubnets(t *testing.T) {
 						Role:              infrav1.SubnetControlPlane,
 					},
 				})
-				s.IsVnetManaged(gomockinternal.AContext()).Return(true, nil)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -589,8 +587,6 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "skip delete if vnet is managed",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.IsVnetManaged(gomockinternal.AContext()).Return(false, nil)
 			},
 		},
 		{

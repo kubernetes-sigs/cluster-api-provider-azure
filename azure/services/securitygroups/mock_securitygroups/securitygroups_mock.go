@@ -21,7 +21,6 @@ limitations under the License.
 package mock_securitygroups
 
 import (
-	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -124,6 +123,20 @@ func (mr *MockNSGScopeMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockNSGScope)(nil).CloudEnvironment))
 }
 
+// ClusterName mocks base method.
+func (m *MockNSGScope) ClusterName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClusterName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockNSGScopeMockRecorder) ClusterName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockNSGScope)(nil).ClusterName))
+}
+
 // DeleteLongRunningOperationState mocks base method.
 func (m *MockNSGScope) DeleteLongRunningOperationState(arg0, arg1 string) {
 	m.ctrl.T.Helper()
@@ -150,6 +163,20 @@ func (mr *MockNSGScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockNSGScope)(nil).GetLongRunningOperationState), arg0, arg1)
 }
 
+// GetVnetManagedCache mocks base method.
+func (m *MockNSGScope) GetVnetManagedCache() *bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVnetManagedCache")
+	ret0, _ := ret[0].(*bool)
+	return ret0
+}
+
+// GetVnetManagedCache indicates an expected call of GetVnetManagedCache.
+func (mr *MockNSGScopeMockRecorder) GetVnetManagedCache() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVnetManagedCache", reflect.TypeOf((*MockNSGScope)(nil).GetVnetManagedCache))
+}
+
 // HashKey mocks base method.
 func (m *MockNSGScope) HashKey() string {
 	m.ctrl.T.Helper()
@@ -162,21 +189,6 @@ func (m *MockNSGScope) HashKey() string {
 func (mr *MockNSGScopeMockRecorder) HashKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockNSGScope)(nil).HashKey))
-}
-
-// IsVnetManaged mocks base method.
-func (m *MockNSGScope) IsVnetManaged(arg0 context.Context) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged", arg0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockNSGScopeMockRecorder) IsVnetManaged(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockNSGScope)(nil).IsVnetManaged), arg0)
 }
 
 // NSGSpecs mocks base method.
@@ -203,6 +215,18 @@ func (m *MockNSGScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 func (mr *MockNSGScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockNSGScope)(nil).SetLongRunningOperationState), arg0)
+}
+
+// SetVnetManagedCache mocks base method.
+func (m *MockNSGScope) SetVnetManagedCache(arg0 bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetVnetManagedCache", arg0)
+}
+
+// SetVnetManagedCache indicates an expected call of SetVnetManagedCache.
+func (mr *MockNSGScopeMockRecorder) SetVnetManagedCache(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVnetManagedCache", reflect.TypeOf((*MockNSGScope)(nil).SetVnetManagedCache), arg0)
 }
 
 // SubscriptionID mocks base method.
@@ -267,4 +291,32 @@ func (m *MockNSGScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string,
 func (mr *MockNSGScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockNSGScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
+}
+
+// VNetSpec mocks base method.
+func (m *MockNSGScope) VNetSpec() azure.ResourceSpecGetter {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VNetSpec")
+	ret0, _ := ret[0].(azure.ResourceSpecGetter)
+	return ret0
+}
+
+// VNetSpec indicates an expected call of VNetSpec.
+func (mr *MockNSGScopeMockRecorder) VNetSpec() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VNetSpec", reflect.TypeOf((*MockNSGScope)(nil).VNetSpec))
+}
+
+// Vnet mocks base method.
+func (m *MockNSGScope) Vnet() *v1beta1.VnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Vnet")
+	ret0, _ := ret[0].(*v1beta1.VnetSpec)
+	return ret0
+}
+
+// Vnet indicates an expected call of Vnet.
+func (mr *MockNSGScopeMockRecorder) Vnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockNSGScope)(nil).Vnet))
 }

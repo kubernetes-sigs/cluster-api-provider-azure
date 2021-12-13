@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -33,19 +34,22 @@ import (
 type NatGatewayScope interface {
 	azure.ClusterScoper
 	NatGatewaySpecs() []azure.NatGatewaySpec
+	VNetSpec() azure.ResourceSpecGetter
 }
 
 // Service provides operations on azure resources.
 type Service struct {
-	Scope NatGatewayScope
+	Scope   NatGatewayScope
+	VNetSvc azure.SharedReconciler
 	client
 }
 
 // New creates a new service.
-func New(scope NatGatewayScope) *Service {
+func New(scope NatGatewayScope, vnetScope virtualnetworks.VNetScope) *Service {
 	return &Service{
-		Scope:  scope,
-		client: newClient(scope),
+		Scope:   scope,
+		VNetSvc: virtualnetworks.New(vnetScope),
+		client:  newClient(scope),
 	}
 }
 
@@ -55,7 +59,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Reconcile")
 	defer done()
 
-	managed, err := s.Scope.IsManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if vnet is managed")
 	} else if !managed {
@@ -155,7 +159,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Delete")
 	defer done()
 
-	managed, err := s.Scope.IsVnetManaged(ctx)
+	managed, err := s.IsManaged(ctx)
 	if azure.ResourceNotFound(err) {
 		// if the vnet doesn't exist, then we don't need to delete the nat gateways
 		// since nat gateways are a sub resource of the vnet, they must have been already deleted as well.
@@ -180,4 +184,13 @@ func (s *Service) Delete(ctx context.Context) error {
 		log.V(2).Info("successfully deleted nat gateway", "nat gateway", natGatewaySpec.Name)
 	}
 	return nil
+}
+
+// IsManaged returns true if the NAT gateways are managed.
+// NAT gateways are managed if and only if the vnet is managed.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.IsManaged")
+	defer done()
+
+	return s.VNetSvc.IsManaged(ctx, s.Scope.VNetSpec())
 }

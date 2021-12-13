@@ -21,7 +21,6 @@ limitations under the License.
 package mock_loadbalancers
 
 import (
-	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -303,21 +302,6 @@ func (m *MockLBScope) IsIPv6Enabled() bool {
 func (mr *MockLBScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockLBScope)(nil).IsIPv6Enabled))
-}
-
-// IsVnetManaged mocks base method.
-func (m *MockLBScope) IsVnetManaged(arg0 context.Context) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged", arg0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockLBScopeMockRecorder) IsVnetManaged(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockLBScope)(nil).IsVnetManaged), arg0)
 }
 
 // LBSpecs mocks base method.
