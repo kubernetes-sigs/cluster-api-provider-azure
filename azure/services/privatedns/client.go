@@ -28,8 +28,10 @@ import (
 
 // Client wraps go-sdk.
 type client interface {
+	GetZone(context.Context, string, string) (privatedns.PrivateZone, error)
 	CreateOrUpdateZone(context.Context, string, string, privatedns.PrivateZone) error
 	DeleteZone(context.Context, string, string) error
+	GetLink(context.Context, string, string, string) (privatedns.VirtualNetworkLink, error)
 	CreateOrUpdateLink(context.Context, string, string, string, privatedns.VirtualNetworkLink) error
 	DeleteLink(context.Context, string, string, string) error
 	CreateOrUpdateRecordSet(context.Context, string, string, privatedns.RecordType, string, privatedns.RecordSet) error
@@ -74,11 +76,21 @@ func newRecordSetsClient(subscriptionID string, baseURI string, authorizer autor
 	return recordsClient
 }
 
+// GetZone returns a private zone.
+func (ac *azureClient) GetZone(ctx context.Context, resourceGroupName, zoneName string) (privatedns.PrivateZone, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.AzureClient.GetZone")
+	defer done()
+	zone, err := ac.privatezones.Get(ctx, resourceGroupName, zoneName)
+	if err != nil {
+		return privatedns.PrivateZone{}, err
+	}
+	return zone, nil
+}
+
 // CreateOrUpdateZone creates or updates a private zone.
 func (ac *azureClient) CreateOrUpdateZone(ctx context.Context, resourceGroupName string, zoneName string, zone privatedns.PrivateZone) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.AzureClient.CreateOrUpdateZone")
 	defer done()
-
 	future, err := ac.privatezones.CreateOrUpdate(ctx, resourceGroupName, zoneName, zone, "", "")
 	if err != nil {
 		return err
@@ -106,6 +118,17 @@ func (ac *azureClient) DeleteZone(ctx context.Context, resourceGroupName, name s
 	}
 	_, err = future.Result(ac.privatezones)
 	return err
+}
+
+// GetLink returns a vnet link.
+func (ac *azureClient) GetLink(ctx context.Context, resourceGroupName, zoneName, vnetLinkName string) (privatedns.VirtualNetworkLink, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.AzureClient.GetLink")
+	defer done()
+	vnetLink, err := ac.vnetlinks.Get(ctx, resourceGroupName, zoneName, vnetLinkName)
+	if err != nil {
+		return privatedns.VirtualNetworkLink{}, err
+	}
+	return vnetLink, nil
 }
 
 // CreateOrUpdateLink creates or updates a virtual network link to the specified Private DNS zone.

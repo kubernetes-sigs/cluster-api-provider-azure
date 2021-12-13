@@ -134,3 +134,33 @@ func (mr *MockclientMockRecorder) DeleteZone(arg0, arg1, arg2 interface{}) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteZone", reflect.TypeOf((*Mockclient)(nil).DeleteZone), arg0, arg1, arg2)
 }
+
+// GetLink mocks base method.
+func (m *Mockclient) GetLink(arg0 context.Context, arg1, arg2, arg3 string) (privatedns.VirtualNetworkLink, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLink", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(privatedns.VirtualNetworkLink)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLink indicates an expected call of GetLink.
+func (mr *MockclientMockRecorder) GetLink(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLink", reflect.TypeOf((*Mockclient)(nil).GetLink), arg0, arg1, arg2, arg3)
+}
+
+// GetZone mocks base method.
+func (m *Mockclient) GetZone(arg0 context.Context, arg1, arg2 string) (privatedns.PrivateZone, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZone", arg0, arg1, arg2)
+	ret0, _ := ret[0].(privatedns.PrivateZone)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZone indicates an expected call of GetZone.
+func (mr *MockclientMockRecorder) GetZone(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZone", reflect.TypeOf((*Mockclient)(nil).GetZone), arg0, arg1, arg2)
+}

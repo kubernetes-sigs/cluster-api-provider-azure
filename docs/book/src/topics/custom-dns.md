@@ -35,3 +35,18 @@ spec:
   resourceGroup: cluster-example
 
 ```
+# Manage DNS Via CAPZ Tool
+
+Private DNS when created by CAPZ can be managed by CAPZ tool itself automatically. To give the flexibility to have BYO 
+as well as managed DNS zone, an enhancement is made that causes all the managed zones created in the CAPZ version before 
+the enhancement changes to be treated as unmanaged. The enhancement is captured in PR
+[1791](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1791) 
+
+To manage the private DNS via CAPZ please tag it manually from azure portal.
+
+Steps to tag:
+
+- Go to azure portal and search for `Private DNS zones`.
+- Select the DNS zone that you want to be managed.
+- Go to `Tags` section and add key as `sigs.k8s.io_cluster-api-provider-azure_cluster_<clustername>` and value as
+`owned`. (Note: clustername is the name of the cluster that you created)
