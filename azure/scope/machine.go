@@ -534,9 +534,7 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 	conditions.SetSummary(m.AzureMachine,
 		conditions.WithConditions(
 			infrav1.VMRunningCondition,
-		),
-		conditions.WithStepCounterIfOnly(
-			infrav1.VMRunningCondition,
+			infrav1.AvailabilitySetReadyCondition,
 		),
 	)
 
@@ -546,6 +544,7 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			infrav1.VMRunningCondition,
+			infrav1.AvailabilitySetReadyCondition,
 		}})
 }
 
