@@ -190,11 +190,6 @@ type PrivateDNSLinkSpec struct {
 	LinkName          string
 }
 
-// AvailabilitySetSpec defines the specification for an availability set.
-type AvailabilitySetSpec struct {
-	Name string
-}
-
 // ExtensionSpec defines the specification for a VM or VMScaleSet extension.
 type ExtensionSpec struct {
 	Name              string

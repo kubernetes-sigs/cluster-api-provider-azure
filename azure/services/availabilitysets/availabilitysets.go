@@ -18,95 +18,63 @@ package availabilitysets
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+const serviceName = "availabilitysets"
 
 // AvailabilitySetScope defines the scope interface for a availability sets service.
 type AvailabilitySetScope interface {
 	azure.ClusterDescriber
-	AvailabilitySet() (string, bool)
+	azure.AsyncStatusUpdater
+	AvailabilitySetSpec() azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope AvailabilitySetScope
 	Client
+	async.Reconciler
 	resourceSKUCache *resourceskus.Cache
 }
 
 // New creates a new availability sets service.
 func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) *Service {
+	client := NewClient(scope)
 	return &Service{
 		Scope:            scope,
-		Client:           NewClient(scope),
+		Client:           client,
 		resourceSKUCache: skuCache,
+		Reconciler:       async.New(scope, client, client),
 	}
 }
 
 // Reconcile creates or updates availability sets.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(
-		ctx,
-		"availabilitysets.Service.Reconcile",
-	)
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "availabilitysets.Service.Reconcile")
 	defer done()
 
-	availabilitySetName, ok := s.Scope.AvailabilitySet()
-	if !ok {
-		return nil
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
+	setSpec := s.Scope.AvailabilitySetSpec()
+	var err error
+	if setSpec != nil {
+		_, err = s.CreateResource(ctx, setSpec, serviceName)
+	} else {
+		log.V(2).Info("skip creation when no availability set spec is found")
 	}
 
-	asSku, err := s.resourceSKUCache.Get(ctx, string(compute.AvailabilitySetSkuTypesAligned), resourceskus.AvailabilitySets)
-	if err != nil {
-		return errors.Wrap(err, "failed to get availability sets sku")
-	}
-
-	faultDomainCountStr, ok := asSku.GetCapability(resourceskus.MaximumPlatformFaultDomainCount)
-	if !ok {
-		return errors.Errorf("cannot find capability %s sku %s", resourceskus.MaximumPlatformFaultDomainCount, *asSku.Name)
-	}
-
-	faultDomainCount, err := strconv.ParseUint(faultDomainCountStr, 10, 32)
-	if err != nil {
-		return errors.Wrap(err, "failed to determine max fault domain count")
-	}
-
-	log.V(2).Info("creating availability set", "availability set", availabilitySetName)
-
-	asParams := compute.AvailabilitySet{
-		Sku: &compute.Sku{
-			Name: to.StringPtr(string(compute.AvailabilitySetSkuTypesAligned)),
-		},
-		AvailabilitySetProperties: &compute.AvailabilitySetProperties{
-			PlatformFaultDomainCount: to.Int32Ptr(int32(faultDomainCount)),
-		},
-		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-			ClusterName: s.Scope.ClusterName(),
-			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(availabilitySetName),
-			Role:        to.StringPtr(infrav1.CommonRole),
-			Additional:  s.Scope.AdditionalTags(),
-		})),
-		Location: to.StringPtr(s.Scope.Location()),
-	}
-
-	_, err = s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), availabilitySetName, asParams)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create availability set %s", availabilitySetName)
-	}
-
-	log.V(2).Info("successfully created availability set", "availability set", availabilitySetName)
-
-	return nil
+	s.Scope.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, err)
+	return err
 }
 
 // Delete deletes availability sets.
@@ -114,38 +82,34 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "availabilitysets.Service.Delete")
 	defer done()
 
-	availabilitySetName, ok := s.Scope.AvailabilitySet()
-	if !ok {
-		return nil
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
+	setSpec := s.Scope.AvailabilitySetSpec()
+	var resultingErr error
+	if setSpec == nil {
+		log.V(2).Info("skip deletion when no availability set spec is found")
+	} else {
+		existingSet, err := s.Client.Get(ctx, setSpec)
+		if err != nil {
+			if !azure.ResourceNotFound(err) {
+				resultingErr = errors.Wrapf(err, "failed to get availability set %s in resource group %s", setSpec.ResourceName(), setSpec.ResourceGroupName())
+			}
+		} else {
+			availabilitySet, ok := existingSet.(compute.AvailabilitySet)
+			if !ok {
+				resultingErr = errors.Errorf("%T is not a compute.AvailabilitySet", existingSet)
+			} else {
+				// only delete when the availability set does not have any vms
+				if availabilitySet.AvailabilitySetProperties != nil && availabilitySet.VirtualMachines != nil && len(*availabilitySet.VirtualMachines) > 0 {
+					log.V(2).Info("skip deleting availability set with VMs", "availability set", setSpec.ResourceName())
+				} else {
+					resultingErr = s.DeleteResource(ctx, setSpec, serviceName)
+				}
+			}
+		}
 	}
 
-	as, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), availabilitySetName)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to get availability set %s in resource group %s", availabilitySetName, s.Scope.ResourceGroup())
-	}
-
-	// only delete when the availability set does not have any vms
-	if as.AvailabilitySetProperties != nil && as.VirtualMachines != nil && len(*as.VirtualMachines) > 0 {
-		return nil
-	}
-
-	log.V(2).Info("deleting availability set", "availability set", availabilitySetName)
-	err = s.Client.Delete(ctx, s.Scope.ResourceGroup(), availabilitySetName)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete availability set %s in resource group %s", availabilitySetName, s.Scope.ResourceGroup())
-	}
-
-	log.V(2).Info("successfully delete availability set", "availability set", availabilitySetName)
-
-	return nil
+	s.Scope.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, resultingErr)
+	return resultingErr
 }
