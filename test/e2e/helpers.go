@@ -634,3 +634,19 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 
 	return filepath.Join(path, "repo-list.yaml"), nil
 }
+
+// getPodLogs returns the logs of a pod, or an error in string format.
+func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1.Pod) string {
+	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
+	logs, err := req.Stream(ctx)
+	if err != nil {
+		return fmt.Sprintf("error streaming logs for pod %s: %v", pod.Name, err)
+	}
+	defer logs.Close()
+
+	b := new(bytes.Buffer)
+	if _, err = io.Copy(b, logs); err != nil {
+		return fmt.Sprintf("error copying logs for pod %s: %v", pod.Name, err)
+	}
+	return b.String()
+}
