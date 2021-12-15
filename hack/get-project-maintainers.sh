@@ -19,10 +19,9 @@ set -o nounset
 set -o pipefail
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/.. 
-cd "${REPO_ROOT}"
 
-YQ=$(realpath hack/tools/bin/yq)
-make "${YQ}" &>/dev/null
+YQ="${REPO_ROOT}/hack/tools/bin/yq"
+cd "${REPO_ROOT}" && make "${YQ##*/}" &>/dev/null
 
 KEYS=()
 while IFS='' read -r line; do KEYS+=("$line"); done < <(${YQ} e '.aliases["cluster-api-azure-maintainers"][]' OWNERS_ALIASES)
