@@ -6036,7 +6036,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  gpu-operator-components.yaml: |-
+  gpu-operator-components.yaml: |
     ---
     # Source: gpu-operator/templates/resources-namespace.yaml
     apiVersion: v1
@@ -6383,7 +6383,7 @@ data:
             - name: node-feature-discovery-master
               securityContext:
                 {}
-              image: "quay.io/kubernetes_incubator/node-feature-discovery:v0.6.0"
+              image: "k8s.gcr.io/nfd/node-feature-discovery:v0.9.0"
               imagePullPolicy: IfNotPresent
               ports:
                 - name: api
@@ -6509,7 +6509,7 @@ data:
       driver:
         repository: nvcr.io/nvidia
         image: driver
-        version: 460.32.03
+        version: 470.82.01
         imagePullPolicy: IfNotPresent
         repoConfig:
           configMapName: ""
@@ -6529,7 +6529,7 @@ data:
       toolkit:
         repository: nvcr.io/nvidia/k8s
         image: container-toolkit
-        version: 1.4.7-ubuntu18.04
+        version: 1.7.2
         imagePullPolicy: IfNotPresent
         tolerations:
           - key: CriticalAddonsOnly

@@ -20,7 +20,9 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
@@ -73,7 +76,9 @@ func AzureGPUSpec(ctx context.Context, inputGetter func() AzureGPUSpecInput) {
 			}
 		}
 		return false
-	}, e2eConfig.GetIntervals(specName, "wait-worker-nodes")...).Should(BeTrue())
+	}, e2eConfig.GetIntervals(specName, "wait-worker-nodes")...).Should(BeTrue(), func() string {
+		return getGPUOperatorPodLogs(ctx, clientset)
+	})
 
 	By("running a CUDA vector calculation job")
 	jobsClient := clientset.BatchV1().Jobs(corev1.NamespaceDefault)
@@ -90,7 +95,7 @@ func AzureGPUSpec(ctx context.Context, inputGetter func() AzureGPUSpecInput) {
 					Containers: []corev1.Container{
 						{
 							Name:  jobName,
-							Image: "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.1-ubuntu18.04",
+							Image: "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.2.1",
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									"nvidia.com/gpu": resource.MustParse("1"),
@@ -111,4 +116,19 @@ func AzureGPUSpec(ctx context.Context, inputGetter func() AzureGPUSpecInput) {
 		Clientset: clientset,
 	}
 	WaitForJobComplete(ctx, gpuJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
+}
+
+// getGPUOperatorPodLogs returns the logs of the Nvidia GPU operator pods.
+func getGPUOperatorPodLogs(ctx context.Context, clientset *kubernetes.Clientset) string {
+	podsClient := clientset.CoreV1().Pods(corev1.NamespaceAll)
+	pods, err := podsClient.List(ctx, metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=gpu-operator"})
+	if err != nil {
+		return err.Error()
+	}
+	b := strings.Builder{}
+	for _, pod := range pods.Items {
+		b.WriteString(fmt.Sprintf("\nLogs for pod %s:\n", pod.Name))
+		b.WriteString(getPodLogs(ctx, clientset, pod))
+	}
+	return b.String()
 }
