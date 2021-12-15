@@ -45,6 +45,10 @@ func (r *AzureManagedMachinePool) Default(client client.Client) {
 	if r.Spec.Name == nil || *r.Spec.Name == "" {
 		r.Spec.Name = &r.Name
 	}
+
+	if r.Spec.ScaleSetPriority == nil {
+		r.Spec.ScaleSetPriority = to.StringPtr(DefaultScaleSetPriority)
+	}
 }
 
 //+kubebuilder:webhook:verbs=update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,versions=v1beta1,name=validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -53,6 +57,7 @@ func (r *AzureManagedMachinePool) Default(client client.Client) {
 func (r *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 	validators := []func() error{
 		r.validateMaxPods,
+		r.ValidateSpotNodePool,
 	}
 
 	var errs []error
@@ -93,6 +98,25 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 				field.Invalid(
 					field.NewPath("Spec", "OSDiskSizeGB"),
 					*r.Spec.OSDiskSizeGB,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.ScaleSetPriority != nil {
+		// Prevent ScaleSetPriority modification if it was already set to some value
+		if r.Spec.ScaleSetPriority == nil {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "ScaleSetPriority"),
+					r.Spec.ScaleSetPriority,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.ScaleSetPriority != *old.Spec.ScaleSetPriority {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "ScaleSetPriority"),
+					*r.Spec.ScaleSetPriority,
 					"field is immutable"))
 		}
 	}
@@ -240,6 +264,18 @@ func (r *AzureManagedMachinePool) validateMaxPods() error {
 				field.NewPath("Spec", "MaxPods"),
 				r.Spec.MaxPods,
 				"MaxPods must be between 10 and 250")
+		}
+	}
+
+	return nil
+}
+
+func (r *AzureManagedMachinePool) ValidateSpotNodePool() error {
+	if r.Spec.ScaleSetPriority != nil && *r.Spec.ScaleSetPriority == "Spot" {
+		if r.Spec.Mode != string(NodePoolModeUser) {
+			return field.Forbidden(
+				field.NewPath("Spec", "ScaleSetPriority"),
+				"Spot ScaleSetPriority requires AzureManagedMachinePool mode User")
 		}
 	}
 

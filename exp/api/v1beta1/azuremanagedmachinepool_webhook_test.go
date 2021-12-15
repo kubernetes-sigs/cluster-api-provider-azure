@@ -47,6 +47,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(val).To(Equal("System"))
 	g.Expect(*ammp.Spec.Name).To(Equal("fooName"))
+	g.Expect(*ammp.Spec.ScaleSetPriority).To(Equal("Regular"))
 
 	t.Logf("Testing ammp defaulting webhook with empty string name specified in Spec")
 	emptyName := ""
@@ -426,6 +427,27 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			},
 			wantErr:  true,
 			errorLen: 1,
+		},
+		{
+			name: "spot instances with System mode not allowed",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:             "System",
+					ScaleSetPriority: to.StringPtr("Spot"),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "spot instances with User mode",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:             "User",
+					ScaleSetPriority: to.StringPtr("Spot"),
+				},
+			},
+			wantErr: false,
 		},
 	}
 	var client client.Client

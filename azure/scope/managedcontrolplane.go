@@ -603,6 +603,10 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		OsDiskType:        managedMachinePool.Spec.OsDiskType,
 	}
 
+	if managedMachinePool.Spec.ScaleSetPriority != nil {
+		agentPoolSpec.ScaleSetPriority = *managedMachinePool.Spec.ScaleSetPriority
+	}
+
 	if managedMachinePool.Spec.OSDiskSizeGB != nil {
 		agentPoolSpec.OSDiskSizeGB = *managedMachinePool.Spec.OSDiskSizeGB
 	}

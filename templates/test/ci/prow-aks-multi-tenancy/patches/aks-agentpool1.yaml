@@ -11,3 +11,4 @@ spec:
       value: shared
   nodeLabels:
     "type": "shared"
+  scaleSetPriority: Spot

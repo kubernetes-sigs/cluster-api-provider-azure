@@ -43,6 +43,7 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.MaxPods = restored.Spec.MaxPods
 	dst.Spec.OsDiskType = restored.Spec.OsDiskType
 	dst.Spec.NodeLabels = restored.Spec.NodeLabels
+	dst.Spec.ScaleSetPriority = restored.Spec.ScaleSetPriority
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
 	dst.Status.Conditions = restored.Status.Conditions

@@ -360,4 +360,7 @@ type AgentPoolSpec struct {
 
 	// OsDiskType specifies the OS disk type for each node in the pool. Allowed values are 'Ephemeral' and 'Managed'.
 	OsDiskType *string `json:"osDiskType,omitempty"`
+
+	// ScaleSetPriority specifies the virtual machine scale set priority. Default to regular. Possible values include: 'Spot', 'Regular'
+	ScaleSetPriority string `json:"scaleSetPriority,omitempty"`
 }

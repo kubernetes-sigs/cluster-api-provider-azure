@@ -131,6 +131,105 @@ func TestManagedControlPlaneScope_Autoscaling(t *testing.T) {
 	}
 }
 
+func TestManagedControlPlaneScope_ScaleSetPriority(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = capiv1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
+	cases := []struct {
+		Name     string
+		Input    ManagedControlPlaneScopeParams
+		Expected azure.AgentPoolSpec
+	}{
+		{
+			Name: "Without ScaleSetPriority",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				MachinePool:      getMachinePool("pool0"),
+				InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+				PatchTarget:      getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+			},
+			Expected: azure.AgentPoolSpec{
+
+				Name:         "pool0",
+				SKU:          "Standard_D2s_v3",
+				Replicas:     1,
+				Mode:         "System",
+				Cluster:      "cluster1",
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+			},
+		},
+		{
+			Name: "With ScaleSetPriority",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				MachinePool:      getMachinePool("pool0"),
+				InfraMachinePool: getAzureMachinePoolWithScaleSetPriority("pool0", "Spot"),
+				PatchTarget:      getAzureMachinePoolWithScaleSetPriority("pool0", "Spot"),
+			},
+			Expected: azure.AgentPoolSpec{
+				Name:             "pool0",
+				SKU:              "Standard_D2s_v3",
+				Mode:             "System",
+				Cluster:          "cluster1",
+				Replicas:         1,
+				ScaleSetPriority: "Spot",
+				VnetSubnetID:     "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			g := NewWithT(t)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
+			c.Input.Client = fakeClient
+			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
+			g.Expect(err).To(Succeed())
+			agentPool := s.AgentPoolSpec()
+			g.Expect(agentPool).To(Equal(c.Expected))
+			agentPools, err := s.GetAllAgentPoolSpecs(context.TODO())
+			g.Expect(err).To(Succeed())
+			g.Expect(agentPools[0].ScaleSetPriority).To(Equal(c.Expected.ScaleSetPriority))
+		})
+	}
+}
+
 func TestManagedControlPlaneScope_NodeLabels(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = capiv1exp.AddToScheme(scheme)
@@ -143,6 +242,7 @@ func TestManagedControlPlaneScope_NodeLabels(t *testing.T) {
 	}{
 		{
 			Name: "Without node labels",
+
 			Input: ManagedControlPlaneScopeParams{
 				AzureClients: AzureClients{
 					Authorizer: autorest.NullAuthorizer{},
@@ -700,6 +800,12 @@ func getAzureMachinePoolWithScaling(name string, min, max int32) *infrav1.AzureM
 		MinSize: to.Int32Ptr(min),
 		MaxSize: to.Int32Ptr(max),
 	}
+	return managedPool
+}
+
+func getAzureMachinePoolWithScaleSetPriority(name string, scaleSetPriority string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeSystem)
+	managedPool.Spec.ScaleSetPriority = to.StringPtr(scaleSetPriority)
 	return managedPool
 }
 

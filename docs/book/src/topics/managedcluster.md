@@ -358,6 +358,30 @@ spec:
   ...
 ```
 
+### Add a spot node pool to an AKS cluster
+
+You can add a spot node pool to an AKS cluster which already have System nodepool.
+
+The spot node pool must have the `User` mode.
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: System
+  osDiskSizeGB: 512
+  sku: Standard_D2s_v3
+  taints:
+    - effect: no-schedule
+      key: dedicated
+      value: kafka
+  mode: User
+  osDiskSizeGB: 512
+  sku: Standard_D2s_v3
+  scaleSetPriority: Spot
+```
+
 ### Use a public Standard Load Balancer
 
 A public Load Balancer when integrated with AKS serves two purposes:
@@ -419,24 +443,25 @@ those can only be set during the creation time.
 
 Following is the list of immutable fields for managed clusters:
 
-| CRD                      | jsonPath                           | Comment                   |
-|--------------------------|------------------------------------|---------------------------|
-| AzureManagedControlPlane | .spec.subscriptionID               |                           |
-| AzureManagedControlPlane | .spec.resourceGroupName            |                           |
-| AzureManagedControlPlane | .spec.nodeResourceGroupName        |                           |
-| AzureManagedControlPlane | .spec.location                     |                           |
-| AzureManagedControlPlane | .spec.sshPublicKey                 |                           |
-| AzureManagedControlPlane | .spec.dnsServiceIP                 |                           |
-| AzureManagedControlPlane | .spec.networkPlugin                |                           |
-| AzureManagedControlPlane | .spec.networkPolicy                |                           |
-| AzureManagedControlPlane | .spec.loadBalancerSKU              |                           |
-| AzureManagedControlPlane | .spec.apiServerAccessProfile       | except AuthorizedIPRanges |
-| AzureManagedMachinePool  | .spec.sku                          |                           |
-| AzureManagedMachinePool  | .spec.osDiskSizeGB                 |                           |
-| AzureManagedMachinePool  | .spec.osDiskType                   |                           |
-| AzureManagedMachinePool  | .spec.taints                       |                           |
-| AzureManagedMachinePool  | .spec.availabilityZones            |                           |
-| AzureManagedMachinePool  | .spec.maxPods                      |                           |
+| CRD                      | jsonPath                     | Comment                   |
+|--------------------------|------------------------------|---------------------------|
+| AzureManagedControlPlane | .spec.subscriptionID         |                           |
+| AzureManagedControlPlane | .spec.resourceGroupName      |                           |
+| AzureManagedControlPlane | .spec.nodeResourceGroupName  |                           |
+| AzureManagedControlPlane | .spec.location               |                           |
+| AzureManagedControlPlane | .spec.sshPublicKey           |                           |
+| AzureManagedControlPlane | .spec.dnsServiceIP           |                           |
+| AzureManagedControlPlane | .spec.networkPlugin          |                           |
+| AzureManagedControlPlane | .spec.networkPolicy          |                           |
+| AzureManagedControlPlane | .spec.loadBalancerSKU        |                           |
+| AzureManagedControlPlane | .spec.apiServerAccessProfile | except AuthorizedIPRanges |
+| AzureManagedMachinePool  | .spec.sku                    |                           |
+| AzureManagedMachinePool  | .spec.scaleSetPriority       |                           |
+| AzureManagedMachinePool  | .spec.osDiskSizeGB           |                           |
+| AzureManagedMachinePool  | .spec.osDiskType             |                           |
+| AzureManagedMachinePool  | .spec.taints                 |                           |
+| AzureManagedMachinePool  | .spec.availabilityZones      |                           |
+| AzureManagedMachinePool  | .spec.maxPods                |                           |
 
 ## Features
 

@@ -243,6 +243,14 @@ spec:
                 items:
                   type: string
                 type: array
+              scaleSetPriority:
+                description: 'ScaleSetPriority specifies the virtual machine scale
+                  set priority. Default to regular. Possible values include: ''Spot'',
+                  ''Regular'''
+                enum:
+                - Regular
+                - Spot
+                type: string
               scaling:
                 description: Scaling specifies the autoscaling parameters for the
                   node pool.
