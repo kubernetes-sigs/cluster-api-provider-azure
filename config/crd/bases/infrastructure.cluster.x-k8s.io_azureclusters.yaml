@@ -1346,7 +1346,7 @@ spec:
                             description: NatGateway associated with this subnet.
                             properties:
                               id:
-                                description: ID is the Azure resource ID of the nat
+                                description: ID is the Azure resource ID of the NAT
                                   gateway. READ-ONLY
                                 type: string
                               ip:
@@ -1816,7 +1816,7 @@ spec:
                           description: NatGateway associated with this subnet.
                           properties:
                             id:
-                              description: ID is the Azure resource ID of the nat
+                              description: ID is the Azure resource ID of the NAT
                                 gateway. READ-ONLY
                               type: string
                             ip:

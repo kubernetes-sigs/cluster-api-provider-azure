@@ -117,7 +117,7 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 	}
 
 	if err := s.natGatewaySvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile nat gateway")
+		return errors.Wrapf(err, "failed to reconcile NAT gateway")
 	}
 
 	if err := s.subnetsSvc.Reconcile(ctx); err != nil {
@@ -175,7 +175,7 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 			}
 
 			if err := s.natGatewaySvc.Delete(ctx); err != nil {
-				return errors.Wrapf(err, "failed to delete nat gateway")
+				return errors.Wrapf(err, "failed to delete NAT gateway")
 			}
 
 			if err := s.publicIPSvc.Delete(ctx); err != nil {

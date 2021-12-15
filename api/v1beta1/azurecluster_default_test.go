@@ -978,7 +978,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "NAT Gateway enabled - no LB",
+			name: "NAT gateway enabled - no LB",
 			cluster: &AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
@@ -1037,7 +1037,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "NAT Gateway enabled on 1 of 2 node subnets",
+			name: "NAT gateway enabled on 1 of 2 node subnets",
 			cluster: &AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
@@ -1121,7 +1121,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple node subnets, NAT Gateway not enabled in any of them",
+			name: "multiple node subnets, NAT gateway not enabled in any of them",
 			cluster: &AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
@@ -1211,7 +1211,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple node subnets, NAT Gateway enabled on all of them",
+			name: "multiple node subnets, NAT gateway enabled on all of them",
 			cluster: &AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",

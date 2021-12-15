@@ -107,7 +107,7 @@ func GenerateFrontendIPConfigName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
 }
 
-// GenerateNatGatewayIPName generates a nat gateway IP name.
+// GenerateNatGatewayIPName generates a NAT gateway IP name.
 func GenerateNatGatewayIPName(clusterName, subnetName string) string {
 	return fmt.Sprintf("pip-%s-%s-natgw", clusterName, subnetName)
 }
@@ -220,7 +220,7 @@ func SecurityGroupID(subscriptionID, resourceGroup, nsgName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resourceGroup, nsgName)
 }
 
-// NatGatewayID returns the azure resource ID for a given nat gateway.
+// NatGatewayID returns the azure resource ID for a given NAT gateway.
 func NatGatewayID(subscriptionID, resourceGroup, natgatewayName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/natGateways/%s", subscriptionID, resourceGroup, natgatewayName)
 }

@@ -219,7 +219,7 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 			}
 		}
 
-		// If we don't default the outbound LB when there are some subnets with nat gateway,
+		// If we don't default the outbound LB when there are some subnets with NAT gateway,
 		// and some without, those without wouldn't have outbound traffic. So taking the
 		// safer route, we configure the outbound LB in that scenario.
 		if !needsOutboundLB {
@@ -401,7 +401,7 @@ func generateControlPlaneOutboundIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-controlplane-outbound", clusterName)
 }
 
-// generateNatGatewayIPName generates a nat gateway IP name.
+// generateNatGatewayIPName generates a NAT gateway IP name.
 func generateNatGatewayIPName(clusterName, subnetName string) string {
 	return fmt.Sprintf("pip-%s-%s-natgw", clusterName, subnetName)
 }

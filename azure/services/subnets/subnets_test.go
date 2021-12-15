@@ -352,7 +352,7 @@ func TestReconcileSubnets(t *testing.T) {
 			},
 		},
 		{
-			name:          "doesn't overwrite existing NAT Gateway",
+			name:          "doesn't overwrite existing NAT gateway",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
 				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{

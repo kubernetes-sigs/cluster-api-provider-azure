@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways/mock_natgateways"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -38,227 +39,89 @@ func init() {
 	_ = clusterv1.AddToScheme(scheme.Scheme)
 }
 
+var (
+	customVNetSpec = infrav1.VnetSpec{
+		ID:   "1234",
+		Name: "my-vnet",
+	}
+	ownedVNetSpec = infrav1.VnetSpec{
+		Name: "my-vnet",
+	}
+	natGatewaySpec1 = NatGatewaySpec{
+		Name:           "my-node-natgateway-1",
+		ResourceGroup:  "my-rg",
+		SubscriptionID: "my-sub",
+		Location:       "westus",
+		NatGatewayIP:   infrav1.PublicIPSpec{Name: "pip-node-subnet"},
+	}
+	natGateway1 = network.NatGateway{
+		ID: to.StringPtr("/subscriptions/my-sub/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway-1"),
+	}
+	customVNetTags = infrav1.Tags{
+		"Name": "my-vnet",
+		"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "shared",
+		"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
+	}
+	ownedVNetTags = infrav1.Tags{
+		"Name": "my-vnet",
+		"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
+		"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
+	}
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+)
+
 func TestReconcileNatGateways(t *testing.T) {
 	testcases := []struct {
 		name          string
 		tags          infrav1.Tags
 		expectedError string
-		expect        func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder)
+		expect        func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
-			name: "nat gateways in custom vnet mode",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "shared",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "NAT gateways in custom vnet mode",
+			tags:          customVNetTags,
 			expectedError: "",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					ID:   "1234",
-					Name: "my-vnet",
-				})
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&customVNetSpec)
 				s.ClusterName()
+				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name: "nat gateway create successfully",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "NAT gateway create successfully",
+			tags:          ownedVNetTags,
 			expectedError: "",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&ownedVNetSpec)
 				s.ClusterName()
-				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
-					{
-						Name: "my-node-natgateway",
-						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
-							Role: infrav1.SubnetNode,
-						},
-						NatGatewayIP: infrav1.PublicIPSpec{Name: "pip-node-subnet"},
-					},
-				})
-
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Return(network.NatGateway{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")).Times(1)
-				s.Location().Return("westus")
-				s.SetSubnet(infrav1.SubnetSpec{
-					Role: infrav1.SubnetNode,
-					Name: "node-subnet",
-					NatGateway: infrav1.NatGateway{
-						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway",
-						Name: "my-node-natgateway",
-						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "pip-node-subnet",
-						},
-					},
-				})
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{})).Times(1)
+				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
+				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(natGateway1, nil)
+				s.SetNatGatewayIDInSubnets(natGatewaySpec1.Name, *natGateway1.ID)
+				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name: "update nat gateway if actual state does not match desired state",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
-			expectedError: "",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
+			name:          "fail to create a NAT gateway",
+			tags:          ownedVNetTags,
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&ownedVNetSpec)
 				s.ClusterName()
-				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
-					{
-						Name: "my-node-natgateway",
-						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
-							Role: infrav1.SubnetNode,
-						},
-						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "different-pip-name",
-						},
-					},
-				})
-
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().Return("my-rg").AnyTimes()
-				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Times(1).Return(network.NatGateway{
-					Name: to.StringPtr("my-node-natgateway"),
-					ID:   to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway"),
-					NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{PublicIPAddresses: &[]network.SubResource{
-						{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw")},
-					}},
-				}, nil)
-				s.SetSubnet(infrav1.SubnetSpec{
-					Role: infrav1.SubnetNode,
-					Name: "node-subnet",
-					NatGateway: infrav1.NatGateway{
-						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway",
-						Name: "my-node-natgateway",
-						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "different-pip-name",
-						},
-					},
-				})
-				s.Location().Return("westus")
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{}))
+				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
+				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(nil, internalError)
+				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, internalError)
 			},
 		},
 		{
-			name: "nat gateway is not updated if it's up to date",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
-			expectedError: "",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
+			name:          "result is not a NAT gateway",
+			tags:          ownedVNetTags,
+			expectedError: "created resource string is not a network.NatGateway",
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&ownedVNetSpec)
 				s.ClusterName()
-				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
-					{
-						Name: "my-node-natgateway",
-						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
-							Role: infrav1.SubnetNode,
-						},
-						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "pip-my-node-natgateway-node-subnet-natgw",
-						},
-					},
-				})
-
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().Return("my-rg").AnyTimes()
-				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Times(1).Return(network.NatGateway{
-					Name: to.StringPtr("my-node-natgateway"),
-					ID:   to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway"),
-					NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{PublicIPAddresses: &[]network.SubResource{
-						{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw"),
-						},
-					}},
-				}, nil)
-				s.SetSubnet(infrav1.SubnetSpec{
-					Role: infrav1.SubnetNode,
-					Name: "node-subnet",
-					NatGateway: infrav1.NatGateway{
-						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway",
-						Name: "my-node-natgateway",
-						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "pip-my-node-natgateway-node-subnet-natgw",
-						},
-					},
-				})
-				s.Location().Return("westus").Times(0)
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{})).Times(0)
-			},
-		},
-		{
-			name: "fail when getting existing nat gateway",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
-			expectedError: "failed to get nat gateway my-node-natgateway in my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
-				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
-					{
-						Name: "my-node-natgateway",
-						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
-							Role: infrav1.SubnetNode,
-						},
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Return(network.NatGateway{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-				m.CreateOrUpdate(gomockinternal.AContext(), gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(network.NatGateway{})).Times(0)
-			},
-		},
-		{
-			name: "fail to create a nat gateway",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
-			expectedError: "failed to create nat gateway my-node-natgateway in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
-				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
-					{
-						Name: "my-node-natgateway",
-						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
-							Role: infrav1.SubnetNode,
-						},
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Return(network.NatGateway{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				s.Location().Return("westus")
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
+				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return("not a nat gateway", nil)
+				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, gomockinternal.ErrStrEq("created resource string is not a network.NatGateway"))
 			},
 		},
 	}
@@ -271,13 +134,13 @@ func TestReconcileNatGateways(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_natgateways.NewMockNatGatewayScope(mockCtrl)
-			clientMock := mock_natgateways.NewMockclient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				client: clientMock,
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -296,104 +159,40 @@ func TestDeleteNatGateway(t *testing.T) {
 		name          string
 		tags          infrav1.Tags
 		expectedError string
-		expect        func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder)
+		expect        func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
-			name: "nat gateways in custom vnet mode",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "shared",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "NAT gateways in custom vnet mode",
+			tags:          customVNetTags,
 			expectedError: "",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					ID:   "1234",
-					Name: "my-vnet",
-				})
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&customVNetSpec)
 				s.ClusterName()
+				s.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name: "nat gateway deleted successfully",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
+			name:          "NAT gateway deleted successfully",
+			tags:          ownedVNetTags,
 			expectedError: "",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&ownedVNetSpec)
 				s.ClusterName()
-				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
-					{
-						Name: "my-node-natgateway",
-						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
-							Role: infrav1.SubnetNode,
-						},
-					},
-				})
-				s.ResourceGroup().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-node-natgateway")
+				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
+				r.DeleteResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name: "nat gateway already deleted",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
-			expectedError: "",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
+			name:          "NAT gateway deletion fails",
+			tags:          ownedVNetTags,
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&ownedVNetSpec)
 				s.ClusterName()
-				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
-					{
-						Name: "my-node-natgateway",
-						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
-							Role: infrav1.SubnetNode,
-						},
-					},
-				})
-				s.ResourceGroup().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Return(autorest.NewErrorWithResponse("", "", &http.Response{
-					StatusCode: 404,
-				}, "Not Found"))
-			},
-		},
-		{
-			name: "nat gateway deletion fails",
-			tags: infrav1.Tags{
-				"Name": "my-vnet",
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-			},
-			expectedError: "failed to delete nat gateway my-node-natgateway in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
-				s.Vnet().Return(&infrav1.VnetSpec{
-					Name: "my-vnet",
-				})
-				s.ClusterName()
-				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
-					{
-						Name: "my-node-natgateway",
-						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
-							Role: infrav1.SubnetNode,
-						},
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Return(autorest.NewErrorWithResponse("", "", &http.Response{
-					StatusCode: 500,
-				}, "Internal Server Error"))
+				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
+				r.DeleteResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(internalError)
+				s.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, internalError)
 			},
 		},
 	}
@@ -406,13 +205,13 @@ func TestDeleteNatGateway(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_natgateways.NewMockNatGatewayScope(mockCtrl)
-			clientMock := mock_natgateways.NewMockclient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				client: clientMock,
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
 
 			err := s.Delete(context.TODO())

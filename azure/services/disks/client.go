@@ -51,7 +51,7 @@ func NewDisksClient(subscriptionID string, baseURI string, authorizer autorest.A
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
 func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "disks.Service.DeleteAsync")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "disks.azureClient.DeleteAsync")
 	defer done()
 
 	future, err := ac.disks.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
@@ -80,7 +80,7 @@ func (ac *azureClient) Result(ctx context.Context, futureData azureautorest.Futu
 
 // IsDone returns true if the long-running operation has completed.
 func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.IsDone")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "disks.azureClient.IsDone")
 	defer done()
 
 	isDone, err := future.DoneWithContext(ctx, ac.disks)
