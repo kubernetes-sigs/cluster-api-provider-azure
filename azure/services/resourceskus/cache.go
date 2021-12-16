@@ -135,7 +135,7 @@ func (c *Cache) Get(ctx context.Context, name string, kind ResourceType) (SKU, e
 			return SKU(sku), nil
 		}
 	}
-	return SKU{}, fmt.Errorf("resource sku with name '%s' and category '%s' not found in location '%s'", name, string(kind), c.location)
+	return SKU{}, azure.WithTerminalError(fmt.Errorf("resource sku with name '%s' and category '%s' not found in location '%s'", name, string(kind), c.location))
 }
 
 // Map invokes a function over all cached values.

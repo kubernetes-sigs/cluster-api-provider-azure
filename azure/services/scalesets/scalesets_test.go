@@ -72,7 +72,7 @@ func TestNewService(t *testing.T) {
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
-				Location: "test-location",
+				Location:       "test-location",
 				ResourceGroup:  "my-rg",
 				SubscriptionID: "123",
 				NetworkSpec: infrav1.NetworkSpec{
@@ -519,7 +519,7 @@ func TestReconcileVMSS(t *testing.T) {
 		},
 		{
 			name:          "failed to get SKU",
-			expectedError: "reconcile error that cannot be recovered occurred: failed to get SKU INVALID_VM_SIZE in compute api: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found in location 'test-location'. Object will not be requeued",
+			expectedError: "failed to get SKU INVALID_VM_SIZE in compute api: reconcile error that cannot be recovered occurred: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found in location 'test-location'. Object will not be requeued",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       defaultVMSSName,
