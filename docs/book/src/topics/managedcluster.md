@@ -263,6 +263,25 @@ spec:
     maxSize: 10
 ```
 
+### AKS Node Labels to an Agent Pool
+
+You can configure the `NodeLabels` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec.
+
+Below an example `nodeLabels` configuration is assigned to `agentpool0`, specifying that each node in the pool will add a label `dedicated : kafka`
+
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: System
+  osDiskSizeGB: 512
+  sku: Standard_D2s_v3
+  nodeLabels:
+    dedicated: kafka 
+```
+
 ### AKS Node Pool MaxPods configuration
 
 You can configure the `MaxPods` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec (see [here](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#configure-maximum---new-clusters) for the official AKS documentation). This corresponds to the kubelet `--max-pods` configuration (official kubelet configuration documentation can be found [here](https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/)).
