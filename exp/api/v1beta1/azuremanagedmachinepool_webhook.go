@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -92,6 +93,14 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 					*r.Spec.OSDiskSizeGB,
 					"field is immutable"))
 		}
+	}
+
+	if !reflect.DeepEqual(r.Spec.Taints, old.Spec.Taints) {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "Taints"),
+				r.Spec.Taints,
+				"field is immutable"))
 	}
 
 	if !ensureStringSlicesAreEqual(r.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {

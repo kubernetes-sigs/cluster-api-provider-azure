@@ -599,6 +599,14 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		agentPoolSpec.OSDiskSizeGB = *managedMachinePool.Spec.OSDiskSizeGB
 	}
 
+	if len(managedMachinePool.Spec.Taints) > 0 {
+		nodeTaints := make([]string, 0, len(managedMachinePool.Spec.Taints))
+		for _, t := range managedMachinePool.Spec.Taints {
+			nodeTaints = append(nodeTaints, fmt.Sprintf("%s=%s:%s", t.Key, t.Value, t.Effect))
+		}
+		agentPoolSpec.NodeTaints = nodeTaints
+	}
+
 	if managedMachinePool.Spec.Scaling != nil {
 		agentPoolSpec.EnableAutoScaling = to.BoolPtr(true)
 		agentPoolSpec.MaxCount = managedMachinePool.Spec.Scaling.MaxSize

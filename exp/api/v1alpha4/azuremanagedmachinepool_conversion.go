@@ -38,6 +38,7 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.Spec.Scaling = restored.Spec.Scaling
 	dst.Spec.Name = restored.Spec.Name
+	dst.Spec.Taints = restored.Spec.Taints
 	dst.Spec.AvailabilityZones = restored.Spec.AvailabilityZones
 	dst.Spec.MaxPods = restored.Spec.MaxPods
 	dst.Spec.OsDiskType = restored.Spec.OsDiskType

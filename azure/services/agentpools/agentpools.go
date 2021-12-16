@@ -78,6 +78,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			EnableAutoScaling:   agentPoolSpec.EnableAutoScaling,
 			MaxCount:            agentPoolSpec.MaxCount,
 			MinCount:            agentPoolSpec.MinCount,
+			NodeTaints:          &agentPoolSpec.NodeTaints,
 			AvailabilityZones:   &agentPoolSpec.AvailabilityZones,
 			MaxPods:             agentPoolSpec.MaxPods,
 			OsDiskType:          containerservice.OSDiskType(to.String(agentPoolSpec.OsDiskType)),
