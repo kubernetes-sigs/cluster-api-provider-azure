@@ -7,3 +7,4 @@ ginkgo.flakeAttempts: 0
 ginkgo.trace: true
 ginkgo.v: true
 node-os-distro: windows
+dump-logs-on-failure: true
