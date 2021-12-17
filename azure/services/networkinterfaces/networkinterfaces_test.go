@@ -22,368 +22,78 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces/mock_networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+)
+
+var (
+	fakeNICSpec1 = NICSpec{
+		Name:                  "nic-1",
+		ResourceGroup:         "my-rg",
+		Location:              "fake-location",
+		SubscriptionID:        "123",
+		MachineName:           "azure-test1",
+		SubnetName:            "my-subnet",
+		VNetName:              "my-vnet",
+		VNetResourceGroup:     "my-rg",
+		AcceleratedNetworking: nil,
+		SKU:                   &fakeSku,
+	}
+	fakeNICSpec2 = NICSpec{
+		Name:                  "nic-2",
+		ResourceGroup:         "my-rg",
+		Location:              "fake-location",
+		SubscriptionID:        "123",
+		MachineName:           "azure-test1",
+		SubnetName:            "my-subnet",
+		VNetName:              "my-vnet",
+		VNetResourceGroup:     "my-rg",
+		AcceleratedNetworking: nil,
+		SKU:                   &fakeSku,
+	}
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
 )
 
 func TestReconcileNetworkInterface(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder)
+		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
-			name:          "network interface already exists",
+			name:          "successfully create a network interface",
 			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:              "nic-1",
-						MachineName:       "azure-test1",
-						SubnetName:        "my-subnet",
-						VNetName:          "my-vnet",
-						VNetResourceGroup: "my-rg",
-						VMSize:            "Standard_D2v2",
-					},
-					{
-						Name:              "nic-2",
-						MachineName:       "azure-test1",
-						SubnetName:        "my-subnet",
-						VNetName:          "my-vnet",
-						VNetResourceGroup: "my-rg",
-						VMSize:            "Standard_D2v2",
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				gomock.InOrder(
-					m.Get(gomockinternal.AContext(), "my-rg", "nic-1"),
-					m.Get(gomockinternal.AContext(), "my-rg", "nic-2"))
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1})
+				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "node network interface create fails",
-			expectedError: "failed to create network interface my-net-interface in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:                  "my-net-interface",
-						MachineName:           "azure-test1",
-						SubnetName:            "my-subnet",
-						VNetName:              "my-vnet",
-						VNetResourceGroup:     "my-rg",
-						PublicLBName:          "my-public-lb",
-						VMSize:                "Standard_D2v2",
-						AcceleratedNetworking: nil,
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				gomock.InOrder(
-					m.Get(gomockinternal.AContext(), "my-rg", "my-net-interface").
-						Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})).
-						Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
+			name:          "successfully create multiple network interfaces",
+			expectedError: "",
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2})
+				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, nil)
+				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "node network interface with Static private IP successfully created",
-			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:                    "my-net-interface",
-						MachineName:             "azure-test1",
-						SubnetName:              "my-subnet",
-						VNetName:                "my-vnet",
-						VNetResourceGroup:       "my-rg",
-						PublicLBName:            "my-public-lb",
-						PublicLBAddressPoolName: "cluster-name-outboundBackendPool",
-						StaticIPAddress:         "fake.static.ip",
-						VMSize:                  "Standard_D2v2",
-						AcceleratedNetworking:   nil,
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-net-interface").
-					Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-net-interface", gomockinternal.DiffEq(network.Interface{
-					Location: to.StringPtr("fake-location"),
-					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-						EnableAcceleratedNetworking: to.BoolPtr(true),
-						EnableIPForwarding:          to.BoolPtr(false),
-						IPConfigurations: &[]network.InterfaceIPConfiguration{
-							{
-								Name: to.StringPtr("pipConfig"),
-								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/cluster-name-outboundBackendPool")}},
-									PrivateIPAllocationMethod:       network.IPAllocationMethodStatic,
-									PrivateIPAddress:                to.StringPtr("fake.static.ip"),
-									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-								},
-							},
-						},
-					},
-				}))
-			},
-		},
-		{
-			name:          "node network interface with Dynamic private IP successfully created",
-			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:                    "my-net-interface",
-						MachineName:             "azure-test1",
-						SubnetName:              "my-subnet",
-						VNetName:                "my-vnet",
-						VNetResourceGroup:       "my-rg",
-						PublicLBName:            "my-public-lb",
-						PublicLBAddressPoolName: "cluster-name-outboundBackendPool",
-						VMSize:                  "Standard_D2v2",
-						AcceleratedNetworking:   nil,
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				gomock.InOrder(
-					m.Get(gomockinternal.AContext(), "my-rg", "my-net-interface").
-						Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-net-interface", gomockinternal.DiffEq(network.Interface{
-						Location: to.StringPtr("fake-location"),
-						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-							EnableAcceleratedNetworking: to.BoolPtr(true),
-							EnableIPForwarding:          to.BoolPtr(false),
-							IPConfigurations: &[]network.InterfaceIPConfiguration{
-								{
-									Name: to.StringPtr("pipConfig"),
-									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/cluster-name-outboundBackendPool")}},
-										PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
-										Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									},
-								},
-							},
-						},
-					})))
-			},
-		},
-		{
-			name:          "control plane network interface successfully created",
-			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:                      "my-net-interface",
-						MachineName:               "azure-test1",
-						SubnetName:                "my-subnet",
-						VNetName:                  "my-vnet",
-						VNetResourceGroup:         "my-rg",
-						PublicLBName:              "my-public-lb",
-						PublicLBAddressPoolName:   "my-public-lb-backendPool",
-						PublicLBNATRuleName:       "azure-test1",
-						InternalLBName:            "my-internal-lb",
-						InternalLBAddressPoolName: "my-internal-lb-backendPool",
-						VMSize:                    "Standard_D2v2",
-						AcceleratedNetworking:     nil,
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-net-interface").
-					Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-net-interface", gomockinternal.DiffEq(network.Interface{
-					Location: to.StringPtr("fake-location"),
-					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-						EnableAcceleratedNetworking: to.BoolPtr(true),
-						EnableIPForwarding:          to.BoolPtr(false),
-						IPConfigurations: &[]network.InterfaceIPConfiguration{
-							{
-								Name: to.StringPtr("pipConfig"),
-								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-									Subnet:                      &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									PrivateIPAllocationMethod:   network.IPAllocationMethodDynamic,
-									LoadBalancerInboundNatRules: &[]network.InboundNatRule{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/inboundNatRules/azure-test1")}},
-									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{
-										{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/my-public-lb-backendPool")},
-										{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-internal-lb/backendAddressPools/my-internal-lb-backendPool")}},
-								},
-							},
-						},
-					},
-				}))
-			},
-		},
-		{
-			name:          "network interface with Public IP successfully created",
-			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:                  "my-public-net-interface",
-						MachineName:           "azure-test1",
-						SubnetName:            "my-subnet",
-						VNetName:              "my-vnet",
-						VNetResourceGroup:     "my-rg",
-						PublicIPName:          "my-public-ip",
-						VMSize:                "Standard_D2v2",
-						AcceleratedNetworking: nil,
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-public-net-interface").
-					Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-public-net-interface", gomock.AssignableToTypeOf(network.Interface{}))
-			},
-		},
-		{
-			name:          "network interface with accelerated networking successfully created",
-			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:                  "my-net-interface",
-						MachineName:           "azure-test1",
-						SubnetName:            "my-subnet",
-						VNetName:              "my-vnet",
-						VNetResourceGroup:     "my-rg",
-						PublicLBName:          "my-public-lb",
-						VMSize:                "Standard_D2v2",
-						AcceleratedNetworking: nil,
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-net-interface").
-					Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-net-interface", gomockinternal.DiffEq(network.Interface{
-					Location: to.StringPtr("fake-location"),
-					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-						EnableAcceleratedNetworking: to.BoolPtr(true),
-						EnableIPForwarding:          to.BoolPtr(false),
-						IPConfigurations: &[]network.InterfaceIPConfiguration{
-							{
-								Name: to.StringPtr("pipConfig"),
-								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
-									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
-								},
-							},
-						},
-					},
-				}),
-				)
-			},
-		},
-		{
-			name:          "network interface without accelerated networking successfully created",
-			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:                  "my-net-interface",
-						MachineName:           "azure-test1",
-						SubnetName:            "my-subnet",
-						VNetName:              "my-vnet",
-						VNetResourceGroup:     "my-rg",
-						PublicLBName:          "my-public-lb",
-						VMSize:                "Standard_D2v2",
-						AcceleratedNetworking: to.BoolPtr(false),
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-net-interface").
-					Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-net-interface", gomockinternal.DiffEq(network.Interface{
-					Location: to.StringPtr("fake-location"),
-					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-						EnableAcceleratedNetworking: to.BoolPtr(false),
-						EnableIPForwarding:          to.BoolPtr(false),
-						IPConfigurations: &[]network.InterfaceIPConfiguration{
-							{
-								Name: to.StringPtr("pipConfig"),
-								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
-									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
-								},
-							},
-						},
-					},
-				}))
-			},
-		},
-		{
-			name:          "network interface with ipv6 created successfully",
-			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:                  "my-net-interface",
-						MachineName:           "azure-test1",
-						SubnetName:            "my-subnet",
-						VNetName:              "my-vnet",
-						IPv6Enabled:           true,
-						VNetResourceGroup:     "my-rg",
-						PublicLBName:          "my-public-lb",
-						VMSize:                "Standard_D2v2",
-						AcceleratedNetworking: nil,
-						EnableIPForwarding:    true,
-					},
-				})
-				s.SubscriptionID().AnyTimes().Return("123")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("fake-location")
-				gomock.InOrder(
-					m.Get(gomockinternal.AContext(), "my-rg", "my-net-interface").
-						Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-net-interface", gomockinternal.DiffEq(network.Interface{
-						Location: to.StringPtr("fake-location"),
-						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-							EnableAcceleratedNetworking: to.BoolPtr(true),
-							EnableIPForwarding:          to.BoolPtr(true),
-							IPConfigurations: &[]network.InterfaceIPConfiguration{
-								{
-									Name: to.StringPtr("pipConfig"),
-									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-										Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-										PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
-										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
-									},
-								},
-								{
-									Name: to.StringPtr("ipConfigv6"),
-									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-										Subnet:                  &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-										Primary:                 to.BoolPtr(false),
-										PrivateIPAddressVersion: "IPv6",
-									},
-								},
-							},
-						},
-					})),
-				)
+			name:          "network interface create fails",
+			expectedError: internalError.Error(),
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2})
+				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, internalError)
+				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, internalError)
 			},
 		},
 	}
@@ -396,34 +106,13 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_networkinterfaces.NewMockNICScope(mockCtrl)
-			clientMock := mock_networkinterfaces.NewMockClient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				Client: clientMock,
-				resourceSKUCache: resourceskus.NewStaticCache([]compute.ResourceSku{
-					{
-						Name: to.StringPtr("Standard_D2v2"),
-						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
-						Locations: &[]string{
-							"fake-location",
-						},
-						LocationInfo: &[]compute.ResourceSkuLocationInfo{
-							{
-								Location: to.StringPtr("fake-location"),
-								Zones:    &[]string{"1"},
-							},
-						},
-						Capabilities: &[]compute.ResourceSkuCapabilities{
-							{
-								Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
-								Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
-							},
-						},
-					},
-				}, ""),
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -443,53 +132,35 @@ func TestDeleteNetworkInterface(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder)
+		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "successfully delete an existing network interface",
 			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:         "my-net-interface",
-						PublicLBName: "my-public-lb",
-						MachineName:  "azure-test1",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-net-interface")
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1})
+				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "network interface already deleted",
+			name:          "successfully delete multiple existing network interfaces",
 			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:         "my-net-interface",
-						PublicLBName: "my-public-lb",
-						MachineName:  "azure-test1",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-net-interface").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2})
+				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil)
+				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "network interface deletion fails",
-			expectedError: "failed to delete network interface my-net-interface in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
-				s.NICSpecs().Return([]azure.NICSpec{
-					{
-						Name:         "my-net-interface",
-						PublicLBName: "my-public-lb",
-						MachineName:  "azure-test1",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-net-interface").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			expectedError: internalError.Error(),
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2})
+				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil)
+				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(internalError)
+				s.UpdateDeleteStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, internalError)
 			},
 		},
 	}
@@ -502,13 +173,13 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_networkinterfaces.NewMockNICScope(mockCtrl)
-			clientMock := mock_networkinterfaces.NewMockClient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				Client: clientMock,
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
 
 			err := s.Delete(context.TODO())

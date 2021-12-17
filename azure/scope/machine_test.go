@@ -35,6 +35,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 )
 
 func specArrayToString(specs []azure.ResourceSpecGetter) string {
@@ -1336,12 +1338,19 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		machineScope MachineScope
-		want         []azure.NICSpec
+		want         []azure.ResourceSpecGetter
 	}{
 		{
 			name: "Node Machine with no NAT gateway and no public IP address",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
 					Cluster: &clusterv1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
@@ -1361,6 +1370,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							},
 						},
 						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							Location:      "westus",
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1397,9 +1408,12 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.NICSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
 					Name:                      "machine-name-nic",
+					ResourceGroup:             "my-rg",
+					Location:                  "westus",
+					SubscriptionID:            "123",
 					MachineName:               "machine-name",
 					SubnetName:                "subnet1",
 					VNetName:                  "vnet1",
@@ -1410,17 +1424,24 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
-					VMSize:                    "",
 					AcceleratedNetworking:     nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
+					SKU:                       nil,
 				},
 			},
 		},
 		{
-			name: "Node Machine with NAT gateway",
+			name: "Node Machine with no NAT gateway and no public IP address and SKU is in machine cache",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
 					Cluster: &clusterv1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
@@ -1440,6 +1461,106 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							},
 						},
 						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							Location:      "westus",
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										Role: infrav1.SubnetNode,
+										Name: "subnet1",
+									},
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: to.StringPtr("azure://compute/virtual-machines/machine-name"),
+						SubnetName: "subnet1",
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "machine",
+						Labels: map[string]string{
+							//clusterv1.MachineControlPlaneLabelName: "true",
+						},
+					},
+				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{
+						Name: to.StringPtr("Standard_D2v2"),
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
+					Name:                      "machine-name-nic",
+					ResourceGroup:             "my-rg",
+					Location:                  "westus",
+					SubscriptionID:            "123",
+					MachineName:               "machine-name",
+					SubnetName:                "subnet1",
+					VNetName:                  "vnet1",
+					VNetResourceGroup:         "rg1",
+					PublicLBName:              "outbound-lb",
+					PublicLBAddressPoolName:   "outbound-lb-outboundBackendPool",
+					PublicLBNATRuleName:       "",
+					InternalLBName:            "",
+					InternalLBAddressPoolName: "",
+					PublicIPName:              "",
+					AcceleratedNetworking:     nil,
+					IPv6Enabled:               false,
+					EnableIPForwarding:        false,
+					SKU: &resourceskus.SKU{
+						Name: to.StringPtr("Standard_D2v2"),
+					},
+				},
+			},
+		},
+		{
+			name: "Node Machine with NAT gateway",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1beta1",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							Location:      "westus",
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1479,9 +1600,12 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.NICSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
 					Name:                      "machine-name-nic",
+					ResourceGroup:             "my-rg",
+					Location:                  "westus",
+					SubscriptionID:            "123",
 					MachineName:               "machine-name",
 					SubnetName:                "subnet1",
 					VNetName:                  "vnet1",
@@ -1492,10 +1616,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
-					VMSize:                    "",
 					AcceleratedNetworking:     nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
+					SKU:                       nil,
 				},
 			},
 		},
@@ -1503,6 +1627,13 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			name: "Node Machine with public IP address",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
 					Cluster: &clusterv1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
@@ -1522,6 +1653,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							},
 						},
 						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							Location:      "westus",
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1559,9 +1692,12 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.NICSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
 					Name:                      "machine-name-nic",
+					ResourceGroup:             "my-rg",
+					Location:                  "westus",
+					SubscriptionID:            "123",
 					MachineName:               "machine-name",
 					SubnetName:                "subnet1",
 					VNetName:                  "vnet1",
@@ -1572,10 +1708,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "pip-machine-name",
-					VMSize:                    "",
 					AcceleratedNetworking:     nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
+					SKU:                       nil,
 				},
 			},
 		},
@@ -1583,6 +1719,13 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			name: "Control Plane Machine with private LB",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
 					Cluster: &clusterv1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
@@ -1602,6 +1745,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							},
 						},
 						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							Location:      "westus",
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1642,9 +1787,12 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.NICSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
 					Name:                      "machine-name-nic",
+					ResourceGroup:             "my-rg",
+					Location:                  "westus",
+					SubscriptionID:            "123",
 					MachineName:               "machine-name",
 					SubnetName:                "subnet1",
 					VNetName:                  "vnet1",
@@ -1655,10 +1803,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "api-lb",
 					InternalLBAddressPoolName: "api-lb-backendPool",
 					PublicIPName:              "",
-					VMSize:                    "",
 					AcceleratedNetworking:     nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
+					SKU:                       nil,
 				},
 			},
 		},
@@ -1666,6 +1814,13 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			name: "Control Plane Machine with public LB",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
 					Cluster: &clusterv1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
@@ -1685,6 +1840,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							},
 						},
 						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							Location:      "westus",
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1724,9 +1881,12 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.NICSpec{
-				{
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
 					Name:                      "machine-name-nic",
+					ResourceGroup:             "my-rg",
+					Location:                  "westus",
+					SubscriptionID:            "123",
 					MachineName:               "machine-name",
 					SubnetName:                "subnet1",
 					VNetName:                  "vnet1",
@@ -1737,10 +1897,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
-					VMSize:                    "",
 					AcceleratedNetworking:     nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
+					SKU:                       nil,
 				},
 			},
 		},
@@ -1749,7 +1909,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotNicSpecs := tt.machineScope.NICSpecs()
 			if !reflect.DeepEqual(gotNicSpecs, tt.want) {
-				t.Errorf("NICSpecs(), gotNicSpecs = %v, want %v", gotNicSpecs, tt.want)
+				t.Errorf("NICSpecs(), gotNicSpecs = %s, want %s", specArrayToString(gotNicSpecs), specArrayToString(tt.want))
 			}
 		})
 	}

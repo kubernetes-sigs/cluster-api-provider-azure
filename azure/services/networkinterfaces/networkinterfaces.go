@@ -19,158 +19,84 @@ package networkinterfaces
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/pkg/errors"
-
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+const serviceName = "interfaces"
 
 // NICScope defines the scope interface for a network interfaces service.
 type NICScope interface {
 	azure.ClusterDescriber
-	NICSpecs() []azure.NICSpec
+	azure.AsyncStatusUpdater
+	NICSpecs() []azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope NICScope
-	Client
+	async.Reconciler
 	resourceSKUCache *resourceskus.Cache
 }
 
 // New creates a new service.
 func New(scope NICScope, skuCache *resourceskus.Cache) *Service {
+	Client := NewClient(scope)
 	return &Service{
 		Scope:            scope,
-		Client:           NewClient(scope),
+		Reconciler:       async.New(scope, Client, Client),
 		resourceSKUCache: skuCache,
 	}
 }
 
 // Reconcile gets/creates/updates a network interface.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.Reconcile")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.Reconcile")
 	defer done()
 
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
+	// We go through the list of NICSpecs to reconcile each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
+	var result error
 	for _, nicSpec := range s.Scope.NICSpecs() {
-		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
-		switch {
-		case err != nil && !azure.ResourceNotFound(err):
-			return errors.Wrapf(err, "failed to fetch network interface %s", nicSpec.Name)
-		case err == nil:
-			// network interface already exists, do nothing
-			continue
-		default:
-			nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
-
-			subnet := &network.Subnet{
-				ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName)),
+		if _, err := s.CreateResource(ctx, nicSpec, serviceName); err != nil {
+			if !azure.IsOperationNotDoneError(err) || result == nil {
+				result = err
 			}
-			nicConfig.Subnet = subnet
-
-			nicConfig.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
-			if nicSpec.StaticIPAddress != "" {
-				nicConfig.PrivateIPAllocationMethod = network.IPAllocationMethodStatic
-				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
-			}
-
-			backendAddressPools := []network.BackendAddressPool{}
-			if nicSpec.PublicLBName != "" {
-				if nicSpec.PublicLBAddressPoolName != "" {
-					backendAddressPools = append(backendAddressPools,
-						network.BackendAddressPool{
-							ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName)),
-						})
-				}
-				if nicSpec.PublicLBNATRuleName != "" {
-					nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
-						{
-							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
-						},
-					}
-				}
-			}
-			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
-				backendAddressPools = append(backendAddressPools,
-					network.BackendAddressPool{
-						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
-					})
-			}
-			nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
-
-			if nicSpec.PublicIPName != "" {
-				nicConfig.PublicIPAddress = &network.PublicIPAddress{
-					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
-				}
-			}
-
-			if nicSpec.AcceleratedNetworking == nil {
-				// set accelerated networking to the capability of the VMSize
-				sku, err := s.resourceSKUCache.Get(ctx, nicSpec.VMSize, resourceskus.VirtualMachines)
-				if err != nil {
-					return azure.WithTerminalError(errors.Wrapf(err, "failed to get SKU %s in compute api", nicSpec.VMSize))
-				}
-
-				accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)
-				nicSpec.AcceleratedNetworking = &accelNet
-			}
-
-			ipConfigurations := []network.InterfaceIPConfiguration{
-				{
-					Name:                                     to.StringPtr("pipConfig"),
-					InterfaceIPConfigurationPropertiesFormat: nicConfig,
-				},
-			}
-
-			if nicSpec.IPv6Enabled {
-				ipv6Config := network.InterfaceIPConfiguration{
-					Name: to.StringPtr("ipConfigv6"),
-					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-						PrivateIPAddressVersion: "IPv6",
-						Primary:                 to.BoolPtr(false),
-						Subnet:                  &network.Subnet{ID: subnet.ID},
-					},
-				}
-
-				ipConfigurations = append(ipConfigurations, ipv6Config)
-			}
-
-			err = s.Client.CreateOrUpdate(ctx,
-				s.Scope.ResourceGroup(),
-				nicSpec.Name,
-				network.Interface{
-					Location: to.StringPtr(s.Scope.Location()),
-					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-						EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
-						IPConfigurations:            &ipConfigurations,
-						EnableIPForwarding:          to.BoolPtr(nicSpec.EnableIPForwarding),
-					},
-				})
-
-			if err != nil {
-				return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.ResourceGroup())
-			}
-			log.V(2).Info("successfully created network interface", "network interface", nicSpec.Name)
 		}
 	}
-	return nil
+
+	s.Scope.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, result)
+	return result
 }
 
 // Delete deletes the network interface with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.Delete")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.Delete")
 	defer done()
 
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
+	var result error
+
+	// We go through the list of NICSpecs to delete each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
 	for _, nicSpec := range s.Scope.NICSpecs() {
-		log.V(2).Info("deleting network interface", "network interface", nicSpec.Name)
-		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
-		if err != nil && !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete network interface %s in resource group %s", nicSpec.Name, s.Scope.ResourceGroup())
+		if err := s.DeleteResource(ctx, nicSpec, serviceName); err != nil {
+			if !azure.IsOperationNotDoneError(err) || result == nil {
+				result = err
+			}
 		}
-		log.V(2).Info("successfully deleted NIC", "network interface", nicSpec.Name)
 	}
-	return nil
+	s.Scope.UpdateDeleteStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, result)
+	return result
 }

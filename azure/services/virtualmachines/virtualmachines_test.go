@@ -31,6 +31,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces/mock_networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines/mock_virtualmachines"
@@ -65,6 +66,10 @@ var (
 				},
 			},
 		},
+	}
+	fakeNetworkInterfaceGetterSpec = networkinterfaces.NICSpec{
+		Name:          "nic-1",
+		ResourceGroup: "test-group",
 	}
 	fakeNetworkInterface = network.Interface{
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
@@ -114,7 +119,7 @@ func TestReconcileVM(t *testing.T) {
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
 				s.SetProviderID("azure://test-vm-id")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
-				mnic.Get(gomockinternal.AContext(), "test-group", "nic-1").Return(fakeNetworkInterface, nil)
+				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
 				mpip.Get(gomockinternal.AContext(), "test-group", "pip-1").Return(fakePublicIPs, nil)
 				s.SetAddresses(fakeNodeAddresses)
 				s.SetVMState(infrav1.Succeeded)
@@ -140,7 +145,7 @@ func TestReconcileVM(t *testing.T) {
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
 				s.SetProviderID("azure://test-vm-id")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
-				mnic.Get(gomockinternal.AContext(), "test-group", "nic-1").Return(network.Interface{}, internalError)
+				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(network.Interface{}, internalError)
 			},
 		},
 		{
@@ -153,7 +158,7 @@ func TestReconcileVM(t *testing.T) {
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
 				s.SetProviderID("azure://test-vm-id")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
-				mnic.Get(gomockinternal.AContext(), "test-group", "nic-1").Return(fakeNetworkInterface, nil)
+				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
 				mpip.Get(gomockinternal.AContext(), "test-group", "pip-1").Return(network.PublicIPAddress{}, internalError)
 			},
 		},

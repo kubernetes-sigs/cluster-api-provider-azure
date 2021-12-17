@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -145,9 +146,17 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 		nicName := getResourceNameByID(to.String(nicRef.ID))
 
 		// Fetch nic and append its addresses
-		nic, err := s.interfacesClient.Get(ctx, rgName, nicName)
+		existingNic, err := s.interfacesClient.Get(ctx, &networkinterfaces.NICSpec{
+			Name:          nicName,
+			ResourceGroup: rgName,
+		})
 		if err != nil {
 			return addresses, err
+		}
+
+		nic, ok := existingNic.(network.Interface)
+		if !ok {
+			return nil, errors.Errorf("%T is not a network.Interface", existingNic)
 		}
 
 		if nic.IPConfigurations == nil {
