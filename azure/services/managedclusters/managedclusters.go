@@ -233,15 +233,16 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	for i := range managedClusterSpec.AgentPools {
 		pool := managedClusterSpec.AgentPools[i]
 		profile := containerservice.ManagedClusterAgentPoolProfile{
-			Name:              &pool.Name,
-			VMSize:            &pool.SKU,
-			OsDiskSizeGB:      &pool.OSDiskSizeGB,
-			Count:             &pool.Replicas,
-			Type:              containerservice.AgentPoolTypeVirtualMachineScaleSets,
-			VnetSubnetID:      &managedClusterSpec.VnetSubnetID,
-			Mode:              containerservice.AgentPoolMode(pool.Mode),
-			AvailabilityZones: &pool.AvailabilityZones,
-			MaxPods:           pool.MaxPods,
+			Name:                &pool.Name,
+			VMSize:              &pool.SKU,
+			OsDiskSizeGB:        &pool.OSDiskSizeGB,
+			Count:               &pool.Replicas,
+			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
+			VnetSubnetID:        &managedClusterSpec.VnetSubnetID,
+			Mode:                containerservice.AgentPoolMode(pool.Mode),
+			AvailabilityZones:   &pool.AvailabilityZones,
+			MaxPods:             pool.MaxPods,
+			OrchestratorVersion: pool.Version,
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
@@ -313,6 +314,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			// AKS.
 			existingMC.NetworkProfile.LoadBalancerProfile.EffectiveOutboundIPs = nil
 		}
+
+		// Avoid changing agent pool profiles through AMCP and just use the existing agent pool profiles
+		// AgentPool changes are managed through AMMP
+		managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
 
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
