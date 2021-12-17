@@ -1,6 +1,7 @@
 # -*- mode: Python -*-
 
 envsubst_cmd = "./hack/tools/bin/envsubst"
+kubectl_cmd = "./hack/tools/bin/kubectl"
 tools_bin = "./hack/tools/bin"
 
 #Add tools to path
@@ -43,7 +44,7 @@ if "default_registry" in settings:
 def deploy_capi():
     version = settings.get("capi_version")
     capi_uri = "https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version)
-    cmd = "curl -sSL {} | {} | kubectl apply -f -".format(capi_uri, envsubst_cmd)
+    cmd = "curl -sSL {} | {} | {} apply -f -".format(capi_uri, envsubst_cmd, kubectl_cmd)
     local(cmd, quiet=True)
     if settings.get("extra_args"):
         extra_args = settings.get("extra_args")
@@ -59,7 +60,7 @@ def deploy_capi():
 
 
 def patch_args_with_extra_args(namespace, name, extra_args):
-    args_str = str(local('kubectl get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[1].args}}'.format(name, namespace)))
+    args_str = str(local('{} get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[1].args}}'.format(kubectl_cmd, name, namespace)))
     args_to_add = [arg for arg in extra_args if arg not in args_str]
     if args_to_add:
         args = args_str[1:-1].split()
@@ -69,7 +70,7 @@ def patch_args_with_extra_args(namespace, name, extra_args):
             "path": "/spec/template/spec/containers/1/args",
             "value": args,
         }]
-        local("kubectl patch deployment {} -n {} --type json -p='{}'".format(name, namespace, str(encode_json(patch)).replace("\n", "")))
+        local("{} patch deployment {} -n {} --type json -p='{}'".format(kubectl_cmd, name, namespace, str(encode_json(patch)).replace("\n", "")))
 
 
 # Users may define their own Tilt customizations in tilt.d. This directory is excluded from git and these files will
@@ -200,32 +201,32 @@ def capz():
 
 def create_identity_secret():
     #create secret for identity password
-    local("kubectl delete secret cluster-identity-secret --ignore-not-found=true")
+    local(kubectl_cmd + " delete secret cluster-identity-secret --ignore-not-found=true")
 
     os.putenv('AZURE_CLUSTER_IDENTITY_SECRET_NAME', 'cluster-identity-secret')
     os.putenv('AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE', 'default')
     os.putenv('CLUSTER_IDENTITY_NAME', 'cluster-identity')
 
     os.putenv('AZURE_CLIENT_SECRET_B64', base64_encode(os.environ.get("AZURE_CLIENT_SECRET")))
-    local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | kubectl apply -f -", quiet=True, echo_off=True)
+    local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -", quiet=True, echo_off=True)
     os.unsetenv('AZURE_CLIENT_SECRET_B64')
 
 def create_crs():
     # create config maps
-    local("kubectl delete configmaps calico-addon --ignore-not-found=true")
-    local("kubectl create configmap calico-addon --from-file=templates/addons/calico.yaml")
-    local("kubectl delete configmaps calico-ipv6-addon --ignore-not-found=true")
-    local("kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml")
-    local("kubectl delete configmaps flannel-windows-addon --ignore-not-found=true")
+    local(kubectl_cmd + " delete configmaps calico-addon --ignore-not-found=true")
+    local(kubectl_cmd + " create configmap calico-addon --from-file=templates/addons/calico.yaml")
+    local(kubectl_cmd + " delete configmaps calico-ipv6-addon --ignore-not-found=true")
+    local(kubectl_cmd + " create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml")
+    local(kubectl_cmd + " delete configmaps flannel-windows-addon --ignore-not-found=true")
 
     # need to set version for kube-proxy on windows.
     os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))
-    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel/ --dry-run=client -o yaml | " + envsubst_cmd + " | kubectl apply -f -")
-    local("kubectl create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | kubectl apply -f -")
+    local(kubectl_cmd + " create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
+    local(kubectl_cmd + " create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
 
     # set up crs
-    local("kubectl apply -f templates/addons/calico-resource-set.yaml")
-    local("kubectl apply -f templates/addons/flannel-resource-set.yaml")
+    local(kubectl_cmd + " apply -f templates/addons/calico-resource-set.yaml")
+    local(kubectl_cmd + " apply -f templates/addons/flannel-resource-set.yaml")
 
 # create flavor resources from cluster-template files in the templates directory 
 def flavors():
@@ -251,7 +252,7 @@ def flavors():
 
     local_resource(
         name = 'delete-all-workload-clusters',
-        cmd = "kubectl delete clusters --all --wait=false",
+        cmd = kubectl_cmd + " delete clusters --all --wait=false",
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL,
         labels = [ "flavors" ]
@@ -312,7 +313,7 @@ def deploy_worker_templates(template, substitutions):
     yaml = yaml.replace('"', '\\"')     # add escape character to double quotes in yaml
     local_resource(
         name = os.path.basename(flavor),
-        cmd = "RANDOM=$(bash -c 'echo $RANDOM'); CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | kubectl apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\"",
+        cmd = "RANDOM=$(bash -c 'echo $RANDOM'); CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\"",
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL,
         labels = [ "flavors" ]
@@ -341,9 +342,9 @@ def kustomizesub(folder):
     return yaml
 
 def waitforsystem():
-    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-bootstrap-system")
-    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-control-plane-system")
-    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-system")
+    local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-bootstrap-system")
+    local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-control-plane-system")
+    local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-system")
 
 ##############################
 # Actual work happens here
