@@ -275,9 +275,7 @@ spec:
         owner: root:root
         path: c:/k/azure.json
         permissions: "0644"
-      - content: |-
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-          Set-ItemProperty -Path "HKLM:SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Type DWord -Name NoAutoUpdate -Value 1
+      - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
         path: C:/defender-exclude-calico.ps1
         permissions: "0744"
       - content: |
