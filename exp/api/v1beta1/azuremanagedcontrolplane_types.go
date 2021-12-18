@@ -210,6 +210,10 @@ type AzureManagedControlPlaneStatus struct {
 	// +optional
 	Initialized bool `json:"initialized,omitempty"`
 
+	// Conditions defines current service state of the AzureManagedControlPlane.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
 	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
 	// next reconciliation loop.
 	// +optional
@@ -237,6 +241,16 @@ type AzureManagedControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AzureManagedControlPlane `json:"items"`
+}
+
+// GetConditions returns the list of conditions for an AzureManagedControlPlane API object.
+func (m *AzureManagedControlPlane) GetConditions() clusterv1.Conditions {
+	return m.Status.Conditions
+}
+
+// SetConditions will set the given conditions on an AzureManagedControlPlane object.
+func (m *AzureManagedControlPlane) SetConditions(conditions clusterv1.Conditions) {
+	m.Status.Conditions = conditions
 }
 
 // GetFutures returns the list of long running operation states for an AzureManagedControlPlane API object.

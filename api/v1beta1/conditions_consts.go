@@ -76,6 +76,14 @@ const (
 	ScaleSetModelOutOfDateReason = "ScaleSetModelOutOfDate"
 )
 
+// AzureManagedCluster Conditions and Reasons.
+const (
+	// ManagedClusterRunningCondition means the AKS cluster exists and is in a running state.
+	ManagedClusterRunningCondition clusterv1.ConditionType = "ManagedClusterRunning"
+	// AgentPoolsReadyCondition means the AKS agent pools exist and are ready to be used.
+	AgentPoolsReadyCondition clusterv1.ConditionType = "AgentPoolsReady"
+)
+
 // Azure Services Conditions and Reasons.
 const (
 	// ResourceGroupReadyCondition means the resource group exists and is ready to be used.
