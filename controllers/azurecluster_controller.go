@@ -228,7 +228,7 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 				if azure.IsOperationNotDoneError(reconcileError) {
 					log.V(2).Info(fmt.Sprintf("AzureCluster reconcile not done: %s", reconcileError.Error()))
 				} else {
-					log.V(2).Info("transient failure to reconcile AzureCluster, retrying")
+					log.V(2).Info(fmt.Sprintf("transient failure to reconcile AzureCluster, retrying: %s", reconcileError.Error()))
 				}
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}

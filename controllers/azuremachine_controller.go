@@ -308,7 +308,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 				if azure.IsOperationNotDoneError(reconcileError) {
 					log.V(2).Info(fmt.Sprintf("AzureMachine reconcile not done: %s", reconcileError.Error()))
 				} else {
-					log.V(2).Info("transient failure to reconcile AzureMachine, retrying")
+					log.V(2).Info(fmt.Sprintf("transient failure to reconcile AzureMachine, retrying: %s", reconcileError.Error()))
 				}
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
