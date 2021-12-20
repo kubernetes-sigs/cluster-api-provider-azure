@@ -309,19 +309,15 @@ func (c *AzureCluster) setBastionDefaults() {
 			c.Spec.BastionSpec.AzureBastion.Name = generateAzureBastionName(c.ObjectMeta.Name)
 		}
 		// Ensure defaults for the Subnet settings.
-		{
-			if c.Spec.BastionSpec.AzureBastion.Subnet.Name == "" {
-				c.Spec.BastionSpec.AzureBastion.Subnet.Name = DefaultAzureBastionSubnetName
-			}
-			if len(c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks) == 0 {
-				c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks = []string{DefaultAzureBastionSubnetCIDR}
-			}
+		if c.Spec.BastionSpec.AzureBastion.Subnet.Name == "" {
+			c.Spec.BastionSpec.AzureBastion.Subnet.Name = DefaultAzureBastionSubnetName
+		}
+		if len(c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks) == 0 {
+			c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks = []string{DefaultAzureBastionSubnetCIDR}
 		}
 		// Ensure defaults for the PublicIP settings.
-		{
-			if c.Spec.BastionSpec.AzureBastion.PublicIP.Name == "" {
-				c.Spec.BastionSpec.AzureBastion.PublicIP.Name = generateAzureBastionPublicIPName(c.ObjectMeta.Name)
-			}
+		if c.Spec.BastionSpec.AzureBastion.PublicIP.Name == "" {
+			c.Spec.BastionSpec.AzureBastion.PublicIP.Name = generateAzureBastionPublicIPName(c.ObjectMeta.Name)
 		}
 	}
 }

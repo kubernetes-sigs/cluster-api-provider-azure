@@ -27,6 +27,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // MockBastionScope is a mock of BastionScope interface.
@@ -136,6 +137,20 @@ func (mr *MockBastionScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockBastionScope)(nil).AvailabilitySetEnabled))
 }
 
+// AzureBastionSpec mocks base method.
+func (m *MockBastionScope) AzureBastionSpec() azure.ResourceSpecGetter {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureBastionSpec")
+	ret0, _ := ret[0].(azure.ResourceSpecGetter)
+	return ret0
+}
+
+// AzureBastionSpec indicates an expected call of AzureBastionSpec.
+func (mr *MockBastionScopeMockRecorder) AzureBastionSpec() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureBastionSpec", reflect.TypeOf((*MockBastionScope)(nil).AzureBastionSpec))
+}
+
 // BaseURI mocks base method.
 func (m *MockBastionScope) BaseURI() string {
 	m.ctrl.T.Helper()
@@ -148,20 +163,6 @@ func (m *MockBastionScope) BaseURI() string {
 func (mr *MockBastionScopeMockRecorder) BaseURI() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockBastionScope)(nil).BaseURI))
-}
-
-// BastionSpec mocks base method.
-func (m *MockBastionScope) BastionSpec() azure.BastionSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BastionSpec")
-	ret0, _ := ret[0].(azure.BastionSpec)
-	return ret0
-}
-
-// BastionSpec indicates an expected call of BastionSpec.
-func (mr *MockBastionScopeMockRecorder) BastionSpec() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BastionSpec", reflect.TypeOf((*MockBastionScope)(nil).BastionSpec))
 }
 
 // ClientID mocks base method.
@@ -262,6 +263,18 @@ func (mr *MockBastionScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockBastionScope)(nil).ControlPlaneSubnet))
 }
 
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockBastionScope) DeleteLongRunningOperationState(arg0, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockBastionScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockBastionScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+}
+
 // FailureDomains mocks base method.
 func (m *MockBastionScope) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -274,6 +287,20 @@ func (m *MockBastionScope) FailureDomains() []string {
 func (mr *MockBastionScopeMockRecorder) FailureDomains() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockBastionScope)(nil).FailureDomains))
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockBastionScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret0, _ := ret[0].(*v1beta1.Future)
+	return ret0
+}
+
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockBastionScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockBastionScope)(nil).GetLongRunningOperationState), arg0, arg1)
 }
 
 // GetPrivateDNSZoneName mocks base method.
@@ -416,6 +443,18 @@ func (mr *MockBastionScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockBastionScope)(nil).ResourceGroup))
 }
 
+// SetLongRunningOperationState mocks base method.
+func (m *MockBastionScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockBastionScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockBastionScope)(nil).SetLongRunningOperationState), arg0)
+}
+
 // SetSubnet mocks base method.
 func (m *MockBastionScope) SetSubnet(arg0 v1beta1.SubnetSpec) {
 	m.ctrl.T.Helper()
@@ -482,6 +521,42 @@ func (m *MockBastionScope) TenantID() string {
 func (mr *MockBastionScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockBastionScope)(nil).TenantID))
+}
+
+// UpdateDeleteStatus mocks base method.
+func (m *MockBastionScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
+}
+
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockBastionScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockBastionScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockBastionScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockBastionScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockBastionScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockBastionScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockBastionScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockBastionScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
 
 // Vnet mocks base method.

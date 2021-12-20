@@ -132,6 +132,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	Expect(os.Setenv(AzureInternalLBIP, "10.255.0.100")).NotTo(HaveOccurred())
 	Expect(os.Setenv(AzureCPSubnetCidr, "10.255.0.0/24")).NotTo(HaveOccurred())
 	Expect(os.Setenv(AzureNodeSubnetCidr, "10.255.1.0/24")).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureBastionSubnetCidr, "10.255.255.224/27")).NotTo(HaveOccurred())
 	result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
 	clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 		ClusterProxy: publicClusterProxy,

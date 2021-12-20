@@ -76,19 +76,6 @@ type NSGSpec struct {
 	SecurityRules infrav1.SecurityRules
 }
 
-// BastionSpec defines the specification for the generic bastion feature.
-type BastionSpec struct {
-	AzureBastion *AzureBastionSpec
-}
-
-// AzureBastionSpec defines the specification for azure bastion feature.
-type AzureBastionSpec struct { // nolint
-	Name         string
-	SubnetSpec   infrav1.SubnetSpec
-	PublicIPName string
-	VNetName     string
-}
-
 // ScaleSetSpec defines the specification for a Scale Set.
 type ScaleSetSpec struct {
 	Name                         string

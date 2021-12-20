@@ -30,7 +30,15 @@ spec:
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
   bastionSpec:
-    azureBastion: {}
+    azureBastion:
+      name: ${CLUSTER_NAME}-azure-bastion
+      publicIP:
+        name: ${CLUSTER_NAME}-azure-bastion-pip
+      subnet:
+        cidrBlocks:
+        - ${AZURE_BASTION_SUBNET_CIDR}
+        name: AzureBastionSubnet
+        role: bastion
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
