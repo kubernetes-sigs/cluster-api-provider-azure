@@ -77,13 +77,15 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 	// difference in desired and existing, which would result in sending
 	// unnecessary Azure API requests.
 	propertiesNormalized := &containerservice.ManagedClusterProperties{
-		KubernetesVersion: managedCluster.ManagedClusterProperties.KubernetesVersion,
-		NetworkProfile:    &containerservice.NetworkProfile{},
+		KubernetesVersion:    managedCluster.ManagedClusterProperties.KubernetesVersion,
+		NetworkProfile:       &containerservice.NetworkProfile{},
+		DisableLocalAccounts: managedCluster.ManagedClusterProperties.DisableLocalAccounts,
 	}
 
 	existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
-		KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
-		NetworkProfile:    &containerservice.NetworkProfile{},
+		KubernetesVersion:    existingMC.ManagedClusterProperties.KubernetesVersion,
+		NetworkProfile:       &containerservice.NetworkProfile{},
+		DisableLocalAccounts: existingMC.ManagedClusterProperties.DisableLocalAccounts,
 	}
 
 	if managedCluster.AadProfile != nil {
@@ -227,6 +229,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				LoadBalancerSku: containerservice.LoadBalancerSku(managedClusterSpec.LoadBalancerSKU),
 				NetworkPolicy:   containerservice.NetworkPolicy(managedClusterSpec.NetworkPolicy),
 			},
+			DisableLocalAccounts: managedClusterSpec.DisableLocalAccounts,
 		},
 	}
 

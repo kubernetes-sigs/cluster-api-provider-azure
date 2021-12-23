@@ -37,6 +37,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	}
 
 	dst.Spec.AddonProfiles = restored.Spec.AddonProfiles
+	dst.Spec.DisableLocalAccounts = restored.Spec.DisableLocalAccounts
 	dst.Status.Conditions = restored.Status.Conditions
 
 	return nil

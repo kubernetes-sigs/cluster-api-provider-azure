@@ -236,6 +236,9 @@ type ManagedClusterSpec struct {
 
 	// APIServerAccessProfile is the access profile for AKS API server.
 	APIServerAccessProfile *APIServerAccessProfile
+
+	// DisableLocalAccounts - If set to true, getting static credential will be disabled for this cluster. Expected to only be used for AAD clusters.
+	DisableLocalAccounts *bool
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.

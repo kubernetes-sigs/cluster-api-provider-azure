@@ -590,6 +590,11 @@ spec:
                 - host
                 - port
                 type: object
+              disableLocalAccounts:
+                description: DisableLocalAccounts - If set to true, getting static
+                  credential will be disabled for this cluster. Expected to only be
+                  used for AAD clusters.
+                type: boolean
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
                   DNS service. It must be within the Kubernetes service address range

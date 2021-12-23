@@ -421,6 +421,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 			s.ControlPlane.Spec.VirtualNetwork.Name,
 			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
+		DisableLocalAccounts: s.ControlPlane.Spec.DisableLocalAccounts,
 	}
 
 	if s.ControlPlane.Spec.NetworkPlugin != nil {
