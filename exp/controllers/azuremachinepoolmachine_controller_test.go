@@ -125,7 +125,9 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterSpec{
-			SubscriptionID: "subID",
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				SubscriptionID: "subID",
+			},
 		},
 	}
 

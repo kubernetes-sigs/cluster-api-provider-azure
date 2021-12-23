@@ -41,14 +41,18 @@ func TestAPIServerHost(t *testing.T) {
 			name: "public apiserver lb (user-defined dns)",
 			azureCluster: infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: fakeSubscriptionID,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: fakeSubscriptionID,
+					},
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: infrav1.LoadBalancerSpec{
-							Type: infrav1.Public,
-							FrontendIPs: []infrav1.FrontendIP{
-								{
-									PublicIP: &infrav1.PublicIPSpec{
-										DNSName: "my-cluster-apiserver.example.com",
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
+								FrontendIPs: []infrav1.FrontendIP{
+									{
+										PublicIP: &infrav1.PublicIPSpec{
+											DNSName: "my-cluster-apiserver.example.com",
+										},
 									},
 								},
 							},
@@ -62,14 +66,18 @@ func TestAPIServerHost(t *testing.T) {
 			name: "private apiserver lb (default private dns zone)",
 			azureCluster: infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: fakeSubscriptionID,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: fakeSubscriptionID,
+					},
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: infrav1.LoadBalancerSpec{
-							Type: infrav1.Public,
-							FrontendIPs: []infrav1.FrontendIP{
-								{
-									PublicIP: &infrav1.PublicIPSpec{
-										DNSName: "my-cluster-apiserver.capz.io",
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
+								FrontendIPs: []infrav1.FrontendIP{
+									{
+										PublicIP: &infrav1.PublicIPSpec{
+											DNSName: "my-cluster-apiserver.capz.io",
+										},
 									},
 								},
 							},
@@ -83,11 +91,17 @@ func TestAPIServerHost(t *testing.T) {
 			name: "private apiserver (user-defined private dns zone)",
 			azureCluster: infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: fakeSubscriptionID,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: fakeSubscriptionID,
+					},
 					NetworkSpec: infrav1.NetworkSpec{
-						PrivateDNSZoneName: "example.private",
+						NetworkClassSpec: infrav1.NetworkClassSpec{
+							PrivateDNSZoneName: "example.private",
+						},
 						APIServerLB: infrav1.LoadBalancerSpec{
-							Type: infrav1.Internal,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
+							},
 						},
 					},
 				},
@@ -165,12 +179,16 @@ func TestGettingSecurityRules(t *testing.T) {
 			},
 		},
 		Spec: infrav1.AzureClusterSpec{
-			SubscriptionID: "123",
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				SubscriptionID: "123",
+			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
 					{
 						Name: "node",
-						Role: infrav1.SubnetNode,
+						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Role: infrav1.SubnetNode,
+						},
 					},
 				},
 			},
@@ -225,30 +243,42 @@ func TestOutboundLBName(t *testing.T) {
 			name:           "private cluster with node outbound lb",
 			role:           "node",
 			nodeOutboundLB: &infrav1.LoadBalancerSpec{},
-			apiServerLB:    &infrav1.LoadBalancerSpec{Type: "Internal"},
-			expected:       "my-cluster",
+			apiServerLB: &infrav1.LoadBalancerSpec{
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: "Internal",
+				}},
+			expected: "my-cluster",
 		},
 		{
 			clusterName: "my-cluster",
 			name:        "private cluster without node outbound lb",
 			role:        "node",
-			apiServerLB: &infrav1.LoadBalancerSpec{Type: "Internal"},
-			expected:    "",
+			apiServerLB: &infrav1.LoadBalancerSpec{
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: "Internal",
+				}},
+			expected: "",
 		},
 		{
 			clusterName:            "my-cluster",
 			name:                   "private cluster with control plane outbound lb",
 			role:                   "control-plane",
 			controlPlaneOutboundLB: &infrav1.LoadBalancerSpec{Name: "cp-outbound-lb"},
-			apiServerLB:            &infrav1.LoadBalancerSpec{Type: "Internal"},
-			expected:               "cp-outbound-lb",
+			apiServerLB: &infrav1.LoadBalancerSpec{
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: "Internal",
+				}},
+			expected: "cp-outbound-lb",
 		},
 		{
 			clusterName: "my-cluster",
 			name:        "private cluster without control plane outbound lb",
 			role:        "control-plane",
-			apiServerLB: &infrav1.LoadBalancerSpec{Type: "Internal"},
-			expected:    "",
+			apiServerLB: &infrav1.LoadBalancerSpec{
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: "Internal",
+				}},
+			expected: "",
 		},
 	}
 
@@ -279,12 +309,16 @@ func TestOutboundLBName(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: "123",
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+					},
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
 							{
 								Name: "node",
-								Role: infrav1.SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
+								},
 							},
 						},
 					},

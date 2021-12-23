@@ -363,12 +363,14 @@ func newAzureCluster(location string) *infrav1.AzureCluster {
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterSpec{
-			Location: location,
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				Location:       location,
+				SubscriptionID: "baz",
+			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Vnet: infrav1.VnetSpec{},
 			},
-			ResourceGroup:  "bar",
-			SubscriptionID: "baz",
+			ResourceGroup: "bar",
 		},
 	}
 }
@@ -414,7 +416,10 @@ func newAzureClusterWithCustomVnet(location string) *infrav1.AzureCluster {
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterSpec{
-			Location: location,
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				Location:       location,
+				SubscriptionID: "baz",
+			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Vnet: infrav1.VnetSpec{
 					Name:          "custom-vnet",
@@ -423,16 +428,19 @@ func newAzureClusterWithCustomVnet(location string) *infrav1.AzureCluster {
 				Subnets: infrav1.Subnets{
 					infrav1.SubnetSpec{
 						Name: "foo-controlplane-subnet",
-						Role: infrav1.SubnetControlPlane,
+						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Role: infrav1.SubnetControlPlane,
+						},
 					},
 					infrav1.SubnetSpec{
 						Name: "foo-node-subnet",
-						Role: infrav1.SubnetNode,
+						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Role: infrav1.SubnetNode,
+						},
 					},
 				},
 			},
-			ResourceGroup:  "bar",
-			SubscriptionID: "baz",
+			ResourceGroup: "bar",
 		},
 	}
 }

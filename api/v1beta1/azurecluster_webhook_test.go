@@ -91,7 +91,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
-					SubnetSpec{Name: "invalid-subnet-name###", Role: "random-role"})
+					SubnetSpec{Name: "invalid-subnet-name###", SubnetClassSpec: SubnetClassSpec{Role: "random-role"}})
 				return cluster
 			}(),
 			wantErr: true,
@@ -221,7 +221,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
-					SubnetSpec{Name: "invalid-name###", Role: "random-role"})
+					SubnetSpec{Name: "invalid-name###", SubnetClassSpec: SubnetClassSpec{Role: "random-role"}})
 				return cluster
 			}(),
 			wantErr: true,
@@ -244,12 +244,16 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			name: "azurecluster subscription ID is immutable",
 			oldCluster: &AzureCluster{
 				Spec: AzureClusterSpec{
-					SubscriptionID: "212ec1q8",
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						SubscriptionID: "212ec1q8",
+					},
 				},
 			},
 			cluster: &AzureCluster{
 				Spec: AzureClusterSpec{
-					SubscriptionID: "212ec1q9",
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						SubscriptionID: "212ec1q9",
+					},
 				},
 			},
 			wantErr: true,
@@ -258,12 +262,16 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			name: "azurecluster location is immutable",
 			oldCluster: &AzureCluster{
 				Spec: AzureClusterSpec{
-					Location: "North Europe",
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						Location: "North Europe",
+					},
 				},
 			},
 			cluster: &AzureCluster{
 				Spec: AzureClusterSpec{
-					Location: "West Europe",
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						Location: "West Europe",
+					},
 				},
 			},
 			wantErr: true,
@@ -272,12 +280,16 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			name: "azurecluster azureEnvironment is immutable",
 			oldCluster: &AzureCluster{
 				Spec: AzureClusterSpec{
-					AzureEnvironment: "AzureGermanCloud",
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						AzureEnvironment: "AzureGermanCloud",
+					},
 				},
 			},
 			cluster: &AzureCluster{
 				Spec: AzureClusterSpec{
-					AzureEnvironment: "AzureChinaCloud",
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						AzureEnvironment: "AzureChinaCloud",
+					},
 				},
 			},
 			wantErr: true,

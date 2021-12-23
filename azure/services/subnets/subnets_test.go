@@ -163,11 +163,15 @@ func TestReconcileSubnets(t *testing.T) {
 						Role:              infrav1.SubnetNode,
 					},
 				})
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1", Tags: infrav1.Tags{
-					"Name": "vnet-exists",
-					"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "not",
-					"sigs.k8s.io_cluster-api-provider-azure_role":                 "dd",
-				}})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1",
+					VnetClassSpec: infrav1.VnetClassSpec{
+						Tags: infrav1.Tags{
+							"Name": "vnet-exists",
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "not",
+							"sigs.k8s.io_cluster-api-provider-azure_role":                 "dd",
+						},
+					},
+				})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("custom-vnet-rg")
@@ -181,16 +185,20 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
 				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
-					ID:         "subnet-id",
-					Name:       "my-subnet",
-					Role:       infrav1.SubnetNode,
-					CIDRBlocks: []string{"10.0.0.0/16"},
+					ID:   "subnet-id",
+					Name: "my-subnet",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetNode,
+						CIDRBlocks: []string{"10.0.0.0/16"},
+					},
 				})
 				s.Subnet("my-subnet-1").AnyTimes().Return(infrav1.SubnetSpec{
-					ID:         "subnet-id-1",
-					Name:       "my-subnet-1",
-					Role:       infrav1.SubnetControlPlane,
-					CIDRBlocks: []string{"10.2.0.0/16"},
+					ID:   "subnet-id-1",
+					Name: "my-subnet-1",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetControlPlane,
+						CIDRBlocks: []string{"10.2.0.0/16"},
+					},
 				})
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
@@ -231,10 +239,12 @@ func TestReconcileSubnets(t *testing.T) {
 						},
 					}, nil)
 				s.SetSubnet(infrav1.SubnetSpec{
-					ID:         "subnet-id",
-					Name:       "my-subnet",
-					Role:       infrav1.SubnetNode,
-					CIDRBlocks: []string{"10.0.0.0/16"},
+					ID:   "subnet-id",
+					Name: "my-subnet",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetNode,
+						CIDRBlocks: []string{"10.0.0.0/16"},
+					},
 				}).Times(1)
 				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-subnet-1").
 					Return(network.Subnet{
@@ -253,10 +263,12 @@ func TestReconcileSubnets(t *testing.T) {
 						},
 					}, nil)
 				s.SetSubnet(infrav1.SubnetSpec{
-					ID:         "subnet-id-1",
-					Name:       "my-subnet-1",
-					Role:       infrav1.SubnetControlPlane,
-					CIDRBlocks: []string{"10.2.0.0/16"},
+					ID:   "subnet-id-1",
+					Name: "my-subnet-1",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetControlPlane,
+						CIDRBlocks: []string{"10.2.0.0/16"},
+					},
 				}).Times(1)
 			},
 		},
@@ -265,16 +277,20 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
 				s.Subnet("my-ipv6-subnet").AnyTimes().Return(infrav1.SubnetSpec{
-					ID:         "subnet-id",
-					Name:       "my-ipv6-subnet",
-					Role:       infrav1.SubnetNode,
-					CIDRBlocks: []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+					ID:   "subnet-id",
+					Name: "my-ipv6-subnet",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetNode,
+						CIDRBlocks: []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+					},
 				})
 				s.Subnet("my-ipv6-subnet-cp").AnyTimes().Return(infrav1.SubnetSpec{
-					ID:         "subnet-id-1",
-					Name:       "my-ipv6-subnet-cp",
-					Role:       infrav1.SubnetControlPlane,
-					CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+					ID:   "subnet-id-1",
+					Name: "my-ipv6-subnet-cp",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetControlPlane,
+						CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+					},
 				})
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
@@ -319,10 +335,12 @@ func TestReconcileSubnets(t *testing.T) {
 						},
 					}, nil)
 				s.SetSubnet(infrav1.SubnetSpec{
-					ID:         "subnet-id",
-					Name:       "my-ipv6-subnet",
-					Role:       infrav1.SubnetNode,
-					CIDRBlocks: []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+					ID:   "subnet-id",
+					Name: "my-ipv6-subnet",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetNode,
+						CIDRBlocks: []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+					},
 				}).Times(1)
 				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-ipv6-subnet-cp").
 					Return(network.Subnet{
@@ -344,10 +362,12 @@ func TestReconcileSubnets(t *testing.T) {
 						},
 					}, nil)
 				s.SetSubnet(infrav1.SubnetSpec{
-					ID:         "subnet-id-1",
-					Name:       "my-ipv6-subnet-cp",
-					Role:       infrav1.SubnetControlPlane,
-					CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+					ID:   "subnet-id-1",
+					Name: "my-ipv6-subnet-cp",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetControlPlane,
+						CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+					},
 				}).Times(1)
 			},
 		},
@@ -356,10 +376,12 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
 				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
-					ID:         "subnet-id",
-					Name:       "my-subnet",
-					Role:       infrav1.SubnetNode,
-					CIDRBlocks: []string{"10.0.0.0/16"},
+					ID:   "subnet-id",
+					Name: "my-subnet",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetNode,
+						CIDRBlocks: []string{"10.0.0.0/16"},
+					},
 					NatGateway: infrav1.NatGateway{
 						ID:   azure.NatGatewayID("123", "my-rg", "existing-natgateway"),
 						Name: "existing-natgateway",
@@ -402,10 +424,12 @@ func TestReconcileSubnets(t *testing.T) {
 						},
 					}, nil)
 				s.SetSubnet(infrav1.SubnetSpec{
-					ID:         "subnet-id",
-					Name:       "my-subnet",
-					Role:       infrav1.SubnetNode,
-					CIDRBlocks: []string{"10.0.0.0/16"},
+					ID:   "subnet-id",
+					Name: "my-subnet",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetNode,
+						CIDRBlocks: []string{"10.0.0.0/16"},
+					},
 					NatGateway: infrav1.NatGateway{
 						ID:   azure.NatGatewayID("123", "my-rg", "existing-natgateway"),
 						Name: "existing-natgateway",
@@ -421,10 +445,12 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
 				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
-					ID:         "",
-					Name:       "my-subnet",
-					Role:       infrav1.SubnetNode,
-					CIDRBlocks: []string{},
+					ID:   "",
+					Name: "my-subnet",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetNode,
+						CIDRBlocks: []string{},
+					},
 				})
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
@@ -457,10 +483,12 @@ func TestReconcileSubnets(t *testing.T) {
 						},
 					}, nil)
 				s.SetSubnet(infrav1.SubnetSpec{
-					ID:         "subnet-id",
-					Name:       "my-subnet",
-					Role:       infrav1.SubnetNode,
-					CIDRBlocks: []string{"10.0.0.0/16"},
+					ID:   "subnet-id",
+					Name: "my-subnet",
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Role:       infrav1.SubnetNode,
+						CIDRBlocks: []string{"10.0.0.0/16"},
+					},
 				}).Times(1)
 			},
 		},

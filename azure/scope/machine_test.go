@@ -337,14 +337,18 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
-							ResourceGroup:  "my-rg",
-							SubscriptionID: "123",
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								SubscriptionID: "123",
+							},
 							NetworkSpec: infrav1.NetworkSpec{
 								APIServerLB: infrav1.LoadBalancerSpec{
 									Name: "foo-loadbalancer",
-									FrontendIPs: []infrav1.FrontendIP{
-										{
-											Name: "foo-frontend-ip",
+									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+										FrontendIPs: []infrav1.FrontendIP{
+											{
+												Name: "foo-frontend-ip",
+											},
 										},
 									},
 								},
@@ -1370,7 +1374,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
-							Location:      "westus",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1378,7 +1384,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								Subnets: []infrav1.SubnetSpec{
 									{
-										Role: infrav1.SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+										},
 										Name: "subnet1",
 									},
 								},
@@ -1461,7 +1469,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
-							Location:      "westus",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1469,7 +1479,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								Subnets: []infrav1.SubnetSpec{
 									{
-										Role: infrav1.SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+										},
 										Name: "subnet1",
 									},
 								},
@@ -1559,7 +1571,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
-							Location:      "westus",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1567,7 +1581,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								Subnets: []infrav1.SubnetSpec{
 									{
-										Role: infrav1.SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+										},
 										Name: "subnet1",
 										NatGateway: infrav1.NatGateway{
 											Name: "natgw",
@@ -1653,7 +1669,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
-							Location:      "westus",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1661,7 +1679,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								Subnets: []infrav1.SubnetSpec{
 									{
-										Role: infrav1.SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+										},
 										Name: "subnet1",
 									},
 								},
@@ -1745,7 +1765,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
-							Location:      "westus",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1753,13 +1775,17 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								Subnets: []infrav1.SubnetSpec{
 									{
-										Role: infrav1.SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+										},
 										Name: "subnet1",
 									},
 								},
 								APIServerLB: infrav1.LoadBalancerSpec{
 									Name: "api-lb",
-									Type: infrav1.Internal,
+									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+										Type: infrav1.Internal,
+									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
@@ -1840,7 +1866,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
-							Location:      "westus",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
 							NetworkSpec: infrav1.NetworkSpec{
 								Vnet: infrav1.VnetSpec{
 									Name:          "vnet1",
@@ -1848,7 +1876,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								Subnets: []infrav1.SubnetSpec{
 									{
-										Role: infrav1.SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+										},
 										Name: "subnet1",
 									},
 								},
