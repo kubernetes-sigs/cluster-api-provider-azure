@@ -58,7 +58,9 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	// set default control plane outbound lb for private v1alpha3 clusters
 	if src.Spec.NetworkSpec.APIServerLB.Type == Internal && restored.Spec.NetworkSpec.ControlPlaneOutboundLB == nil {
 		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = &infrav1beta1.LoadBalancerSpec{
-			FrontendIPsCount: pointer.Int32Ptr(1),
+			LoadBalancerClassSpec: infrav1beta1.LoadBalancerClassSpec{
+				FrontendIPsCount: pointer.Int32Ptr(1),
+			},
 		}
 	} else {
 		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = restored.Spec.NetworkSpec.ControlPlaneOutboundLB
@@ -67,7 +69,9 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	// set default node plane outbound lb for all v1alpha3 clusters
 	if restored.Spec.NetworkSpec.NodeOutboundLB == nil {
 		dst.Spec.NetworkSpec.NodeOutboundLB = &infrav1beta1.LoadBalancerSpec{
-			FrontendIPsCount: pointer.Int32Ptr(1),
+			LoadBalancerClassSpec: infrav1beta1.LoadBalancerClassSpec{
+				FrontendIPsCount: pointer.Int32Ptr(1),
+			},
 		}
 	} else {
 		dst.Spec.NetworkSpec.NodeOutboundLB = restored.Spec.NetworkSpec.NodeOutboundLB
@@ -115,6 +119,7 @@ func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 		}
 		dst.Annotations[azureEnvironmentAnnotation] = src.Spec.AzureEnvironment
 	}
+
 	// Preserve Hub data on down-conversion.
 	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
@@ -150,6 +155,12 @@ func Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in *AzureClus
 		return err
 	}
 
+	// copy AzureClusterClassSpec fields
+	out.SubscriptionID = in.SubscriptionID
+	out.Location = in.Location
+	out.AdditionalTags = *(*infrav1beta1.Tags)(&in.AdditionalTags)
+	out.IdentityRef = in.IdentityRef
+
 	return nil
 }
 
@@ -158,6 +169,12 @@ func Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *infrav1be
 	if err := autoConvert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in, out, s); err != nil {
 		return err
 	}
+
+	// copy AzureClusterClassSpec fields
+	out.SubscriptionID = in.SubscriptionID
+	out.Location = in.Location
+	out.AdditionalTags = Tags(*&in.AdditionalTags)
+	out.IdentityRef = in.IdentityRef
 
 	return nil
 }
@@ -185,7 +202,7 @@ func Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, out *i
 		}
 	}
 
-	if err := autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
+	if err := Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
 	return nil
@@ -205,7 +222,7 @@ func Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1beta1.Networ
 		}
 	}
 
-	if err := autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
+	if err := Convert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
 	return nil
@@ -213,17 +230,41 @@ func Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1beta1.Networ
 
 // Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec.
 func Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in *infrav1beta1.VnetSpec, out *VnetSpec, s apiconversion.Scope) error { //nolint
-	return autoConvert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in, out, s)
+	if err := autoConvert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// copy VnetClassSpec fields
+	out.CIDRBlocks = *(&in.CIDRBlocks)
+	out.Tags = Tags(*&in.Tags)
+
+	return nil
 }
 
 // Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec.
 func Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *infrav1beta1.SubnetSpec, s apiconversion.Scope) error { //nolint
-	return autoConvert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in, out, s)
+	if err := autoConvert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Convert SubnetClassSpec fields
+	out.Role = infrav1beta1.SubnetRole(in.Role)
+	out.CIDRBlocks = *(&in.CIDRBlocks)
+
+	return nil
 }
 
 // Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec.
 func Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in *infrav1beta1.SubnetSpec, out *SubnetSpec, s apiconversion.Scope) error { //nolint
-	return autoConvert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in, out, s)
+	if err := autoConvert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Convert SubnetClassSpec fields
+	out.Role = SubnetRole(in.Role)
+	out.CIDRBlocks = *(&in.CIDRBlocks)
+
+	return nil
 }
 
 func Convert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup(in *infrav1beta1.SecurityGroup, out *SecurityGroup, s apiconversion.Scope) error {
@@ -290,12 +331,62 @@ func Convert_v1beta1_SecurityRule_To_v1alpha3_IngressRule(in *infrav1beta1.Secur
 
 // Convert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec is an autogenerated conversion function.
 func Convert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec(in *VnetSpec, out *infrav1beta1.VnetSpec, s apiconversion.Scope) error {
-	return autoConvert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec(in, out, s)
+	if err := autoConvert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// copy VnetClassSpec fields
+	out.CIDRBlocks = *(&in.CIDRBlocks)
+	out.Tags = *(*infrav1beta1.Tags)(&in.Tags)
+
+	return nil
 }
 
 // Convert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec is an autogenerated conversion function.
 func Convert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *infrav1beta1.LoadBalancerSpec, out *LoadBalancerSpec, s apiconversion.Scope) error {
-	return autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in, out, s)
+	if err := autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Convert LoadBalancerClassSpec fields
+	out.SKU = SKU(in.SKU)
+	if in.FrontendIPs != nil {
+		in, out := &in.FrontendIPs, &out.FrontendIPs
+		*out = make([]FrontendIP, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.FrontendIPs = nil
+	}
+	out.Type = LBType(in.Type)
+
+	return nil
+}
+
+func Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *LoadBalancerSpec, out *infrav1beta1.LoadBalancerSpec, s apiconversion.Scope) error {
+	if err := autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Convert LoadBalancerClassSpec fields
+	out.SKU = infrav1beta1.SKU(in.SKU)
+	if in.FrontendIPs != nil {
+		in, out := &in.FrontendIPs, &out.FrontendIPs
+		*out = make([]infrav1beta1.FrontendIP, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.FrontendIPs = nil
+	}
+	out.Type = infrav1beta1.LBType(in.Type)
+
+	return nil
 }
 
 // Convert_v1alpha3_Future_To_v1beta1_Future is an autogenerated conversion function.
@@ -308,4 +399,28 @@ func Convert_v1alpha3_Future_To_v1beta1_Future(in *Future, out *infrav1beta1.Fut
 func Convert_v1beta1_Future_To_v1alpha3_Future(in *infrav1beta1.Future, out *Future, s apiconversion.Scope) error {
 	out.FutureData = in.Data
 	return autoConvert_v1beta1_Future_To_v1alpha3_Future(in, out, s)
+}
+
+// Convert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP is an autogenerated conversion function.
+func Convert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP(in *FrontendIP, out *infrav1beta1.FrontendIP, s apiconversion.Scope) error {
+	if err := autoConvert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP(in, out, s); err != nil {
+		return err
+	}
+
+	// Convert FrontendIPClass fields
+	out.PrivateIPAddress = in.PrivateIPAddress
+
+	return nil
+}
+
+// Convert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP is an autogenerated conversion function.
+func Convert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP(in *infrav1beta1.FrontendIP, out *FrontendIP, s apiconversion.Scope) error {
+	if err := autoConvert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP(in, out, s); err != nil {
+		return err
+	}
+
+	// Convert FrontendIPClass fields
+	out.PrivateIPAddress = in.PrivateIPAddress
+
+	return nil
 }
