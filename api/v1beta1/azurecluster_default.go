@@ -46,8 +46,8 @@ const (
 )
 
 func (c *AzureCluster) setDefaults() {
+	c.Spec.AzureClusterClassSpec.setDefaults()
 	c.setResourceGroupDefault()
-	c.setAzureEnvironmentDefault()
 	c.setNetworkSpecDefaults()
 }
 
@@ -80,28 +80,26 @@ func (c *AzureCluster) setVnetDefaults() {
 	if c.Spec.NetworkSpec.Vnet.Name == "" {
 		c.Spec.NetworkSpec.Vnet.Name = generateVnetName(c.ObjectMeta.Name)
 	}
-	if len(c.Spec.NetworkSpec.Vnet.CIDRBlocks) == 0 {
-		c.Spec.NetworkSpec.Vnet.CIDRBlocks = []string{DefaultVnetCIDR}
-	}
+	c.Spec.NetworkSpec.Vnet.VnetClassSpec.setDefaults()
 }
 
 func (c *AzureCluster) setSubnetDefaults() {
 	cpSubnet, err := c.Spec.NetworkSpec.GetControlPlaneSubnet()
 	if err != nil {
-		cpSubnet = SubnetSpec{Role: SubnetControlPlane}
+		cpSubnet = SubnetSpec{SubnetClassSpec: SubnetClassSpec{Role: SubnetControlPlane}}
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
 	}
 
 	if cpSubnet.Name == "" {
 		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
 	}
-	if len(cpSubnet.CIDRBlocks) == 0 {
-		cpSubnet.CIDRBlocks = []string{DefaultControlPlaneSubnetCIDR}
-	}
+
+	cpSubnet.SubnetClassSpec.setDefaults(DefaultControlPlaneSubnetCIDR)
+
 	if cpSubnet.SecurityGroup.Name == "" {
 		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
 	}
-	setSecurityRuleDefaults(&cpSubnet.SecurityGroup)
+	cpSubnet.SecurityGroup.SecurityGroupClass.setDefaults(SecurityRuleDirectionInbound)
 
 	c.Spec.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
 
@@ -114,13 +112,13 @@ func (c *AzureCluster) setSubnetDefaults() {
 			if subnet.Name == "" {
 				subnet.Name = withIndex(generateNodeSubnetName(c.ObjectMeta.Name), nodeSubnetCounter)
 			}
-			if len(subnet.CIDRBlocks) == 0 {
-				subnet.CIDRBlocks = []string{fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter)}
-			}
+			subnet.SubnetClassSpec.setDefaults(fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter))
+
 			if subnet.SecurityGroup.Name == "" {
 				subnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
 			}
-			setSecurityRuleDefaults(&subnet.SecurityGroup)
+			cpSubnet.SecurityGroup.SecurityGroupClass.setDefaults(SecurityRuleDirectionInbound)
+
 			if subnet.RouteTable.Name == "" {
 				subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 			}
@@ -136,9 +134,11 @@ func (c *AzureCluster) setSubnetDefaults() {
 
 	if !nodeSubnetFound {
 		nodeSubnet := SubnetSpec{
-			Role:       SubnetNode,
-			Name:       generateNodeSubnetName(c.ObjectMeta.Name),
-			CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+			SubnetClassSpec: SubnetClassSpec{
+				Role:       SubnetNode,
+				CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+			},
+			Name: generateNodeSubnetName(c.ObjectMeta.Name),
 			SecurityGroup: SecurityGroup{
 				Name: generateNodeSecurityGroupName(c.ObjectMeta.Name),
 			},
@@ -154,14 +154,6 @@ func (c *AzureCluster) setVnetPeeringDefaults() {
 	for i, peering := range c.Spec.NetworkSpec.Vnet.Peerings {
 		if peering.ResourceGroup == "" {
 			c.Spec.NetworkSpec.Vnet.Peerings[i].ResourceGroup = c.Spec.ResourceGroup
-		}
-	}
-}
-
-func setSecurityRuleDefaults(sg *SecurityGroup) {
-	for i := range sg.SecurityRules {
-		if sg.SecurityRules[i].Direction == "" {
-			sg.SecurityRules[i].Direction = SecurityRuleDirectionInbound
 		}
 	}
 }
@@ -199,8 +191,10 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 		if len(lb.FrontendIPs) == 0 {
 			lb.FrontendIPs = []FrontendIP{
 				{
-					Name:             generateFrontendIPConfigName(lb.Name),
-					PrivateIPAddress: DefaultInternalLBIPAddress,
+					Name: generateFrontendIPConfigName(lb.Name),
+					FrontendIPClass: FrontendIPClass{
+						PrivateIPAddress: DefaultInternalLBIPAddress,
+					},
 				},
 			}
 		}

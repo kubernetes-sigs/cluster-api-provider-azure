@@ -86,9 +86,7 @@ type NetworkSpec struct {
 	// +optional
 	ControlPlaneOutboundLB *LoadBalancerSpec `json:"controlPlaneOutboundLB,omitempty"`
 
-	// PrivateDNSZoneName defines the zone name for the Azure Private DNS.
-	// +optional
-	PrivateDNSZoneName string `json:"privateDNSZoneName,omitempty"`
+	NetworkClassSpec `json:",inline"`
 }
 
 // VnetSpec configures an Azure virtual network.
@@ -106,17 +104,11 @@ type VnetSpec struct {
 	// Name defines a name for the virtual network resource.
 	Name string `json:"name"`
 
-	// CIDRBlocks defines the virtual network's address space, specified as one or more address prefixes in CIDR notation.
-	// +optional
-	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
-
 	// Peerings defines a list of peerings of the newly created virtual network with existing virtual networks.
 	// +optional
 	Peerings VnetPeerings `json:"peerings,omitempty"`
 
-	// Tags is a collection of tags describing the resource.
-	// +optional
-	Tags Tags `json:"tags,omitempty"`
+	VnetClassSpec `json:",inline"`
 }
 
 // VnetPeeringSpec specifies an existing remote virtual network to peer with the AzureCluster's virtual network.
@@ -147,10 +139,8 @@ type SecurityGroup struct {
 	// +optional
 	ID   string `json:"id,omitempty"`
 	Name string `json:"name"`
-	// +optional
-	SecurityRules SecurityRules `json:"securityRules,omitempty"`
-	// +optional
-	Tags Tags `json:"tags,omitempty"`
+
+	SecurityGroupClass `json:",inline"`
 }
 
 // RouteTable defines an Azure route table.
@@ -239,18 +229,8 @@ type LoadBalancerSpec struct {
 	ID string `json:"id,omitempty"`
 	// +optional
 	Name string `json:"name,omitempty"`
-	// +optional
-	SKU SKU `json:"sku,omitempty"`
-	// +optional
-	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
-	// +optional
-	Type LBType `json:"type,omitempty"`
-	// FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
-	// +optional
-	FrontendIPsCount *int32 `json:"frontendIPsCount,omitempty"`
-	// IdleTimeoutInMinutes specifies the timeout for the TCP idle connection.
-	// +optional
-	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
+
+	LoadBalancerClassSpec `json:",inline"`
 }
 
 // SKU defines an Azure load balancer SKU.
@@ -276,9 +256,9 @@ type FrontendIP struct {
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 	// +optional
-	PrivateIPAddress string `json:"privateIP,omitempty"`
-	// +optional
 	PublicIP *PublicIPSpec `json:"publicIP,omitempty"`
+
+	FrontendIPClass `json:",inline"`
 }
 
 // PublicIPSpec defines the inputs to create an Azure public IP address.
@@ -523,10 +503,6 @@ const (
 
 // SubnetSpec configures an Azure subnet.
 type SubnetSpec struct {
-	// Role defines the subnet role (eg. Node, ControlPlane)
-	// +kubebuilder:validation:Enum=node;control-plane;bastion
-	Role SubnetRole `json:"role"`
-
 	// ID is the Azure resource ID of the subnet.
 	// READ-ONLY
 	// +optional
@@ -534,10 +510,6 @@ type SubnetSpec struct {
 
 	// Name defines a name for the subnet resource.
 	Name string `json:"name"`
-
-	// CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.
-	// +optional
-	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
 	// +optional
@@ -550,6 +522,8 @@ type SubnetSpec struct {
 	// NatGateway associated with this subnet.
 	// +optional
 	NatGateway NatGateway `json:"natGateway,omitempty"`
+
+	SubnetClassSpec `json:",inline"`
 }
 
 // GetControlPlaneSubnet returns the cluster control plane subnet.
