@@ -500,6 +500,7 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 			Replicas:          1,
 			OSDiskSizeGB:      0,
 			Mode:              pool.Spec.Mode,
+			MaxPods:           pool.Spec.MaxPods,
 			AvailabilityZones: pool.Spec.AvailabilityZones,
 		}
 
@@ -557,6 +558,7 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
 		Mode:              s.InfraMachinePool.Spec.Mode,
+		MaxPods:           s.InfraMachinePool.Spec.MaxPods,
 		AvailabilityZones: s.InfraMachinePool.Spec.AvailabilityZones,
 	}
 
@@ -568,10 +570,6 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 		agentPoolSpec.EnableAutoScaling = to.BoolPtr(true)
 		agentPoolSpec.MaxCount = s.InfraMachinePool.Spec.Scaling.MaxSize
 		agentPoolSpec.MinCount = s.InfraMachinePool.Spec.Scaling.MinSize
-	}
-
-	if s.InfraMachinePool.Spec.MaxPods != nil {
-		agentPoolSpec.MaxPods = s.InfraMachinePool.Spec.MaxPods
 	}
 
 	return agentPoolSpec
