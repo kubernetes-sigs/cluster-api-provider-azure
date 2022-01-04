@@ -252,6 +252,10 @@ func windowsK8sLogs(execToPathFn func(outputFileName string, command string, arg
 			"kubelet.log",
 			`Get-ChildItem "C:\\var\\log\\kubelet\\"  | ForEach-Object { if ($_ -match 'log.INFO') { write-output "$_";cat "c:\\var\\log\\kubelet\\$_" } }`,
 		),
+		execToPathFn(
+			"cni.log",
+			`Get-Content "C:\\cni.log"`,
+		),
 	}
 }
 
