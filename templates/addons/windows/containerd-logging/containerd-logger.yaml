@@ -69,6 +69,36 @@ data:
           ]
         }
       ],
+      "filters": [
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == Stats && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::LayerID && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::NameToGuid && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.Stats && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.State && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetProcessProperties && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetComputeSystemProperties && hasnoproperty error"
+        }
+      ],
       "outputs": [
         {
           "type": "StdOutput"

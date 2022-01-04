@@ -291,6 +291,7 @@ spec:
             cloud-config: c:/k/azure.json
             cloud-provider: azure
             feature-gates: WindowsHostProcessContainers=true
+            v: "2"
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - nssm set kubelet start SERVICE_AUTO_START

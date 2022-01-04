@@ -64,6 +64,7 @@ spec:
             cloud-config: 'c:/k/azure.json'
             azure-container-registry-config: 'c:/k/azure.json'
             feature-gates: "WindowsHostProcessContainers=true"
+            v: "2"
       files:
       - contentFrom:
           secret:
