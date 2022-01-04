@@ -268,9 +268,19 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		return reconcile.Result{}, nil
 	}
 
+	var reconcileError azure.ReconcileError
+
 	// Initialize the cache to be used by the AzureMachine services.
 	err := machineScope.InitMachineCache(ctx)
 	if err != nil {
+		if errors.As(err, &reconcileError) && reconcileError.IsTerminal() {
+			amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "SKUNotFound", errors.Wrap(err, "failed to initialize machine cache").Error())
+			log.Error(err, "Failed to initialize machine cache")
+			machineScope.SetFailureReason(capierrors.InvalidConfigurationMachineError)
+			machineScope.SetFailureMessage(err)
+			machineScope.SetNotReady()
+			return reconcile.Result{}, nil
+		}
 		return reconcile.Result{}, errors.Wrap(err, "failed to init machine scope cache")
 	}
 
@@ -292,7 +302,6 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		}
 
 		// Handle transient and terminal errors
-		var reconcileError azure.ReconcileError
 		if errors.As(err, &reconcileError) {
 			if reconcileError.IsTerminal() {
 				amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())

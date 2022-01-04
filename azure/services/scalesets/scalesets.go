@@ -287,7 +287,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 
 	sku, err := s.resourceSKUCache.Get(ctx, spec.Size, resourceskus.VirtualMachines)
 	if err != nil {
-		return azure.WithTerminalError(errors.Wrapf(err, "failed to get SKU %s in compute api", spec.Size))
+		return errors.Wrapf(err, "failed to get SKU %s in compute api", spec.Size)
 	}
 
 	// Checking if the requested VM size has at least 2 vCPUS

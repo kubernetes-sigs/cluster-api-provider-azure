@@ -58,7 +58,7 @@ func TestCacheGet(t *testing.T) {
 					Name: to.StringPtr("other"),
 				},
 			},
-			err: "resource sku with name 'foo' and category 'bar' not found in location 'test'",
+			err: "reconcile error that cannot be recovered occurred: resource sku with name 'foo' and category 'bar' not found in location 'test'. Object will not be requeued",
 		},
 	}
 

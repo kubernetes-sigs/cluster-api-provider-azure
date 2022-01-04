@@ -104,7 +104,7 @@ type MachineCache struct {
 
 // InitMachineCache sets cached information about the machine to be used in the scope.
 func (m *MachineScope) InitMachineCache(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.machineScope.initMachineCache")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.MachineScope.InitMachineCache")
 	defer done()
 
 	if m.cache == nil {
@@ -128,13 +128,12 @@ func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 
 		m.cache.VMSKU, err = skuCache.Get(ctx, m.AzureMachine.Spec.VMSize, resourceskus.VirtualMachines)
 		if err != nil {
-			return azure.WithTerminalError(errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachine.Spec.VMSize))
+			return errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachine.Spec.VMSize)
 		}
 
 		m.cache.availabilitySetSKU, err = skuCache.Get(ctx, string(compute.AvailabilitySetSkuTypesAligned), resourceskus.AvailabilitySets)
 		if err != nil {
-			// TODO: verify error message
-			return azure.WithTerminalError(errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(compute.AvailabilitySetSkuTypesAligned)))
+			return errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(compute.AvailabilitySetSkuTypesAligned))
 		}
 	}
 
