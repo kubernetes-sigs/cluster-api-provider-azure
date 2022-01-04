@@ -308,26 +308,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*ManagedControlPlaneSubnet)(nil), (*v1beta1.ManagedControlPlaneSubnet)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet(a.(*ManagedControlPlaneSubnet), b.(*v1beta1.ManagedControlPlaneSubnet), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ManagedControlPlaneSubnet)(nil), (*ManagedControlPlaneSubnet)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(a.(*v1beta1.ManagedControlPlaneSubnet), b.(*ManagedControlPlaneSubnet), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*ManagedControlPlaneVirtualNetwork)(nil), (*v1beta1.ManagedControlPlaneVirtualNetwork)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedControlPlaneVirtualNetwork(a.(*ManagedControlPlaneVirtualNetwork), b.(*v1beta1.ManagedControlPlaneVirtualNetwork), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ManagedControlPlaneVirtualNetwork)(nil), (*ManagedControlPlaneVirtualNetwork)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork(a.(*v1beta1.ManagedControlPlaneVirtualNetwork), b.(*ManagedControlPlaneVirtualNetwork), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*SKU)(nil), (*v1beta1.SKU)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_SKU_To_v1beta1_SKU(a.(*SKU), b.(*v1beta1.SKU), scope)
 	}); err != nil {
@@ -348,6 +328,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*ManagedControlPlaneSubnet)(nil), (*v1beta1.ManagedControlPlaneSubnet)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet(a.(*ManagedControlPlaneSubnet), b.(*v1beta1.ManagedControlPlaneSubnet), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*ManagedControlPlaneVirtualNetwork)(nil), (*v1beta1.ManagedControlPlaneVirtualNetwork)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedControlPlaneVirtualNetwork(a.(*ManagedControlPlaneVirtualNetwork), b.(*v1beta1.ManagedControlPlaneVirtualNetwork), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*clusterapiproviderazureapiv1alpha4.OSDisk)(nil), (*clusterapiproviderazureapiv1beta1.OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_OSDisk_To_v1beta1_OSDisk(a.(*clusterapiproviderazureapiv1alpha4.OSDisk), b.(*clusterapiproviderazureapiv1beta1.OSDisk), scope)
 	}); err != nil {
@@ -365,6 +355,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*clusterapiproviderazureapiv1beta1.Image)(nil), (*clusterapiproviderazureapiv1alpha4.Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_Image_To_v1alpha4_Image(a.(*clusterapiproviderazureapiv1beta1.Image), b.(*clusterapiproviderazureapiv1alpha4.Image), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta1.ManagedControlPlaneSubnet)(nil), (*ManagedControlPlaneSubnet)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(a.(*v1beta1.ManagedControlPlaneSubnet), b.(*ManagedControlPlaneSubnet), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta1.ManagedControlPlaneVirtualNetwork)(nil), (*ManagedControlPlaneVirtualNetwork)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork(a.(*v1beta1.ManagedControlPlaneVirtualNetwork), b.(*ManagedControlPlaneVirtualNetwork), scope)
 	}); err != nil {
 		return err
 	}
@@ -1280,52 +1280,28 @@ func Convert_v1beta1_MachineRollingUpdateDeployment_To_v1alpha4_MachineRollingUp
 
 func autoConvert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet(in *ManagedControlPlaneSubnet, out *v1beta1.ManagedControlPlaneSubnet, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
+	// WARNING: in.CIDRBlock requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet is an autogenerated conversion function.
-func Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet(in *ManagedControlPlaneSubnet, out *v1beta1.ManagedControlPlaneSubnet, s conversion.Scope) error {
-	return autoConvert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet(in, out, s)
 }
 
 func autoConvert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(in *v1beta1.ManagedControlPlaneSubnet, out *ManagedControlPlaneSubnet, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
+	// WARNING: in.CIDRBlocks requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet is an autogenerated conversion function.
-func Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(in *v1beta1.ManagedControlPlaneSubnet, out *ManagedControlPlaneSubnet, s conversion.Scope) error {
-	return autoConvert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(in, out, s)
 }
 
 func autoConvert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedControlPlaneVirtualNetwork(in *ManagedControlPlaneVirtualNetwork, out *v1beta1.ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
-	if err := Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1beta1_ManagedControlPlaneSubnet(&in.Subnet, &out.Subnet, s); err != nil {
-		return err
-	}
+	// WARNING: in.CIDRBlock requires manual conversion: does not exist in peer-type
+	// WARNING: in.Subnet requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedControlPlaneVirtualNetwork is an autogenerated conversion function.
-func Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedControlPlaneVirtualNetwork(in *ManagedControlPlaneVirtualNetwork, out *v1beta1.ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
-	return autoConvert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedControlPlaneVirtualNetwork(in, out, s)
 }
 
 func autoConvert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork(in *v1beta1.ManagedControlPlaneVirtualNetwork, out *ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
-	if err := Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(&in.Subnet, &out.Subnet, s); err != nil {
-		return err
-	}
+	// WARNING: in.CIDRBlocks requires manual conversion: does not exist in peer-type
+	// WARNING: in.Subnets requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork is an autogenerated conversion function.
-func Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork(in *v1beta1.ManagedControlPlaneVirtualNetwork, out *ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
-	return autoConvert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork(in, out, s)
 }
 
 func autoConvert_v1alpha4_SKU_To_v1beta1_SKU(in *SKU, out *v1beta1.SKU, s conversion.Scope) error {

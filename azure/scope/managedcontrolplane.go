@@ -198,7 +198,7 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 	return &infrav1.VnetSpec{
 		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
 		Name:          s.ControlPlane.Spec.VirtualNetwork.Name,
-		CIDRBlocks:    []string{s.ControlPlane.Spec.VirtualNetwork.CIDRBlock},
+		CIDRBlocks:    s.ControlPlane.Spec.VirtualNetwork.CIDRBlocks,
 	}
 }
 
@@ -238,26 +238,21 @@ func (s *ManagedControlPlaneScope) NodeNatGateway() infrav1.NatGateway {
 
 // SubnetSpecs returns the subnets specs.
 func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
-	return []azure.SubnetSpec{
-		{
-			Name:     s.NodeSubnet().Name,
-			CIDRs:    s.NodeSubnet().CIDRBlocks,
+	nodeSubnets := s.NodeSubnets()
+	subnetSpecs := make([]azure.SubnetSpec, len(nodeSubnets))
+	for i := range nodeSubnets {
+		subnetSpecs[i] = azure.SubnetSpec{
+			Name:     nodeSubnets[i].Name,
+			CIDRs:    nodeSubnets[i].CIDRBlocks,
 			VNetName: s.Vnet().Name,
-		},
+		}
 	}
+	return subnetSpecs
 }
 
 // Subnets returns the subnets specs.
 func (s *ManagedControlPlaneScope) Subnets() infrav1.Subnets {
 	return infrav1.Subnets{}
-}
-
-// NodeSubnet returns the cluster node subnet.
-func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
-	return infrav1.SubnetSpec{
-		Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
-		CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
-	}
 }
 
 // SetSubnet sets the passed subnet spec into the scope.
@@ -273,20 +268,24 @@ func (s *ManagedControlPlaneScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 
 // NodeSubnets returns the subnets with the node role.
 func (s *ManagedControlPlaneScope) NodeSubnets() []infrav1.SubnetSpec {
-	return []infrav1.SubnetSpec{
-		{
-			Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
-			CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
-		},
+	subnetSpecs := make([]infrav1.SubnetSpec, len(s.ControlPlane.Spec.VirtualNetwork.Subnets))
+	for i := range s.ControlPlane.Spec.VirtualNetwork.Subnets {
+		subnetSpecs[i] = infrav1.SubnetSpec{
+			Name:       s.ControlPlane.Spec.VirtualNetwork.Subnets[i].Name,
+			CIDRBlocks: s.ControlPlane.Spec.VirtualNetwork.Subnets[i].CIDRBlocks,
+		}
 	}
+	return subnetSpecs
 }
 
 // Subnet returns the subnet with the provided name.
 func (s *ManagedControlPlaneScope) Subnet(name string) infrav1.SubnetSpec {
 	subnet := infrav1.SubnetSpec{}
-	if name == s.ControlPlane.Spec.VirtualNetwork.Subnet.Name {
-		subnet.Name = s.ControlPlane.Spec.VirtualNetwork.Subnet.Name
-		subnet.CIDRBlocks = []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock}
+	for _, subnetSpec := range s.ControlPlane.Spec.VirtualNetwork.Subnets {
+		if name == subnetSpec.Name {
+			subnet.Name = subnetSpec.Name
+			subnet.CIDRBlocks = subnetSpec.CIDRBlocks
+		}
 	}
 
 	return subnet
@@ -366,7 +365,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 			s.ControlPlane.Spec.SubscriptionID,
 			s.ControlPlane.Spec.ResourceGroupName,
 			s.ControlPlane.Spec.VirtualNetwork.Name,
-			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			s.ControlPlane.Spec.VirtualNetwork.Subnets[0].Name,
 		),
 	}
 
@@ -554,7 +553,7 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 			s.ControlPlane.Spec.SubscriptionID,
 			s.ControlPlane.Spec.ResourceGroupName,
 			s.ControlPlane.Spec.VirtualNetwork.Name,
-			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			s.ControlPlane.Spec.VirtualNetwork.Subnets[0].Name,
 		),
 		Mode:              s.InfraMachinePool.Spec.Mode,
 		AvailabilityZones: s.InfraMachinePool.Spec.AvailabilityZones,

@@ -61,6 +61,9 @@ func TestManagedControlPlaneScope_Autoscaling(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+							Subnets: []infrav1.ManagedControlPlaneSubnet{{}},
+						},
 					},
 				},
 				MachinePool:      getMachinePool("pool0"),
@@ -96,6 +99,9 @@ func TestManagedControlPlaneScope_Autoscaling(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+							Subnets: []infrav1.ManagedControlPlaneSubnet{{}},
+						},
 					},
 				},
 				MachinePool:      getMachinePool("pool1"),
@@ -288,6 +294,13 @@ func TestManagedControlPlaneScope_MaxPods(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+							Subnets: []infrav1.ManagedControlPlaneSubnet{
+								{
+									Name: "my-subnet",
+								},
+							},
+						},
 					},
 				},
 				MachinePool:      getMachinePool("pool0"),
@@ -300,7 +313,7 @@ func TestManagedControlPlaneScope_MaxPods(t *testing.T) {
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
-				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/my-subnet",
 			},
 		},
 		{
@@ -322,6 +335,13 @@ func TestManagedControlPlaneScope_MaxPods(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+							Subnets: []infrav1.ManagedControlPlaneSubnet{
+								{
+									Name: "my-subnet",
+								},
+							},
+						},
 					},
 				},
 				MachinePool:      getMachinePool("pool1"),
@@ -335,7 +355,7 @@ func TestManagedControlPlaneScope_MaxPods(t *testing.T) {
 				Cluster:      "cluster1",
 				Replicas:     1,
 				MaxPods:      to.Int32Ptr(12),
-				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/my-subnet",
 			},
 		},
 	}
