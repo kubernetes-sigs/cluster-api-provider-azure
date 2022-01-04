@@ -48,7 +48,7 @@ func New(scope FutureScope, createClient Creator, deleteClient Deleter) *Service
 
 // processOngoingOperation is a helper function that will process an ongoing operation to check if it is done.
 // If it is not done, it will return a transient error.
-func processOngoingOperation(ctx context.Context, scope FutureScope, client FutureHandler, resourceName string, serviceName string) (interface{}, error) {
+func processOngoingOperation(ctx context.Context, scope FutureScope, client FutureHandler, resourceName string, serviceName string) (result interface{}, err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.processOngoingOperation")
 	defer done()
 
@@ -79,7 +79,7 @@ func processOngoingOperation(ctx context.Context, scope FutureScope, client Futu
 
 	// Resource has been created/deleted/updated.
 	log.V(2).Info("long running operation has completed", "service", serviceName, "resource", resourceName)
-	result, err := client.Result(ctx, sdkFuture, future.Type)
+	result, err = client.Result(ctx, sdkFuture, future.Type)
 	if err == nil {
 		scope.DeleteLongRunningOperationState(resourceName, serviceName)
 	}
@@ -87,7 +87,7 @@ func processOngoingOperation(ctx context.Context, scope FutureScope, client Futu
 }
 
 // CreateResource implements the logic for creating a resource Asynchronously.
-func (s *Service) CreateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (interface{}, error) {
+func (s *Service) CreateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (result interface{}, err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.CreateResource")
 	defer done()
 
@@ -138,7 +138,7 @@ func (s *Service) CreateResource(ctx context.Context, spec azure.ResourceSpecGet
 }
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.
-func (s *Service) DeleteResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) error {
+func (s *Service) DeleteResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.DeleteResource")
 	defer done()
 

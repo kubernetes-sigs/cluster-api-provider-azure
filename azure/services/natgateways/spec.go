@@ -50,7 +50,7 @@ func (s *NatGatewaySpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the NAT gateway.
-func (s *NatGatewaySpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *NatGatewaySpec) Parameters(existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		existingNatGateway, ok := existing.(network.NatGateway)
 		if !ok {

@@ -53,7 +53,7 @@ func (s *AvailabilitySetSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the availability set.
-func (s *AvailabilitySetSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *AvailabilitySetSpec) Parameters(existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(compute.AvailabilitySet); !ok {
 			return nil, errors.Errorf("%T is not a compute.AvailabilitySet", existing)

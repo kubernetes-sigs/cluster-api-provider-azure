@@ -48,7 +48,7 @@ func (s *GroupSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the group.
-func (s *GroupSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *GroupSpec) Parameters(existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		// rg already exists, nothing to update.
 		// Note that rg tags are updated separately using tags service.

@@ -38,6 +38,6 @@ func (s *DiskSpec) OwnerResourceName() string {
 }
 
 // Parameters is a no-op for disks.
-func (s *DiskSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *DiskSpec) Parameters(existing interface{}) (params interface{}, err error) {
 	return nil, nil
 }
