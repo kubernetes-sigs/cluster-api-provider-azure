@@ -65,6 +65,7 @@ spec:
             azure-container-registry-config: 'c:/k/azure.json'
             feature-gates: "WindowsHostProcessContainers=true"
             v: "2"
+            windows-priorityclass: "ABOVE_NORMAL_PRIORITY_CLASS"
       files:
       - contentFrom:
           secret:
