@@ -1,6 +1,6 @@
 module sigs.k8s.io/cluster-api-provider-azure
 
-go 1.16
+go 1.17
 
 require (
 	github.com/Azure/aad-pod-identity v1.8.5
