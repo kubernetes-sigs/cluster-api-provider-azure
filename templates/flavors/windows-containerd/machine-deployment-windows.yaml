@@ -78,3 +78,4 @@ spec:
         permissions: "0744"
         content: |-
           Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe

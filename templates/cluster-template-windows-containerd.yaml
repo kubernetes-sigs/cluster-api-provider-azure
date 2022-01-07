@@ -286,7 +286,9 @@ spec:
         owner: root:root
         path: c:/k/azure.json
         permissions: "0644"
-      - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+      - content: |-
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
         path: C:/defender-exclude-calico.ps1
         permissions: "0744"
       joinConfiguration:
