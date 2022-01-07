@@ -331,7 +331,7 @@ func TestManagedControlPlaneScope_MaxPods(t *testing.T) {
 			Expected: azure.AgentPoolSpec{
 				Name:         "pool1",
 				SKU:          "Standard_D2s_v3",
-				Mode:         "User",
+				Mode:         "System",
 				Cluster:      "cluster1",
 				Replicas:     1,
 				MaxPods:      to.Int32Ptr(12),
@@ -350,6 +350,9 @@ func TestManagedControlPlaneScope_MaxPods(t *testing.T) {
 			g.Expect(err).To(Succeed())
 			agentPool := s.AgentPoolSpec()
 			g.Expect(agentPool).To(Equal(c.Expected))
+			agentPools, err := s.GetAgentPoolSpecs(context.TODO())
+			g.Expect(err).To(Succeed())
+			g.Expect(agentPools[0].MaxPods).To(Equal(c.Expected.MaxPods))
 		})
 	}
 }
@@ -388,7 +391,7 @@ func getAzureMachinePoolWithScaling(name string, min, max int32) *infrav1.AzureM
 }
 
 func getAzureMachinePoolWithMaxPods(name string, maxPods int32) *infrav1.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeSystem)
 	managedPool.Spec.MaxPods = to.Int32Ptr(maxPods)
 	return managedPool
 }
