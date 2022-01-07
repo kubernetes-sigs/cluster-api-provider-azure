@@ -27,23 +27,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// spanLogger is a logr.Logger implementation that writes log
+// spanLogSink is a logr.LogSink implementation that writes log
 // data to a span.
-type spanLogger struct {
+type spanLogSink struct {
 	trace.Span
 	name string
 	vals []interface{}
 }
 
-func (s *spanLogger) End(opts ...trace.SpanEndOption) {
+func (*spanLogSink) Init(info logr.RuntimeInfo) {
+}
+
+func (s *spanLogSink) End(opts ...trace.SpanEndOption) {
 	s.Span.End(opts...)
 }
 
-func (s *spanLogger) Enabled() bool {
+func (*spanLogSink) Enabled(v int) bool {
 	return true
 }
 
-func (s *spanLogger) kvsToAttrs(keysAndValues ...interface{}) []attribute.KeyValue {
+func (s *spanLogSink) kvsToAttrs(keysAndValues ...interface{}) []attribute.KeyValue {
 	var ret []attribute.KeyValue
 	for i := 0; i < len(keysAndValues); i += 2 {
 		kv1 := fmt.Sprintf("%s", keysAndValues[i])
@@ -58,7 +61,7 @@ func (s *spanLogger) kvsToAttrs(keysAndValues ...interface{}) []attribute.KeyVal
 	return ret
 }
 
-func (s *spanLogger) evtStr(evtType, msg string) string {
+func (s *spanLogSink) evtStr(evtType, msg string) string {
 	return fmt.Sprintf(
 		"[%s | %s] %s",
 		evtType,
@@ -67,7 +70,7 @@ func (s *spanLogger) evtStr(evtType, msg string) string {
 	)
 }
 
-func (s *spanLogger) Info(msg string, keysAndValues ...interface{}) {
+func (s *spanLogSink) Info(level int, msg string, keysAndValues ...interface{}) {
 	attrs := s.kvsToAttrs(keysAndValues...)
 	s.AddEvent(
 		s.evtStr("INFO", msg),
@@ -76,7 +79,7 @@ func (s *spanLogger) Info(msg string, keysAndValues ...interface{}) {
 	)
 }
 
-func (s *spanLogger) Error(err error, msg string, keysAndValues ...interface{}) {
+func (s *spanLogSink) Error(err error, msg string, keysAndValues ...interface{}) {
 	attrs := s.kvsToAttrs(keysAndValues...)
 	s.AddEvent(
 		s.evtStr("ERROR", fmt.Sprintf("%s (%s)", msg, err)),
@@ -85,18 +88,21 @@ func (s *spanLogger) Error(err error, msg string, keysAndValues ...interface{}) 
 	)
 }
 
-func (s *spanLogger) V(level int) logr.Logger {
-	return s
-}
-
-func (s *spanLogger) WithValues(keysAndValues ...interface{}) logr.Logger {
+func (s *spanLogSink) WithValues(keysAndValues ...interface{}) logr.LogSink {
 	s.vals = append(s.vals, keysAndValues...)
 	return s
 }
 
-func (s *spanLogger) WithName(name string) logr.Logger {
+func (s *spanLogSink) WithName(name string) logr.LogSink {
 	s.name = name
 	return s
+}
+
+// NewSpanLogSink is the main entry-point to this implementation.
+func NewSpanLogSink(span trace.Span) logr.LogSink {
+	return &spanLogSink{
+		Span: span,
+	}
 }
 
 // Config holds optional, arbitrary configuration information
@@ -165,10 +171,8 @@ func StartSpanWithLogger(
 	}
 
 	lggr := log.FromContext(ctx, kvs...).WithName(spanName)
-	return ctx, &compositeLogger{
-		loggers: []logr.Logger{
-			corrIDLogger(ctx, lggr),
-			&spanLogger{Span: span},
-		},
-	}, endFn
+	return ctx, NewCompositeLogger([]logr.LogSink{
+		corrIDLogger(ctx, lggr).GetSink(),
+		NewSpanLogSink(span),
+	}), endFn
 }

@@ -42,9 +42,10 @@ func RuntimeRawExtension(t *testing.T, p interface{}) *runtime.RawExtension {
 // test log messages.
 type Log struct{}
 
+func (l *Log) Init(info logr.RuntimeInfo)                                {}
 func (l *Log) Error(err error, msg string, keysAndValues ...interface{}) {}
-func (l *Log) V(level int) logr.Logger                                   { return l }
-func (l *Log) WithValues(keysAndValues ...interface{}) logr.Logger       { return l }
-func (l *Log) WithName(name string) logr.Logger                          { return l }
-func (l *Log) Info(msg string, keysAndValues ...interface{})             {}
-func (l *Log) Enabled() bool                                             { return false }
+func (l *Log) V(level int) logr.LogSink                                  { return l }
+func (l *Log) WithValues(keysAndValues ...interface{}) logr.LogSink      { return l }
+func (l *Log) WithName(name string) logr.LogSink                         { return l }
+func (l *Log) Info(level int, msg string, keysAndValues ...interface{})  {}
+func (l *Log) Enabled(level int) bool                                    { return false }

@@ -71,7 +71,7 @@ func NewLogger(options ...Option) *Logger {
 	return l
 }
 
-var _ logr.Logger = (*Logger)(nil)
+var _ logr.LogSink = (*Logger)(nil)
 
 type (
 	// Logger defines a test friendly logr.Logger.
@@ -85,6 +85,7 @@ type (
 		writer     io.Writer
 		root       *Logger
 		cloneMu    sync.Mutex
+		info       logr.RuntimeInfo
 	}
 
 	Listener struct {
@@ -118,7 +119,7 @@ func (li *Listener) addEntry(entry LogEntry) {
 	li.entries = append(li.entries, entry)
 }
 
-var _ logr.Logger = &Logger{}
+var _ logr.LogSink = &Logger{}
 
 func (l *Logger) addListener(listener *Listener) func() {
 	if l.root != nil {
@@ -142,13 +143,17 @@ func (l *Logger) removeListener(id string) {
 	delete(l.listeners, id)
 }
 
+func (l *Logger) Init(info logr.RuntimeInfo) {
+	l.info = info
+}
+
 // Enabled is always enabled.
-func (l *Logger) Enabled() bool {
+func (l *Logger) Enabled(v int) bool {
 	return true
 }
 
 // Info logs a non-error message with the given key/value pairs as context.
-func (l *Logger) Info(msg string, kvs ...interface{}) {
+func (l *Logger) Info(level int, msg string, kvs ...interface{}) {
 	values := copySlice(l.values)
 	values = append(values, kvs...)
 	values = append(values, "msg", msg)
@@ -164,14 +169,14 @@ func (l *Logger) Error(err error, msg string, kvs ...interface{}) {
 }
 
 // V returns an Logger value for a specific verbosity level.
-func (l *Logger) V(level int) logr.Logger {
+func (l *Logger) V(level int) logr.LogSink {
 	nl := l.clone()
 	nl.level = level
 	return nl
 }
 
 // WithName adds a new element to the logger's name.
-func (l *Logger) WithName(name string) logr.Logger {
+func (l *Logger) WithName(name string) logr.LogSink {
 	nl := l.clone()
 	if len(l.prefix) > 0 {
 		nl.prefix = l.prefix + "/"
@@ -181,7 +186,7 @@ func (l *Logger) WithName(name string) logr.Logger {
 }
 
 // WithValues adds some key-value pairs of context to a logger.
-func (l *Logger) WithValues(kvList ...interface{}) logr.Logger {
+func (l *Logger) WithValues(kvList ...interface{}) logr.LogSink {
 	nl := l.clone()
 	nl.values = append(nl.values, kvList...)
 	return nl

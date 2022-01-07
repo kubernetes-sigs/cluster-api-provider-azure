@@ -20,70 +20,73 @@ import (
 	"github.com/go-logr/logr"
 )
 
-type compositeLogger struct {
-	loggers []logr.Logger
+type compositeLogSink struct {
+	logSinks []logr.LogSink
 }
 
-func (c *compositeLogger) Enabled() bool {
-	for _, l := range c.loggers {
-		if !l.Enabled() {
+func (c *compositeLogSink) Init(info logr.RuntimeInfo) {
+	// we change the depth of the stack so that we can get the real
+	// line where the log statement was called. We need to do this because the composite logger adds to the
+	// call stack due to wrapping the internal logger.
+	info.CallDepth = info.CallDepth + 2
+	for _, l := range c.logSinks {
+		l.Init(info)
+	}
+}
+
+func (c *compositeLogSink) Enabled(v int) bool {
+	for _, l := range c.logSinks {
+		if !l.Enabled(v) {
 			return false
 		}
 	}
 	return true
 }
 
-func (c *compositeLogger) iter(fn func(l logr.Logger)) {
-	for _, l := range c.loggers {
-		// the callDepthLogger interface allows us to change the depth of the stack so that we can get the real
-		// line where the log statement was called. We need to do this because the composite logger adds to the
-		// call stack due to wrapping the internal logger.
-		l = logr.WithCallDepth(l, 3)
+func (c *compositeLogSink) iter(fn func(l logr.LogSink)) {
+	for _, l := range c.logSinks {
 		fn(l)
 	}
 }
 
-func (c *compositeLogger) Info(msg string, keysAndValues ...interface{}) {
-	c.iter(func(l logr.Logger) {
-		l.Info(msg, keysAndValues...)
+func (c *compositeLogSink) Info(level int, msg string, keysAndValues ...interface{}) {
+	c.iter(func(l logr.LogSink) {
+		l.Info(level, msg, keysAndValues...)
 	})
 }
 
-func (c *compositeLogger) Error(err error, msg string, keysAndValues ...interface{}) {
-	c.iter(func(l logr.Logger) {
+func (c *compositeLogSink) Error(err error, msg string, keysAndValues ...interface{}) {
+	c.iter(func(l logr.LogSink) {
 		l.Error(err, msg, keysAndValues...)
 	})
 }
 
-func (c *compositeLogger) V(level int) logr.Logger {
-	var loggers = make([]logr.Logger, len(c.loggers))
-	for i, l := range c.loggers {
-		loggers[i] = l.V(level)
+func (c *compositeLogSink) WithValues(keysAndValues ...interface{}) logr.LogSink {
+	var logSinks = make([]logr.LogSink, len(c.logSinks))
+	for i, l := range c.logSinks {
+		logSinks[i] = l.WithValues(keysAndValues...)
 	}
 
-	return &compositeLogger{
-		loggers: loggers,
+	return &compositeLogSink{
+		logSinks: logSinks,
 	}
 }
 
-func (c *compositeLogger) WithValues(keysAndValues ...interface{}) logr.Logger {
-	var loggers = make([]logr.Logger, len(c.loggers))
-	for i, l := range c.loggers {
-		loggers[i] = l.WithValues(keysAndValues...)
+func (c *compositeLogSink) WithName(name string) logr.LogSink {
+	var logSinks = make([]logr.LogSink, len(c.logSinks))
+	for i, l := range c.logSinks {
+		logSinks[i] = l.WithName(name)
 	}
 
-	return &compositeLogger{
-		loggers: loggers,
+	return &compositeLogSink{
+		logSinks: logSinks,
 	}
 }
 
-func (c *compositeLogger) WithName(name string) logr.Logger {
-	var loggers = make([]logr.Logger, len(c.loggers))
-	for i, l := range c.loggers {
-		loggers[i] = l.WithName(name)
+// NewCompositeLogger is the main entry-point to this implementation.
+func NewCompositeLogger(logSinks []logr.LogSink) logr.Logger {
+	sink := &compositeLogSink{
+		logSinks: logSinks,
 	}
-
-	return &compositeLogger{
-		loggers: loggers,
-	}
+	return logr.New(sink)
 }
