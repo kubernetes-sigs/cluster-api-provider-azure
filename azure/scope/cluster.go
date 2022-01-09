@@ -649,6 +649,10 @@ func (s *ClusterScope) AdditionalTags() infrav1.Tags {
 
 // APIServerPort returns the APIServerPort to use when creating the load balancer.
 func (s *ClusterScope) APIServerPort() int32 {
+	netSpec := s.AzureCluster.Spec.NetworkSpec
+	if netSpec.OverrideAPIEndpoint != nil {
+		return netSpec.OverrideAPIEndpoint.Port
+	}
 	if s.Cluster.Spec.ClusterNetwork != nil && s.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
 		return *s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
@@ -657,6 +661,10 @@ func (s *ClusterScope) APIServerPort() int32 {
 
 // APIServerHost returns the hostname used to reach the API server.
 func (s *ClusterScope) APIServerHost() string {
+	netSpec := s.AzureCluster.Spec.NetworkSpec
+	if netSpec.OverrideAPIEndpoint != nil && len(netSpec.OverrideAPIEndpoint.Host) > 0 {
+		return netSpec.OverrideAPIEndpoint.Host
+	}
 	if s.IsAPIServerPrivate() {
 		return azure.GeneratePrivateFQDN(s.GetPrivateDNSZoneName())
 	}

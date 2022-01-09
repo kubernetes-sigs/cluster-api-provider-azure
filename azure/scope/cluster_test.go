@@ -96,6 +96,21 @@ func TestAPIServerHost(t *testing.T) {
 			},
 			want: "apiserver.example.private",
 		},
+		{
+			name: "override host returned to cluster api.",
+			azureCluster: infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: fakeSubscriptionID,
+					NetworkSpec: infrav1.NetworkSpec{
+						OverrideAPIEndpoint: &clusterv1.APIEndpoint{
+							Host: "apiserver.example.private",
+							Port: 443,
+						},
+					},
+				},
+			},
+			want: "apiserver.example.private",
+		},
 	}
 
 	for _, tc := range tests {

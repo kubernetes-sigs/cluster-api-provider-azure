@@ -1788,6 +1788,21 @@ spec:
                         description: LBType defines an Azure load balancer Type.
                         type: string
                     type: object
+                  overrideAPIEndpoint:
+                    description: override API Endpoint passed back to Cluster API
+                      (hope you know what you are doing, good luck!)
+                    properties:
+                      host:
+                        description: The hostname on which the API server is serving.
+                        type: string
+                      port:
+                        description: The port on which the API server is serving.
+                        format: int32
+                        type: integer
+                    required:
+                    - host
+                    - port
+                    type: object
                   privateDNSZoneName:
                     description: PrivateDNSZoneName defines the zone name for the
                       Azure Private DNS.

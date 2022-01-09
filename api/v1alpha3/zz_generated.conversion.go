@@ -1379,6 +1379,7 @@ func autoConvert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *v1beta1.Network
 	if err := Convert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
+	// WARNING: in.OverrideAPIEndpoint requires manual conversion: does not exist in peer-type
 	// WARNING: in.NodeOutboundLB requires manual conversion: does not exist in peer-type
 	// WARNING: in.ControlPlaneOutboundLB requires manual conversion: does not exist in peer-type
 	// WARNING: in.PrivateDNSZoneName requires manual conversion: does not exist in peer-type

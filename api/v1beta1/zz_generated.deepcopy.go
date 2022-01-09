@@ -942,6 +942,11 @@ func (in *NetworkSpec) DeepCopyInto(out *NetworkSpec) {
 		}
 	}
 	in.APIServerLB.DeepCopyInto(&out.APIServerLB)
+	if in.OverrideAPIEndpoint != nil {
+		in, out := &in.OverrideAPIEndpoint, &out.OverrideAPIEndpoint
+		*out = new(apiv1beta1.APIEndpoint)
+		**out = **in
+	}
 	if in.NodeOutboundLB != nil {
 		in, out := &in.NodeOutboundLB, &out.NodeOutboundLB
 		*out = new(LoadBalancerSpec)

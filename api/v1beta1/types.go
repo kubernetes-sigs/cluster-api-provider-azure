@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 const (
@@ -74,6 +75,10 @@ type NetworkSpec struct {
 	// APIServerLB is the configuration for the control-plane load balancer.
 	// +optional
 	APIServerLB LoadBalancerSpec `json:"apiServerLB,omitempty"`
+
+	// override API Endpoint passed back to Cluster API (hope you know what you are doing, good luck!)
+	// +optional
+	OverrideAPIEndpoint *clusterv1.APIEndpoint `json:"overrideAPIEndpoint,omitempty"`
 
 	// NodeOutboundLB is the configuration for the node outbound load balancer.
 	// +optional
