@@ -43,6 +43,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error { //
 	dst.Spec.APIServerAccessProfile = restored.Spec.APIServerAccessProfile
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
+	dst.Status.Conditions = restored.Status.Conditions
 
 	return nil
 }

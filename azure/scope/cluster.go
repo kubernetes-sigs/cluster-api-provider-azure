@@ -607,6 +607,9 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ClusterScope) PatchObject(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ClusterScope.PatchObject")
+	defer done()
+
 	conditions.SetSummary(s.AzureCluster,
 		conditions.WithConditions(
 			infrav1.ResourceGroupReadyCondition,

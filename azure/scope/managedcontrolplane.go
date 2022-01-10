@@ -33,6 +33,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capiexputil "sigs.k8s.io/cluster-api/exp/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,7 +55,7 @@ type ManagedControlPlaneScopeParams struct {
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	MachinePool      *expv1.MachinePool
-	PatchTarget      client.Object
+	PatchTarget      conditions.Setter
 }
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
@@ -114,7 +115,7 @@ type ManagedControlPlaneScope struct {
 	MachinePool      *expv1.MachinePool
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
-	PatchTarget      client.Object
+	PatchTarget      conditions.Setter
 
 	AllNodePools []infrav1exp.AzureManagedMachinePool
 }
@@ -182,7 +183,19 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.PatchObject")
 	defer done()
 
-	return s.patchHelper.Patch(ctx, s.PatchTarget)
+	conditions.SetSummary(s.PatchTarget)
+
+	return s.patchHelper.Patch(
+		ctx,
+		s.PatchTarget,
+		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+			clusterv1.ReadyCondition,
+			infrav1.ResourceGroupReadyCondition,
+			infrav1.VNetReadyCondition,
+			infrav1.SubnetsReadyCondition,
+			infrav1.ManagedClusterRunningCondition,
+			infrav1.AgentPoolsReadyCondition,
+		}})
 }
 
 // Close closes the current scope persisting the cluster configuration and status.
@@ -636,17 +649,44 @@ func (s *ManagedControlPlaneScope) DeleteLongRunningOperationState(name, service
 
 // UpdateDeleteStatus updates a condition on the AzureManagedControlPlane status after a DELETE operation.
 func (s *ManagedControlPlaneScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
-	// TODO: add condition to AzureManagedControlPlane status
+	switch {
+	case err == nil:
+		conditions.MarkFalse(s.PatchTarget, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.PatchTarget, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+	default:
+		conditions.MarkFalse(s.PatchTarget, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+	}
 }
 
 // UpdatePutStatus updates a condition on the AzureManagedControlPlane status after a PUT operation.
 func (s *ManagedControlPlaneScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
-	// TODO: add condition to AzureManagedControlPlane status
+	switch {
+	case err == nil:
+		conditions.MarkTrue(s.PatchTarget, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.PatchTarget, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+	default:
+		conditions.MarkFalse(s.PatchTarget, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+	}
 }
 
 // UpdatePatchStatus updates a condition on the AzureManagedControlPlane status after a PATCH operation.
 func (s *ManagedControlPlaneScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
-	// TODO: add condition to AzureManagedControlPlane status
+	switch {
+	case err == nil:
+		conditions.MarkTrue(s.PatchTarget, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.PatchTarget, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+	default:
+		conditions.MarkFalse(s.PatchTarget, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+	}
 }
 
 // AnnotationJSON returns a map[string]interface from a JSON annotation.

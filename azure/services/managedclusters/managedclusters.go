@@ -349,7 +349,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return nil
 }
 
-// Delete deletes the virtual network with the provided name.
+// Delete deletes the managed cluster.
 func (s *Service) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Delete")
 	defer done()

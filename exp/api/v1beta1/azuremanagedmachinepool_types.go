@@ -18,6 +18,8 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 )
 
@@ -98,6 +100,15 @@ type AzureManagedMachinePoolStatus struct {
 	// controller's output.
 	// +optional
 	ErrorMessage *string `json:"errorMessage,omitempty"`
+
+	// Conditions defines current service state of the AzureManagedControlPlane.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
+	// next reconciliation loop.
+	// +optional
+	LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -121,6 +132,26 @@ type AzureManagedMachinePoolList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AzureManagedMachinePool `json:"items"`
+}
+
+// GetConditions returns the list of conditions for an AzureManagedMachinePool API object.
+func (m *AzureManagedMachinePool) GetConditions() clusterv1.Conditions {
+	return m.Status.Conditions
+}
+
+// SetConditions will set the given conditions on an AzureManagedMachinePool object.
+func (m *AzureManagedMachinePool) SetConditions(conditions clusterv1.Conditions) {
+	m.Status.Conditions = conditions
+}
+
+// GetFutures returns the list of long running operation states for an AzureManagedMachinePool API object.
+func (m *AzureManagedMachinePool) GetFutures() infrav1.Futures {
+	return m.Status.LongRunningOperationStates
+}
+
+// SetFutures will set the given long running operation states on an AzureManagedMachinePool object.
+func (m *AzureManagedMachinePool) SetFutures(futures infrav1.Futures) {
+	m.Status.LongRunningOperationStates = futures
 }
 
 func init() {
