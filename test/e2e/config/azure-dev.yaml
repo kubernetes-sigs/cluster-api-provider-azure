@@ -198,6 +198,7 @@ variables:
   INIT_WITH_PROVIDERS_CONTRACT: "v1alpha3"
   INIT_WITH_KUBERNETES_VERSION: "v1.21.2"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
+  WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
