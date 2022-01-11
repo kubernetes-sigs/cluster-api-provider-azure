@@ -31,26 +31,26 @@ type FutureScope interface {
 // FutureHandler is a client that can check on the progress of a future.
 type FutureHandler interface {
 	// IsDone returns true if the operation is complete.
-	IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error)
+	IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error)
 	// Result returns the result of the operation.
-	Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (interface{}, error)
+	Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error)
 }
 
 // Creator is a client that can create or update a resource asynchronously.
 type Creator interface {
 	FutureHandler
-	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, existingResource interface{}) (interface{}, azureautorest.FutureAPI, error)
-	Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error)
+	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
+	Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error)
 }
 
 // Deleter is a client that can delete a resource asynchronously.
 type Deleter interface {
 	FutureHandler
-	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
+	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error)
 }
 
 // Reconciler is a generic interface used to perform asynchronous reconciliation of Azure resources.
 type Reconciler interface {
-	CreateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (interface{}, error)
-	DeleteResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) error
+	CreateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (result interface{}, err error)
+	DeleteResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (err error)
 }

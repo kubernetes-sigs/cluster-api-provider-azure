@@ -32,10 +32,10 @@ import (
 // client wraps go-sdk.
 type client interface {
 	Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
-	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, interface{}) (interface{}, azureautorest.FutureAPI, error)
-	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
-	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
-	Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
+	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
+	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error)
+	IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error)
+	Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error)
 }
 
 // azureClient contains the Azure go-sdk Client.
@@ -61,7 +61,7 @@ func newGroupsClient(subscriptionID string, baseURI string, authorizer autorest.
 }
 
 // Get gets a resource group.
-func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error) {
+func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.Get")
 	defer done()
 
@@ -70,7 +70,7 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 
 // CreateOrUpdateAsync creates or updates a resource group.
 // Creating a resource group is not a long running operation, so we don't ever return a future.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (interface{}, azureautorest.FutureAPI, error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.CreateOrUpdate")
 	defer done()
 
@@ -79,7 +79,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 		return nil, nil, errors.Errorf("%T is not a resources.Group", parameters)
 	}
 
-	result, err := ac.groups.CreateOrUpdate(ctx, spec.ResourceName(), group)
+	result, err = ac.groups.CreateOrUpdate(ctx, spec.ResourceName(), group)
 	return result, nil, err
 }
 
@@ -88,11 +88,11 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 // progress of the operation.
 //
 // NOTE: When you delete a resource group, all of its resources are also deleted.
-func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.Delete")
 	defer done()
 
-	future, err := ac.groups.Delete(ctx, spec.ResourceName())
+	deleteFuture, err := ac.groups.Delete(ctx, spec.ResourceName())
 	if err != nil {
 		return nil, err
 	}
@@ -100,23 +100,23 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = future.WaitForCompletionRef(ctx, ac.groups.Client)
+	err = deleteFuture.WaitForCompletionRef(ctx, ac.groups.Client)
 	if err != nil {
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return &future, err
+		return &deleteFuture, err
 	}
-	_, err = future.Result(ac.groups)
+	_, err = deleteFuture.Result(ac.groups)
 	// if the operation completed, return a nil future.
 	return nil, err
 }
 
 // IsDone returns true if the long-running operation has completed.
-func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
+func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.IsDone")
 	defer done()
 
-	isDone, err := future.DoneWithContext(ctx, ac.groups)
+	isDone, err = future.DoneWithContext(ctx, ac.groups)
 	if err != nil {
 		return false, errors.Wrap(err, "failed checking if the operation was complete")
 	}
@@ -125,7 +125,7 @@ func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 }
 
 // Result fetches the result of a long-running operation future.
-func (ac *azureClient) Result(ctx context.Context, futureData azureautorest.FutureAPI, futureType string) (interface{}, error) {
+func (ac *azureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
 	// Result is a no-op for resource groups as only Delete operations return a future.
 	return nil, nil
 }

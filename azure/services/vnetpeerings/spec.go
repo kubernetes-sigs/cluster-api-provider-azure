@@ -49,7 +49,7 @@ func (s *VnetPeeringSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the virtual network peering.
-func (s *VnetPeeringSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *VnetPeeringSpec) Parameters(existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(network.VirtualNetworkPeering); !ok {
 			return nil, errors.Errorf("%T is not a network.VnetPeering", existing)

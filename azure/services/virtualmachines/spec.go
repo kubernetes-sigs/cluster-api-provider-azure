@@ -73,7 +73,7 @@ func (s *VMSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the virtual machine.
-func (s *VMSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *VMSpec) Parameters(existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(compute.VirtualMachine); !ok {
 			return nil, errors.Errorf("%T is not a compute.VirtualMachine", existing)

@@ -30,11 +30,11 @@ import (
 
 // Client wraps go-sdk.
 type Client interface {
-	Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error)
-	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, interface{}) (interface{}, azureautorest.FutureAPI, error)
-	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
-	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
-	Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
+	Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error)
+	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
+	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error)
+	IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error)
+	Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error)
 }
 
 // AzureClient contains the Azure go-sdk Client.
@@ -59,7 +59,7 @@ func newAvailabilitySetsClient(subscriptionID string, baseURI string, authorizer
 }
 
 // Get gets an availability set.
-func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error) {
+func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitysets.AzureClient.Get")
 	defer done()
 
@@ -69,7 +69,7 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // CreateOrUpdateAsync creates or updates a availability set asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (interface{}, azureautorest.FutureAPI, error) {
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitySets.AzureClient.CreateOrUpdateAsync")
 	defer done()
 
@@ -78,18 +78,18 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 		return nil, nil, errors.Errorf("%T is not a compute.AvailabilitySet", parameters)
 	}
 
-	result, err := ac.availabilitySets.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), availabilitySet)
+	result, err = ac.availabilitySets.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), availabilitySet)
 	return result, nil, err
 }
 
 // DeleteAsync deletes a availability set asynchronously. DeleteAsync sends a DELETE
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitysets.AzureClient.Delete")
 	defer done()
 
-	_, err := ac.availabilitySets.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
+	_, err = ac.availabilitySets.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
 
 	if err != nil {
 		return nil, err
@@ -99,20 +99,20 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 }
 
 // Result fetches the result of a long-running operation future.
-func (ac *AzureClient) Result(ctx context.Context, futureData azureautorest.FutureAPI, futureType string) (interface{}, error) {
+func (ac *AzureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
 	// Result is a no-op for resource groups as only Delete operations return a future.
 	return nil, nil
 }
 
 // IsDone returns true if the long-running operation has completed.
-func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "availabilitysets.AzureClient.IsDone")
-	defer span.End()
+func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitysets.AzureClient.IsDone")
+	defer done()
 
-	done, err := future.DoneWithContext(ctx, ac.availabilitySets)
+	isDone, err = future.DoneWithContext(ctx, ac.availabilitySets)
 	if err != nil {
 		return false, errors.Wrap(err, "failed checking if the operation was complete")
 	}
 
-	return done, nil
+	return isDone, nil
 }

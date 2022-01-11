@@ -36,10 +36,10 @@ import (
 type (
 	Client interface {
 		Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
-		CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, interface{}) (interface{}, azureautorest.FutureAPI, error)
-		DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
-		IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
-		Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
+		CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
+		DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error)
+		IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error)
+		Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error)
 	}
 
 	// AzureClient contains the Azure go-sdk Client.
@@ -64,7 +64,7 @@ func newVirtualMachinesClient(subscriptionID string, baseURI string, authorizer 
 }
 
 // Get retrieves information about the model view or the instance view of a virtual machine.
-func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error) {
+func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Get")
 	defer done()
 
@@ -74,7 +74,7 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // CreateOrUpdateAsync creates or updates a virtual machine asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (interface{}, azureautorest.FutureAPI, error) {
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.CreateOrUpdate")
 	defer done()
 
@@ -83,7 +83,7 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 		return nil, nil, errors.Errorf("%T is not a compute.VirtualMachine", parameters)
 	}
 
-	future, err := ac.virtualmachines.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vm)
+	createFuture, err := ac.virtualmachines.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vm)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -91,13 +91,13 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = future.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
+	err = createFuture.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
 	if err != nil {
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return nil, &future, err
+		return nil, &createFuture, err
 	}
-	result, err := future.Result(ac.virtualmachines)
+	result, err = createFuture.Result(ac.virtualmachines)
 	// if the operation completed, return a nil future
 	return result, nil, err
 }
@@ -105,13 +105,13 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 // DeleteAsync deletes a virtual machine asynchronously. DeleteAsync sends a DELETE
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Delete")
 	defer done()
 
 	// TODO: pass variable to force the deletion or not
 	// now we are not forcing.
-	future, err := ac.virtualmachines.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName(), to.BoolPtr(false))
+	deleteFuture, err := ac.virtualmachines.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName(), to.BoolPtr(false))
 	if err != nil {
 		return nil, err
 	}
@@ -119,23 +119,23 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = future.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
+	err = deleteFuture.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
 	if err != nil {
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return &future, err
+		return &deleteFuture, err
 	}
-	_, err = future.Result(ac.virtualmachines)
+	_, err = deleteFuture.Result(ac.virtualmachines)
 	// if the operation completed, return a nil future.
 	return nil, err
 }
 
 // IsDone returns true if the long-running operation has completed.
-func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
+func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.IsDone")
 	defer done()
 
-	isDone, err := future.DoneWithContext(ctx, ac.virtualmachines)
+	isDone, err = future.DoneWithContext(ctx, ac.virtualmachines)
 	if err != nil {
 		return false, errors.Wrap(err, "failed checking if the operation was complete")
 	}
@@ -144,37 +144,42 @@ func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 }
 
 // Result fetches the result of a long-running operation future.
-func (ac *AzureClient) Result(ctx context.Context, futureData azureautorest.FutureAPI, futureType string) (interface{}, error) {
+func (ac *AzureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
 	_, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Result")
 	defer done()
 
-	if futureData == nil {
+	if future == nil {
 		return nil, errors.Errorf("cannot get result from nil future")
 	}
-	var result func(client compute.VirtualMachinesClient) (VM compute.VirtualMachine, err error)
 
 	switch futureType {
 	case infrav1.PatchFuture:
-		var future *compute.VirtualMachinesUpdateFuture
-		jsonData, err := futureData.MarshalJSON()
+		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
+		// Unfortunately the FutureAPI can't be casted directly to VirtualMachinesUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
+		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
+		var updateFuture *compute.VirtualMachinesUpdateFuture
+		jsonData, err := future.MarshalJSON()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal future")
 		}
-		if err := json.Unmarshal(jsonData, &future); err != nil {
+		if err := json.Unmarshal(jsonData, &updateFuture); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal future data")
 		}
-		result = (*future).Result
+		return (*updateFuture).Result(ac.virtualmachines)
 
 	case infrav1.PutFuture:
-		var future *compute.VirtualMachinesCreateOrUpdateFuture
-		jsonData, err := futureData.MarshalJSON()
+		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
+		// Unfortunately the FutureAPI can't be casted directly to VirtualMachinesCreateOrUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
+		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
+		var createFuture *compute.VirtualMachinesCreateOrUpdateFuture
+		jsonData, err := future.MarshalJSON()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal future")
 		}
-		if err := json.Unmarshal(jsonData, &future); err != nil {
+		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal future data")
 		}
-		result = (*future).Result
+		return (*createFuture).Result(ac.virtualmachines)
 
 	case infrav1.DeleteFuture:
 		// Delete does not return a result VM.
@@ -183,6 +188,4 @@ func (ac *AzureClient) Result(ctx context.Context, futureData azureautorest.Futu
 	default:
 		return nil, errors.Errorf("unknown future type %q", futureType)
 	}
-
-	return result(ac.virtualmachines)
 }
