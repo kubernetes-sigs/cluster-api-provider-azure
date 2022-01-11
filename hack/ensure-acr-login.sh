@@ -17,6 +17,7 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+set +o xtrace
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
@@ -27,4 +28,10 @@ if [[ "${REGISTRY:-}" =~ capzci\.azurecr\.io ]]; then
     : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
     az account set -s "${AZURE_SUBSCRIPTION_ID}"
     az acr login --name capzci
+    # TODO(mainred): When using ACR, `az acr login` impacts the authentication of `docker buildx build --push` when the
+    # ACR, capzci in our case, has anonymous pull enabled.
+    # Use `docker login` as a suggested workaround and remove this target when the issue is resolved.
+    # Issue link: https://github.com/Azure/acr/issues/582
+    # Failed building link: https://prow.k8s.io/view/gs/kubernetes-jenkins/pr-logs/pull/kubernetes-sigs_cloud-provider-azure/974/pull-cloud-provider-azure-e2e-ccm-capz/1480459040440979456
+    docker login -u "${AZURE_CLIENT_ID}" -p "${AZURE_CLIENT_SECRET}" capzci.azurecr.io
 fi
