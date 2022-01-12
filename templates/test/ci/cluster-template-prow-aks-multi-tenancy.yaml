@@ -70,7 +70,7 @@ metadata:
   name: agentpool0
   namespace: default
 spec:
-  maxPods: 24
+  maxPods: 30
   mode: System
   osDiskSizeGB: 512
   sku: ${AZURE_NODE_MACHINE_TYPE}
