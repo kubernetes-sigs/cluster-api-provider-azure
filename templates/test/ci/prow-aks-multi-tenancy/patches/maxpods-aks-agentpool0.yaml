@@ -3,4 +3,4 @@ kind: AzureManagedMachinePool
 metadata:
   name: "agentpool0"
 spec:
-  maxPods: 24
+  maxPods: 30
