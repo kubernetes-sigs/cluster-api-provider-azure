@@ -159,6 +159,7 @@ func TestReconcile(t *testing.T) {
 				Replicas:      2,
 				OSDiskSizeGB:  100,
 				MaxPods:       to.Int32Ptr(12),
+				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 			},
 			expectedError: "failed to get existing agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -176,6 +177,7 @@ func TestReconcile(t *testing.T) {
 				Replicas:      2,
 				OSDiskSizeGB:  100,
 				MaxPods:       to.Int32Ptr(12),
+				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -194,6 +196,7 @@ func TestReconcile(t *testing.T) {
 				Replicas:      2,
 				OSDiskSizeGB:  100,
 				MaxPods:       to.Int32Ptr(12),
+				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 			},
 			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -212,6 +215,7 @@ func TestReconcile(t *testing.T) {
 				Replicas:      2,
 				OSDiskSizeGB:  100,
 				MaxPods:       to.Int32Ptr(12),
+				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 			},
 			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -238,6 +242,7 @@ func TestReconcile(t *testing.T) {
 				Replicas:      2,
 				OSDiskSizeGB:  100,
 				MaxPods:       to.Int32Ptr(12),
+				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
@@ -251,6 +256,7 @@ func TestReconcile(t *testing.T) {
 						ProvisioningState:   to.StringPtr("Succeeded"),
 						VnetSubnetID:        to.StringPtr(""),
 						MaxPods:             to.Int32Ptr(12),
+						OsDiskType:          containerservice.OSDiskTypeEphemeral,
 					},
 				}, nil)
 			},
@@ -298,6 +304,7 @@ func TestReconcile(t *testing.T) {
 						SKU:          tc.agentPoolsSpec.SKU,
 						OSDiskSizeGB: &osDiskSizeGB,
 						MaxPods:      to.Int32Ptr(12),
+						OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 					},
 				},
 			}

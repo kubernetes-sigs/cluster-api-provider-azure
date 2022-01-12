@@ -72,7 +72,7 @@ metadata:
   name: "agentpool0"
 spec:
   mode: System
-  osDiskSizeGB: 512
+  osDiskSizeGB: 30
   sku: "${AZURE_NODE_MACHINE_TYPE}"
 ---
 # Deploy a second agent pool with the same number of machines, but using potentially different infrastructure.
@@ -102,5 +102,5 @@ metadata:
   name: "agentpool1"
 spec:
   mode: User
-  osDiskSizeGB: 1024
+  osDiskSizeGB: 40
   sku: "${AZURE_NODE_MACHINE_TYPE}"

@@ -131,6 +131,25 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
+	if old.Spec.OsDiskType != nil {
+		// Prevent OSDiskType modification if it was already set to some value
+		if r.Spec.OsDiskType == nil || to.String(r.Spec.OsDiskType) == "" {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "OsDiskType"),
+					r.Spec.OsDiskType,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.OsDiskType != *old.Spec.OsDiskType {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "OsDiskType"),
+					r.Spec.OsDiskType,
+					"field is immutable"))
+		}
+	}
+
 	if len(allErrs) != 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), r.Name, allErrs)
 	}

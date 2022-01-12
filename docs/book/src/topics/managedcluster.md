@@ -134,7 +134,7 @@ metadata:
   name: agentpool0
 spec:
   mode: System
-  osDiskSizeGB: 512
+  osDiskSizeGB: 30
   sku: Standard_D2s_v3
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -160,7 +160,7 @@ metadata:
   name: agentpool1
 spec:
   mode: User
-  osDiskSizeGB: 1024
+  osDiskSizeGB: 40
   sku: Standard_D2s_v4
 ```
 
@@ -241,7 +241,7 @@ spec:
   version: v1.21.2
   aadProfile:
     managed: true
-    adminGroupObjectIDs: 
+    adminGroupObjectIDs:
     - 917056a9-8eb5-439c-g679-b34901ade75h # fake admin groupId
 ```
 
@@ -256,7 +256,7 @@ metadata:
   name: agentpool0
 spec:
   mode: System
-  osDiskSizeGB: 512
+  osDiskSizeGB: 30
   sku: Standard_D2s_v3
   scaling:
     minSize: 2
@@ -276,9 +276,27 @@ metadata:
   name: agentpool0
 spec:
   mode: System
-  osDiskSizeGB: 512
+  osDiskSizeGB: 30
   sku: Standard_D2s_v3
-  maxPods: 24
+  maxPods: 32
+```
+
+### AKS Node Pool OsDiskType configuration
+
+You can configure the `OsDiskType` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec (see [here](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#ephemeral-os) for the official AKS documentation). There are two options to choose from: `"Managed"` (the default) or `"Ephemeral"`.
+
+Below an example `osDiskType` configuration is assigned to `agentpool0`, specifying that each node in the pool will use a local, ephemeral OS disk for faster disk I/O at the expense of possible data loss:
+
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: System
+  osDiskSizeGB: 30
+  sku: Standard_D2s_v3
+  osDiskType: "Ephemeral"
 ```
 
 ### Use a public Standard Load Balancer

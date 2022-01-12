@@ -520,6 +520,7 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 			Mode:              pool.Spec.Mode,
 			MaxPods:           pool.Spec.MaxPods,
 			AvailabilityZones: pool.Spec.AvailabilityZones,
+			OsDiskType:        pool.Spec.OsDiskType,
 		}
 
 		// Set optional values
@@ -578,6 +579,7 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 		Mode:              s.InfraMachinePool.Spec.Mode,
 		MaxPods:           s.InfraMachinePool.Spec.MaxPods,
 		AvailabilityZones: s.InfraMachinePool.Spec.AvailabilityZones,
+		OsDiskType:        s.InfraMachinePool.Spec.OsDiskType,
 	}
 
 	if s.InfraMachinePool.Spec.OSDiskSizeGB != nil {

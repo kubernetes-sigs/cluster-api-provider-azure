@@ -5,4 +5,5 @@ resources:
   - ../../../flavors/aks-multi-tenancy
 patchesStrategicMerge:
   - ../patches/tags-aks.yaml
-  - patches/maxpods-aks-agentpool0.yaml
+  - patches/aks-agentpool0.yaml
+  - patches/aks-agentpool1.yaml

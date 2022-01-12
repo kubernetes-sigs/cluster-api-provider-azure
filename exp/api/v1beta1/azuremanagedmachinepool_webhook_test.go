@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,6 +59,12 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	ammp.Spec.Name = &normalName
 	ammp.Default(client)
 	g.Expect(*ammp.Spec.Name).To(Equal("barName"))
+
+	t.Logf("Testing ammp defaulting webhook with normal OsDiskType specified in Spec")
+	normalOsDiskType := "Ephemeral"
+	ammp.Spec.OsDiskType = &normalOsDiskType
+	ammp.Default(client)
+	g.Expect(*ammp.Spec.OsDiskType).To(Equal("Ephemeral"))
 }
 
 func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
@@ -225,6 +232,50 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Cannot change OSDiskType of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					MaxPods:      to.Int32Ptr(24),
+					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					MaxPods:      to.Int32Ptr(24),
+					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Unchanged OSDiskType in an agentpool should not result in an error",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					MaxPods:      to.Int32Ptr(30),
+					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					MaxPods:      to.Int32Ptr(30),
+					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+				},
+			},
+			wantErr: false,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
@@ -252,7 +303,18 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods: to.Int32Ptr(30),
+					MaxPods:    to.Int32Ptr(30),
+					OsDiskType: to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "another valid permutation",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					MaxPods:    to.Int32Ptr(249),
+					OsDiskType: to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 				},
 			},
 			wantErr: false,
