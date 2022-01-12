@@ -366,7 +366,7 @@ spec:
         permissions: "0644"
       - content: |-
           Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-          Set-ItemProperty -Path "HKLM:SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Type DWord -Name NoAutoUpdate -Value 1
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
         path: C:/defender-exclude-calico.ps1
         permissions: "0744"
       - content: |
@@ -382,6 +382,8 @@ spec:
             cloud-config: c:/k/azure.json
             cloud-provider: azure
             feature-gates: WindowsHostProcessContainers=true
+            v: "2"
+            windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - nssm set kubelet start SERVICE_AUTO_START

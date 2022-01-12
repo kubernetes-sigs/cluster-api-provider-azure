@@ -64,6 +64,8 @@ spec:
             cloud-config: 'c:/k/azure.json'
             azure-container-registry-config: 'c:/k/azure.json'
             feature-gates: "WindowsHostProcessContainers=true"
+            v: "2"
+            windows-priorityclass: "ABOVE_NORMAL_PRIORITY_CLASS"
       files:
       - contentFrom:
           secret:
@@ -76,4 +78,4 @@ spec:
         permissions: "0744"
         content: |-
           Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-          Set-ItemProperty -Path "HKLM:SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Type DWord -Name NoAutoUpdate -Value 1
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe

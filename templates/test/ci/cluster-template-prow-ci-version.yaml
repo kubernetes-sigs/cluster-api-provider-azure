@@ -3,6 +3,7 @@ kind: Cluster
 metadata:
   labels:
     cni: ${CLUSTER_NAME}-calico
+    containerd-logger: enabled
     metrics-server: enabled
   name: ${CLUSTER_NAME}
   namespace: default
@@ -403,8 +404,8 @@ spec:
         marketplace:
           offer: capi-windows
           publisher: cncf-upstream
-          sku: k8s-1dot22dot1-windows-2019-containerd
-          version: 2021.10.15
+          sku: k8s-1dot23dot1-windows-2019-containerd
+          version: 2021.12.16
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -431,7 +432,7 @@ spec:
         permissions: "0644"
       - content: |-
           Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-          Set-ItemProperty -Path "HKLM:SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Type DWord -Name NoAutoUpdate -Value 1
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
         path: C:/defender-exclude-calico.ps1
         permissions: "0744"
       - content: |
@@ -467,8 +468,8 @@ spec:
 
           # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
           # that is applied at at this stage (windows-kubeproxy-ci.yaml)
-          ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.22.1-calico-hostprocess
-          ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.22.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
+          ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
+          ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
 
           kubeadm.exe version -o=short
           kubectl.exe version --client=true --short=true
@@ -483,6 +484,8 @@ spec:
             cloud-config: c:/k/azure.json
             cloud-provider: azure
             feature-gates: WindowsHostProcessContainers=true
+            v: "2"
+            windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - nssm set kubelet start SERVICE_AUTO_START
@@ -3122,6 +3125,20 @@ spec:
     name: metrics-server-${CLUSTER_NAME}
   strategy: ApplyOnce
 ---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: containerd-logger-${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      containerd-logger: enabled
+  resources:
+  - kind: ConfigMap
+    name: containerd-logger-${CLUSTER_NAME}
+  strategy: ApplyOnce
+---
 apiVersion: v1
 data:
   metrics-server: |
@@ -3329,4 +3346,124 @@ metadata:
   labels:
     type: generated
   name: metrics-server-${CLUSTER_NAME}
+  namespace: default
+---
+apiVersion: v1
+data:
+  containerd-windows-logger: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: containerd-logger
+      name: containerd-logger
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: containerd-logger
+      template:
+        metadata:
+          labels:
+            k8s-app: containerd-logger
+        spec:
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\system"
+          hostNetwork: true
+          containers:
+          - image: ghcr.io/kubernetes-sigs/sig-windows/eventflow-logger:v0.1.0
+            args: [ "config.json" ]
+            name: containerd-logger
+            imagePullPolicy: Always
+            volumeMounts:
+            - name: containerd-logger-config
+              mountPath: /config.json
+              subPath: config.json
+          nodeSelector:
+            kubernetes.io/os: windows
+          tolerations:
+          - key: CriticalAddonsOnly
+            operator: Exists
+          - operator: Exists
+          volumes:
+          - configMap:
+              name: containerd-logger-config
+            name: containerd-logger-config
+      updateStrategy:
+        type: RollingUpdate
+    ---
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: containerd-logger-config
+      namespace: kube-system
+    data:
+      config.json: |
+        {
+          "inputs": [
+            {
+              "type": "ETW",
+              "sessionNamePrefix": "containerd",
+              "cleanupOldSessions": true,
+              "reuseExistingSession": true,
+              "providers": [
+                {
+                  "providerName": "Microsoft.Virtualization.RunHCS",
+                  "providerGuid": "0B52781F-B24D-5685-DDF6-69830ED40EC3",
+                  "level": "Verbose"
+                },
+                {
+                  "providerName": "ContainerD",
+                  "providerGuid": "2acb92c0-eb9b-571a-69cf-8f3410f383ad",
+                  "level": "Verbose"
+                }
+              ]
+            }
+          ],
+          "filters": [
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == Stats && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::LayerID && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::NameToGuid && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.Stats && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.State && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetProcessProperties && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetComputeSystemProperties && hasnoproperty error"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "StdOutput"
+            }
+          ],
+          "schemaVersion": "2016-08-11"
+        }
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: containerd-logger-${CLUSTER_NAME}
   namespace: default

@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: containerd-logger
+  name: containerd-logger
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: containerd-logger
+  template:
+    metadata:
+      labels:
+        k8s-app: containerd-logger
+    spec:
+      securityContext:
+        windowsOptions:
+          hostProcess: true
+          runAsUserName: "NT AUTHORITY\\system"
+      hostNetwork: true
+      containers:
+      - image: ghcr.io/kubernetes-sigs/sig-windows/eventflow-logger:v0.1.0
+        args: [ "config.json" ]
+        name: containerd-logger
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: containerd-logger-config
+          mountPath: /config.json
+          subPath: config.json
+      nodeSelector:
+        kubernetes.io/os: windows
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - operator: Exists
+      volumes:
+      - configMap:
+          name: containerd-logger-config
+        name: containerd-logger-config
+  updateStrategy:
+    type: RollingUpdate
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: containerd-logger-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+      "inputs": [
+        {
+          "type": "ETW",
+          "sessionNamePrefix": "containerd",
+          "cleanupOldSessions": true,
+          "reuseExistingSession": true,
+          "providers": [
+            {
+              "providerName": "Microsoft.Virtualization.RunHCS",
+              "providerGuid": "0B52781F-B24D-5685-DDF6-69830ED40EC3",
+              "level": "Verbose"
+            },
+            {
+              "providerName": "ContainerD",
+              "providerGuid": "2acb92c0-eb9b-571a-69cf-8f3410f383ad",
+              "level": "Verbose"
+            }
+          ]
+        }
+      ],
+      "filters": [
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == Stats && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::LayerID && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::NameToGuid && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.Stats && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.State && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetProcessProperties && hasnoproperty error"
+        },
+        {
+            "type": "drop",
+            "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetComputeSystemProperties && hasnoproperty error"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "StdOutput"
+        }
+      ],
+      "schemaVersion": "2016-08-11"
+    }

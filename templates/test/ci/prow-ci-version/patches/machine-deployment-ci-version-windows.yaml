@@ -6,10 +6,11 @@ spec:
   template:
     spec:
       image:
-        # we use the 1.22.1 image as a workaround there is no published marketplace image for k8s CI versions.
-        # 1.22.1 binaries and images will get replaced to the desired version by the script in this template.
+        # we use the 1.23.1 image as a workaround there is no published marketplace image for k8s CI versions.
+        # 1.23.1 binaries and images will get replaced to the desired version by the script above.
         marketplace:
           publisher: cncf-upstream
           offer: capi-windows
-          sku: k8s-1dot22dot1-windows-2019-containerd
-          version: "2021.10.15"
+          sku: k8s-1dot23dot1-windows-2019-containerd
+          version: "2021.12.16"
+
