@@ -316,6 +316,11 @@ func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	return true
 }
 
+// APIServerLBName returns the API Server LB spec.
+func (s *ManagedControlPlaneScope) APIServerLB() *infrav1.LoadBalancerSpec {
+	return nil // does not apply for AKS
+}
+
 // APIServerLBName returns the API Server LB name.
 func (s *ManagedControlPlaneScope) APIServerLBName() string {
 	return "" // does not apply for AKS

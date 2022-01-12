@@ -62,6 +62,7 @@ type NetworkDescriber interface {
 	SetSubnet(infrav1.SubnetSpec)
 	IsIPv6Enabled() bool
 	ControlPlaneRouteTable() infrav1.RouteTable
+	APIServerLB() *infrav1.LoadBalancerSpec
 	APIServerLBName() string
 	APIServerLBPoolName(string) string
 	IsAPIServerPrivate() bool

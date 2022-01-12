@@ -52,6 +52,20 @@ func (m *MockNSGScope) EXPECT() *MockNSGScopeMockRecorder {
 	return m.recorder
 }
 
+// APIServerLB mocks base method.
+func (m *MockNSGScope) APIServerLB() *v1beta1.LoadBalancerSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLB")
+	ret0, _ := ret[0].(*v1beta1.LoadBalancerSpec)
+	return ret0
+}
+
+// APIServerLB indicates an expected call of APIServerLB.
+func (mr *MockNSGScopeMockRecorder) APIServerLB() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLB", reflect.TypeOf((*MockNSGScope)(nil).APIServerLB))
+}
+
 // APIServerLBName mocks base method.
 func (m *MockNSGScope) APIServerLBName() string {
 	m.ctrl.T.Helper()

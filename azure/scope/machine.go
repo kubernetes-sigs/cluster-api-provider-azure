@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -193,16 +194,25 @@ func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 }
 
 // InboundNatSpecs returns the inbound NAT specs.
-func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
+func (m *MachineScope) InboundNatSpecs(portsInUse map[int32]struct{}) []azure.ResourceSpecGetter {
+	// The existing inbound NAT rules are needed in order to find an available SSH port for each new inbound NAT rule.
 	if m.Role() == infrav1.ControlPlane {
-		return []azure.InboundNatSpec{
-			{
-				Name:             m.Name(),
-				LoadBalancerName: m.APIServerLBName(),
-			},
+		spec := &inboundnatrules.InboundNatSpec{
+			Name:                      m.Name(),
+			ResourceGroup:             m.ResourceGroup(),
+			LoadBalancerName:          m.APIServerLBName(),
+			FrontendIPConfigurationID: nil,
+			PortsInUse:                portsInUse,
 		}
+		if frontEndIPs := m.APIServerLB().FrontendIPs; len(frontEndIPs) > 0 {
+			ipConfig := frontEndIPs[0].Name
+			id := azure.FrontendIPConfigID(m.SubscriptionID(), m.ResourceGroup(), m.APIServerLBName(), ipConfig)
+			spec.FrontendIPConfigurationID = to.StringPtr(id)
+		}
+
+		return []azure.ResourceSpecGetter{spec}
 	}
-	return []azure.InboundNatSpec{}
+	return []azure.ResourceSpecGetter{}
 }
 
 // NICSpecs returns the network interface specs.

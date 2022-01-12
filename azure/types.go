@@ -64,12 +64,6 @@ type LBSpec struct {
 	IdleTimeoutInMinutes *int32
 }
 
-// InboundNatSpec defines the specification for an inbound NAT rule.
-type InboundNatSpec struct {
-	Name             string
-	LoadBalancerName string
-}
-
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
 	Name              string
