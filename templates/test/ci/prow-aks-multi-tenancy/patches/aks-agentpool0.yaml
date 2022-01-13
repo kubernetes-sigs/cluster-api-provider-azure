@@ -1,0 +1,7 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: "agentpool0"
+spec:
+  maxPods: 30
+  osDiskType: "Managed"

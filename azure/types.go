@@ -417,4 +417,7 @@ type AgentPoolSpec struct {
 
 	// MaxPods specifies the kubelet --max-pods configuration for the agent pool.
 	MaxPods *int32 `json:"maxPods,omitempty"`
+
+	// OsDiskType specifies the OS disk type for each node in the pool. Allowed values are 'Ephemeral' and 'Managed'.
+	OsDiskType *string `json:"osDiskType,omitempty"`
 }

@@ -66,7 +66,7 @@ metadata:
   namespace: default
 spec:
   mode: System
-  osDiskSizeGB: 512
+  osDiskSizeGB: 30
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -96,7 +96,7 @@ metadata:
   namespace: default
 spec:
   mode: User
-  osDiskSizeGB: 1024
+  osDiskSizeGB: 40
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

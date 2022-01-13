@@ -72,7 +72,7 @@ metadata:
   name: "agentpool0"
 spec:
   mode: System
-  osDiskSizeGB: 512
+  osDiskSizeGB: 30
   sku: "${AZURE_NODE_MACHINE_TYPE}"
 ---
 # Deploy a second agent pool with the same number of machines, but using potentially different infrastructure.
@@ -102,5 +102,34 @@ metadata:
   name: "agentpool1"
 spec:
   mode: User
-  osDiskSizeGB: 1024
+  osDiskSizeGB: 40
+  sku: "${AZURE_NODE_MACHINE_TYPE}"
+---
+# Deploy a third agent pool with one machine in order to test a AzureManagedMachinePool with only required configuration
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: "agentpool2"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: 1
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: "${CLUSTER_NAME}"
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureManagedMachinePool
+        name: "agentpool2"
+      version: "${KUBERNETES_VERSION}"
+---
+# The infrastructure backing the third pool will use the same VM SKU, which is the only required configuration
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: "agentpool2"
+spec:
+  mode: User
   sku: "${AZURE_NODE_MACHINE_TYPE}"

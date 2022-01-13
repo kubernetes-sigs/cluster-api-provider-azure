@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
@@ -80,6 +81,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			MinCount:            agentPoolSpec.MinCount,
 			AvailabilityZones:   &agentPoolSpec.AvailabilityZones,
 			MaxPods:             agentPoolSpec.MaxPods,
+			OsDiskType:          containerservice.OSDiskType(to.String(agentPoolSpec.OsDiskType)),
 		},
 	}
 

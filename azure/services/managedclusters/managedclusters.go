@@ -243,6 +243,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			AvailabilityZones:   &pool.AvailabilityZones,
 			MaxPods:             pool.MaxPods,
 			OrchestratorVersion: pool.Version,
+			OsDiskType:          containerservice.OSDiskType(to.String(pool.OsDiskType)),
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
