@@ -471,9 +471,9 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 	return managedClusterSpec, nil
 }
 
-// GetAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.
-func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.GetAgentPoolSpecs")
+// GetAllAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.
+func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.GetAllAgentPoolSpecs")
 	defer done()
 
 	if len(s.AllNodePools) == 0 {
@@ -495,7 +495,7 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 		ammps           = make([]azure.AgentPoolSpec, 0, len(s.AllNodePools))
 		foundSystemPool = false
 	)
-	for _, pool := range s.AllNodePools {
+	for i, pool := range s.AllNodePools {
 		// Fetch the owning MachinePool.
 
 		ownerPool, err := capiexputil.GetOwnerMachinePool(ctx, s.Client, pool.ObjectMeta)
@@ -512,34 +512,14 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 			foundSystemPool = true
 		}
 
-		ammp := azure.AgentPoolSpec{
-			Name:              to.String(pool.Spec.Name),
-			SKU:               pool.Spec.SKU,
-			Replicas:          1,
-			OSDiskSizeGB:      0,
-			Mode:              pool.Spec.Mode,
-			MaxPods:           pool.Spec.MaxPods,
-			AvailabilityZones: pool.Spec.AvailabilityZones,
-			OsDiskType:        pool.Spec.OsDiskType,
-		}
-
-		// Set optional values
-		if pool.Spec.OSDiskSizeGB != nil {
-			ammp.OSDiskSizeGB = *pool.Spec.OSDiskSizeGB
-		}
-
-		if ownerPool.Spec.Replicas != nil {
-			ammp.Replicas = *ownerPool.Spec.Replicas
-		}
-
 		if ownerPool.Spec.Template.Spec.Version != nil {
 			version := *ownerPool.Spec.Template.Spec.Version
 			if semver.Compare(version, s.ControlPlane.Spec.Version) > 0 {
 				return nil, errors.New("MachinePool version cannot be greater than the AzureManagedControlPlane version")
 			}
-			ammp.Version = to.StringPtr(strings.TrimPrefix(version, "v"))
 		}
 
+		ammp := buildAgentPoolSpec(s.ControlPlane, ownerPool, &s.AllNodePools[i])
 		ammps = append(ammps, ammp)
 	}
 
@@ -552,44 +532,50 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 
 // AgentPoolSpec returns an azure.AgentPoolSpec for currently reconciled AzureManagedMachinePool.
 func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
+	return buildAgentPoolSpec(s.ControlPlane, s.MachinePool, s.InfraMachinePool)
+}
+
+func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane,
+	machinePool *expv1.MachinePool,
+	managedMachinePool *infrav1exp.AzureManagedMachinePool) azure.AgentPoolSpec {
 	var normalizedVersion *string
-	if s.MachinePool.Spec.Template.Spec.Version != nil {
-		v := strings.TrimPrefix(*s.MachinePool.Spec.Template.Spec.Version, "v")
+	if machinePool.Spec.Template.Spec.Version != nil {
+		v := strings.TrimPrefix(*machinePool.Spec.Template.Spec.Version, "v")
 		normalizedVersion = &v
 	}
 
 	replicas := int32(1)
-	if s.MachinePool.Spec.Replicas != nil {
-		replicas = *s.MachinePool.Spec.Replicas
+	if machinePool.Spec.Replicas != nil {
+		replicas = *machinePool.Spec.Replicas
 	}
 
 	agentPoolSpec := azure.AgentPoolSpec{
-		Name:          to.String(s.InfraMachinePool.Spec.Name),
-		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
-		Cluster:       s.ControlPlane.Name,
-		SKU:           s.InfraMachinePool.Spec.SKU,
+		Name:          to.String(managedMachinePool.Spec.Name),
+		ResourceGroup: managedControlPlane.Spec.ResourceGroupName,
+		Cluster:       managedControlPlane.Name,
+		SKU:           managedMachinePool.Spec.SKU,
 		Replicas:      replicas,
 		Version:       normalizedVersion,
 		VnetSubnetID: azure.SubnetID(
-			s.ControlPlane.Spec.SubscriptionID,
-			s.ControlPlane.Spec.ResourceGroupName,
-			s.ControlPlane.Spec.VirtualNetwork.Name,
-			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			managedControlPlane.Spec.SubscriptionID,
+			managedControlPlane.Spec.ResourceGroupName,
+			managedControlPlane.Spec.VirtualNetwork.Name,
+			managedControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
-		Mode:              s.InfraMachinePool.Spec.Mode,
-		MaxPods:           s.InfraMachinePool.Spec.MaxPods,
-		AvailabilityZones: s.InfraMachinePool.Spec.AvailabilityZones,
-		OsDiskType:        s.InfraMachinePool.Spec.OsDiskType,
+		Mode:              managedMachinePool.Spec.Mode,
+		MaxPods:           managedMachinePool.Spec.MaxPods,
+		AvailabilityZones: managedMachinePool.Spec.AvailabilityZones,
+		OsDiskType:        managedMachinePool.Spec.OsDiskType,
 	}
 
-	if s.InfraMachinePool.Spec.OSDiskSizeGB != nil {
-		agentPoolSpec.OSDiskSizeGB = *s.InfraMachinePool.Spec.OSDiskSizeGB
+	if managedMachinePool.Spec.OSDiskSizeGB != nil {
+		agentPoolSpec.OSDiskSizeGB = *managedMachinePool.Spec.OSDiskSizeGB
 	}
 
-	if s.InfraMachinePool.Spec.Scaling != nil {
+	if managedMachinePool.Spec.Scaling != nil {
 		agentPoolSpec.EnableAutoScaling = to.BoolPtr(true)
-		agentPoolSpec.MaxCount = s.InfraMachinePool.Spec.Scaling.MaxSize
-		agentPoolSpec.MinCount = s.InfraMachinePool.Spec.Scaling.MinSize
+		agentPoolSpec.MaxCount = managedMachinePool.Spec.Scaling.MaxSize
+		agentPoolSpec.MinCount = managedMachinePool.Spec.Scaling.MinSize
 	}
 
 	return agentPoolSpec

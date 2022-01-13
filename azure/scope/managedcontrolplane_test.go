@@ -169,10 +169,12 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 			},
 			Expected: []azure.AgentPoolSpec{
 				{
-					Name:     "pool0",
-					SKU:      "Standard_D2s_v3",
-					Replicas: 1,
-					Mode:     "System",
+					Name:         "pool0",
+					SKU:          "Standard_D2s_v3",
+					Replicas:     1,
+					Mode:         "System",
+					Cluster:      "cluster1",
+					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				},
 			},
 		},
@@ -204,11 +206,13 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 			},
 			Expected: []azure.AgentPoolSpec{
 				{
-					Name:     "pool0",
-					SKU:      "Standard_D2s_v3",
-					Mode:     "System",
-					Replicas: 1,
-					Version:  to.StringPtr("1.21.1"),
+					Name:         "pool0",
+					SKU:          "Standard_D2s_v3",
+					Mode:         "System",
+					Replicas:     1,
+					Version:      to.StringPtr("1.21.1"),
+					Cluster:      "cluster1",
+					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				},
 			},
 		},
@@ -250,7 +254,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			agentPools, err := s.GetAgentPoolSpecs(context.TODO())
+			agentPools, err := s.GetAllAgentPoolSpecs(context.TODO())
 			if err != nil {
 				g.Expect(err.Error()).To(Equal(c.Err))
 			} else {
@@ -351,7 +355,7 @@ func TestManagedControlPlaneScope_MaxPods(t *testing.T) {
 			g.Expect(err).To(Succeed())
 			agentPool := s.AgentPoolSpec()
 			g.Expect(agentPool).To(Equal(c.Expected))
-			agentPools, err := s.GetAgentPoolSpecs(context.TODO())
+			agentPools, err := s.GetAllAgentPoolSpecs(context.TODO())
 			g.Expect(err).To(Succeed())
 			g.Expect(agentPools[0].MaxPods).To(Equal(c.Expected.MaxPods))
 		})
