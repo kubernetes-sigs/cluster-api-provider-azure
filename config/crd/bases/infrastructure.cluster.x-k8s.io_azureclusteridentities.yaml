@@ -428,6 +428,7 @@ spec:
                 description: UserAssignedMSI or Service Principal
                 enum:
                 - ServicePrincipal
+                - ManualServicePrincipal
                 - UserAssignedMSI
                 type: string
             required:
