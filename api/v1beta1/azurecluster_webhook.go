@@ -75,6 +75,20 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
+	if old.Spec.ControlPlaneEndpoint.Host != "" && c.Spec.ControlPlaneEndpoint.Host != old.Spec.ControlPlaneEndpoint.Host {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "ControlPlaneEndpoint", "Host"),
+				c.Spec.ControlPlaneEndpoint.Host, "field is immutable"),
+		)
+	}
+
+	if old.Spec.ControlPlaneEndpoint.Port != 0 && c.Spec.ControlPlaneEndpoint.Port != old.Spec.ControlPlaneEndpoint.Port {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "ControlPlaneEndpoint", "Port"),
+				c.Spec.ControlPlaneEndpoint.Port, "field is immutable"),
+		)
+	}
+
 	if !reflect.DeepEqual(c.Spec.AzureEnvironment, old.Spec.AzureEnvironment) {
 		// The equality failure could be because of default mismatch between v1alpha3 and v1beta1. This happens because
 		// the new object `r` will have run through the default webhooks but the old object `old` would not have so.

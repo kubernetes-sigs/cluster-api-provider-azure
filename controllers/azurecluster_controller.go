@@ -240,9 +240,11 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 	}
 
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
-	azureCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
-		Host: clusterScope.APIServerHost(),
-		Port: clusterScope.APIServerPort(),
+	if azureCluster.Spec.ControlPlaneEndpoint.Host == "" {
+		azureCluster.Spec.ControlPlaneEndpoint.Host = clusterScope.APIServerHost()
+	}
+	if azureCluster.Spec.ControlPlaneEndpoint.Port == 0 {
+		azureCluster.Spec.ControlPlaneEndpoint.Port = clusterScope.APIServerPort()
 	}
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it

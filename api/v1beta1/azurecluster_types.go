@@ -45,7 +45,8 @@ type AzureClusterSpec struct {
 
 	Location string `json:"location"`
 
-	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane. It is not recommended to set
+	// this when creating an AzureCluster as CAPZ will set this for you. However, if it is set, CAPZ will not change it.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 

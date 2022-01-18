@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func TestAzureCluster_ValidateCreate(t *testing.T) {
@@ -34,6 +35,18 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			name: "azurecluster with pre-existing vnet - valid spec",
 			cluster: func() *AzureCluster {
 				return createValidCluster()
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "azurecluster with pre-existing control plane endpoint - valid spec",
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+					Host: "apiserver.example.com",
+					Port: 8443,
+				}
+				return cluster
 			}(),
 			wantErr: false,
 		},
@@ -105,6 +118,41 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		cluster    *AzureCluster
 		wantErr    bool
 	}{
+		{
+			name: "azurecluster with pre-existing control plane endpoint - valid spec",
+			oldCluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+					Host: "apiserver.example.com",
+					Port: 8443,
+				}
+				return cluster
+			}(),
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+					Host: "apiserver.example.io",
+					Port: 6443,
+				}
+				return cluster
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "azurecluster with no control plane endpoint - valid spec",
+			oldCluster: func() *AzureCluster {
+				return createValidCluster()
+			}(),
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+					Host: "apiserver.example.com",
+					Port: 8443,
+				}
+				return cluster
+			}(),
+			wantErr: false,
+		},
 		{
 			name: "azurecluster with pre-existing vnet - valid spec",
 			oldCluster: func() *AzureCluster {
