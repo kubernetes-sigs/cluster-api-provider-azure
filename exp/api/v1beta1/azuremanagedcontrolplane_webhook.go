@@ -65,8 +65,7 @@ func (r *AzureManagedControlPlane) Default() {
 		r.Spec.Version = normalizedVersion
 	}
 
-	err := r.setDefaultSSHPublicKey()
-	if err != nil {
+	if err := r.setDefaultSSHPublicKey(); err != nil {
 		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "SetDefaultSshPublicKey failed")
 	}
 

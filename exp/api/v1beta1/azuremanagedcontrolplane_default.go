@@ -34,8 +34,7 @@ const (
 
 // setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane.
 func (r *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
-	sshKeyData := r.Spec.SSHPublicKey
-	if sshKeyData == "" {
+	if sshKeyData := r.Spec.SSHPublicKey; sshKeyData == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
 		if err != nil {
 			return err

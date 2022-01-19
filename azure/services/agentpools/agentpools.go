@@ -94,8 +94,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// cluster, normalized to reflect the input we originally provided.
 	// AKS will populate defaults and read-only values, which we want
 	// to strip/clean to match what we expect.
-	isCreate := azure.ResourceNotFound(err)
-	if isCreate {
+
+	if isCreate := azure.ResourceNotFound(err); isCreate {
 		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
 		if err != nil && azure.ResourceNotFound(err) {
 			return azure.WithTransientError(errors.Wrap(err, "agent pool dependent resource does not exist yet"), 20*time.Second)
