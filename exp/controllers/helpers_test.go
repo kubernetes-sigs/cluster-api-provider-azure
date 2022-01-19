@@ -561,7 +561,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		{
 			Name: "NotAnAzureCluster",
 			MapObjectFactory: func(g *GomegaWithT) client.Object {
-				return newMachinePool("foo", "bar")
+				return newMachinePool("fakeCluster", "bar")
 			},
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)

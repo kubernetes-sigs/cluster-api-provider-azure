@@ -38,7 +38,7 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	cluster := newAzureCluster("foo")
+	cluster := newAzureCluster("fakeCluster")
 	cluster.Spec.ResourceGroup = "resourceGroup"
 	cluster.Spec.Location = "test-location"
 	cluster.Spec.ResourceGroup = "my-rg"
@@ -52,11 +52,11 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 	clusterMock.EXPECT().BaseURI().AnyTimes()
 	clusterMock.EXPECT().Authorizer().AnyTimes()
 	clusterMock.EXPECT().Location().Return(cluster.Spec.Location)
-	clusterMock.EXPECT().HashKey().Return("foo")
+	clusterMock.EXPECT().HashKey().Return("fakeCluster")
 
 	mps := &scope.MachinePoolScope{
 		ClusterScoper: clusterMock,
-		MachinePool:   newMachinePool("foo", "poolName"),
+		MachinePool:   newMachinePool("fakeCluster", "poolName"),
 		AzureMachinePool: &infrav1exp.AzureMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "poolName",

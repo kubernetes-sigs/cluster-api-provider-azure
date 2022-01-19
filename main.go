@@ -313,7 +313,7 @@ func main() {
 
 	registerControllers(ctx, mgr)
 
-	registerWebhooks(ctx, mgr)
+	registerWebhooks(mgr)
 
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager", "version", version.Get().String())
@@ -473,7 +473,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 	}
 }
 
-func registerWebhooks(ctx context.Context, mgr manager.Manager) {
+func registerWebhooks(mgr manager.Manager) {
 	if err := (&infrav1beta1.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureCluster")
 		os.Exit(1)

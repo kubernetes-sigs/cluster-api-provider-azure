@@ -85,9 +85,9 @@ func TestGetCloudProviderConfig(t *testing.T) {
 
 	cluster := newCluster("foo")
 	cluster.Default()
-	azureCluster := newAzureCluster("foo", "bar")
+	azureCluster := newAzureCluster("bar")
 	azureCluster.Default()
-	azureClusterCustomVnet := newAzureClusterWithCustomVnet("foo", "bar")
+	azureClusterCustomVnet := newAzureClusterWithCustomVnet("bar")
 	azureClusterCustomVnet.Default()
 
 	cases := map[string]struct {
@@ -253,7 +253,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 	}
 
 	cluster := newCluster("foo")
-	azureCluster := newAzureCluster("foo", "bar")
+	azureCluster := newAzureCluster("bar")
 
 	cluster.Default()
 	azureCluster.Default()
@@ -354,7 +354,7 @@ func newCluster(name string) *clusterv1.Cluster {
 	}
 }
 
-func newAzureCluster(name, location string) *infrav1.AzureCluster {
+func newAzureCluster(location string) *infrav1.AzureCluster {
 	return &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
@@ -405,7 +405,7 @@ func withbackOffConfig(ac infrav1.AzureCluster) *infrav1.AzureCluster {
 	return &ac
 }
 
-func newAzureClusterWithCustomVnet(name, location string) *infrav1.AzureCluster {
+func newAzureClusterWithCustomVnet(location string) *infrav1.AzureCluster {
 	return &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",

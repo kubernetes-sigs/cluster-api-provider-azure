@@ -265,7 +265,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				createdVMSS := newDefaultVMSS("VM_SIZE")
 				instances := newDefaultInstances()
-				_ = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
+				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
 				s.DeleteLongRunningOperationState(defaultSpec.Name, scope.ScalesetsServiceName)
 			},
 		},
@@ -277,7 +277,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				createdVMSS := newDefaultWindowsVMSS()
 				instances := newDefaultInstances()
-				_ = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
+				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
 				s.DeleteLongRunningOperationState(defaultSpec.Name, scope.ScalesetsServiceName)
 			},
 		},
@@ -1194,7 +1194,7 @@ func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 	}
 }
 
-func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, createdVMSS compute.VirtualMachineScaleSet, instances []compute.VirtualMachineScaleSetVM) compute.VirtualMachineScaleSet {
+func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, createdVMSS compute.VirtualMachineScaleSet, instances []compute.VirtualMachineScaleSetVM) {
 	createdVMSS.ID = to.StringPtr("vmss-id")
 	createdVMSS.ProvisioningState = to.StringPtr(string(infrav1.Succeeded))
 	setupDefaultVMSSExpectations(s)
@@ -1210,7 +1210,6 @@ func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockS
 	s.MaxSurge().Return(1, nil)
 	s.SetVMSSState(gomock.Any())
 	s.SetProviderID(azure.ProviderIDPrefix + *createdVMSS.ID)
-	return createdVMSS
 }
 
 func setupDefaultVMSSStartCreatingExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {

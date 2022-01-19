@@ -35,8 +35,8 @@ func TestAzureMachineSpec_SetDefaultSSHPublicKey(t *testing.T) {
 	}
 
 	existingPublicKey := "testpublickey"
-	publicKeyExistTest := test{machine: createMachineWithSSHPublicKey(t, existingPublicKey)}
-	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey(t, "")}
+	publicKeyExistTest := test{machine: createMachineWithSSHPublicKey(existingPublicKey)}
+	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey("")}
 
 	err := publicKeyExistTest.machine.Spec.SetDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
@@ -250,12 +250,12 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 	}
 }
 
-func createMachineWithSSHPublicKey(t *testing.T, sshPublicKey string) *AzureMachine {
+func createMachineWithSSHPublicKey(sshPublicKey string) *AzureMachine {
 	machine := hardcodedAzureMachineWithSSHKey(sshPublicKey)
 	return machine
 }
 
-func createMachineWithUserAssignedIdentities(t *testing.T, identitiesList []UserAssignedIdentity) *AzureMachine {
+func createMachineWithUserAssignedIdentities(identitiesList []UserAssignedIdentity) *AzureMachine {
 	machine := hardcodedAzureMachineWithSSHKey(generateSSHPublicKey(true))
 	machine.Spec.Identity = VMIdentityUserAssigned
 	machine.Spec.UserAssignedIdentities = identitiesList
