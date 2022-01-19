@@ -76,17 +76,17 @@ func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 }
 
 // ValidateSystemAssignedIdentity validates the system-assigned identities list.
-func ValidateSystemAssignedIdentity(identityType VMIdentity, old, new string, fldPath *field.Path) field.ErrorList {
+func ValidateSystemAssignedIdentity(identityType VMIdentity, oldIdentity, newIdentity string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if identityType == VMIdentitySystemAssigned {
-		if _, err := uuid.Parse(new); err != nil {
-			allErrs = append(allErrs, field.Invalid(fldPath, new, "Role assignment name must be a valid GUID. It is optional and will be auto-generated when not specified."))
+		if _, err := uuid.Parse(newIdentity); err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, newIdentity, "Role assignment name must be a valid GUID. It is optional and will be auto-generated when not specified."))
 		}
-		if old != "" && old != new {
-			allErrs = append(allErrs, field.Invalid(fldPath, new, "Role assignment name should not be modified after AzureMachine creation."))
+		if oldIdentity != "" && oldIdentity != newIdentity {
+			allErrs = append(allErrs, field.Invalid(fldPath, newIdentity, "Role assignment name should not be modified after AzureMachine creation."))
 		}
-	} else if len(new) != 0 {
+	} else if len(newIdentity) != 0 {
 		allErrs = append(allErrs, field.Forbidden(fldPath, "Role assignment name should only be set when using system assigned identity."))
 	}
 
@@ -235,23 +235,23 @@ func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []DataDisk, fieldPath *f
 	return allErrs
 }
 
-func validateManagedDisksUpdate(old, new *ManagedDiskParameters, fieldPath *field.Path) field.ErrorList {
+func validateManagedDisksUpdate(oldDiskParams, newDiskParams *ManagedDiskParameters, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	fieldErrMsg := "changing managed disk options after machine creation is not allowed"
 
-	if new != nil && old != nil {
-		if new.StorageAccountType != old.StorageAccountType {
-			allErrs = append(allErrs, field.Invalid(fieldPath.Child("storageAccountType"), new, fieldErrMsg))
+	if newDiskParams != nil && oldDiskParams != nil {
+		if newDiskParams.StorageAccountType != oldDiskParams.StorageAccountType {
+			allErrs = append(allErrs, field.Invalid(fieldPath.Child("storageAccountType"), newDiskParams, fieldErrMsg))
 		}
-		if new.DiskEncryptionSet != nil && old.DiskEncryptionSet != nil {
-			if new.DiskEncryptionSet.ID != old.DiskEncryptionSet.ID {
-				allErrs = append(allErrs, field.Invalid(fieldPath.Child("diskEncryptionSet").Child("ID"), new, fieldErrMsg))
+		if newDiskParams.DiskEncryptionSet != nil && oldDiskParams.DiskEncryptionSet != nil {
+			if newDiskParams.DiskEncryptionSet.ID != oldDiskParams.DiskEncryptionSet.ID {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Child("diskEncryptionSet").Child("ID"), newDiskParams, fieldErrMsg))
 			}
-		} else if (new.DiskEncryptionSet != nil && old.DiskEncryptionSet == nil) || (new.DiskEncryptionSet == nil && old.DiskEncryptionSet != nil) {
-			allErrs = append(allErrs, field.Invalid(fieldPath.Child("diskEncryptionSet"), new, fieldErrMsg))
+		} else if (newDiskParams.DiskEncryptionSet != nil && oldDiskParams.DiskEncryptionSet == nil) || (newDiskParams.DiskEncryptionSet == nil && oldDiskParams.DiskEncryptionSet != nil) {
+			allErrs = append(allErrs, field.Invalid(fieldPath.Child("diskEncryptionSet"), newDiskParams, fieldErrMsg))
 		}
-	} else if (new != nil && old == nil) || (new == nil && old != nil) {
-		allErrs = append(allErrs, field.Invalid(fieldPath, new, fieldErrMsg))
+	} else if (newDiskParams != nil && oldDiskParams == nil) || (newDiskParams == nil && oldDiskParams != nil) {
+		allErrs = append(allErrs, field.Invalid(fieldPath, newDiskParams, fieldErrMsg))
 	}
 
 	return allErrs

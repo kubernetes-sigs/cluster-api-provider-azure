@@ -490,10 +490,10 @@ func validatePrivateDNSZoneName(networkSpec NetworkSpec, fldPath *field.Path) fi
 }
 
 // validateCloudProviderConfigOverrides validates CloudProviderConfigOverrides.
-func validateCloudProviderConfigOverrides(old, new *CloudProviderConfigOverrides, fldPath *field.Path) field.ErrorList {
+func validateCloudProviderConfigOverrides(oldConfig, newConfig *CloudProviderConfigOverrides, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	if !reflect.DeepEqual(old, new) {
-		allErrs = append(allErrs, field.Invalid(fldPath, new, "cannot change cloudProviderConfigOverrides cluster creation"))
+	if !reflect.DeepEqual(oldConfig, newConfig) {
+		allErrs = append(allErrs, field.Invalid(fldPath, newConfig, "cannot change cloudProviderConfigOverrides cluster creation"))
 	}
 	return allErrs
 }

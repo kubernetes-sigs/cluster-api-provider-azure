@@ -23,6 +23,6 @@ import (
 )
 
 // RandomName will generate a random name "{prefix}-{rand(len)}".
-func RandomName(prefix string, len int) string {
-	return fmt.Sprintf("%s-%s", prefix, rand.String(len))
+func RandomName(prefix string, length int) string {
+	return fmt.Sprintf("%s-%s", prefix, rand.String(length))
 }
