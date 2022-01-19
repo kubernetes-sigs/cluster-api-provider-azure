@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest/to"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

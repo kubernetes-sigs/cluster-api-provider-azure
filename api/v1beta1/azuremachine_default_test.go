@@ -21,9 +21,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/uuid"
-
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
 )
 

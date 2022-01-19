@@ -18,9 +18,8 @@ package webhook
 
 import (
 	"context"
-	"net/http"
-
 	"errors"
+	"net/http"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

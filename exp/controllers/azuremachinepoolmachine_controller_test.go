@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"

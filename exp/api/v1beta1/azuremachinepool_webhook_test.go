@@ -22,15 +22,12 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/util/uuid"
-
 	"github.com/Azure/go-autorest/autorest/to"
+	guuid "github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
-
-	guuid "github.com/google/uuid"
-
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 

@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
-
 	. "github.com/onsi/gomega"
 )
 
