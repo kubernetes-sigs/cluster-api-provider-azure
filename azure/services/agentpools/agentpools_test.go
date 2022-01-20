@@ -261,6 +261,42 @@ func TestReconcile(t *testing.T) {
 				}, nil)
 			},
 		},
+		{
+			name: "skip PoolProfile count update if autoscaling is enabled",
+			agentPoolsSpec: azure.AgentPoolSpec{
+				Name:              "my-agent-pool-autoscaling",
+				ResourceGroup:     "my-rg",
+				Cluster:           "my-cluster",
+				SKU:               "Standard_D2s_v3",
+				Version:           to.StringPtr("9.99.9999"),
+				Replicas:          1,
+				EnableAutoScaling: to.BoolPtr(true),
+				MaxCount:          to.Int32Ptr(2),
+				MinCount:          to.Int32Ptr(1),
+				OSDiskSizeGB:      100,
+				MaxPods:           to.Int32Ptr(12),
+				OsDiskType:        to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool-autoscaling").Return(containerservice.AgentPool{
+					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+						Count:               to.Int32Ptr(2), // get the scaled up count
+						OsDiskSizeGB:        to.Int32Ptr(100),
+						VMSize:              to.StringPtr(string(containerservice.VMSizeTypesStandardD2sV3)),
+						OsType:              containerservice.OSTypeLinux,
+						OrchestratorVersion: to.StringPtr("9.99.9999"),
+						ProvisioningState:   to.StringPtr("Succeeded"),
+						VnetSubnetID:        to.StringPtr(""),
+						EnableAutoScaling:   to.BoolPtr(true),
+						MaxPods:             to.Int32Ptr(12),
+						MaxCount:            to.Int32Ptr(2),
+						MinCount:            to.Int32Ptr(1),
+						OsDiskType:          containerservice.OSDiskTypeEphemeral,
+					},
+				}, nil)
+			},
+		},
 	}
 
 	for _, tc := range testcases {
@@ -307,6 +343,14 @@ func TestReconcile(t *testing.T) {
 						OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 					},
 				},
+			}
+
+			if tc.agentPoolsSpec.EnableAutoScaling != nil {
+				scaling := &infraexpv1.ManagedMachinePoolScaling{
+					MinSize: tc.agentPoolsSpec.MinCount,
+					MaxSize: tc.agentPoolsSpec.MaxCount,
+				}
+				machinePoolScope.InfraMachinePool.Spec.Scaling = scaling
 			}
 
 			tc.expect(agentpoolsMock.EXPECT())
