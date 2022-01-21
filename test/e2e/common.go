@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -67,6 +68,7 @@ const (
 	ManagedClustersResourceType    = "managedClusters"
 	capiImagePublisher             = "cncf-upstream"
 	capiOfferName                  = "capi"
+	capiWindowsOfferName           = "capi-windows"
 )
 
 func Byf(format string, a ...interface{}) {
