@@ -1366,6 +1366,10 @@ spec:
                             type: object
                           role:
                             description: Role defines the subnet role (eg. Node, ControlPlane)
+                            enum:
+                            - node
+                            - control-plane
+                            - bastion
                             type: string
                           routeTable:
                             description: RouteTable defines the route table that should
@@ -1838,6 +1842,10 @@ spec:
                           type: object
                         role:
                           description: Role defines the subnet role (eg. Node, ControlPlane)
+                          enum:
+                          - node
+                          - control-plane
+                          - bastion
                           type: string
                         routeTable:
                           description: RouteTable defines the route table that should

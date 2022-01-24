@@ -1559,6 +1559,7 @@ func TestBastionDefault(t *testing.T) {
 							Subnet: SubnetSpec{
 								Name:       "AzureBastionSubnet",
 								CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
+								Role:       DefaultAzureBastionSubnetRole,
 							},
 							PublicIP: PublicIPSpec{
 								Name: "foo-azure-bastion-pip",
@@ -1592,6 +1593,7 @@ func TestBastionDefault(t *testing.T) {
 							Subnet: SubnetSpec{
 								Name:       "AzureBastionSubnet",
 								CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
+								Role:       DefaultAzureBastionSubnetRole,
 							},
 							PublicIP: PublicIPSpec{
 								Name: "foo-azure-bastion-pip",
@@ -1625,6 +1627,7 @@ func TestBastionDefault(t *testing.T) {
 							Subnet: SubnetSpec{
 								Name:       "AzureBastionSubnet",
 								CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
+								Role:       DefaultAzureBastionSubnetRole,
 							},
 							PublicIP: PublicIPSpec{
 								Name: "foo-azure-bastion-pip",
@@ -1661,6 +1664,7 @@ func TestBastionDefault(t *testing.T) {
 							Subnet: SubnetSpec{
 								Name:       "my-superfancy-name",
 								CIDRBlocks: []string{"10.10.0.0/16"},
+								Role:       DefaultAzureBastionSubnetRole,
 							},
 							PublicIP: PublicIPSpec{
 								Name: "foo-azure-bastion-pip",
@@ -1696,6 +1700,7 @@ func TestBastionDefault(t *testing.T) {
 							Subnet: SubnetSpec{
 								Name:       "AzureBastionSubnet",
 								CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
+								Role:       DefaultAzureBastionSubnetRole,
 							},
 							PublicIP: PublicIPSpec{
 								Name: "my-ultrafancy-pip-name",
