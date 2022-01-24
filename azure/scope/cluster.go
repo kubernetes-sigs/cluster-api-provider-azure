@@ -36,6 +36,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
@@ -165,11 +166,17 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 }
 
 // LBSpecs returns the load balancer specs.
-func (s *ClusterScope) LBSpecs() []azure.LBSpec {
-	specs := []azure.LBSpec{
-		{
+func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
+	specs := []azure.ResourceSpecGetter{
+		&loadbalancers.LBSpec{
 			// API Server LB
 			Name:                 s.APIServerLB().Name,
+			ResourceGroup:        s.ResourceGroup(),
+			SubscriptionID:       s.SubscriptionID(),
+			ClusterName:          s.ClusterName(),
+			Location:             s.Location(),
+			VNetName:             s.Vnet().Name,
+			VNetResourceGroup:    s.Vnet().ResourceGroup,
 			SubnetName:           s.ControlPlaneSubnet().Name,
 			FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
 			APIServerPort:        s.APIServerPort(),
@@ -178,32 +185,47 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 			Role:                 infrav1.APIServerRole,
 			BackendPoolName:      s.APIServerLBPoolName(s.APIServerLB().Name),
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:       s.AdditionalTags(),
 		},
 	}
 
 	// Node outbound LB
 	if s.NodeOutboundLB() != nil {
-		specs = append(specs, azure.LBSpec{
+		specs = append(specs, &loadbalancers.LBSpec{
 			Name:                 s.NodeOutboundLBName(),
+			ResourceGroup:        s.ResourceGroup(),
+			SubscriptionID:       s.SubscriptionID(),
+			ClusterName:          s.ClusterName(),
+			Location:             s.Location(),
+			VNetName:             s.Vnet().Name,
+			VNetResourceGroup:    s.Vnet().ResourceGroup,
 			FrontendIPConfigs:    s.NodeOutboundLB().FrontendIPs,
 			Type:                 s.NodeOutboundLB().Type,
 			SKU:                  s.NodeOutboundLB().SKU,
 			BackendPoolName:      s.OutboundPoolName(s.NodeOutboundLBName()),
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.NodeOutboundRole,
+			AdditionalTags:       s.AdditionalTags(),
 		})
 	}
 
 	// Control Plane Outbound LB
 	if s.ControlPlaneOutboundLB() != nil {
-		specs = append(specs, azure.LBSpec{
+		specs = append(specs, &loadbalancers.LBSpec{
 			Name:                 s.ControlPlaneOutboundLB().Name,
+			ResourceGroup:        s.ResourceGroup(),
+			SubscriptionID:       s.SubscriptionID(),
+			ClusterName:          s.ClusterName(),
+			Location:             s.Location(),
+			VNetName:             s.Vnet().Name,
+			VNetResourceGroup:    s.Vnet().ResourceGroup,
 			FrontendIPConfigs:    s.ControlPlaneOutboundLB().FrontendIPs,
 			Type:                 s.ControlPlaneOutboundLB().Type,
 			SKU:                  s.ControlPlaneOutboundLB().SKU,
 			BackendPoolName:      s.OutboundPoolName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.ControlPlaneOutboundRole,
+			AdditionalTags:       s.AdditionalTags(),
 		})
 	}
 
@@ -623,6 +645,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.VnetPeeringReadyCondition,
 			infrav1.DisksReadyCondition,
 			infrav1.NATGatewaysReadyCondition,
+			infrav1.LoadBalancersReadyCondition,
 		),
 	)
 
@@ -637,6 +660,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.VnetPeeringReadyCondition,
 			infrav1.DisksReadyCondition,
 			infrav1.NATGatewaysReadyCondition,
+			infrav1.LoadBalancersReadyCondition,
 		}})
 }
 

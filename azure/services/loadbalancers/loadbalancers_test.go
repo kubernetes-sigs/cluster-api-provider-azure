@@ -21,232 +21,139 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers/mock_loadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks/mock_virtualnetworks"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+)
+
+var (
+	fakePublicAPILBSpec = LBSpec{
+		Name:                 "my-publiclb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Public,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-publiclb-backendPool",
+		IdleTimeoutInMinutes: to.Int32Ptr(4),
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-publiclb-frontEnd",
+				PublicIP: &infrav1.PublicIPSpec{
+					Name:    "my-publicip",
+					DNSName: "my-cluster.12345.mydomain.com",
+				},
+			},
+		},
+		APIServerPort: 6443,
+	}
+
+	fakeInternalAPILBSpec = LBSpec{
+		Name:                 "my-private-lb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Internal,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-private-lb-backendPool",
+		IdleTimeoutInMinutes: to.Int32Ptr(4),
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name:             "my-private-lb-frontEnd",
+				PrivateIPAddress: "10.0.0.10",
+			},
+		},
+		APIServerPort: 6443,
+	}
+
+	fakeNodeOutboundLBSpec = LBSpec{
+		Name:                 "my-cluster",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.NodeOutboundRole,
+		Type:                 infrav1.Public,
+		SKU:                  infrav1.SKUStandard,
+		BackendPoolName:      "my-cluster-outboundBackendPool",
+		IdleTimeoutInMinutes: to.Int32Ptr(30),
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-cluster-frontEnd",
+				PublicIP: &infrav1.PublicIPSpec{
+					Name: "outbound-publicip",
+				},
+			},
+		},
+	}
+
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
 )
 
 func TestReconcileLoadBalancer(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder)
+		expect        func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "fail to create a public LB",
-			expectedError: "failed to create load balancer \"my-publiclb\": #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name: "my-publiclb",
-						Role: infrav1.APIServerRole,
-					},
-				})
-				setupDefaultLBExpectations(s)
-				m.Get(gomockinternal.AContext(), "my-rg", "my-publiclb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
+				r.CreateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, internalError)
+				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, internalError)
 			},
 		},
 		{
 			name:          "create public apiserver LB",
 			expectedError: "",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name:                 "my-publiclb",
-						Role:                 infrav1.APIServerRole,
-						Type:                 infrav1.Public,
-						SKU:                  infrav1.SKUStandard,
-						SubnetName:           "my-cp-subnet",
-						BackendPoolName:      "my-publiclb-backendPool",
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-						FrontendIPConfigs: []infrav1.FrontendIP{
-							{
-								Name: "my-publiclb-frontEnd",
-								PublicIP: &infrav1.PublicIPSpec{
-									Name:    "my-publicip",
-									DNSName: "my-cluster.12345.mydomain.com",
-								},
-							},
-						},
-						APIServerPort: 6443,
-					},
-				})
-				setupDefaultLBExpectations(s)
-				gomock.InOrder(
-					m.Get(gomockinternal.AContext(), "my-rg", "my-publiclb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publiclb", gomockinternal.DiffEq(newDefaultPublicAPIServerLB())).Return(nil))
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
+				r.CreateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "create internal apiserver LB",
 			expectedError: "",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name:                 "my-private-lb",
-						Role:                 infrav1.APIServerRole,
-						Type:                 infrav1.Internal,
-						SKU:                  infrav1.SKUStandard,
-						SubnetName:           "my-cp-subnet",
-						BackendPoolName:      "my-private-lb-backendPool",
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-						FrontendIPConfigs: []infrav1.FrontendIP{
-							{
-								Name:             "my-private-lb-frontEnd",
-								PrivateIPAddress: "10.0.0.10",
-							},
-						},
-						APIServerPort: 6443,
-					},
-				})
-				setupDefaultLBExpectations(s)
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "my-vnet",
-				})
-				gomock.InOrder(
-					m.Get(gomockinternal.AContext(), "my-rg", "my-private-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-private-lb", gomockinternal.DiffEq(newDefaultInternalAPIServerLB())).Return(nil))
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakeInternalAPILBSpec})
+				r.CreateResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "create node outbound LB",
 			expectedError: "",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name:                 "my-cluster",
-						Role:                 infrav1.NodeOutboundRole,
-						Type:                 infrav1.Public,
-						SKU:                  infrav1.SKUStandard,
-						BackendPoolName:      "my-cluster-outboundBackendPool",
-						IdleTimeoutInMinutes: to.Int32Ptr(30),
-						FrontendIPConfigs: []infrav1.FrontendIP{
-							{
-								Name: "my-cluster-frontEnd",
-								PublicIP: &infrav1.PublicIPSpec{
-									Name: "outbound-publicip",
-								},
-							},
-						},
-					},
-				})
-				setupDefaultLBExpectations(s)
-				gomock.InOrder(
-					m.Get(gomockinternal.AContext(), "my-rg", "my-cluster").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", gomockinternal.DiffEq(newDefaultNodeOutboundLB())).Return(nil))
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakeNodeOutboundLBSpec})
+				r.CreateResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "create multiple LBs",
 			expectedError: "",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name:                 "my-lb",
-						SubnetName:           "my-subnet",
-						APIServerPort:        6443,
-						Role:                 infrav1.APIServerRole,
-						Type:                 infrav1.Internal,
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-					},
-					{
-						Name:                 "my-lb-2",
-						APIServerPort:        6443,
-						Role:                 infrav1.APIServerRole,
-						Type:                 infrav1.Public,
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-					},
-					{
-						Name:                 "my-lb-3",
-						Role:                 infrav1.NodeOutboundRole,
-						Type:                 infrav1.Public,
-						IdleTimeoutInMinutes: to.Int32Ptr(30),
-					},
-				})
-				setupDefaultLBExpectations(s)
-				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{
-					ResourceGroup: "my-rg",
-					Name:          "my-vnet",
-				})
-				m.Get(gomockinternal.AContext(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
-				m.Get(gomockinternal.AContext(), "my-rg", "my-lb-2").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb-2", gomock.AssignableToTypeOf(network.LoadBalancer{}))
-				m.Get(gomockinternal.AContext(), "my-rg", "my-lb-3").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb-3", gomock.AssignableToTypeOf(network.LoadBalancer{}))
-			},
-		},
-		{
-			name:          "LB already exists and needs no updates",
-			expectedError: "",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name:                 "my-publiclb",
-						Role:                 infrav1.APIServerRole,
-						Type:                 infrav1.Public,
-						SKU:                  infrav1.SKUStandard,
-						SubnetName:           "my-cp-subnet",
-						BackendPoolName:      "my-publiclb-backendPool",
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-						FrontendIPConfigs: []infrav1.FrontendIP{
-							{
-								Name: "my-publiclb-frontEnd",
-								PublicIP: &infrav1.PublicIPSpec{
-									Name:    "my-publicip",
-									DNSName: "my-cluster.12345.mydomain.com",
-								},
-							},
-						},
-						APIServerPort: 6443,
-					},
-				})
-				setupDefaultLBExpectations(s)
-				existingLB := newDefaultPublicAPIServerLB()
-				existingLB.ID = to.StringPtr("azure/my-publiclb")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-publiclb").Return(existingLB, nil)
-			},
-		},
-		{
-			name:          "LB already exists and is missing properties",
-			expectedError: "",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name:                 "my-publiclb",
-						Role:                 infrav1.APIServerRole,
-						Type:                 infrav1.Public,
-						SKU:                  infrav1.SKUStandard,
-						SubnetName:           "my-cp-subnet",
-						BackendPoolName:      "my-publiclb-backendPool",
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-						FrontendIPConfigs: []infrav1.FrontendIP{
-							{
-								Name: "my-publiclb-frontEnd",
-								PublicIP: &infrav1.PublicIPSpec{
-									Name:    "my-publicip",
-									DNSName: "my-cluster.12345.mydomain.com",
-								},
-							},
-						},
-						APIServerPort: 6443,
-					},
-				})
-				setupDefaultLBExpectations(s)
-				existingLB := newDefaultPublicAPIServerLB()
-				existingLB.ID = to.StringPtr("azure/my-publiclb")
-				existingLB.BackendAddressPools = &[]network.BackendAddressPool{}
-				m.Get(gomockinternal.AContext(), "my-rg", "my-publiclb").Return(existingLB, nil)
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publiclb", gomockinternal.DiffEq(newDefaultPublicAPIServerLB())).Return(nil)
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec, &fakeInternalAPILBSpec, &fakeNodeOutboundLBSpec})
+				r.CreateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, nil)
+				r.CreateResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil, nil)
+				r.CreateResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
 	}
@@ -261,15 +168,13 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			scopeMock := mock_loadbalancers.NewMockLBScope(mockCtrl)
-			clientMock := mock_loadbalancers.NewMockClient(mockCtrl)
-			vnetMock := mock_virtualnetworks.NewMockClient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), vnetMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:                 scopeMock,
-				Client:                clientMock,
-				virtualNetworksClient: vnetMock,
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
@@ -286,51 +191,35 @@ func TestDeleteLoadBalancer(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder)
+		expect        func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
-			name:          "successfully delete an existing load balancer",
+			name:          "delete a load balancer",
 			expectedError: "",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name: "my-internallb",
-					},
-					{
-						Name: "my-publiclb",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-internallb")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-publiclb")
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
+				r.DeleteResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "load balancer already deleted",
+			name:          "delete multiple load balancers",
 			expectedError: "",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name: "my-publiclb",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-publiclb").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec, &fakeInternalAPILBSpec, &fakeNodeOutboundLBSpec})
+				r.DeleteResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil)
+				r.DeleteResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil)
+				r.DeleteResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "load balancer deletion fails",
-			expectedError: "failed to delete load balancer my-publiclb in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder) {
-				s.LBSpecs().Return([]azure.LBSpec{
-					{
-						Name: "my-publiclb",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-publiclb").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
+				r.DeleteResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(internalError)
+				s.UpdateDeleteStatus(infrav1.LoadBalancersReadyCondition, serviceName, internalError)
 			},
 		},
 	}
@@ -345,13 +234,13 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			scopeMock := mock_loadbalancers.NewMockLBScope(mockCtrl)
-			publicLBMock := mock_loadbalancers.NewMockClient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), publicLBMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				Client: publicLBMock,
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
 
 			err := s.Delete(context.TODO())
@@ -363,195 +252,4 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			}
 		})
 	}
-}
-
-func newDefaultNodeOutboundLB() network.LoadBalancer {
-	return network.LoadBalancer{
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr(infrav1.NodeOutboundRole),
-		},
-		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
-		Location: to.StringPtr("testlocation"),
-		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
-				{
-					Name: to.StringPtr("my-cluster-frontEnd"),
-					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-						PublicIPAddress: &network.PublicIPAddress{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/outbound-publicip")},
-					},
-				},
-			},
-			BackendAddressPools: &[]network.BackendAddressPool{
-				{
-					Name: to.StringPtr("my-cluster-outboundBackendPool"),
-				},
-			},
-			LoadBalancingRules: &[]network.LoadBalancingRule{},
-			Probes:             &[]network.Probe{},
-			OutboundRules: &[]network.OutboundRule{
-				{
-					Name: to.StringPtr("OutboundNATAllProtocols"),
-					OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
-						FrontendIPConfigurations: &[]network.SubResource{
-							{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-cluster/frontendIPConfigurations/my-cluster-frontEnd")},
-						},
-						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-cluster/backendAddressPools/my-cluster-outboundBackendPool"),
-						},
-						Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
-						IdleTimeoutInMinutes: to.Int32Ptr(30),
-					},
-				},
-			},
-		},
-	}
-}
-
-func newDefaultPublicAPIServerLB() network.LoadBalancer {
-	return network.LoadBalancer{
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr(infrav1.APIServerRole),
-		},
-		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
-		Location: to.StringPtr("testlocation"),
-		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
-				{
-					Name: to.StringPtr("my-publiclb-frontEnd"),
-					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-						PublicIPAddress: &network.PublicIPAddress{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/my-publicip")},
-					},
-				},
-			},
-			BackendAddressPools: &[]network.BackendAddressPool{
-				{
-					Name: to.StringPtr("my-publiclb-backendPool"),
-				},
-			},
-			LoadBalancingRules: &[]network.LoadBalancingRule{
-				{
-					Name: to.StringPtr(lbRuleHTTPS),
-					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-						DisableOutboundSnat:  to.BoolPtr(true),
-						Protocol:             network.TransportProtocolTCP,
-						FrontendPort:         to.Int32Ptr(6443),
-						BackendPort:          to.Int32Ptr(6443),
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-						EnableFloatingIP:     to.BoolPtr(false),
-						LoadDistribution:     network.LoadDistributionDefault,
-						FrontendIPConfiguration: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/frontendIPConfigurations/my-publiclb-frontEnd"),
-						},
-						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
-						},
-						Probe: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/probes/TCPProbe"),
-						},
-					},
-				},
-			},
-			Probes: &[]network.Probe{
-				{
-					Name: to.StringPtr(tcpProbe),
-					ProbePropertiesFormat: &network.ProbePropertiesFormat{
-						Protocol:          network.ProbeProtocolTCP,
-						Port:              to.Int32Ptr(6443),
-						IntervalInSeconds: to.Int32Ptr(15),
-						NumberOfProbes:    to.Int32Ptr(4),
-					},
-				},
-			},
-			OutboundRules: &[]network.OutboundRule{
-				{
-					Name: to.StringPtr("OutboundNATAllProtocols"),
-					OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
-						FrontendIPConfigurations: &[]network.SubResource{
-							{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/frontendIPConfigurations/my-publiclb-frontEnd")},
-						},
-						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
-						},
-						Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-					},
-				},
-			},
-		},
-	}
-}
-
-func newDefaultInternalAPIServerLB() network.LoadBalancer {
-	return network.LoadBalancer{
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr(infrav1.APIServerRole),
-		},
-		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
-		Location: to.StringPtr("testlocation"),
-		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
-				{
-					Name: to.StringPtr("my-private-lb-frontEnd"),
-					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-						PrivateIPAllocationMethod: network.IPAllocationMethodStatic,
-						Subnet: &network.Subnet{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-cp-subnet"),
-						},
-						PrivateIPAddress: to.StringPtr("10.0.0.10"),
-					},
-				},
-			},
-			BackendAddressPools: &[]network.BackendAddressPool{
-				{
-					Name: to.StringPtr("my-private-lb-backendPool"),
-				},
-			},
-			LoadBalancingRules: &[]network.LoadBalancingRule{
-				{
-					Name: to.StringPtr(lbRuleHTTPS),
-					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-						DisableOutboundSnat:  to.BoolPtr(true),
-						Protocol:             network.TransportProtocolTCP,
-						FrontendPort:         to.Int32Ptr(6443),
-						BackendPort:          to.Int32Ptr(6443),
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-						EnableFloatingIP:     to.BoolPtr(false),
-						LoadDistribution:     network.LoadDistributionDefault,
-						FrontendIPConfiguration: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/frontendIPConfigurations/my-private-lb-frontEnd"),
-						},
-						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/backendAddressPools/my-private-lb-backendPool"),
-						},
-						Probe: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/probes/TCPProbe"),
-						},
-					},
-				},
-			},
-			OutboundRules: &[]network.OutboundRule{},
-			Probes: &[]network.Probe{
-				{
-					Name: to.StringPtr(tcpProbe),
-					ProbePropertiesFormat: &network.ProbePropertiesFormat{
-						Protocol:          network.ProbeProtocolTCP,
-						Port:              to.Int32Ptr(6443),
-						IntervalInSeconds: to.Int32Ptr(15),
-						NumberOfProbes:    to.Int32Ptr(4),
-					},
-				},
-			},
-		},
-	}
-}
-
-func setupDefaultLBExpectations(s *mock_loadbalancers.MockLBScopeMockRecorder) {
-	s.SubscriptionID().AnyTimes().Return("123")
-	s.ResourceGroup().AnyTimes().Return("my-rg")
-	s.Location().AnyTimes().Return("testlocation")
-	s.ClusterName().AnyTimes().Return("my-cluster")
-	s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 }

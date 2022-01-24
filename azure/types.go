@@ -51,19 +51,6 @@ type NICSpec struct {
 	EnableIPForwarding        bool
 }
 
-// LBSpec defines the specification for a Load Balancer.
-type LBSpec struct {
-	Name                 string
-	Role                 string
-	Type                 infrav1.LBType
-	SKU                  infrav1.SKU
-	SubnetName           string
-	BackendPoolName      string
-	FrontendIPConfigs    []infrav1.FrontendIP
-	APIServerPort        int32
-	IdleTimeoutInMinutes *int32
-}
-
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
 	Name              string
