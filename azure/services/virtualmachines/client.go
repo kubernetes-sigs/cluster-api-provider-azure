@@ -32,8 +32,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk.
 type (
+	// Client wraps go-sdk.
 	Client interface {
 		Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
 		CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)

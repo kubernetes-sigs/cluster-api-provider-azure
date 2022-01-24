@@ -31,26 +31,6 @@ type PublicIPSpec struct {
 	IsIPv6  bool
 }
 
-// NICSpec defines the specification for a Network Interface.
-type NICSpec struct {
-	Name                      string
-	MachineName               string
-	SubnetName                string
-	VNetName                  string
-	VNetResourceGroup         string
-	StaticIPAddress           string
-	PublicLBName              string
-	PublicLBAddressPoolName   string
-	PublicLBNATRuleName       string
-	InternalLBName            string
-	InternalLBAddressPoolName string
-	PublicIPName              string
-	VMSize                    string
-	AcceleratedNetworking     *bool
-	IPv6Enabled               bool
-	EnableIPForwarding        bool
-}
-
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
 	Name              string

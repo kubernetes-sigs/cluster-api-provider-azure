@@ -27,6 +27,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // MockNICScope is a mock of NICScope interface.
@@ -178,6 +179,18 @@ func (mr *MockNICScopeMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockNICScope)(nil).ClusterName))
 }
 
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockNICScope) DeleteLongRunningOperationState(arg0, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockNICScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockNICScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+}
+
 // FailureDomains mocks base method.
 func (m *MockNICScope) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -190,6 +203,20 @@ func (m *MockNICScope) FailureDomains() []string {
 func (mr *MockNICScopeMockRecorder) FailureDomains() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockNICScope)(nil).FailureDomains))
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockNICScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret0, _ := ret[0].(*v1beta1.Future)
+	return ret0
+}
+
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockNICScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockNICScope)(nil).GetLongRunningOperationState), arg0, arg1)
 }
 
 // HashKey mocks base method.
@@ -221,10 +248,10 @@ func (mr *MockNICScopeMockRecorder) Location() *gomock.Call {
 }
 
 // NICSpecs mocks base method.
-func (m *MockNICScope) NICSpecs() []azure.NICSpec {
+func (m *MockNICScope) NICSpecs() []azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NICSpecs")
-	ret0, _ := ret[0].([]azure.NICSpec)
+	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
 	return ret0
 }
 
@@ -246,6 +273,18 @@ func (m *MockNICScope) ResourceGroup() string {
 func (mr *MockNICScopeMockRecorder) ResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockNICScope)(nil).ResourceGroup))
+}
+
+// SetLongRunningOperationState mocks base method.
+func (m *MockNICScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockNICScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockNICScope)(nil).SetLongRunningOperationState), arg0)
 }
 
 // SubscriptionID mocks base method.
@@ -274,4 +313,40 @@ func (m *MockNICScope) TenantID() string {
 func (mr *MockNICScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockNICScope)(nil).TenantID))
+}
+
+// UpdateDeleteStatus mocks base method.
+func (m *MockNICScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
+}
+
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockNICScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockNICScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockNICScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockNICScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockNICScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockNICScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockNICScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockNICScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }

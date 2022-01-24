@@ -116,6 +116,8 @@ const (
 	RoleAssignmentReadyCondition clusterv1.ConditionType = "RoleAssignmentReady"
 	// DisksReadyCondition means the disks exist and are ready to be used.
 	DisksReadyCondition clusterv1.ConditionType = "DisksReady"
+	// NetworkInterfaceReadyCondition means the network interfaces exist and are ready to be used.
+	NetworkInterfaceReadyCondition clusterv1.ConditionType = "NetworkInterfacesReady"
 
 	// CreatingReason means the resource is being created.
 	CreatingReason = "Creating"

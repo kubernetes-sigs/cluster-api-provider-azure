@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -216,18 +217,21 @@ func (m *MachineScope) InboundNatSpecs(portsInUse map[int32]struct{}) []azure.Re
 }
 
 // NICSpecs returns the network interface specs.
-func (m *MachineScope) NICSpecs() []azure.NICSpec {
-	spec := azure.NICSpec{
+func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
+	spec := &networkinterfaces.NICSpec{
 		Name:                  azure.GenerateNICName(m.Name()),
+		ResourceGroup:         m.ResourceGroup(),
+		Location:              m.Location(),
+		SubscriptionID:        m.SubscriptionID(),
 		MachineName:           m.Name(),
 		VNetName:              m.Vnet().Name,
 		VNetResourceGroup:     m.Vnet().ResourceGroup,
 		SubnetName:            m.AzureMachine.Spec.SubnetName,
-		VMSize:                m.AzureMachine.Spec.VMSize,
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 		IPv6Enabled:           m.IsIPv6Enabled(),
 		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
 	}
+
 	if m.Role() == infrav1.ControlPlane {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
 		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
@@ -250,7 +254,11 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
 	}
 
-	return []azure.NICSpec{spec}
+	if m.cache != nil {
+		spec.SKU = &m.cache.VMSKU
+	}
+
+	return []azure.ResourceSpecGetter{spec}
 }
 
 // NICIDs returns the NIC resource IDs.
@@ -258,7 +266,7 @@ func (m *MachineScope) NICIDs() []string {
 	nicspecs := m.NICSpecs()
 	nicIDs := make([]string, len(nicspecs))
 	for i, nic := range nicspecs {
-		nicIDs[i] = azure.NetworkInterfaceID(m.SubscriptionID(), m.ResourceGroup(), nic.Name)
+		nicIDs[i] = azure.NetworkInterfaceID(m.SubscriptionID(), nic.ResourceGroupName(), nic.ResourceName())
 	}
 	return nicIDs
 }
@@ -544,6 +552,7 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 		conditions.WithConditions(
 			infrav1.VMRunningCondition,
 			infrav1.AvailabilitySetReadyCondition,
+			infrav1.NetworkInterfaceReadyCondition,
 		),
 	)
 
@@ -554,6 +563,7 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 			clusterv1.ReadyCondition,
 			infrav1.VMRunningCondition,
 			infrav1.AvailabilitySetReadyCondition,
+			infrav1.NetworkInterfaceReadyCondition,
 		}})
 }
 
