@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -28,6 +29,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	azuresdk "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -441,6 +443,9 @@ func getAPIVersion(resourceID string) (string, error) {
 
 	switch parsed.Provider {
 	case "Microsoft.Network":
+		if parsed.ResourceType == "privateDnsZones" {
+			return getAPIVersionFromUserAgent(privatedns.UserAgent()), nil
+		}
 		return getAPIVersionFromUserAgent(network.UserAgent()), nil
 	case "Microsoft.Compute":
 		return getAPIVersionFromUserAgent(compute.UserAgent()), nil
