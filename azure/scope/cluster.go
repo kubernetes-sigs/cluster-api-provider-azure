@@ -35,6 +35,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
@@ -290,7 +291,7 @@ func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 // SubnetSpecs returns the subnets specs.
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	numberOfSubnets := len(s.AzureCluster.Spec.NetworkSpec.Subnets)
-	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
+	if s.IsAzureBastionEnabled() {
 		numberOfSubnets++
 	}
 
@@ -308,7 +309,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 		subnetSpecs = append(subnetSpecs, subnetSpec)
 	}
 
-	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
+	if s.IsAzureBastionEnabled() {
 		azureBastionSubnet := s.AzureCluster.Spec.BastionSpec.AzureBastion.Subnet
 		subnetSpecs = append(subnetSpecs, azure.SubnetSpec{
 			Name:              azureBastionSubnet.Name,
@@ -401,19 +402,33 @@ func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
 	return specs
 }
 
-// BastionSpec returns the bastion spec.
-func (s *ClusterScope) BastionSpec() azure.BastionSpec {
-	var ret azure.BastionSpec
-	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
-		ret.AzureBastion = &azure.AzureBastionSpec{
-			Name:         s.AzureCluster.Spec.BastionSpec.AzureBastion.Name,
-			SubnetSpec:   s.AzureCluster.Spec.BastionSpec.AzureBastion.Subnet,
-			PublicIPName: s.AzureCluster.Spec.BastionSpec.AzureBastion.PublicIP.Name,
-			VNetName:     s.Vnet().Name,
+// IsAzureBastionEnabled returns true if the azure bastion is enabled.
+func (s *ClusterScope) IsAzureBastionEnabled() bool {
+	return s.AzureCluster.Spec.BastionSpec.AzureBastion != nil
+}
+
+// AzureBastion returns the cluster AzureBastion.
+func (s *ClusterScope) AzureBastion() *infrav1.AzureBastion {
+	return s.AzureCluster.Spec.BastionSpec.AzureBastion
+}
+
+// AzureBastionSpec returns the bastion spec.
+func (s *ClusterScope) AzureBastionSpec() azure.ResourceSpecGetter {
+	if s.IsAzureBastionEnabled() {
+		subnetID := azure.SubnetID(s.SubscriptionID(), s.ResourceGroup(), s.Vnet().Name, s.AzureBastion().Subnet.Name)
+		publicIPID := azure.PublicIPID(s.SubscriptionID(), s.ResourceGroup(), s.AzureBastion().PublicIP.Name)
+
+		return &bastionhosts.AzureBastionSpec{
+			Name:          s.AzureBastion().Name,
+			ResourceGroup: s.ResourceGroup(),
+			Location:      s.Location(),
+			ClusterName:   s.ClusterName(),
+			SubnetID:      subnetID,
+			PublicIPID:    publicIPID,
 		}
 	}
 
-	return ret
+	return nil
 }
 
 // Vnet returns the cluster Vnet.
@@ -646,6 +661,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.DisksReadyCondition,
 			infrav1.NATGatewaysReadyCondition,
 			infrav1.LoadBalancersReadyCondition,
+			infrav1.BastionHostReadyCondition,
 		),
 	)
 
@@ -661,6 +677,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.DisksReadyCondition,
 			infrav1.NATGatewaysReadyCondition,
 			infrav1.LoadBalancersReadyCondition,
+			infrav1.BastionHostReadyCondition,
 		}})
 }
 
