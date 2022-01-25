@@ -11,10 +11,10 @@ patchesStrategicMerge:
   - ../patches/windows-containerd-patch.yaml
   - ../patches/machine-deployment-worker-counts.yaml
   - patches/machine-deployment-ci-version.yaml
-  - patches/machine-deployment-ci-version-windows.yaml
   - ../patches/metrics-server-enabled-cluster.yaml
   - patches/controller-manager-featuregates.yaml
   - ../patches/windows-containerd-enabled-cluster.yaml
+  - patches/machine-deployment-ci-version-windows-shared-gallery.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
@@ -36,6 +36,12 @@ patches:
     kind: KubeadmControlPlane
     name: .*-control-plane
   path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml
+- target:
+    group: infrastructure.cluster.x-k8s.io/v1beta1
+    version: v1beta1
+    kind: AzureMachineTemplate
+    name: ${CLUSTER_NAME}-md-win
+  path: patches/drop-machine-deployment-windows-image-marketplace.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     behavior: merge
