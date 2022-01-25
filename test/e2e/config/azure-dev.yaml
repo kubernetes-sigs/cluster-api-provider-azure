@@ -3,6 +3,12 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
+  - name: k8s.gcr.io/cluster-api/cluster-api-controller:v1.1.0-beta.1
+    loadBehavior: tryLoad
+  - name: k8s.gcr.io/cluster-api/kubeadm-bootstrap-controller:v1.1.0-beta.1
+    loadBehavior: tryLoad
+  - name: k8s.gcr.io/cluster-api/kubeadm-control-plane-controller:v1.1.0-beta.1
+    loadBehavior: tryLoad
 
 providers:
   - name: cluster-api
@@ -17,8 +23,8 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/core-components.yaml"
+    - name: v0.4.5 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.5/core-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -26,9 +32,10 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
-    - name: v1.0.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.2/core-components.yaml
+    - name: v1.1.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.0-beta.1/core-components.yaml
       type: url
+      contract: v1beta1
       files:
       - sourcePath: "../data/shared/v1beta1/metadata.yaml"
       replacements:
@@ -48,8 +55,8 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/bootstrap-components.yaml"
+    - name: v0.4.5 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.5/bootstrap-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -57,9 +64,10 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
-    - name: v1.0.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.2/bootstrap-components.yaml
+    - name: v1.1.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.0-beta.1/bootstrap-components.yaml
       type: url
+      contract: v1beta1
       files:
       - sourcePath: "../data/shared/v1beta1/metadata.yaml"
       replacements:
@@ -78,8 +86,8 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/control-plane-components.yaml"
+    - name: v0.4.5 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.5/control-plane-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -87,9 +95,10 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
-    - name: v1.0.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.2/control-plane-components.yaml
+    - name: v1.1.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.0-beta.1/control-plane-components.yaml
       type: url
+      contract: v1beta1
       files:
       - sourcePath: "../data/shared/v1beta1/metadata.yaml"
       replacements:
@@ -121,8 +130,9 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.0.99 # next; use manifest from source files
+    - name: v1.1.99 # next; use manifest from source files
       value: "${PWD}/config/default"
+      contract: v1beta1
       files:
       - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow.yaml"

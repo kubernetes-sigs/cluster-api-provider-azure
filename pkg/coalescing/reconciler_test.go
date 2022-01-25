@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	gtypes "github.com/onsi/gomega/types"
@@ -56,7 +57,7 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 				cacherMock.EXPECT().ShouldProcess(defaultRequestKey).Return(time.Now(), true)
 				cacherMock.EXPECT().Reconciled(defaultRequestKey)
 				mockReconciler.EXPECT().Reconcile(gomock.Any(), defaultRequest)
-				return NewReconciler(mockReconciler, cacherMock, log.NullLogger{})
+				return NewReconciler(mockReconciler, cacherMock, logr.New(log.NullLogSink{}))
 			},
 			Request:   defaultRequest,
 			MatchThis: Equal(0 * time.Second),
@@ -65,7 +66,7 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 			Name: "should not call upstream reconciler if key does exists in cache and is not expired",
 			Reconciler: func(g *WithT, cacherMock *mock_coalescing.MockReconcileCacher, mockReconciler *mock_coalescing.MockReconciler) reconcile.Reconciler {
 				cacherMock.EXPECT().ShouldProcess(defaultRequestKey).Return(time.Now().Add(30*time.Second), false)
-				return NewReconciler(mockReconciler, cacherMock, log.NullLogger{})
+				return NewReconciler(mockReconciler, cacherMock, logr.New(log.NullLogSink{}))
 			},
 			Request:   defaultRequest,
 			MatchThis: And(BeNumerically("<=", 30*time.Second), BeNumerically(">", 29*time.Second)),
@@ -75,7 +76,7 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 			Reconciler: func(g *WithT, cacherMock *mock_coalescing.MockReconcileCacher, mockReconciler *mock_coalescing.MockReconciler) reconcile.Reconciler {
 				cacherMock.EXPECT().ShouldProcess(defaultRequestKey).Return(time.Now(), true)
 				mockReconciler.EXPECT().Reconcile(gomock.Any(), defaultRequest).Return(reconcile.Result{}, errors.New("boom"))
-				return NewReconciler(mockReconciler, cacherMock, log.NullLogger{})
+				return NewReconciler(mockReconciler, cacherMock, logr.New(log.NullLogSink{}))
 			},
 			Request:   defaultRequest,
 			MatchThis: Equal(0 * time.Second),

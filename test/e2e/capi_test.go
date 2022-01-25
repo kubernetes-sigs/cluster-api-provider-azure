@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	clusterctl "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -106,33 +107,6 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				BootstrapClusterProxy: bootstrapClusterProxy,
 				ArtifactFolder:        artifactFolder,
 				SkipCleanup:           skipCleanup,
-			}
-		})
-	})
-
-	Context("Running the KCP upgrade spec in a HA cluster [K8s-Upgrade]", func() {
-		capi_e2e.KCPUpgradeSpec(context.TODO(), func() capi_e2e.KCPUpgradeSpecInput {
-			return capi_e2e.KCPUpgradeSpecInput{
-				E2EConfig:                e2eConfig,
-				ClusterctlConfigPath:     clusterctlConfigPath,
-				BootstrapClusterProxy:    bootstrapClusterProxy,
-				ArtifactFolder:           artifactFolder,
-				ControlPlaneMachineCount: 3,
-				SkipCleanup:              skipCleanup,
-			}
-		})
-	})
-
-	Context("Running the KCP upgrade spec in a HA cluster using scale in rollout [K8s-Upgrade]", func() {
-		capi_e2e.KCPUpgradeSpec(context.TODO(), func() capi_e2e.KCPUpgradeSpecInput {
-			return capi_e2e.KCPUpgradeSpecInput{
-				E2EConfig:                e2eConfig,
-				ClusterctlConfigPath:     clusterctlConfigPath,
-				BootstrapClusterProxy:    bootstrapClusterProxy,
-				ArtifactFolder:           artifactFolder,
-				ControlPlaneMachineCount: 3,
-				SkipCleanup:              skipCleanup,
-				Flavor:                   "kcp-scale-in",
 			}
 		})
 	})
@@ -289,6 +263,37 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				ArtifactFolder:        artifactFolder,
 				SkipCleanup:           skipCleanup,
 				SkipConformanceTests:  true,
+			}
+		})
+	})
+
+	Context("Running KCP upgrade in a HA cluster [K8s-Upgrade]", func() {
+		capi_e2e.ClusterUpgradeConformanceSpec(context.TODO(), func() capi_e2e.ClusterUpgradeConformanceSpecInput {
+			return capi_e2e.ClusterUpgradeConformanceSpecInput{
+				E2EConfig:                e2eConfig,
+				ClusterctlConfigPath:     clusterctlConfigPath,
+				BootstrapClusterProxy:    bootstrapClusterProxy,
+				ArtifactFolder:           artifactFolder,
+				ControlPlaneMachineCount: pointer.Int64(3),
+				WorkerMachineCount:       pointer.Int64(1),
+				SkipCleanup:              skipCleanup,
+				SkipConformanceTests:     true,
+			}
+		})
+	})
+
+	Context("Running KCP upgrade in a HA cluster using scale in rollout [K8s-Upgrade]", func() {
+		capi_e2e.ClusterUpgradeConformanceSpec(context.TODO(), func() capi_e2e.ClusterUpgradeConformanceSpecInput {
+			return capi_e2e.ClusterUpgradeConformanceSpecInput{
+				E2EConfig:                e2eConfig,
+				ClusterctlConfigPath:     clusterctlConfigPath,
+				BootstrapClusterProxy:    bootstrapClusterProxy,
+				ArtifactFolder:           artifactFolder,
+				ControlPlaneMachineCount: pointer.Int64(3),
+				WorkerMachineCount:       pointer.Int64(1),
+				SkipCleanup:              skipCleanup,
+				SkipConformanceTests:     true,
+				Flavor:                   pointer.String("kcp-scale-in"),
 			}
 		})
 	})

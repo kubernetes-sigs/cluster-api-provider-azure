@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -54,7 +55,7 @@ var _ = BeforeSuite(func(done Done) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ctx = log.IntoContext(ctx, testEnv.Log)
+	ctx = log.IntoContext(ctx, logr.New(testEnv.Log))
 
 	Expect((&AzureManagedClusterReconciler{
 		Client:   testEnv,

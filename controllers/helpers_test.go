@@ -24,6 +24,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -56,9 +57,10 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	log := mock_log.NewMockLogger(mockCtrl)
-	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default")
-	mapper, err := AzureClusterToAzureMachinesMapper(context.Background(), client, &infrav1.AzureMachine{}, scheme, log)
+	sink := mock_log.NewMockLogSink(mockCtrl)
+	sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
+	sink.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default")
+	mapper, err := AzureClusterToAzureMachinesMapper(context.Background(), client, &infrav1.AzureMachine{}, scheme, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
 
 	requests := mapper(&infrav1.AzureCluster{

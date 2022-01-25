@@ -92,7 +92,7 @@ type (
 		manager.Manager
 		client.Client
 		Config      *rest.Config
-		Log         logr.Logger
+		Log         logr.LogSink
 		LogRecorder *record.Logger
 		doneMgr     chan struct{}
 	}
