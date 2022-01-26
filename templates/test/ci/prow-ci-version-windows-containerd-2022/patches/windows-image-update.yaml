@@ -7,9 +7,10 @@ spec:
   template:
     spec:
       image:
-        sharedGallery:
-          resourceGroup: "capz-ci"
-          name: "capi-windows-2022-containerd"
-          subscriptionID: "${AZURE_SUBSCRIPTION_ID}"
-          gallery: "CAPZTestingImages"
-          version: "0.3.1642811382"
+        # we use the 1.22.2 image as a workaround there is no published marketplace image for k8s CI versions.
+        # 1.22.2 binaries and images will get replaced to the desired version by the script above.
+        marketplace:
+          publisher: cncf-upstream
+          offer: capi-windows
+          sku: k8s-1dot23dot1-windows-2022-containerd
+          version: "2021.12.16"
