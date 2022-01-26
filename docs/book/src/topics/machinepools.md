@@ -173,8 +173,5 @@ spec:
     permissions: "0644"
   joinConfiguration:
     nodeRegistration:
-      kubeletExtraArgs:
-        cloud-config: /etc/kubernetes/azure.json
-        cloud-provider: azure
       name: '{{ ds.meta_data["local_hostname"] }}'
 ```

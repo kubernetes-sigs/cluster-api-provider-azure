@@ -164,15 +164,11 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -301,8 +297,6 @@ spec:
         nodeRegistration:
           kubeletExtraArgs:
             azure-container-registry-config: /etc/kubernetes/azure.json
-            cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
       - bash -c /tmp/replace-k8s-binaries.sh
@@ -379,8 +373,6 @@ spec:
           criSocket: npipe:////./pipe/containerd-containerd
           kubeletExtraArgs:
             azure-container-registry-config: c:/k/azure.json
-            cloud-config: c:/k/azure.json
-            cloud-provider: azure
             feature-gates: WindowsHostProcessContainers=true
             v: "2"
             windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
