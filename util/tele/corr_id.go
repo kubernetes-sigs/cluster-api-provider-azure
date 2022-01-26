@@ -50,8 +50,7 @@ type CorrID string
 //	fmt.Println("new corr ID: ", newCorrID)
 //	doSomething(ctx)
 func ctxWithCorrID(ctx context.Context) (context.Context, CorrID) {
-	currentCorrIDIface := ctx.Value(CorrIDKeyVal)
-	if currentCorrIDIface != nil {
+	if currentCorrIDIface := ctx.Value(CorrIDKeyVal); currentCorrIDIface != nil {
 		currentCorrID, ok := currentCorrIDIface.(CorrID)
 		if ok {
 			return ctx, currentCorrID

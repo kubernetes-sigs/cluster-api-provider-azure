@@ -28,8 +28,7 @@ import (
 
 // SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachinePool.
 func (amp *AzureMachinePool) SetDefaultSSHPublicKey() error {
-	sshKeyData := amp.Spec.Template.SSHPublicKey
-	if sshKeyData == "" {
+	if sshKeyData := amp.Spec.Template.SSHPublicKey; sshKeyData == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
 		if err != nil {
 			return err
@@ -37,7 +36,6 @@ func (amp *AzureMachinePool) SetDefaultSSHPublicKey() error {
 
 		amp.Spec.Template.SSHPublicKey = base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
 	}
-
 	return nil
 }
 

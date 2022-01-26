@@ -200,8 +200,8 @@ func (p *AzureCredentialsProvider) GetClientSecret(ctx context.Context) (string,
 		Name:      secretRef.Name,
 	}
 	secret := &corev1.Secret{}
-	err := p.Client.Get(ctx, key, secret)
-	if err != nil {
+
+	if err := p.Client.Get(ctx, key, secret); err != nil {
 		return "", errors.Wrap(err, "Unable to fetch ClientSecret")
 	}
 	return string(secret.Data[azureSecretKey]), nil

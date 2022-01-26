@@ -65,9 +65,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	setSpec := s.Scope.AvailabilitySetSpec()
 	var err error
-	if setSpec != nil {
+	if setSpec := s.Scope.AvailabilitySetSpec(); setSpec != nil {
 		_, err = s.CreateResource(ctx, setSpec, serviceName)
 	} else {
 		log.V(2).Info("skip creation when no availability set spec is found")
@@ -85,9 +84,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	setSpec := s.Scope.AvailabilitySetSpec()
 	var resultingErr error
-	if setSpec == nil {
+	if setSpec := s.Scope.AvailabilitySetSpec(); setSpec == nil {
 		log.V(2).Info("skip deletion when no availability set spec is found")
 	} else {
 		existingSet, err := s.Client.Get(ctx, setSpec)

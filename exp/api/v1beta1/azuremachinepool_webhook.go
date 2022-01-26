@@ -43,8 +43,7 @@ var _ webhook.Defaulter = &AzureMachinePool{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (amp *AzureMachinePool) Default() {
-	err := amp.SetDefaultSSHPublicKey()
-	if err != nil {
+	if err := amp.SetDefaultSSHPublicKey(); err != nil {
 		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "SetDefaultSshPublicKey failed")
 	}
 	amp.SetIdentityDefaults()
