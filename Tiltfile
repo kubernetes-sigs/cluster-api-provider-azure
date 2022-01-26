@@ -218,6 +218,8 @@ def create_crs():
     local(kubectl_cmd + " delete configmaps calico-ipv6-addon --ignore-not-found=true")
     local(kubectl_cmd + " create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml")
     local(kubectl_cmd + " delete configmaps flannel-windows-addon --ignore-not-found=true")
+    local(kubectl_cmd + " delete configmaps csi-proxy-addon --ignore-not-found=true")
+    local(kubectl_cmd + " create configmap csi-proxy-addon --from-file=templates/addons/windows/csi-proxy/csi-proxy.yaml")
 
     # need to set version for kube-proxy on windows.
     os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))
@@ -227,6 +229,7 @@ def create_crs():
     # set up crs
     local(kubectl_cmd + " apply -f templates/addons/calico-resource-set.yaml")
     local(kubectl_cmd + " apply -f templates/addons/flannel-resource-set.yaml")
+    local(kubectl_cmd + " apply -f templates/addons/windows/csi-proxy/csi-proxy-resource-set.yaml")
 
 # create flavor resources from cluster-template files in the templates directory 
 def flavors():

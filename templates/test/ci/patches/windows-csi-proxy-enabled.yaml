@@ -5,4 +5,3 @@ metadata:
   name: ${CLUSTER_NAME}
   labels:
     csi-proxy: enabled
-    windows: enabled

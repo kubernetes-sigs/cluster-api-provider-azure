@@ -3,6 +3,7 @@ kind: Cluster
 metadata:
   labels:
     cni: ${CLUSTER_NAME}-calico
+    csi-proxy: enabled
     windows: enabled
   name: ${CLUSTER_NAME}
   namespace: default
