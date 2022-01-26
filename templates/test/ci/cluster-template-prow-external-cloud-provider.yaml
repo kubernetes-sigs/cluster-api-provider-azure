@@ -414,7 +414,7 @@ data:
           effect: NoSchedule
       containers:
         - name: cloud-controller-manager
-          image: ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG:=mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.0.7}
+          image: ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG:=mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.1.5}
           imagePullPolicy: IfNotPresent
           command: ["cloud-controller-manager"]
           args:
@@ -542,7 +542,7 @@ data:
               effect: NoSchedule
           containers:
             - name: cloud-node-manager
-              image: ${AZURE_CLOUD_NODE_MANAGER_IMG:=mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.0.7}
+              image: ${AZURE_CLOUD_NODE_MANAGER_IMG:=mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.1.5}
               imagePullPolicy: IfNotPresent
               command:
                 - cloud-node-manager
