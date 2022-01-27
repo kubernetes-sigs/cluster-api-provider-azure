@@ -25,9 +25,9 @@ A system-assigned identity is a managed identity which is tied to the lifespan o
 
 ⚠️  **When a Node is created with a System Assigned Identity, A role of Subscription contributor is added to this generated Identity**
 
-<aside class="note warning"> 
+<aside class="note warning">
 
-<h1> Warning </h1> 
+<h1> Warning </h1>
 
 To create an Azure VM with the system-assigned managed identity enabled, your AzureClusterIdentity needs the [Virtual Machine Contributor](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-contributor) role assignment. In order to be able to grant the subscription contributor role to the identity, it also needs `Microsoft.Authorization/roleAssignments/write` permissions, such as [User Access Administrator](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#user-access-administrator) or [Owner](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#owner).
 
@@ -37,7 +37,7 @@ To create an Azure VM with the system-assigned managed identity enabled, your Az
 
 #### User-assigned
 
-<aside class="note"> 
+<aside class="note">
 
 <h1> Note </h1>
 
@@ -83,7 +83,7 @@ spec:
 
 The CAPZ controller will look for `UserAssigned` value in `identity` field under `AzureMachinePool`, and assign the user identities listed in `userAssignedIdentities` to the virtual machine scale set.
 
-Alternatively, you can use the `user-assigned-identity`, and `machinepool-user-assigned-identity` flavors by setting the `{flavor}` in `clusterctl generate cluster --flavor {flavor}` to use user-assigned managed identity in machine deployment, and machine pool respectively.
+Alternatively, you can also use the `user-assigned-identity` flavor to build a simple machine deployment-enabled cluster by using `clusterctl generate cluster --flavor user-assigned-identity` to generate a cluster template.
 
 #### System-assigned
 
@@ -119,15 +119,15 @@ spec:
 
 The CAPZ controller will look for `SystemAssigned` value in `identity` field under `AzureMachinePool`, and enable system-assigned managed identity in the virtual machine scale set.
 
-Alternatively, you can also use the `system-assigned-identity`, and `machinepool-system-assigned-identity` flavors by setting the `{flavor}` in `clusterctl generate cluster --flavor {flavor}` to use system-assigned managed identity in machine deployment, and machine pool respectively.
+Alternatively, you can also use the `system-assigned-identity` flavor to build a simple machine deployment-enabled cluster by using `clusterctl generate cluster --flavor system-assigned-identity` to generate a cluster template.
 
 ### Service Principal (not recommended)
 
 A service principal is an identity in AAD which is described by a tenant ID and client (or "app") ID. It can have one or more associated secrets or certificates. The set of these values will enable the holder to exchange the values for a JWT token to communicate with Azure. The user generally creates a service principal, saves the credentials, and then uses the credentials in applications. To read more about Service Principals and AD Applications see ["Application and service principal objects in Azure Active Directory"](https://azure.microsoft.com/en-us/documentation/articles/active-directory-application-objects/).
 
-<aside class="note warning"> 
+<aside class="note warning">
 
-<h1> Warning </h1> 
+<h1> Warning </h1>
 
 Using Service Principal authentication for Cloud Provider Azure is less secure than Managed Identity. Your Service Principal credentials will be written to a file on the disk of each VM in order to be accessible by Cloud Provider.
 
