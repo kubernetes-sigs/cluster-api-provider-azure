@@ -3975,8 +3975,9 @@ data:
     \ labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n    app.kubernetes.io/name:
     node-feature-discovery\n    app.kubernetes.io/instance: gpu-operator\n    app.kubernetes.io/version:
     \"v0.8.2\"\n    app.kubernetes.io/managed-by: Helm\ndata:\n  nfd-worker.conf:
-    |-\n    sources:\n      pci:\n        deviceLabelFields:\n        - vendor\n---\n#
-    Source: gpu-operator/charts/node-feature-discovery/templates/service.yaml\napiVersion:
+    |-\n    sources:\n      pci:\n        deviceClassWhitelist:\n        - \"02\"\n
+    \       - \"0200\"\n        - \"0207\"\n        - \"0300\"\n        - \"0302\"\n
+    \       deviceLabelFields:\n        - vendor\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/service.yaml\napiVersion:
     v1\nkind: Service\nmetadata:\n  name: gpu-operator-node-feature-discovery-master\n
     \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n
     \   app.kubernetes.io/name: node-feature-discovery\n    app.kubernetes.io/instance:
@@ -4046,7 +4047,7 @@ data:
     11.4.2-base-ubi8\n      imagePullPolicy: IfNotPresent\n  daemonsets:\n    tolerations:
     \n      - effect: NoSchedule\n        key: nvidia.com/gpu\n        operator: Exists\n
     \   priorityClassName: system-node-critical\n  validator:\n    repository: nvcr.io/nvidia/cloud-native\n
-    \   image: gpu-operator-validator\n    version: v1.9.0\n    imagePullPolicy: IfNotPresent\n
+    \   image: gpu-operator-validator\n    version: v1.9.1\n    imagePullPolicy: IfNotPresent\n
     \   securityContext: \n      privileged: true\n      seLinuxOptions:\n        level:
     s0\n    plugin:\n      env: \n        - name: WITH_WORKLOAD\n          value:
     \"true\"\n  mig:\n    strategy: single\n  psp:\n    enabled: false\n  driver:\n
@@ -4071,10 +4072,10 @@ data:
     FAIL_ON_INIT_ERROR\n        value: \"true\"\n      - name: DEVICE_LIST_STRATEGY\n
     \       value: envvar\n      - name: DEVICE_ID_STRATEGY\n        value: uuid\n
     \     - name: NVIDIA_VISIBLE_DEVICES\n        value: all\n      - name: NVIDIA_DRIVER_CAPABILITIES\n
-    \       value: all\n  dcgm:\n    enabled: true\n    repository: nvcr.io/nvidia/cloud-native\n
+    \       value: all\n  dcgm:\n    enabled: false\n    repository: nvcr.io/nvidia/cloud-native\n
     \   image: dcgm\n    version: 2.3.1-ubuntu20.04\n    imagePullPolicy: IfNotPresent\n
     \   hostPort: 5555\n  dcgmExporter:\n    repository: nvcr.io/nvidia/k8s\n    image:
-    dcgm-exporter\n    version: 2.3.1-2.6.0-ubuntu20.04\n    imagePullPolicy: IfNotPresent\n
+    dcgm-exporter\n    version: 2.3.1-2.6.1-ubuntu20.04\n    imagePullPolicy: IfNotPresent\n
     \   env: \n      - name: DCGM_EXPORTER_LISTEN\n        value: :9400\n      - name:
     DCGM_EXPORTER_KUBERNETES\n        value: \"true\"\n      - name: DCGM_EXPORTER_COLLECTORS\n
     \       value: /etc/dcgm-exporter/dcp-metrics-included.csv\n  gfd:\n    repository:
@@ -4086,7 +4087,7 @@ data:
     \n      privileged: true\n    env: \n      - name: WITH_REBOOT\n        value:
     \"false\"\n    config: \n      name: \"\"\n    gpuClientsConfig: \n      name:
     \"\"\n  nodeStatusExporter:\n    enabled: false\n    repository: nvcr.io/nvidia/cloud-native\n
-    \   image: gpu-operator-validator\n    version: v1.9.0\n    imagePullPolicy: IfNotPresent\n---\n#
+    \   image: gpu-operator-validator\n    version: v1.9.1\n    imagePullPolicy: IfNotPresent\n---\n#
     Source: gpu-operator/templates/operator.yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n
     \ name: gpu-operator\n  namespace: gpu-operator-resources\n  labels:\n    app.kubernetes.io/component:
     \"gpu-operator\"\n    \nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n
@@ -4095,7 +4096,7 @@ data:
     \"gpu-operator\"\n        app: \"gpu-operator\"\n      annotations:\n        openshift.io/scc:
     restricted-readonly\n    spec:\n      serviceAccountName: gpu-operator\n      priorityClassName:
     system-node-critical\n      containers:\n      - name: gpu-operator\n        image:
-    nvcr.io/nvidia/gpu-operator:v1.9.0\n        imagePullPolicy: IfNotPresent\n        command:
+    nvcr.io/nvidia/gpu-operator:v1.9.1\n        imagePullPolicy: IfNotPresent\n        command:
     [\"gpu-operator\"]\n        args:\n        - --leader-elect\n        env:\n        -
     name: WATCH_NAMESPACE\n          value: \"\"\n        - name: OPERATOR_NAMESPACE\n
     \         valueFrom:\n            fieldRef:\n              fieldPath: metadata.namespace\n
