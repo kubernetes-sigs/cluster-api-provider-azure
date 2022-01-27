@@ -195,19 +195,19 @@ func (mr *MockManagedClusterScopeMockRecorder) FailureDomains() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockManagedClusterScope)(nil).FailureDomains))
 }
 
-// GetAgentPoolSpecs mocks base method.
-func (m *MockManagedClusterScope) GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
+// GetAllAgentPoolSpecs mocks base method.
+func (m *MockManagedClusterScope) GetAllAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAgentPoolSpecs", ctx)
+	ret := m.ctrl.Call(m, "GetAllAgentPoolSpecs", ctx)
 	ret0, _ := ret[0].([]azure.AgentPoolSpec)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAgentPoolSpecs indicates an expected call of GetAgentPoolSpecs.
-func (mr *MockManagedClusterScopeMockRecorder) GetAgentPoolSpecs(ctx interface{}) *gomock.Call {
+// GetAllAgentPoolSpecs indicates an expected call of GetAllAgentPoolSpecs.
+func (mr *MockManagedClusterScopeMockRecorder) GetAllAgentPoolSpecs(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentPoolSpecs", reflect.TypeOf((*MockManagedClusterScope)(nil).GetAgentPoolSpecs), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllAgentPoolSpecs", reflect.TypeOf((*MockManagedClusterScope)(nil).GetAllAgentPoolSpecs), ctx)
 }
 
 // GetKubeConfigData mocks base method.

@@ -44,7 +44,7 @@ var (
 type ManagedClusterScope interface {
 	azure.ClusterDescriber
 	ManagedClusterSpec() (azure.ManagedClusterSpec, error)
-	GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
+	GetAllAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
 	SetControlPlaneEndpoint(clusterv1.APIEndpoint)
 	MakeEmptyKubeConfigSecret() corev1.Secret
 	GetKubeConfigData() []byte
@@ -168,7 +168,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	if azure.ResourceNotFound(err) {
 		isCreate = true
 		// Add system agent pool to cluster spec that will be submitted to the API
-		managedClusterSpec.AgentPools, err = s.Scope.GetAgentPoolSpecs(ctx)
+		managedClusterSpec.AgentPools, err = s.Scope.GetAllAgentPoolSpecs(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get system agent pool specs for managed cluster %s", s.Scope.ClusterName())
 		}
