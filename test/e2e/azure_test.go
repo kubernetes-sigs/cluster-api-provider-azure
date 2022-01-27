@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -141,7 +142,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	if os.Getenv("LOCAL_ONLY") != "true" {
 		Context("Creating a private cluster", func() {
-			It("Creates a public management cluster in the same vnet", func() {
+			It("Creates a public management cluster in a custom vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
 				Context("Creating a custom virtual network", func() {
 					Expect(os.Setenv(AzureCustomVNetName, "custom-vnet")).NotTo(HaveOccurred())

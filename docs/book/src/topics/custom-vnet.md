@@ -17,10 +17,16 @@ spec:
       resourceGroup: custom-vnet
       name: my-vnet
     subnets:
-      - name: control-plane-subnet
+      - name: my-control-plane-subnet
         role: control-plane
-      - name: node-subnet
+        securityGroup:
+          name: my-control-plane-nsg
+      - name: my-node-subnet
         role: node
+        routeTable:
+          name: my-node-routetable
+        securityGroup:
+          name: my-node-nsg
   resourceGroup: cluster-byo-vnet
   ```
 
