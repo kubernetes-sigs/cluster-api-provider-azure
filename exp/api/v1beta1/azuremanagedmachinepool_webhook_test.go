@@ -255,6 +255,87 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "custom header annotation values are immutable",
+			old: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
+					},
+				},
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			new: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "false",
+					},
+				},
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "cannot remove custom header annotation after resource creation",
+			old: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
+					},
+				},
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			new: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+				},
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "cannot add new custom header annotations after resource creation",
+			old: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
+					},
+				},
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			new: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature":    "true",
+						"infrastructure.cluster.x-k8s.io/custom-header-AnotherFeature": "true",
+					},
+				},
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "non-custom headers annotations are mutable",
+			old: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"annotation-a": "true",
+						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
+					},
+				},
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			new: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
+						"annotation-b": "true",
+					},
+				},
+				Spec: AzureManagedMachinePoolSpec{},
+			},
+			wantErr: false,
+		},
+		{
 			name: "Unchanged OSDiskType in an agentpool should not result in an error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{

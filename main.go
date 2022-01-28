@@ -505,6 +505,13 @@ func registerWebhooks(mgr manager.Manager) {
 	}
 
 	if feature.Gates.Enabled(feature.AKS) {
+		if err := (&infrav1beta1exp.AzureManagedCluster{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedCluster")
+			os.Exit(1)
+		}
+	}
+
+	if feature.Gates.Enabled(feature.AKS) {
 		if err := (&infrav1beta1exp.AzureManagedControlPlane{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlane")
 			os.Exit(1)

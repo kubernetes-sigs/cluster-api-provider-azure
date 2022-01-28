@@ -266,6 +266,20 @@ func (mr *MockManagedClusterScopeMockRecorder) MakeEmptyKubeConfigSecret() *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MakeEmptyKubeConfigSecret", reflect.TypeOf((*MockManagedClusterScope)(nil).MakeEmptyKubeConfigSecret))
 }
 
+// ManagedClusterAnnotations mocks base method.
+func (m *MockManagedClusterScope) ManagedClusterAnnotations() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ManagedClusterAnnotations")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// ManagedClusterAnnotations indicates an expected call of ManagedClusterAnnotations.
+func (mr *MockManagedClusterScopeMockRecorder) ManagedClusterAnnotations() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ManagedClusterAnnotations", reflect.TypeOf((*MockManagedClusterScope)(nil).ManagedClusterAnnotations))
+}
+
 // ManagedClusterSpec mocks base method.
 func (m *MockManagedClusterScope) ManagedClusterSpec() (azure.ManagedClusterSpec, error) {
 	m.ctrl.T.Helper()

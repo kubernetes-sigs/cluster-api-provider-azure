@@ -29,7 +29,7 @@ import (
 // Client wraps go-sdk.
 type Client interface {
 	Get(context.Context, string, string, string) (containerservice.AgentPool, error)
-	CreateOrUpdate(context.Context, string, string, string, containerservice.AgentPool) error
+	CreateOrUpdate(context.Context, string, string, string, containerservice.AgentPool, map[string]string) error
 	Delete(context.Context, string, string, string) error
 }
 
@@ -62,11 +62,20 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, cluster, name
 }
 
 // CreateOrUpdate creates or updates an agent pool.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cluster, name string, properties containerservice.AgentPool) error {
+func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cluster, name string,
+	properties containerservice.AgentPool, customHeaders map[string]string) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.CreateOrUpdate")
 	defer done()
 
-	future, err := ac.agentpools.CreateOrUpdate(ctx, resourceGroupName, cluster, name, properties)
+	preparer, err := ac.agentpools.CreateOrUpdatePreparer(ctx, resourceGroupName, cluster, name, properties)
+	if err != nil {
+		return errors.Wrap(err, "failed to prepare operation")
+	}
+	for key, element := range customHeaders {
+		preparer.Header.Add(key, element)
+	}
+
+	future, err := ac.agentpools.CreateOrUpdateSender(preparer)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin operation")
 	}

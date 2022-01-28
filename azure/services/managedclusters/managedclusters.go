@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -42,6 +43,7 @@ var (
 // ManagedClusterScope defines the scope interface for a managed cluster.
 type ManagedClusterScope interface {
 	azure.ClusterDescriber
+	ManagedClusterAnnotations() map[string]string
 	ManagedClusterSpec() (azure.ManagedClusterSpec, error)
 	GetAllAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
 	SetControlPlaneEndpoint(clusterv1.APIEndpoint)
@@ -292,8 +294,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
+	customHeaders := maps.FilterByKeyPrefix(s.Scope.ManagedClusterAnnotations(), azure.CustomHeaderPrefix)
 	if isCreate {
-		managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
+		managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
 		if err != nil {
 			return fmt.Errorf("failed to create managed cluster, %w", err)
 		}
@@ -322,7 +325,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
-			managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
+			managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
 			if err != nil {
 				return fmt.Errorf("failed to update managed cluster, %w", err)
 			}

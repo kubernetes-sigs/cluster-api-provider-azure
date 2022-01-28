@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -35,6 +36,7 @@ type ManagedMachinePoolScope interface {
 	azure.ClusterDescriber
 
 	NodeResourceGroup() string
+	AgentPoolAnnotations() map[string]string
 	AgentPoolSpec() azure.AgentPoolSpec
 	SetAgentPoolProviderIDList([]string)
 	SetAgentPoolReplicas(int32)
@@ -64,7 +66,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer done()
 
 	agentPoolSpec := s.scope.AgentPoolSpec()
-
 	profile := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			VMSize:              &agentPoolSpec.SKU,
@@ -96,8 +97,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// AKS will populate defaults and read-only values, which we want
 	// to strip/clean to match what we expect.
 
+	customHeaders := maps.FilterByKeyPrefix(s.scope.AgentPoolAnnotations(), azure.CustomHeaderPrefix)
 	if isCreate := azure.ResourceNotFound(err); isCreate {
-		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
+		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name,
+			profile, customHeaders)
 		if err != nil && azure.ResourceNotFound(err) {
 			return azure.WithTransientError(errors.Wrap(err, "agent pool dependent resource does not exist yet"), 20*time.Second)
 		} else if err != nil {
@@ -138,7 +141,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		diff := cmp.Diff(normalizedProfile, existingProfile)
 		if diff != "" {
 			log.V(2).Info(fmt.Sprintf("Update required (+new -old):\n%s", diff))
-			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
+			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name,
+				profile, customHeaders)
 			if err != nil {
 				return errors.Wrap(err, "failed to create or update agent pool")
 			}

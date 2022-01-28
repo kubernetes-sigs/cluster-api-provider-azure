@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -27,6 +28,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -101,6 +103,17 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 				field.NewPath("Spec", "Taints"),
 				r.Spec.Taints,
 				"field is immutable"))
+	}
+
+	// custom headers are immutable
+	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
+	newCustomHeaders := maps.FilterByKeyPrefix(r.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
+	if !reflect.DeepEqual(oldCustomHeaders, newCustomHeaders) {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("metadata", "annotations"),
+				r.ObjectMeta.Annotations,
+				fmt.Sprintf("annotations with '%s' prefix are immutable", azure.CustomHeaderPrefix)))
 	}
 
 	if !ensureStringSlicesAreEqual(r.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {
