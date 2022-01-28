@@ -31,7 +31,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -162,7 +161,7 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, resourceGroupNam
 	if err != nil {
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return converters.SDKToFuture(&future, infrav1.PutFuture, scope.ScalesetsServiceName, vmssName, resourceGroupName)
+		return converters.SDKToFuture(&future, infrav1.PutFuture, serviceName, vmssName, resourceGroupName)
 	}
 
 	// todo: this returns the result VMSS, we should use it
@@ -195,7 +194,7 @@ func (ac *AzureClient) UpdateAsync(ctx context.Context, resourceGroupName, vmssN
 	if err != nil {
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return converters.SDKToFuture(&future, infrav1.PatchFuture, scope.ScalesetsServiceName, vmssName, resourceGroupName)
+		return converters.SDKToFuture(&future, infrav1.PatchFuture, serviceName, vmssName, resourceGroupName)
 	}
 	// todo: this returns the result VMSS, we should use it
 	_, err = future.Result(ac.scalesets)
@@ -306,7 +305,7 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssN
 	if err != nil {
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return converters.SDKToFuture(&future, infrav1.DeleteFuture, scope.ScalesetsServiceName, vmssName, resourceGroupName)
+		return converters.SDKToFuture(&future, infrav1.DeleteFuture, serviceName, vmssName, resourceGroupName)
 	}
 	_, err = future.Result(ac.scalesets)
 

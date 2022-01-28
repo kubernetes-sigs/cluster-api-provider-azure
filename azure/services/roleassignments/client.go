@@ -21,21 +21,16 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/Azure/go-autorest/autorest"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
-
-// client wraps go-sdk.
-type client interface {
-	Create(context.Context, string, string, authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error)
-}
 
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	roleassignments authorization.RoleAssignmentsClient
 }
-
-var _ client = (*azureClient)(nil)
 
 // newClient creates a new role assignment client from subscription ID.
 func newClient(auth azure.Authorizer) *azureClient {
@@ -50,18 +45,45 @@ func newRoleAssignmentClient(subscriptionID string, baseURI string, authorizer a
 	return roleClient
 }
 
-// Create creates a role assignment.
-// Parameters:
-// scope - the scope of the role assignment to create. The scope can be any REST resource instance. For
-// example, use '/subscriptions/{subscription-id}/' for a subscription,
-// '/subscriptions/{subscription-id}/resourceGroups/{resource-group-name}' for a resource group, and
-// '/subscriptions/{subscription-id}/resourceGroups/{resource-group-name}/providers/{resource-provider}/{resource-type}/{resource-name}'
-// for a resource.
-// roleAssignmentName - the name of the role assignment to create. It can be any valid GUID.
-// parameters - parameters for the role assignment.
-func (ac *azureClient) Create(ctx context.Context, scope string, roleAssignmentName string, parameters authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "roleassignments.AzureClient.Create")
+// Get gets the specified role assignment by the role assignment name.
+func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, error) {
+	ctx, span := tele.Tracer().Start(ctx, "roleassignments.AzureClient.Get")
+	defer span.End()
+	return ac.roleassignments.Get(ctx, spec.OwnerResourceName(), spec.ResourceName())
+}
+
+// CreateOrUpdateAsync creates a roleassignment.
+// Creating a roleassignment is not a long running operation, so we don't ever return a future.
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (interface{}, azureautorest.FutureAPI, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.CreateOrUpdate")
+	defer done()
+	createParams, ok := parameters.(authorization.RoleAssignmentCreateParameters)
+	if !ok {
+		return nil, nil, errors.Errorf("%T is not a authorization.RoleAssignmentCreateParameters", parameters)
+	}
+	result, err := ac.roleassignments.Create(ctx, spec.OwnerResourceName(), spec.ResourceName(), createParams)
+	return result, nil, err
+}
+
+// IsDone returns true if the long-running operation has completed.
+func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "roleassignments.AzureClient.IsDone")
 	defer done()
 
-	return ac.roleassignments.Create(ctx, scope, roleAssignmentName, parameters)
+	isDone, err := future.DoneWithContext(ctx, ac.roleassignments)
+	if err != nil {
+		return false, errors.Wrap(err, "failed checking if the operation was complete")
+	}
+	return isDone, nil
+}
+
+// Result fetches the result of a long-running operation future.
+func (ac *azureClient) Result(ctx context.Context, futureData azureautorest.FutureAPI, futureType string) (interface{}, error) {
+	// Result is a no-op for role assignment as only Delete operations return a future.
+	return nil, nil
+}
+
+// DeleteAsync is no-op for role assignments. It gets deleted as part of the VM deletion.
+func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+	return nil, nil
 }
