@@ -358,6 +358,19 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
 			}, result)
 
+			Context("Running a security scanner", func() {
+				KubescapeSpec(ctx, func() KubescapeSpecInput {
+					return KubescapeSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						FailThreshold:         e2eConfig.GetVariable(SecurityScanFailThreshold),
+						Container:             e2eConfig.GetVariable(SecurityScanContainer),
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
 			Context("Validating time synchronization", func() {
 				AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
 					return AzureTimeSyncSpecInput{

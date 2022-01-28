@@ -65,6 +65,8 @@ const (
 	JobName                        = "JOB_NAME"
 	Timestamp                      = "TIMESTAMP"
 	AKSKubernetesVersion           = "AKS_KUBERNETES_VERSION"
+	SecurityScanFailThreshold      = "SECURITY_SCAN_FAIL_THRESHOLD"
+	SecurityScanContainer          = "SECURITY_SCAN_CONTAINER"
 	ManagedClustersResourceType    = "managedClusters"
 	capiImagePublisher             = "cncf-upstream"
 	capiOfferName                  = "capi"
