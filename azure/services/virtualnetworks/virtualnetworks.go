@@ -45,7 +45,7 @@ type VNetScope interface {
 type Service struct {
 	Scope VNetScope
 	async.Reconciler
-	Getter
+	async.Getter
 }
 
 // New creates a new service.

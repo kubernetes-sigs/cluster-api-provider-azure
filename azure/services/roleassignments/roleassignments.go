@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -43,7 +44,7 @@ type RoleAssignmentScope interface {
 type Service struct {
 	Scope RoleAssignmentScope
 	client
-	virtualMachinesClient        virtualmachines.Client
+	virtualMachinesGetter        async.Getter
 	virtualMachineScaleSetClient scalesets.Client
 }
 
@@ -52,7 +53,7 @@ func New(scope RoleAssignmentScope) *Service {
 	return &Service{
 		Scope:                        scope,
 		client:                       newClient(scope),
-		virtualMachinesClient:        virtualmachines.NewClient(scope),
+		virtualMachinesGetter:        virtualmachines.NewClient(scope),
 		virtualMachineScaleSetClient: scalesets.NewClient(scope),
 	}
 }
@@ -85,7 +86,7 @@ func (s *Service) reconcileVM(ctx context.Context, roleSpec azure.RoleAssignment
 		ResourceGroup: s.Scope.ResourceGroup(),
 	}
 
-	resultVMIface, err := s.virtualMachinesClient.Get(ctx, spec)
+	resultVMIface, err := s.virtualMachinesGetter.Get(ctx, spec)
 	if err != nil {
 		return errors.Wrap(err, "cannot get VM to assign role to system assigned identity")
 	}

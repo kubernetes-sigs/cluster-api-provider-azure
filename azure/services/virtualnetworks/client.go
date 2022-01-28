@@ -31,17 +31,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Getter is an interface that can get a virtual network.
-type Getter interface {
-	Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error)
-}
-
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	virtualnetworks network.VirtualNetworksClient
 }
-
-var _ Getter = &azureClient{}
 
 // newClient creates a new VM client from subscription ID.
 func newClient(auth azure.Authorizer) *azureClient {

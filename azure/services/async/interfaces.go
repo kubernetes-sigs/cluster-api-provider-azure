@@ -36,11 +36,16 @@ type FutureHandler interface {
 	Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error)
 }
 
+// Getter is an interface that can get a resource.
+type Getter interface {
+	Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error)
+}
+
 // Creator is a client that can create or update a resource asynchronously.
 type Creator interface {
 	FutureHandler
+	Getter
 	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
-	Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error)
 }
 
 // Deleter is a client that can delete a resource asynchronously.
