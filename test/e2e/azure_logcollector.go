@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -250,7 +251,7 @@ func windowsK8sLogs(execToPathFn func(outputFileName string, command string, arg
 		),
 		execToPathFn(
 			"kubelet.log",
-			`Get-ChildItem "C:\\var\\log\\kubelet\\"  | ForEach-Object { if ($_ -match 'log.INFO') { write-output "$_";cat "c:\\var\\log\\kubelet\\$_" } }`,
+			`Get-ChildItem "C:\\var\\log\\kubelet\\"  | ForEach-Object { if ($_ -match 'log.INFO|err.*.log') { write-output "$_";cat "c:\\var\\log\\kubelet\\$_" } }`,
 		),
 		execToPathFn(
 			"cni.log",
