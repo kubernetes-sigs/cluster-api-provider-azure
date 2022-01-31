@@ -63,6 +63,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 		WithOptions(options).
 		For(&infrav1.AzureCluster{}).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue)).
+		Named("AzureIdentity").
 		Build(r)
 	if err != nil {
 		return errors.Wrap(err, "error creating controller")
