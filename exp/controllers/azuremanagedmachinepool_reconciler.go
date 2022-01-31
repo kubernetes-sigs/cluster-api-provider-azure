@@ -116,6 +116,11 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 			match = &ss
 			break
 		}
+
+		if ss.Tags["aks-managed-poolName"] != nil && *ss.Tags["aks-managed-poolName"] == agentPoolName {
+			match = &ss
+			break
+		}
 	}
 
 	if match == nil {
