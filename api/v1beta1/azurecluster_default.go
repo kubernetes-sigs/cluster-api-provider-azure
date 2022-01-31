@@ -35,6 +35,8 @@ const (
 	DefaultAzureBastionSubnetCIDR = "10.255.255.224/27"
 	// DefaultAzureBastionSubnetName is the default Subnet Name for AzureBastion.
 	DefaultAzureBastionSubnetName = "AzureBastionSubnet"
+	// DefaultAzureBastionSubnetRole is the default Subnet role for AzureBastion.
+	DefaultAzureBastionSubnetRole = SubnetBastion
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address.
 	DefaultInternalLBIPAddress = "10.0.0.100"
 	// DefaultOutboundRuleIdleTimeoutInMinutes is the default for IdleTimeoutInMinutes for the load balancer.
@@ -314,6 +316,9 @@ func (c *AzureCluster) setBastionDefaults() {
 		}
 		if len(c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks) == 0 {
 			c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks = []string{DefaultAzureBastionSubnetCIDR}
+		}
+		if c.Spec.BastionSpec.AzureBastion.Subnet.Role == "" {
+			c.Spec.BastionSpec.AzureBastion.Subnet.Role = DefaultAzureBastionSubnetRole
 		}
 		// Ensure defaults for the PublicIP settings.
 		if c.Spec.BastionSpec.AzureBastion.PublicIP.Name == "" {

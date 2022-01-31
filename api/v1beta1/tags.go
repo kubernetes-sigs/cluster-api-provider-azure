@@ -126,7 +126,7 @@ const (
 	ControlPlaneOutboundRole = "controlPlaneOutbound"
 
 	// BastionRole describes the value for the bastion role.
-	BastionRole = "bastion"
+	BastionRole = Bastion
 
 	// CommonRole describes the value for the common role.
 	CommonRole = "common"
