@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -411,8 +412,19 @@ func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClust
 // resolveKubernetesVersions looks at Kubernetes versions set as variables in the e2e config and sets them to a valid k8s version
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
 func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
-	skus := getAllCAPIImageSkus(context.TODO(), os.Getenv(AzureLocation))
-	versions := parseImageSkuNames(skus)
+	ubuntuSkus := getImageSkusInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiOfferName)
+	ubuntuVersions := parseImageSkuNames(ubuntuSkus)
+
+	windowsSkus := getImageSkusInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiWindowsOfferName)
+	windowsVersions := parseImageSkuNames(windowsSkus)
+
+	// find the intersection of ubuntu and windows versions available, since we need an image for both.
+	var versions semver.Versions
+	for k, v := range ubuntuVersions {
+		if _, ok := windowsVersions[k]; ok {
+			versions = append(versions, v)
+		}
+	}
 
 	if config.HasVariable(capi_e2e.KubernetesVersion) {
 		resolveKubernetesVersion(config, versions, capi_e2e.KubernetesVersion)
@@ -433,8 +445,8 @@ func resolveKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Vers
 	config.Variables[varName] = v
 }
 
-// getAllCAPIImageSkus returns all skus for the capi offer under the "cncf-upstream" publisher.
-func getAllCAPIImageSkus(ctx context.Context, location string) []string {
+// getImageSkusInOffer returns all skus for an offer that have at least one image.
+func getImageSkusInOffer(ctx context.Context, location, publisher, offer string) []string {
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
@@ -443,9 +455,9 @@ func getAllCAPIImageSkus(ctx context.Context, location string) []string {
 	imagesClient := compute.NewVirtualMachineImagesClient(subscriptionID)
 	imagesClient.Authorizer = authorizer
 
-	Byf("Finding image skus for offer %s/%s in %s", capiImagePublisher, capiOfferName, location)
+	Byf("Finding image skus for offer %s/%s in %s", publisher, offer, location)
 
-	res, err := imagesClient.ListSkus(ctx, location, capiImagePublisher, capiOfferName)
+	res, err := imagesClient.ListSkus(ctx, location, publisher, offer)
 	Expect(err).NotTo(HaveOccurred())
 
 	var skus []string
@@ -454,7 +466,7 @@ func getAllCAPIImageSkus(ctx context.Context, location string) []string {
 		for i, sku := range *res.Value {
 			// we have to do this to make sure the SKU has existing images
 			// see https://github.com/Azure/azure-cli/issues/20115.
-			res, err := imagesClient.List(ctx, location, capiImagePublisher, capiOfferName, *sku.Name, "", nil, "")
+			res, err := imagesClient.List(ctx, location, publisher, offer, *sku.Name, "", nil, "")
 			Expect(err).NotTo(HaveOccurred())
 			if res.Value != nil && len(*res.Value) > 0 {
 				skus[i] = *sku.Name
@@ -464,17 +476,19 @@ func getAllCAPIImageSkus(ctx context.Context, location string) []string {
 	return skus
 }
 
-// parseImageSkuNames parses SKU names in format "k8s-1dot17dot2-ubuntu-1804" to extract the Kubernetes version.
+// parseImageSkuNames parses SKU names in format "k8s-1dot17dot2-os-123" to extract the Kubernetes version.
 // it returns a sorted list of all k8s versions found.
-func parseImageSkuNames(skus []string) semver.Versions {
-	var capiSku = regexp.MustCompile(`^k8s-(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)-ubuntu.*$`)
-	versions := make(semver.Versions, len(skus))
-	for i, sku := range skus {
+func parseImageSkuNames(skus []string) map[string]semver.Version {
+	capiSku := regexp.MustCompile(`^k8s-(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)-[a-z]*.*$`)
+	versions := make(map[string]semver.Version, len(skus))
+	for _, sku := range skus {
 		match := capiSku.FindStringSubmatch(sku)
 		if len(match) != 0 {
-			versions[i] = semver.MustParse(fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3]))
+			stringVer := fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3])
+			versions[stringVer] = semver.MustParse(stringVer)
 		}
 	}
+
 	return versions
 }
 
