@@ -108,8 +108,6 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedCluster
 metadata:
   name: my-cluster
-spec:
-  subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
