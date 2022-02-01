@@ -31,23 +31,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-type (
-	// Client wraps go-sdk.
-	Client interface {
-		Get(context.Context, azure.ResourceSpecGetter) (result interface{}, err error)
-		CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
-		DeleteAsync(context.Context, azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error)
-		IsDone(context.Context, azureautorest.FutureAPI) (isDone bool, err error)
-		Result(context.Context, azureautorest.FutureAPI, string) (result interface{}, err error)
-	}
-
-	// AzureClient contains the Azure go-sdk Client.
-	AzureClient struct {
-		interfaces network.InterfacesClient
-	}
-)
-
-var _ Client = &AzureClient{}
+// AzureClient contains the Azure go-sdk Client.
+type AzureClient struct {
+	interfaces network.InterfacesClient
+}
 
 // NewClient creates a new VM client from subscription ID.
 func NewClient(auth azure.Authorizer) *AzureClient {

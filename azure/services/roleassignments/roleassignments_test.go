@@ -28,10 +28,10 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments/mock_roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines/mock_virtualmachines"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -45,13 +45,13 @@ var (
 func TestReconcileRoleAssignmentsVM(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder)
+		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_async.MockGetterMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "create a role assignment",
 			expectedError: "",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_async.MockGetterMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
@@ -76,7 +76,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 		{
 			name:          "error getting VM",
 			expectedError: "cannot get VM to assign role to system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_async.MockGetterMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
@@ -91,7 +91,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 		{
 			name:          "return error when creating a role assignment",
 			expectedError: "cannot assign role to VM system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_async.MockGetterMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
@@ -119,14 +119,14 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			defer mockCtrl.Finish()
 			scopeMock := mock_roleassignments.NewMockRoleAssignmentScope(mockCtrl)
 			clientMock := mock_roleassignments.NewMockclient(mockCtrl)
-			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
+			vmGetterMock := mock_async.NewMockGetter(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), vmMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), vmGetterMock.EXPECT())
 
 			s := &Service{
 				Scope:                 scopeMock,
 				client:                clientMock,
-				virtualMachinesClient: vmMock,
+				virtualMachinesGetter: vmGetterMock,
 			}
 
 			err := s.Reconcile(context.TODO())

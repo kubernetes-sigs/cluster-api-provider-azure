@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -362,11 +363,14 @@ func (s *ClusterScope) VnetPeeringSpecs() []azure.ResourceSpecGetter {
 }
 
 // VNetSpec returns the virtual network spec.
-func (s *ClusterScope) VNetSpec() azure.VNetSpec {
-	return azure.VNetSpec{
-		ResourceGroup: s.Vnet().ResourceGroup,
-		Name:          s.Vnet().Name,
-		CIDRs:         s.Vnet().CIDRBlocks,
+func (s *ClusterScope) VNetSpec() azure.ResourceSpecGetter {
+	return &virtualnetworks.VNetSpec{
+		ResourceGroup:  s.Vnet().ResourceGroup,
+		Name:           s.Vnet().Name,
+		CIDRs:          s.Vnet().CIDRBlocks,
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
 	}
 }
 
@@ -662,6 +666,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.NATGatewaysReadyCondition,
 			infrav1.LoadBalancersReadyCondition,
 			infrav1.BastionHostReadyCondition,
+			infrav1.VNetReadyCondition,
 		),
 	)
 
@@ -678,6 +683,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.NATGatewaysReadyCondition,
 			infrav1.LoadBalancersReadyCondition,
 			infrav1.BastionHostReadyCondition,
+			infrav1.VNetReadyCondition,
 		}})
 }
 
