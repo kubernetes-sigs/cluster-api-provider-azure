@@ -71,13 +71,13 @@ func Convert_v1beta1_AzureManagedMachinePoolStatus_To_v1alpha4_AzureManagedMachi
 }
 
 // ConvertTo converts this AzureManagedMachinePoolList to the Hub version (v1beta1).
-func (src *AzureManagedMachinePoolList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureManagedMachinePoolList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureManagedMachinePoolList)
 	return Convert_v1alpha4_AzureManagedMachinePoolList_To_v1beta1_AzureManagedMachinePoolList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureManagedMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureManagedMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureManagedMachinePoolList)
 	return Convert_v1beta1_AzureManagedMachinePoolList_To_v1alpha4_AzureManagedMachinePoolList(src, dst, nil)
 }

@@ -25,7 +25,7 @@ import (
 )
 
 // ConvertTo converts this AzureCluster to the Hub version (v1beta1).
-func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureCluster)
 	if err := Convert_v1alpha4_AzureCluster_To_v1beta1_AzureCluster(src, dst, nil); err != nil {
 		return err
@@ -44,7 +44,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureCluster)
 	if err := Convert_v1beta1_AzureCluster_To_v1alpha4_AzureCluster(src, dst, nil); err != nil {
 		return err
@@ -55,19 +55,19 @@ func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 }
 
 // ConvertTo converts this AzureClusterList to the Hub version (v1beta1).
-func (src *AzureClusterList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureClusterList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureClusterList)
 	return Convert_v1alpha4_AzureClusterList_To_v1beta1_AzureClusterList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureClusterList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureClusterList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureClusterList)
 	return Convert_v1beta1_AzureClusterList_To_v1alpha4_AzureClusterList(src, dst, nil)
 }
 
 // Convert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec.
-func Convert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec(in *infrav1beta1.VnetSpec, out *VnetSpec, s apiconversion.Scope) error { //nolint
+func Convert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec(in *infrav1beta1.VnetSpec, out *VnetSpec, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec(in, out, s)
 }
 

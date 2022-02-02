@@ -24,7 +24,7 @@ import (
 )
 
 // ConvertTo converts this AzureManagedMachinePool to the Hub version (v1beta1).
-func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureManagedMachinePool)
 	if err := Convert_v1alpha3_AzureManagedMachinePool_To_v1beta1_AzureManagedMachinePool(src, dst, nil); err != nil {
 		return err
@@ -50,7 +50,7 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error { // 
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureManagedMachinePool) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureManagedMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureManagedMachinePool)
 	if err := Convert_v1beta1_AzureManagedMachinePool_To_v1alpha3_AzureManagedMachinePool(src, dst, nil); err != nil {
 		return err
@@ -71,13 +71,13 @@ func Convert_v1beta1_AzureManagedMachinePoolStatus_To_v1alpha3_AzureManagedMachi
 }
 
 // ConvertTo converts this AzureManagedMachinePoolList to the Hub version (v1beta1).
-func (src *AzureManagedMachinePoolList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureManagedMachinePoolList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureManagedMachinePoolList)
 	return Convert_v1alpha3_AzureManagedMachinePoolList_To_v1beta1_AzureManagedMachinePoolList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureManagedMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureManagedMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureManagedMachinePoolList)
 	return Convert_v1beta1_AzureManagedMachinePoolList_To_v1alpha3_AzureManagedMachinePoolList(src, dst, nil)
 }

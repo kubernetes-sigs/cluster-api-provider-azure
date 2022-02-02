@@ -24,7 +24,7 @@ import (
 )
 
 // ConvertTo converts this AzureManagedControlPlane to the Hub version (v1beta1).
-func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureManagedControlPlane)
 	if err := Convert_v1alpha3_AzureManagedControlPlane_To_v1beta1_AzureManagedControlPlane(src, dst, nil); err != nil {
 		return err
@@ -48,7 +48,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error { //
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureManagedControlPlane) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureManagedControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureManagedControlPlane)
 	if err := Convert_v1beta1_AzureManagedControlPlane_To_v1alpha3_AzureManagedControlPlane(src, dst, nil); err != nil {
 		return err
@@ -69,13 +69,13 @@ func Convert_v1beta1_AzureManagedControlPlaneStatus_To_v1alpha3_AzureManagedCont
 }
 
 // ConvertTo converts this AzureManagedControlPlaneList to the Hub version (v1beta1).
-func (src *AzureManagedControlPlaneList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureManagedControlPlaneList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureManagedControlPlaneList)
 	return Convert_v1alpha3_AzureManagedControlPlaneList_To_v1beta1_AzureManagedControlPlaneList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureManagedControlPlaneList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureManagedControlPlaneList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureManagedControlPlaneList)
 	return Convert_v1beta1_AzureManagedControlPlaneList_To_v1alpha3_AzureManagedControlPlaneList(src, dst, nil)
 }

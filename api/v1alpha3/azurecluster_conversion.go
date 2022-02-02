@@ -29,7 +29,7 @@ const (
 )
 
 // ConvertTo converts this AzureCluster to the Hub version (v1beta1).
-func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureCluster)
 	if err := Convert_v1alpha3_AzureCluster_To_v1beta1_AzureCluster(src, dst, nil); err != nil {
 		return err
@@ -102,7 +102,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureCluster)
 	if err := Convert_v1beta1_AzureCluster_To_v1alpha3_AzureCluster(src, dst, nil); err != nil {
 		return err
@@ -120,39 +120,39 @@ func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 }
 
 // ConvertTo converts this AzureClusterList to the Hub version (v1beta1).
-func (src *AzureClusterList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureClusterList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureClusterList)
 	return Convert_v1alpha3_AzureClusterList_To_v1beta1_AzureClusterList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureClusterList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureClusterList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureClusterList)
 	return Convert_v1beta1_AzureClusterList_To_v1alpha3_AzureClusterList(src, dst, nil)
 }
 
 // Convert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus converts AzureCluster.Status from v1alpha3 to v1beta1.
-func Convert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in *AzureClusterStatus, out *infrav1beta1.AzureClusterStatus, s apiconversion.Scope) error { // nolint
+func Convert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in *AzureClusterStatus, out *infrav1beta1.AzureClusterStatus, s apiconversion.Scope) error {
 	return autoConvert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in, out, s)
 }
 
 // Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec.
-func Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in *AzureClusterSpec, out *infrav1beta1.AzureClusterSpec, s apiconversion.Scope) error { //nolint
+func Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in *AzureClusterSpec, out *infrav1beta1.AzureClusterSpec, s apiconversion.Scope) error {
 	return autoConvert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in, out, s)
 }
 
 // Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec converts from the Hub version (v1beta1) of the AzureClusterSpec to this version.
-func Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *infrav1beta1.AzureClusterSpec, out *AzureClusterSpec, s apiconversion.Scope) error { // nolint
+func Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *infrav1beta1.AzureClusterSpec, out *AzureClusterSpec, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in, out, s)
 }
 
 // Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus.
-func Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *infrav1beta1.AzureClusterStatus, out *AzureClusterStatus, s apiconversion.Scope) error { //nolint
+func Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *infrav1beta1.AzureClusterStatus, out *AzureClusterStatus, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in, out, s)
 }
 
 // Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec.
-func Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, out *infrav1beta1.NetworkSpec, s apiconversion.Scope) error { //nolint
+func Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, out *infrav1beta1.NetworkSpec, s apiconversion.Scope) error {
 	if err := Convert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, out *i
 }
 
 // Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec.
-func Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1beta1.NetworkSpec, out *NetworkSpec, s apiconversion.Scope) error { //nolint
+func Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1beta1.NetworkSpec, out *NetworkSpec, s apiconversion.Scope) error {
 	if err := Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
@@ -186,17 +186,17 @@ func Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1beta1.Networ
 }
 
 // Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec.
-func Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in *infrav1beta1.VnetSpec, out *VnetSpec, s apiconversion.Scope) error { //nolint
+func Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in *infrav1beta1.VnetSpec, out *VnetSpec, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in, out, s)
 }
 
 // Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec.
-func Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *infrav1beta1.SubnetSpec, s apiconversion.Scope) error { //nolint
+func Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *infrav1beta1.SubnetSpec, s apiconversion.Scope) error {
 	return autoConvert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in, out, s)
 }
 
 // Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec.
-func Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in *infrav1beta1.SubnetSpec, out *SubnetSpec, s apiconversion.Scope) error { //nolint
+func Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in *infrav1beta1.SubnetSpec, out *SubnetSpec, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in, out, s)
 }
 
@@ -219,7 +219,7 @@ func Convert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup(in *infrav1beta1.Se
 	return nil
 }
 
-func Convert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup(in *SecurityGroup, out *infrav1beta1.SecurityGroup, s apiconversion.Scope) error { //nolint
+func Convert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup(in *SecurityGroup, out *infrav1beta1.SecurityGroup, s apiconversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 
@@ -236,7 +236,7 @@ func Convert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup(in *SecurityGroup, 
 }
 
 // Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule
-func Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule(in *IngressRule, out *infrav1beta1.SecurityRule, _ apiconversion.Scope) error { //nolint
+func Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule(in *IngressRule, out *infrav1beta1.SecurityRule, _ apiconversion.Scope) error {
 	out.Name = in.Name
 	out.Description = in.Description
 	out.Protocol = infrav1beta1.SecurityGroupProtocol(in.Protocol)
@@ -250,7 +250,7 @@ func Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule(in *IngressRule, out *
 }
 
 // Convert_v1beta1_SecurityRule_To_v1alpha3_IngressRule
-func Convert_v1beta1_SecurityRule_To_v1alpha3_IngressRule(in *infrav1beta1.SecurityRule, out *IngressRule, _ apiconversion.Scope) error { //nolint
+func Convert_v1beta1_SecurityRule_To_v1alpha3_IngressRule(in *infrav1beta1.SecurityRule, out *IngressRule, _ apiconversion.Scope) error {
 	out.Name = in.Name
 	out.Description = in.Description
 	out.Protocol = SecurityGroupProtocol(in.Protocol)

@@ -26,7 +26,7 @@ import (
 )
 
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).
-func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureMachinePool)
 	if err := Convert_v1alpha3_AzureMachinePool_To_v1beta1_AzureMachinePool(src, dst, nil); err != nil {
 		return err
@@ -86,7 +86,7 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureMachinePool)
 	if err := Convert_v1beta1_AzureMachinePool_To_v1alpha3_AzureMachinePool(src, dst, nil); err != nil {
 		return err
@@ -96,7 +96,7 @@ func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error { // nolin
 	return utilconversion.MarshalData(src, dst)
 }
 
-func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in *expv1beta1.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error { //nolint
+func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in *expv1beta1.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error {
 	return autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in, out, s)
 }
 

@@ -24,7 +24,7 @@ import (
 )
 
 // ConvertTo converts this AzureMachineTemplate to the Hub version (v1beta1).
-func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureMachineTemplate)
 	if err := Convert_v1alpha3_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(src, dst, nil); err != nil {
 		return err
@@ -57,7 +57,7 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureMachineTemplate)
 	if err := Convert_v1beta1_AzureMachineTemplate_To_v1alpha3_AzureMachineTemplate(src, dst, nil); err != nil {
 		return err
@@ -68,18 +68,18 @@ func (dst *AzureMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error { // n
 }
 
 // ConvertTo converts this AzureMachineTemplateList to the Hub version (v1beta1).
-func (src *AzureMachineTemplateList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureMachineTemplateList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureMachineTemplateList)
 	return Convert_v1alpha3_AzureMachineTemplateList_To_v1beta1_AzureMachineTemplateList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureMachineTemplateList)
 	return Convert_v1beta1_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(src, dst, nil)
 }
 
-func Convert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in *infrav1beta1.AzureSharedGalleryImage, out *AzureSharedGalleryImage, s apimachineryconversion.Scope) error { // nolint
+func Convert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in *infrav1beta1.AzureSharedGalleryImage, out *AzureSharedGalleryImage, s apimachineryconversion.Scope) error {
 	return autoConvert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in, out, s)
 }
 

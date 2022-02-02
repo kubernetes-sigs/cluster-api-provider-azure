@@ -22,13 +22,13 @@ import (
 )
 
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).
-func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureMachinePool)
 	return Convert_v1alpha4_AzureMachinePool_To_v1beta1_AzureMachinePool(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureMachinePool)
 	return Convert_v1beta1_AzureMachinePool_To_v1alpha4_AzureMachinePool(src, dst, nil)
 }

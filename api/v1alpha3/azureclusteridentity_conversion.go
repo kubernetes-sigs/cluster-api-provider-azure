@@ -30,7 +30,7 @@ const (
 )
 
 // ConvertTo converts this AzureCluster to the Hub version (v1beta1).
-func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureClusterIdentity)
 	if err := Convert_v1alpha3_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(src, dst, nil); err != nil {
 		return err
@@ -73,7 +73,7 @@ func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nol
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureClusterIdentity)
 	if err := Convert_v1beta1_AzureClusterIdentity_To_v1alpha3_AzureClusterIdentity(src, dst, nil); err != nil {
 		return err
@@ -94,12 +94,12 @@ func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error { // n
 }
 
 // Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec.
-func Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(in *AzureClusterIdentitySpec, out *infrav1beta1.AzureClusterIdentitySpec, s apiconversion.Scope) error { // nolint
+func Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(in *AzureClusterIdentitySpec, out *infrav1beta1.AzureClusterIdentitySpec, s apiconversion.Scope) error {
 	return autoConvert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(in, out, s)
 }
 
 // Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec
-func Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in *infrav1beta1.AzureClusterIdentitySpec, out *AzureClusterIdentitySpec, s apiconversion.Scope) error { // nolint
+func Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in *infrav1beta1.AzureClusterIdentitySpec, out *AzureClusterIdentitySpec, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in, out, s)
 }
 
