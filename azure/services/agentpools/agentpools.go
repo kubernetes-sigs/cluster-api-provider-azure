@@ -82,6 +82,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			AvailabilityZones:   &agentPoolSpec.AvailabilityZones,
 			MaxPods:             agentPoolSpec.MaxPods,
 			OsDiskType:          containerservice.OSDiskType(to.String(agentPoolSpec.OsDiskType)),
+			NodeLabels:          agentPoolSpec.NodeLabels,
 		},
 	}
 

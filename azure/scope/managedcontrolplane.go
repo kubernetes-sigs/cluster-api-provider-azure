@@ -582,6 +582,13 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		agentPoolSpec.MinCount = managedMachinePool.Spec.Scaling.MinSize
 	}
 
+	if len(managedMachinePool.Spec.NodeLabels) > 0 {
+		agentPoolSpec.NodeLabels = make(map[string]*string, len(managedMachinePool.Spec.NodeLabels))
+		for k, v := range managedMachinePool.Spec.NodeLabels {
+			agentPoolSpec.NodeLabels[k] = to.StringPtr(v)
+		}
+	}
+
 	return agentPoolSpec
 }
 

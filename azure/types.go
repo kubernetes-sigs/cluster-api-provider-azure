@@ -355,6 +355,9 @@ type AgentPoolSpec struct {
 	// Minimum number of nodes for auto-scaling
 	MinCount *int32 `json:"minCount,omitempty"`
 
+	// Node labels - labels for all of the nodes present in node pool
+	NodeLabels map[string]*string `json:"nodeLabels,omitempty"`
+
 	// EnableAutoScaling - Whether to enable auto-scaler
 	EnableAutoScaling *bool `json:"enableAutoScaling,omitempty"`
 
