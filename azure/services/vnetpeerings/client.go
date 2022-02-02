@@ -24,7 +24,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"

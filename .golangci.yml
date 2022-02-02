@@ -16,6 +16,7 @@ linters:
     - errcheck
     - errorlint
     - exportloopref
+    - gci
     - goconst
     - gocyclo
     - godot

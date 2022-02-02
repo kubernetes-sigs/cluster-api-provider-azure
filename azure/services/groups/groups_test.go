@@ -18,7 +18,6 @@ package groups
 
 import (
 	"context"
-
 	"net/http"
 	"testing"
 

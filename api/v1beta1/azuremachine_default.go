@@ -21,9 +21,8 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachine.

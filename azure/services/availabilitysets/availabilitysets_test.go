@@ -25,10 +25,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/pkg/errors"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"

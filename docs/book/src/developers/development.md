@@ -413,6 +413,7 @@ If you're interested in submitting PRs to the project, please be sure to run som
 
 ```bash
 make lint # Runs a suite of quick scripts to check code structure
+make lint-fix # Runs a suite of quick scripts to fix lint errors
 make test # Runs tests on the Go code
 ```
 

@@ -19,11 +19,10 @@ package v1beta1
 import (
 	"testing"
 
-	"k8s.io/utils/pointer"
-
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 )
 
 func TestClusterNameValidation(t *testing.T) {

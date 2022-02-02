@@ -26,7 +26,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters/mock_managedclusters"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"

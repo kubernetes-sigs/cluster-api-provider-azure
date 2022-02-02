@@ -21,7 +21,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/onsi/gomega"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )

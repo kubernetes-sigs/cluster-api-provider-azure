@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
-
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 

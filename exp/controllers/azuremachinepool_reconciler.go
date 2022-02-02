@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"

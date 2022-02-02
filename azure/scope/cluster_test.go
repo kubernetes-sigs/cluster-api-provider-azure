@@ -21,11 +21,9 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
-
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"

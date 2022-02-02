@@ -20,10 +20,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/cluster-api/util/secret"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
@@ -32,6 +28,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // azureManagedControlPlaneService contains the services required by the cluster controller.

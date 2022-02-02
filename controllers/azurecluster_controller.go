@@ -21,11 +21,16 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -37,13 +42,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // AzureClusterReconciler reconciles an AzureCluster object.

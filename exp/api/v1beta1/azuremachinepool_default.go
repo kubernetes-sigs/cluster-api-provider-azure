@@ -21,7 +21,6 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/uuid"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )

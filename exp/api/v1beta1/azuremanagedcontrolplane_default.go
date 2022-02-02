@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"golang.org/x/crypto/ssh"
-
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 

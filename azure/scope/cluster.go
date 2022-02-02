@@ -28,11 +28,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/utils/net"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -44,6 +39,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.

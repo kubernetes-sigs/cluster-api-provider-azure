@@ -21,7 +21,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 )
 

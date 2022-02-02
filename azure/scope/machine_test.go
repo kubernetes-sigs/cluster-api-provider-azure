@@ -29,14 +29,13 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func specArrayToString(specs []azure.ResourceSpecGetter) string {
