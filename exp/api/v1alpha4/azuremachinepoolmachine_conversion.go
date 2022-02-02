@@ -24,13 +24,23 @@ import (
 // ConvertTo converts this AzureMachinePoolMachine to the Hub version (v1beta1).
 func (src *AzureMachinePoolMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst := dstRaw.(*expv1beta1.AzureMachinePoolMachine)
-
 	return Convert_v1alpha4_AzureMachinePoolMachine_To_v1beta1_AzureMachinePoolMachine(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureMachinePoolMachine) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 	src := srcRaw.(*expv1beta1.AzureMachinePoolMachine)
-
 	return Convert_v1beta1_AzureMachinePoolMachine_To_v1alpha4_AzureMachinePoolMachine(src, dst, nil)
+}
+
+// ConvertTo converts this AzureMachinePoolMachineList to the Hub version (v1beta1).
+func (src *AzureMachinePoolMachineList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*expv1beta1.AzureMachinePoolMachineList)
+	return Convert_v1alpha4_AzureMachinePoolMachineList_To_v1beta1_AzureMachinePoolMachineList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureMachinePoolMachineList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*expv1beta1.AzureMachinePoolMachineList)
+	return Convert_v1beta1_AzureMachinePoolMachineList_To_v1alpha4_AzureMachinePoolMachineList(src, dst, nil)
 }

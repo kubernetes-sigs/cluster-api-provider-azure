@@ -75,3 +75,15 @@ func Convert_v1beta1_AzureManagedMachinePoolSpec_To_v1alpha4_AzureManagedMachine
 func Convert_v1beta1_AzureManagedMachinePoolStatus_To_v1alpha4_AzureManagedMachinePoolStatus(in *expv1beta1.AzureManagedMachinePoolStatus, out *AzureManagedMachinePoolStatus, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureManagedMachinePoolStatus_To_v1alpha4_AzureManagedMachinePoolStatus(in, out, s)
 }
+
+// ConvertTo converts this AzureManagedMachinePoolList to the Hub version (v1beta1).
+func (src *AzureManagedMachinePoolList) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*expv1beta1.AzureManagedMachinePoolList)
+	return Convert_v1alpha4_AzureManagedMachinePoolList_To_v1beta1_AzureManagedMachinePoolList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureManagedMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*expv1beta1.AzureManagedMachinePoolList)
+	return  Convert_v1beta1_AzureManagedMachinePoolList_To_v1alpha4_AzureManagedMachinePoolList(src, dst, nil)
+}
