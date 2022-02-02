@@ -7,6 +7,5 @@ resources:
 patchesStrategicMerge:
   - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
   - patches/private-lb.yaml
-  - patches/apiserver-host-dns.yaml
   - patches/azure-bastion.yaml
 
