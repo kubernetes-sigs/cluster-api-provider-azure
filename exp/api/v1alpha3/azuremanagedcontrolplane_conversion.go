@@ -73,3 +73,17 @@ func Convert_v1beta1_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedContro
 func Convert_v1beta1_AzureManagedControlPlaneStatus_To_v1alpha3_AzureManagedControlPlaneStatus(in *expv1beta1.AzureManagedControlPlaneStatus, out *AzureManagedControlPlaneStatus, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureManagedControlPlaneStatus_To_v1alpha3_AzureManagedControlPlaneStatus(in, out, s)
 }
+
+// ConvertTo converts this AzureManagedControlPlaneList to the Hub version (v1beta1).
+func (src *AzureManagedControlPlaneList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*expv1beta1.AzureManagedControlPlaneList)
+
+	return Convert_v1alpha3_AzureManagedControlPlaneList_To_v1beta1_AzureManagedControlPlaneList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureManagedControlPlaneList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*expv1beta1.AzureManagedControlPlaneList)
+
+	return Convert_v1beta1_AzureManagedControlPlaneList_To_v1alpha3_AzureManagedControlPlaneList(src, dst, nil)
+}

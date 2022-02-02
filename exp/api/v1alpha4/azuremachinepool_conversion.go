@@ -34,3 +34,17 @@ func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error { // nolin
 
 	return Convert_v1beta1_AzureMachinePool_To_v1alpha4_AzureMachinePool(src, dst, nil)
 }
+
+// ConvertTo converts this AzureMachinePoolList to the Hub version (v1beta1).
+func (src *AzureMachinePoolList) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*expv1beta1.AzureMachinePoolList)
+
+	return Convert_v1alpha4_AzureMachinePoolList_To_v1beta1_AzureMachinePoolList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*expv1beta1.AzureMachinePoolList)
+
+	return Convert_v1beta1_AzureMachinePoolList_To_v1alpha4_AzureMachinePoolList(src, dst, nil)
+}
