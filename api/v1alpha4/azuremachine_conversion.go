@@ -24,7 +24,6 @@ import (
 // ConvertTo converts this AzureMachine to the Hub version (v1beta1).
 func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst := dstRaw.(*v1beta1.AzureMachine)
-
 	return Convert_v1alpha4_AzureMachine_To_v1beta1_AzureMachine(src, dst, nil)
 }
 

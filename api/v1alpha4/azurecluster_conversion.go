@@ -51,11 +51,7 @@ func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 	}
 
 	// Preserve Hub data on down-conversion.
-	if err := utilconversion.MarshalData(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureClusterList to the Hub version (v1beta1).

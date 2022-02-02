@@ -26,7 +26,6 @@ import (
 // ConvertTo converts this AzureMachineTemplate to the Hub version (v1beta1).
 func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst := dstRaw.(*infrav1beta1.AzureMachineTemplate)
-
 	if err := Convert_v1alpha4_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(src, dst, nil); err != nil {
 		return err
 	}
@@ -50,11 +49,7 @@ func (dst *AzureMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error { // n
 	}
 
 	// Preserve Hub data on down-conversion.
-	if err := utilconversion.MarshalData(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureMachineTemplateList to the Hub version (v1beta1).
@@ -70,8 +65,5 @@ func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error { 
 }
 
 func Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in *infrav1beta1.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s apimachineryconversion.Scope) error {
-	if err := autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in, out, s); err != nil {
-		return err
-	}
-	return nil
+	return autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in, out, s)
 }

@@ -26,7 +26,6 @@ import (
 // ConvertTo converts this AzureMachine to the Hub version (v1beta1).
 func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst := dstRaw.(*v1beta1.AzureMachine)
-
 	if err := Convert_v1alpha3_AzureMachine_To_v1beta1_AzureMachine(src, dst, nil); err != nil {
 		return err
 	}
@@ -66,11 +65,7 @@ func (dst *AzureMachine) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 	}
 
 	// Preserve Hub data on down-conversion.
-	if err := utilconversion.MarshalData(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureMachineList to the Hub version (v1beta1).
@@ -86,38 +81,22 @@ func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error { // nolin
 }
 
 func Convert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(in *AzureMachineSpec, out *v1beta1.AzureMachineSpec, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(in, out, s); err != nil {
-		return err
-	}
-
-	return nil
+	return autoConvert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(in, out, s)
 }
 
 // Convert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec converts from the Hub version (v1beta1) of the AzureMachineSpec to this version.
 func Convert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1beta1.AzureMachineSpec, out *AzureMachineSpec, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in, out, s); err != nil {
-		return err
-	}
-
-	return nil
+	return autoConvert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in, out, s)
 }
 
 // Convert_v1alpha3_AzureMachineStatus_To_v1beta1_AzureMachineStatus converts this AzureMachineStatus to the Hub version (v1beta1).
 func Convert_v1alpha3_AzureMachineStatus_To_v1beta1_AzureMachineStatus(in *AzureMachineStatus, out *v1beta1.AzureMachineStatus, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1alpha3_AzureMachineStatus_To_v1beta1_AzureMachineStatus(in, out, s); err != nil {
-		return err
-	}
-
-	return nil
+	return autoConvert_v1alpha3_AzureMachineStatus_To_v1beta1_AzureMachineStatus(in, out, s)
 }
 
 // Convert_v1beta1_AzureMachineStatus_To_v1alpha3_AzureMachineStatus converts from the Hub version (v1beta1) of the AzureMachineStatus to this version.
 func Convert_v1beta1_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(in *v1beta1.AzureMachineStatus, out *AzureMachineStatus, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1beta1_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(in, out, s); err != nil {
-		return err
-	}
-
-	return nil
+	return autoConvert_v1beta1_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(in, out, s)
 }
 
 // Convert_v1alpha3_OSDisk_To_v1beta1_OSDisk converts this OSDisk to the Hub version (v1beta1).

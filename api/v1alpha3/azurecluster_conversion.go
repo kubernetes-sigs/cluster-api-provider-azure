@@ -116,11 +116,7 @@ func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 		dst.Annotations[azureEnvironmentAnnotation] = src.Spec.AzureEnvironment
 	}
 	// Preserve Hub data on down-conversion.
-	if err := utilconversion.MarshalData(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureClusterList to the Hub version (v1beta1).
@@ -137,38 +133,22 @@ func (dst *AzureClusterList) ConvertFrom(srcRaw conversion.Hub) error { // nolin
 
 // Convert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus converts AzureCluster.Status from v1alpha3 to v1beta1.
 func Convert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in *AzureClusterStatus, out *infrav1beta1.AzureClusterStatus, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in, out, s); err != nil {
-		return err
-	}
-
-	return nil
+	return autoConvert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in, out, s)
 }
 
 // Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec.
 func Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in *AzureClusterSpec, out *infrav1beta1.AzureClusterSpec, s apiconversion.Scope) error { //nolint
-	if err := autoConvert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in, out, s); err != nil {
-		return err
-	}
-
-	return nil
+	return autoConvert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in, out, s)
 }
 
 // Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec converts from the Hub version (v1beta1) of the AzureClusterSpec to this version.
 func Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *infrav1beta1.AzureClusterSpec, out *AzureClusterSpec, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in, out, s); err != nil {
-		return err
-	}
-
-	return nil
+	return autoConvert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in, out, s)
 }
 
 // Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus.
 func Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *infrav1beta1.AzureClusterStatus, out *AzureClusterStatus, s apiconversion.Scope) error { //nolint
-	if err := autoConvert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in, out, s); err != nil {
-		return err
-	}
-
-	return nil
+	return autoConvert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in, out, s)
 }
 
 // Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec.
@@ -185,10 +165,7 @@ func Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, out *i
 		}
 	}
 
-	if err := autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
-		return err
-	}
-	return nil
+	return autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s)
 }
 
 // Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec.
@@ -205,10 +182,7 @@ func Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1beta1.Networ
 		}
 	}
 
-	if err := autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
-		return err
-	}
-	return nil
+	return autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s)
 }
 
 // Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec.
