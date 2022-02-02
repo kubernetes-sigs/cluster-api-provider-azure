@@ -102,7 +102,8 @@ spec:
   version: v1.21.2
   networkPolicy: azure # or calico
   networkPlugin: azure # or kubenet
-  sku: Free # or Paid
+  sku:
+    tier: Free # or Paid
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedCluster
