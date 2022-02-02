@@ -22,11 +22,12 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	clusterctl "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -279,7 +280,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						ArtifactFolder:            artifactFolder,
 						SkipCleanup:               skipCleanup,
 						InitWithProvidersContract: "v1alpha4",
-						InitWithBinary:            "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/clusterctl-{OS}-{ARCH}",
+						InitWithBinary:            "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/clusterctl-{OS}-{ARCH}",
 						PreInit:                   getPreInitFunc(ctx),
 					}
 				})

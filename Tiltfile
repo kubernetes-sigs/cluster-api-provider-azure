@@ -16,7 +16,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v1.0.0",
+    "capi_version": "v1.0.4",
     "cert_manager_version": "v1.1.0",
     "kubernetes_version": "v1.22.2",
     "aks_kubernetes_version": "v1.20.5"
@@ -227,7 +227,7 @@ def create_crs():
     local("kubectl apply -f templates/addons/calico-resource-set.yaml")
     local("kubectl apply -f templates/addons/flannel-resource-set.yaml")
 
-# create flavor resources from cluster-template files in the templates directory 
+# create flavor resources from cluster-template files in the templates directory
 def flavors():
     substitutions = settings.get("kustomize_substitutions", {})
 
