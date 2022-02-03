@@ -38,6 +38,7 @@ linters:
     - rowserrcheck
     - staticcheck
     - structcheck
+    - thelper
     - typecheck
     - unconvert
     - unparam

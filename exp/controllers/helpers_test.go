@@ -570,7 +570,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 	cases := []struct {
 		Name             string
-		Setup            func(*GomegaWithT, *testing.T) (*mock_log.MockLogSink, *gomock.Controller, client.Client)
+		Setup            func(*testing.T, *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client)
 		MapObjectFactory func(*GomegaWithT) client.Object
 		Expect           func(*GomegaWithT, []reconcile.Request)
 	}{
@@ -579,7 +579,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			MapObjectFactory: func(g *GomegaWithT) client.Object {
 				return newMachinePool("fakeCluster", "bar")
 			},
-			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+				t.Helper()
 				mockCtrl := gomock.NewController(t)
 				sink := mock_log.NewMockLogSink(mockCtrl)
 				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
@@ -597,7 +598,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			MapObjectFactory: func(g *GomegaWithT) client.Object {
 				return newAzureCluster("foo")
 			},
-			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+				t.Helper()
 				mockCtrl := gomock.NewController(t)
 				sink := mock_log.NewMockLogSink(mockCtrl)
 				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
@@ -616,7 +618,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			MapObjectFactory: func(g *GomegaWithT) client.Object {
 				return newAzureCluster("foo")
 			},
-			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+				t.Helper()
 				mockCtrl := gomock.NewController(t)
 				sink := mock_log.NewMockLogSink(mockCtrl)
 				logWithValues := mock_log.NewMockLogSink(mockCtrl)
@@ -639,7 +642,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			MapObjectFactory: func(g *GomegaWithT) client.Object {
 				return newAzureCluster("foo")
 			},
-			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+				t.Helper()
 				mockCtrl := gomock.NewController(t)
 				sink := mock_log.NewMockLogSink(mockCtrl)
 				logWithValues := mock_log.NewMockLogSink(mockCtrl)
@@ -664,7 +668,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			MapObjectFactory: func(g *GomegaWithT) client.Object {
 				return newAzureCluster("foo")
 			},
-			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
+				t.Helper()
 				mockCtrl := gomock.NewController(t)
 				sink := mock_log.NewMockLogSink(mockCtrl)
 				logWithValues := mock_log.NewMockLogSink(mockCtrl)
@@ -698,7 +703,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
-			sink, mockctrl, fakeClient := c.Setup(g, t)
+			sink, mockctrl, fakeClient := c.Setup(t, g)
 			defer mockctrl.Finish()
 
 			f := AzureClusterToAzureMachinePoolsFunc(context.Background(), fakeClient, logr.New(sink))
