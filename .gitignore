@@ -56,6 +56,9 @@ bazel-*
 tilt-settings.json
 tilt_config.json
 
+# Book
+docs/book/book/
+
 # e2e output
 test/e2e/junit.e2e_suite.*.xml
 test/e2e/capz-e2e-*.yaml

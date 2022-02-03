@@ -661,7 +661,7 @@ clean-release: ## Remove the release folder
 	rm -rf $(RELEASE_DIR)
 
 .PHONY: verify
-verify: verify-boilerplate verify-modules verify-gen verify-shellcheck
+verify: verify-boilerplate verify-modules verify-gen verify-shellcheck verify-book-links
 
 .PHONY: verify-boilerplate
 verify-boilerplate:
@@ -682,3 +682,8 @@ verify-gen: generate
 .PHONY: verify-shellcheck
 verify-shellcheck:
 	./hack/verify-shellcheck.sh
+
+.PHONY: verify-book-links
+verify-book-links: ## Verify book links
+	$(MAKE) -C docs/book verify
+

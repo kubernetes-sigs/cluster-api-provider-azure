@@ -14,23 +14,41 @@
 
 # Directories.
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-TOOLS_DIR := ../../hack/tools
+TOOLS_DIR := $(realpath ../../hack/tools)
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
-BIN_DIR := bin
+CRATE_INSTALL := $(realpath ../../third_party/japaric-trust/crate_install.sh)
+
+export PATH := $(TOOLS_BIN_DIR):$(PATH)
 
 # Binaries.
 TABULATE := $(TOOLS_BIN_DIR)/mdbook-tabulate
 $(TABULATE): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/mdbook-tabulate ./mdbook/tabulate
+	cd $(TOOLS_DIR); go build -tags=tools -o $(TOOLS_BIN_DIR)/mdbook-tabulate sigs.k8s.io/cluster-api/hack/tools/mdbook/tabulate
 
 EMBED := $(TOOLS_BIN_DIR)/mdbook-embed
 $(EMBED): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/mdbook-embed ./mdbook/embed
+	cd $(TOOLS_DIR); go build -tags=tools -o $(TOOLS_BIN_DIR)/mdbook-embed sigs.k8s.io/cluster-api/hack/tools/mdbook/embed
 
 RELEASELINK := $(TOOLS_BIN_DIR)/mdbook-releaselink
 $(RELEASELINK): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/mdbook-releaselink ./mdbook/releaselink
+	cd $(TOOLS_DIR); go build -tags=tools -o $(TOOLS_BIN_DIR)/mdbook-releaselink sigs.k8s.io/cluster-api/hack/tools/mdbook/releaselink
+
+MDBOOK := $(TOOLS_BIN_DIR)/mdbook
+$(MDBOOK):
+	$(CRATE_INSTALL) --git rust-lang/mdBook --tag v0.4.11 --to $(TOOLS_BIN_DIR) --force
+
+MDBOOK_LINKCHECK := $(TOOLS_BIN_DIR)/mdbook-linkcheck
+$(MDBOOK_LINKCHECK):
+	$(CRATE_INSTALL) --git Michael-F-Bryan/mdbook-linkcheck --tag v0.7.0 --to $(TOOLS_BIN_DIR) --force
 
 .PHONY: serve
-serve:
-	mdbook serve
+serve: $(MDBOOK) $(TABULATE) $(EMBED) $(RELEASELINK) $(MDBOOK_LINKCHECK)
+	$(MDBOOK) serve
+
+.PHONY: build
+build: $(MDBOOK) $(TABULATE) $(EMBED) $(RELEASELINK) $(MDBOOK_LINKCHECK)
+	$(MDBOOK) build
+
+.PHONY: verify
+verify: $(MDBOOK) $(TABULATE) $(EMBED) $(RELEASELINK) $(MDBOOK_LINKCHECK)
+	$(MDBOOK) build
