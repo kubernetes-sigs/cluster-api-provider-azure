@@ -53,6 +53,7 @@ KUBETEST_WINDOWS_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/$(KUBETEST_WIND
 KUBETEST_REPO_LIST_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/)
 AZURE_TEMPLATES := $(E2E_DATA_DIR)/infrastructure-azure
 ADDONS_DIR := templates/addons
+CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
 
 # use the project local tool binaries first
 export PATH := $(TOOLS_BIN_DIR):$(PATH)
@@ -238,6 +239,9 @@ manager: ## Build manager binary.
 ## --------------------------------------
 ## Tooling Binaries
 ## --------------------------------------
+conversion-verifier: $(CONVERSION_VERIFIER) go.mod go.sum ## fetch CAPI's conversion verifier
+$(CONVERSION_VERIFIER): go.mod
+	cd $(TOOLS_DIR); go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier
 
 $(CONTROLLER_GEN): ## Build controller-gen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-tools/cmd/controller-gen $(CONTROLLER_GEN_BIN) $(CONTROLLER_GEN_VER)
@@ -661,7 +665,7 @@ clean-release: ## Remove the release folder
 	rm -rf $(RELEASE_DIR)
 
 .PHONY: verify
-verify: verify-boilerplate verify-modules verify-gen verify-shellcheck
+verify: verify-boilerplate verify-modules verify-gen verify-shellcheck verify-conversions
 
 .PHONY: verify-boilerplate
 verify-boilerplate:
@@ -682,3 +686,7 @@ verify-gen: generate
 .PHONY: verify-shellcheck
 verify-shellcheck:
 	./hack/verify-shellcheck.sh
+
+.PHONY: verify-conversions
+verify-conversions: $(CONVERSION_VERIFIER)  ## Verifies expected API conversion are in place
+	$(CONVERSION_VERIFIER)

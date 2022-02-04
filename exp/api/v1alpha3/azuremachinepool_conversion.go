@@ -132,3 +132,15 @@ func Convert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(i
 	}
 	return autoConvert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(in, out, s)
 }
+
+// ConvertTo converts this AzureMachinePoolList to the Hub version (v1beta1).
+func (src *AzureMachinePoolList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*expv1beta1.AzureMachinePoolList)
+	return Convert_v1alpha3_AzureMachinePoolList_To_v1beta1_AzureMachinePoolList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*expv1beta1.AzureMachinePoolList)
+	return Convert_v1beta1_AzureMachinePoolList_To_v1alpha3_AzureMachinePoolList(src, dst, nil)
+}

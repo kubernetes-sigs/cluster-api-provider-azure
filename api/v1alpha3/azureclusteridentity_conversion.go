@@ -110,3 +110,15 @@ func Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySp
 
 	return nil
 }
+
+// ConvertTo converts this AzureClusterIdentityList to the Hub version (v1beta1).
+func (src *AzureClusterIdentityList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*infrav1beta1.AzureClusterIdentityList)
+	return Convert_v1alpha3_AzureClusterIdentityList_To_v1beta1_AzureClusterIdentityList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureClusterIdentityList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*infrav1beta1.AzureClusterIdentityList)
+	return Convert_v1beta1_AzureClusterIdentityList_To_v1alpha3_AzureClusterIdentityList(src, dst, nil)
+}
