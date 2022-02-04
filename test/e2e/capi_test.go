@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -275,7 +276,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				BootstrapClusterProxy:    bootstrapClusterProxy,
 				ArtifactFolder:           artifactFolder,
 				ControlPlaneMachineCount: pointer.Int64(3),
-				WorkerMachineCount:       pointer.Int64(1),
+				WorkerMachineCount:       pointer.Int64(0),
 				SkipCleanup:              skipCleanup,
 				SkipConformanceTests:     true,
 			}
@@ -290,7 +291,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				BootstrapClusterProxy:    bootstrapClusterProxy,
 				ArtifactFolder:           artifactFolder,
 				ControlPlaneMachineCount: pointer.Int64(3),
-				WorkerMachineCount:       pointer.Int64(1),
+				WorkerMachineCount:       pointer.Int64(0),
 				SkipCleanup:              skipCleanup,
 				SkipConformanceTests:     true,
 				Flavor:                   pointer.String("kcp-scale-in"),

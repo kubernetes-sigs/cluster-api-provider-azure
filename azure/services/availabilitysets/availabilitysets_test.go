@@ -25,10 +25,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/pkg/errors"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"
@@ -149,12 +148,12 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "deletes availability set",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(compute.AvailabilitySet{}, nil),
@@ -166,7 +165,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "noop if AvailabilitySetSpec returns nil",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(nil)
 				s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil)
 			},
@@ -174,7 +173,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "delete proceeds with missing required value in availability set spec",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpecMissing)
 				gomock.InOrder(
 					m.Get(gomockinternal.AContext(), &fakeSetSpecMissing).Return(compute.AvailabilitySet{}, nil),
@@ -186,7 +185,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "noop if availability set has vms",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(fakeSetWithVMs, nil),
@@ -197,7 +196,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "availability set not found",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(nil, notFoundError),
@@ -208,7 +207,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "error in getting availability set",
 			expectedError: "failed to get availability set test-as in resource group test-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(nil, internalError),
@@ -219,7 +218,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "availability set get result is not an availability set",
 			expectedError: "string is not a compute.AvailabilitySet",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return("not an availability set", nil),
@@ -230,7 +229,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "error in deleting availability set",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(compute.AvailabilitySet{}, nil),
@@ -249,14 +248,14 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_availabilitysets.NewMockAvailabilitySetScope(mockCtrl)
-			clientMock := mock_availabilitysets.NewMockClient(mockCtrl)
+			getterMock := mock_async.NewMockGetter(mockCtrl)
 			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), asyncMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), getterMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
 				Scope:      scopeMock,
-				Client:     clientMock,
+				Getter:     getterMock,
 				Reconciler: asyncMock,
 			}
 

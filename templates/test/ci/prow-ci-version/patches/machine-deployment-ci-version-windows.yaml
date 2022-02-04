@@ -1,8 +1,7 @@
----
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
-  name: "${CLUSTER_NAME}-md-win"
+  name: ${CLUSTER_NAME}-md-win
 spec:
   template:
     spec:
@@ -12,5 +11,6 @@ spec:
         marketplace:
           publisher: cncf-upstream
           offer: capi-windows
-          sku: k8s-1dot23dot3-windows-2022-containerd
+          sku: k8s-1dot23dot3-windows-2019-containerd
           version: "latest"
+

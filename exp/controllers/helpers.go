@@ -27,6 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -37,11 +41,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 // AzureClusterToAzureMachinePoolsMapper creates a mapping handler to transform AzureClusters into AzureMachinePools. The transform

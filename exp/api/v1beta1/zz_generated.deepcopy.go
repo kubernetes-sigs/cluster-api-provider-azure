@@ -773,6 +773,13 @@ func (in *AzureManagedMachinePoolSpec) DeepCopyInto(out *AzureManagedMachinePool
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.NodeLabels != nil {
+		in, out := &in.NodeLabels, &out.NodeLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.ProviderIDList != nil {
 		in, out := &in.ProviderIDList, &out.ProviderIDList
 		*out = make([]string, len(*in))

@@ -20,16 +20,14 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
-
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 )
 
 // VMSpec defines the specification for a Virtual Machine.

@@ -23,26 +23,14 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
-
-// Client wraps go-sdk.
-type Client interface {
-	Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error)
-	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
-	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error)
-	IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error)
-	Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error)
-}
 
 // AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
 	availabilitySets compute.AvailabilitySetsClient
 }
-
-var _ Client = (*AzureClient)(nil)
 
 // NewClient creates a new Resource SKUs Client from subscription ID.
 func NewClient(auth azure.Authorizer) *AzureClient {

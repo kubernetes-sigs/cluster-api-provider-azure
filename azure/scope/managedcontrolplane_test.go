@@ -131,6 +131,111 @@ func TestManagedControlPlaneScope_Autoscaling(t *testing.T) {
 	}
 }
 
+func TestManagedControlPlaneScope_NodeLabels(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = capiv1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
+	cases := []struct {
+		Name     string
+		Input    ManagedControlPlaneScopeParams
+		Expected azure.AgentPoolSpec
+	}{
+		{
+			Name: "Without node labels",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				MachinePool:      getMachinePool("pool0"),
+				InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+				PatchTarget:      getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+			},
+			Expected: azure.AgentPoolSpec{
+
+				Name:         "pool0",
+				SKU:          "Standard_D2s_v3",
+				Replicas:     1,
+				Mode:         "System",
+				Cluster:      "cluster1",
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+			},
+		},
+		{
+			Name: "With node labels",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				MachinePool: getMachinePool("pool1"),
+				InfraMachinePool: getAzureMachinePoolWithLabels("pool1", map[string]string{
+					"custom": "default",
+				}),
+				PatchTarget: getAzureMachinePoolWithLabels("pool1", map[string]string{
+					"custom": "default",
+				}),
+			},
+			Expected: azure.AgentPoolSpec{
+				Name:     "pool1",
+				SKU:      "Standard_D2s_v3",
+				Mode:     "System",
+				Cluster:  "cluster1",
+				Replicas: 1,
+				NodeLabels: map[string]*string{
+					"custom": to.StringPtr("default"),
+				},
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			g := NewWithT(t)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
+			c.Input.Client = fakeClient
+			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
+			g.Expect(err).To(Succeed())
+			agentPool := s.AgentPoolSpec()
+			g.Expect(agentPool).To(Equal(c.Expected))
+			agentPools, err := s.GetAllAgentPoolSpecs(context.TODO())
+			g.Expect(err).To(Succeed())
+			g.Expect(agentPools[0].NodeLabels).To(Equal(c.Expected.NodeLabels))
+		})
+	}
+}
+
 func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = capiv1exp.AddToScheme(scheme)
@@ -499,6 +604,12 @@ func getAzureMachinePoolWithMaxPods(name string, maxPods int32) *infrav1.AzureMa
 func getAzureMachinePoolWithOsDiskType(name string, osDiskType string) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.OsDiskType = to.StringPtr(osDiskType)
+	return managedPool
+}
+
+func getAzureMachinePoolWithLabels(name string, nodeLabels map[string]string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeSystem)
+	managedPool.Spec.NodeLabels = nodeLabels
 	return managedPool
 }
 

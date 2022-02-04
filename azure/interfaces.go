@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/Azure/go-autorest/autorest"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )

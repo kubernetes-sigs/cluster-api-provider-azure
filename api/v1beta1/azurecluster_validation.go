@@ -22,12 +22,11 @@ import (
 	"reflect"
 	"regexp"
 
-	"k8s.io/utils/pointer"
-
 	valid "github.com/asaskevich/govalidator"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 )
 
 const (

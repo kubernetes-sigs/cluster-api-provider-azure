@@ -167,7 +167,52 @@ func DescribeFailedJob(ctx context.Context, input WaitForJobCompleteInput) strin
 		namespace, name))
 	b.WriteString(fmt.Sprintf("\nJob:\n%s\n", prettyPrint(input.Job)))
 	b.WriteString(describeEvents(ctx, input.Clientset, namespace, name))
+	b.WriteString(getJobPodLogs(ctx, input))
 	return b.String()
+}
+
+func getJobPodLogs(ctx context.Context, input WaitForJobCompleteInput) string {
+	podsClient := input.Clientset.CoreV1().Pods(input.Job.GetNamespace())
+	pods, err := podsClient.List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s", input.Job.GetName())})
+	if err != nil {
+		return err.Error()
+	}
+	logs := make(map[string]string, len(pods.Items))
+	for _, pod := range pods.Items {
+		logs[pod.Name] = getPodLogs(ctx, input.Clientset, pod)
+	}
+	b := strings.Builder{}
+	args := input.Job.Spec.Template.Spec.Containers[0].Args
+	b.WriteString(fmt.Sprintf("Output of \"kubescape %s\":\n", strings.Join(args, " ")))
+	var lastLog string
+	for podName, log := range logs {
+		b.WriteString(fmt.Sprintf("\nLogs for pod %s:\n", podName))
+		if logsAreSimilar(lastLog, log) {
+			b.WriteString("(Omitted because of similarity to previous pod's logs.)")
+		} else {
+			b.WriteString(log)
+		}
+		lastLog = log
+	}
+	return b.String()
+}
+
+// logsAreSimilar compares two multi-line strings and returns true if at least 90% of the lines match.
+func logsAreSimilar(a, b string) bool {
+	if a == "" {
+		return false
+	}
+	a1 := strings.Split(a, "\n")
+	b1 := strings.Split(b, "\n")
+	for i := len(a1) - 1; i >= 0; i-- {
+		for _, v := range b1 {
+			if a1[i] == v {
+				a1 = append(a1[:i], a1[i+1:]...)
+				break
+			}
+		}
+	}
+	return float32(len(a1))/float32(len(b1)) < 0.1
 }
 
 // servicesClientAdapter adapts a Service to work with WaitForServicesAvailable.

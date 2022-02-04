@@ -29,6 +29,11 @@ import (
 	"k8s.io/klog/v2"
 	kubedrain "k8s.io/kubectl/pkg/drain"
 	"k8s.io/utils/pointer"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
@@ -37,12 +42,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 const (

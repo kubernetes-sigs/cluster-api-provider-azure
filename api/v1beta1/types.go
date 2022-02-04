@@ -26,6 +26,8 @@ const (
 	ControlPlane string = "control-plane"
 	// Node machine label.
 	Node string = "node"
+	// Bastion subnet label.
+	Bastion string = "bastion"
 )
 
 // Futures is a slice of Future.
@@ -514,11 +516,15 @@ const (
 
 	// SubnetControlPlane defines a Kubernetes control plane node role.
 	SubnetControlPlane = SubnetRole(ControlPlane)
+
+	// SubnetBastion defines a Bastion subnet role.
+	SubnetBastion = SubnetRole(Bastion)
 )
 
 // SubnetSpec configures an Azure subnet.
 type SubnetSpec struct {
 	// Role defines the subnet role (eg. Node, ControlPlane)
+	// +kubebuilder:validation:Enum=node;control-plane;bastion
 	Role SubnetRole `json:"role"`
 
 	// ID is the Azure resource ID of the subnet.

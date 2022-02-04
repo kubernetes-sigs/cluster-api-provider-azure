@@ -25,12 +25,10 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -54,20 +52,18 @@ type VMScope interface {
 type Service struct {
 	Scope VMScope
 	async.Reconciler
-	interfacesClient       networkinterfaces.Client
-	publicIPsClient        publicips.Client
-	availabilitySetsClient availabilitysets.Client
+	interfacesGetter async.Getter
+	publicIPsClient  publicips.Client
 }
 
 // New creates a new service.
 func New(scope VMScope) *Service {
 	Client := NewClient(scope)
 	return &Service{
-		Scope:                  scope,
-		interfacesClient:       networkinterfaces.NewClient(scope),
-		publicIPsClient:        publicips.NewClient(scope),
-		availabilitySetsClient: availabilitysets.NewClient(scope),
-		Reconciler:             async.New(scope, Client, Client),
+		Scope:            scope,
+		interfacesGetter: networkinterfaces.NewClient(scope),
+		publicIPsClient:  publicips.NewClient(scope),
+		Reconciler:       async.New(scope, Client, Client),
 	}
 }
 
@@ -146,7 +142,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 		nicName := getResourceNameByID(to.String(nicRef.ID))
 
 		// Fetch nic and append its addresses
-		existingNic, err := s.interfacesClient.Get(ctx, &networkinterfaces.NICSpec{
+		existingNic, err := s.interfacesGetter.Get(ctx, &networkinterfaces.NICSpec{
 			Name:          nicName,
 			ResourceGroup: rgName,
 		})

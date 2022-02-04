@@ -26,29 +26,15 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-type (
-	// Client wraps go-sdk.
-	Client interface {
-		Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
-		CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error)
-		DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error)
-		IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error)
-		Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error)
-	}
-
-	// AzureClient contains the Azure go-sdk Client.
-	AzureClient struct {
-		virtualmachines compute.VirtualMachinesClient
-	}
-)
-
-var _ Client = &AzureClient{}
+// AzureClient contains the Azure go-sdk Client.
+type AzureClient struct {
+	virtualmachines compute.VirtualMachinesClient
+}
 
 // NewClient creates a new VM client from subscription ID.
 func NewClient(auth azure.Authorizer) *AzureClient {

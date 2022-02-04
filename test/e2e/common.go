@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -65,9 +66,12 @@ const (
 	JobName                        = "JOB_NAME"
 	Timestamp                      = "TIMESTAMP"
 	AKSKubernetesVersion           = "AKS_KUBERNETES_VERSION"
+	SecurityScanFailThreshold      = "SECURITY_SCAN_FAIL_THRESHOLD"
+	SecurityScanContainer          = "SECURITY_SCAN_CONTAINER"
 	ManagedClustersResourceType    = "managedClusters"
 	capiImagePublisher             = "cncf-upstream"
 	capiOfferName                  = "capi"
+	capiWindowsOfferName           = "capi-windows"
 )
 
 func Byf(format string, a ...interface{}) {

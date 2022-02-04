@@ -21,7 +21,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )

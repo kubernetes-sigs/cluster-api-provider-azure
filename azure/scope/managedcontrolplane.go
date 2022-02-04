@@ -30,6 +30,13 @@ import (
 	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capiexputil "sigs.k8s.io/cluster-api/exp/util"
@@ -37,13 +44,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // ManagedControlPlaneScopeParams defines the input parameters used to create a new managed
@@ -226,11 +226,14 @@ func (s *ManagedControlPlaneScope) GroupSpec() azure.ResourceSpecGetter {
 }
 
 // VNetSpec returns the virtual network spec.
-func (s *ManagedControlPlaneScope) VNetSpec() azure.VNetSpec {
-	return azure.VNetSpec{
-		ResourceGroup: s.Vnet().ResourceGroup,
-		Name:          s.Vnet().Name,
-		CIDRs:         s.Vnet().CIDRBlocks,
+func (s *ManagedControlPlaneScope) VNetSpec() azure.ResourceSpecGetter {
+	return &virtualnetworks.VNetSpec{
+		ResourceGroup:  s.Vnet().ResourceGroup,
+		Name:           s.Vnet().Name,
+		CIDRs:          s.Vnet().CIDRBlocks,
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
 	}
 }
 
@@ -576,6 +579,13 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		agentPoolSpec.EnableAutoScaling = to.BoolPtr(true)
 		agentPoolSpec.MaxCount = managedMachinePool.Spec.Scaling.MaxSize
 		agentPoolSpec.MinCount = managedMachinePool.Spec.Scaling.MinSize
+	}
+
+	if len(managedMachinePool.Spec.NodeLabels) > 0 {
+		agentPoolSpec.NodeLabels = make(map[string]*string, len(managedMachinePool.Spec.NodeLabels))
+		for k, v := range managedMachinePool.Spec.NodeLabels {
+			agentPoolSpec.NodeLabels[k] = to.StringPtr(v)
+		}
 	}
 
 	return agentPoolSpec

@@ -41,7 +41,7 @@ type AvailabilitySetScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope AvailabilitySetScope
-	Client
+	async.Getter
 	async.Reconciler
 	resourceSKUCache *resourceskus.Cache
 }
@@ -51,7 +51,7 @@ func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) *Service {
 	client := NewClient(scope)
 	return &Service{
 		Scope:            scope,
-		Client:           client,
+		Getter:           client,
 		resourceSKUCache: skuCache,
 		Reconciler:       async.New(scope, client, client),
 	}
@@ -88,7 +88,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	if setSpec := s.Scope.AvailabilitySetSpec(); setSpec == nil {
 		log.V(2).Info("skip deletion when no availability set spec is found")
 	} else {
-		existingSet, err := s.Client.Get(ctx, setSpec)
+		existingSet, err := s.Get(ctx, setSpec)
 		if err != nil {
 			if !azure.ResourceNotFound(err) {
 				resultingErr = errors.Wrapf(err, "failed to get availability set %s in resource group %s", setSpec.ResourceName(), setSpec.ResourceGroupName())

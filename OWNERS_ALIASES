@@ -21,5 +21,6 @@ aliases:
     - nader-ziada
     - shysank
   cluster-api-azure-reviewers:
+    - jackfrancis
     - juan-lee
     - mboersma

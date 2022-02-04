@@ -217,6 +217,12 @@ spec:
                 description: Name - name of the agent pool. If not specified, CAPZ
                   uses the name of the CR as the agent pool name.
                 type: string
+              nodeLabels:
+                additionalProperties:
+                  type: string
+                description: Node labels - labels for all of the nodes present in
+                  node pool
+                type: object
               osDiskSizeGB:
                 description: OSDiskSizeGB is the disk size for every machine in this
                   agent pool. If you specify 0, it will apply the default osDisk size

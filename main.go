@@ -26,7 +26,6 @@ import (
 	"time"
 
 	// +kubebuilder:scaffold:imports
-
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,16 +36,6 @@ import (
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
-	clusterv1beta1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	capifeature "sigs.k8s.io/cluster-api/feature"
-	"sigs.k8s.io/cluster-api/util/record"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -61,6 +50,15 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1beta1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	capifeature "sigs.k8s.io/cluster-api/feature"
+	"sigs.k8s.io/cluster-api/util/record"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 var (

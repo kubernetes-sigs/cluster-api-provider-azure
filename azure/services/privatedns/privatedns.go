@@ -19,12 +19,10 @@ package privatedns
 import (
 	"context"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"

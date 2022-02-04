@@ -28,11 +28,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/utils/net"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -40,9 +35,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -362,11 +362,14 @@ func (s *ClusterScope) VnetPeeringSpecs() []azure.ResourceSpecGetter {
 }
 
 // VNetSpec returns the virtual network spec.
-func (s *ClusterScope) VNetSpec() azure.VNetSpec {
-	return azure.VNetSpec{
-		ResourceGroup: s.Vnet().ResourceGroup,
-		Name:          s.Vnet().Name,
-		CIDRs:         s.Vnet().CIDRBlocks,
+func (s *ClusterScope) VNetSpec() azure.ResourceSpecGetter {
+	return &virtualnetworks.VNetSpec{
+		ResourceGroup:  s.Vnet().ResourceGroup,
+		Name:           s.Vnet().Name,
+		CIDRs:          s.Vnet().CIDRBlocks,
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
 	}
 }
 
@@ -662,6 +665,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.NATGatewaysReadyCondition,
 			infrav1.LoadBalancersReadyCondition,
 			infrav1.BastionHostReadyCondition,
+			infrav1.VNetReadyCondition,
 		),
 	)
 
@@ -678,6 +682,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.NATGatewaysReadyCondition,
 			infrav1.LoadBalancersReadyCondition,
 			infrav1.BastionHostReadyCondition,
+			infrav1.VNetReadyCondition,
 		}})
 }
 

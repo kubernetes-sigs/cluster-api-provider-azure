@@ -102,14 +102,13 @@ spec:
   version: v1.21.2
   networkPolicy: azure # or calico
   networkPlugin: azure # or kubenet
-  sku: Free # or Paid
+  sku:
+    tier: Free # or Paid
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedCluster
 metadata:
   name: my-cluster
-spec:
-  subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -261,6 +260,25 @@ spec:
   scaling:
     minSize: 2
     maxSize: 10
+```
+
+### AKS Node Labels to an Agent Pool
+
+You can configure the `NodeLabels` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec.
+
+Below an example `nodeLabels` configuration is assigned to `agentpool0`, specifying that each node in the pool will add a label `dedicated : kafka`
+
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: System
+  osDiskSizeGB: 512
+  sku: Standard_D2s_v3
+  nodeLabels:
+    dedicated: kafka 
 ```
 
 ### AKS Node Pool MaxPods configuration

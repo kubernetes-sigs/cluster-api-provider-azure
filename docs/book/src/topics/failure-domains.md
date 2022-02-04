@@ -1,7 +1,5 @@
 # Failure Domains
 
-The Azure provider includes the support for [failure domains](https://cluster-api.sigs.k8s.io/developer/providers/v1alpha2-to-v1alpha3.html#optional-support-failure-domains) introduced as part of v1alpha3.
-
 ## Failure domains in Azure
 
 A failure domain in the Azure provider maps to an **availability zone** within an Azure region. In Azure an availability zone is a separate data center within a region that offers redundancy and separation from the other availability zones within a region.

@@ -24,7 +24,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/pkg/errors"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -113,6 +112,11 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	for _, ss := range vmss {
 		ss := ss
 		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == agentPoolName {
+			match = &ss
+			break
+		}
+
+		if ss.Tags["aks-managed-poolName"] != nil && *ss.Tags["aks-managed-poolName"] == agentPoolName {
 			match = &ss
 			break
 		}

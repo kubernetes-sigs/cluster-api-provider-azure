@@ -25,7 +25,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -82,6 +81,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			AvailabilityZones:   &agentPoolSpec.AvailabilityZones,
 			MaxPods:             agentPoolSpec.MaxPods,
 			OsDiskType:          containerservice.OSDiskType(to.String(agentPoolSpec.OsDiskType)),
+			NodeLabels:          agentPoolSpec.NodeLabels,
 		},
 	}
 

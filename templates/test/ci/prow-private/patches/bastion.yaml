@@ -12,4 +12,4 @@ spec:
         cidrBlocks:
         - ${AZURE_BASTION_SUBNET_CIDR}
         name: AzureBastionSubnet
-        role: "bastion"
+        role: bastion

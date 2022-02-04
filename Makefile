@@ -297,7 +297,11 @@ $(YQ_BIN): $(YQ) ## Building yq from the tools folder
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) lint-latest ## Lint codebase
-	$(GOLANGCI_LINT) run -v
+	$(GOLANGCI_LINT) run -v $(GOLANGCI_LINT_EXTRA_ARGS)
+
+.PHONY: lint-fix
+lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
+	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
 
 lint-full: $(GOLANGCI_LINT) ## Run slower linters to detect possible issues
 	$(GOLANGCI_LINT) run -v --fast=false
@@ -545,7 +549,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	./hack/create-identity-secret.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.0-beta.1/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.0/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz

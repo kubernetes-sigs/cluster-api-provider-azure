@@ -30,9 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces/mock_networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines/mock_virtualmachines"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -107,12 +105,12 @@ func TestReconcileVM(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "create vm succeeds",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
@@ -128,7 +126,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "creating vm fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, internalError)
@@ -138,7 +136,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get network interfaces",
 			expectedError: "failed to fetch VM addresses: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
@@ -151,7 +149,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get public IPs",
 			expectedError: "failed to fetch VM addresses: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
@@ -173,19 +171,17 @@ func TestReconcileVM(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
-			interfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
+			interfaceMock := mock_async.NewMockGetter(mockCtrl)
 			publicIPMock := mock_publicips.NewMockClient(mockCtrl)
-			availabilitySetsMock := mock_availabilitysets.NewMockClient(mockCtrl)
 			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:                  scopeMock,
-				interfacesClient:       interfaceMock,
-				publicIPsClient:        publicIPMock,
-				availabilitySetsClient: availabilitySetsMock,
-				Reconciler:             asyncMock,
+				Scope:            scopeMock,
+				interfacesGetter: interfaceMock,
+				publicIPsClient:  publicIPMock,
+				Reconciler:       asyncMock,
 			}
 
 			err := s.Reconcile(context.TODO())

@@ -168,6 +168,12 @@ data:
   nfd-worker.conf: |-
     sources:
       pci:
+        deviceClassWhitelist:
+        - "02"
+        - "0200"
+        - "0207"
+        - "0300"
+        - "0302"
         deviceLabelFields:
         - vendor
 ---
@@ -363,7 +369,7 @@ spec:
   validator:
     repository: nvcr.io/nvidia/cloud-native
     image: gpu-operator-validator
-    version: v1.9.0
+    version: v1.9.1
     imagePullPolicy: IfNotPresent
     securityContext: 
       privileged: true
@@ -446,7 +452,7 @@ spec:
       - name: NVIDIA_DRIVER_CAPABILITIES
         value: all
   dcgm:
-    enabled: true
+    enabled: false
     repository: nvcr.io/nvidia/cloud-native
     image: dcgm
     version: 2.3.1-ubuntu20.04
@@ -455,7 +461,7 @@ spec:
   dcgmExporter:
     repository: nvcr.io/nvidia/k8s
     image: dcgm-exporter
-    version: 2.3.1-2.6.0-ubuntu20.04
+    version: 2.3.1-2.6.1-ubuntu20.04
     imagePullPolicy: IfNotPresent
     env: 
       - name: DCGM_EXPORTER_LISTEN
@@ -493,7 +499,7 @@ spec:
     enabled: false
     repository: nvcr.io/nvidia/cloud-native
     image: gpu-operator-validator
-    version: v1.9.0
+    version: v1.9.1
     imagePullPolicy: IfNotPresent
 ---
 # Source: gpu-operator/templates/operator.yaml
@@ -525,7 +531,7 @@ spec:
       priorityClassName: system-node-critical
       containers:
       - name: gpu-operator
-        image: nvcr.io/nvidia/gpu-operator:v1.9.0
+        image: nvcr.io/nvidia/gpu-operator:v1.9.1
         imagePullPolicy: IfNotPresent
         command: ["gpu-operator"]
         args:

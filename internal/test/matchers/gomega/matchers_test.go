@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
-
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
 )
 

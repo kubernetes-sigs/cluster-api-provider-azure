@@ -60,6 +60,10 @@ type AzureManagedMachinePoolSpec struct {
 	// +optional
 	AvailabilityZones []string `json:"availabilityZones,omitempty"`
 
+	// Node labels - labels for all of the nodes present in node pool
+	// +optional
+	NodeLabels map[string]string `json:"nodeLabels,omitempty"`
+
 	// ProviderIDList is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderIDList []string `json:"providerIDList,omitempty"`
