@@ -778,17 +778,19 @@ func (s *ClusterScope) SetDNSName() {
 		ip, dns := s.GenerateLegacyFQDN()
 		lb = &infrav1.LoadBalancerSpec{
 			Name: lbName,
-			SKU:  infrav1.SKUStandard,
-			FrontendIPs: []infrav1.FrontendIP{
-				{
-					Name: azure.GenerateFrontendIPConfigName(lbName),
-					PublicIP: &infrav1.PublicIPSpec{
-						Name:    ip,
-						DNSName: dns,
+			LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+				SKU: infrav1.SKUStandard,
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: azure.GenerateFrontendIPConfigName(lbName),
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    ip,
+							DNSName: dns,
+						},
 					},
 				},
+				Type: infrav1.Public,
 			},
-			Type: infrav1.Public,
 		}
 		lb.DeepCopyInto(s.APIServerLB())
 	}

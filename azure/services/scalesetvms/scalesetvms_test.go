@@ -65,9 +65,11 @@ func TestNewService(t *testing.T) {
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
-				Location:       "test-location",
-				ResourceGroup:  "my-rg",
-				SubscriptionID: "123",
+				AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+					Location:       "test-location",
+					SubscriptionID: "123",
+				},
+				ResourceGroup: "my-rg",
 				NetworkSpec: infrav1.NetworkSpec{
 					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 				},

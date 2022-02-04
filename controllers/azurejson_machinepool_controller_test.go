@@ -67,12 +67,16 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 			},
 		},
 		Spec: infrav1.AzureClusterSpec{
-			SubscriptionID: "123",
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				SubscriptionID: "123",
+			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
 					{
 						Name: "node",
-						Role: infrav1.SubnetNode,
+						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Role: infrav1.SubnetNode,
+						},
 					},
 				},
 			},

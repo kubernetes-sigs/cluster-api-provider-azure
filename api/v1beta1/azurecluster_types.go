@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -33,6 +32,8 @@ const (
 
 // AzureClusterSpec defines the desired state of AzureCluster.
 type AzureClusterSpec struct {
+	AzureClusterClassSpec `json:",inline"`
+
 	// NetworkSpec encapsulates all things related to Azure network.
 	// +optional
 	NetworkSpec NetworkSpec `json:"networkSpec,omitempty"`
@@ -40,45 +41,14 @@ type AzureClusterSpec struct {
 	// +optional
 	ResourceGroup string `json:"resourceGroup,omitempty"`
 
+	// BastionSpec encapsulates all things related to the Bastions in the cluster.
 	// +optional
-	SubscriptionID string `json:"subscriptionID,omitempty"`
-
-	Location string `json:"location"`
+	BastionSpec BastionSpec `json:"bastionSpec,omitempty"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane. It is not recommended to set
 	// this when creating an AzureCluster as CAPZ will set this for you. However, if it is set, CAPZ will not change it.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
-
-	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
-	// ones added by default.
-	// +optional
-	AdditionalTags Tags `json:"additionalTags,omitempty"`
-
-	// IdentityRef is a reference to an AzureIdentity to be used when reconciling this cluster
-	// +optional
-	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
-
-	// AzureEnvironment is the name of the AzureCloud to be used.
-	// The default value that would be used by most users is "AzurePublicCloud", other values are:
-	// - ChinaCloud: "AzureChinaCloud"
-	// - GermanCloud: "AzureGermanCloud"
-	// - PublicCloud: "AzurePublicCloud"
-	// - USGovernmentCloud: "AzureUSGovernmentCloud"
-	// +optional
-	AzureEnvironment string `json:"azureEnvironment,omitempty"`
-
-	// BastionSpec encapsulates all things related to the Bastions in the cluster.
-	// +optional
-	BastionSpec BastionSpec `json:"bastionSpec,omitempty"`
-
-	// CloudProviderConfigOverrides is an optional set of configuration values that can be overridden in azure cloud provider config.
-	// This is only a subset of options that are available in azure cloud provider config.
-	// Some values for the cloud provider config are inferred from other parts of cluster api provider azure spec, and may not be available for overrides.
-	// See: https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs
-	// Note: All cloud provider config values can be customized by creating the secret beforehand. CloudProviderConfigOverrides is only used when the secret is managed by the Azure Provider.
-	// +optional
-	CloudProviderConfigOverrides *CloudProviderConfigOverrides `json:"cloudProviderConfigOverrides,omitempty"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster.

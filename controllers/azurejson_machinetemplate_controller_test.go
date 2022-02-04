@@ -65,7 +65,9 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 			},
 		},
 		Spec: infrav1.AzureClusterSpec{
-			SubscriptionID: "123",
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				SubscriptionID: "123",
+			},
 		},
 	}
 

@@ -71,8 +71,10 @@ var (
 		IdleTimeoutInMinutes: to.Int32Ptr(4),
 		FrontendIPConfigs: []infrav1.FrontendIP{
 			{
-				Name:             "my-private-lb-frontEnd",
-				PrivateIPAddress: "10.0.0.10",
+				Name: "my-private-lb-frontEnd",
+				FrontendIPClass: infrav1.FrontendIPClass{
+					PrivateIPAddress: "10.0.0.10",
+				},
 			},
 		},
 		APIServerPort: 6443,
