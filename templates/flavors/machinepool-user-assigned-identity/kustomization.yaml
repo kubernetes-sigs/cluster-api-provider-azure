@@ -1,6 +1,0 @@
-namespace: default
-resources:
-  - ../base
-  - machine-pool-deployment.yaml
-patchesStrategicMerge:
-  - patches/user-assigned-identity.yaml
