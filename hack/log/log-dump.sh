@@ -127,8 +127,52 @@ dump_workload_cluster_logs() {
     wait
 }
 
+dump_workload_cluster_logs_windows() {
+    echo "Deploying log-dump-daemonset-windows"
+    "${KUBECTL}" apply -f "${REPO_ROOT}/hack/log/log-dump-daemonset-windows.yaml"
+    echo "Waiting for log-dump-daemonset-windows"
+    "${KUBECTL}" wait pod -l app=log-dump-node-windows --for=condition=Ready --timeout=5m
+
+    IFS=" " read -ra log_dump_pods <<< "$(kubectl get pod -l app=log-dump-node-windows -ojsonpath='{.items[*].metadata.name}')"
+
+    for log_dump_pod in "${log_dump_pods[@]}"; do
+        local node_name
+        node_name="$(get_node_name "${log_dump_pod}")"
+        echo "Getting logs for node ${node_name}"
+
+        local log_dump_dir="${ARTIFACTS}/workload-cluster/${node_name}"
+        mkdir -p "${log_dump_dir}"
+
+        # make a new folder to copy logs to since files cannot be read to directly
+        "${KUBECTL}" exec "${log_dump_pod}" -- cmd.exe /c mkdir log
+        "${KUBECTL}" exec "${log_dump_pod}" -- cmd.exe /c xcopy /s c:\\var\\log\\kubelet c:\\log\\
+        "${KUBECTL}" exec "${log_dump_pod}" -- cmd.exe /c xcopy /s c:\\var\\log\\pods c:\\log\\
+
+        # Get a list of all of the files to copy with dir
+        # /s - recurse
+        # /B - bare format (no heading info or summaries)
+        # /A-D - exclude directories
+        IFS=" " read -ra log_dump_files <<< "$(kubectl exec "${log_dump_pod}" -- cmd.exe /c dir /s /B /A-D log | tr '\n' ' ' | tr -d '\r' )"
+        echo "Collecting pod logs"
+
+        for log_dump_file in "${log_dump_files[@]}"; do
+            echo "    Getting logfile ${log_dump_file}"
+            # reverse slashes and remove c:\log\ from paths
+            fixed_dump_file_path="$(echo "${log_dump_file//\\//}" | cut -d "/" -f3-)"
+            dir="$(dirname "${fixed_dump_file_path}")"
+            file="$(basename "${fixed_dump_file_path}")"
+            mkdir -p "${log_dump_dir}"/"${dir}"
+            "${KUBECTL}" exec "${log_dump_pod}" -- cmd.exe /c type "${log_dump_file}" > "${log_dump_dir}"/"${dir}"/"${file}"
+        done
+
+        echo "Exported logs for node \"${node_name}\""
+    done
+
+}
+
 cleanup() {
     "${KUBECTL}" delete -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml" || true
+    "${KUBECTL}" delete -f "${REPO_ROOT}/hack/log/log-dump-daemonset-windows.yaml" || true
     # shellcheck source=hack/log/redact.sh
     source "${REPO_ROOT}/hack/log/redact.sh"
 }
@@ -138,5 +182,12 @@ trap cleanup EXIT
 echo "================ DUMPING LOGS FOR MANAGEMENT CLUSTER ================"
 dump_mgmt_cluster_logs
 
-echo "================ DUMPING LOGS FOR WORKLOAD CLUSTER ================"
+echo "================ DUMPING LOGS FOR WORKLOAD CLUSTER (Linux) =========="
 dump_workload_cluster_logs
+
+if [[ -z "${TEST_WINDOWS}" ]]; then
+    echo "TEST_WINDOWS envvar not set, skipping log collection for Windows nodes."
+else
+    echo "================ DUMPING LOGS FOR WORKLOAD CLUSTER (Windows) ========"
+    dump_workload_cluster_logs_windows
+fi
