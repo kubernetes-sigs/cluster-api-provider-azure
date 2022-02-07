@@ -325,6 +325,7 @@ generate: ## Generate code
 	$(MAKE) generate-flavors
 	$(MAKE) generate-e2e-templates
 	$(MAKE) generate-addons
+	$(MAKE) generate-infrastructure-components
 
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets
@@ -390,6 +391,10 @@ generate-e2e-templates: $(KUSTOMIZE)
 .PHONY: generate-addons
 generate-addons:
 	$(KUSTOMIZE) build $(ADDONS_DIR)/metrics-server > $(ADDONS_DIR)/metrics-server/metrics-server.yaml
+
+.PHONY: generate-infrastructure-components
+generate-infrastructure-components: $(KUSTOMIZE) ## Builds the infrastructure-components.yaml from current config/default
+	kustomize build config/default > config/infrastructure-components.yaml
 
 ## --------------------------------------
 ## Docker
