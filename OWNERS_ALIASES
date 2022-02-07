@@ -22,5 +22,6 @@ aliases:
     - shysank
   cluster-api-azure-reviewers:
     - jackfrancis
+    - jsturtevant
     - juan-lee
     - mboersma
