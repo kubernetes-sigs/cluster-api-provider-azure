@@ -23,8 +23,8 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.5 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.5/core-components.yaml"
+    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/core-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -55,8 +55,8 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.5 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.5/bootstrap-components.yaml"
+    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/bootstrap-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -86,8 +86,8 @@ providers:
       replacements:
         - old: "imagePullPolicy: Always"
           new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.5 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.5/control-plane-components.yaml"
+    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/control-plane-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
