@@ -23,25 +23,25 @@ import (
 )
 
 // ConvertTo converts this AzureCluster to the Hub version (v1beta1).
-func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureClusterIdentity)
 	return Convert_v1alpha4_AzureClusterIdentity_To_v1beta1_AzureClusterIdentity(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureClusterIdentity)
 	return Convert_v1beta1_AzureClusterIdentity_To_v1alpha4_AzureClusterIdentity(src, dst, nil)
 }
 
 // ConvertTo converts this AzureCluster to the Hub version (v1beta1).
-func (src *AzureClusterIdentityList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureClusterIdentityList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureClusterIdentityList)
 	return Convert_v1alpha4_AzureClusterIdentityList_To_v1beta1_AzureClusterIdentityList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureClusterIdentityList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureClusterIdentityList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureClusterIdentityList)
 	return Convert_v1beta1_AzureClusterIdentityList_To_v1alpha4_AzureClusterIdentityList(src, dst, nil)
 }

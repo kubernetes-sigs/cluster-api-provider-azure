@@ -22,26 +22,25 @@ import (
 )
 
 // ConvertTo converts this AzureMachine to the Hub version (v1beta1).
-func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta1.AzureMachine)
-
 	return Convert_v1alpha4_AzureMachine_To_v1beta1_AzureMachine(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureMachine) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.AzureMachine)
 	return Convert_v1beta1_AzureMachine_To_v1alpha4_AzureMachine(src, dst, nil)
 }
 
 // ConvertTo converts this AzureMachineList to the Hub version (v1beta1).
-func (src *AzureMachineList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureMachineList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta1.AzureMachineList)
 	return Convert_v1alpha4_AzureMachineList_To_v1beta1_AzureMachineList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.AzureMachineList)
 	return Convert_v1beta1_AzureMachineList_To_v1alpha4_AzureMachineList(src, dst, nil)
 }

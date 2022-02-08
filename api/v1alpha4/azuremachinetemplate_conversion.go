@@ -24,9 +24,8 @@ import (
 )
 
 // ConvertTo converts this AzureMachineTemplate to the Hub version (v1beta1).
-func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureMachineTemplate)
-
 	if err := Convert_v1alpha4_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(src, dst, nil); err != nil {
 		return err
 	}
@@ -43,35 +42,28 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureMachineTemplate)
 	if err := Convert_v1beta1_AzureMachineTemplate_To_v1alpha4_AzureMachineTemplate(src, dst, nil); err != nil {
 		return err
 	}
 
 	// Preserve Hub data on down-conversion.
-	if err := utilconversion.MarshalData(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureMachineTemplateList to the Hub version (v1beta1).
-func (src *AzureMachineTemplateList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureMachineTemplateList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureMachineTemplateList)
 	return Convert_v1alpha4_AzureMachineTemplateList_To_v1beta1_AzureMachineTemplateList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureMachineTemplateList)
 	return Convert_v1beta1_AzureMachineTemplateList_To_v1alpha4_AzureMachineTemplateList(src, dst, nil)
 }
 
 func Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in *infrav1beta1.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s apimachineryconversion.Scope) error {
-	if err := autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in, out, s); err != nil {
-		return err
-	}
-	return nil
+	return autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in, out, s)
 }

@@ -17,16 +17,17 @@ limitations under the License.
 package v1alpha4
 
 import (
+	"unsafe"
+
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
-	"unsafe"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this AzureCluster to the Hub version (v1beta1).
-func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureCluster)
 	if err := Convert_v1alpha4_AzureCluster_To_v1beta1_AzureCluster(src, dst, nil); err != nil {
 		return err
@@ -45,28 +46,24 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureCluster)
 	if err := Convert_v1beta1_AzureCluster_To_v1alpha4_AzureCluster(src, dst, nil); err != nil {
 		return err
 	}
 
 	// Preserve Hub data on down-conversion.
-	if err := utilconversion.MarshalData(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureClusterList to the Hub version (v1beta1).
-func (src *AzureClusterList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureClusterList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureClusterList)
 	return Convert_v1alpha4_AzureClusterList_To_v1beta1_AzureClusterList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureClusterList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureClusterList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.AzureClusterList)
 	return Convert_v1beta1_AzureClusterList_To_v1alpha4_AzureClusterList(src, dst, nil)
 }
