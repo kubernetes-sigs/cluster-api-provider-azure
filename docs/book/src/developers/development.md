@@ -22,6 +22,7 @@
     - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
     - [Deploying a workload cluster](#deploying-a-workload-cluster)
     - [Viewing Telemetry](#viewing-telemetry)
+    - [Debugging](#debugging)
   - [Manual Testing](#manual-testing)
     - [Creating a dev cluster](#creating-a-dev-cluster)
       - [Building and pushing dev images](#building-and-pushing-dev-images)
@@ -264,6 +265,49 @@ specified in `AZURE_INSTRUMENTATION_KEY`, choose "Transaction search" on the lef
 To view metrics in the Prometheus interface, open the Tilt web interface, select the
 "metrics: prometheus-operator" resource, and click "View metrics" near the top of the screen. Or
 visit http://localhost:9090/ in your browser. <!-- markdown-link-check-disable-line -->
+
+#### Debugging
+
+You can debug CAPZ (or another provider / core CAPI) by running the controllers with delve. When developing using Tilt this is easily done by using the **debug** configuration section in your **tilt-settings.json** file. For example:
+
+```json
+{
+  "default_registry": "${REGISTRY}",
+  "provider_repos": ["../cluster-api-provider-azure"],
+  "enable_providers": ["azure", "kubeadm-bootstrap", "kubeadm-control-plane"],
+  "kustomize_substitutions": {
+      "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  },
+  "debug": {
+    "azure": {
+      "continue": true,
+      "port": 30000
+    }
+  }
+}
+```
+
+> Note you can list multiple controllers or **core** CAPI and expose metrics as well in the debug section. Full details of the options can be seen [here](https://cluster-api.sigs.k8s.io/developer/tilt.html).
+
+If you then start Tilt you can connect to delve via the port defined (i.e. 30000 in the sample). If you are using VSCode then you can use a launch configuration similar to this:
+
+```json
+{
+   "name": "Connect to CAPZ",
+   "type": "go",
+   "request": "attach",
+   "mode": "remote",
+   "remotePath": "",
+   "port": 30000,
+   "host": "127.0.0.1",
+   "showLog": true,
+   "trace": "log",
+   "logOutput": "rpc"
+}
+```
 
 ### Manual Testing
 
