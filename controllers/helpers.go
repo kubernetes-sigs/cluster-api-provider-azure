@@ -432,14 +432,14 @@ func toCloudProviderBackOffConfig(source infrav1.BackOffConfig) BackOffConfig {
 	return backOffConfig
 }
 
-func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner metav1.OwnerReference, new *corev1.Secret, clusterName string) error {
+func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner metav1.OwnerReference, newSecret *corev1.Secret, clusterName string) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.reconcileAzureSecret")
 	defer done()
 
 	// Fetch previous secret, if it exists
 	key := types.NamespacedName{
-		Namespace: new.Namespace,
-		Name:      new.Name,
+		Namespace: newSecret.Namespace,
+		Name:      newSecret.Name,
 	}
 	old := &corev1.Secret{}
 	err := kubeclient.Get(ctx, key, old)
@@ -449,7 +449,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 
 	// Create if it wasn't found
 	if apierrors.IsNotFound(err) {
-		if err := kubeclient.Create(ctx, new); err != nil && !apierrors.IsAlreadyExists(err) {
+		if err := kubeclient.Create(ctx, newSecret); err != nil && !apierrors.IsAlreadyExists(err) {
 			return errors.Wrap(err, "failed to create cluster azure json")
 		}
 		return nil
@@ -471,7 +471,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 		}
 	}
 
-	hasData := equality.Semantic.DeepEqual(old.Data, new.Data)
+	hasData := equality.Semantic.DeepEqual(old.Data, newSecret.Data)
 	if hasData && hasOwner {
 		// no update required
 		log.V(2).Info("returning early from json reconcile, no update needed")
@@ -483,7 +483,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 	}
 
 	if !hasData {
-		old.Data = new.Data
+		old.Data = newSecret.Data
 	}
 
 	log.V(2).Info("updating azure json")
