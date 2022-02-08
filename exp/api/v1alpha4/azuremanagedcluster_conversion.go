@@ -22,25 +22,25 @@ import (
 )
 
 // ConvertTo converts this AzureManagedCluster to the Hub version (v1beta1).
-func (src *AzureManagedCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureManagedCluster) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureManagedCluster)
 	return Convert_v1alpha4_AzureManagedCluster_To_v1beta1_AzureManagedCluster(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureManagedCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureManagedCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureManagedCluster)
 	return Convert_v1beta1_AzureManagedCluster_To_v1alpha4_AzureManagedCluster(src, dst, nil)
 }
 
 // ConvertTo converts this AzureManagedClusterList to the Hub version (v1beta1).
-func (src *AzureManagedClusterList) ConvertTo(dstRaw conversion.Hub) error { // nolint
+func (src *AzureManagedClusterList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureManagedClusterList)
 	return Convert_v1alpha4_AzureManagedClusterList_To_v1beta1_AzureManagedClusterList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *AzureManagedClusterList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+func (dst *AzureManagedClusterList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureManagedClusterList)
 	return Convert_v1beta1_AzureManagedClusterList_To_v1alpha4_AzureManagedClusterList(src, dst, nil)
 }
