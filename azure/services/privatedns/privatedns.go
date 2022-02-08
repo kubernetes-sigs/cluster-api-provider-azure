@@ -71,21 +71,24 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				"Please see https://capz.sigs.k8s.io/topics/custom-dns.html#manage-dns-via-capz-tool", "private DNS", zoneSpec.ZoneName)
 			return nil
 		}
-		// Create the private DNS zone.
-		log.V(2).Info("creating private DNS zone", "private dns zone", zoneSpec.ZoneName)
-		pDNS := privatedns.PrivateZone{
-			Location: to.StringPtr(azure.Global),
-			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-				ClusterName: s.Scope.ClusterName(),
-				Lifecycle:   infrav1.ResourceLifecycleOwned,
-				Additional:  s.Scope.AdditionalTags(),
-			})),
-		}
-		err = s.client.CreateOrUpdateZone(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName, pDNS)
+		_, err = s.client.GetZone(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create private DNS zone %s", zoneSpec.ZoneName)
+			// Create the private DNS zone.
+			log.V(2).Info("creating private DNS zone", "private dns zone", zoneSpec.ZoneName)
+			pDNS := privatedns.PrivateZone{
+				Location: to.StringPtr(azure.Global),
+				Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+					ClusterName: s.Scope.ClusterName(),
+					Lifecycle:   infrav1.ResourceLifecycleOwned,
+					Additional:  s.Scope.AdditionalTags(),
+				})),
+			}
+			err = s.client.CreateOrUpdateZone(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName, pDNS)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create private DNS zone %s", zoneSpec.ZoneName)
+			}
+			log.V(2).Info("successfully created private DNS zone", "private dns zone", zoneSpec.ZoneName)
 		}
-		log.V(2).Info("successfully created private DNS zone", "private dns zone", zoneSpec.ZoneName)
 		for _, linkSpec := range zoneSpec.Links {
 			// If the virtual network link is not managed by capz, skip its reconciliation
 			isVnetLinkManaged, err := s.isVnetLinkManaged(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName, linkSpec.LinkName)
