@@ -7968,8 +7968,6 @@ data:
                 configMapKeyRef:
                   key: veth_mtu
                   name: calico-config
-            - name: FELIX_AWSSRCDSTCHECK
-              value: Disable
             - name: CALICO_DISABLE_FILE_LOGGING
               value: "true"
             - name: FELIX_DEFAULTENDPOINTTOHOSTACTION

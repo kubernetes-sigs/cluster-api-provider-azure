@@ -8,3 +8,9 @@ patches:
 - path: patches/calico-node.yaml
   target:
     kind: DaemonSet
+- target:
+    version: v1
+    kind: DaemonSet
+    name: calico-node
+    namespace: kube-system
+  path: patches/remove-aws-reference.yaml
