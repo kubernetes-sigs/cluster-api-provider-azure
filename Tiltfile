@@ -177,10 +177,12 @@ def capz():
             yaml = str(encode_yaml_stream(yaml_dict))
             yaml = fixup_yaml_empty_arrays(yaml)
 
+    ldflags = str(local("hack/version.sh"))
+
     # Set up a local_resource build of the provider's manager binary.
     local_resource(
         "manager",
-        cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags \'-extldflags "-static"\' -o .tiltbuild/manager',
+        cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags  \'-extldflags "-static" ' + ldflags + "' -o .tiltbuild/manager",
         deps = ["api", "azure", "config", "controllers", "exp", "feature", "pkg", "util", "go.mod", "go.sum", "main.go"],
         labels = ["cluster-api"],
     )

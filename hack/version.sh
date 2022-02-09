@@ -43,6 +43,8 @@ version::get_version_vars() {
             # We have distance to base tag (v1.1.0-1-gCommitHash)
             # shellcheck disable=SC2001
             GIT_VERSION=$(echo "${GIT_VERSION}" | sed "s/-g\([0-9a-f]\{14\}\)$/-\1/")
+            # TODO: What should the output of this command look like?
+            # For example, v1.1.0-32-gfeb4736460af8f maps to v1.1.0-32-f, do we want the trailing "-f" or not?
         fi
         if [[ "${GIT_TREE_STATE}" == "dirty" ]]; then
             # git describe --dirty only considers changes to existing files, but

@@ -225,6 +225,18 @@ endif
 $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
 	source ./scripts/fetch_ext_bins.sh && fetch_tools
 
+.PHONY: env-info # Temporary target to get additional logs in prow tests
+env-info:
+	@echo "Working dir is $(shell pwd)"
+	@echo "Working dir contents:"
+	ls -la || echo ""
+	@echo "Root dir contents:"
+	ls -la / || echo ""
+	@echo "Workspace contents are:"
+	ls -la /workspace || echo ""
+	@echo "Output of /hack/version.sh:"
+	./hack/version.sh || echo ""
+
 ## --------------------------------------
 ## Binaries
 ## --------------------------------------
@@ -406,7 +418,7 @@ docker-pull-prerequisites:
 	docker pull gcr.io/distroless/static:latest
 
 .PHONY: docker-build
-docker-build: docker-pull-prerequisites ## Build the docker image for controller-manager
+docker-build: docker-pull-prerequisites env-info ## Build the docker image for controller-manager
 	DOCKER_BUILDKIT=1 docker build --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG)-$(ARCH):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
