@@ -947,7 +947,7 @@ func (s *ClusterScope) TagsSpecs() []azure.TagsSpec {
 		{
 			Scope:      azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
 			Tags:       s.AdditionalTags(),
-			Annotation: infrav1.RGTagsLastAppliedAnnotation,
+			Annotation: azure.RGTagsLastAppliedAnnotation,
 		},
 	}
 }

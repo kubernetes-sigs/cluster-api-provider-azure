@@ -177,7 +177,7 @@ func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
 		{
 			Scope:      azure.VMID(m.SubscriptionID(), m.ResourceGroup(), m.Name()),
 			Tags:       m.AdditionalTags(),
-			Annotation: infrav1.VMTagsLastAppliedAnnotation,
+			Annotation: azure.VMTagsLastAppliedAnnotation,
 		},
 	}
 }
