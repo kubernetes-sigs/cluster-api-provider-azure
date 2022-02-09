@@ -18,103 +18,80 @@ package subnets
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+const serviceName = "subnets"
 
 // SubnetScope defines the scope interface for a subnet service.
 type SubnetScope interface {
 	azure.ClusterScoper
-	SubnetSpecs() []azure.SubnetSpec
+	azure.AsyncStatusUpdater
+	UpdateSubnetID(string, string)
+	UpdateSubnetCIDRs(string, []string)
+	SubnetSpecs() []azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope SubnetScope
-	Client
+	async.Reconciler
 }
 
 // New creates a new service.
 func New(scope SubnetScope) *Service {
+	Client := NewClient(scope)
 	return &Service{
-		Scope:  scope,
-		Client: NewClient(scope),
+		Scope:      scope,
+		Reconciler: async.New(scope, Client, Client),
 	}
 }
 
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Reconcile")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Reconcile")
 	defer done()
 
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
+	// We go through the list of SubnetSpecs to reconcile each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
+	var resultErr error
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
-		existingSubnet, err := s.getExisting(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec)
-		switch {
-		case err != nil && !azure.ResourceNotFound(err):
-			return errors.Wrapf(err, "failed to get subnet %s", subnetSpec.Name)
-		case err == nil:
-			// subnet already exists, update the spec and skip creation
-			s.Scope.SetSubnet(*existingSubnet)
-			continue
-
-		case !s.Scope.IsVnetManaged():
-			return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
-
-		default:
-
-			subnetProperties := network.SubnetPropertiesFormat{
-				AddressPrefixes: &subnetSpec.CIDRs,
+		result, err := s.CreateResource(ctx, subnetSpec, serviceName)
+		if err != nil {
+			if !azure.IsOperationNotDoneError(err) || resultErr == nil {
+				resultErr = err
+			}
+		} else {
+			subnet, ok := result.(network.Subnet)
+			if !ok {
+				return errors.Errorf("%T is not a network.Subnet", result)
+			}
+			var addresses []string
+			if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefix != nil {
+				addresses = []string{to.String(subnet.SubnetPropertiesFormat.AddressPrefix)}
+			} else if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
+				addresses = to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
 			}
 
-			// workaround needed to avoid SubscriptionNotRegisteredForFeature for feature Microsoft.Network/AllowMultipleAddressPrefixesOnSubnet.
-			if len(subnetSpec.CIDRs) == 1 {
-				subnetProperties = network.SubnetPropertiesFormat{
-					AddressPrefix: &subnetSpec.CIDRs[0],
-				}
-			}
-
-			if subnetSpec.RouteTableName != "" {
-				subnetProperties.RouteTable = &network.RouteTable{
-					ID: to.StringPtr(azure.RouteTableID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.RouteTableName)),
-				}
-			}
-
-			if subnetSpec.NatGatewayName != "" {
-				subnetProperties.NatGateway = &network.SubResource{
-					ID: to.StringPtr(azure.NatGatewayID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.NatGatewayName)),
-				}
-			}
-
-			if subnetSpec.SecurityGroupName != "" {
-				subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
-					ID: to.StringPtr(azure.SecurityGroupID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)),
-				}
-			}
-
-			log.V(2).Info("creating subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
-			err = s.Client.CreateOrUpdate(
-				ctx,
-				s.Scope.Vnet().ResourceGroup,
-				subnetSpec.VNetName,
-				subnetSpec.Name,
-				network.Subnet{
-					SubnetPropertiesFormat: &subnetProperties,
-				},
-			)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.Vnet().ResourceGroup)
-			}
-
-			log.V(2).Info("successfully created subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
+			s.Scope.UpdateSubnetID(subnetSpec.ResourceName(), to.String(subnet.ID))
+			s.Scope.UpdateSubnetCIDRs(subnetSpec.ResourceName(), addresses)
 		}
 	}
-	return nil
+
+	s.Scope.UpdatePutStatus(infrav1.SubnetsReadyCondition, serviceName, resultErr)
+	return resultErr
 }
 
 // Delete deletes the subnet with the provided name.
@@ -122,46 +99,28 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Delete")
 	defer done()
 
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
+
+	if !s.Scope.IsVnetManaged() {
+		log.V(4).Info("Skipping subnets deletion in custom vnet mode")
+
+		s.Scope.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, nil)
+		return nil
+	}
+
+	var result error
+
+	// We go through the list of SubnetSpecs to delete each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
-		if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
-			log.V(4).Info("Skipping subnets deletion in custom vnet mode")
-			continue
+		if err := s.DeleteResource(ctx, subnetSpec, serviceName); err != nil {
+			if !azure.IsOperationNotDoneError(err) || result == nil {
+				result = err
+			}
 		}
-		log.V(2).Info("deleting subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
-		err := s.Client.Delete(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec.VNetName, subnetSpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
-			// already deleted
-			continue
-		}
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete subnet %s in resource group %s", subnetSpec.Name, s.Scope.Vnet().ResourceGroup)
-		}
-
-		log.V(2).Info("successfully deleted subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 	}
-	return nil
-}
-
-// getExisting provides information about an existing subnet.
-func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.SubnetSpec) (*infrav1.SubnetSpec, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.getExisting")
-	defer done()
-
-	subnet, err := s.Client.Get(ctx, rgName, spec.VNetName, spec.Name)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch subnet named %s in vnet %s", spec.VNetName, spec.Name)
-	}
-
-	var addresses []string
-	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefix != nil {
-		addresses = []string{to.String(subnet.SubnetPropertiesFormat.AddressPrefix)}
-	} else if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
-		addresses = to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
-	}
-
-	subnetSpec := s.Scope.Subnet(spec.Name)
-	subnetSpec.ID = to.String(subnet.ID)
-	subnetSpec.CIDRBlocks = addresses
-
-	return &subnetSpec, nil
+	s.Scope.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, result)
+	return result
 }

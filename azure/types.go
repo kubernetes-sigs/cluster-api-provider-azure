@@ -30,17 +30,6 @@ type PublicIPSpec struct {
 	IsIPv6  bool
 }
 
-// SubnetSpec defines the specification for a Subnet.
-type SubnetSpec struct {
-	Name              string
-	CIDRs             []string
-	VNetName          string
-	RouteTableName    string
-	SecurityGroupName string
-	Role              infrav1.SubnetRole
-	NatGatewayName    string
-}
-
 // RoleAssignmentSpec defines the specification for a Role Assignment.
 type RoleAssignmentSpec struct {
 	MachineName  string
