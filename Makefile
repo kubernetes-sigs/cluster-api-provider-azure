@@ -387,7 +387,7 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 		rbac:roleName=manager-role
 
 .PHONY: generate-flavors ## Generate template flavors
-generate-flavors: $(KUSTOMIZE)
+generate-flavors: $(KUSTOMIZE) generate-addons
 	./hack/gen-flavors.sh
 
 .PHONY: generate-e2e-templates ## Generate Azure infrastructure templates for the v1alpha4 CAPI test suite.
@@ -406,6 +406,8 @@ generate-e2e-templates: $(KUSTOMIZE)
 .PHONY: generate-addons
 generate-addons:
 	$(KUSTOMIZE) build $(ADDONS_DIR)/metrics-server > $(ADDONS_DIR)/metrics-server/metrics-server.yaml
+	$(KUSTOMIZE) build $(ADDONS_DIR)/calico > $(ADDONS_DIR)/calico.yaml
+	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-ipv6 > $(ADDONS_DIR)/calico-ipv6.yaml
 
 ## --------------------------------------
 ## Docker

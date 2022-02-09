@@ -1,0 +1,11 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: calico-config
+  namespace: kube-system
+data:
+  # On Azure, the underlying network has an MTU of 1400, even though the network interface will have an MTU of 1500.
+  # We set this value to 1350 for “physical network MTU size minus 50” since we use VXLAN, which uses a 50-byte header.
+  # If enabling Wireguard, this value should be changed to 1340 (Wireguard uses a 60-byte header).
+  # https://docs.projectcalico.org/networking/mtu#determine-mtu-size
+  veth_mtu: "1350"
