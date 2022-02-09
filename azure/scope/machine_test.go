@@ -1410,7 +1410,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							//clusterv1.MachineControlPlaneLabelName: "true",
+							// clusterv1.MachineControlPlaneLabelName: "true",
 						},
 					},
 				},
@@ -1505,7 +1505,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							//clusterv1.MachineControlPlaneLabelName: "true",
+							// clusterv1.MachineControlPlaneLabelName: "true",
 						},
 					},
 				},
@@ -1610,7 +1610,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							//clusterv1.MachineControlPlaneLabelName: "true",
+							// clusterv1.MachineControlPlaneLabelName: "true",
 						},
 					},
 				},
@@ -1706,7 +1706,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							//clusterv1.MachineControlPlaneLabelName: "true",
+							// clusterv1.MachineControlPlaneLabelName: "true",
 						},
 					},
 				},

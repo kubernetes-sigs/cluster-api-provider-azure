@@ -28,7 +28,7 @@ func (c *compositeLogSink) Init(info logr.RuntimeInfo) {
 	// we change the depth of the stack so that we can get the real
 	// line where the log statement was called. We need to do this because the composite logger adds to the
 	// call stack due to wrapping the internal logger.
-	info.CallDepth = info.CallDepth + 2
+	info.CallDepth += 2
 	for _, l := range c.logSinks {
 		l.Init(info)
 	}

@@ -165,7 +165,7 @@ func (ac *azureClient) Result(ctx context.Context, future azureautorest.FutureAP
 		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal future data")
 		}
-		return (*createFuture).Result(ac.loadbalancers)
+		return createFuture.Result(ac.loadbalancers)
 
 	case infrav1.DeleteFuture:
 		// Delete does not return a result load balancer

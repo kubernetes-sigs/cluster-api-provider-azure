@@ -333,7 +333,7 @@ func (m *MachineScope) AvailabilityZone() string {
 	if m.Machine.Spec.FailureDomain != nil {
 		return *m.Machine.Spec.FailureDomain
 	}
-	// DEPRECATED: to support old clients
+	// Deprecated: to support old clients
 	if m.AzureMachine.Spec.FailureDomain != nil {
 		return *m.AzureMachine.Spec.FailureDomain
 	}

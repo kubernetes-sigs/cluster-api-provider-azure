@@ -579,7 +579,7 @@ func MachinePoolModelHasChanged(logger logr.Logger) predicate.Funcs {
 				!cmp.Equal(oldAmp.Spec.UserAssignedIdentities, newAmp.Spec.UserAssignedIdentities) ||
 				!cmp.Equal(oldAmp.Status.ProvisioningState, newAmp.Status.ProvisioningState)
 
-			//if shouldUpdate {
+			// if shouldUpdate {
 			log.Info("machine pool predicate", "shouldUpdate", shouldUpdate)
 			//}
 			return shouldUpdate

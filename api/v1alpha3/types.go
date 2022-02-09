@@ -72,7 +72,7 @@ type VnetSpec struct {
 	Name string `json:"name"`
 
 	// CidrBlock is the CIDR block to be used when the provider creates a managed virtual network.
-	// DEPRECATED: Use CIDRBlocks instead
+	// Deprecated: Use CIDRBlocks instead
 	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
@@ -311,7 +311,7 @@ type AzureSharedGalleryImage struct {
 
 // AvailabilityZone specifies an Azure Availability Zone.
 //
-// DEPRECATED: Use FailureDomain instead.
+// Deprecated: Use FailureDomain instead.
 type AvailabilityZone struct {
 	ID      *string `json:"id,omitempty"`
 	Enabled *bool   `json:"enabled,omitempty"`
@@ -432,7 +432,7 @@ type SubnetSpec struct {
 	Name string `json:"name"`
 
 	// CidrBlock is the CIDR block to be used when the provider creates a managed Vnet.
-	// DEPRECATED: Use CIDRBlocks instead
+	// Deprecated: Use CIDRBlocks instead
 	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
 

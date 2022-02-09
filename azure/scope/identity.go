@@ -270,7 +270,7 @@ func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1
 		},
 		Spec: aadpodv1.AzureIdentityBindingSpec{
 			AzureIdentity: copiedIdentity.Name,
-			Selector:      infrav1.AzureIdentityBindingSelector, //should be same as selector added on controller
+			Selector:      infrav1.AzureIdentityBindingSelector, // should be same as selector added on controller
 		},
 	}
 	err = kubeClient.Create(ctx, azureIdentityBinding)

@@ -18,6 +18,7 @@ linters:
     - exportloopref
     - gci
     - goconst
+    - gocritic
     - gocyclo
     - godot
     - gofmt

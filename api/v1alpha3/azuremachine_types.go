@@ -42,7 +42,7 @@ type AzureMachineSpec struct {
 	// as defined in Cluster API. This relates to an Azure Availability Zone
 	FailureDomain *string `json:"failureDomain,omitempty"`
 
-	// DEPRECATED: use FailureDomain instead
+	// Deprecated: use FailureDomain instead
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// Image is used to provide details of an image to use during VM creation.
@@ -79,7 +79,7 @@ type AzureMachineSpec struct {
 	// DataDisk specifies the parameters that are used to add one or more data disks to the machine
 	DataDisks []DataDisk `json:"dataDisks,omitempty"`
 
-	// DEPRECATED: to support old clients, will be removed in v1alpha4/v1beta1
+	// Deprecated: to support old clients, will be removed in v1alpha4/v1beta1
 	Location string `json:"location"`
 
 	SSHPublicKey string `json:"sshPublicKey"`

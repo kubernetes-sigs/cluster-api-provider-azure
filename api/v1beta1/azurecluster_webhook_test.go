@@ -33,9 +33,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 	}{
 		{
 			name: "azurecluster with pre-existing vnet - valid spec",
-			cluster: func() *AzureCluster {
-				return createValidCluster()
-			}(),
+			cluster: createValidCluster(),
 			wantErr: false,
 		},
 		{
@@ -140,9 +138,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with no control plane endpoint - valid spec",
-			oldCluster: func() *AzureCluster {
-				return createValidCluster()
-			}(),
+			oldCluster: createValidCluster(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
@@ -155,12 +151,8 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - valid spec",
-			oldCluster: func() *AzureCluster {
-				return createValidCluster()
-			}(),
-			cluster: func() *AzureCluster {
-				return createValidCluster()
-			}(),
+			oldCluster: createValidCluster(),
+			cluster: createValidCluster(),
 			wantErr: false,
 		},
 		{
@@ -179,9 +171,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - lack control plane subnet",
-			oldCluster: func() *AzureCluster {
-				return createValidCluster()
-			}(),
+			oldCluster: createValidCluster(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[1:]
@@ -191,9 +181,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - lack node subnet",
-			oldCluster: func() *AzureCluster {
-				return createValidCluster()
-			}(),
+			oldCluster: createValidCluster(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[:1]
@@ -203,9 +191,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - invalid resourcegroup name",
-			oldCluster: func() *AzureCluster {
-				return createValidCluster()
-			}(),
+			oldCluster: createValidCluster(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = "invalid-name###"
@@ -215,9 +201,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - invalid subnet name",
-			oldCluster: func() *AzureCluster {
-				return createValidCluster()
-			}(),
+			oldCluster: createValidCluster(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
