@@ -53,7 +53,8 @@ var (
 		BootstrapData:     "fake data",
 	}
 	fakeExistingVM = compute.VirtualMachine{
-		ID: to.StringPtr("test-vm-id"),
+		ID:   to.StringPtr("test-vm-id"),
+		Name: to.StringPtr("test-vm-name"),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			ProvisioningState: to.StringPtr("Succeeded"),
 			NetworkProfile: &compute.NetworkProfile{
@@ -89,6 +90,10 @@ var (
 		},
 	}
 	fakeNodeAddresses = []corev1.NodeAddress{
+		{
+			Type:    corev1.NodeInternalDNS,
+			Address: "test-vm-name",
+		},
 		{
 			Type:    corev1.NodeInternalIP,
 			Address: "10.0.0.5",
