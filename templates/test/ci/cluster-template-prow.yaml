@@ -3,6 +3,7 @@ kind: Cluster
 metadata:
   labels:
     cni: ${CLUSTER_NAME}-calico
+    csi-proxy: enabled
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -352,6 +353,20 @@ spec:
     namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
   tenantID: ${AZURE_TENANT_ID}
   type: ServicePrincipal
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: csi-proxy
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      csi-proxy: enabled
+  resources:
+  - kind: ConfigMap
+    name: csi-proxy-addon
+  strategy: ApplyOnce
 ---
 apiVersion: v1
 data:
@@ -4452,4 +4467,42 @@ metadata:
   labels:
     type: generated
   name: cni-${CLUSTER_NAME}-calico
+  namespace: default
+---
+apiVersion: v1
+data:
+  csi-proxy: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: csi-proxy
+      name: csi-proxy
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: csi-proxy
+      template:
+        metadata:
+          labels:
+            k8s-app: csi-proxy
+        spec:
+          nodeSelector:
+            "kubernetes.io/os": windows
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\SYSTEM"
+          hostNetwork: true
+          containers:
+            - name: csi-proxy
+              image: ghcr.io/kubernetes-sigs/sig-windows/csi-proxy:v1.0.2
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: csi-proxy-addon
   namespace: default

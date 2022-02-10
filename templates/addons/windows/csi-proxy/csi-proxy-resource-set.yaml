@@ -1,0 +1,14 @@
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: csi-proxy
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      csi-proxy: enabled
+  resources:
+  - kind: ConfigMap
+    name: csi-proxy-addon
+  strategy: ApplyOnce
