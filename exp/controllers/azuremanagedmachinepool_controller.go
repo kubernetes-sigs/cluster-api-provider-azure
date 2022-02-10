@@ -97,7 +97,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
-			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(clusterv1exp.GroupVersion.WithKind("AzureManagedMachinePool"), log)),
+			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"), log)),
 		).
 		// watch for changes in AzureManagedControlPlanes
 		Watches(
