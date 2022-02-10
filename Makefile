@@ -148,7 +148,7 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 WIN_REPO_URL ?=
 
 # Build time versioning details.
-LDFLAGS := $(shell hack/version.sh)
+LDFLAGS := $(shell hack/ensure-git-folder.sh && hack/version.sh)
 
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
