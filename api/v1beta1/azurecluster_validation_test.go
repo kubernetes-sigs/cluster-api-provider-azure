@@ -675,14 +675,13 @@ func TestValidateAPIServerLB(t *testing.T) {
 			name: "invalid SKU",
 			lb: LoadBalancerSpec{
 				Name: "my-awesome-lb",
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-
-					SKU: "Awesome",
-					FrontendIPs: []FrontendIP{
-						{
-							Name: "ip-config",
-						},
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-config",
 					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					SKU:  "Awesome",
 					Type: Public,
 				},
 			},
@@ -725,14 +724,12 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "too many IP configs",
 			lb: LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					FrontendIPs: []FrontendIP{
-						{
-							Name: "ip-1",
-						},
-						{
-							Name: "ip-2",
-						},
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+					{
+						Name: "ip-2",
 					},
 				},
 			},
@@ -754,16 +751,16 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "public LB with private IP",
 			lb: LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					Type: Public,
-					FrontendIPs: []FrontendIP{
-						{
-							Name: "ip-1",
-							FrontendIPClass: FrontendIPClass{
-								PrivateIPAddress: "10.0.0.4",
-							},
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "10.0.0.4",
 						},
 					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Public,
 				},
 			},
 			wantErr: true,
@@ -776,16 +773,16 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "internal LB with public IP",
 			lb: LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					Type: Internal,
-					FrontendIPs: []FrontendIP{
-						{
-							Name: "ip-1",
-							PublicIP: &PublicIPSpec{
-								Name: "my-invalid-ip",
-							},
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						PublicIP: &PublicIPSpec{
+							Name: "my-invalid-ip",
 						},
 					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
 				},
 			},
 			wantErr: true,
@@ -798,16 +795,16 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "internal LB with invalid private IP",
 			lb: LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					Type: Internal,
-					FrontendIPs: []FrontendIP{
-						{
-							Name: "ip-1",
-							FrontendIPClass: FrontendIPClass{
-								PrivateIPAddress: "NAIP",
-							},
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "NAIP",
 						},
 					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
 				},
 			},
 			wantErr: true,
@@ -821,16 +818,16 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "internal LB with out of range private IP",
 			lb: LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					Type: Internal,
-					FrontendIPs: []FrontendIP{
-						{
-							Name: "ip-1",
-							FrontendIPClass: FrontendIPClass{
-								PrivateIPAddress: "20.1.2.3",
-							},
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "20.1.2.3",
 						},
 					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
 				},
 			},
 			cpCIDRS: []string{"10.0.0.0/24", "10.1.0.0/24"},
@@ -845,17 +842,17 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "internal LB with in range private IP",
 			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "10.1.0.3",
+						},
+					},
+				},
 				LoadBalancerClassSpec: LoadBalancerClassSpec{
 					Type: Internal,
 					SKU:  SKUStandard,
-					FrontendIPs: []FrontendIP{
-						{
-							Name: "ip-1",
-							FrontendIPClass: FrontendIPClass{
-								PrivateIPAddress: "10.1.0.3",
-							},
-						},
-					},
 				},
 				Name: "my-private-lb",
 			},
@@ -949,7 +946,7 @@ func TestPrivateDNSZoneName(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			err := validatePrivateDNSZoneName(test.network, field.NewPath("spec", "networkSpec", "privateDNSZoneName"))
+			err := validatePrivateDNSZoneName(test.network.PrivateDNSZoneName, test.network.APIServerLB.Type, field.NewPath("spec", "networkSpec", "privateDNSZoneName"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
@@ -1051,18 +1048,14 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 		{
 			name: "invalid FrontendIps update",
 			lb: &LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					FrontendIPs: []FrontendIP{{
-						Name: "some-frontend-ip",
-					}},
-				},
+				FrontendIPs: []FrontendIP{{
+					Name: "some-frontend-ip",
+				}},
 			},
 			old: &LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					FrontendIPs: []FrontendIP{{
-						Name: "old-frontend-ip",
-					}},
-				},
+				FrontendIPs: []FrontendIP{{
+					Name: "old-frontend-ip",
+				}},
 			},
 			wantErr: true,
 			expectedErr: field.Error{
@@ -1077,30 +1070,25 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 		{
 			name: "FrontendIps can update when frontendIpsCount changes",
 			lb: &LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					FrontendIPs: []FrontendIP{{
-						Name: "some-frontend-ip-1",
-					}, {
-						Name: "some-frontend-ip-2",
-					}},
-					FrontendIPsCount: pointer.Int32Ptr(2),
-				},
+				FrontendIPs: []FrontendIP{{
+					Name: "some-frontend-ip-1",
+				}, {
+					Name: "some-frontend-ip-2",
+				}},
+				FrontendIPsCount: pointer.Int32Ptr(2),
 			},
 			old: &LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					FrontendIPs: []FrontendIP{{
-						Name: "old-frontend-ip",
-					}},
-				},
+				FrontendIPs: []FrontendIP{{
+					Name: "old-frontend-ip",
+				}},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{},
 			},
 			wantErr: false,
 		},
 		{
 			name: "frontend ips count exceeds max value",
 			lb: &LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					FrontendIPsCount: pointer.Int32Ptr(100),
-				},
+				FrontendIPsCount: pointer.Int32Ptr(100),
 			},
 			wantErr: true,
 			expectedErr: field.Error{
@@ -1176,9 +1164,7 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 		{
 			name: "frontend ips count exceeds max value",
 			lb: &LoadBalancerSpec{
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					FrontendIPsCount: pointer.Int32Ptr(100),
-				},
+				FrontendIPsCount: pointer.Int32Ptr(100),
 			},
 			apiServerLB: LoadBalancerSpec{
 				LoadBalancerClassSpec: LoadBalancerClassSpec{
@@ -1353,17 +1339,17 @@ func createValidVnet() VnetSpec {
 func createValidAPIServerLB() LoadBalancerSpec {
 	return LoadBalancerSpec{
 		Name: "my-lb",
-		LoadBalancerClassSpec: LoadBalancerClassSpec{
-			SKU: SKUStandard,
-			FrontendIPs: []FrontendIP{
-				{
-					Name: "ip-config",
-					PublicIP: &PublicIPSpec{
-						Name:    "public-ip",
-						DNSName: "myfqdn.azure.com",
-					},
+		FrontendIPs: []FrontendIP{
+			{
+				Name: "ip-config",
+				PublicIP: &PublicIPSpec{
+					Name:    "public-ip",
+					DNSName: "myfqdn.azure.com",
 				},
 			},
+		},
+		LoadBalancerClassSpec: LoadBalancerClassSpec{
+			SKU:  SKUStandard,
 			Type: Public,
 		},
 	}
@@ -1371,25 +1357,23 @@ func createValidAPIServerLB() LoadBalancerSpec {
 
 func createValidNodeOutboundLB() *LoadBalancerSpec {
 	return &LoadBalancerSpec{
-		LoadBalancerClassSpec: LoadBalancerClassSpec{
-			FrontendIPsCount: pointer.Int32Ptr(1),
-		},
+		FrontendIPsCount: pointer.Int32Ptr(1),
 	}
 }
 
 func createValidAPIServerInternalLB() LoadBalancerSpec {
 	return LoadBalancerSpec{
 		Name: "my-lb",
-		LoadBalancerClassSpec: LoadBalancerClassSpec{
-			SKU: SKUStandard,
-			FrontendIPs: []FrontendIP{
-				{
-					Name: "ip-config-private",
-					FrontendIPClass: FrontendIPClass{
-						PrivateIPAddress: "10.10.1.1",
-					},
+		FrontendIPs: []FrontendIP{
+			{
+				Name: "ip-config-private",
+				FrontendIPClass: FrontendIPClass{
+					PrivateIPAddress: "10.10.1.1",
 				},
 			},
+		},
+		LoadBalancerClassSpec: LoadBalancerClassSpec{
+			SKU:  SKUStandard,
 			Type: Internal,
 		},
 	}

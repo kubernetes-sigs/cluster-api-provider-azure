@@ -58,9 +58,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 	// set default control plane outbound lb for private v1alpha3 clusters
 	if src.Spec.NetworkSpec.APIServerLB.Type == Internal && restored.Spec.NetworkSpec.ControlPlaneOutboundLB == nil {
 		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = &infrav1beta1.LoadBalancerSpec{
-			LoadBalancerClassSpec: infrav1beta1.LoadBalancerClassSpec{
-				FrontendIPsCount: pointer.Int32Ptr(1),
-			},
+			FrontendIPsCount: pointer.Int32Ptr(1),
 		}
 	} else {
 		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = restored.Spec.NetworkSpec.ControlPlaneOutboundLB
@@ -69,9 +67,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 	// set default node plane outbound lb for all v1alpha3 clusters
 	if restored.Spec.NetworkSpec.NodeOutboundLB == nil {
 		dst.Spec.NetworkSpec.NodeOutboundLB = &infrav1beta1.LoadBalancerSpec{
-			LoadBalancerClassSpec: infrav1beta1.LoadBalancerClassSpec{
-				FrontendIPsCount: pointer.Int32Ptr(1),
-			},
+			FrontendIPsCount: pointer.Int32Ptr(1),
 		}
 	} else {
 		dst.Spec.NetworkSpec.NodeOutboundLB = restored.Spec.NetworkSpec.NodeOutboundLB

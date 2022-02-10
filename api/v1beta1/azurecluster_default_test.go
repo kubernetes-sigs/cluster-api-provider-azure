@@ -122,24 +122,23 @@ func TestVnetDefaults(t *testing.T) {
 						},
 						APIServerLB: LoadBalancerSpec{
 							Name: "my-lb",
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-								FrontendIPs: []FrontendIP{
-									{
-										Name: "ip-config",
-										PublicIP: &PublicIPSpec{
-											Name:    "public-ip",
-											DNSName: "myfqdn.azure.com",
-										},
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "ip-config",
+									PublicIP: &PublicIPSpec{
+										Name:    "public-ip",
+										DNSName: "myfqdn.azure.com",
 									},
 								},
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU: SKUStandard,
+
 								Type: Public,
 							},
 						},
 						NodeOutboundLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								FrontendIPsCount: to.Int32Ptr(1),
-							},
+							FrontendIPsCount: to.Int32Ptr(1),
 						},
 					},
 				},
@@ -326,8 +325,12 @@ func TestSubnetDefaults(t *testing.T) {
 									Role:       SubnetNode,
 									CIDRBlocks: []string{"10.1.0.16/24"},
 								},
-								Name:       "my-node-subnet",
-								NatGateway: NatGateway{Name: "foo-natgw"},
+								Name: "my-node-subnet",
+								NatGateway: NatGateway{
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "foo-natgw",
+									},
+								},
 							},
 						},
 					},
@@ -358,7 +361,9 @@ func TestSubnetDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 								NatGateway: NatGateway{
-									Name: "foo-natgw",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "foo-natgw",
+									},
 									NatGatewayIP: PublicIPSpec{
 										Name: "pip-cluster-test-my-node-subnet-natgw",
 									},
@@ -734,8 +739,8 @@ func TestVnetPeeringDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							Peerings: VnetPeerings{
 								{
-									RemoteVnetName: "my-vnet",
-									ResourceGroup:  "cluster-test",
+									VnetPeeringClassSpec: VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
+									ResourceGroup:        "cluster-test",
 								},
 							},
 						},
@@ -752,8 +757,8 @@ func TestVnetPeeringDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							Peerings: VnetPeerings{
 								{
-									RemoteVnetName: "my-vnet",
-									ResourceGroup:  "cluster-test",
+									VnetPeeringClassSpec: VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
+									ResourceGroup:        "cluster-test",
 								},
 							},
 						},
@@ -773,7 +778,7 @@ func TestVnetPeeringDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							Peerings: VnetPeerings{
 								{
-									RemoteVnetName: "my-vnet",
+									VnetPeeringClassSpec: VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
 								},
 							},
 						},
@@ -790,8 +795,8 @@ func TestVnetPeeringDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							Peerings: VnetPeerings{
 								{
-									RemoteVnetName: "my-vnet",
-									ResourceGroup:  "cluster-test",
+									VnetPeeringClassSpec: VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
+									ResourceGroup:        "cluster-test",
 								},
 							},
 						},
@@ -839,17 +844,17 @@ func TestAPIServerLBDefaults(t *testing.T) {
 					NetworkSpec: NetworkSpec{
 						APIServerLB: LoadBalancerSpec{
 							Name: "cluster-test-public-lb",
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-								FrontendIPs: []FrontendIP{
-									{
-										Name: "cluster-test-public-lb-frontEnd",
-										PublicIP: &PublicIPSpec{
-											Name:    "pip-cluster-test-apiserver",
-											DNSName: "",
-										},
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-public-lb-frontEnd",
+									PublicIP: &PublicIPSpec{
+										Name:    "pip-cluster-test-apiserver",
+										DNSName: "",
 									},
 								},
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
 								Type:                 Public,
 								IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
@@ -881,16 +886,16 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
 						APIServerLB: LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-								FrontendIPs: []FrontendIP{
-									{
-										Name: "cluster-test-internal-lb-frontEnd",
-										FrontendIPClass: FrontendIPClass{
-											PrivateIPAddress: DefaultInternalLBIPAddress,
-										},
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-internal-lb-frontEnd",
+									FrontendIPClass: FrontendIPClass{
+										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
 								},
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
 								Type:                 Internal,
 								IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
@@ -1066,16 +1071,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 						},
 						NodeOutboundLB: &LoadBalancerSpec{
 							Name: "cluster-test",
+							FrontendIPs: []FrontendIP{{
+								Name: "cluster-test-frontEnd",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-cluster-test-node-outbound",
+								},
+							}},
+							FrontendIPsCount: to.Int32Ptr(1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-								FrontendIPs: []FrontendIP{{
-									Name: "cluster-test-frontEnd",
-									PublicIP: &PublicIPSpec{
-										Name: "pip-cluster-test-node-outbound",
-									},
-								}},
+								SKU:                  SKUStandard,
 								Type:                 Public,
-								FrontendIPsCount:     to.Int32Ptr(1),
 								IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
@@ -1109,7 +1114,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "node-natgateway",
+									},
 								},
 							},
 						},
@@ -1139,7 +1146,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "node-natgateway",
+									},
 								},
 							},
 						},
@@ -1178,7 +1187,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "node-natgateway",
+									},
 								},
 							},
 							{
@@ -1216,7 +1227,10 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+
+										Name: "node-natgateway",
+									},
 								},
 							},
 							{
@@ -1235,16 +1249,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 						},
 						NodeOutboundLB: &LoadBalancerSpec{
 							Name: "cluster-test",
+							FrontendIPs: []FrontendIP{{
+								Name: "cluster-test-frontEnd",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-cluster-test-node-outbound",
+								},
+							}},
+							FrontendIPsCount: to.Int32Ptr(1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-								FrontendIPs: []FrontendIP{{
-									Name: "cluster-test-frontEnd",
-									PublicIP: &PublicIPSpec{
-										Name: "pip-cluster-test-node-outbound",
-									},
-								}},
+								SKU:                  SKUStandard,
 								Type:                 Public,
-								FrontendIPsCount:     to.Int32Ptr(1),
 								IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
@@ -1344,16 +1358,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							},
 						},
 						NodeOutboundLB: &LoadBalancerSpec{
+							FrontendIPs: []FrontendIP{{
+								Name: "cluster-test-frontEnd",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-cluster-test-node-outbound",
+								},
+							}},
+							FrontendIPsCount: to.Int32Ptr(1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-								FrontendIPs: []FrontendIP{{
-									Name: "cluster-test-frontEnd",
-									PublicIP: &PublicIPSpec{
-										Name: "pip-cluster-test-node-outbound",
-									},
-								}},
+								SKU:                  SKUStandard,
 								Type:                 Public,
-								FrontendIPsCount:     to.Int32Ptr(1),
 								IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 							Name: "cluster-test",
@@ -1388,7 +1402,10 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+
+										Name: "node-natgateway",
+									},
 								},
 							},
 							{
@@ -1399,7 +1416,10 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway-2",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+
+										Name: "node-natgateway-2",
+									},
 								},
 							},
 							{
@@ -1410,7 +1430,10 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway-3",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+
+										Name: "node-natgateway-3",
+									},
 								},
 							},
 						},
@@ -1440,7 +1463,10 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+
+										Name: "node-natgateway",
+									},
 								},
 							},
 							{
@@ -1451,7 +1477,10 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway-2",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+
+										Name: "node-natgateway-2",
+									},
 								},
 							},
 							{
@@ -1462,7 +1491,10 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
-									Name: "node-natgateway-3",
+									NatGatewayClassSpec: NatGatewayClassSpec{
+
+										Name: "node-natgateway-3",
+									},
 								},
 							},
 						},
@@ -1512,8 +1544,8 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					NetworkSpec: NetworkSpec{
 						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						NodeOutboundLB: &LoadBalancerSpec{
+							FrontendIPsCount: to.Int32Ptr(2),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								FrontendIPsCount:     to.Int32Ptr(2),
 								IdleTimeoutInMinutes: to.Int32Ptr(15),
 							},
 						},
@@ -1532,24 +1564,24 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							},
 						},
 						NodeOutboundLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-								FrontendIPs: []FrontendIP{
-									{
-										Name: "cluster-test-frontEnd-1",
-										PublicIP: &PublicIPSpec{
-											Name: "pip-cluster-test-node-outbound-1",
-										},
-									},
-									{
-										Name: "cluster-test-frontEnd-2",
-										PublicIP: &PublicIPSpec{
-											Name: "pip-cluster-test-node-outbound-2",
-										},
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-frontEnd-1",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-node-outbound-1",
 									},
 								},
+								{
+									Name: "cluster-test-frontEnd-2",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-node-outbound-2",
+									},
+								},
+							},
+							FrontendIPsCount: to.Int32Ptr(2), // we expect the original value to be respected here
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
 								Type:                 Public,
-								FrontendIPsCount:     to.Int32Ptr(2),  // we expect the original value to be respected here
 								IdleTimeoutInMinutes: to.Int32Ptr(15), // we expect the original value to be respected here
 							},
 							Name: "cluster-test",
@@ -1644,8 +1676,8 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 					NetworkSpec: NetworkSpec{
 						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
+							FrontendIPsCount: to.Int32Ptr(2),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								FrontendIPsCount:     to.Int32Ptr(2),
 								IdleTimeoutInMinutes: to.Int32Ptr(15),
 							},
 						},
@@ -1665,24 +1697,24 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 						},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
 							Name: "cluster-test-outbound-lb",
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-								FrontendIPs: []FrontendIP{
-									{
-										Name: "cluster-test-outbound-lb-frontEnd-1",
-										PublicIP: &PublicIPSpec{
-											Name: "pip-cluster-test-controlplane-outbound-1",
-										},
-									},
-									{
-										Name: "cluster-test-outbound-lb-frontEnd-2",
-										PublicIP: &PublicIPSpec{
-											Name: "pip-cluster-test-controlplane-outbound-2",
-										},
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-outbound-lb-frontEnd-1",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-controlplane-outbound-1",
 									},
 								},
+								{
+									Name: "cluster-test-outbound-lb-frontEnd-2",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-controlplane-outbound-2",
+									},
+								},
+							},
+							FrontendIPsCount: to.Int32Ptr(2),
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
 								Type:                 Public,
-								FrontendIPsCount:     to.Int32Ptr(2),
 								IdleTimeoutInMinutes: to.Int32Ptr(15),
 							},
 						},

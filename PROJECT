@@ -29,3 +29,6 @@ resources:
 - group: infrastructure
   version: v1beta1
   kind: AzureMachineTemplate
+- group: infrastructure
+  version: v1beta1
+  kind: AzureClusterTemplate
