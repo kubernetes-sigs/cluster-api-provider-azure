@@ -236,6 +236,21 @@ env-info:
 	ls -la /workspace || echo ""
 	@echo "Output of /hack/version.sh:"
 	./hack/version.sh || echo ""
+	@echo "Job environment variables:"
+	@echo "CI is $${CI}"
+	@echo "ARTIFACTS is $${ARTIFACTS}"
+	@echo "JOB_NAME is $${JOB_NAME}"
+	@echo "JOB_TYPE is $${JOB_TYPE}"
+	@echo "JOB_SPEC is $${JOB_SPEC}"
+	@echo "BUILD_ID is $${BUILD_ID}"
+	@echo "PROW_JOB_ID is $${PROW_JOB_ID}"
+	@echo "REPO_OWNER is $${REPO_OWNER}"
+	@echo "REPO_NAME is $${REPO_NAME}"
+	@echo "PULL_BASE_REF is $${PULL_BASE_REF}"
+	@echo "PULL_BASE_SHA is $${PULL_BASE_SHA}"
+	@echo "PULL_REFS is $${PULL_REFS}"
+	@echo "PULL_NUMBER is $${PULL_NUMBER}"
+	@echo "PULL_PULL_SHA is $${PULL_PULL_SHA}"
 
 ## --------------------------------------
 ## Binaries
