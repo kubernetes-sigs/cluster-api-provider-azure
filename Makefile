@@ -167,18 +167,22 @@ help:  ## Display this help
 .PHONY: test
 test: generate lint go-test ## Run generate lint and tests
 
+KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
+
 envs-test:
 export TEST_ASSET_KUBECTL = $(KUBECTL)
 export TEST_ASSET_KUBE_APISERVER = $(KUBE_APISERVER)
 export TEST_ASSET_ETCD = $(ETCD)
 
 .PHONY: go-test
-go-test: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run go tests
+go-test: envs-test $(KUBECTL) $(SETUP_ENVTEST)  ## Run go tests
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)"
 	echo $(TEST_ASSET_KUBECTL)
 	go test ./...
 
 .PHONY: test-cover
-test-cover: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run tests with code coverage and code generate reports
+test-cover: envs-test $(KUBECTL) $(SETUP_ENVTEST) ## Run tests with code coverage and code generate reports
+	(KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)"
 	go test -v -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out -o coverage.txt
 	go tool cover -html=coverage.out -o coverage.html
@@ -222,8 +226,6 @@ ifneq ($(WIN_REPO_URL), )
 endif
 	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_WINDOWS_CONF_PATH) -kubetest.repo-list-path=$(KUBETEST_REPO_LIST_PATH) $(E2E_ARGS)"
 
-$(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
-	source ./scripts/fetch_ext_bins.sh && fetch_tools
 
 .PHONY: env-info # Temporary target to get additional logs in prow tests
 env-info:
@@ -263,6 +265,16 @@ $(CONVERSION_GEN): ## Build conversion-gen.
 
 $(ENVSUBST): ## Build envsubst from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/drone/envsubst/v2/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
+	rm -f $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)*
+	mkdir -p $(TOOLS_DIR) && cd $(TOOLS_DIR) && go build -tags=tools -o $(ENVSUBST) github.com/drone/envsubst/v2/cmd/envsubst
+	ln -sf $(ENVSUBST) $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)
+
+$(SETUP_ENVTEST): $(TOOLS_DIR)/go.mod # Build setup-envtest from tools folder.
+	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/setup-envtest sigs.k8s.io/controller-runtime/tools/setup-envtest
+
+
+.PHONY: $(ENVSUBST_BIN)
+$(ENVSUBST_BIN): $(ENVSUBST) ## Build envsubst from tools folder.
 
 $(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
