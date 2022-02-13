@@ -175,7 +175,7 @@ spec:
                       properties:
                         cidrBlock:
                           description: 'CidrBlock is the CIDR block to be used when
-                            the provider creates a managed Vnet. DEPRECATED: Use CIDRBlocks
+                            the provider creates a managed Vnet. Deprecated: Use CIDRBlocks
                             instead'
                           type: string
                         cidrBlocks:
@@ -287,7 +287,7 @@ spec:
                     properties:
                       cidrBlock:
                         description: 'CidrBlock is the CIDR block to be used when
-                          the provider creates a managed virtual network. DEPRECATED:
+                          the provider creates a managed virtual network. Deprecated:
                           Use CIDRBlocks instead'
                         type: string
                       cidrBlocks:
