@@ -9,14 +9,18 @@
 
 ## Create a tag
 
-- Identify a known good commit on the main branch
-- Fast-forward the release branch to the selected commit. :warning: Always release from the release branch and not from main!
-  - `git checkout release-0.x`
-  - `git fetch upstream`
-  - `git merge --ff-only upstream/main`
-  - `git push`
+- Prepare the release branch. :warning: Always release from the release branch and not from main!
+  - If releasing a patch release, check out the existing release branch and make sure you have the latest changes:
+    - `git checkout release-1.x`
+    - `git fetch upstream`
+    - `git rebase upstream/release-1.x`
+  - If releasing a minor release, create a new release branch from the main branch:
+    - `git fetch upstream`
+    - `git rebase upstream/main`
+    - `git checkout -b release-1.x`
+    - `git push upstream release-1.x`
 - Create tag with git
-  - `export RELEASE_TAG=v0.4.6` (the tag of the release to be cut)
+  - `export RELEASE_TAG=v1.2.3` (the tag of the release to be cut)
   - `git tag -s ${RELEASE_TAG} -m "${RELEASE_TAG}"`
   - `-s` creates a signed tag, you must have a GPG key [added to your GitHub account](https://docs.github.com/en/enterprise/2.16/user/github/authenticating-to-github/generating-a-new-gpg-key)
   - `git push upstream ${RELEASE_TAG}`
