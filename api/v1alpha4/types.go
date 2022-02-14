@@ -242,7 +242,7 @@ type PublicIPSpec struct {
 }
 
 // VMState describes the state of an Azure virtual machine.
-// DEPRECATED: use ProvisioningState.
+// Deprecated: use ProvisioningState.
 type VMState string
 
 // ProvisioningState describes the provisioning state of an Azure resource.

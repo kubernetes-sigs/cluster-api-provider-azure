@@ -656,7 +656,7 @@ func (s *ClusterScope) GenerateFQDN(ipName string) string {
 }
 
 // GenerateLegacyFQDN generates an IP name and a fully qualified domain name, based on a hash, cluster name and cluster location.
-// DEPRECATED: use GenerateFQDN instead.
+// Deprecated: use GenerateFQDN instead.
 func (s *ClusterScope) GenerateLegacyFQDN() (string, string) {
 	h := fnv.New32a()
 	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), s.ClusterName()))); err != nil {
@@ -831,20 +831,20 @@ func (s *ClusterScope) SetDNSName() {
 func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalancerSpec, generateOutboundIPName func(string) string) []azure.PublicIPSpec {
 	var outboundIPSpecs []azure.PublicIPSpec
 	loadBalancerNodeOutboundIPs := outboundLB.FrontendIPsCount
-	if loadBalancerNodeOutboundIPs == nil || *loadBalancerNodeOutboundIPs == 0 {
+	switch {
+	case loadBalancerNodeOutboundIPs == nil || *loadBalancerNodeOutboundIPs == 0:
 		// do nothing
-	} else if *loadBalancerNodeOutboundIPs == 1 {
+	case *loadBalancerNodeOutboundIPs == 1:
 		outboundIPSpecs = append(outboundIPSpecs, azure.PublicIPSpec{
 			Name: generateOutboundIPName(s.ClusterName()),
 		})
-	} else {
+	default:
 		for i := 0; i < int(*loadBalancerNodeOutboundIPs); i++ {
 			outboundIPSpecs = append(outboundIPSpecs, azure.PublicIPSpec{
 				Name: azure.WithIndex(generateOutboundIPName(s.ClusterName()), i+1),
 			})
 		}
 	}
-
 	return outboundIPSpecs
 }
 

@@ -151,7 +151,7 @@ func (ac *AzureClient) Result(ctx context.Context, future azureautorest.FutureAP
 		if err := json.Unmarshal(jsonData, &updateFuture); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal future data")
 		}
-		return (*updateFuture).Result(ac.virtualmachines)
+		return updateFuture.Result(ac.virtualmachines)
 
 	case infrav1.PutFuture:
 		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
@@ -165,7 +165,7 @@ func (ac *AzureClient) Result(ctx context.Context, future azureautorest.FutureAP
 		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal future data")
 		}
-		return (*createFuture).Result(ac.virtualmachines)
+		return createFuture.Result(ac.virtualmachines)
 
 	case infrav1.DeleteFuture:
 		// Delete does not return a result VM.

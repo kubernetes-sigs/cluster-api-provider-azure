@@ -54,7 +54,7 @@ const (
 	EphemeralOSDisk = "EphemeralOSDiskSupported"
 	// AcceleratedNetworking identifies the capability for accelerated networking support.
 	AcceleratedNetworking = "AcceleratedNetworkingEnabled"
-	//VCPUs identifies the capability for the number of vCPUS.
+	// VCPUs identifies the capability for the number of vCPUS.
 	VCPUs = "vCPUs"
 	// MemoryGB identifies the capability for memory Size.
 	MemoryGB = "MemoryGB"

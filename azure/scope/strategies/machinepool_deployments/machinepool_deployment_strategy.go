@@ -195,7 +195,7 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		return toDelete, nil
 	}
 
-	if len(machinesWithoutLatestModel) <= 0 {
+	if len(machinesWithoutLatestModel) == 0 {
 		log.Info("nothing more to do since all the AzureMachinePoolMachine(s) are the latest model and not over-provisioned")
 		return []infrav1exp.AzureMachinePoolMachine{}, nil
 	}

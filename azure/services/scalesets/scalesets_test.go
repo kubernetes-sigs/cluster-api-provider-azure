@@ -744,15 +744,15 @@ func getFakeSkus() []compute.ResourceSku {
 					Location: to.StringPtr("test-location"),
 					Zones:    &[]string{"1", "3"},
 					//ZoneDetails: &[]compute.ResourceSkuZoneDetails{
-					//	{
-					//		Capabilities: &[]compute.ResourceSkuCapabilities{
-					//			{
-					//				Name:  pointer.String("UltraSSDAvailable"),
-					//				Value: pointer.String("True"),
-					//			},
-					//		},
-					//	},
-					//},
+					//    {
+					//        	Capabilities: &[]compute.ResourceSkuCapabilities{
+					//        		{
+					//        			Name:  pointer.String("UltraSSDAvailable"),
+					//        			Value: pointer.String("True"),
+					//        		},
+					//        	},
+					//        },
+					//    },
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -837,16 +837,16 @@ func getFakeSkus() []compute.ResourceSku {
 				{
 					Location: to.StringPtr("test-location"),
 					Zones:    &[]string{"1", "3"},
-					//ZoneDetails: &[]compute.ResourceSkuZoneDetails{
-					//	{
-					//		Capabilities: &[]compute.ResourceSkuCapabilities{
-					//			{
-					//				Name:  pointer.String("UltraSSDAvailable"),
-					//				Value: pointer.String("True"),
-					//			},
-					//		},
-					//	},
-					//},
+					//  ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+					//	    {
+					//    		Capabilities: &[]compute.ResourceSkuCapabilities{
+					//    			{
+					//    				Name:  pointer.String("UltraSSDAvailable"),
+					//    				Value: pointer.String("True"),
+					//    			},
+					//    		},
+					//	    },
+					//  },
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{

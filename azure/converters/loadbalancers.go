@@ -23,8 +23,7 @@ import (
 
 // SKUtoSDK converts infrav1.SKU into a network.LoadBalancerSkuName.
 func SKUtoSDK(src infrav1.SKU) network.LoadBalancerSkuName {
-	switch src {
-	case infrav1.SKUStandard:
+	if src == infrav1.SKUStandard {
 		return network.LoadBalancerSkuNameStandard
 	}
 	return ""

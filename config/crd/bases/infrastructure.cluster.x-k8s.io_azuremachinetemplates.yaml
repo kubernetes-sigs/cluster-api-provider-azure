@@ -67,7 +67,7 @@ spec:
                           dynamic public ips for machines where this value is true.
                         type: boolean
                       availabilityZone:
-                        description: 'DEPRECATED: use FailureDomain instead'
+                        description: 'Deprecated: use FailureDomain instead'
                         properties:
                           enabled:
                             type: boolean
@@ -246,7 +246,7 @@ spec:
                             type: object
                         type: object
                       location:
-                        description: 'DEPRECATED: to support old clients, will be
+                        description: 'Deprecated: to support old clients, will be
                           removed in v1alpha4/v1beta1'
                         type: string
                       osDisk:

@@ -317,7 +317,7 @@ func GetDefaultWindowsImage(k8sVersion, runtime string) (*infrav1.Image, error) 
 
 	// Starting with 1.22 we default to containerd for Windows unless the runtime flag is set.
 	if v.GTE(v122) && runtime != "dockershim" {
-		skuID = skuID + "-containerd"
+		skuID += "-containerd"
 	}
 
 	defaultImage := &infrav1.Image{
