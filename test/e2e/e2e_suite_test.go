@@ -33,6 +33,8 @@ import (
 	"testing"
 	"time"
 
+	"sigs.k8s.io/cluster-api/util"
+
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2019-06-01/insights"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -86,6 +88,19 @@ func (acp *AzureClusterProxy) CollectWorkloadClusterLogs(ctx context.Context, na
 	Byf("Dumping workload cluster %s/%s Azure activity log", namespace, name)
 	start = time.Now()
 	acp.collectActivityLogs(ctx, aboveMachinesPath)
+	Byf("Fetching activity logs took %s", time.Since(start).String())
+
+	gmsaDCip := e2eConfig.GetVariable("GMSA_DNS_IP")
+	if gmsaDCip != "" {
+		start = time.Now()
+		workloadCluster, err := util.GetClusterByName(ctx, bootstrapClusterProxy.GetClient(), namespace, name)
+
+		Byf("Dumping gMSA domain logs for Domain Controller at %s through api server %s", gmsaDCip, workloadCluster.Spec.ControlPlaneEndpoint.Host)
+		Expect(err).NotTo(HaveOccurred())
+		acp.collectgMSALogs(workloadCluster.Spec.ControlPlaneEndpoint.Host, aboveMachinesPath, gmsaDCip)
+		Byf("Fetching gMSA logs took %s", time.Since(start).String())
+	}
+
 	Byf("Fetching activity logs took %s", time.Since(start).String())
 }
 
@@ -242,6 +257,22 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, aboveMach
 			}
 		}
 	}
+}
+
+func (acp *AzureClusterProxy) collectgMSALogs(hostname, logpath, domainIp string) {
+	fmt.Fprintf(GinkgoWriter, "INFO: Collecting gMSA domain logs\n")
+	f, err := fileOnHost(filepath.Join(logpath, "gmsadomain.txt"))
+	Expect(err).NotTo(HaveOccurred())
+	defer f.Close()
+
+	cmd := fmt.Sprintf("get-content -path 'c:/gmsa/create-AD.txt'")
+	execOnHost(hostname, domainIp, "22", f, cmd)
+
+	cmd = fmt.Sprintf("get-content -path 'c:/gmsa/cred-spec.txt'")
+	execOnHost(hostname, domainIp, "22", f, cmd)
+
+	cmd = fmt.Sprintf("get-content -path 'c:/gmsa/gmsa-cred-spec-gmsa-e2e.txt'")
+	execOnHost(hostname, domainIp, "22", f, cmd)
 }
 
 func init() {

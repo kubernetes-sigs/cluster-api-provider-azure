@@ -28,17 +28,15 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubetest"
@@ -90,8 +88,17 @@ var _ = Describe("Conformance Tests", func() {
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
 		}
-		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-		Expect(err).NotTo(HaveOccurred())
+		_, err = bootstrapClusterProxy.GetClientSet().CoreV1().Secrets(namespace.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			Expect(err).ShouldNot(HaveOccurred())
+		}
+		if err != nil {
+			Logf("Creating cluster identity secret \"%s\"", secret.Name)
+			err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
+			Expect(err).NotTo(HaveOccurred())
+		} else {
+			Logf("Using existing cluster identity secret")
+		}
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
@@ -180,7 +187,7 @@ var _ = Describe("Conformance Tests", func() {
 
 		if isWindows(kubetestConfigFilePath) {
 			// Windows requires a taint on control nodes nodes since not all conformance tests have ability to run
-			options := v1.ListOptions{
+			linuxNodeOptions := v1.ListOptions{
 				LabelSelector: "kubernetes.io/os=linux",
 			}
 
@@ -200,13 +207,19 @@ var _ = Describe("Conformance Tests", func() {
 				}
 			}
 
-			err = node.TaintNode(workloadProxy.GetClientSet(), options, noScheduleTaint)
+			err = node.TaintNode(workloadProxy.GetClientSet(), linuxNodeOptions, noScheduleTaint)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Windows requires a repo-list because some images are not in k8s gcr
 			repoList, err = resolveKubetestRepoListPath(kubernetesVersion, kubetestRepoListPath)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Fprintf(GinkgoWriter, "INFO: Using repo-list %s for version %s\n", repoList, kubernetesVersion)
+
+			// GMSA
+			if strings.Contains(kubetestConfigFilePath, "windows-serial-slow") {
+				fmt.Fprintf(GinkgoWriter, "INFO: Configuring GMSA for %s\n", kubetestConfigFilePath)
+				configureGmsa(ctx, workloadProxy, bootstrapClusterProxy, namespace.Name, clusterName, e2eConfig)
+			}
 		}
 
 		ginkgoNodes, err := strconv.Atoi(e2eConfig.GetVariable("CONFORMANCE_NODES"))

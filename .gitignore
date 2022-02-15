@@ -80,3 +80,7 @@ _releasenotes
 
 # calico manifests archive
 release-*/manifests/calico-*.yaml
+
+# gmsa files
+scripts/gmsa/domain.init
+gmsa-spec-writer-output.txt

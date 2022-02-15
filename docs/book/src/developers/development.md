@@ -37,6 +37,7 @@
     - [Mocks](#mocks)
     - [E2E Testing](#e2e-testing)
     - [Conformance Testing](#conformance-testing)
+      - [Windows gMSA conformance tests](#windows-gmsa-conformance-tests)
     - [Running custom test suites on CAPZ clusters](#running-custom-test-suites-on-capz-clusters)
 
 <!-- /TOC -->
@@ -536,6 +537,17 @@ With the following environment variables defined, CAPZ runs `./scripts/ci-build-
 | `LOCAL_ONLY`            | `false`    |
 | `REGISTRY`              | Your Registry |
 | `TEST_K8S`              | `true`     |
+
+##### Windows gMSA conformance tests
+
+The Windows gMSA tests use the [KeyVault gMSA CCG plugin](https://github.com/microsoft/Azure-Key-Vault-Plugin-gMSA). The gMSA tests require additional setup to run:
+
+- A VM image with the [Key Vault plugin installed](https://github.com/kubernetes-sigs/image-builder/pull/835)
+- A [one time script](../../../../scripts/gmsa/setup-gmsa.sh) to run on the subscription that will provision a Key Vault, Azure Managed Identities and configure access to the Key Vault.
+- On each run, the `./scripts/ci-conformance.sh` will [provision a VM](../../../../scripts/gmsa/ci-gmsa.sh) to act as the Domain Controller.  The Domain controller will initialize itself and set the required values in the Key Vault.
+
+After the cluster is created the e2e suite does some additional setup on the cluster.  It ensures the appropriate secrets are set in the Key Vault then makes sure the required files are on the cluster 
+Worker Nodes for the test. These requirements are documented in the [gMSA e2e test](https://github.com/kubernetes/kubernetes/blob/885f14d162471dfc9a3f8d4c46430805cf6be828/test/e2e/windows/gmsa_full.go#L17-L37). More details on requirements and implementation are in the [gMSA issue](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/1860).  At the end of a test run the secrets and Domain Controller VM are removed unless `SKIP_CLEANUP` is set.
 
 #### Running custom test suites on CAPZ clusters
 

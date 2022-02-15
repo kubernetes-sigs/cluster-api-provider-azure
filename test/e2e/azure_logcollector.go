@@ -301,6 +301,14 @@ func windowsInfo(execToPathFn func(outputFileName string, command string, args .
 			"services.log",
 			"get-service",
 		),
+		execToPathFn(
+			"gmsa-ccg.log",
+			"(Get-WinEvent -path 'C:\\Windows\\System32\\winevt\\Logs\\Microsoft-Windows-Containers-CCG%4Admin.evtx').ToXml()",
+		),
+		execToPathFn(
+			"gmsa-keyvault.log",
+			"Get-WinEvent -path C:\\Windows\\System32\\winevt\\Logs\\Microsoft-AKSGMSAPlugin%4Admin.evtx",
+		),
 	}
 }
 

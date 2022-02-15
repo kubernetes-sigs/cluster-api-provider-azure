@@ -118,6 +118,48 @@ func WaitForDeploymentsAvailable(ctx context.Context, input WaitForDeploymentsAv
 	Logf("Deployment %s/%s is now available, took %v", namespace, name, time.Since(start))
 }
 
+// deploymentsClientAdapter adapts a Deployment to work with WaitForDeploymentsAvailable.
+type daemonSetClientAdapter struct {
+	client typedappsv1.DaemonSetInterface
+}
+
+// Get fetches the deployment named by the key and updates the provided object.
+func (c daemonSetClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+	daemonSet, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
+	if deployObj, ok := obj.(*appsv1.DaemonSet); ok {
+		daemonSet.DeepCopyInto(deployObj)
+	}
+	return err
+}
+
+// WaitForDeamonSetAvailableInput is the input for WaitForDeploymentsAvailable.
+type WaitForDeamonSetAvailableInput struct {
+	Getter    framework.Getter
+	Deamonset *appsv1.DaemonSet
+	Clientset *kubernetes.Clientset
+}
+
+// WaitForDaemonSetAvailable waits until the Daemonset has status.Available = True, that signals that
+// all the desired replicas are in place.
+// This can be used to check if Cluster API controllers installed in the management cluster are working.
+func WaitForDaemonSetAvailable(ctx context.Context, input WaitForDeamonSetAvailableInput, intervals ...interface{}) {
+	start := time.Now()
+	namespace, name := input.Deamonset.GetNamespace(), input.Deamonset.GetName()
+	Byf("waiting for DaemonSet %s/%s to be available", namespace, name)
+	Log("starting to wait for DaemonSet to become available")
+	Eventually(func() bool {
+		key := client.ObjectKey{Namespace: namespace, Name: name}
+		if err := input.Getter.Get(ctx, key, input.Deamonset); err == nil {
+			if input.Deamonset.Status.DesiredNumberScheduled == input.Deamonset.Status.CurrentNumberScheduled &&
+				input.Deamonset.Status.DesiredNumberScheduled == input.Deamonset.Status.NumberReady {
+				return true
+			}
+		}
+		return false
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedDaemonSet(ctx, input) })
+	Logf("DaemonSet %s/%s is now available, took %v", namespace, name, time.Since(start))
+}
+
 // DescribeFailedDeployment returns detailed output to help debug a deployment failure in e2e.
 func DescribeFailedDeployment(ctx context.Context, input WaitForDeploymentsAvailableInput) string {
 	namespace, name := input.Deployment.GetNamespace(), input.Deployment.GetName()
@@ -125,6 +167,17 @@ func DescribeFailedDeployment(ctx context.Context, input WaitForDeploymentsAvail
 	b.WriteString(fmt.Sprintf("Deployment %s/%s failed",
 		namespace, name))
 	b.WriteString(fmt.Sprintf("\nDeployment:\n%s\n", prettyPrint(input.Deployment)))
+	b.WriteString(describeEvents(ctx, input.Clientset, namespace, name))
+	return b.String()
+}
+
+// DescribeFailedDeployment returns detailed output to help debug a deployment failure in e2e.
+func DescribeFailedDaemonSet(ctx context.Context, input WaitForDeamonSetAvailableInput) string {
+	namespace, name := input.Deamonset.GetNamespace(), input.Deamonset.GetName()
+	b := strings.Builder{}
+	b.WriteString(fmt.Sprintf("Deployment %s/%s failed",
+		namespace, name))
+	b.WriteString(fmt.Sprintf("\nDeployment:\n%s\n", prettyPrint(input.Deamonset)))
 	b.WriteString(describeEvents(ctx, input.Clientset, namespace, name))
 	return b.String()
 }

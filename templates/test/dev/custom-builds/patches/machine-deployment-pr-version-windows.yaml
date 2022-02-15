@@ -12,5 +12,5 @@ spec:
         marketplace:
           publisher: cncf-upstream
           offer: capi-windows
-          sku: k8s-1dot23dot4-windows-2019-containerd
+          sku: k8s-1dot23dot5-windows-2019-containerd
           version: "latest"

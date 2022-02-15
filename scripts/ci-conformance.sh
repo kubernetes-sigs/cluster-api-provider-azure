@@ -92,12 +92,35 @@ AZURE_SSH_PUBLIC_KEY=$(< "${AZURE_SSH_PUBLIC_KEY_FILE}" tr -d '\r\n')
 export AZURE_SSH_PUBLIC_KEY
 
 cleanup() {
+    # clean up GMSA NODE RG
+    if [[ "${SKIP_CLEANUP:-}" != "true" && -n ${GMSA_ID:-} ]]; then
+      echo "Cleaning up gMSA resources $GMSA_NODE_RG with keyvault $CI_RG-gmsa"
+      az keyvault secret list --vault-name "$CI_RG"-gmsa --query "[? contains(name, '${GMSA_ID}')].name" -o tsv | while read -r secret ; do
+         az keyvault secret delete -n "$secret" --vault-name "$CI_RG"-gmsa
+      done
+
+      az group delete --name "$GMSA_NODE_RG" --no-wait -y --force-deletion-types=Microsoft.Compute/virtualMachines,Microsoft.Compute/virtualMachineScaleSets
+    fi
+
     "${REPO_ROOT}/hack/log/redact.sh" || true
 }
 
 trap cleanup EXIT
 
 if [[ "${WINDOWS}" == "true" ]]; then
+  if [[ $KUBETEST_WINDOWS_CONFIG =~ "windows-serial-slow" ]]; then
+    export CI_RG="${CI_RG:-capz-ci}"
+    export GMSA_ID="${RANDOM}"
+    export GMSA_NODE_RG="gmsa-dc-${GMSA_ID}"
+
+    echo "setting up domain vm in $GMSA_NODE_RG with keyvault $CI_RG-gmsa"
+    "${REPO_ROOT}/scripts/gmsa/ci-gmsa.sh"
+    
+    # export the ip Address so it can be used in e2e test
+    vmname="dc-${GMSA_ID}"
+    vmip=$(az vm list-ip-addresses -n ${vmname} -g $GMSA_NODE_RG --query "[?virtualMachine.name=='$vmname'].virtualMachine.network.privateIpAddresses" -o tsv)
+    export GMSA_DNS_IP=$vmip
+  fi
   make test-windows-upstream
 else
   make test-conformance

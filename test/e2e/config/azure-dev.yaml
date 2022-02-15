@@ -211,6 +211,11 @@ variables:
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   SECURITY_SCAN_FAIL_THRESHOLD: "${SECURITY_SCAN_FAIL_THRESHOLD:-100}"
   SECURITY_SCAN_CONTAINER: "${SECURITY_SCAN_CONTAINER:-quay.io/armosec/kubescape:v1.0.138}"
+  # GMSA
+  GMSA_KEYVAULT_URL: "https://${CI_RG}-gmsa.vault.azure.net"
+  GMSA_IDENTITY_ID: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/gmsa-user-identity"
+  GMSA_DNS_IP: "${GMSA_DNS_IP}"
+  GMSA_ID: "${GMSA_ID}"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]

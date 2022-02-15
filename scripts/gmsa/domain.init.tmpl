@@ -1,0 +1,231 @@
+#cloud-config
+write_files:
+    - content: |
+        # exit on error
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = 'Stop'
+        $ProgressPreference = "SilentlyContinue"
+        Start-Transcript -Path "c:\gmsa\create-AD.txt" -Append
+
+        # this allows for vm to boot fast (return from cli)
+        # then do rest of AD provisioning after the fact which can take 5+ mins
+        if (-not(test-path c:\firstboot.txt)) {
+            $d = get-date
+            New-Item -Path c:\ -Name "firstboot.txt" -ItemType "file" -Value "$d"
+            Restart-Computer
+            exit
+        }
+
+        $keyvaultName="${CI_RG}-gmsa"
+        $gmsaAdminName="gmsa-admin-${GMSA_ID}"
+        $gmsaUserName="gmsa-e2e-user-${GMSA_ID}"
+        $resourcegroup="${CI_RG}"
+
+        function CheckADServices()
+        {
+            Sleep 4
+            $svcs = "adws","dns","kdc","netlogon","ntds","lanmanserver","lanmanworkstation"
+            $svcstatus = 0
+            foreach ( $svc in $svcs ) {
+                if ( $(Get-Service -Name $svc).Status -notlike "Running") {
+                    $svcstatus += 1
+                }
+            }
+
+            if ($svcstatus -gt 0) {
+                return $false
+            } else {
+                return $true
+            }
+        }
+
+        # Function to make sure AD is fully up
+        function CheckGroup()
+        {
+            try {
+                Sleep 2
+                $x = Get-AdGroupMember -Identity "Enterprise Admins"
+                return $true
+            } catch {
+                return $false
+            }
+        }
+
+        # Function to import Active Directory PowerShell module without error
+        function ImportADPS()
+        {
+            try {
+                Import-Module ActiveDirectory
+                return $true
+            } catch {
+                Write-host "import module failed"
+                return $false
+            }
+        }
+
+        $cs = Get-CimInstance -ClassName Win32_ComputerSystem -Property PartOfDomain
+        if (-not $cs.PartOfDomain) {
+            Write-Output "This computer is not joined to an Active Directory domain. Creating a Domain."
+            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+            Install-Module Az.KeyVault -Force
+            Add-AzAccount -identity
+
+            # create AD domain account
+            Add-Type -AssemblyName 'System.Web'
+            $admpassword = [System.Web.Security.Membership]::GeneratePassword(120, 10)
+            $admpassword_secure = ( $admpassword | ConvertTo-SecureString -AsPlainText -Force)
+            New-LocalUser -Name $gmsaAdminName -Password $admpassword_secure
+            Add-LocalGroupMember -Group "Administrators" -Member $gmsaAdminName
+            Set-AzKeyVaultSecret -VaultName $keyvaultName -Name $gmsaAdminName -SecretValue $admpassword_secure
+
+            Install-WindowsFeature AD-Domain-Services
+            Import-Module ADDSDeployment
+            Install-ADDSForest -DomainName k8sgmsa.lan -SafeModeAdministratorPassword $admpassword_secure -InstallDNS -DomainMode 7 -DomainNetbiosName k8sgmsa -ForestMode 7 -Confirm:$false -NoRebootOnCompletion
+
+            # tell cloudbase-init to restart and rerun
+            Write-Output "domain created. restarting..."
+            Restart-Computer
+            exit
+        }
+
+        Write-Host "wait for add services..."
+        # on a fresh reboot these services won't start right away.  This ensures the rest of the steps work
+        do {$ADresult = CheckADServices} while ($ADresult -eq $false)
+        do {$ADPSresult = ImportADPS} while ($ADPSresult -eq $false)
+        do {$CGresult = CheckGroup} while ($CGresult -eq $false)
+
+        if ( -not(Get-AdGroupMember -Identity "Enterprise Admins" | Select-String -Pattern "$gmsaAdminName" -Quiet)) {
+            Write-Output "Setting up domain admin and restarting"
+            Add-ADGroupMember -Identity "Domain Admins" -Members $gmsaAdminName
+            Add-ADGroupMember -Identity "Enterprise Admins" -Members $gmsaAdminName
+
+            # tell cloudbase-init to restart and rerun
+            Write-Output "Admins added..."
+            Restart-Computer
+            exit
+        }
+
+        Write-Host "Starting configuration of Domain for e2e tests"
+        Add-Type -AssemblyName 'System.Web'
+        $pwd = [System.Web.Security.Membership]::GeneratePassword(120, 10)
+        $pwd_secure = ( $pwd | ConvertTo-SecureString -AsPlainText -Force)
+        New-ADUser -Enabled $true -PasswordNeverExpires $true -CannotChangePassword $true -PassThru -Name $gmsaUserName -AccountPassword $pwd_secure
+
+        Install-PackageProvider -Name NuGet -Force
+        Install-Module Az.KeyVault -force
+        Install-Module Az.ManagedServiceIdentity -force
+        Add-AzAccount -identity
+
+        # Secret for plugin must be in format "domain.fqdn\username:pass"
+        $ADDomain = (Get-ADDomain -Current LocalComputer).DNSRoot
+        $pwd_secure_keyvault = ( "$ADDomain\$${gmsaUserName}:$pwd" | ConvertTo-SecureString -AsPlainText -Force)
+        $secret=Set-AzKeyVaultSecret -VaultName $keyvaultName -Name $gmsaUserName -SecretValue $pwd_secure_keyvault
+
+        # get secret uri without version information
+        # remove port information in uri, otherwise plugin will fail
+        $secretUri=$secret.Id -replace "/$($secret.Version)$", ''
+        $secretUri=$secretUri -replace ":443", ''
+
+        # required for creating AD service account
+        $KdsRootKey = Get-KdsRootKey
+        if ($KdsRootKey -eq $null) {
+            # For Development only see the following for production configuration
+            # https://docs.microsoft.com/en-us/windows-server/security/group-managed-service-accounts/create-the-key-distribution-services-kds-root-key
+            Add-KdsRootKey -EffectiveTime ((get-date).addhours(-10))
+            Start-Sleep -Seconds 15
+        }
+
+        New-ADServiceAccount -Name gmsa-e2e -DNSHostName gmsa-e2e.k8sgmsa.lan -PrincipalsAllowedToRetrieveManagedPassword $gmsaUserName -ServicePrincipalnames http/gmsa-e2e.k8sgmsa.lan
+
+        # create folder required for test
+        # https://github.com/kubernetes/kubernetes/pull/108432#issuecomment-1058692639
+        mkdir "c:\write_test"
+        New-SmbShare -Name "write_test" -Path "c:\write_test" -FullAccess "gmsa-e2e$"
+
+        $identity=Get-AzUserAssignedIdentity -ResourceGroupName $resourcegroup -Name gmsa-user-identity
+        C:/gmsa/cred-spec.ps1 -AccountName gmsa-e2e -pricipalId $identity.PrincipalId -secretUri $secretUri
+
+        # put it where it can be used by clusters in e2e
+        $spec=Get-Content -raw c:\gmsa\gmsa-cred-spec-gmsa-e2e.yml
+        $spec64=[Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($spec))
+        $spec_secure = ( $spec64 | ConvertTo-SecureString -AsPlainText -Force)
+        Set-AzKeyVaultSecret -VaultName $keyvaultName -Name gmsa-cred-spec-gmsa-e2e-${GMSA_ID} -SecretValue $spec_secure
+      path: C:\gmsa\create-AD.ps1
+      permissions: 0644
+    - content: |
+        Param(
+            [Parameter(Position = 0, Mandatory = $true)] [String] $AccountName,
+            [Parameter(Position = 1, Mandatory = $true)] [String] $pricipalId,
+            [Parameter(Position = 1, Mandatory = $true)] [String] $secretUri
+        )
+
+        # Logging for troubleshooting
+        Start-Transcript -Path "C:\gmsa\CredSpec.txt"
+        # exit on error
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = 'Stop'
+        $ProgressPreference = "SilentlyContinue"
+
+        # deps install
+        Install-PackageProvider -Name NuGet -Force
+        Install-Module powershell-yaml -Force
+        $ADDomain = Get-ADDomain -Current LocalComputer
+
+        # Clean up account names and validate formatting
+        $AccountName = $AccountName.TrimEnd('$')
+        $output = [ordered]	@{
+            "apiVersion" = "windows.k8s.io/v1"
+            "kind" = "GMSACredentialSpec"
+            "metadata" = @{
+                "name" = $AccountName
+            }
+            "credspec" = @{
+                "CmsPlugins" = @(
+                    "ActiveDirectory"
+                )
+                "DomainJoinConfig" = @{
+                    "Sid" = $ADDomain.DomainSID.Value
+                    "MachineAccountName" = $AccountName
+                    "Guid" = $ADDomain.ObjectGUID
+                    "DnsTreeName" = $ADDomain.Forest
+                    "DnsName" = $ADDomain.DNSRoot
+                    "NetBiosName" = $ADDomain.NetBIOSName
+                }
+                "ActiveDirectoryConfig" = @{
+                    "GroupManagedServiceAccounts" = @(
+                        @{
+                            "Name" = $AccountName
+                            "Scope" = $ADDomain.DNSRoot
+                        },
+                        @{
+                            "Name" = $AccountName
+                            "Scope" = $ADDomain.NetBIOSName
+                        }
+                    )
+                    "HostAccountConfig" = @{
+                        "PortableCcgVersion" = "1"
+                        "PluginGUID" = "{CCC2A336-D7F3-4818-A213-272B7924213E}"
+                        "PluginInput" = "ObjectId=$($pricipalId);SecretUri=$${secretUri}"
+                    }
+                }
+            }
+        }
+
+        $ManifestFile = "gmsa-cred-spec-$AccountName.yml"
+        $SpecPath = "C:\gmsa"
+        $ManifestFile = Join-Path $SpecPath "gmsa-cred-spec-gmsa-e2e.yml"
+        ConvertTo-Yaml $output | Set-Content $ManifestFile
+        Write-Output "K8S manifest rendered at $ManifestFile"
+
+        Write-Output "Domain creation complete. Disabling scheduled task."
+        Disable-ScheduledTask -TaskName "Domain Create"
+      path: C:\gmsa\cred-spec.ps1
+      permissions: 0644
+users:
+    - groups: Administrators
+      name: capi
+      ssh_authorized_keys:
+        - ${AZURE_SSH_PUBLIC_KEY:=""}
+runcmd:
+    - schtasks.exe /create /tn "Domain Create" /ru SYSTEM /Sc ONSTART /tr "powershell /c C:/gmsa/create-AD.ps1"
+    - shutdown /r /f
