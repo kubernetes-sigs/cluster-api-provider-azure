@@ -178,6 +178,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 		thirtyPercent    = intstr.FromString("30%")
 		succeeded        = infrav1.Succeeded
 		baseTime         = time.Now().Add(-24 * time.Hour).Truncate(time.Microsecond)
+		deleteTime       = metav1.NewTime(time.Now())
 	)
 
 	tests := []struct {
@@ -200,6 +201,19 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 		{
 			name:            "if over-provisioned, select a machine with an out-of-date model",
 			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+			},
+			want: Equal([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+			}),
+		},
+		{
+			name:            "if over-provisioned, select a machine with an out-of-date model when using Random Delete Policy",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.RandomDeletePolicyType}),
 			desiredReplicas: 2,
 			input: map[string]infrav1exp.AzureMachinePoolMachine{
 				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
@@ -251,6 +265,59 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 			want: gomega.DiffEq([]infrav1exp.AzureMachinePoolMachine{
 				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
 				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour))}),
+			}),
+		},
+		{
+			name:            "if over-provisioned but with an equivalent number marked for deletion, nothing to do; this is the case where Azure has not yet caught up to capz",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour))}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			},
+			want: HaveLen(0),
+		},
+		{
+			name:            "if Azure is deleting 2 machines, but we have already marked their AzureMachinePoolMachine equivalents for deletion, nothing to do; this is the case where capz has not yet caught up to Azure",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour))}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: infrav1.Deleting, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: infrav1.Deleting, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			},
+			want: HaveLen(0),
+		},
+		{
+			name:            "if Azure is deleting 2 machines, we want to delete their AzureMachinePoolMachine equivalents",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour))}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: infrav1.Deleting, DeletionTime: nil, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: infrav1.Deleting, DeletionTime: nil, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			},
+			want: gomega.DiffEq([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: infrav1.Deleting, DeletionTime: nil, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: infrav1.Deleting, DeletionTime: nil, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+			}),
+		},
+		{
+			name:            "if Azure is deleting 1 machine, pick another candidate for deletion",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour))}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			},
+			want: gomega.DiffEq([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
 			}),
 		},
 		{
@@ -340,12 +407,14 @@ type ampmOptions struct {
 	LatestModel       bool
 	ProvisioningState infrav1.ProvisioningState
 	CreationTime      metav1.Time
+	DeletionTime      *metav1.Time
 }
 
 func makeAMPM(opts ampmOptions) infrav1exp.AzureMachinePoolMachine {
 	return infrav1exp.AzureMachinePoolMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			CreationTimestamp: opts.CreationTime,
+			DeletionTimestamp: opts.DeletionTime,
 		},
 		Status: infrav1exp.AzureMachinePoolMachineStatus{
 			Ready:              opts.Ready,

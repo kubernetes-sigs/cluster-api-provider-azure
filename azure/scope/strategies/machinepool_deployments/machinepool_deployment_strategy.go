@@ -149,6 +149,7 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		"disruptionBudget", disruptionBudget,
 		"machinesWithoutTheLatestModel", len(machinesWithoutLatestModel),
 		"failedMachines", len(failedMachines),
+		"deletingMachines", len(deletingMachines),
 	)
 
 	// if we have failed or deleting machines, remove them
@@ -157,7 +158,7 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		return append(failedMachines, deletingMachines...), nil
 	}
 
-	// if we have deleting machines, remove them
+	// if we have failed machines, remove them
 	if len(failedMachines) > 0 {
 		log.Info("failed machines", "desiredReplicaCount", desiredReplicaCount, "maxUnavailable", maxUnavailable, "failedMachines", getProviderIDs(failedMachines))
 		return failedMachines, nil
@@ -233,11 +234,16 @@ func getFailedMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePo
 	return machines
 }
 
+// getDeletingMachines is responsible for identifying machines whose VMs are in an active state of deletion
+// but whose corresponding AzureMachinePoolMachine resource has not yet been marked for deletion.
 func getDeletingMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) []infrav1exp.AzureMachinePoolMachine {
 	var machines []infrav1exp.AzureMachinePoolMachine
 	for _, v := range machinesByProviderID {
-		// ready status, with provisioning state Succeeded, and not marked for delete
-		if v.Status.ProvisioningState != nil && *v.Status.ProvisioningState == infrav1.Deleting {
+		if v.Status.ProvisioningState != nil &&
+			// provisioning state is Deleting
+			*v.Status.ProvisioningState == infrav1.Deleting &&
+			// Ensure that the machine has not already been marked for deletion
+			v.DeletionTimestamp.IsZero() {
 			machines = append(machines, v)
 		}
 	}
@@ -249,7 +255,12 @@ func getReadyMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePoo
 	var readyMachines []infrav1exp.AzureMachinePoolMachine
 	for _, v := range machinesByProviderID {
 		// ready status, with provisioning state Succeeded, and not marked for delete
-		if v.Status.Ready && v.Status.ProvisioningState != nil && *v.Status.ProvisioningState == infrav1.Succeeded {
+		if v.Status.Ready &&
+			(v.Status.ProvisioningState != nil && *v.Status.ProvisioningState == infrav1.Succeeded) &&
+			// Don't include machines that have already been marked for delete
+			v.DeletionTimestamp.IsZero() &&
+			// Don't include machines whose VMs are in an active state of deleting
+			*v.Status.ProvisioningState != infrav1.Deleting {
 			readyMachines = append(readyMachines, v)
 		}
 	}
