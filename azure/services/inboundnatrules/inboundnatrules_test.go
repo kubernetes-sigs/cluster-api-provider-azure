@@ -125,6 +125,16 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			},
 		},
 		{
+			name:          "No LB, Nat rule reconciliation is skipped",
+			expectedError: "",
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockclientMockRecorder,
+				r *mock_async.MockReconcilerMockRecorder) {
+				s.APIServerLBName().AnyTimes().Return("")
+				s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil)
+			},
+		},
+		{
 			name:          "fail to get existing rules",
 			expectedError: "failed to get existing NAT rules: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,

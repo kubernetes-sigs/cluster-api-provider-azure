@@ -56,8 +56,18 @@ func New(scope InboundNatScope) *Service {
 
 // Reconcile gets/creates/updates an inbound NAT rule.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.Service.Reconcile")
 	defer done()
+
+	// Externally managed clusters might not have an LB
+	if s.Scope.APIServerLBName() == "" {
+		log.V(4).Info("Skipping InboundNatRule reconciliation as the cluster has no LB configured")
+		// Until https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/1868 is
+		// resolved, this needs to be set for the machine to be able to reach the ready condition:
+		// https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/2066#discussion_r806150004
+		s.Scope.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil)
+		return nil
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
