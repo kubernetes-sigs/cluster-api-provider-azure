@@ -220,9 +220,15 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 	}
 
 	if err := acs.Reconcile(ctx); err != nil {
-		// Handle transient errors
+		// Handle terminal & transient errors
 		var reconcileError azure.ReconcileError
 		if errors.As(err, &reconcileError) {
+			if reconcileError.IsTerminal() {
+				acr.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "ReconcileErrror", errors.Wrapf(err, "failed to reconcile AzureCluster").Error())
+				log.Error(err, "failed to reconcile AzureCluster", "name", clusterScope.ClusterName())
+				conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "")
+				return reconcile.Result{}, nil
+			}
 			if reconcileError.IsTransient() {
 				if azure.IsOperationNotDoneError(reconcileError) {
 					log.V(2).Info(fmt.Sprintf("AzureCluster reconcile not done: %s", reconcileError.Error()))
