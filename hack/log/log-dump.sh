@@ -87,6 +87,30 @@ dump_mgmt_cluster_logs() {
 }
 
 dump_workload_cluster_logs() {
+    echo "================ DUMPING LOGS FOR WORKLOAD CLUSTER (Linux) =========="
+    dump_workload_cluster_logs_linux
+
+    if [[ -z "${TEST_WINDOWS}" ]]; then
+        echo "TEST_WINDOWS envvar not set, skipping log collection for Windows nodes."
+    else
+        echo "================ DUMPING LOGS FOR WORKLOAD CLUSTER (Windows) ========"
+        dump_workload_cluster_logs_windows
+    fi
+
+    dump_kube_system_pod_describes
+}
+
+dump_kube_system_pod_describes() {
+    workload_cluster_dir="${ARTIFACTS}/workload-cluster"
+    echo "Collecting describe information of Pods in kube-system namespace"
+    "${KUBECTL}" get pod -n kube-system --no-headers=true | awk '{print $1}' | while read -r POD_NAME; do
+        NODE_NAME=$(kubectl get pod -n kube-system "${POD_NAME}" -o jsonpath='{.spec.nodeName}')
+        mkdir -p "${workload_cluster_dir}/${NODE_NAME}/pods/kube-system_${POD_NAME}"
+        kubectl describe pod -n kube-system "${POD_NAME}" > "${workload_cluster_dir}/${NODE_NAME}/pods/kube-system_${POD_NAME}/pod-describe.txt" &
+    done
+}
+
+dump_workload_cluster_logs_linux() {
     echo "Deploying log-dump-daemonset"
     "${KUBECTL}" apply -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml"
     "${KUBECTL}" wait pod -l app=log-dump-node --for=condition=Ready --timeout=5m
@@ -108,9 +132,11 @@ dump_workload_cluster_logs() {
         log_dump_commands+=( "tar -cf - var/log/pods --ignore-failed-read | tar xf - --strip-components=2 -C . --wildcards '*kube-system*'" )
     fi
 
+    node_names=()
     for log_dump_pod in "${log_dump_pods[@]}"; do
         local node_name
         node_name="$(get_node_name "${log_dump_pod}")"
+        node_names+=("${node_name}")
 
         local log_dump_dir="${ARTIFACTS}/workload-cluster/${node_name}"
         mkdir -p "${log_dump_dir}"
@@ -118,13 +144,23 @@ dump_workload_cluster_logs() {
         for cmd in "${log_dump_commands[@]}"; do
             bash -c "kubectl exec ${log_dump_pod} -- ${cmd}" &
         done
-
         popd > /dev/null
+
         echo "Exported logs for node \"${node_name}\""
     done
 
     # Wait for log-dumping commands running in the background to complete
     wait
+
+    # Rename Pods' directories:
+    # workload-cluster/node0/pods/ns0_pod0_xxx -> workload-cluster/node0/pods/ns0_pod0
+    for node_name in "${node_names[@]}"; do
+        pushd "${ARTIFACTS}/workload-cluster/${node_name}/pods" > /dev/null
+        for dir in *; do
+            mv "${dir}" "${dir%_*}"
+        done
+        popd > /dev/null
+    done
 }
 
 dump_workload_cluster_logs_windows() {
@@ -135,10 +171,12 @@ dump_workload_cluster_logs_windows() {
 
     IFS=" " read -ra log_dump_pods <<< "$(kubectl get pod -l app=log-dump-node-windows -ojsonpath='{.items[*].metadata.name}')"
 
+    node_names=()
     for log_dump_pod in "${log_dump_pods[@]}"; do
         local node_name
         node_name="$(get_node_name "${log_dump_pod}")"
         echo "Getting logs for node ${node_name}"
+        node_names+=("${node_name}")
 
         local log_dump_dir="${ARTIFACTS}/workload-cluster/${node_name}"
         mkdir -p "${log_dump_dir}"
@@ -161,13 +199,25 @@ dump_workload_cluster_logs_windows() {
             fixed_dump_file_path="$(echo "${log_dump_file//\\//}" | cut -d "/" -f3-)"
             dir="$(dirname "${fixed_dump_file_path}")"
             file="$(basename "${fixed_dump_file_path}")"
-            mkdir -p "${log_dump_dir}"/"${dir}"
-            "${KUBECTL}" exec "${log_dump_pod}" -- cmd.exe /c type "${log_dump_file}" > "${log_dump_dir}"/"${dir}"/"${file}"
+            mkdir -p "${log_dump_dir}/pods/${dir}"
+            if [[ "${file}" =~ "kubelet" ]]; then
+                "${KUBECTL}" exec "${log_dump_pod}" -- cmd.exe /c type "${log_dump_file}" > "${log_dump_dir}/${dir}/${file}"
+            else
+                "${KUBECTL}" exec "${log_dump_pod}" -- cmd.exe /c type "${log_dump_file}" > "${log_dump_dir}/pods/${dir}/${file}"
+            fi
         done
 
         echo "Exported logs for node \"${node_name}\""
     done
 
+    # Rename Pods' directories
+    for node_name in "${node_names[@]}"; do
+        pushd "${ARTIFACTS}/workload-cluster/${node_name}/pods" > /dev/null
+        for dir in *; do
+            mv "${dir}" "${dir%_*}"
+        done
+        popd > /dev/null
+    done
 }
 
 cleanup() {
@@ -182,12 +232,4 @@ trap cleanup EXIT
 echo "================ DUMPING LOGS FOR MANAGEMENT CLUSTER ================"
 dump_mgmt_cluster_logs
 
-echo "================ DUMPING LOGS FOR WORKLOAD CLUSTER (Linux) =========="
 dump_workload_cluster_logs
-
-if [[ -z "${TEST_WINDOWS}" ]]; then
-    echo "TEST_WINDOWS envvar not set, skipping log collection for Windows nodes."
-else
-    echo "================ DUMPING LOGS FOR WORKLOAD CLUSTER (Windows) ========"
-    dump_workload_cluster_logs_windows
-fi

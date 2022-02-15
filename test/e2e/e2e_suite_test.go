@@ -147,6 +147,22 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 	pods := &corev1.PodList{}
 	Expect(workload.GetClient().List(ctx, pods, client.InNamespace(kubesystem))).To(Succeed())
 
+	events, err := workload.GetClientSet().CoreV1().Events(kubesystem).List(ctx, metav1.ListOptions{})
+	eventMsgs := map[string]string{}
+	if err != nil {
+		Byf("failed to get events in kube-system namespace: %v", err)
+	} else {
+		for _, event := range events.Items {
+			if event.InvolvedObject.Kind == "Pod" {
+				if _, ok := eventMsgs[event.InvolvedObject.Name]; !ok {
+					eventMsgs[event.InvolvedObject.Name] = event.Message
+				} else {
+					eventMsgs[event.InvolvedObject.Name] += fmt.Sprintf("\n%s", event.Message)
+				}
+			}
+		}
+	}
+
 	for _, pod := range pods.Items {
 		for _, container := range pod.Spec.Containers {
 			// Watch each container's logs in a goroutine so we can stream them all concurrently.
@@ -155,7 +171,11 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 
 				Byf("Creating log watcher for controller %s/%s, container %s", kubesystem, pod.Name, container.Name)
 				logFile := path.Join(aboveMachinesPath, kubesystem, pod.Name, container.Name+".log")
-				Expect(os.MkdirAll(filepath.Dir(logFile), 0755)).To(Succeed())
+				if os.MkdirAll(filepath.Dir(logFile), 0755); err != nil {
+					// Failing to mkdir should not cause the test to fail
+					Byf("Error mkdir: %v", err)
+					return
+				}
 
 				f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
@@ -187,6 +207,40 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 				}
 			}(pod, container)
 		}
+
+		go func(pod corev1.Pod) {
+			defer GinkgoRecover()
+
+			Byf("Collecting events for Pod %s/%s", kubesystem, pod.Name)
+			eventFile := path.Join(aboveMachinesPath, kubesystem, pod.Name, "pod-events.txt")
+			if err := os.MkdirAll(filepath.Dir(eventFile), 0755); err != nil {
+				// Failing to mkdir should not cause the test to fail
+				Byf("Error mkdir: %v", err)
+				return
+			}
+
+			f, err := os.OpenFile(eventFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				// Failing to open the file should not cause the test to fail
+				Byf("Error opening file to write Pod events: %v", err)
+				return
+			}
+			defer f.Close()
+
+			msg, ok := eventMsgs[pod.Name]
+			if !ok {
+				Byf("failed to find events of Pod %q", pod.Name)
+				return
+			}
+
+			out := bufio.NewWriter(f)
+			defer out.Flush()
+			_, err = out.WriteString(msg)
+			if err != nil && err != io.ErrUnexpectedEOF {
+				// Failing to collect event message should not cause the test to fail
+				Byf("failed to collect event message of pod %s/%s: %v", kubesystem, pod.Name, err)
+			}
+		}(pod)
 	}
 }
 
