@@ -62,10 +62,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// Externally managed clusters might not have an LB
 	if s.Scope.APIServerLBName() == "" {
 		log.V(4).Info("Skipping InboundNatRule reconciliation as the cluster has no LB configured")
-		// Until https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/1868 is
-		// resolved, this needs to be set for the machine to be able to reach the ready condition:
-		// https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/2066#discussion_r806150004
-		s.Scope.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil)
 		return nil
 	}
 
@@ -84,11 +80,16 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		portsInUse[*rule.InboundNatRulePropertiesFormat.FrontendPort] = struct{}{} // Mark frontend port as in use
 	}
 
+	specs := s.Scope.InboundNatSpecs(portsInUse)
+	if len(specs) == 0 {
+		return nil
+	}
+
 	// We go through the list of InboundNatSpecs to reconcile each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var result error
-	for _, natRule := range s.Scope.InboundNatSpecs(portsInUse) {
+	for _, natRule := range specs {
 		// If we are creating multiple inbound NAT rules, we could have a collision in finding an available frontend port since the newly created rule takes an available port, and we do not update portsInUse in the specs.
 		// It doesn't matter in this case since we only create one rule per machine, but for multiple rules, we could end up restarting the Reconcile function each time to get the updated available ports.
 		// TODO: We can update the available ports and recompute the specs each time, or alternatively, we could deterministically calculate the ports we plan on using to avoid collisions, i.e. rule #1 uses the first available port, rule #2 uses the second available port, etc.
@@ -100,6 +101,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	s.Scope.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, result)
+
 	return result
 }
 
@@ -111,18 +113,23 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	var result error
+	specs := s.Scope.InboundNatSpecs(make(map[int32]struct{}))
+	if len(specs) == 0 {
+		return nil
+	}
 
 	// We go through the list of InboundNatSpecs to delete each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
-	for _, natRule := range s.Scope.InboundNatSpecs(make(map[int32]struct{})) {
+	var result error
+	for _, natRule := range specs {
 		if err := s.DeleteResource(ctx, natRule, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
 		}
 	}
+
 	s.Scope.UpdateDeleteStatus(infrav1.InboundNATRulesReadyCondition, serviceName, result)
 	return result
 }

@@ -93,6 +93,18 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no NAT rule specs are found",
+			expectedError: "",
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockclientMockRecorder,
+				r *mock_async.MockReconcilerMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
+				s.APIServerLBName().AnyTimes().Return(fakeLBName)
+				m.List(gomockinternal.AContext(), fakeGroupName, fakeLBName).Return(noExistingRules, nil)
+				s.InboundNatSpecs(noPortsInUse).Return([]azure.ResourceSpecGetter{})
+			},
+		},
+		{
 			name:          "NAT rule successfully created with with no existing rules",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
@@ -131,7 +143,6 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				m *mock_inboundnatrules.MockclientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
 				s.APIServerLBName().AnyTimes().Return("")
-				s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil)
 			},
 		},
 		{
@@ -201,6 +212,14 @@ func TestDeleteNetworkInterface(t *testing.T) {
 		expect        func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 			m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
+		{
+			name:          "noop if no NAT rules are found",
+			expectedError: "",
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.InboundNatSpecs(noPortsInUse).Return([]azure.ResourceSpecGetter{})
+			},
+		},
 		{
 			name:          "successfully delete an existing NAT rule",
 			expectedError: "",

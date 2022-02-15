@@ -63,11 +63,16 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
+	specs := s.Scope.SubnetSpecs()
+	if len(specs) == 0 {
+		return nil
+	}
+
 	// We go through the list of SubnetSpecs to reconcile each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var resultErr error
-	for _, subnetSpec := range s.Scope.SubnetSpecs() {
+	for _, subnetSpec := range specs {
 		result, err := s.CreateResource(ctx, subnetSpec, serviceName)
 		if err != nil {
 			if !azure.IsOperationNotDoneError(err) || resultErr == nil {
@@ -90,7 +95,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
-	s.Scope.UpdatePutStatus(infrav1.SubnetsReadyCondition, serviceName, resultErr)
+	if s.Scope.IsVnetManaged() {
+		s.Scope.UpdatePutStatus(infrav1.SubnetsReadyCondition, serviceName, resultErr)
+	}
+
 	return resultErr
 }
 
@@ -104,23 +112,27 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	if !s.Scope.IsVnetManaged() {
 		log.V(4).Info("Skipping subnets deletion in custom vnet mode")
-
-		s.Scope.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, nil)
 		return nil
 	}
 
-	var result error
+	specs := s.Scope.SubnetSpecs()
+	if len(specs) == 0 {
+		return nil
+	}
 
 	// We go through the list of SubnetSpecs to delete each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
-	for _, subnetSpec := range s.Scope.SubnetSpecs() {
+	var result error
+	for _, subnetSpec := range specs {
 		if err := s.DeleteResource(ctx, subnetSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
 		}
 	}
+
 	s.Scope.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, result)
+
 	return result
 }

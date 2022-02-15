@@ -76,6 +76,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	vmSpec := s.Scope.VMSpec()
+	if vmSpec == nil {
+		return nil
+	}
 
 	result, err := s.CreateResource(ctx, vmSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
@@ -113,6 +116,9 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	vmSpec := s.Scope.VMSpec()
+	if vmSpec == nil {
+		return nil
+	}
 
 	err := s.DeleteResource(ctx, vmSpec, serviceName)
 	if err != nil {

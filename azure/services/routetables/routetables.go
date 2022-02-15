@@ -63,18 +63,25 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	if !s.Scope.IsVnetManaged() {
 		log.V(4).Info("Skipping route tables reconcile in custom vnet mode")
-	} else {
-		// We go through the list of route tables to reconcile each one, independently of the result of the previous one.
-		// If multiple errors occur, we return the most pressing one.
-		//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (ie. error creating) -> operationNotDoneError (ie. creating in progress) -> no error (ie. created)
-		for _, rtSpec := range s.Scope.RouteTableSpecs() {
-			if _, err := s.CreateResource(ctx, rtSpec, serviceName); err != nil {
-				if !azure.IsOperationNotDoneError(err) || resErr == nil {
-					resErr = err
-				}
+		return nil
+	}
+
+	specs := s.Scope.RouteTableSpecs()
+	if len(specs) == 0 {
+		return nil
+	}
+
+	// We go through the list of route tables to reconcile each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
+	for _, rtSpec := range specs {
+		if _, err := s.CreateResource(ctx, rtSpec, serviceName); err != nil {
+			if !azure.IsOperationNotDoneError(err) || resErr == nil {
+				resErr = err
 			}
 		}
 	}
+
 	s.Scope.UpdatePutStatus(infrav1.RouteTablesReadyCondition, serviceName, resErr)
 	return resErr
 }
@@ -94,12 +101,16 @@ func (s *Service) Delete(ctx context.Context) error {
 		return nil
 	}
 
-	var result error
+	specs := s.Scope.RouteTableSpecs()
+	if len(specs) == 0 {
+		return nil
+	}
 
 	// We go through the list of RouteTableSpecs to delete each one, independently of the result of the previous one.
-	// If multiple erros occur, we return the most pressing one
+	// If multiple errors occur, we return the most pressing one
 	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
-	for _, rtSpec := range s.Scope.RouteTableSpecs() {
+	var result error
+	for _, rtSpec := range specs {
 		if err := s.DeleteResource(ctx, rtSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err

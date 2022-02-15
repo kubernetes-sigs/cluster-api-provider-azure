@@ -63,6 +63,13 @@ func TestReconcileGroups(t *testing.T) {
 		expect        func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no group spec is found",
+			expectedError: "",
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.GroupSpec().Return(nil)
+			},
+		},
+		{
 			name:          "create group succeeds",
 			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
@@ -119,6 +126,13 @@ func TestDeleteGroups(t *testing.T) {
 		expectedError string
 		expect        func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
+		{
+			name:          "noop if no group spec is found",
+			expectedError: "",
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.GroupSpec().Return(nil)
+			},
+		},
 		{
 			name:          "delete operation is successful for managed resource group",
 			expectedError: "",

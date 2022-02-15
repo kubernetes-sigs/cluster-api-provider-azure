@@ -53,6 +53,14 @@ func TestReconcileRouteTables(t *testing.T) {
 		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no route table specs are found",
+			expectedError: "",
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.IsVnetManaged().Return(true)
+				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
+		{
 			name:          "create multiple route tables succeeds",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
@@ -86,11 +94,10 @@ func TestReconcileRouteTables(t *testing.T) {
 			},
 		},
 		{
-			name:          "vnet is not managed",
+			name:          "noop if vnet is not managed",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(false)
-				s.UpdatePutStatus(infrav1.RouteTablesReadyCondition, serviceName, nil)
 			},
 		},
 	}
@@ -131,6 +138,14 @@ func TestDeleteRouteTable(t *testing.T) {
 		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no route table specs are found",
+			expectedError: "",
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.IsVnetManaged().Return(true)
+				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
+		{
 			name:          "delete multiple route tables succeeds",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
@@ -164,7 +179,7 @@ func TestDeleteRouteTable(t *testing.T) {
 			},
 		},
 		{
-			name:          "vnet is not managed",
+			name:          "noop if vnet is not managed",
 			expectedError: "",
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(false)

@@ -68,11 +68,28 @@ func TestReconcileVnet(t *testing.T) {
 		expect        func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no vnet spec is found",
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VNetSpec().Return(nil)
+			},
+		},
+		{
+			name:          "reconcile when vnet is not managed",
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VNetSpec().Return(&fakeVNetSpec)
+				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, nil)
+				s.IsVnetManaged().Return(false)
+			},
+		},
+		{
 			name:          "create vnet succeeds, should not return an error",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VNetSpec().Return(&fakeVNetSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, nil)
+				s.IsVnetManaged().Return(true)
 				s.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, nil)
 			},
 		},
@@ -82,6 +99,7 @@ func TestReconcileVnet(t *testing.T) {
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VNetSpec().Return(&fakeVNetSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, internalError)
+				s.IsVnetManaged().Return(true)
 				s.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, internalError)
 			},
 		},
@@ -124,6 +142,13 @@ func TestDeleteVnet(t *testing.T) {
 		expectedError string
 		expect        func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
+		{
+			name:          "noop if no vnet spec is found",
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VNetSpec().Return(nil)
+			},
+		},
 		{
 			name:          "delete vnet succeeds, should not return an error",
 			expectedError: "",

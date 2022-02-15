@@ -61,6 +61,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	var resultingErr error
 	if bastionSpec := s.Scope.AzureBastionSpec(); bastionSpec != nil {
 		_, resultingErr = s.CreateResource(ctx, bastionSpec, serviceName)
+	} else {
+		return nil
 	}
 
 	s.Scope.UpdatePutStatus(infrav1.BastionHostReadyCondition, serviceName, resultingErr)
@@ -78,6 +80,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	var resultingErr error
 	if bastionSpec := s.Scope.AzureBastionSpec(); bastionSpec != nil {
 		resultingErr = s.DeleteResource(ctx, bastionSpec, serviceName)
+	} else {
+		return nil
 	}
 
 	s.Scope.UpdateDeleteStatus(infrav1.BastionHostReadyCondition, serviceName, resultingErr)

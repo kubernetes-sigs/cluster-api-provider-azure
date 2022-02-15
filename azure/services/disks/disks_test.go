@@ -57,6 +57,13 @@ func TestDeleteDisk(t *testing.T) {
 		expect        func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no disk specs are found",
+			expectedError: "",
+			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DiskSpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
+		{
 			name:          "delete the disk",
 			expectedError: "",
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {

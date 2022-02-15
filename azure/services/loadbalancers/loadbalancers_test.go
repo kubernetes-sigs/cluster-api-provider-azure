@@ -111,6 +111,13 @@ func TestReconcileLoadBalancer(t *testing.T) {
 		expect        func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no LBSpecs are found",
+			expectedError: "",
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
+		{
 			name:          "fail to create a public LB",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
@@ -194,6 +201,13 @@ func TestDeleteLoadBalancer(t *testing.T) {
 		expectedError string
 		expect        func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
+		{
+			name:          "noop if no LBSpecs are found",
+			expectedError: "",
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
 		{
 			name:          "delete a load balancer",
 			expectedError: "",
