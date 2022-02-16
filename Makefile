@@ -284,7 +284,7 @@ create-workload-cluster: $(ENVSUBST) ## Create a workload cluster.
 	timeout --foreground 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
 	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
+	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
 
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
@@ -297,7 +297,7 @@ create-aks-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a aks cluster.
 	timeout --foreground 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
 	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
+	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
 
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
