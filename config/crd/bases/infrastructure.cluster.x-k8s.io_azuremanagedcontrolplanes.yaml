@@ -530,6 +530,26 @@ spec:
                   resources managed by the Azure provider, in addition to the ones
                   added by default.
                 type: object
+              addonProfiles:
+                description: AddonProfiles are the profiles of managed cluster add-on.
+                items:
+                  properties:
+                    config:
+                      additionalProperties:
+                        type: string
+                      description: Config - Key-value pairs for configuring an add-on.
+                      type: object
+                    enabled:
+                      description: Enabled - Whether the add-on is enabled or not.
+                      type: boolean
+                    name:
+                      description: Name- The name of managed cluster add-on.
+                      type: string
+                  required:
+                  - enabled
+                  - name
+                  type: object
+                type: array
               apiServerAccessProfile:
                 description: APIServerAccessProfile is the access profile for AKS
                   API server.

@@ -474,6 +474,16 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		}
 	}
 
+	if s.ControlPlane.Spec.AddonProfiles != nil {
+		for _, profile := range s.ControlPlane.Spec.AddonProfiles {
+			managedClusterSpec.AddonProfiles = append(managedClusterSpec.AddonProfiles, azure.AddonProfile{
+				Name:    profile.Name,
+				Enabled: profile.Enabled,
+				Config:  profile.Config,
+			})
+		}
+	}
+
 	if s.ControlPlane.Spec.SKU != nil {
 		managedClusterSpec.SKU = &azure.SKU{
 			Tier: string(s.ControlPlane.Spec.SKU.Tier),

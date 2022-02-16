@@ -99,6 +99,30 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 		}
 	}
 
+	if managedCluster.AddonProfiles != nil {
+		for k, v := range managedCluster.AddonProfiles {
+			if propertiesNormalized.AddonProfiles == nil {
+				propertiesNormalized.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
+			}
+			propertiesNormalized.AddonProfiles[k] = &containerservice.ManagedClusterAddonProfile{
+				Enabled: v.Enabled,
+				Config:  v.Config,
+			}
+		}
+	}
+
+	if existingMC.AddonProfiles != nil {
+		for k, v := range existingMC.AddonProfiles {
+			if existingMCPropertiesNormalized.AddonProfiles == nil {
+				existingMCPropertiesNormalized.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
+			}
+			existingMCPropertiesNormalized.AddonProfiles[k] = &containerservice.ManagedClusterAddonProfile{
+				Enabled: v.Enabled,
+				Config:  v.Config,
+			}
+		}
+	}
+
 	if managedCluster.NetworkProfile != nil {
 		propertiesNormalized.NetworkProfile.LoadBalancerProfile = managedCluster.NetworkProfile.LoadBalancerProfile
 	}
@@ -257,6 +281,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
+	handleAddonProfiles(managedCluster, managedClusterSpec)
+
 	if managedClusterSpec.SKU != nil {
 		tierName := containerservice.ManagedClusterSKUTier(managedClusterSpec.SKU.Tier)
 		managedCluster.Sku = &containerservice.ManagedClusterSKU{
@@ -350,6 +376,22 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	s.Scope.SetKubeConfigData(kubeConfigData)
 
 	return nil
+}
+
+func handleAddonProfiles(managedCluster containerservice.ManagedCluster, spec azure.ManagedClusterSpec) {
+	for i := range spec.AddonProfiles {
+		if managedCluster.AddonProfiles == nil {
+			managedCluster.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
+		}
+		item := spec.AddonProfiles[i]
+		addonProfile := &containerservice.ManagedClusterAddonProfile{
+			Enabled: &item.Enabled,
+		}
+		if item.Config != nil {
+			addonProfile.Config = *to.StringMapPtr(item.Config)
+		}
+		managedCluster.AddonProfiles[item.Name] = addonProfile
+	}
 }
 
 // Delete deletes the managed cluster.

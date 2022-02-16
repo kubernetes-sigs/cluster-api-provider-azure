@@ -23,6 +23,9 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
+  addonProfiles:
+  - enabled: true
+    name: azurepolicy
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
