@@ -317,6 +317,27 @@ spec:
   osDiskType: "Ephemeral"
 ```
 
+### AKS Node Pool Taints
+
+You can configure the `Taints` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec.
+
+Below is an example of `taints` configuration for the `agentpool0`:
+
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: System
+  osDiskSizeGB: 512
+  sku: Standard_D2s_v3
+  taints:
+    - effect: no-schedule
+      key: dedicated
+      value: kafka
+```
+
 ### Use a public Standard Load Balancer
 
 A public Load Balancer when integrated with AKS serves two purposes:
@@ -370,6 +391,32 @@ spec:
     privateDNSZone: None # System, None. Allowed only when enablePrivateCluster is true
     enablePrivateClusterPublicFQDN: false # Allowed only when enablePrivateCluster is true
 ```
+
+## Immutable fields for Managed Clusters (AKS)
+
+Some fields from the family of Managed Clusters CRD are immutable. Which means 
+those can only be set during the creation time. 
+
+Following is the list of immutable fields for managed clusters:
+
+| CRD                      | jsonPath                           | Comment                   |
+|--------------------------|------------------------------------|---------------------------|
+| AzureManagedControlPlane | .spec.subscriptionID               |                           |
+| AzureManagedControlPlane | .spec.resourceGroupName            |                           |
+| AzureManagedControlPlane | .spec.nodeResourceGroupName        |                           |
+| AzureManagedControlPlane | .spec.location                     |                           |
+| AzureManagedControlPlane | .spec.sshPublicKey                 |                           |
+| AzureManagedControlPlane | .spec.dnsServiceIP                 |                           |
+| AzureManagedControlPlane | .spec.networkPlugin                |                           |
+| AzureManagedControlPlane | .spec.networkPolicy                |                           |
+| AzureManagedControlPlane | .spec.loadBalancerSKU              |                           |
+| AzureManagedControlPlane | .spec.apiServerAccessProfile       | except AuthorizedIPRanges |
+| AzureManagedMachinePool  | .spec.sku                          |                           |
+| AzureManagedMachinePool  | .spec.osDiskSizeGB                 |                           |
+| AzureManagedMachinePool  | .spec.osDiskType                   |                           |
+| AzureManagedMachinePool  | .spec.taints                       |                           |
+| AzureManagedMachinePool  | .spec.availabilityZones            |                           |
+| AzureManagedMachinePool  | .spec.maxPods                      |                           |
 
 ## Features
 

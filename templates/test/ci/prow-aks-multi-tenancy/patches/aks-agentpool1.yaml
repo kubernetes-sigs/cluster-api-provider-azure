@@ -5,3 +5,9 @@ metadata:
 spec:
   maxPods: 64
   osDiskType: "Ephemeral"
+  taints:
+    - effect: NoSchedule
+      key: type
+      value: shared
+  nodeLabels:
+    "type": "shared"

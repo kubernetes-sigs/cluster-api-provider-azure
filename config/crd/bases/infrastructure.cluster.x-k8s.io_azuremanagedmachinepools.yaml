@@ -257,6 +257,30 @@ spec:
               sku:
                 description: SKU is the size of the VMs in the node pool.
                 type: string
+              taints:
+                description: Taints specifies the taints for nodes present in this
+                  agent pool.
+                items:
+                  properties:
+                    effect:
+                      description: Effect specifies the effect for the taint
+                      enum:
+                      - NoSchedule
+                      - NoExecute
+                      - PreferNoSchedule
+                      type: string
+                    key:
+                      description: Key is the key of the taint
+                      type: string
+                    value:
+                      description: Value is the value of the taint
+                      type: string
+                  required:
+                  - effect
+                  - key
+                  - value
+                  type: object
+                type: array
             required:
             - mode
             - sku

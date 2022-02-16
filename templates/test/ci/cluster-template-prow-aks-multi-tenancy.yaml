@@ -104,9 +104,15 @@ metadata:
 spec:
   maxPods: 64
   mode: User
+  nodeLabels:
+    type: shared
   osDiskSizeGB: 40
   osDiskType: Ephemeral
   sku: ${AZURE_NODE_MACHINE_TYPE}
+  taints:
+  - effect: NoSchedule
+    key: type
+    value: shared
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
