@@ -509,8 +509,10 @@ func getLatestSkuForMinor(version string, skus semver.Versions) string {
 			}
 		}
 	} else if v, err := semver.ParseTolerant(version); err == nil {
-		// if the version is in the format "v1.21.2", we make sure we have an existing image for it.
-		Expect(skus).To(ContainElement(v), fmt.Sprintf("Provided Kubernetes version %s does not have a corresponding VM image in the capi offer", version))
+		if len(v.Pre) == 0 {
+			// if the version is in the format "v1.21.2", we make sure we have an existing image for it.
+			Expect(skus).To(ContainElement(v), fmt.Sprintf("Provided Kubernetes version %s does not have a corresponding VM image in the capi offer", version))
+		}
 	}
 	// otherwise, we just return the version as-is. This allows for versions in other formats, such as "latest" or "latest-1.21".
 	return version
