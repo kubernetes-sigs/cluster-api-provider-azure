@@ -128,7 +128,12 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.getAddresses")
 	defer done()
 
-	var addresses []corev1.NodeAddress
+	addresses := []corev1.NodeAddress{
+		{
+			Type:    corev1.NodeInternalDNS,
+			Address: to.String(vm.Name),
+		},
+	}
 	if vm.NetworkProfile.NetworkInterfaces == nil {
 		return addresses, nil
 	}
