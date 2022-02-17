@@ -42,7 +42,22 @@ EOF
   fi
 }
 
-verify_go_version
+install_go_with_version() {
+  echo "Install golang ${GO_VERSION}"
+  GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz"
+  curl -LO "https://go.dev/dl/${GO_TARBALL}"
+  if [[ -d /usr/local/go ]]; then
+    mv /usr/local/go /usr/local/go.old
+  fi
+  tar xzf "${GO_TARBALL}" -C /usr/local
+  rm "${GO_TARBALL}"
+}
+
+if [[ -n "${GO_VERSION:-}" ]]; then
+  install_go_with_version
+else
+  verify_go_version
+fi
 
 # Explicitly opt into go modules, even though we're inside a GOPATH directory
 export GO111MODULE=on
