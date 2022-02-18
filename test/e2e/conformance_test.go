@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -184,12 +185,22 @@ var _ = Describe("Conformance Tests", func() {
 			}
 
 			noScheduleTaint := &corev1.Taint{
-				Key:    "node-role.kubernetes.io/master",
+				Key:    "node-role.kubernetes.io/control-plane",
 				Value:  "",
 				Effect: "NoSchedule",
 			}
 
-			err := node.TaintNode(workloadProxy.GetClientSet(), options, noScheduleTaint)
+			if v, err := semver.ParseTolerant(kubernetesVersion); err == nil {
+				if v.LT(semver.MustParse("1.24.0-alpha.0.0")) {
+					noScheduleTaint = &corev1.Taint{
+						Key:    "node-role.kubernetes.io/master",
+						Value:  "",
+						Effect: "NoSchedule",
+					}
+				}
+			}
+
+			err = node.TaintNode(workloadProxy.GetClientSet(), options, noScheduleTaint)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Windows requires a repo-list because some images are not in k8s gcr

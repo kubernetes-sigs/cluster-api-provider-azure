@@ -2767,6 +2767,7 @@ data:
     \       kubernetes.io/os: linux\n      tolerations:\n        # Mark the pod as
     a critical add-on for rescheduling.\n        - key: CriticalAddonsOnly\n          operator:
     Exists\n        - key: node-role.kubernetes.io/master\n          effect: NoSchedule\n
+    \       - key: node-role.kubernetes.io/control-plane\n          effect: NoSchedule\n
     \     serviceAccountName: calico-kube-controllers\n      priorityClassName: system-cluster-critical\n
     \     containers:\n        - name: calico-kube-controllers\n          image: calico/kube-controllers:v3.20.0\n
     \         env:\n            # Choose which controllers to run.\n            -
