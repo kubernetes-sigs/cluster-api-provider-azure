@@ -4309,6 +4309,8 @@ data:
             operator: Exists
           - effect: NoSchedule
             key: node-role.kubernetes.io/master
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/control-plane
     ---
     apiVersion: policy/v1beta1
     kind: PodDisruptionBudget
@@ -4915,6 +4917,9 @@ data:
           tolerations:
           - effect: NoSchedule
             key: node-role.kubernetes.io/master
+            operator: Exists
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/control-plane
             operator: Exists
           volumes:
           - emptyDir: {}

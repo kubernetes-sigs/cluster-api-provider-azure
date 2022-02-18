@@ -14,3 +14,8 @@ patches:
     name: calico-node
     namespace: kube-system
   path: patches/remove-aws-reference.yaml
+- path: patches/control-plane-tolerations.yaml
+  target:
+    kind: Deployment
+    name: calico-kube-controllers
+    namespace: kube-system
