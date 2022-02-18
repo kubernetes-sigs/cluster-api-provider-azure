@@ -8,18 +8,6 @@ CAPZ enables you to create Windows Kubernetes clusters on Microsoft Azure. We re
 
 To deploy a cluster using Windows, use the [Windows Containerd flavor template](../../../../templates/cluster-template-machinepool-windows-containerd.yaml).
 
-#### Kube-proxy and CNIs for Containerd
-
-Windows HostProcess Container support is in Alpha support in Kubernetes 1.22 and is planned to go to Beta in 1.23.  See the Windows [Hostprocess KEP](https://github.com/kubernetes/enhancements/tree/master/keps/sig-windows/1981-windows-privileged-container-support) for more details.  Kube-proxy and other CNI's  have been updated to use HostProcess containers directly.  The current implementation is using [kube-proxy and Calico CNI built by sig-windows](https://github.com/kubernetes-sigs/sig-windows-tools/pull/161). Sig-windows is working to upstream the kube-proxy, cni implementations, and better kubeadm support in the next few releases.
-
-Current requirements:
-
-- Kuberentes 1.22+
-- containerd 1.6 Beta+ 
-- `WindowsHostProcessContainers` feature-gate (currently in alpha) turned on for kube-apiserver and kubelet if using Kubernetes 1.22
-
-These requirements are satisfied by the Windows Containerd Template and Azure Marketplace reference image `cncf-upstream:capi-windows:k8s-1dot22dot1-windows-2019-containerd:2021.10.15`
-
 ## Deploy a workload
 
 After you Windows VM is up and running you can deploy a workload. Using the deployment file below:
@@ -87,6 +75,18 @@ kubernetes   ClusterIP      10.0.0.1     <none>        443/TCP        46m
 curl <EXTERNAL-IP>
 ```
 
+#### Kube-proxy and CNIs for Containerd
+
+The Windows HostProcess Container feature is Alpha for Kubernetes v1.22 and Beta for v1.23.  See the Windows [Hostprocess KEP](https://github.com/kubernetes/enhancements/tree/master/keps/sig-windows/1981-windows-privileged-container-support) for more details.  Kube-proxy and other CNI's  have been updated to run in HostProcess containers.  The current implementation is using [kube-proxy and Calico CNI built by sig-windows](https://github.com/kubernetes-sigs/sig-windows-tools/pull/161). Sig-windows is working to upstream the kube-proxy, cni implementations, and improve kubeadm support in the next few releases.
+
+Current requirements:
+
+- Kuberentes 1.22+
+- containerd 1.6+ 
+- `WindowsHostProcessContainers` feature-gate (Alpha for v1.22) turned on for kube-apiserver and kubelet if using Kubernetes 1.22
+
+These requirements are satisfied by the Windows Containerd Template and Azure Marketplace reference image `cncf-upstream:capi-windows:k8s-1dot22dot1-windows-2019-containerd:2021.10.15`
+
 ## Details
 
 See the CAPI proposal for implementation details: https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20200804-windows-support.md
@@ -137,7 +137,13 @@ If you would like customize your images please refer to the documentation on bui
 
 ### Using Docker EE and dockershim for Windows Clusters
 
-> We recommend using [Containerd for Windows clusters](#using-containerd-for-windows-clusters)
+<aside class="note warning"> 
+
+<h1> Warning </h1> 
+
+Docker EE and dockershim for Windows Clusters is now deprecated for this project and will be removed in future releases, the recommended approach is to use [Containerd for Windows clusters](#using-containerd-for-windows-clusters). The default Windows template will be configured to used containerd in the future.
+
+</aside>
 
 Windows nodes can either run [Containerd (recommended)](#using-containerd-for-windows-clusters) or Docker EE as the container runtime.  
 Docker EE requires the dockershim which will be [removed starting with Kubernetes 1.24](https://kubernetes.io/blog/2020/12/02/dockershim-faq/#when-will-dockershim-be-removed) and 
