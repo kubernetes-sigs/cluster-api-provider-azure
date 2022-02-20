@@ -32,49 +32,49 @@ const (
 )
 
 // setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane.
-func (r *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
-	if sshKeyData := r.Spec.SSHPublicKey; sshKeyData == "" {
+func (m *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
+	if sshKeyData := m.Spec.SSHPublicKey; sshKeyData == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
 		if err != nil {
 			return err
 		}
 
-		r.Spec.SSHPublicKey = base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
+		m.Spec.SSHPublicKey = base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
 	}
 
 	return nil
 }
 
 // setDefaultNodeResourceGroupName sets the default NodeResourceGroup for an AzureManagedControlPlane.
-func (r *AzureManagedControlPlane) setDefaultNodeResourceGroupName() {
-	if r.Spec.NodeResourceGroupName == "" {
-		r.Spec.NodeResourceGroupName = fmt.Sprintf("MC_%s_%s_%s", r.Spec.ResourceGroupName, r.Name, r.Spec.Location)
+func (m *AzureManagedControlPlane) setDefaultNodeResourceGroupName() {
+	if m.Spec.NodeResourceGroupName == "" {
+		m.Spec.NodeResourceGroupName = fmt.Sprintf("MC_%s_%s_%s", m.Spec.ResourceGroupName, m.Name, m.Spec.Location)
 	}
 }
 
 // setDefaultVirtualNetwork sets the default VirtualNetwork for an AzureManagedControlPlane.
-func (r *AzureManagedControlPlane) setDefaultVirtualNetwork() {
-	if r.Spec.VirtualNetwork.Name == "" {
-		r.Spec.VirtualNetwork.Name = r.Name
+func (m *AzureManagedControlPlane) setDefaultVirtualNetwork() {
+	if m.Spec.VirtualNetwork.Name == "" {
+		m.Spec.VirtualNetwork.Name = m.Name
 	}
-	if r.Spec.VirtualNetwork.CIDRBlock == "" {
-		r.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDR
+	if m.Spec.VirtualNetwork.CIDRBlock == "" {
+		m.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDR
 	}
 }
 
 // setDefaultSubnet sets the default Subnet for an AzureManagedControlPlane.
-func (r *AzureManagedControlPlane) setDefaultSubnet() {
-	if r.Spec.VirtualNetwork.Subnet.Name == "" {
-		r.Spec.VirtualNetwork.Subnet.Name = r.Name
+func (m *AzureManagedControlPlane) setDefaultSubnet() {
+	if m.Spec.VirtualNetwork.Subnet.Name == "" {
+		m.Spec.VirtualNetwork.Subnet.Name = m.Name
 	}
-	if r.Spec.VirtualNetwork.Subnet.CIDRBlock == "" {
-		r.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDR
+	if m.Spec.VirtualNetwork.Subnet.CIDRBlock == "" {
+		m.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDR
 	}
 }
 
-func (r *AzureManagedControlPlane) setDefaultSku() {
-	if r.Spec.SKU == nil {
-		r.Spec.SKU = &SKU{
+func (m *AzureManagedControlPlane) setDefaultSku() {
+	if m.Spec.SKU == nil {
+		m.Spec.SKU = &SKU{
 			Tier: FreeManagedControlPlaneTier,
 		}
 	}

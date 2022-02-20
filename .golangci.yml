@@ -40,6 +40,7 @@ linters:
     - rowserrcheck
     - staticcheck
     - structcheck
+    - stylecheck
     - thelper
     - typecheck
     - unconvert
@@ -100,6 +101,10 @@ issues:
     - path: _test\.go
       linters:
         - unused
+    - linters:
+        - stylecheck
+      text: "ST1016: methods on the same type should have the same receiver name"
+      path: .*(api|types)\/.*\/*_types\.go$
   include:
   - EXC0002 # include "missing comments" issues from golint
   max-issues-per-linter: 0
