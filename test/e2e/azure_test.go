@@ -174,16 +174,6 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				}, result)
 
-				Context("Validating time synchronization", func() {
-					AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
-						return AzureTimeSyncSpecInput{
-							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:             namespace,
-							ClusterName:           clusterName,
-						}
-					})
-				})
-
 				Context("Creating a private cluster from the management cluster", func() {
 					AzurePrivateClusterSpec(ctx, func() AzurePrivateClusterSpecInput {
 						return AzurePrivateClusterSpecInput{
@@ -228,16 +218,6 @@ var _ = Describe("Workload cluster creation", func() {
 			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 		}, result)
-
-		Context("Validating time synchronization", func() {
-			AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
-				return AzureTimeSyncSpecInput{
-					BootstrapClusterProxy: bootstrapClusterProxy,
-					Namespace:             namespace,
-					ClusterName:           clusterName,
-				}
-			})
-		})
 
 		Context("Validating failure domains", func() {
 			AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
@@ -307,16 +287,6 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
 
-			Context("Validating time synchronization", func() {
-				AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
-					return AzureTimeSyncSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
-			})
-
 			Context("Creating an accessible ipv6 load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
@@ -367,16 +337,6 @@ var _ = Describe("Workload cluster creation", func() {
 						FailThreshold:         e2eConfig.GetVariable(SecurityScanFailThreshold),
 						Container:             e2eConfig.GetVariable(SecurityScanContainer),
 						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			Context("Validating time synchronization", func() {
-				AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
-					return AzureTimeSyncSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
 					}
 				})
 			})
@@ -528,16 +488,6 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForControlPlaneMachinesReady,
 				},
 			}, result)
-
-			Context("Validating AKS time synchronization", func() {
-				AzureDaemonsetTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
-					return AzureTimeSyncSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
-			})
 		})
 	})
 
