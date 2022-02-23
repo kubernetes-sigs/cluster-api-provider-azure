@@ -52,17 +52,17 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // CreateOrUpdate mocks base method.
-func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2, arg3 string, arg4 containerservice.AgentPool) error {
+func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2, arg3 string, arg4 containerservice.AgentPool, arg5 map[string]string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateOrUpdate indicates an expected call of CreateOrUpdate.
-func (mr *MockClientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // Delete mocks base method.

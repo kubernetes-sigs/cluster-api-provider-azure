@@ -338,6 +338,26 @@ spec:
       value: kafka
 ```
 
+### Enable AKS features with custom headers (--aks-custom-headers)
+To enable some AKS cluster / node pool features you need to pass special headers to the cluster / node pool create request. 
+For example, to [add a node pool for GPU nodes](https://docs.microsoft.com/en-us/azure/aks/gpu-cluster#add-a-node-pool-for-gpu-nodes),
+you need to pass a custom header `UseGPUDedicatedVHD=true` (with `--aks-custom-headers UseGPUDedicatedVHD=true` argument). 
+To do this with CAPZ, you need to add special annotations to AzureManagedCluster (for cluster 
+features) or AzureManagedMachinePool (for node pool features). These annotations should have a prefix `infrastructure.cluster.x-k8s.io/custom-header-` followed 
+by the name of the AKS feature. For example, to create a node pool with GPU support, you would add the following 
+annotation to AzureManagedMachinePool:
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  ...
+  annotations:
+    "infrastructure.cluster.x-k8s.io/custom-header-UseGPUDedicatedVHD": "true"
+  ...
+spec:
+  ...
+```
+
 ### Use a public Standard Load Balancer
 
 A public Load Balancer when integrated with AKS serves two purposes:

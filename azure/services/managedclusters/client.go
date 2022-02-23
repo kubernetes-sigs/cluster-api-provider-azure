@@ -30,7 +30,7 @@ import (
 type Client interface {
 	Get(context.Context, string, string) (containerservice.ManagedCluster, error)
 	GetCredentials(context.Context, string, string) ([]byte, error)
-	CreateOrUpdate(context.Context, string, string, containerservice.ManagedCluster) (containerservice.ManagedCluster, error)
+	CreateOrUpdate(context.Context, string, string, containerservice.ManagedCluster, map[string]string) (containerservice.ManagedCluster, error)
 	Delete(context.Context, string, string) error
 }
 
@@ -78,11 +78,19 @@ func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 }
 
 // CreateOrUpdate creates or updates a managed cluster.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster) (containerservice.ManagedCluster, error) {
+func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster, headers map[string]string) (containerservice.ManagedCluster, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.AzureClient.CreateOrUpdate")
 	defer done()
 
-	future, err := ac.managedclusters.CreateOrUpdate(ctx, resourceGroupName, name, cluster)
+	preparer, err := ac.managedclusters.CreateOrUpdatePreparer(ctx, resourceGroupName, name, cluster)
+	if err != nil {
+		return containerservice.ManagedCluster{}, errors.Wrap(err, "failed to prepare operation")
+	}
+	for key, value := range headers {
+		preparer.Header.Add(key, value)
+	}
+
+	future, err := ac.managedclusters.CreateOrUpdateSender(preparer)
 	if err != nil {
 		return containerservice.ManagedCluster{}, errors.Wrap(err, "failed to begin operation")
 	}
