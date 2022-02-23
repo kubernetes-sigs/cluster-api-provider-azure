@@ -27,7 +27,10 @@ import (
 )
 
 // AzureMachineTemplateImmutableMsg ...
-const AzureMachineTemplateImmutableMsg = "AzureMachineTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/change-machine-template.html"
+const (
+	AzureMachineTemplateImmutableMsg          = "AzureMachineTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/change-machine-template.html"
+	AzureMachineTemplateRoleAssignmentNameMsg = "AzureMachineTemplate spec.template.spec.roleAssignmentName field can't be set"
+)
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *AzureMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -46,10 +49,19 @@ var _ webhook.Validator = &AzureMachineTemplate{}
 func (r *AzureMachineTemplate) ValidateCreate() error {
 	spec := r.Spec.Template.Spec
 
-	if allErrs := ValidateAzureMachineSpec(spec); len(allErrs) > 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachineTemplate").GroupKind(), r.Name, allErrs)
+	allErrs := ValidateAzureMachineSpec(spec)
+
+	if r.Spec.Template.Spec.RoleAssignmentName != "" {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "roleAssignmentName"), r, AzureMachineTemplateRoleAssignmentNameMsg),
+		)
 	}
-	return nil
+
+	if len(allErrs) == 0 {
+		return nil
+	}
+
+	return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachineTemplate").GroupKind(), r.Name, allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -92,5 +104,9 @@ func (r *AzureMachineTemplate) ValidateDelete() error {
 
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) Default() {
-	r.Spec.Template.Spec.SetDefaults()
+	if err := r.Spec.Template.Spec.SetDefaultSSHPublicKey(); err != nil {
+		ctrl.Log.WithName("SetDefault").Error(err, "SetDefaultSSHPublicKey failed")
+	}
+	r.Spec.Template.Spec.SetDefaultCachingType()
+	r.Spec.Template.Spec.SetDataDisksDefaults()
 }
