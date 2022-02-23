@@ -117,6 +117,10 @@ type VnetPeeringSpec struct {
 	// +optional
 	ResourceGroup string `json:"resourceGroup,omitempty"`
 
+	VnetPeeringClassSpec `json:",inline"`
+}
+
+type VnetPeeringClassSpec struct {
 	// RemoteVnetName defines name of the remote virtual network.
 	RemoteVnetName string `json:"remoteVnetName"`
 }
@@ -158,10 +162,15 @@ type NatGateway struct {
 	// ID is the Azure resource ID of the NAT gateway.
 	// READ-ONLY
 	// +optional
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name"`
+	ID string `json:"id,omitempty"`
 	// +optional
 	NatGatewayIP PublicIPSpec `json:"ip,omitempty"`
+
+	NatGatewayClassSpec `json:",inline"`
+}
+
+type NatGatewayClassSpec struct {
+	Name string `json:"name"`
 }
 
 // SecurityGroupProtocol defines the protocol type for a security group rule.
@@ -229,6 +238,11 @@ type LoadBalancerSpec struct {
 	ID string `json:"id,omitempty"`
 	// +optional
 	Name string `json:"name,omitempty"`
+	// +optional
+	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
+	// FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
+	// +optional
+	FrontendIPsCount *int32 `json:"frontendIPsCount,omitempty"`
 
 	LoadBalancerClassSpec `json:",inline"`
 }

@@ -160,15 +160,8 @@ func (c *AzureCluster) setVnetPeeringDefaults() {
 
 func (c *AzureCluster) setAPIServerLBDefaults() {
 	lb := &c.Spec.NetworkSpec.APIServerLB
-	if lb.Type == "" {
-		lb.Type = Public
-	}
-	if lb.SKU == "" {
-		lb.SKU = SKUStandard
-	}
-	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
-	}
+
+	lb.LoadBalancerClassSpec.setAPIServerLBDefaults()
 
 	if lb.Type == Public {
 		if lb.Name == "" {
@@ -226,13 +219,9 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 	}
 
 	lb := c.Spec.NetworkSpec.NodeOutboundLB
-	lb.Type = Public
-	lb.SKU = SKUStandard
-	lb.Name = c.ObjectMeta.Name
+	lb.LoadBalancerClassSpec.setNodeOutboundLBDefaults()
 
-	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
-	}
+	lb.Name = c.ObjectMeta.Name
 
 	if lb.FrontendIPsCount == nil {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
@@ -242,32 +231,19 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 }
 
 func (c *AzureCluster) setControlPlaneOutboundLBDefaults() {
-	// public clusters don't need control plane outbound lb
-	if c.Spec.NetworkSpec.APIServerLB.Type == Public {
-		return
-	}
-
-	// private clusters can disable control plane outbound lb by setting it to nil.
-	if c.Spec.NetworkSpec.ControlPlaneOutboundLB == nil {
-		return
-	}
-
 	lb := c.Spec.NetworkSpec.ControlPlaneOutboundLB
-	lb.Type = Public
-	lb.SKU = SKUStandard
 
+	if lb == nil {
+		return
+	}
+
+	lb.LoadBalancerClassSpec.setControlPlaneOutboundLBDefaults()
 	if lb.Name == "" {
 		lb.Name = generateControlPlaneOutboundLBName(c.ObjectMeta.Name)
 	}
-
-	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
-	}
-
 	if lb.FrontendIPsCount == nil {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
 	}
-
 	c.setOutboundLBFrontendIPs(lb, generateControlPlaneOutboundIPName)
 }
 
@@ -318,6 +294,53 @@ func (c *AzureCluster) setBastionDefaults() {
 		if c.Spec.BastionSpec.AzureBastion.PublicIP.Name == "" {
 			c.Spec.BastionSpec.AzureBastion.PublicIP.Name = generateAzureBastionPublicIPName(c.ObjectMeta.Name)
 		}
+	}
+}
+
+func (lb *LoadBalancerClassSpec) setAPIServerLBDefaults() {
+	if lb.Type == "" {
+		lb.Type = Public
+	}
+	if lb.SKU == "" {
+		lb.SKU = SKUStandard
+	}
+	if lb.IdleTimeoutInMinutes == nil {
+		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+	}
+}
+
+func (lb *LoadBalancerClassSpec) setNodeOutboundLBDefaults() {
+	lb.setOutboundLBDefaults()
+}
+
+func (lb *LoadBalancerClassSpec) setControlPlaneOutboundLBDefaults() {
+	lb.setOutboundLBDefaults()
+}
+
+func (lb *LoadBalancerClassSpec) setOutboundLBDefaults() {
+	lb.Type = Public
+	lb.SKU = SKUStandard
+	if lb.IdleTimeoutInMinutes == nil {
+		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+	}
+}
+
+func setControlPlaneOutboundLBDefaults(lb *LoadBalancerClassSpec, apiserverLBType LBType) {
+	// public clusters don't need control plane outbound lb
+	if apiserverLBType == Public {
+		return
+	}
+
+	// private clusters can disable control plane outbound lb by setting it to nil.
+	if lb == nil {
+		return
+	}
+
+	lb.Type = Public
+	lb.SKU = SKUStandard
+
+	if lb.IdleTimeoutInMinutes == nil {
+		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
 	}
 }
 

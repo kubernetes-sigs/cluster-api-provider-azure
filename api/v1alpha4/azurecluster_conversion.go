@@ -279,3 +279,23 @@ func Convert_v1beta1_SecurityGroup_To_v1alpha4_SecurityGroup(in *infrav1beta1.Se
 
 	return nil
 }
+
+func Convert_v1alpha4_NatGateway_To_v1beta1_NatGateway(in *NatGateway, out *infrav1beta1.NatGateway, s apiconversion.Scope) error { //nolint
+	if err := autoConvert_v1alpha4_NatGateway_To_v1beta1_NatGateway(in, out, s); err != nil {
+		return err
+	}
+
+	// Convert Name field
+	out.Name = in.Name
+	return nil
+}
+
+func Convert_v1beta1_NatGateway_To_v1alpha4_NatGateway(in *infrav1beta1.NatGateway, out *NatGateway, s apiconversion.Scope) error { //nolint
+	if err := autoConvert_v1beta1_NatGateway_To_v1alpha4_NatGateway(in, out, s); err != nil {
+		return err
+	}
+
+	// Convert Name field
+	out.Name = in.Name
+	return nil
+}

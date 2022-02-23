@@ -46,15 +46,15 @@ func TestAPIServerHost(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: infrav1.LoadBalancerSpec{
-							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
-								Type: infrav1.Public,
-								FrontendIPs: []infrav1.FrontendIP{
-									{
-										PublicIP: &infrav1.PublicIPSpec{
-											DNSName: "my-cluster-apiserver.example.com",
-										},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									PublicIP: &infrav1.PublicIPSpec{
+										DNSName: "my-cluster-apiserver.example.com",
 									},
 								},
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
 					},
@@ -71,15 +71,15 @@ func TestAPIServerHost(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: infrav1.LoadBalancerSpec{
-							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
-								Type: infrav1.Public,
-								FrontendIPs: []infrav1.FrontendIP{
-									{
-										PublicIP: &infrav1.PublicIPSpec{
-											DNSName: "my-cluster-apiserver.capz.io",
-										},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									PublicIP: &infrav1.PublicIPSpec{
+										DNSName: "my-cluster-apiserver.capz.io",
 									},
 								},
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
 					},

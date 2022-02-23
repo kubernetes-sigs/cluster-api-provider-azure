@@ -86,12 +86,7 @@ type LoadBalancerClassSpec struct {
 	// +optional
 	SKU SKU `json:"sku,omitempty"`
 	// +optional
-	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
-	// +optional
 	Type LBType `json:"type,omitempty"`
-	// FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
-	// +optional
-	FrontendIPsCount *int32 `json:"frontendIPsCount,omitempty"`
 	// IdleTimeoutInMinutes specifies the timeout for the TCP idle connection.
 	// +optional
 	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
@@ -133,7 +128,7 @@ func (sc *SubnetClassSpec) setDefaults(cidr string) {
 }
 
 // setDefaults sets default values for SecurityGroupClass.
-func (sgc *SecurityGroupClass) setDefaults(dir SecurityRuleDirection) {
+func (sgc *SecurityGroupClass) setDefaults(dir SecurityRuleDirection) { //nolint:unparam
 	for i := range sgc.SecurityRules {
 		if sgc.SecurityRules[i].Direction == "" {
 			sgc.SecurityRules[i].Direction = dir

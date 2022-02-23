@@ -1304,7 +1304,17 @@ func autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *LoadB
 	out.ID = in.ID
 	out.Name = in.Name
 	// WARNING: in.SKU requires manual conversion: does not exist in peer-type
-	// WARNING: in.FrontendIPs requires manual conversion: does not exist in peer-type
+	if in.FrontendIPs != nil {
+		in, out := &in.FrontendIPs, &out.FrontendIPs
+		*out = make([]v1beta1.FrontendIP, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha3_FrontendIP_To_v1beta1_FrontendIP(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.FrontendIPs = nil
+	}
 	// WARNING: in.Type requires manual conversion: does not exist in peer-type
 	return nil
 }
@@ -1312,6 +1322,18 @@ func autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *LoadB
 func autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *v1beta1.LoadBalancerSpec, out *LoadBalancerSpec, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
+	if in.FrontendIPs != nil {
+		in, out := &in.FrontendIPs, &out.FrontendIPs
+		*out = make([]FrontendIP, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_FrontendIP_To_v1alpha3_FrontendIP(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.FrontendIPs = nil
+	}
+	// WARNING: in.FrontendIPsCount requires manual conversion: does not exist in peer-type
 	// WARNING: in.LoadBalancerClassSpec requires manual conversion: does not exist in peer-type
 	return nil
 }

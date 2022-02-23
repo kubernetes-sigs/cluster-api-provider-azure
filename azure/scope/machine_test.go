@@ -344,11 +344,9 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 							NetworkSpec: infrav1.NetworkSpec{
 								APIServerLB: infrav1.LoadBalancerSpec{
 									Name: "foo-loadbalancer",
-									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
-										FrontendIPs: []infrav1.FrontendIP{
-											{
-												Name: "foo-frontend-ip",
-											},
+									FrontendIPs: []infrav1.FrontendIP{
+										{
+											Name: "foo-frontend-ip",
 										},
 									},
 								},
@@ -1586,7 +1584,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 										},
 										Name: "subnet1",
 										NatGateway: infrav1.NatGateway{
-											Name: "natgw",
+											NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
+												Name: "natgw",
+											},
 										},
 									},
 								},

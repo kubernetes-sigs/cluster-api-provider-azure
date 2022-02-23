@@ -146,7 +146,7 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 
 	allErrs = append(allErrs, validateControlPlaneOutboundLB(networkSpec.ControlPlaneOutboundLB, networkSpec.APIServerLB, fldPath.Child("controlPlaneOutboundLB"))...)
 
-	allErrs = append(allErrs, validatePrivateDNSZoneName(networkSpec, fldPath)...)
+	allErrs = append(allErrs, validatePrivateDNSZoneName(networkSpec.PrivateDNSZoneName, networkSpec.APIServerLB.Type, fldPath.Child("privateDNSZoneName"))...)
 
 	if len(allErrs) == 0 {
 		return nil
@@ -309,33 +309,18 @@ func validateSecurityRule(rule SecurityRule, fldPath *field.Path) *field.Error {
 
 func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	// SKU should be Standard and is immutable.
-	if lb.SKU != SKUStandard {
-		allErrs = append(allErrs, field.NotSupported(fldPath.Child("sku"), lb.SKU, []string{string(SKUStandard)}))
-	}
-	if old.SKU != "" && old.SKU != lb.SKU {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("sku"), "API Server load balancer SKU should not be modified after AzureCluster creation."))
-	}
 
-	// Type should be Public or Internal.
-	if lb.Type != Internal && lb.Type != Public {
-		allErrs = append(allErrs, field.NotSupported(fldPath.Child("type"), lb.Type,
-			[]string{string(Public), string(Internal)}))
-	}
-	if old.Type != "" && old.Type != lb.Type {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("type"), "API Server load balancer type should not be modified after AzureCluster creation."))
-	}
+	lbClassSpec := lb.LoadBalancerClassSpec
+	olLBClassSpec := old.LoadBalancerClassSpec
+	allErrs = append(allErrs, validateClassSpecForAPIServerLB(lbClassSpec, &olLBClassSpec, fldPath)...)
 
 	// Name should be valid.
 	if err := validateLoadBalancerName(lb.Name, fldPath.Child("name")); err != nil {
 		allErrs = append(allErrs, err)
 	}
+	// Name should be immutable.
 	if old.Name != "" && old.Name != lb.Name {
 		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer name should not be modified after AzureCluster creation."))
-	}
-
-	if old.IdleTimeoutInMinutes != nil && !pointer.Int32Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("idleTimeoutInMinutes"), "API Server load balancer idle timeout cannot be modified after AzureCluster creation."))
 	}
 
 	// There should only be one IP config.
@@ -367,11 +352,6 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 					"Public Load Balancers cannot have a Private IP"))
 			}
 		}
-
-		if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
-				fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
-		}
 	}
 
 	return allErrs
@@ -380,13 +360,18 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	// LB can be nil when disabled for private clusters.
-	if lb == nil && apiserverLB.Type == Internal {
-		return allErrs
+	var lbClassSpec, oldClassSpec *LoadBalancerClassSpec
+	if lb != nil {
+		lbClassSpec = &lb.LoadBalancerClassSpec
 	}
+	if old != nil {
+		oldClassSpec = &old.LoadBalancerClassSpec
+	}
+	apiserverLBClassSpec := apiserverLB.LoadBalancerClassSpec
+
+	allErrs = append(allErrs, validateClassSpecForNodeOutboundLB(lbClassSpec, oldClassSpec, apiserverLBClassSpec, fldPath)...)
 
 	if lb == nil {
-		allErrs = append(allErrs, field.Required(fldPath, "Node outbound load balancer cannot be nil for public clusters."))
 		return allErrs
 	}
 
@@ -396,18 +381,6 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 
 	if old != nil && old.Name != lb.Name {
 		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "Node outbound load balancer Name should not be modified after AzureCluster creation."))
-	}
-
-	if old != nil && old.SKU != lb.SKU {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("sku"), "Node outbound load balancer SKU should not be modified after AzureCluster creation."))
-	}
-
-	if old != nil && old.Type != lb.Type {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("type"), "Node outbound load balancer Type cannot be modified after AzureCluster creation."))
-	}
-
-	if old != nil && !pointer.Int32Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("idleTimeoutInMinutes"), "Node outbound load balancer idle timeout cannot be modified after AzureCluster creation."))
 	}
 
 	if old != nil && old.FrontendIPsCount == lb.FrontendIPsCount {
@@ -431,6 +404,120 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 			fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
 	}
 
+	return allErrs
+}
+
+func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	var lbClassSpec *LoadBalancerClassSpec
+	if lb != nil {
+		lbClassSpec = &lb.LoadBalancerClassSpec
+	}
+	apiServerLBClassSpec := apiserverLB.LoadBalancerClassSpec
+
+	allErrs = append(allErrs, validateClassSpecForControlPlaneOutboundLB(lbClassSpec, apiServerLBClassSpec, fldPath)...)
+
+	if apiServerLBClassSpec.Type == Internal && lb != nil {
+		if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
+				fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
+		}
+	}
+
+	return allErrs
+}
+
+// validatePrivateDNSZoneName validates the PrivateDNSZoneName.
+func validatePrivateDNSZoneName(privateDNSZoneName string, apiserverLBType LBType, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if len(privateDNSZoneName) > 0 {
+		if apiserverLBType != Internal {
+			allErrs = append(allErrs, field.Invalid(fldPath, apiserverLBType,
+				"PrivateDNSZoneName is available only if APIServerLB.Type is Internal"))
+		}
+		if !valid.IsDNSName(privateDNSZoneName) {
+			allErrs = append(allErrs, field.Invalid(fldPath, privateDNSZoneName,
+				"PrivateDNSZoneName can only contain alphanumeric characters, underscores and dashes, must end with an alphanumeric character",
+			))
+		}
+	}
+
+	return allErrs
+}
+
+// validateCloudProviderConfigOverrides validates CloudProviderConfigOverrides.
+func validateCloudProviderConfigOverrides(oldConfig, newConfig *CloudProviderConfigOverrides, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	if !reflect.DeepEqual(oldConfig, newConfig) {
+		allErrs = append(allErrs, field.Invalid(fldPath, newConfig, "cannot change cloudProviderConfigOverrides cluster creation"))
+	}
+	return allErrs
+}
+
+func validateClassSpecForAPIServerLB(lb LoadBalancerClassSpec, old *LoadBalancerClassSpec, apiServerLBPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// SKU should be Standard
+	if lb.SKU != SKUStandard {
+		allErrs = append(allErrs, field.NotSupported(apiServerLBPath.Child("sku"), lb.SKU, []string{string(SKUStandard)}))
+	}
+
+	// Type should be Public or Internal.
+	if lb.Type != Internal && lb.Type != Public {
+		allErrs = append(allErrs, field.NotSupported(apiServerLBPath.Child("type"), lb.Type,
+			[]string{string(Public), string(Internal)}))
+	}
+
+	// SKU should be immutable.
+	if old != nil && old.SKU != "" && old.SKU != lb.SKU {
+		allErrs = append(allErrs, field.Forbidden(apiServerLBPath.Child("sku"), "API Server load balancer SKU should not be modified after AzureCluster creation."))
+	}
+
+	// Type should be immutable.
+	if old != nil && old.Type != "" && old.Type != lb.Type {
+		allErrs = append(allErrs, field.Forbidden(apiServerLBPath.Child("type"), "API Server load balancer type should not be modified after AzureCluster creation."))
+	}
+
+	// IdletimeoutInMinutes should be immutable.
+	if old != nil && old.IdleTimeoutInMinutes != nil && !pointer.Int32Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
+		allErrs = append(allErrs, field.Forbidden(apiServerLBPath.Child("idleTimeoutInMinutes"), "API Server load balancer idle timeout cannot be modified after AzureCluster creation."))
+	}
+
+	if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
+		allErrs = append(allErrs, field.Invalid(apiServerLBPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
+			fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
+	}
+
+	return allErrs
+}
+
+func validateClassSpecForNodeOutboundLB(lb *LoadBalancerClassSpec, old *LoadBalancerClassSpec, apiserverLB LoadBalancerClassSpec, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// LB can be nil when disabled for private clusters.
+	if lb == nil && apiserverLB.Type == Internal {
+		return allErrs
+	}
+
+	if lb == nil {
+		allErrs = append(allErrs, field.Required(fldPath, "Node outbound load balancer cannot be nil for public clusters."))
+		return allErrs
+	}
+
+	if old != nil && old.SKU != lb.SKU {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("sku"), "Node outbound load balancer SKU should not be modified after AzureCluster creation."))
+	}
+
+	if old != nil && old.Type != lb.Type {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("type"), "Node outbound load balancer Type cannot be modified after AzureCluster creation."))
+	}
+
+	if old != nil && !pointer.Int32Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("idleTimeoutInMinutes"), "Node outbound load balancer idle timeout cannot be modified after AzureCluster creation."))
+	}
+
 	if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
 			fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
@@ -439,7 +526,7 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 	return allErrs
 }
 
-func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+func validateClassSpecForControlPlaneOutboundLB(lb *LoadBalancerClassSpec, apiserverLB LoadBalancerClassSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	switch apiserverLB.Type {
@@ -453,47 +540,11 @@ func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB LoadBalanc
 			return nil
 		}
 
-		if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
-				fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
-		}
-
 		if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
 				fmt.Sprintf("Control plane outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
 		}
 	}
 
-	return allErrs
-}
-
-// validatePrivateDNSZoneName validate the PrivateDNSZoneName.
-func validatePrivateDNSZoneName(networkSpec NetworkSpec, fldPath *field.Path) field.ErrorList {
-	var allErrs field.ErrorList
-
-	if len(networkSpec.PrivateDNSZoneName) > 0 {
-		if networkSpec.APIServerLB.Type != Internal {
-			allErrs = append(allErrs, field.Invalid(fldPath, networkSpec.APIServerLB.Type,
-				"PrivateDNSZoneName is available only if APIServerLB.Type is Internal"))
-		}
-		if !valid.IsDNSName(networkSpec.PrivateDNSZoneName) {
-			allErrs = append(allErrs, field.Invalid(fldPath, networkSpec.PrivateDNSZoneName,
-				"PrivateDNSZoneName can only contain alphanumeric characters, underscores and dashes, must end with an alphanumeric character",
-			))
-		}
-	}
-	if len(allErrs) == 0 {
-		return nil
-	}
-
-	return allErrs
-}
-
-// validateCloudProviderConfigOverrides validates CloudProviderConfigOverrides.
-func validateCloudProviderConfigOverrides(oldConfig, newConfig *CloudProviderConfigOverrides, fldPath *field.Path) field.ErrorList {
-	var allErrs field.ErrorList
-	if !reflect.DeepEqual(oldConfig, newConfig) {
-		allErrs = append(allErrs, field.Invalid(fldPath, newConfig, "cannot change cloudProviderConfigOverrides cluster creation"))
-	}
 	return allErrs
 }
