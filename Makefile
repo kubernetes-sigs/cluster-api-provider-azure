@@ -135,8 +135,8 @@ RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 PULL_POLICY ?= Always
 
 # Allow overriding the e2e configurations
-GINKGO_FOCUS ?= Workload cluster creation
-GINKGO_SKIP ?= Creating a GPU-enabled cluster
+GINKGO_FOCUS ?= \[REQUIRED\]
+GINKGO_SKIP ?=
 GINKGO_NODES ?= 3
 GINKGO_NOCOLOR ?= false
 GINKGO_ARGS ?=
