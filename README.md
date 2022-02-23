@@ -39,17 +39,8 @@ This provider's versions are compatible with the following versions of Cluster A
 
 ### Kubernetes Versions
 
-This provider's versions are able to install and manage the following versions of Kubernetes:
+The Azure provider is able to install and manage the [versions of Kubernetes supported by the Cluster API (CAPI) project](https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions).
 
-|  | Azure Provider `v0.4.x` | Azure Provider `v0.5.x` | Azure Provider `v1.0.x` |
-|---|---|---|---|
-| Kubernetes 1.16 | ✓ |  |  |
-| Kubernetes 1.17 | ✓ |  |  |
-| Kubernetes 1.18 | ✓ | ✓ | ✓ |
-| Kubernetes 1.19 | ✓ | ✓ | ✓ |
-| Kubernetes 1.20 | ✓ | ✓ | ✓ |
-| Kubernetes 1.21 | ✓ | ✓ | ✓ |
-| Kubernetes 1.22 |   | ✓ | ✓ |
 
 #### Managed Clusters (AKS)
 
