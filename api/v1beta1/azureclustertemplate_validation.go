@@ -28,6 +28,10 @@ func (c *AzureClusterTemplate) validateClusterTemplate() error {
 	var allErrs field.ErrorList
 	allErrs = append(allErrs, c.validateClusterTemplateSpec()...)
 
+	if len(allErrs) == 0 {
+		return nil
+	}
+
 	return apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "AzureClusterTemplate"},
 		c.Name, allErrs)

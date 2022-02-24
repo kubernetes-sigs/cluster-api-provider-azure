@@ -30,8 +30,8 @@ func (c *AzureClusterTemplate) setNetworkTemplateSpecDefaults() {
 	c.setBastionTemplateDefaults()
 	c.setSubnetsTemplateDefaults()
 
-	networkSpec := c.Spec.Template.Spec.NetworkSpec
-	networkSpec.APIServerLB.setAPIServerLBDefaults()
+	apiServerLB := &c.Spec.Template.Spec.NetworkSpec.APIServerLB
+	apiServerLB.setAPIServerLBDefaults()
 	c.setNodeOutboundLBDefaults()
 	c.setControlPlaneOutboundLBDefaults()
 }
