@@ -613,3 +613,15 @@ func createMachineWithOsDiskCacheType(cacheType string) *AzureMachine {
 	machine.Spec.OSDisk.CachingType = cacheType
 	return machine
 }
+
+func createMachineWithRoleAssignmentName() *AzureMachine {
+	machine := &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey:       validSSHPublicKey,
+			OSDisk:             validOSDisk,
+			Identity:           VMIdentitySystemAssigned,
+			RoleAssignmentName: "c6e3443d-bc11-4335-8819-ab6637b10586",
+		},
+	}
+	return machine
+}
