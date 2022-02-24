@@ -1036,14 +1036,14 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 						{
-							Name: to.StringPtr("my-vmss-netconfig"),
+							Name: to.StringPtr("my-vmss"),
 							VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
 								Primary:                     to.BoolPtr(true),
 								EnableAcceleratedNetworking: to.BoolPtr(false),
 								EnableIPForwarding:          to.BoolPtr(true),
 								IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
 									{
-										Name: to.StringPtr("my-vmss-ipconfig"),
+										Name: to.StringPtr("my-vmss"),
 										VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 											Subnet: &compute.APIEntityReference{
 												ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
