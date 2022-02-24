@@ -25,7 +25,9 @@ type AzureClusterTemplateSpec struct {
 	Template AzureClusterTemplateResource `json:"template"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:path=azureclustertemplates,scope=Namespaced,categories=cluster-api
+// +kubebuilder:storageversion
 
 // AzureClusterTemplate is the Schema for the azureclustertemplates API.
 type AzureClusterTemplate struct {
@@ -36,8 +38,6 @@ type AzureClusterTemplate struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=azureclustertemplates,scope=Namespaced,categories=cluster-api
-// +kubebuilder:storageversion
 
 // AzureClusterTemplateList contains a list of AzureClusterTemplate.
 type AzureClusterTemplateList struct {
