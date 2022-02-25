@@ -74,8 +74,8 @@ When developing on Windows, it is suggested to set up the project on Windows + W
 ### Get the source
 
 ```shell
-go get -d sigs.k8s.io/cluster-api-provider-azure
-cd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure"
+git clone https://github.com/kubernetes-sigs/cluster-api-provider-azure
+cd cluster-api-provider-azure
 ```
 
 ### Get familiar with basic concepts
