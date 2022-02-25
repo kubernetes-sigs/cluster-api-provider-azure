@@ -188,7 +188,7 @@ func WaitForControlPlaneMachinesToExist(ctx context.Context, input WaitForContro
 		ammpList := &infrav1exp.AzureManagedMachinePoolList{}
 
 		if err := input.Lister.List(ctx, ammpList, opt1, opt2); err != nil {
-			Logf("Failed to get machinePool: %+v", err)
+			LogWarningf("Failed to get machinePool: %+v", err)
 			return false
 		}
 
@@ -202,7 +202,7 @@ func WaitForControlPlaneMachinesToExist(ctx context.Context, input WaitForContro
 				ownerMachinePool := &clusterv1exp.MachinePool{}
 				if err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: ref.Name},
 					ownerMachinePool); err != nil {
-					Logf("Failed to get machinePool: %+v", err)
+					LogWarningf("Failed to get machinePool: %+v", err)
 					return false
 				}
 				if len(ownerMachinePool.Status.NodeRefs) >= minReplicas.value(ownerMachinePool) {

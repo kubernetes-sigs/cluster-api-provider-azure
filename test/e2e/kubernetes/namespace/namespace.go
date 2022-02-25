@@ -21,10 +21,17 @@ package namespace
 import (
 	"context"
 	"log"
+	"time"
 
+	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+)
+
+const (
+	namespaceOperationTimeout             = 30 * time.Second
+	namespaceOperationSleepBetweenRetries = 3 * time.Second
 )
 
 // Create a namespace with the given name
@@ -36,15 +43,20 @@ func Create(ctx context.Context, clientset *kubernetes.Clientset, name string, l
 		},
 	}
 
-	namespace, err := clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
-		log.Printf("failed trying to create namespace (%s):%s\n", name, err.Error())
-		return nil, err
-	}
+	var namespace *corev1.Namespace
+	Eventually(func() error {
+		var err error
+		namespace, err = clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+		if err != nil {
+			log.Printf("failed trying to create namespace (%s):%s\n", name, err.Error())
+			return err
+		}
+		return nil
+	}, namespaceOperationTimeout, namespaceOperationSleepBetweenRetries).Should(Succeed())
 	return namespace, nil
 }
 
-// CreateIfNotExist a namespace with the given name if it doesn't exist already
+// CreateNamespaceDeleteIfExist creates a namespace, deletes it first if it already exists
 func CreateNamespaceDeleteIfExist(ctx context.Context, clientset *kubernetes.Clientset, name string, labels map[string]string) (*corev1.Namespace, error) {
 	n, err := Get(ctx, clientset, name)
 	if err == nil {

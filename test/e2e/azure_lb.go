@@ -123,10 +123,16 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	if !input.IPv6 {
 		By("creating an internal Load Balancer service")
 
-		ilbService := webDeployment.GetService(ports, deploymentBuilder.InternalLoadbalancer)
+		ilbService := webDeployment.CreateServiceResourceSpec(ports, deploymentBuilder.InternalLoadbalancer)
 		Log("starting to create an internal Load Balancer service")
-		_, err = servicesClient.Create(ctx, ilbService, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			_, err := servicesClient.Create(ctx, ilbService, metav1.CreateOptions{})
+			if err != nil {
+				LogWarningf("failed creating service (%s):%s\n", ilbService.Name, err.Error())
+				return err
+			}
+			return nil
+		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 		ilbSvcInput := WaitForServiceAvailableInput{
 			Getter:    servicesClientAdapter{client: servicesClient},
 			Service:   ilbService,
@@ -136,14 +142,28 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 		By("connecting to the internal LB service from a curl pod")
 
-		svc, err := servicesClient.Get(ctx, ilbService.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		var svc *corev1.Service
+		Eventually(func() error {
+			var err error
+			svc, err = servicesClient.Get(ctx, ilbService.Name, metav1.GetOptions{})
+			if err != nil {
+				LogWarningf("failed getting service (%s):%s\n", ilbService.Name, err.Error())
+				return err
+			}
+			return nil
+		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 		ilbIP := extractServiceIp(svc)
 
-		ilbJob := job.CreateCurlJob("curl-to-ilb-job", ilbIP)
+		ilbJob := job.CreateCurlJobResourceSpec("curl-to-ilb-job", ilbIP)
 		Log("starting to create a curl to ilb job")
-		_, err = jobsClient.Create(ctx, ilbJob, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			_, err := jobsClient.Create(ctx, ilbJob, metav1.CreateOptions{})
+			if err != nil {
+				LogWarningf("failed creating job (%s):%s\n", ilbJob.Name, err.Error())
+				return err
+			}
+			return nil
+		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 		ilbJobInput := WaitForJobCompleteInput{
 			Getter:    jobsClientAdapter{client: jobsClient},
 			Job:       ilbJob,
@@ -154,19 +174,37 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		if !input.SkipCleanup {
 			By("deleting the ilb test resources")
 			Logf("deleting the ilb service: %s", ilbService.Name)
-			err = servicesClient.Delete(ctx, ilbService.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() error {
+				err := servicesClient.Delete(ctx, ilbService.Name, metav1.DeleteOptions{})
+				if err != nil {
+					LogWarningf("failed deleting service (%s):%s\n", ilbService.Name, err.Error())
+					return err
+				}
+				return nil
+			}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 			Logf("deleting the ilb job: %s", ilbJob.Name)
-			err = jobsClient.Delete(ctx, ilbJob.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() error {
+				err := jobsClient.Delete(ctx, ilbJob.Name, metav1.DeleteOptions{})
+				if err != nil {
+					LogWarningf("failed deleting job (%s):%s\n", ilbJob.Name, err.Error())
+					return err
+				}
+				return nil
+			}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 		}
 	}
 
 	By("creating an external Load Balancer service")
-	elbService := webDeployment.GetService(ports, deploymentBuilder.ExternalLoadbalancer)
+	elbService := webDeployment.CreateServiceResourceSpec(ports, deploymentBuilder.ExternalLoadbalancer)
 	Log("starting to create an external Load Balancer service")
-	_, err = servicesClient.Create(ctx, elbService, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		_, err := servicesClient.Create(ctx, elbService, metav1.CreateOptions{})
+		if err != nil {
+			LogWarningf("failed creating service (%s):%s\n", elbService.Name, err.Error())
+			return err
+		}
+		return nil
+	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	elbSvcInput := WaitForServiceAvailableInput{
 		Getter:    servicesClientAdapter{client: servicesClient},
 		Service:   elbService,
@@ -175,14 +213,28 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	WaitForServiceAvailable(ctx, elbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
 
 	By("connecting to the external LB service from a curl pod")
-	svc, err := servicesClient.Get(ctx, elbService.Name, metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	var svc *corev1.Service
+	Eventually(func() error {
+		var err error
+		svc, err = servicesClient.Get(ctx, elbService.Name, metav1.GetOptions{})
+		if err != nil {
+			LogWarningf("failed getting service (%s):%s\n", elbService.Name, err.Error())
+			return err
+		}
+		return nil
+	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 
 	elbIP := extractServiceIp(svc)
 	Log("starting to create curl-to-elb job")
-	elbJob := job.CreateCurlJob("curl-to-elb-job"+util.RandomString(6), elbIP)
-	_, err = jobsClient.Create(ctx, elbJob, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	elbJob := job.CreateCurlJobResourceSpec("curl-to-elb-job"+util.RandomString(6), elbIP)
+	Eventually(func() error {
+		_, err := jobsClient.Create(ctx, elbJob, metav1.CreateOptions{})
+		if err != nil {
+			LogWarningf("failed creating job (%s):%s\n", elbJob.Name, err.Error())
+			return err
+		}
+		return nil
+	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	elbJobInput := WaitForJobCompleteInput{
 		Getter:    jobsClientAdapter{client: jobsClient},
 		Job:       elbJob,
@@ -208,14 +260,32 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 	By("deleting the test resources")
 	Logf("starting to delete external LB service %s", elbService.Name)
-	err = servicesClient.Delete(ctx, elbService.Name, metav1.DeleteOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		err := servicesClient.Delete(ctx, elbService.Name, metav1.DeleteOptions{})
+		if err != nil {
+			LogWarningf("failed deleting service (%s):%s\n", elbService.Name, err.Error())
+			return err
+		}
+		return nil
+	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	Logf("starting to delete deployment %s", deployment.Name)
-	err = webDeployment.Client(clientset).Delete(ctx, deployment.Name, metav1.DeleteOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		err := webDeployment.Client(clientset).Delete(ctx, deployment.Name, metav1.DeleteOptions{})
+		if err != nil {
+			LogWarningf("failed deleting deployment (%s):%s\n", deployment.Name, err.Error())
+			return err
+		}
+		return nil
+	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	Logf("starting to delete job %s", elbJob.Name)
-	err = jobsClient.Delete(ctx, elbJob.Name, metav1.DeleteOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		err := jobsClient.Delete(ctx, elbJob.Name, metav1.DeleteOptions{})
+		if err != nil {
+			LogWarningf("failed deleting job (%s):%s\n", elbJob.Name, err.Error())
+			return err
+		}
+		return nil
+	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 }
 
 func extractServiceIp(svc *corev1.Service) string {

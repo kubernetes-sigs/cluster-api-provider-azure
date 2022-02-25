@@ -121,10 +121,15 @@ func AzureGPUSpec(ctx context.Context, inputGetter func() AzureGPUSpecInput) {
 // getGPUOperatorPodLogs returns the logs of the Nvidia GPU operator pods.
 func getGPUOperatorPodLogs(ctx context.Context, clientset *kubernetes.Clientset) string {
 	podsClient := clientset.CoreV1().Pods(corev1.NamespaceAll)
-	pods, err := podsClient.List(ctx, metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=gpu-operator"})
-	if err != nil {
-		return err.Error()
-	}
+	var pods *corev1.PodList
+	var err error
+	Eventually(func() error {
+		pods, err = podsClient.List(ctx, metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=gpu-operator"})
+		if err != nil {
+			LogWarning(err.Error())
+		}
+		return err
+	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	b := strings.Builder{}
 	for _, pod := range pods.Items {
 		b.WriteString(fmt.Sprintf("\nLogs for pod %s:\n", pod.Name))

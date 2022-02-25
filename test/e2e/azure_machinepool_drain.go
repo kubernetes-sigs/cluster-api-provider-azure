@@ -47,7 +47,11 @@ import (
 )
 
 const (
-	AzureMachinePoolDrainSpecName = "azure-mp-drain"
+	AzureMachinePoolDrainSpecName               = "azure-mp-drain"
+	waitForDrainOperationTimeout                = 5 * time.Minute
+	waitForDrainSleepBetweenRetries             = 500 * time.Millisecond
+	waitforResourceOperationTimeout             = 30 * time.Second
+	waitforResourceOperationSleepBetweenRetries = 3 * time.Second
 )
 
 // AzureMachinePoolDrainSpecInput is the input for AzureMachinePoolDrainSpec.
@@ -154,19 +158,21 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 	Eventually(func() error {
 		helper, err := patch.NewHelper(owningMachinePool, mgmtClusterProxy.GetClient())
 		if err != nil {
+			LogWarning(err.Error())
 			return err
 		}
 
 		decreasedReplicas := *owningMachinePool.Spec.Replicas - int32(1)
 		owningMachinePool.Spec.Replicas = &decreasedReplicas
 		return helper.Patch(ctx, owningMachinePool)
-	})
+	}, 3*time.Minute, 3*time.Second).Should(Succeed())
 
 	By(fmt.Sprintf("checking for a machine to start draining for machine pool: %s/%s", amp.Namespace, amp.Name))
 	Eventually(func() error {
 		ampmls, err := getAzureMachinePoolMachines(ctx, mgmtClusterProxy, workloadClusterProxy, amp)
 		if err != nil {
-			return errors.Wrap(err, "failed to list the azure machine pool machines")
+			LogWarning(errors.Wrap(err, "failed to list the azure machine pool machines").Error())
+			return err
 		}
 
 		for _, machine := range ampmls {
@@ -176,35 +182,33 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 		}
 
 		return errors.New("no machine has started to drain")
-	})
+	}, waitForDrainOperationTimeout, waitForDrainSleepBetweenRetries).Should(Succeed())
 
-	By(fmt.Sprintf("checking for a machine to successfully complete draining for machine pool: %s/%s", amp.Namespace, amp.Name))
-	Eventually(func() error {
-		ampmls, err := getAzureMachinePoolMachines(ctx, mgmtClusterProxy, workloadClusterProxy, amp)
-		if err != nil {
-			return errors.Wrap(err, "failed to list the azure machine pool machines")
-		}
-
-		for _, machine := range ampmls {
-			if conditions.Has(&machine, clusterv1.DrainingSucceededCondition) && conditions.IsTrue(&machine, clusterv1.DrainingSucceededCondition) {
-				return nil // started draining the node prior to delete
-			}
-		}
-
-		return errors.New("no machine has finished draining")
-	})
+	// TODO setup a watcher to detect the terminal drain success state
 }
 
 func labelNodesWithMachinePoolName(ctx context.Context, workloadClient client.Client, mpName string, ampms []infrav1exp.AzureMachinePoolMachine) {
 	for _, ampm := range ampms {
 		n := &corev1.Node{}
-		Expect(workloadClient.Get(ctx, client.ObjectKey{
-			Name:      ampm.Status.NodeRef.Name,
-			Namespace: ampm.Status.NodeRef.Namespace,
-		}, n)).ToNot(HaveOccurred())
+		Eventually(func() error {
+			err := workloadClient.Get(ctx, client.ObjectKey{
+				Name:      ampm.Status.NodeRef.Name,
+				Namespace: ampm.Status.NodeRef.Namespace,
+			}, n)
+			if err != nil {
+				LogWarning(err.Error())
+			}
+			return err
+		}, waitforResourceOperationTimeout, 3*time.Second).Should(Succeed())
 		n.Labels[clusterv1.OwnerKindAnnotation] = "MachinePool"
 		n.Labels[clusterv1.OwnerNameAnnotation] = mpName
-		Expect(workloadClient.Update(ctx, n)).ToNot(HaveOccurred())
+		Eventually(func() error {
+			err := workloadClient.Update(ctx, n)
+			if err != nil {
+				LogWarning(err.Error())
+			}
+			return err
+		}, waitforResourceOperationTimeout, 3*time.Second).Should(Succeed())
 	}
 }
 
@@ -231,10 +235,16 @@ func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 
 		if ref.Kind == "MachinePool" && gv.Group == clusterv1exp.GroupVersion.Group {
 			mp := &clusterv1exp.MachinePool{}
-			err := c.Get(ctx, client.ObjectKey{
-				Name:      ref.Name,
-				Namespace: obj.Namespace,
-			}, mp)
+			Eventually(func() error {
+				err := c.Get(ctx, client.ObjectKey{
+					Name:      ref.Name,
+					Namespace: obj.Namespace,
+				}, mp)
+				if err != nil {
+					LogWarning(err.Error())
+				}
+				return err
+			}, waitforResourceOperationTimeout, 3*time.Second).Should(Succeed())
 			return mp, err
 		}
 	}
@@ -271,18 +281,14 @@ func deployHttpService(ctx context.Context, clientset *kubernetes.Clientset, isW
 	webDeploymentBuilder.AddContainerPort("http", "http", 80, corev1.ProtocolTCP)
 
 	if isWindows {
-		var windowsVersion windows.OSVersion
-		Eventually(func() error {
-			version, err := node.GetWindowsVersion(ctx, clientset)
-			windowsVersion = version
-			return err
-		}, 300*time.Second, 5*time.Second).Should(Succeed())
+		windowsVersion, err := node.GetWindowsVersion(ctx, clientset)
+		Expect(err).NotTo(HaveOccurred())
 		iisImage := windows.GetWindowsImage(windows.Httpd, windowsVersion)
 		webDeploymentBuilder.SetImage(deploymentName, iisImage)
 		webDeploymentBuilder.AddWindowsSelectors()
 	}
 
-	elbService := webDeploymentBuilder.GetService(ports, deployments.ExternalLoadbalancer)
+	elbService := webDeploymentBuilder.CreateServiceResourceSpec(ports, deployments.ExternalLoadbalancer)
 
 	for _, opt := range opts {
 		opt(webDeploymentBuilder, elbService)
