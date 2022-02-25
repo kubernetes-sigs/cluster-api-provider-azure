@@ -179,7 +179,7 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		AzureCluster: azureCluster,
 	})
 	if err != nil {
-		err = errors.Errorf("failed to create scope: %+v", err)
+		err = errors.Wrap(err, "failed to create scope")
 		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "CreateClusterScopeFailed", err.Error())
 		return reconcile.Result{}, err
 	}
