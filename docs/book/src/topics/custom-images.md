@@ -6,13 +6,35 @@ This document will help you get a CAPZ Kubernetes cluster up and running with yo
 
 An *image* defines the operating system and Kubernetes components that will populate the disk of each node in your cluster.
 
-By default, images offered by "capi" in the [Azure Marketplace][azure-marketplace] are used. You can list these *reference images* with this command:
+By default, images offered by "capi" in the [Azure Marketplace][azure-marketplace] are used.
+
+You can list these *reference images* with this command:
 
 ```bash
 az vm image list --publisher cncf-upstream --offer capi --all -o table
 ```
 
-Note: These images are not updated for security fixes and it is recommended to always use the latest patch version for the Kubernetes version you wish to run. For production-like environments, and for more control over your nodes, it is highly recommended to build and use your own custom images.
+It is recommended to use the latest patch release of Kubernetes for a [supported minor release][supported-k8s].
+
+<aside class="note warning">
+
+<h1> Availability </h1>
+
+The Cluster API for Azure team publishes *reference images* for each Kubernetes release, for both Linux and Windows.
+
+Reference images for versions of Kubernetes which have known security issues or which are no longer [supported by Cluster API][supported-capi] will be removed from the Azure Marketplace.
+
+</aside>
+
+<aside class="note warning">
+
+<h1> Security </h1>
+
+The reference images are not updated with security fixes. They are intended only to facilitate testing and to help users try out Cluster API for Azure.
+
+The reference images should not be used in a production environment. It is highly recommended to [maintain your own custom image](#building-a-custom-image) instead.
+
+</aside>
 
 ## Building a custom image
 
@@ -159,4 +181,6 @@ spec:
 [kubeadm-preflight-checks]: https://github.com/kubernetes/kubeadm/blob/master/docs/design/design_v1.10.md#preflight-checks
 [replication-recommendations]: https://docs.microsoft.com/azure/virtual-machines/linux/shared-image-galleries#scaling
 [shared-image-gallery]: https://docs.microsoft.com/azure/virtual-machines/linux/shared-image-galleries
+[supported-capi]: https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions
+[supported-k8s]: https://kubernetes.io/releases/version-skew-policy/#supported-versions
 [upgrading-workload-clusters]: https://cluster-api.sigs.k8s.io/tasks/kubeadm-control-plane.html#upgrading-workload-clusters
