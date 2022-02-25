@@ -217,7 +217,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	})
 	if err != nil {
 		amr.Recorder.Eventf(azureMachine, corev1.EventTypeWarning, "Error creating the machine scope", err.Error())
-		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")
 	}
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.

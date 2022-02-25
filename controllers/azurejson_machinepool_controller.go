@@ -144,7 +144,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 		AzureCluster: azureCluster,
 	})
 	if err != nil {
-		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")
 	}
 
 	apiVersion, kind := infrav1.GroupVersion.WithKind("AzureMachinePool").ToAPIVersionAndKind()
