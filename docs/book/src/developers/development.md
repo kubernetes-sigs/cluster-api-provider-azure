@@ -525,6 +525,7 @@ With the following environment variables defined, you can build a CAPZ cluster f
 | `WINDOWS_FLAVOR`     | Optional, can be `containerd` or `containerd-2022`, when not specified dockershim is used |
 | `KUBETEST_WINDOWS_CONFIG`     | Optional, can be `upstream-windows-serial-slow.yaml`, when not specified `upstream-windows.yaml` is used |
 | `WINDOWS_CONTAINERD_URL`     | Optional, can be any url to a `tar.gz` file containing binaries for containerd in the same format as upstream package |
+| `SKIP_E2E_TEST`           | Optional, if `true` then the cluster will be created but the conformance tests will not be run against the cluster.  |
 
 With the following environment variables defined, CAPZ runs `./scripts/ci-build-kubernetes.sh` as part of `./scripts/ci-conformance.sh`, which allows developers to build Kubernetes from source and run the Kubernetes Conformance test suite against a CAPZ cluster based on the custom build:
 

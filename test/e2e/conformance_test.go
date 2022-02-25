@@ -212,6 +212,12 @@ var _ = Describe("Conformance Tests", func() {
 		ginkgoNodes, err := strconv.Atoi(e2eConfig.GetVariable("CONFORMANCE_NODES"))
 		Expect(err).NotTo(HaveOccurred())
 
+		skipTests := os.Getenv("SKIP_E2E_TEST")
+		if skipTests == "true" {
+			fmt.Fprintf(GinkgoWriter, "INFO: Skipping conformance tests")
+			return
+		}
+
 		runtime = b.Time("conformance suite", func() {
 			err := kubetest.Run(context.Background(),
 				kubetest.RunInput{
