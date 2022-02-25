@@ -424,13 +424,13 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 						{
-							Name: to.StringPtr(vmssSpec.Name + "-netconfig"),
+							Name: to.StringPtr(vmssSpec.Name),
 							VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
 								Primary:            to.BoolPtr(true),
 								EnableIPForwarding: to.BoolPtr(true),
 								IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
 									{
-										Name: to.StringPtr(vmssSpec.Name + "-ipconfig"),
+										Name: to.StringPtr(vmssSpec.Name),
 										VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 											Subnet: &compute.APIEntityReference{
 												ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, vmssSpec.SubnetName)),
