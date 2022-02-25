@@ -1,5 +1,0 @@
-# Drops the FELIX_AWSSRCDSTCHECK field
-# json patch doesn't allow for dropping fields in array by name
-# https://github.com/projectcalico/calico/issues/5101
-- op: remove
-  path: "/spec/template/spec/containers/0/env/12"

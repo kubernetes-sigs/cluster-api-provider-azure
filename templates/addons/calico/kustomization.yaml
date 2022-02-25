@@ -1,19 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-    - https://docs.projectcalico.org/v3.20/manifests/calico-vxlan.yaml
+    - https://docs.projectcalico.org/v3.22/manifests/calico-vxlan.yaml
 patchesStrategicMerge:
     - patches/azure-mtu.yaml
 patches:
 - path: patches/calico-node.yaml
   target:
     kind: DaemonSet
-- target:
-    version: v1
-    kind: DaemonSet
-    name: calico-node
-    namespace: kube-system
-  path: patches/remove-aws-reference.yaml
 - path: patches/control-plane-tolerations.yaml
   target:
     kind: Deployment
