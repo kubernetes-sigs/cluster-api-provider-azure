@@ -68,6 +68,13 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no network interface specs are found",
+			expectedError: "",
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
+		{
 			name:          "successfully create a network interface",
 			expectedError: "",
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
@@ -134,6 +141,13 @@ func TestDeleteNetworkInterface(t *testing.T) {
 		expectedError string
 		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
+		{
+			name:          "noop if no network interface specs are found",
+			expectedError: "",
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
 		{
 			name:          "successfully delete an existing network interface",
 			expectedError: "",

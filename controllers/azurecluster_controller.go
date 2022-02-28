@@ -241,6 +241,7 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 
 		wrappedErr := errors.Wrap(err, "failed to reconcile cluster services")
 		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerNormalFailed", wrappedErr.Error())
+		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.FailedReason, clusterv1.ConditionSeverityError, wrappedErr.Error())
 		return reconcile.Result{}, wrappedErr
 	}
 

@@ -78,6 +78,16 @@ func TestReconcileNatGateways(t *testing.T) {
 		expect        func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no NAT gateways specs are found",
+			tags:          customVNetTags,
+			expectedError: "",
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&ownedVNetSpec)
+				s.ClusterName()
+				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
+		{
 			name:          "NAT gateways in custom vnet mode",
 			tags:          customVNetTags,
 			expectedError: "",
@@ -161,6 +171,16 @@ func TestDeleteNatGateway(t *testing.T) {
 		expectedError string
 		expect        func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
+		{
+			name:          "noop if no NAT gateways specs are found",
+			tags:          ownedVNetTags,
+			expectedError: "",
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.Vnet().Return(&ownedVNetSpec)
+				s.ClusterName()
+				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{})
+			},
+		},
 		{
 			name:          "NAT gateways in custom vnet mode",
 			tags:          customVNetTags,

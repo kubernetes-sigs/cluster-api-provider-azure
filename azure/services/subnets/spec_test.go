@@ -76,34 +76,6 @@ var (
 		},
 	}
 
-	fakeSubnetSpecNotManaged = SubnetSpec{
-		Name:              "my-subnet-1",
-		ResourceGroup:     "my-rg",
-		SubscriptionID:    "123",
-		CIDRs:             []string{"10.0.0.0/16"},
-		IsVNetManaged:     false,
-		VNetName:          "my-vnet",
-		VNetResourceGroup: "my-vnet-rg",
-		RouteTableName:    "my-subnet_route_table",
-		SecurityGroupName: "my-sg-1",
-		Role:              infrav1.SubnetNode,
-	}
-	fakeSubnetNotManaged = network.Subnet{
-		ID:   to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet-1"),
-		Name: to.StringPtr("my-subnet-1"),
-		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-			AddressPrefix: to.StringPtr("10.0.0.0/16"),
-			RouteTable: &network.RouteTable{
-				ID:   to.StringPtr("rt-id"),
-				Name: to.StringPtr("my-subnet_route_table"),
-			},
-			NetworkSecurityGroup: &network.SecurityGroup{
-				ID:   to.StringPtr("sg-id-1"),
-				Name: to.StringPtr("my-sg-1"),
-			},
-		},
-	}
-
 	fakeIpv6SubnetSpecNotManaged = SubnetSpec{
 		Name:              "my-ipv6-subnet",
 		ResourceGroup:     "my-rg",

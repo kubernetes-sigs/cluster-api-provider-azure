@@ -39,6 +39,7 @@ type VNetScope interface {
 	Vnet() *infrav1.VnetSpec
 	VNetSpec() azure.ResourceSpecGetter
 	ClusterName() string
+	IsVnetManaged() bool
 }
 
 // Service provides operations on Azure resources.
@@ -66,9 +67,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	vnetSpec := s.Scope.VNetSpec()
+	if vnetSpec == nil {
+		return nil
+	}
 
 	result, err := s.CreateResource(ctx, vnetSpec, serviceName)
-	s.Scope.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, err)
 	if err == nil && result != nil {
 		existingVnet, ok := result.(network.VirtualNetwork)
 		if !ok {
@@ -84,6 +87,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 		vnet.CIDRBlocks = prefixes
 	}
+
+	if s.Scope.IsVnetManaged() {
+		s.Scope.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, err)
+	}
+
 	return err
 }
 
@@ -96,6 +104,9 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	vnetSpec := s.Scope.VNetSpec()
+	if vnetSpec == nil {
+		return nil
+	}
 
 	// Check that the vnet is not BYO.
 	managed, err := s.IsManaged(ctx, vnetSpec)

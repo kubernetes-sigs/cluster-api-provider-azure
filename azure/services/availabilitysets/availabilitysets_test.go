@@ -89,11 +89,10 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			},
 		},
 		{
-			name:          "noop if no availability set spec is found",
+			name:          "noop if no availability set spec returns nil",
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(nil)
-				s.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil)
 			},
 		},
 		{
@@ -167,7 +166,6 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(nil)
-				s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil)
 			},
 		},
 		{

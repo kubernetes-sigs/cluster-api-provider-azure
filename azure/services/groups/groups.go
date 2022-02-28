@@ -65,6 +65,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	groupSpec := s.Scope.GroupSpec()
+	if groupSpec == nil {
+		return nil
+	}
 
 	_, err := s.CreateResource(ctx, groupSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, serviceName, err)
@@ -80,6 +83,9 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	groupSpec := s.Scope.GroupSpec()
+	if groupSpec == nil {
+		return nil
+	}
 
 	// check that the resource group is not BYO.
 	managed, err := s.IsGroupManaged(ctx)

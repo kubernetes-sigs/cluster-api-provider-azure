@@ -70,6 +70,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		_, err = s.CreateResource(ctx, setSpec, serviceName)
 	} else {
 		log.V(2).Info("skip creation when no availability set spec is found")
+		return nil
 	}
 
 	s.Scope.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, err)
@@ -85,25 +86,27 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	var resultingErr error
-	if setSpec := s.Scope.AvailabilitySetSpec(); setSpec == nil {
+	setSpec := s.Scope.AvailabilitySetSpec()
+	if setSpec == nil {
 		log.V(2).Info("skip deletion when no availability set spec is found")
+		return nil
+	}
+
+	existingSet, err := s.Get(ctx, setSpec)
+	if err != nil {
+		if !azure.ResourceNotFound(err) {
+			resultingErr = errors.Wrapf(err, "failed to get availability set %s in resource group %s", setSpec.ResourceName(), setSpec.ResourceGroupName())
+		}
 	} else {
-		existingSet, err := s.Get(ctx, setSpec)
-		if err != nil {
-			if !azure.ResourceNotFound(err) {
-				resultingErr = errors.Wrapf(err, "failed to get availability set %s in resource group %s", setSpec.ResourceName(), setSpec.ResourceGroupName())
-			}
+		availabilitySet, ok := existingSet.(compute.AvailabilitySet)
+		if !ok {
+			resultingErr = errors.Errorf("%T is not a compute.AvailabilitySet", existingSet)
 		} else {
-			availabilitySet, ok := existingSet.(compute.AvailabilitySet)
-			if !ok {
-				resultingErr = errors.Errorf("%T is not a compute.AvailabilitySet", existingSet)
+			// only delete when the availability set does not have any vms
+			if availabilitySet.AvailabilitySetProperties != nil && availabilitySet.VirtualMachines != nil && len(*availabilitySet.VirtualMachines) > 0 {
+				log.V(2).Info("skip deleting availability set with VMs", "availability set", setSpec.ResourceName())
 			} else {
-				// only delete when the availability set does not have any vms
-				if availabilitySet.AvailabilitySetProperties != nil && availabilitySet.VirtualMachines != nil && len(*availabilitySet.VirtualMachines) > 0 {
-					log.V(2).Info("skip deleting availability set with VMs", "availability set", setSpec.ResourceName())
-				} else {
-					resultingErr = s.DeleteResource(ctx, setSpec, serviceName)
-				}
+				resultingErr = s.DeleteResource(ctx, setSpec, serviceName)
 			}
 		}
 	}

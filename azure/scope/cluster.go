@@ -679,20 +679,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ClusterScope.PatchObject")
 	defer done()
 
-	conditions.SetSummary(s.AzureCluster,
-		conditions.WithConditions(
-			infrav1.ResourceGroupReadyCondition,
-			infrav1.RouteTablesReadyCondition,
-			infrav1.NetworkInfrastructureReadyCondition,
-			infrav1.VnetPeeringReadyCondition,
-			infrav1.DisksReadyCondition,
-			infrav1.NATGatewaysReadyCondition,
-			infrav1.LoadBalancersReadyCondition,
-			infrav1.BastionHostReadyCondition,
-			infrav1.VNetReadyCondition,
-			infrav1.SubnetsReadyCondition,
-		),
-	)
+	conditions.SetSummary(s.AzureCluster)
 
 	return s.patchHelper.Patch(
 		ctx,

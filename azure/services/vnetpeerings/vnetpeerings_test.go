@@ -95,11 +95,10 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			},
 		},
 		{
-			name:          "create no peerings",
+			name:          "noop if no peering specs are found",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:0])
-				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
+				p.VnetPeeringSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{
@@ -242,11 +241,10 @@ func TestDeleteVnetPeerings(t *testing.T) {
 			},
 		},
 		{
-			name:          "delete no peerings",
+			name:          "noop if no peering specs are found",
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:0])
-				p.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
+				p.VnetPeeringSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{

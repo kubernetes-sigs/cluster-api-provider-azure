@@ -69,7 +69,6 @@ func TestReconcileBastionHosts(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(nil)
-				s.UpdatePutStatus(infrav1.BastionHostReadyCondition, serviceName, nil)
 			},
 		},
 		{
@@ -140,7 +139,6 @@ func TestDeleteBastionHost(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(nil)
-				s.UpdateDeleteStatus(infrav1.BastionHostReadyCondition, serviceName, nil)
 			},
 		},
 	}

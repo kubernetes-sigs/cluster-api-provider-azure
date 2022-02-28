@@ -113,6 +113,13 @@ func TestReconcileVM(t *testing.T) {
 		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
+			name:          "noop if no vm spec is found",
+			expectedError: "",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VMSpec().Return(nil)
+			},
+		},
+		{
 			name:          "create vm succeeds",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_publicips.MockClientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
@@ -206,6 +213,13 @@ func TestDeleteVM(t *testing.T) {
 		expectedError string
 		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
+		{
+			name:          "noop if no vm spec is found",
+			expectedError: "",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VMSpec().Return(nil)
+			},
+		},
 		{
 			name:          "vm doesn't exist",
 			expectedError: "",
