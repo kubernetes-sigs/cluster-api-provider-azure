@@ -4,6 +4,7 @@ resources:
     - https://docs.projectcalico.org/v3.22/manifests/calico-policy-only.yaml
 patchesStrategicMerge:
     - patches/azure-mtu.yaml
+    - patches/calico-config.yaml
 patches:
 - target: 
     group: apps

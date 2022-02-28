@@ -3937,7 +3937,7 @@ data:
           "mtu": 1500,
           "ipam": {
               "type": "host-local",
-              "subnet": "usePodCidr"
+              "subnet": "usePodCidrIPv6"
           },
           "policy": {
               "type": "k8s"
