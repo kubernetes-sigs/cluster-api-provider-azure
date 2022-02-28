@@ -275,6 +275,31 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	Context("Creating a Flatcar cluster [OPTIONAL]", func() {
+		It("With Flatcar control-plane and worker nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "flatcar")
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "flatcar",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+					ControlPlaneMachineCount: pointer.Int64Ptr(1),
+					WorkerMachineCount:       pointer.Int64Ptr(1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			}, result)
+		})
+	})
+
 	Context("Creating a ipv6 control-plane cluster [REQUIRED]", func() {
 		It("With ipv6 worker node", func() {
 			clusterName = getClusterName(clusterNamePrefix, "ipv6")

@@ -137,6 +137,8 @@ providers:
         targetName: "clusterclass-ci-default.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-topology.yaml"
         targetName: "cluster-template-topology.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar.yaml"
+        targetName: "cluster-template-flatcar.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
@@ -154,6 +156,7 @@ variables:
   EXP_MACHINE_POOL: "true"
   EXP_CLUSTER_RESOURCE_SET: "true"
   CLUSTER_TOPOLOGY: "true"
+  EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
   CONFORMANCE_WORKER_MACHINE_COUNT: "2"
   CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT: "${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT:-1}"
   CONFORMANCE_IMAGE: "${CONFORMANCE_IMAGE:-}"
