@@ -569,7 +569,7 @@ release-alias-tag: ## Adds the tag to the last build tag.
 .PHONY: release-notes
 release-notes: $(RELEASE_NOTES) $(RELEASE_NOTES_DIR) ## Generate/update release notes.
 	@if [ -n "${PRE_RELEASE}" ]; then echo ":rotating_light: This is a RELEASE CANDIDATE. Use it only for testing purposes. If you find any bugs, file an [issue](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new)." > $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md; \
-	else $(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH)  --start-rev $(PREVIOUS_TAG) --end-rev $(RELEASE_TAG) --output $(RELEASE_NOTES_DIR)/tmp-release-notes.md; \
+	else $(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH)  --start-rev $(PREVIOUS_TAG) --end-rev $(RELEASE_TAG) --output $(RELEASE_NOTES_DIR)/tmp-release-notes.md --list-v2; \
 	sed 's/\[SIG Cluster Lifecycle\]//g' $(RELEASE_NOTES_DIR)/tmp-release-notes.md > $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md; \
 	rm -f $(RELEASE_NOTES_DIR)/tmp-release-notes.md; \
 	fi
