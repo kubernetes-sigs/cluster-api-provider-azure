@@ -108,11 +108,11 @@ func (amp *AzureMachinePool) ValidateTerminateNotificationTimeout() error {
 		return nil
 	}
 	if *amp.Spec.Template.TerminateNotificationTimeout < 5 {
-		return errors.New("Minimum timeout 5 is allowed for TerminateNotificationTimeout")
+		return errors.New("minimum timeout 5 is allowed for TerminateNotificationTimeout")
 	}
 
 	if *amp.Spec.Template.TerminateNotificationTimeout > 15 {
-		return errors.New("Maximum timeout 15 is allowed for TerminateNotificationTimeout")
+		return errors.New("maximum timeout 15 is allowed for TerminateNotificationTimeout")
 	}
 
 	return nil

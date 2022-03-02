@@ -107,7 +107,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			},
 			Expect: func(g *gomega.GomegaWithT, actual error) {
 				g.Expect(actual).To(gomega.HaveOccurred())
-				g.Expect(actual.Error()).To(gomega.ContainSubstring("Maximum timeout 15 is allowed for TerminateNotificationTimeout"))
+				g.Expect(actual.Error()).To(gomega.ContainSubstring("maximum timeout 15 is allowed for TerminateNotificationTimeout"))
 			},
 		},
 		{
@@ -123,7 +123,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			},
 			Expect: func(g *gomega.GomegaWithT, actual error) {
 				g.Expect(actual).To(gomega.HaveOccurred())
-				g.Expect(actual.Error()).To(gomega.ContainSubstring("Minimum timeout 5 is allowed for TerminateNotificationTimeout"))
+				g.Expect(actual.Error()).To(gomega.ContainSubstring("minimum timeout 5 is allowed for TerminateNotificationTimeout"))
 			},
 		},
 	}
