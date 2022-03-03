@@ -1,0 +1,28 @@
+# Deploy a third agent pool with one machine in order to test a AzureManagedMachinePool with only required configuration
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: "agentpool2"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: 1
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: "${CLUSTER_NAME}"
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureManagedMachinePool
+        name: "agentpool2"
+      version: "${KUBERNETES_VERSION}"
+---
+# The infrastructure backing the third pool will use the same VM SKU, which is the only required configuration
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: "agentpool2"
+spec:
+  mode: User
+  sku: "${AZURE_NODE_MACHINE_TYPE}"

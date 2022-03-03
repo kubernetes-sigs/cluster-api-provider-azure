@@ -23,6 +23,10 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
+  additionalTags:
+    buildProvenance: ${BUILD_PROVENANCE}
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
   addonProfiles:
   - enabled: true
     name: azurepolicy
@@ -30,7 +34,6 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
     name: ${CLUSTER_IDENTITY_NAME}
-    namespace: ${CLUSTER_IDENTITY_NAMESPACE}
   location: ${AZURE_LOCATION}
   resourceGroupName: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
@@ -69,8 +72,10 @@ metadata:
   name: agentpool0
   namespace: default
 spec:
+  maxPods: 30
   mode: System
   osDiskSizeGB: 30
+  osDiskType: Managed
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -99,9 +104,33 @@ metadata:
   name: agentpool1
   namespace: default
 spec:
+  maxPods: 64
   mode: User
+  nodeLabels:
+    type: shared
   osDiskSizeGB: 40
+  osDiskType: Ephemeral
   sku: ${AZURE_NODE_MACHINE_TYPE}
+  taints:
+  - effect: NoSchedule
+    key: type
+    value: shared
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -131,17 +160,3 @@ metadata:
 spec:
   mode: User
   sku: ${AZURE_NODE_MACHINE_TYPE}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureClusterIdentity
-metadata:
-  name: ${CLUSTER_IDENTITY_NAME}
-  namespace: default
-spec:
-  allowedNamespaces: {}
-  clientID: ${AZURE_CLIENT_ID}
-  clientSecret:
-    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
-    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
-  tenantID: ${AZURE_TENANT_ID}
-  type: ServicePrincipal
