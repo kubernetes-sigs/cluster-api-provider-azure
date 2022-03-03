@@ -35,6 +35,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "scalesets"
+
 type (
 	// ScaleSetScope defines the scope interface for a scale sets service.
 	ScaleSetScope interface {
@@ -59,13 +61,18 @@ type (
 	}
 )
 
-// NewService creates a new service.
-func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
+// New creates a new service.
+func New(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Client:           NewClient(scope),
 		Scope:            scope,
 		resourceSKUCache: skuCache,
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile idempotently gets, creates, and updates a scale set.

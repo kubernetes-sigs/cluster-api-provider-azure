@@ -25,6 +25,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "vmssextensions"
+
 // VMSSExtensionScope defines the scope interface for a vmss extension service.
 type VMSSExtensionScope interface {
 	azure.ClusterDescriber
@@ -44,6 +46,11 @@ func New(scope VMSSExtensionScope) *Service {
 		Scope:  scope,
 		client: newClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile creates or updates the VMSS extension.

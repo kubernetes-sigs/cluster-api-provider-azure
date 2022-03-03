@@ -54,6 +54,11 @@ func New(scope InboundNatScope) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile gets/creates/updates an inbound NAT rule.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.Service.Reconcile")

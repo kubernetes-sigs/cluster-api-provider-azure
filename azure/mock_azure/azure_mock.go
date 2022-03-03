@@ -81,31 +81,31 @@ func (mr *MockReconcilerMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), ctx)
 }
 
-// MockCredentialGetter is a mock of CredentialGetter interface.
-type MockCredentialGetter struct {
+// MockServiceReconciler is a mock of ServiceReconciler interface.
+type MockServiceReconciler struct {
 	ctrl     *gomock.Controller
-	recorder *MockCredentialGetterMockRecorder
+	recorder *MockServiceReconcilerMockRecorder
 }
 
-// MockCredentialGetterMockRecorder is the mock recorder for MockCredentialGetter.
-type MockCredentialGetterMockRecorder struct {
-	mock *MockCredentialGetter
+// MockServiceReconcilerMockRecorder is the mock recorder for MockServiceReconciler.
+type MockServiceReconcilerMockRecorder struct {
+	mock *MockServiceReconciler
 }
 
-// NewMockCredentialGetter creates a new mock instance.
-func NewMockCredentialGetter(ctrl *gomock.Controller) *MockCredentialGetter {
-	mock := &MockCredentialGetter{ctrl: ctrl}
-	mock.recorder = &MockCredentialGetterMockRecorder{mock}
+// NewMockServiceReconciler creates a new mock instance.
+func NewMockServiceReconciler(ctrl *gomock.Controller) *MockServiceReconciler {
+	mock := &MockServiceReconciler{ctrl: ctrl}
+	mock.recorder = &MockServiceReconcilerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockCredentialGetter) EXPECT() *MockCredentialGetterMockRecorder {
+func (m *MockServiceReconciler) EXPECT() *MockServiceReconcilerMockRecorder {
 	return m.recorder
 }
 
 // Delete mocks base method.
-func (m *MockCredentialGetter) Delete(ctx context.Context) error {
+func (m *MockServiceReconciler) Delete(ctx context.Context) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx)
 	ret0, _ := ret[0].(error)
@@ -113,28 +113,27 @@ func (m *MockCredentialGetter) Delete(ctx context.Context) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockCredentialGetterMockRecorder) Delete(ctx interface{}) *gomock.Call {
+func (mr *MockServiceReconcilerMockRecorder) Delete(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockCredentialGetter)(nil).Delete), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockServiceReconciler)(nil).Delete), ctx)
 }
 
-// GetCredentials mocks base method.
-func (m *MockCredentialGetter) GetCredentials(ctx context.Context, group, cluster string) ([]byte, error) {
+// Name mocks base method.
+func (m *MockServiceReconciler) Name() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCredentials", ctx, group, cluster)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "Name")
+	ret0, _ := ret[0].(string)
+	return ret0
 }
 
-// GetCredentials indicates an expected call of GetCredentials.
-func (mr *MockCredentialGetterMockRecorder) GetCredentials(ctx, group, cluster interface{}) *gomock.Call {
+// Name indicates an expected call of Name.
+func (mr *MockServiceReconcilerMockRecorder) Name() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentials", reflect.TypeOf((*MockCredentialGetter)(nil).GetCredentials), ctx, group, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockServiceReconciler)(nil).Name))
 }
 
 // Reconcile mocks base method.
-func (m *MockCredentialGetter) Reconcile(ctx context.Context) error {
+func (m *MockServiceReconciler) Reconcile(ctx context.Context) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Reconcile", ctx)
 	ret0, _ := ret[0].(error)
@@ -142,9 +141,9 @@ func (m *MockCredentialGetter) Reconcile(ctx context.Context) error {
 }
 
 // Reconcile indicates an expected call of Reconcile.
-func (mr *MockCredentialGetterMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
+func (mr *MockServiceReconcilerMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockCredentialGetter)(nil).Reconcile), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockServiceReconciler)(nil).Reconcile), ctx)
 }
 
 // MockAuthorizer is a mock of Authorizer interface.

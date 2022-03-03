@@ -92,7 +92,7 @@ func TestNewService(t *testing.T) {
 		ClusterScope:     s,
 	})
 	g.Expect(err).NotTo(HaveOccurred())
-	actual := NewService(mps, resourceskus.NewStaticCache(nil, ""))
+	actual := New(mps, resourceskus.NewStaticCache(nil, ""))
 	g.Expect(actual).ToNot(BeNil())
 }
 

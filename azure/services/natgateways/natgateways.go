@@ -53,6 +53,11 @@ func New(scope NatGatewayScope) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile gets/creates/updates a NAT gateway.
 // Only when the NAT gateway 'Name' property is defined we create the NAT gateway: it's opt-in.
 func (s *Service) Reconcile(ctx context.Context) error {

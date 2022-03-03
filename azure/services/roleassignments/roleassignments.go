@@ -31,7 +31,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-const azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
+const (
+	azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
+	serviceName               = "roleassignments"
+)
 
 // RoleAssignmentScope defines the scope interface for a role assignment service.
 type RoleAssignmentScope interface {
@@ -55,6 +58,11 @@ func New(scope RoleAssignmentScope) *Service {
 		virtualMachinesGetter:        virtualmachines.NewClient(scope),
 		virtualMachineScaleSetClient: scalesets.NewClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile creates a role assignment.

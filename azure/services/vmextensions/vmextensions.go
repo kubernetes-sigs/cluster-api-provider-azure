@@ -26,6 +26,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "vmextensions"
+
 // VMExtensionScope defines the scope interface for a vm extension service.
 type VMExtensionScope interface {
 	azure.ClusterDescriber
@@ -45,6 +47,11 @@ func New(scope VMExtensionScope) *Service {
 		Scope:  scope,
 		client: newClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile creates or updates the VM extension.

@@ -53,6 +53,11 @@ func New(scope NICScope, skuCache *resourceskus.Cache) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile gets/creates/updates a network interface.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.Reconcile")

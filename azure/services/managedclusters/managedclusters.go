@@ -35,6 +35,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
+const serviceName = "managedclusters"
+
 var (
 	defaultUser     = "azureuser"
 	managedIdentity = "msi"
@@ -143,6 +145,11 @@ func New(scope ManagedClusterScope) *Service {
 		Scope:  scope,
 		Client: NewClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile idempotently creates or updates a managed cluster, if possible.

@@ -57,6 +57,11 @@ func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile creates or updates availability sets.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "availabilitysets.Service.Reconcile")

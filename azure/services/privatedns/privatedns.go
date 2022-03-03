@@ -28,6 +28,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "privatedns"
+
 // Scope defines the scope interface for a private dns service.
 type Scope interface {
 	azure.ClusterDescriber
@@ -46,6 +48,11 @@ func New(scope Scope) *Service {
 		Scope:  scope,
 		client: newClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile creates or updates the private zone, links it to the vnet, and creates DNS records.

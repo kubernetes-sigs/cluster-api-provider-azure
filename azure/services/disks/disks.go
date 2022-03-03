@@ -50,6 +50,11 @@ func New(scope DiskScope) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile on disk is currently no-op. OS disks should only be deleted and will create with the VM automatically.
 func (s *Service) Reconcile(ctx context.Context) error {
 	_, _, done := tele.StartSpanWithLogger(ctx, "disks.Service.Reconcile")
