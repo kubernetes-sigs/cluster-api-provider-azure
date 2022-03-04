@@ -85,7 +85,10 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 
 	createFuture, err := ac.loadbalancers.CreateOrUpdateSender(req)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "CreateOrUpdate", createFuture.Response(), "Failure sending request")
+		res := createFuture.Response()
+		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "CreateOrUpdate", res, "Failure sending request")
+		// response body must be closed
+		res.Body.Close()
 		return nil, nil, err
 	}
 
