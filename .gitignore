@@ -76,3 +76,6 @@ hack/boilerplate/*.pyc
 
 # release notes
 _releasenotes
+
+# calico manifests archive
+release-*/manifests/calico-*.yaml
