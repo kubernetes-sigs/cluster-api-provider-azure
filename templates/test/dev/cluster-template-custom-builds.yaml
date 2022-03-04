@@ -4503,7 +4503,7 @@ data:
               value: node
             - name: DATASTORE_TYPE
               value: kubernetes
-            image: docker.io/calico/kube-controllers:v3.22.0
+            image: docker.io/calico/kube-controllers:v3.22.1
             livenessProbe:
               exec:
                 command:
@@ -4613,7 +4613,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/node:v3.22.0
+            image: docker.io/calico/node:v3.22.1
             lifecycle:
               preStop:
                 exec:
@@ -4685,7 +4685,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/cni:v3.22.0
+            image: docker.io/calico/cni:v3.22.1
             name: upgrade-ipam
             securityContext:
               privileged: true
@@ -4719,7 +4719,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/cni:v3.22.0
+            image: docker.io/calico/cni:v3.22.1
             name: install-cni
             securityContext:
               privileged: true
@@ -4728,7 +4728,7 @@ data:
               name: cni-bin-dir
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
-          - image: docker.io/calico/pod2daemon-flexvol:v3.22.0
+          - image: docker.io/calico/pod2daemon-flexvol:v3.22.1
             name: flexvol-driver
             securityContext:
               privileged: true
@@ -4836,7 +4836,7 @@ data:
     for rescheduling.\n      - key: CriticalAddonsOnly\n        operator: Exists\n
     \     - effect: NoExecute\n        operator: Exists\n      initContainers:\n        #
     This container installs the CNI binaries\n        # and CNI network config file
-    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.22.0-hostprocess\n
+    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.22.1-hostprocess\n
     \         args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1\"]\n
     \         imagePullPolicy: Always\n          env:\n            # Name of the CNI
     config file to create.\n            - name: CNI_CONF_NAME\n              value:
@@ -4855,7 +4855,7 @@ data:
     cni-net-dir\n            - name: kubeadm-config\n              mountPath: /etc/kubeadm-config/\n
     \         securityContext:\n            windowsOptions:\n              hostProcess:
     true\n              runAsUserName: \"NT AUTHORITY\\\\system\"\n      containers:\n
-    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.22.0-hostprocess\n
+    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.22.1-hostprocess\n
     \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1\"]\n
     \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        imagePullPolicy:
     Always\n        volumeMounts:\n        - name: calico-config-windows\n          mountPath:
@@ -4866,7 +4866,7 @@ data:
     name: CNI_IPAM_TYPE\n          value: \"calico-ipam\"\n        - name: CALICO_NETWORKING_BACKEND\n
     \         value: \"vxlan\"\n        - name: KUBECONFIG\n          value: \"C:/etc/cni/net.d/calico-kubeconfig\"\n
     \       - name: VXLAN_VNI\n          value: \"4096\"\n      - name: calico-node-felix\n
-    \       image: sigwindowstools/calico-node:v3.22.0-hostprocess\n        args:
+    \       image: sigwindowstools/calico-node:v3.22.1-hostprocess\n        args:
     [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1\"]\n        imagePullPolicy:
     Always\n        workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        volumeMounts:\n
     \       - name: calico-config-windows\n          mountPath: /etc/kube-calico-windows/\n
