@@ -36,7 +36,7 @@ func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
 		},
 		{
 			Name:     "WithAWrappedNotFoundError",
-			Err:      errors.Wrap(NewAgentPoolVMSSNotFoundError("foo", "baz"), "boom!"),
+			Err:      errors.Wrap(NewAgentPoolVMSSNotFoundError("foo", "baz"), "boom"),
 			Expected: true,
 		},
 		{
