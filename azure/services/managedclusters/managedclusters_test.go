@@ -18,260 +18,165 @@ package managedclusters
 
 import (
 	"context"
-	"net/http"
+	"errors"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters/mock_managedclusters"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
+var fakeManagedClusterSpec = &ManagedClusterSpec{Name: "my-managedcluster", ResourceGroup: "my-rg"}
+
 func TestReconcile(t *testing.T) {
-	provisioningstatetestcases := []struct {
-		name                     string
-		provisioningStatesToTest []string
-		expectedError            string
-		expect                   func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string, s *mock_managedclusters.MockManagedClusterScopeMockRecorder)
-	}{
-		{
-			name:                     "managedcluster in terminal provisioning state",
-			provisioningStatesToTest: []string{"Canceled", "Succeeded", "Failed"},
-			expectedError:            "",
-			expect: func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string, s *mock_managedclusters.MockManagedClusterScopeMockRecorder) {
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-managedcluster", gomock.Any(), map[string]string{"myFeature": "true"}).Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-					Fqdn:              pointer.String("my-managedcluster-fqdn"),
-					ProvisioningState: &provisioningstate,
-				}}, nil)
-				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-					Fqdn:              pointer.String("my-managedcluster-fqdn"),
-					ProvisioningState: &provisioningstate,
-					NetworkProfile:    &containerservice.NetworkProfile{},
-				}}, nil)
-				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Times(1)
-				s.ClusterName().AnyTimes().Return("my-managedcluster")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.ManagedClusterAnnotations().Times(1).Return(map[string]string{
-					"infrastructure.cluster.x-k8s.io/custom-header-myFeature": "true",
-				})
-				s.ManagedClusterSpec().AnyTimes().Return(azure.ManagedClusterSpec{
-					Name:              "my-managedcluster",
-					ResourceGroupName: "my-rg",
-				}, nil)
-				s.SetControlPlaneEndpoint(gomock.Any()).Times(1)
-				s.SetKubeConfigData(gomock.Any()).Times(1)
-			},
-		},
-		{
-			name:                     "managedcluster in nonterminal provisioning state",
-			provisioningStatesToTest: []string{"Deleting", "InProgress", "randomStringHere"},
-			expectedError:            "Unable to update existing managed cluster in non terminal state. Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state",
-			expect: func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string, s *mock_managedclusters.MockManagedClusterScopeMockRecorder) {
-				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-					ProvisioningState: &provisioningstate,
-				}}, nil)
-				s.ClusterName().AnyTimes().Return("my-managedcluster")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.ManagedClusterAnnotations().Times(1).Return(map[string]string{})
-				s.ManagedClusterSpec().AnyTimes().Return(azure.ManagedClusterSpec{
-					Name:              "my-managedcluster",
-					ResourceGroupName: "my-rg",
-				}, nil)
-			},
-		},
-	}
-
-	for _, tc := range provisioningstatetestcases {
-		for _, provisioningstate := range tc.provisioningStatesToTest {
-			t.Logf("Testing managedcluster provision state: " + provisioningstate)
-			t.Run(tc.name, func(t *testing.T) {
-				g := NewWithT(t)
-
-				mockCtrl := gomock.NewController(t)
-				defer mockCtrl.Finish()
-				scopeMock := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
-				clientMock := mock_managedclusters.NewMockClient(mockCtrl)
-
-				tc.expect(clientMock.EXPECT(), provisioningstate, scopeMock.EXPECT())
-
-				s := &Service{
-					Scope:  scopeMock,
-					Client: clientMock,
-				}
-
-				err := s.Reconcile(context.TODO())
-				if tc.expectedError != "" {
-					g.Expect(err).To(HaveOccurred())
-					g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
-					g.Expect(err.Error()).To(ContainSubstring(provisioningstate))
-				} else {
-					g.Expect(err).NotTo(HaveOccurred())
-				}
-			})
-		}
-	}
-
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(m *mock_managedclusters.MockClientMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder)
+		expect        func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
-			name:          "no managedcluster exists",
+			name:          "noop if managedcluster spec is nil",
 			expectedError: "",
-			expect: func(m *mock_managedclusters.MockClientMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder) {
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-managedcluster", gomock.Any(), gomock.Any()).Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-					Fqdn:              pointer.String("my-managedcluster-fqdn"),
-					ProvisioningState: pointer.String("Succeeded"),
-				}}, nil).Times(1)
-				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
-				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Times(1)
-				s.ClusterName().AnyTimes().Return("my-managedcluster")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.ManagedClusterAnnotations().Times(1).Return(map[string]string{})
-				s.ManagedClusterSpec().AnyTimes().Return(azure.ManagedClusterSpec{
-					Name:              "my-managedcluster",
-					ResourceGroupName: "my-rg",
-				}, nil)
-				s.GetAllAgentPoolSpecs(gomockinternal.AContext()).AnyTimes().Return([]azure.AgentPoolSpec{
-					{
-						Name:         "my-agentpool",
-						SKU:          "Standard_D4s_v3",
-						Replicas:     1,
-						OSDiskSizeGB: 0,
-					},
-				}, nil)
-				s.SetControlPlaneEndpoint(gomock.Eq(clusterv1.APIEndpoint{
-					Host: "my-managedcluster-fqdn",
-					Port: 443,
-				})).Times(1)
-				s.SetKubeConfigData(gomock.Any()).Times(1)
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec(gomockinternal.AContext()).Return(nil)
 			},
 		},
 		{
-			name:          "missing fqdn after create",
-			expectedError: "failed to get API endpoint for managed cluster",
-			expect: func(m *mock_managedclusters.MockClientMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder) {
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-managedcluster", gomock.Any(), gomock.Any()).Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{}}, nil)
-				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
-				s.ClusterName().AnyTimes().Return("my-managedcluster")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.ManagedClusterAnnotations().Times(1).Return(map[string]string{})
-				s.ManagedClusterSpec().AnyTimes().Return(azure.ManagedClusterSpec{
-					Name:              "my-managedcluster",
-					ResourceGroupName: "my-rg",
-				}, nil)
-				s.GetAllAgentPoolSpecs(gomockinternal.AContext()).AnyTimes().Return([]azure.AgentPoolSpec{
-					{
-						Name:         "my-agentpool",
-						SKU:          "Standard_D4s_v3",
-						Replicas:     1,
-						OSDiskSizeGB: 0,
-					},
-				}, nil)
+			name:          "create managed cluster returns an error",
+			expectedError: "some unexpected error occurred",
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				r.CreateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil, errors.New("some unexpected error occurred"))
+				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("some unexpected error occurred"))
 			},
 		},
 		{
-			name:          "set correct ControlPlaneEndpoint using fqdn from existing MC after update",
+			name:          "create managed cluster succeeds",
 			expectedError: "",
-			expect: func(m *mock_managedclusters.MockClientMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder) {
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-managedcluster", gomock.Any(), gomock.Any()).Return(containerservice.ManagedCluster{
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				r.CreateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 						Fqdn:              pointer.String("my-managedcluster-fqdn"),
 						ProvisioningState: pointer.String("Succeeded"),
 					},
 				}, nil)
-				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{
-					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-						Fqdn:              pointer.String("my-managedcluster-fqdn"),
-						ProvisioningState: pointer.String("Succeeded"),
-						NetworkProfile:    &containerservice.NetworkProfile{},
-					},
-				}, nil).Times(1)
-				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Times(1)
-				s.ClusterName().AnyTimes().Return("my-managedcluster")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.ManagedClusterAnnotations().Times(1).Return(map[string]string{})
-				s.ManagedClusterSpec().AnyTimes().Return(azure.ManagedClusterSpec{
-					Name:              "my-managedcluster",
-					ResourceGroupName: "my-rg",
-				}, nil)
-				s.GetAllAgentPoolSpecs(gomockinternal.AContext()).AnyTimes().Return([]azure.AgentPoolSpec{
-					{
-						Name:         "my-agentpool",
-						SKU:          "Standard_D4s_v3",
-						Replicas:     1,
-						OSDiskSizeGB: 0,
-					},
-				}, nil)
-				s.SetControlPlaneEndpoint(gomock.Eq(clusterv1.APIEndpoint{
+				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
 					Host: "my-managedcluster-fqdn",
 					Port: 443,
-				})).Times(1)
-				s.SetKubeConfigData(gomock.Any()).Times(1)
+				})
+				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
+				s.SetKubeConfigData([]byte("credentials"))
+				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "no update needed - set correct ControlPlaneEndpoint using fqdn from existing MC",
-			expectedError: "",
-			expect: func(m *mock_managedclusters.MockClientMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder) {
-				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{
+			name:          "fail to get managed cluster credentials",
+			expectedError: "failed to get credentials for managed cluster: internal server error",
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				r.CreateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 						Fqdn:              pointer.String("my-managedcluster-fqdn"),
 						ProvisioningState: pointer.String("Succeeded"),
-						KubernetesVersion: pointer.String("1.1"),
-						NetworkProfile:    &containerservice.NetworkProfile{},
-					},
-				}, nil).Times(1)
-				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Times(1)
-				s.ClusterName().AnyTimes().Return("my-managedcluster")
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.ManagedClusterAnnotations().Times(1).Return(map[string]string{})
-				s.ManagedClusterSpec().AnyTimes().Return(azure.ManagedClusterSpec{
-					Name:              "my-managedcluster",
-					ResourceGroupName: "my-rg",
-					Version:           "1.1",
-				}, nil)
-				s.GetAllAgentPoolSpecs(gomockinternal.AContext()).AnyTimes().Return([]azure.AgentPoolSpec{
-					{
-						Name:         "my-agentpool",
-						SKU:          "Standard_D4s_v3",
-						Replicas:     1,
-						OSDiskSizeGB: 0,
 					},
 				}, nil)
-				s.SetControlPlaneEndpoint(gomock.Eq(clusterv1.APIEndpoint{
+				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
 					Host: "my-managedcluster-fqdn",
 					Port: 443,
-				})).Times(1)
-				s.SetKubeConfigData(gomock.Any()).Times(1)
+				})
+				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte(""), errors.New("internal server error"))
 			},
 		},
 	}
 
 	for _, tc := range testcases {
-		t.Logf("Testing " + tc.name)
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-
+			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
-			clientMock := mock_managedclusters.NewMockClient(mockCtrl)
+			credsGetterMock := mock_managedclusters.NewMockCredentialGetter(mockCtrl)
+			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(clientMock.EXPECT(), scopeMock.EXPECT())
+			tc.expect(credsGetterMock.EXPECT(), scopeMock.EXPECT(), reconcilerMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				Client: clientMock,
+				Scope:            scopeMock,
+				CredentialGetter: credsGetterMock,
+				Reconciler:       reconcilerMock,
 			}
 
 			err := s.Reconcile(context.TODO())
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestDelete(t *testing.T) {
+	testcases := []struct {
+		name          string
+		expectedError string
+		expect        func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+	}{
+		{
+			name:          "noop if no managed cluster spec is found",
+			expectedError: "",
+			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec(gomockinternal.AContext()).Return(nil)
+			},
+		},
+		{
+			name:          "successfully delete an existing managed cluster",
+			expectedError: "",
+			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				r.DeleteResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
+			},
+		},
+		{
+			name:          "managed cluster deletion fails",
+			expectedError: "internal error",
+			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				r.DeleteResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(errors.New("internal error"))
+				s.UpdateDeleteStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("internal error"))
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			scopeMock := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
+
+			s := &Service{
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
+			}
+
+			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

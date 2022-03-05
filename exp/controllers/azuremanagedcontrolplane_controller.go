@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	capiexputil "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -153,6 +154,31 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 		return ctrl.Result{}, nil
 	}
 
+	// Fetch all the ManagedMachinePools owned by this Cluster.
+	opt1 := client.InNamespace(azureControlPlane.Namespace)
+	opt2 := client.MatchingLabels(map[string]string{
+		clusterv1.ClusterLabelName: cluster.Name,
+	})
+
+	ammpList := &infrav1exp.AzureManagedMachinePoolList{}
+	if err := amcpr.List(ctx, ammpList, opt1, opt2); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	var pools = make([]scope.ManagedMachinePool, len(ammpList.Items))
+
+	for i, ammp := range ammpList.Items {
+		// Fetch the owner MachinePool.
+		ownerPool, err := capiexputil.GetOwnerMachinePool(ctx, amcpr.Client, ammp.ObjectMeta)
+		if err != nil || ownerPool == nil {
+			return reconcile.Result{}, errors.Wrapf(err, "failed to fetch owner MachinePool for AzureManagedMachinePool: %s", ammp.Name)
+		}
+		pools[i] = scope.ManagedMachinePool{
+			InfraMachinePool: &ammpList.Items[i],
+			MachinePool:      ownerPool,
+		}
+	}
+
 	// check if the control plane's namespace is allowed for this identity and update owner references for the identity.
 	if azureControlPlane.Spec.IdentityRef != nil {
 		identity, err := infracontroller.GetClusterIdentityFromRef(ctx, amcpr.Client, azureControlPlane.Namespace, azureControlPlane.Spec.IdentityRef)
@@ -172,10 +198,10 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 
 	// Create the scope.
 	mcpScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
-		Client:       amcpr.Client,
-		Cluster:      cluster,
-		ControlPlane: azureControlPlane,
-		PatchTarget:  azureControlPlane,
+		Client:              amcpr.Client,
+		Cluster:             cluster,
+		ControlPlane:        azureControlPlane,
+		ManagedMachinePools: pools,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")

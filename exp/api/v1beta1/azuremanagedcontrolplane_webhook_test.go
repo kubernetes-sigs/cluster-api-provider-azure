@@ -39,7 +39,7 @@ func TestDefaultingWebhook(t *testing.T) {
 			Version:           "1.17.5",
 		},
 	}
-	amcp.Default()
+	amcp.Default(nil)
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal("azure"))
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal("Standard"))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal("calico"))
@@ -63,7 +63,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.VirtualNetwork.Name = "fooVnetName"
 	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
 	amcp.Spec.SKU.Tier = PaidManagedControlPlaneTier
-	amcp.Default()
+
+	amcp.Default(nil)
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal(netPlug))
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal(lbSKU))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal(netPol))
@@ -240,11 +241,10 @@ func TestValidatingWebhook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
-
 			if tt.expectErr {
-				g.Expect(tt.amcp.ValidateCreate()).NotTo(Succeed())
+				g.Expect(tt.amcp.ValidateCreate(nil)).NotTo(Succeed())
 			} else {
-				g.Expect(tt.amcp.ValidateCreate()).To(Succeed())
+				g.Expect(tt.amcp.ValidateCreate(nil)).To(Succeed())
 			}
 		})
 	}
@@ -303,7 +303,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amcp.ValidateCreate()
+			err := tc.amcp.ValidateCreate(nil)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(HaveLen(tc.errorLen))
@@ -725,7 +725,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amcp.ValidateUpdate(tc.oldAMCP)
+			err := tc.amcp.ValidateUpdate(tc.oldAMCP, nil)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

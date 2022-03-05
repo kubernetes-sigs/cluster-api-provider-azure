@@ -32,6 +32,8 @@ import (
 const (
 	// DefaultUserName is the default username for a created VM.
 	DefaultUserName = "capi"
+	// DefaultAKSUserName is the default username for a created AKS VM.
+	DefaultAKSUserName = "azureuser"
 )
 
 const (

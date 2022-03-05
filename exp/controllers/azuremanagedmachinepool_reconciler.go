@@ -73,7 +73,7 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 }
 
 // newAzureManagedMachinePoolService populates all the services based on input scope.
-func newAzureManagedMachinePoolService(scope *scope.ManagedControlPlaneScope) (*azureManagedMachinePoolService, error) {
+func newAzureManagedMachinePoolService(scope *scope.ManagedMachinePoolScope) (*azureManagedMachinePoolService, error) {
 	var authorizer azure.Authorizer = scope
 	if scope.Location() != "" {
 		regionalAuthorizer, err := azure.WithRegionalBaseURI(scope, scope.Location())

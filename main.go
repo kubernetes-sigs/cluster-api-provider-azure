@@ -517,19 +517,18 @@ func registerWebhooks(mgr manager.Manager) {
 	}
 
 	if feature.Gates.Enabled(feature.AKS) {
-		if err := (&infrav1beta1exp.AzureManagedControlPlane{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlane")
-			os.Exit(1)
-		}
-	}
-
-	if feature.Gates.Enabled(feature.AKS) {
 		hookServer := mgr.GetWebhookServer()
 		hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhook.NewMutatingWebhook(
 			&infrav1beta1exp.AzureManagedMachinePool{}, mgr.GetClient(),
 		))
 		hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhook.NewValidatingWebhook(
 			&infrav1beta1exp.AzureManagedMachinePool{}, mgr.GetClient(),
+		))
+		hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhook.NewMutatingWebhook(
+			&infrav1beta1exp.AzureManagedControlPlane{}, mgr.GetClient(),
+		))
+		hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhook.NewValidatingWebhook(
+			&infrav1beta1exp.AzureManagedControlPlane{}, mgr.GetClient(),
 		))
 	}
 

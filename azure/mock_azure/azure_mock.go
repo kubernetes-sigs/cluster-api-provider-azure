@@ -1326,6 +1326,253 @@ func (mr *MockClusterScoperMockRecorder) Vnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockClusterScoper)(nil).Vnet))
 }
 
+// MockManagedClusterScoper is a mock of ManagedClusterScoper interface.
+type MockManagedClusterScoper struct {
+	ctrl     *gomock.Controller
+	recorder *MockManagedClusterScoperMockRecorder
+}
+
+// MockManagedClusterScoperMockRecorder is the mock recorder for MockManagedClusterScoper.
+type MockManagedClusterScoperMockRecorder struct {
+	mock *MockManagedClusterScoper
+}
+
+// NewMockManagedClusterScoper creates a new mock instance.
+func NewMockManagedClusterScoper(ctrl *gomock.Controller) *MockManagedClusterScoper {
+	mock := &MockManagedClusterScoper{ctrl: ctrl}
+	mock.recorder = &MockManagedClusterScoperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockManagedClusterScoper) EXPECT() *MockManagedClusterScoperMockRecorder {
+	return m.recorder
+}
+
+// AdditionalTags mocks base method.
+func (m *MockManagedClusterScoper) AdditionalTags() v1beta1.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1beta1.Tags)
+	return ret0
+}
+
+// AdditionalTags indicates an expected call of AdditionalTags.
+func (mr *MockManagedClusterScoperMockRecorder) AdditionalTags() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockManagedClusterScoper)(nil).AdditionalTags))
+}
+
+// Authorizer mocks base method.
+func (m *MockManagedClusterScoper) Authorizer() autorest.Authorizer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Authorizer")
+	ret0, _ := ret[0].(autorest.Authorizer)
+	return ret0
+}
+
+// Authorizer indicates an expected call of Authorizer.
+func (mr *MockManagedClusterScoperMockRecorder) Authorizer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockManagedClusterScoper)(nil).Authorizer))
+}
+
+// AvailabilitySetEnabled mocks base method.
+func (m *MockManagedClusterScoper) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockManagedClusterScoperMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockManagedClusterScoper)(nil).AvailabilitySetEnabled))
+}
+
+// BaseURI mocks base method.
+func (m *MockManagedClusterScoper) BaseURI() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BaseURI")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// BaseURI indicates an expected call of BaseURI.
+func (mr *MockManagedClusterScoperMockRecorder) BaseURI() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockManagedClusterScoper)(nil).BaseURI))
+}
+
+// ClientID mocks base method.
+func (m *MockManagedClusterScoper) ClientID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClientID indicates an expected call of ClientID.
+func (mr *MockManagedClusterScoperMockRecorder) ClientID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientID", reflect.TypeOf((*MockManagedClusterScoper)(nil).ClientID))
+}
+
+// ClientSecret mocks base method.
+func (m *MockManagedClusterScoper) ClientSecret() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientSecret")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClientSecret indicates an expected call of ClientSecret.
+func (mr *MockManagedClusterScoperMockRecorder) ClientSecret() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockManagedClusterScoper)(nil).ClientSecret))
+}
+
+// CloudEnvironment mocks base method.
+func (m *MockManagedClusterScoper) CloudEnvironment() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudEnvironment")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// CloudEnvironment indicates an expected call of CloudEnvironment.
+func (mr *MockManagedClusterScoperMockRecorder) CloudEnvironment() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockManagedClusterScoper)(nil).CloudEnvironment))
+}
+
+// CloudProviderConfigOverrides mocks base method.
+func (m *MockManagedClusterScoper) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
+	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	return ret0
+}
+
+// CloudProviderConfigOverrides indicates an expected call of CloudProviderConfigOverrides.
+func (mr *MockManagedClusterScoperMockRecorder) CloudProviderConfigOverrides() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudProviderConfigOverrides", reflect.TypeOf((*MockManagedClusterScoper)(nil).CloudProviderConfigOverrides))
+}
+
+// ClusterName mocks base method.
+func (m *MockManagedClusterScoper) ClusterName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClusterName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockManagedClusterScoperMockRecorder) ClusterName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockManagedClusterScoper)(nil).ClusterName))
+}
+
+// FailureDomains mocks base method.
+func (m *MockManagedClusterScoper) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockManagedClusterScoperMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockManagedClusterScoper)(nil).FailureDomains))
+}
+
+// HashKey mocks base method.
+func (m *MockManagedClusterScoper) HashKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HashKey")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// HashKey indicates an expected call of HashKey.
+func (mr *MockManagedClusterScoperMockRecorder) HashKey() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockManagedClusterScoper)(nil).HashKey))
+}
+
+// Location mocks base method.
+func (m *MockManagedClusterScoper) Location() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Location")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Location indicates an expected call of Location.
+func (mr *MockManagedClusterScoperMockRecorder) Location() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockManagedClusterScoper)(nil).Location))
+}
+
+// NodeResourceGroup mocks base method.
+func (m *MockManagedClusterScoper) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockManagedClusterScoperMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockManagedClusterScoper)(nil).NodeResourceGroup))
+}
+
+// ResourceGroup mocks base method.
+func (m *MockManagedClusterScoper) ResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ResourceGroup indicates an expected call of ResourceGroup.
+func (mr *MockManagedClusterScoperMockRecorder) ResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockManagedClusterScoper)(nil).ResourceGroup))
+}
+
+// SubscriptionID mocks base method.
+func (m *MockManagedClusterScoper) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockManagedClusterScoperMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockManagedClusterScoper)(nil).SubscriptionID))
+}
+
+// TenantID mocks base method.
+func (m *MockManagedClusterScoper) TenantID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TenantID indicates an expected call of TenantID.
+func (mr *MockManagedClusterScoperMockRecorder) TenantID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockManagedClusterScoper)(nil).TenantID))
+}
+
 // MockResourceSpecGetter is a mock of ResourceSpecGetter interface.
 type MockResourceSpecGetter struct {
 	ctrl     *gomock.Controller
@@ -1404,4 +1651,98 @@ func (m *MockResourceSpecGetter) ResourceName() string {
 func (mr *MockResourceSpecGetterMockRecorder) ResourceName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceName", reflect.TypeOf((*MockResourceSpecGetter)(nil).ResourceName))
+}
+
+// MockResourceSpecGetterWithHeaders is a mock of ResourceSpecGetterWithHeaders interface.
+type MockResourceSpecGetterWithHeaders struct {
+	ctrl     *gomock.Controller
+	recorder *MockResourceSpecGetterWithHeadersMockRecorder
+}
+
+// MockResourceSpecGetterWithHeadersMockRecorder is the mock recorder for MockResourceSpecGetterWithHeaders.
+type MockResourceSpecGetterWithHeadersMockRecorder struct {
+	mock *MockResourceSpecGetterWithHeaders
+}
+
+// NewMockResourceSpecGetterWithHeaders creates a new mock instance.
+func NewMockResourceSpecGetterWithHeaders(ctrl *gomock.Controller) *MockResourceSpecGetterWithHeaders {
+	mock := &MockResourceSpecGetterWithHeaders{ctrl: ctrl}
+	mock.recorder = &MockResourceSpecGetterWithHeadersMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockResourceSpecGetterWithHeaders) EXPECT() *MockResourceSpecGetterWithHeadersMockRecorder {
+	return m.recorder
+}
+
+// CustomHeaders mocks base method.
+func (m *MockResourceSpecGetterWithHeaders) CustomHeaders() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CustomHeaders")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// CustomHeaders indicates an expected call of CustomHeaders.
+func (mr *MockResourceSpecGetterWithHeadersMockRecorder) CustomHeaders() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomHeaders", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).CustomHeaders))
+}
+
+// OwnerResourceName mocks base method.
+func (m *MockResourceSpecGetterWithHeaders) OwnerResourceName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OwnerResourceName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OwnerResourceName indicates an expected call of OwnerResourceName.
+func (mr *MockResourceSpecGetterWithHeadersMockRecorder) OwnerResourceName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OwnerResourceName", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).OwnerResourceName))
+}
+
+// Parameters mocks base method.
+func (m *MockResourceSpecGetterWithHeaders) Parameters(existing interface{}) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Parameters", existing)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Parameters indicates an expected call of Parameters.
+func (mr *MockResourceSpecGetterWithHeadersMockRecorder) Parameters(existing interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).Parameters), existing)
+}
+
+// ResourceGroupName mocks base method.
+func (m *MockResourceSpecGetterWithHeaders) ResourceGroupName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResourceGroupName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ResourceGroupName indicates an expected call of ResourceGroupName.
+func (mr *MockResourceSpecGetterWithHeadersMockRecorder) ResourceGroupName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroupName", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).ResourceGroupName))
+}
+
+// ResourceName mocks base method.
+func (m *MockResourceSpecGetterWithHeaders) ResourceName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResourceName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ResourceName indicates an expected call of ResourceName.
+func (mr *MockResourceSpecGetterWithHeadersMockRecorder) ResourceName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceName", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).ResourceName))
 }

@@ -173,7 +173,11 @@ spec:
     storage: false
     subresources:
       status: {}
-  - name: v1beta1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.mode
+      name: Mode
+      type: string
+    name: v1beta1
     schema:
       openAPIV3Schema:
         description: AzureManagedMachinePool is the Schema for the azuremanagedmachinepools

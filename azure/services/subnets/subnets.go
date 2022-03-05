@@ -33,10 +33,11 @@ const serviceName = "subnets"
 
 // SubnetScope defines the scope interface for a subnet service.
 type SubnetScope interface {
-	azure.ClusterScoper
+	azure.Authorizer
 	azure.AsyncStatusUpdater
 	UpdateSubnetID(string, string)
 	UpdateSubnetCIDRs(string, []string)
+	IsVnetManaged() bool
 	SubnetSpecs() []azure.ResourceSpecGetter
 }
 
