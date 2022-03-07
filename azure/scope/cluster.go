@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
@@ -387,35 +388,53 @@ func (s *ClusterScope) VNetSpec() azure.ResourceSpecGetter {
 }
 
 // PrivateDNSSpec returns the private dns zone spec.
-func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
-	var specs *azure.PrivateDNSSpec
+func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, linkSpec, recordSpec []azure.ResourceSpecGetter) {
 	if s.IsAPIServerPrivate() {
-		links := make([]azure.PrivateDNSLinkSpec, 1+len(s.Vnet().Peerings))
-		links[0] = azure.PrivateDNSLinkSpec{
-			VNetName:          s.Vnet().Name,
+		zone := privatedns.ZoneSpec{
+			Name:           s.GetPrivateDNSZoneName(),
+			ResourceGroup:  s.ResourceGroup(),
+			ClusterName:    s.ClusterName(),
+			AdditionalTags: s.AdditionalTags(),
+		}
+
+		links := make([]azure.ResourceSpecGetter, 1+len(s.Vnet().Peerings))
+		links[0] = privatedns.LinkSpec{
+			Name:              azure.GenerateVNetLinkName(s.Vnet().Name),
+			ZoneName:          s.GetPrivateDNSZoneName(),
+			SubscriptionID:    s.SubscriptionID(),
 			VNetResourceGroup: s.Vnet().ResourceGroup,
-			LinkName:          azure.GenerateVNetLinkName(s.Vnet().Name),
+			VNetName:          s.Vnet().Name,
+			ResourceGroup:     s.ResourceGroup(),
+			ClusterName:       s.ClusterName(),
+			AdditionalTags:    s.AdditionalTags(),
 		}
 		for i, peering := range s.Vnet().Peerings {
-			links[i+1] = azure.PrivateDNSLinkSpec{
-				VNetName:          peering.RemoteVnetName,
+			links[i+1] = privatedns.LinkSpec{
+				Name:              azure.GenerateVNetLinkName(peering.RemoteVnetName),
+				ZoneName:          s.GetPrivateDNSZoneName(),
+				SubscriptionID:    s.SubscriptionID(),
 				VNetResourceGroup: peering.ResourceGroup,
-				LinkName:          azure.GenerateVNetLinkName(peering.RemoteVnetName),
+				VNetName:          peering.RemoteVnetName,
+				ResourceGroup:     s.ResourceGroup(),
+				ClusterName:       s.ClusterName(),
+				AdditionalTags:    s.AdditionalTags(),
 			}
 		}
-		specs = &azure.PrivateDNSSpec{
-			ZoneName: s.GetPrivateDNSZoneName(),
-			Links:    links,
-			Records: []infrav1.AddressRecord{
-				{
-					Hostname: azure.PrivateAPIServerHostname,
-					IP:       s.APIServerPrivateIP(),
-				},
+
+		records := make([]azure.ResourceSpecGetter, 1)
+		records[0] = privatedns.RecordSpec{
+			Record: infrav1.AddressRecord{
+				Hostname: azure.PrivateAPIServerHostname,
+				IP:       s.APIServerPrivateIP(),
 			},
+			ZoneName:      s.GetPrivateDNSZoneName(),
+			ResourceGroup: s.ResourceGroup(),
 		}
+
+		return zone, links, records
 	}
 
-	return specs
+	return nil, nil, nil
 }
 
 // IsAzureBastionEnabled returns true if the azure bastion is enabled.
@@ -700,6 +719,9 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.VNetReadyCondition,
 			infrav1.SubnetsReadyCondition,
 			infrav1.SecurityGroupsReadyCondition,
+			infrav1.PrivateDNSZoneReadyCondition,
+			infrav1.PrivateDNSLinkReadyCondition,
+			infrav1.PrivateDNSRecordReadyCondition,
 		}})
 }
 
