@@ -475,7 +475,7 @@ var _ = Describe("Workload cluster creation", func() {
 					ClusterctlConfigPath:     clusterctlConfigPath,
 					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
 					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-					Flavor:                   "aks-multi-tenancy",
+					Flavor:                   "aks",
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        kubernetesVersion,
