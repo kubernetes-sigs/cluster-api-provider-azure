@@ -239,6 +239,9 @@ type ManagedClusterSpec struct {
 	// AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
 	AADProfile *AADProfile
 
+	// AddonProfiles are the profiles of managed cluster add-on.
+	AddonProfiles []AddonProfile
+
 	// SKU is the SKU of the AKS to be provisioned.
 	SKU *SKU
 
@@ -259,6 +262,13 @@ type AADProfile struct {
 
 	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
 	AdminGroupObjectIDs []string
+}
+
+// AddonProfile - Profile of managed cluster add-on.
+type AddonProfile struct {
+	Name    string
+	Config  map[string]string
+	Enabled bool
 }
 
 // SKU - AKS SKU.

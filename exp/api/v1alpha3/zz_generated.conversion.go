@@ -763,6 +763,7 @@ func autoConvert_v1beta1_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedCo
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	// WARNING: in.IdentityRef requires manual conversion: does not exist in peer-type
 	out.AADProfile = (*AADProfile)(unsafe.Pointer(in.AADProfile))
+	// WARNING: in.AddonProfiles requires manual conversion: does not exist in peer-type
 	// WARNING: in.SKU requires manual conversion: does not exist in peer-type
 	// WARNING: in.LoadBalancerProfile requires manual conversion: does not exist in peer-type
 	// WARNING: in.APIServerAccessProfile requires manual conversion: does not exist in peer-type

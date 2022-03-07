@@ -97,6 +97,10 @@ type AzureManagedControlPlaneSpec struct {
 	// +optional
 	AADProfile *AADProfile `json:"aadProfile,omitempty"`
 
+	// AddonProfiles are the profiles of managed cluster add-on.
+	// +optional
+	AddonProfiles []AddonProfile `json:"addonProfiles,omitempty"`
+
 	// SKU is the SKU of the AKS to be provisioned.
 	// +optional
 	SKU *SKU `json:"sku,omitempty"`
@@ -119,6 +123,18 @@ type AADProfile struct {
 	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
 	// +kubebuilder:validation:Required
 	AdminGroupObjectIDs []string `json:"adminGroupObjectIDs"`
+}
+
+type AddonProfile struct {
+	// Name- The name of managed cluster add-on.
+	Name string `json:"name"`
+
+	// Config - Key-value pairs for configuring an add-on.
+	// +optional
+	Config map[string]string `json:"config,omitempty"`
+
+	// Enabled - Whether the add-on is enabled or not.
+	Enabled bool `json:"enabled"`
 }
 
 // AzureManagedControlPlaneSkuTier - Tier of a managed cluster SKU.
