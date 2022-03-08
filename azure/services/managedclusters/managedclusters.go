@@ -321,8 +321,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	customHeaders := maps.FilterByKeyPrefix(s.Scope.ManagedClusterAnnotations(), azure.CustomHeaderPrefix)
+	// Use the MC fetched from Azure if no update is needed. This is to ensure the read-only fields like Fqdn from the
+	// existing MC are used for updating the AzureManagedCluster.
+	result := existingMC
 	if isCreate {
-		managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
+		result, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
 		if err != nil {
 			return fmt.Errorf("failed to create managed cluster, %w", err)
 		}
@@ -351,7 +354,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
-			managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
+			result, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
 			if err != nil {
 				return fmt.Errorf("failed to update managed cluster, %w", err)
 			}
@@ -359,12 +362,15 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	// Update control plane endpoint.
-	if managedCluster.ManagedClusterProperties != nil && managedCluster.ManagedClusterProperties.Fqdn != nil {
+	if result.ManagedClusterProperties != nil && result.ManagedClusterProperties.Fqdn != nil {
 		endpoint := clusterv1.APIEndpoint{
-			Host: *managedCluster.ManagedClusterProperties.Fqdn,
+			Host: *result.ManagedClusterProperties.Fqdn,
 			Port: 443,
 		}
 		s.Scope.SetControlPlaneEndpoint(endpoint)
+	} else {
+		// Fail if cluster api endpoint is not available.
+		return fmt.Errorf("failed to get API endpoint for managed cluster")
 	}
 
 	// Update kubeconfig data
