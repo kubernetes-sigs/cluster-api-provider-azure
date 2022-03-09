@@ -107,7 +107,16 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
+					grp.IsManaged(gomockinternal.AContext()).Return(true, nil),
 					grp.Delete(gomockinternal.AContext()).Return(nil))
+			},
+		},
+		"Error when checking if resource group is managed": {
+			expectedError: "failed to determine if the AzureCluster resource group is managed: an error happened",
+			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+				gomock.InOrder(
+					grp.Name().Return(groups.ServiceName),
+					grp.IsManaged(gomockinternal.AContext()).Return(false, errors.New("an error happened")))
 			},
 		},
 		"Resource Group delete fails": {
@@ -115,6 +124,7 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
+					grp.IsManaged(gomockinternal.AContext()).Return(true, nil),
 					grp.Delete(gomockinternal.AContext()).Return(errors.New("internal error")))
 			},
 		},
@@ -123,10 +133,11 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
-					grp.Delete(gomockinternal.AContext()).Return(azure.ErrNotOwned),
+					grp.IsManaged(gomockinternal.AContext()).Return(false, nil),
 					three.Delete(gomockinternal.AContext()).Return(nil),
 					two.Delete(gomockinternal.AContext()).Return(nil),
-					one.Delete(gomockinternal.AContext()).Return(nil))
+					one.Delete(gomockinternal.AContext()).Return(nil),
+					grp.Delete(gomockinternal.AContext()).Return(nil))
 			},
 		},
 		"service delete fails": {
@@ -134,7 +145,7 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
-					grp.Delete(gomockinternal.AContext()).Return(azure.ErrNotOwned),
+					grp.IsManaged(gomockinternal.AContext()).Return(false, nil),
 					three.Delete(gomockinternal.AContext()).Return(nil),
 					two.Delete(gomockinternal.AContext()).Return(errors.New("some error happened")),
 					two.Name().Return("two"))

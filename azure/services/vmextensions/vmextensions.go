@@ -100,3 +100,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 func (s *Service) Delete(_ context.Context) error {
 	return nil
 }
+
+// IsManaged returns always returns true as CAPZ does not support BYO VM extension.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
+}

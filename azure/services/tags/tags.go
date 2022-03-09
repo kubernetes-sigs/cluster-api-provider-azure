@@ -194,3 +194,8 @@ func tagsChanged(lastAppliedTags map[string]interface{}, desiredTags map[string]
 	// in dst. Nothing changed.
 	return changed, createdOrUpdated, deleted, newAnnotation
 }
+
+// IsManaged returns always returns true as CAPZ does not support BYO tags.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
+}

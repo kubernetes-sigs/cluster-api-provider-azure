@@ -156,3 +156,8 @@ func (s *Service) isIPManaged(ctx context.Context, ipName string) (bool, error) 
 	tags := converters.MapToTags(ip.Tags)
 	return tags.HasOwned(s.Scope.ClusterName()), nil
 }
+
+// IsManaged returns always returns true as public IPs are managed on a one-by-one basis.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
+}

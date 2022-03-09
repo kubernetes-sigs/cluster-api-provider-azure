@@ -19,6 +19,7 @@ package securitygroups
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
@@ -65,9 +66,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	// Only create the NSGs if their lifecycle is managed by this controller.
-	if !s.Scope.IsVnetManaged() {
+	if managed, err := s.IsManaged(ctx); err == nil && !managed {
 		log.V(4).Info("Skipping network security groups reconcile in custom VNet mode")
 		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if security groups are managed")
 	}
 
 	specs := s.Scope.NSGSpecs()
@@ -100,10 +103,12 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	// Only delete the NSG if its lifecycle is managed by this controller.
-	if !s.Scope.IsVnetManaged() {
+	// Only delete the security groups if their lifecycle is managed by this controller.
+	if managed, err := s.IsManaged(ctx); err == nil && !managed {
 		log.V(4).Info("Skipping network security groups delete in custom VNet mode")
 		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if security groups are managed")
 	}
 
 	specs := s.Scope.NSGSpecs()
@@ -126,4 +131,12 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	s.Scope.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, result)
 	return result
+}
+
+// IsManaged returns true if the security groups' lifecycles are managed.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.IsManaged")
+	defer done()
+
+	return s.Scope.IsVnetManaged(), nil
 }

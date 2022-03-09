@@ -225,3 +225,8 @@ func getResourceNameByID(resourceID string) string {
 	resourceName := explodedResourceID[len(explodedResourceID)-1]
 	return resourceName
 }
+
+// IsManaged returns always returns true as CAPZ does not support BYO VM.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
+}

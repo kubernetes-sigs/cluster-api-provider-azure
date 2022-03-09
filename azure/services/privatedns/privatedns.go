@@ -226,3 +226,9 @@ func (s *Service) isVnetLinkManaged(ctx context.Context, resourceGroupName, zone
 	tags := converters.MapToTags(zone.Tags)
 	return tags.HasOwned(s.Scope.ClusterName()), nil
 }
+
+// IsManaged returns always returns true.
+// TODO: separate private DNS and VNet links so we can implement the IsManaged method for each.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
+}

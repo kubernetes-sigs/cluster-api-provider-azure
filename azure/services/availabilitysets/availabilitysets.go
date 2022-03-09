@@ -119,3 +119,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	s.Scope.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, resultingErr)
 	return resultingErr
 }
+
+// IsManaged returns always returns true as CAPZ does not support BYO availability set.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
+}

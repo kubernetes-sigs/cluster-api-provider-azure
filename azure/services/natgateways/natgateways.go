@@ -67,11 +67,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
+	if managed, err := s.IsManaged(ctx); err == nil && !managed {
 		log.V(4).Info("Skipping nat gateways reconcile in custom vnet mode")
-
-		s.Scope.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if NAT gateways are managed")
 	}
 
 	// We go through the list of NatGatewaySpecs to reconcile each one, independently of the resultingErr of the previous one.
@@ -115,11 +115,11 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
+	if managed, err := s.IsManaged(ctx); err == nil && !managed {
 		log.V(4).Info("Skipping nat gateway deletion in custom vnet mode")
-
-		s.Scope.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if NAT gateways are managed")
 	}
 
 	specs := s.Scope.NatGatewaySpecs()
@@ -140,4 +140,12 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 	s.Scope.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, resultingErr)
 	return resultingErr
+}
+
+// IsManaged returns true if the NAT gateways' lifecycles are managed.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.IsManaged")
+	defer done()
+
+	return s.Scope.IsVnetManaged(), nil
 }

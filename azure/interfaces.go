@@ -33,6 +33,7 @@ type Reconciler interface {
 // ServiceReconciler is an Azure service reconciler which can reconcile an Azure service.
 type ServiceReconciler interface {
 	Name() string
+	IsManaged(ctx context.Context) (bool, error)
 	Reconciler
 }
 

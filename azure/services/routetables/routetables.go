@@ -19,6 +19,7 @@ package routetables
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
@@ -66,9 +67,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	var resErr error
 
-	if !s.Scope.IsVnetManaged() {
+	if managed, err := s.IsManaged(ctx); err == nil && !managed {
 		log.V(4).Info("Skipping route tables reconcile in custom vnet mode")
 		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if route tables are managed")
 	}
 
 	specs := s.Scope.RouteTableSpecs()
@@ -101,9 +104,11 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	// Only delete the route tables if their lifecycle is managed by this controller.
 	// route tables are managed if and only if the vnet is managed.
-	if !s.Scope.IsVnetManaged() {
+	if managed, err := s.IsManaged(ctx); err == nil && !managed {
 		log.V(4).Info("Skipping route table deletion in custom vnet mode")
 		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if route tables are managed")
 	}
 
 	specs := s.Scope.RouteTableSpecs()
@@ -124,4 +129,12 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 	s.Scope.UpdateDeleteStatus(infrav1.RouteTablesReadyCondition, serviceName, result)
 	return result
+}
+
+// IsManaged returns true if the route tables' lifecycles are managed.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "routetables.Service.IsManaged")
+	defer done()
+
+	return s.Scope.IsVnetManaged(), nil
 }

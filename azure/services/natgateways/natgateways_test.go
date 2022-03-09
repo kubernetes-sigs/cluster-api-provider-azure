@@ -40,13 +40,6 @@ func init() {
 }
 
 var (
-	customVNetSpec = infrav1.VnetSpec{
-		ID:   "1234",
-		Name: "my-vnet",
-	}
-	ownedVNetSpec = infrav1.VnetSpec{
-		Name: "my-vnet",
-	}
 	natGatewaySpec1 = NatGatewaySpec{
 		Name:           "my-node-natgateway-1",
 		ResourceGroup:  "my-rg",
@@ -82,8 +75,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			tags:          customVNetTags,
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&ownedVNetSpec)
-				s.ClusterName()
+				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
@@ -92,9 +84,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			tags:          customVNetTags,
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&customVNetSpec)
-				s.ClusterName()
-				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
+				s.IsVnetManaged().Return(false)
 			},
 		},
 		{
@@ -102,8 +92,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			tags:          ownedVNetTags,
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&ownedVNetSpec)
-				s.ClusterName()
+				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
 				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(natGateway1, nil)
 				s.SetNatGatewayIDInSubnets(natGatewaySpec1.Name, *natGateway1.ID)
@@ -115,8 +104,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			tags:          ownedVNetTags,
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&ownedVNetSpec)
-				s.ClusterName()
+				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
 				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, internalError)
@@ -127,8 +115,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			tags:          ownedVNetTags,
 			expectedError: "created resource string is not a network.NatGateway",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&ownedVNetSpec)
-				s.ClusterName()
+				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
 				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return("not a nat gateway", nil)
 				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, gomockinternal.ErrStrEq("created resource string is not a network.NatGateway"))
@@ -176,8 +163,7 @@ func TestDeleteNatGateway(t *testing.T) {
 			tags:          ownedVNetTags,
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&ownedVNetSpec)
-				s.ClusterName()
+				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
@@ -186,9 +172,7 @@ func TestDeleteNatGateway(t *testing.T) {
 			tags:          customVNetTags,
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&customVNetSpec)
-				s.ClusterName()
-				s.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
+				s.IsVnetManaged().Return(false)
 			},
 		},
 		{
@@ -196,8 +180,7 @@ func TestDeleteNatGateway(t *testing.T) {
 			tags:          ownedVNetTags,
 			expectedError: "",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&ownedVNetSpec)
-				s.ClusterName()
+				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
 				r.DeleteResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
@@ -208,8 +191,7 @@ func TestDeleteNatGateway(t *testing.T) {
 			tags:          ownedVNetTags,
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.Vnet().Return(&ownedVNetSpec)
-				s.ClusterName()
+				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
 				r.DeleteResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(internalError)
 				s.UpdateDeleteStatus(infrav1.NATGatewaysReadyCondition, serviceName, internalError)

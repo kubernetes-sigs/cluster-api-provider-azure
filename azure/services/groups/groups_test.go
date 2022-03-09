@@ -27,7 +27,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups/mock_groups"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -146,7 +145,7 @@ func TestDeleteGroups(t *testing.T) {
 		},
 		{
 			name:          "resource group is not managed by capz",
-			expectedError: azure.ErrNotOwned.Error(),
+			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(sampleBYOGroup, nil)

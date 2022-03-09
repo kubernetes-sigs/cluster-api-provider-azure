@@ -102,26 +102,36 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 
 	groupSvc, err := s.getService(groups.ServiceName)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get group service")
 	}
-	if err := groupSvc.Delete(ctx); err != nil {
-		if errors.Is(err, azure.ErrNotOwned) {
-			// If the resource group is not managed we need to delete resources inside the group one by one.
-			// services are deleted in reverse order from the order in which they are reconciled.
-			for i := len(s.services) - 1; i >= 1; i-- {
-				if err := s.services[i].Delete(ctx); err != nil {
-					return errors.Wrapf(err, "failed to delete AzureCluster service %s", s.services[i].Name())
-				}
-			}
-		} else {
+
+	managed, err := groupSvc.IsManaged(ctx)
+	if err != nil {
+		if azure.ResourceNotFound(err) {
+			// If the resource group is not found, there is nothing to delete, return early.
+			return nil
+		}
+		return errors.Wrap(err, "failed to determine if the AzureCluster resource group is managed")
+	}
+	if managed {
+		// if the resource group is managed, we delete the entire resource group directly.
+		if err := groupSvc.Delete(ctx); err != nil {
 			return errors.Wrap(err, "failed to delete resource group")
+		}
+	} else {
+		// If the resource group is not managed we need to delete resources inside the group one by one.
+		// services are deleted in reverse order from the order in which they are reconciled.
+		for i := len(s.services) - 1; i >= 0; i-- {
+			if err := s.services[i].Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete AzureCluster service %s", s.services[i].Name())
+			}
 		}
 	}
 
 	return nil
 }
 
-func (s *azureClusterService) getService(name string) (azure.Reconciler, error) {
+func (s *azureClusterService) getService(name string) (azure.ServiceReconciler, error) {
 	for _, service := range s.services {
 		if service.Name() == name {
 			return service, nil

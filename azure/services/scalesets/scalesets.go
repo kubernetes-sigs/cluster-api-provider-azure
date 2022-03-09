@@ -742,3 +742,8 @@ func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*com
 		EncryptionAtHost: to.BoolPtr(*vmssSpec.SecurityProfile.EncryptionAtHost),
 	}, nil
 }
+
+// IsManaged returns always returns true as CAPZ does not support BYO scale set.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
+}
