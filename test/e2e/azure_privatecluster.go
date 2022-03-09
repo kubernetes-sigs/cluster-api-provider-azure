@@ -25,7 +25,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
@@ -175,10 +174,11 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 				if err != nil {
 					// some unexpected error occurred; return it
+					LogWarning(err.Error())
 					return err
 				}
 
-				return fmt.Errorf("cluster %q as not yet been deleted", cluster.Name)
+				return fmt.Errorf("cluster %q has not yet been deleted", cluster.Name)
 			}, input.E2EConfig.GetIntervals(specName, "wait-delete-cluster")...).Should(BeNil())
 			Logf("deleted private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
 		}
@@ -406,7 +406,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 			for _, genericResource := range page.Values() {
 				apiversion, err := getAPIVersion(*genericResource.ID)
 				if err != nil {
-					Logf("failed to get API version for %q with %+v", *genericResource.ID, err)
+					LogWarningf("failed to get API version for %q with %+v", *genericResource.ID, err)
 				}
 
 				_, err = resClient.GetByID(ctx, *genericResource.ID, apiversion)
@@ -417,7 +417,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 
 				// unexpected error calling GET on the resource
 				if err != nil {
-					Logf("failed GETing resource %q with %+v", *genericResource.ID, err)
+					LogWarningf("failed GETing resource %q with %+v", *genericResource.ID, err)
 					return nil, err
 				}
 
@@ -426,7 +426,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 			}
 			return foundResources, nil
 			// add some tolerance for Azure caching of resource group resource caching
-		}, 5*time.Minute, 10*time.Second).Should(HaveLen(0), "Expect the manually created resource group is empty after removing the manually created resources.")
+		}, deleteOperationTimeout, retryableOperationTimeout).Should(HaveLen(0), "Expect the manually created resource group is empty after removing the manually created resources.")
 
 		Logf("deleting the existing resource group %q", groupName)
 		grpFuture, err := groupClient.Delete(ctx, groupName)

@@ -22,8 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
+	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,18 +36,28 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
 )
 
+const (
+	nodeOperationTimeout             = 30 * time.Second
+	nodeOperationSleepBetweenRetries = 3 * time.Second
+)
+
 func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (windows.OSVersion, error) {
 	options := metav1.ListOptions{
 		LabelSelector: "kubernetes.io/os=windows",
 	}
-	result, err := clientset.CoreV1().Nodes().List(ctx, options)
-	if err != nil {
-		return windows.Unknown, err
-	}
+	var result *corev1.NodeList
+	Eventually(func() error {
+		var err error
+		result, err = clientset.CoreV1().Nodes().List(ctx, options)
+		if err != nil {
+			return err
+		}
 
-	if len(result.Items) == 0 {
-		return windows.Unknown, fmt.Errorf("No Windows Nodes found.")
-	}
+		if len(result.Items) == 0 {
+			return fmt.Errorf("No Windows Nodes found.")
+		}
+		return nil
+	}, nodeOperationTimeout, nodeOperationSleepBetweenRetries).Should(Succeed())
 
 	kernalVersion := result.Items[0].Status.NodeInfo.KernelVersion
 	kernalVersions := strings.Split(kernalVersion, ".")
@@ -61,14 +74,20 @@ func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (wi
 }
 
 func TaintNode(clientset *kubernetes.Clientset, options metav1.ListOptions, taint *corev1.Taint) error {
-	result, err := clientset.CoreV1().Nodes().List(context.Background(), options)
-	if err != nil {
-		return err
-	}
+	var result *corev1.NodeList
+	Eventually(func() error {
+		var err error
+		result, err = clientset.CoreV1().Nodes().List(context.Background(), options)
+		if err != nil {
+			log.Printf("Error trying to list nodes %v: %s\n", options, err.Error())
+			return err
+		}
 
-	if len(result.Items) == 0 {
-		return fmt.Errorf("No Nodes found.")
-	}
+		if len(result.Items) == 0 {
+			return fmt.Errorf("No Nodes found.")
+		}
+		return nil
+	}, nodeOperationTimeout, nodeOperationSleepBetweenRetries).Should(Succeed())
 
 	for _, n := range result.Items {
 		newNode, needsUpdate := addOrUpdateTaint(&n, taint)
@@ -76,7 +95,7 @@ func TaintNode(clientset *kubernetes.Clientset, options metav1.ListOptions, tain
 			continue
 		}
 
-		err = PatchNodeTaints(clientset, newNode.Name, &n, newNode)
+		err := PatchNodeTaints(clientset, newNode.Name, &n, newNode)
 		if err != nil {
 			return err
 		}
@@ -105,7 +124,14 @@ func PatchNodeTaints(clientset *kubernetes.Clientset, nodeName string, oldNode *
 		return fmt.Errorf("failed to create patch for node %q: %v", nodeName, err)
 	}
 
-	_, err = clientset.CoreV1().Nodes().Patch(context.Background(), nodeName, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
+	Eventually(func() error {
+		_, err := clientset.CoreV1().Nodes().Patch(context.Background(), nodeName, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
+		if err != nil {
+			log.Printf("Error updating node taints on node %s:%s\n", nodeName, err.Error())
+			return err
+		}
+		return nil
+	}, nodeOperationTimeout, nodeOperationSleepBetweenRetries).Should(Succeed())
 	return err
 }
 

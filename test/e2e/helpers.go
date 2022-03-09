@@ -61,7 +61,10 @@ import (
 )
 
 const (
-	sshPort = "22"
+	sshPort                               = "22"
+	deleteOperationTimeout                = 20 * time.Minute
+	retryableOperationTimeout             = 30 * time.Second
+	retryableOperationSleepBetweenRetries = 3 * time.Second
 )
 
 // deploymentsClientAdapter adapts a Deployment to work with WaitForDeploymentsAvailable.

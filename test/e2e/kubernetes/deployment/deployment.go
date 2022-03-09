@@ -22,10 +22,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
+	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,8 +38,10 @@ import (
 )
 
 const (
-	ExternalLoadbalancer = LoadbalancerType("external")
-	InternalLoadbalancer = LoadbalancerType("internal")
+	ExternalLoadbalancer                   = LoadbalancerType("external")
+	InternalLoadbalancer                   = LoadbalancerType("internal")
+	deploymentOperationTimeout             = 30 * time.Second
+	deploymentOperationSleepBetweenRetries = 3 * time.Second
 )
 
 type (
@@ -128,11 +132,16 @@ func (d *Builder) AddContainerPort(name, portName string, portNumber int32, prot
 }
 
 func (d *Builder) Deploy(ctx context.Context, clientset *kubernetes.Clientset) (*appsv1.Deployment, error) {
-	deployment, err := d.Client(clientset).Create(ctx, d.deployment, metav1.CreateOptions{})
-	if err != nil {
-		log.Printf("Error trying to deploy %s in namespace %s:%s\n", d.deployment.Name, d.deployment.ObjectMeta.Namespace, err.Error())
-		return nil, err
-	}
+	var deployment *appsv1.Deployment
+	Eventually(func() error {
+		var err error
+		deployment, err = d.Client(clientset).Create(ctx, d.deployment, metav1.CreateOptions{})
+		if err != nil {
+			log.Printf("Error trying to deploy %s in namespace %s:%s\n", d.deployment.Name, d.deployment.ObjectMeta.Namespace, err.Error())
+			return err
+		}
+		return nil
+	}, deploymentOperationTimeout, deploymentOperationSleepBetweenRetries).Should(Succeed())
 
 	return deployment, nil
 }
@@ -146,15 +155,20 @@ func (d *Builder) GetPodsFromDeployment(ctx context.Context, clientset *kubernet
 		LabelSelector: labels.Set(d.deployment.Labels).String(),
 		Limit:         100,
 	}
-	pods, err := clientset.CoreV1().Pods(d.deployment.GetNamespace()).List(ctx, opts)
-	if err != nil {
-		log.Printf("Error trying to get the pods from deployment %s:%s\n", d.deployment.GetName(), err.Error())
-		return nil, err
-	}
+	var pods *corev1.PodList
+	Eventually(func() error {
+		var err error
+		pods, err = clientset.CoreV1().Pods(d.deployment.GetNamespace()).List(ctx, opts)
+		if err != nil {
+			log.Printf("Error trying to get the pods from deployment %s:%s\n", d.deployment.GetName(), err.Error())
+			return err
+		}
+		return nil
+	}, deploymentOperationTimeout, deploymentOperationSleepBetweenRetries).Should(Succeed())
 	return pods.Items, nil
 }
 
-func (d *Builder) GetService(ports []corev1.ServicePort, lbtype LoadbalancerType) *corev1.Service {
+func (d *Builder) CreateServiceResourceSpec(ports []corev1.ServicePort, lbtype LoadbalancerType) *corev1.Service {
 	suffix := "elb"
 	annotations := map[string]string{}
 	if lbtype == InternalLoadbalancer {

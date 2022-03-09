@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 )
 
-func CreateCurlJob(name, endpoint string) *batchv1.Job {
+func CreateCurlJobResourceSpec(name, endpoint string) *batchv1.Job {
 	name = name + util.RandomString(5)
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{

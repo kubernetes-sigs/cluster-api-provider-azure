@@ -19,9 +19,11 @@ limitations under the License.
 package pod
 
 import (
-	"bytes"
+	"fmt"
 	"os"
+	"time"
 
+	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
@@ -29,7 +31,12 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 )
 
-func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string) error {
+const (
+	podExecOperationTimeout             = 3 * time.Minute
+	podExecOperationSleepBetweenRetries = 3 * time.Second
+)
+
+func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string, testSuccess bool) error {
 	req := clientset.CoreV1().RESTClient().Post().Resource("pods").Name(pod.GetName()).
 		Namespace(pod.GetNamespace()).SubResource("exec")
 	option := &v1.PodExecOptions{
@@ -39,6 +46,9 @@ func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod
 		Stderr:  true,
 		TTY:     true,
 	}
+	if !testSuccess {
+		option.Stderr = false
+	}
 	req.VersionedParams(
 		option,
 		scheme.ParameterCodec,
@@ -47,41 +57,20 @@ func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod
 	if err != nil {
 		return err
 	}
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	})
-	if err != nil {
-		return err
-	}
+	Eventually(func() error {
+		err = exec.Stream(remotecommand.StreamOptions{
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		})
+		if testSuccess {
+			return err
+		}
+		// If we get here we are validating that the command returned an expected error
+		if err == nil {
+			return fmt.Errorf("Expected error from command %s but got nil", command)
+		}
+		return nil
+	}, podExecOperationTimeout, podExecOperationSleepBetweenRetries).Should(Succeed())
 
 	return nil
-}
-
-func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string) (*bytes.Buffer, error) {
-	req := clientset.CoreV1().RESTClient().Post().Resource("pods").Name(pod.GetName()).
-		Namespace(pod.GetNamespace()).SubResource("exec")
-	option := &v1.PodExecOptions{
-		Command: command,
-		Stdin:   false,
-		Stdout:  true,
-		Stderr:  true,
-		TTY:     true,
-	}
-	req.VersionedParams(
-		option,
-		scheme.ParameterCodec,
-	)
-	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
-	if err != nil {
-		return nil, err
-	}
-	stdout := bytes.NewBuffer(nil)
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdout: stdout,
-		// needs to be populated or else exec hangs, but we don't need the output. Failures write to stdout when TTY enabled.
-		Stderr: bytes.NewBuffer(nil),
-	})
-
-	return stdout, err
 }

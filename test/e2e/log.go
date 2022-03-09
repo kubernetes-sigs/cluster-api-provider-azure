@@ -38,7 +38,17 @@ func Logf(format string, args ...interface{}) {
 	logf("INFO", format, args...)
 }
 
+// LogWarningf prints warning logs with a timestamp and formatting.
+func LogWarningf(format string, args ...interface{}) {
+	logf("WARNING", format, args...)
+}
+
 // Log prints info logs with a timestamp.
 func Log(message string) {
 	logf("INFO", message)
+}
+
+// Log prints warning logs with a timestamp.
+func LogWarning(message string) {
+	logf("WARNING", message)
 }

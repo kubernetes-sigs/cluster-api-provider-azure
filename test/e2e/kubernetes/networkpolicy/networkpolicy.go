@@ -22,7 +22,9 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -34,6 +36,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/scheme"
+)
+
+const (
+	networkPolicyOperationTimeout             = 30 * time.Second
+	networkPolicyOperationSleepBetweenRetries = 3 * time.Second
 )
 
 // CreateNetworkPolicyFromFile will create a NetworkPolicy from file with a name
@@ -61,21 +68,33 @@ func CreateNetworkPolicyFromFile(ctx context.Context, clientset *kubernetes.Clie
 }
 
 func createNetworkPolicyV1(ctx context.Context, clientset *kubernetes.Clientset, namespace string, networkPolicy *networkingv1.NetworkPolicy) error {
-	_, err := clientset.NetworkingV1().NetworkPolicies(namespace).Create(ctx, networkPolicy, metav1.CreateOptions{})
-	return err
+	Eventually(func() error {
+		_, err := clientset.NetworkingV1().NetworkPolicies(namespace).Create(ctx, networkPolicy, metav1.CreateOptions{})
+		if err != nil {
+			log.Printf("failed trying to create NetworkPolicy (%s):%s\n", networkPolicy.Name, err.Error())
+			return err
+		}
+		return nil
+	}, networkPolicyOperationTimeout, networkPolicyOperationSleepBetweenRetries).Should(Succeed())
+	return nil
 }
 
 // DeleteNetworkPolicy will create a NetworkPolicy from file with a name
 func DeleteNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, name, namespace string) {
 	opts := metav1.DeleteOptions{}
-	err := clientset.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, name, opts)
-	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		err := clientset.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, name, opts)
+		if err != nil {
+			log.Printf("failed trying to delete NetworkPolicy (%s):%s\n", name, err.Error())
+			return err
+		}
+		return nil
+	}, networkPolicyOperationTimeout, networkPolicyOperationSleepBetweenRetries).Should(Succeed())
 }
 
 func EnsureOutboundInternetAccess(clientset *kubernetes.Clientset, config *restclient.Config, pods []v1.Pod) {
 	for _, pod := range pods {
-		err := CheckOutboundConnection(clientset, config, pod)
-		Expect(err).NotTo(HaveOccurred())
+		CheckOutboundConnection(clientset, config, pod)
 	}
 }
 
@@ -83,19 +102,14 @@ func EnsureConnectivityResultBetweenPods(clientset *kubernetes.Clientset, config
 	for _, fromPod := range fromPods {
 		for _, toPod := range toPods {
 			command := []string{"curl", "-S", "-s", "-o", "/dev/null", toPod.Status.PodIP}
-			err := e2e_pod.Exec(clientset, config, fromPod, command)
-			if shouldHaveConnection {
-				Expect(err).NotTo(HaveOccurred())
-			} else {
-				Expect(err).Should(HaveOccurred())
-			}
+			e2e_pod.Exec(clientset, config, fromPod, command, shouldHaveConnection)
 		}
 	}
 }
 
-func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod) error {
+func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod) {
 	command := []string{"curl", "-S", "-s", "-o", "/dev/null", "www.bing.com"}
-	return e2e_pod.Exec(clientset, config, pod, command)
+	e2e_pod.Exec(clientset, config, pod, command, true)
 }
 
 func ApplyNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, nwpolicyName string, namespace string, nwpolicyFileName string, policyDir string) {
