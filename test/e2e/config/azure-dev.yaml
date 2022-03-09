@@ -175,6 +175,8 @@ providers:
         targetName: "cluster-template-aks.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
         targetName: "cluster-template-custom-vnet.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-dual-stack.yaml"
+        targetName: "cluster-template-dual-stack.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"

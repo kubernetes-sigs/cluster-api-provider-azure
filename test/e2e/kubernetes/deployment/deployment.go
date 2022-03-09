@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -168,7 +169,7 @@ func (d *Builder) GetPodsFromDeployment(ctx context.Context, clientset *kubernet
 	return pods.Items, nil
 }
 
-func (d *Builder) CreateServiceResourceSpec(ports []corev1.ServicePort, lbtype LoadbalancerType) *corev1.Service {
+func (d *Builder) CreateServiceResourceSpec(ports []corev1.ServicePort, lbtype LoadbalancerType, ipFamilies []corev1.IPFamily) *corev1.Service {
 	suffix := "elb"
 	annotations := map[string]string{}
 	if lbtype == InternalLoadbalancer {
@@ -188,6 +189,7 @@ func (d *Builder) CreateServiceResourceSpec(ports []corev1.ServicePort, lbtype L
 			Selector: map[string]string{
 				"app": d.deployment.Name,
 			},
+			IPFamilies: ipFamilies,
 		},
 	}
 }

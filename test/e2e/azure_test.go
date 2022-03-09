@@ -296,7 +296,10 @@ var _ = Describe("Workload cluster creation", func() {
 						Namespace:             namespace,
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
-						IPv6:                  true,
+						// Setting IPFamily to ipv6 is not required for single-stack IPv6 clusters. The clusterIP
+						// will be automatically assigned IPv6 address. However, setting this config so that
+						// we can use the same test code for both single-stack and dual-stack IPv6 clusters.
+						IPFamilies: []corev1.IPFamily{corev1.IPv6Protocol},
 					}
 				})
 			})
@@ -535,6 +538,57 @@ var _ = Describe("Workload cluster creation", func() {
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
 						Windows:               true,
+					}
+				})
+			})
+		})
+	})
+
+	Context("Creating a dual-stack cluster [OPTIONAL]", func() {
+		It("With dual-stack worker node", func() {
+			clusterName = getClusterName(clusterNamePrefix, "dual-stack")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "dual-stack",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+					ControlPlaneMachineCount: pointer.Int64Ptr(3),
+					WorkerMachineCount:       pointer.Int64Ptr(1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			}, result)
+
+			// dual-stack external IP for dual-stack clusters is not yet supported
+			// first ip family in ipFamilies is used for the primary clusterIP and cloud-provider
+			// determines the elb/ilb ip family based on the primary clusterIP
+			Context("Creating an accessible ipv4 load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+						IPFamilies:            []corev1.IPFamily{corev1.IPv4Protocol},
+					}
+				})
+			})
+
+			Context("Creating an accessible ipv6 load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+						IPFamilies:            []corev1.IPFamily{corev1.IPv6Protocol},
 					}
 				})
 			})

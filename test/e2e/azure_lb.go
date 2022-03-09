@@ -50,8 +50,8 @@ type AzureLBSpecInput struct {
 	Namespace             *corev1.Namespace
 	ClusterName           string
 	SkipCleanup           bool
-	IPv6                  bool
 	Windows               bool
+	IPFamilies            []corev1.IPFamily
 }
 
 // AzureLBSpec implements a test that verifies Azure internal and external load balancers can
@@ -62,6 +62,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		input        AzureLBSpecInput
 		clusterProxy framework.ClusterProxy
 		clientset    *kubernetes.Clientset
+		isIPv6       = len(input.IPFamilies) > 0 && input.IPFamilies[0] == corev1.IPv6Protocol
 	)
 
 	input = inputGetter()
@@ -122,10 +123,10 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	// TODO: fix and enable this. Internal LBs + IPv6 is currently in preview.
 	// https://docs.microsoft.com/en-us/azure/virtual-network/ipv6-dual-stack-standard-internal-load-balancer-powershell
-	if !input.IPv6 {
+	if !isIPv6 {
 		By("creating an internal Load Balancer service")
 
-		ilbService := webDeployment.CreateServiceResourceSpec(ports, deploymentBuilder.InternalLoadbalancer)
+		ilbService := webDeployment.CreateServiceResourceSpec(ports, deploymentBuilder.InternalLoadbalancer, input.IPFamilies)
 		Log("starting to create an internal Load Balancer service")
 		Eventually(func() error {
 			_, err := servicesClient.Create(ctx, ilbService, metav1.CreateOptions{})
@@ -202,7 +203,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 
 	By("creating an external Load Balancer service")
-	elbService := webDeployment.CreateServiceResourceSpec(ports, deploymentBuilder.ExternalLoadbalancer)
+	elbService := webDeployment.CreateServiceResourceSpec(ports, deploymentBuilder.ExternalLoadbalancer, input.IPFamilies)
 	Log("starting to create an external Load Balancer service")
 	Eventually(func() error {
 		_, err := servicesClient.Create(ctx, elbService, metav1.CreateOptions{})
@@ -249,7 +250,9 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 	WaitForJobComplete(ctx, elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
-	if !input.IPv6 {
+	// connecting directly to the external LB service only works for IPv4
+	// for IPv6 this is only possible when externalTrafficPolicy is set to "Local"
+	if k8snet.IsIPv4String(elbIP) {
 		By("connecting directly to the external LB service")
 		url := fmt.Sprintf("http://%s", elbIP)
 		Log("starting attempts to connect directly to the external LB service")

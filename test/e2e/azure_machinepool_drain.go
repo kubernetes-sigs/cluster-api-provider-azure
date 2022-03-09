@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -61,7 +62,7 @@ type (
 		Namespace             *corev1.Namespace
 		ClusterName           string
 		SkipCleanup           bool
-		IPv6                  bool
+		IPFamilies            []corev1.IPFamily
 	}
 
 	deployCustomizerOption func(builder *deployments.Builder, service *corev1.Service)
@@ -116,7 +117,7 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 		}()
 
 		customizers = []deployCustomizerOption{
-			func(builder *deployments.Builder, _ *corev1.Service) {
+			func(builder *deployments.Builder, service *corev1.Service) {
 				antiAffinity := corev1.PodAntiAffinity{
 					PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
 						{
@@ -288,7 +289,7 @@ func deployHttpService(ctx context.Context, clientset *kubernetes.Clientset, isW
 		webDeploymentBuilder.AddWindowsSelectors()
 	}
 
-	elbService := webDeploymentBuilder.CreateServiceResourceSpec(ports, deployments.ExternalLoadbalancer)
+	elbService := webDeploymentBuilder.CreateServiceResourceSpec(ports, deployments.ExternalLoadbalancer, nil)
 
 	for _, opt := range opts {
 		opt(webDeploymentBuilder, elbService)
