@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -32,6 +33,7 @@ import (
 
 	"github.com/hashicorp/go-retryablehttp"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -173,7 +175,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 		if !input.SkipCleanup {
 			By("deleting the ilb test resources")
-			Logf("deleting the ilb service: %s", ilbService.Name)
+			Logf("starting to delete the ilb service: %s", ilbService.Name)
 			Eventually(func() error {
 				err := servicesClient.Delete(ctx, ilbService.Name, metav1.DeleteOptions{})
 				if err != nil {
@@ -181,7 +183,12 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 					return err
 				}
 				return nil
-			}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+			}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+			Logf("waiting for the ilb service to be deleted: %s", ilbService.Name)
+			Eventually(func() bool {
+				_, err := servicesClient.Get(ctx, ilbService.GetName(), metav1.GetOptions{})
+				return apierrors.IsNotFound(err)
+			}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(BeTrue())
 			Logf("deleting the ilb job: %s", ilbJob.Name)
 			Eventually(func() error {
 				err := jobsClient.Delete(ctx, ilbJob.Name, metav1.DeleteOptions{})
@@ -267,7 +274,12 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 			return err
 		}
 		return nil
-	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+	Logf("waiting for the external LB service to be deleted: %s", elbService.Name)
+	Eventually(func() bool {
+		_, err := servicesClient.Get(ctx, elbService.GetName(), metav1.GetOptions{})
+		return apierrors.IsNotFound(err)
+	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(BeTrue())
 	Logf("starting to delete deployment %s", deployment.Name)
 	Eventually(func() error {
 		err := webDeployment.Client(clientset).Delete(ctx, deployment.Name, metav1.DeleteOptions{})
