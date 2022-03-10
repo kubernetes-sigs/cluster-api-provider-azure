@@ -42,6 +42,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
 )
 
+const waitForLBCreateTimeout = 5 * time.Minute
+
 // AzureLBSpecInput is the input for AzureLBSpec.
 type AzureLBSpecInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
@@ -151,7 +153,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 				return err
 			}
 			return nil
-		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+		}, waitForLBCreateTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 		ilbIP := extractServiceIp(svc)
 
 		ilbJob := job.CreateCurlJobResourceSpec("curl-to-ilb-job", ilbIP)
@@ -222,7 +224,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 			return err
 		}
 		return nil
-	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+	}, waitForLBCreateTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 
 	elbIP := extractServiceIp(svc)
 	Log("starting to create curl-to-elb job")
