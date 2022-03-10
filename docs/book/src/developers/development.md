@@ -574,6 +574,6 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 [manifests]: /docs/manifests.md
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
-[kustomizelinux]: https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md
+[kustomizelinux]: https://kubectl.docs.kubernetes.io/installation/kustomize/
 [gomock]: https://github.com/golang/mock
 [timeout]: http://man7.org/linux/man-pages/man1/timeout.1.html
