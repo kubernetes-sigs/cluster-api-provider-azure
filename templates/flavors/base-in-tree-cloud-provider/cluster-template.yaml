@@ -1,0 +1,140 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  labels:
+    cni: calico
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: [ "192.168.0.0/16" ]
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+  controlPlaneRef:
+    kind: KubeadmControlPlane
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    name: "${CLUSTER_NAME}-control-plane"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  resourceGroup: "${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}"
+  location: "${AZURE_LOCATION}"
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+  networkSpec:
+    vnet:
+      name: "${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}"
+    subnets:
+    - name: control-plane-subnet
+      role: control-plane
+    - name: node-subnet
+      natGateway:
+        name: node-natgateway
+      role: node
+---
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  machineTemplate:
+    infrastructureRef:
+      kind: AzureMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      name: "${CLUSTER_NAME}-control-plane"
+  kubeadmConfigSpec:
+    initConfiguration:
+      nodeRegistration:
+        name: '{{ ds.meta_data["local_hostname"] }}'
+        kubeletExtraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+          azure-container-registry-config: /etc/kubernetes/azure.json
+    joinConfiguration:
+      nodeRegistration:
+        name: '{{ ds.meta_data["local_hostname"] }}'
+        kubeletExtraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+          azure-container-registry-config: /etc/kubernetes/azure.json
+    clusterConfiguration:
+      apiServer:
+        timeoutForControlPlane: 20m
+        extraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+        extraVolumes:
+          - hostPath: /etc/kubernetes/azure.json
+            mountPath: /etc/kubernetes/azure.json
+            name: cloud-config
+            readOnly: true
+      controllerManager:
+        extraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+          allocate-node-cidrs: "false"
+          cluster-name: ${CLUSTER_NAME}
+        extraVolumes:
+          - hostPath: /etc/kubernetes/azure.json
+            mountPath: /etc/kubernetes/azure.json
+            name: cloud-config
+            readOnly: true
+      etcd:
+        local:
+          dataDir: "/var/lib/etcddisk/etcd"
+          extraArgs:
+            quota-backend-bytes: "8589934592"
+    files:
+      - contentFrom:
+          secret:
+            name: ${CLUSTER_NAME}-control-plane-azure-json
+            key: control-plane-azure.json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+    diskSetup:
+      partitions:
+        - device: /dev/disk/azure/scsi1/lun0
+          tableType: gpt
+          layout: true
+          overwrite: false
+      filesystems:
+        - label: etcd_disk
+          filesystem: ext4
+          device: /dev/disk/azure/scsi1/lun0
+          extraOpts:
+            - "-E"
+            - "lazy_itable_init=1,lazy_journal_init=1"
+        - label: ephemeral0
+          filesystem: ext4
+          device: ephemeral0.1
+          replaceFS: ntfs
+    mounts:
+      - - LABEL=etcd_disk
+        - /var/lib/etcddisk
+    preKubeadmCommands: []
+    postKubeadmCommands: []
+  version: "${KUBERNETES_VERSION}"
+---
+kind: AzureMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+      osDisk:
+        osType: "Linux"
+        diskSizeGB: 128
+      dataDisks:
+        - nameSuffix: etcddisk
+          diskSizeGB: 256
+          lun: 0
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}

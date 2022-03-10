@@ -82,11 +82,12 @@ select_cluster_template() {
         export CI_VERSION="${CI_VERSION:-$(curl -sSL ${CI_VERSION_URL})}"
         export KUBERNETES_VERSION="${CI_VERSION}"
     else
-        export CLUSTER_TEMPLATE="test/ci/cluster-template-prow.yaml"
+        export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-in-tree-cloud-provider.yaml"
     fi
 
     if [[ -n "${TEST_CCM:-}" ]]; then
-        export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-external-cloud-provider.yaml"
+        export CLUSTER_TEMPLATE="test/ci/cluster-template-prow.yaml"
+        K8S_FEATURE_GATES="MixedProtocolLBService=true"
         # shellcheck source=scripts/ci-build-azure-ccm.sh
         source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
         echo "Using CCM image ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG} and CNM image ${AZURE_CLOUD_NODE_MANAGER_IMG} to build external cloud provider cluster"
@@ -103,8 +104,13 @@ select_cluster_template() {
     # this requires k8s 1.22+
     if [[ -n "${TEST_WINDOWS:-}" ]]; then
         export WINDOWS_WORKER_MACHINE_COUNT="${WINDOWS_WORKER_MACHINE_COUNT:-2}"
-        export K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
+        if [ "${K8S_FEATURE_GATES:-}" != "" ]; then
+          K8S_FEATURE_GATES+=",WindowsHostProcessContainers=true"
+        else
+          K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
+        fi
     fi
+    export K8S_FEATURE_GATES
 }
 
 create_cluster() {

@@ -37,11 +37,11 @@ export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds.yaml"
 
 To test changes made to the [Azure cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), first build and push images for cloud-controller-manager and/or cloud-node-manager from the root of the cloud-provider-azure repo.
 
-Then, use the `external-cloud-provider` flavor to create a cluster:
+The default reference template uses the external cloud-provider, so simply update them to include references to your custom images. E.g.:
 
 ```bash
 AZURE_CLOUD_CONTROLLER_MANAGER_IMG=myrepo/my-ccm:v0.0.1 \
 AZURE_CLOUD_NODE_MANAGER_IMG=myrepo/my-cnm:v0.0.1 \
-CLUSTER_TEMPLATE=cluster-template-external-cloud-provider.yaml \
+CLUSTER_TEMPLATE=cluster-template.yaml \
 make create-workload-cluster
 ```

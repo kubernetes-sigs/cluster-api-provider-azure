@@ -105,6 +105,9 @@ var _ = Describe("Conformance Tests", func() {
 
 		kubernetesVersion := e2eConfig.GetVariable(capi_e2e.KubernetesVersion)
 		flavor := clusterctl.DefaultFlavor
+		if os.Getenv("IN_TREE_CLOUDPROVIDER") == "true" {
+			flavor = "in-tree-cloud-provider"
+		}
 		if isWindows(kubetestConfigFilePath) {
 			flavor = getWindowsFlavor()
 		}

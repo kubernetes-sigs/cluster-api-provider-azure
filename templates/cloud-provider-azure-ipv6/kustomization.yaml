@@ -1,10 +1,6 @@
 namespace: default
 resources:
-  - ../default
   - ccm-resource-set.yaml
-
-patchesStrategicMerge:
-  - patches/external-cloud-provider.yaml
 
 configMapGenerator:
   - name: cloud-controller-manager-addon

@@ -1,0 +1,6 @@
+namespace: default
+resources:
+  - ../base-in-tree-cloud-provider
+patchesStrategicMerge:
+  - patches/kubeadm-control-plane.yaml
+  - patches/cluster.yaml

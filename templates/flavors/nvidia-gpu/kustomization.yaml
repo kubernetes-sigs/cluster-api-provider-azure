@@ -4,6 +4,7 @@ resources:
   - ../../azure-cluster-identity
   - machine-deployment.yaml
   - gpu-operator-resources-set.yaml
+  - ../../cloud-provider-azure
 
 patchesStrategicMerge:
   - patches/cluster.yaml

@@ -4,7 +4,7 @@ In `clusterctl` the infrastructure provider authors can provide different type o
 or flavors; use the --flavor flag to specify which flavor to use; e.g
 ```shell
 clusterctl config cluster my-cluster --kubernetes-version v1.22.1 \
-    --flavor external-cloud-provider > my-cluster.yaml
+    --flavor ipv6 > my-cluster.yaml
 ```
 See [`clusterctl` flavors docs](https://cluster-api.sigs.k8s.io/clusterctl/commands/generate-cluster.html#flavors).
 
@@ -35,7 +35,7 @@ Please note your tilt-settings.json must contain at minimum the following fields
 ```
 After updating tilt-settings.json, follow these two steps to deploy a workload cluster:
 
-1. Run ``make tilt up`` in the root of cluster-api-provider-azure repo. Note that the tilt-settings.json also resides here in the 
+1. Run ``make tilt up`` in the root of cluster-api-provider-azure repo. Note that the tilt-settings.json also resides here in the
 root of this repo. After tilt has initialized, press `space` to open the tilt web UI in a browser. See the following example:
    ![plot](../../docs/book/theme/tilt-up.png)
 2. Once your browser is open, click the clockwise arrow icon ⟳ on a resource listed. For example, `default` to deploy a default flavor.

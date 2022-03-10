@@ -9,6 +9,7 @@ resources:
   - cni-resource-set.yaml
   - ../../../azure-cluster-identity
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
+  - ../../../cloud-provider-azure
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml

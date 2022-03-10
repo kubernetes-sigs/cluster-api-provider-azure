@@ -67,9 +67,9 @@ All cloud provider config values can be customized by creating the `${RESOURCE}-
 </aside>
 
 
-# External Cloud Provider
+# External Cloud Provider components
 
-To deploy a cluster using [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), create a cluster configuration with the [external cloud provider template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-external-cloud-provider.yaml).
+The recommended cloud provider configuration is to use the external cloud-provider-azure. The [default reference template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template.yaml) specifies external cloud-provider-azure. Note: you must enable the `ClusterResourceSet` feature flag on your cluster-api management cluster in order to use the reference template. See [here](https://github.com/kubernetes-sigs/cluster-api/blob/v1.1.3/docs/book/src/tasks/experimental-features/experimental-features.md#enabling-experimental-features-on-existing-management-clusters) for more information on how to do that.
 
 After deploying the cluster, you should eventually see a set of pods like the following in a `Running` state:
 
@@ -80,6 +80,8 @@ kube-system   cloud-node-manager-hbbqt                                          
 kube-system   cloud-node-manager-mfsdg                                            1/1     Running   0          39s
 kube-system   cloud-node-manager-qrz74                                            1/1     Running   0          24s
 ```
+
+The `cloud-node-manager` component will be scheduled to run on one (or more, if you have more than one replica) of your control plane nodes, and is responsible for doing the bulk of the work communicating with Azure to do cloud-provider-specific work. The `cloud-node-manager` component is a DaemonSet pod that runs on each node, and does ensures that each node running in Azure is healthy and ready for work.
 
 ## Storage Drivers
 

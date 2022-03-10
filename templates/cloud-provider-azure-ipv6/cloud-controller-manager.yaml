@@ -129,70 +129,82 @@ subjects:
     kind: User
     name: cloud-controller-manager
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: cloud-controller-manager
   namespace: kube-system
   labels:
-    tier: control-plane
     component: cloud-controller-manager
 spec:
-  priorityClassName: system-node-critical
-  hostNetwork: true
-  nodeSelector:
-    node-role.kubernetes.io/master: ""
-  serviceAccountName: cloud-controller-manager
-  tolerations:
-    - key: node-role.kubernetes.io/master
-      effect: NoSchedule
-  containers:
-    - name: cloud-controller-manager
-      image: ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG:=mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.1.5}
-      imagePullPolicy: IfNotPresent
-      command: ["cloud-controller-manager"]
-      args:
-        - "--allocate-node-cidrs=true"
-        - "--cloud-config=/etc/kubernetes/azure.json"
-        - "--cloud-provider=azure"
-        - "--cluster-cidr=10.244.0.0/16"
-        - "--cluster-name=${CLUSTER_NAME}"
-        - "--controllers=*,-cloud-node" # disable cloud-node controller
-        - "--configure-cloud-routes=true" # "false" for Azure CNI and "true" for other network plugins
-        - "--leader-elect=true"
-        - "--route-reconciliation-period=10s"
-        - "--v=2"
-        - "--port=10267"
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: "4"
-          memory: 2Gi
-      livenessProbe:
-        httpGet:
-          path: /healthz
-          port: 10267
-        initialDelaySeconds: 20
-        periodSeconds: 10
-        timeoutSeconds: 5
-      volumeMounts:
+  selector:
+    matchLabels:
+      tier: control-plane
+      component: cloud-controller-manager
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        tier: control-plane
+    spec:
+      priorityClassName: system-node-critical
+      hostNetwork: true
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      serviceAccountName: cloud-controller-manager
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cloud-controller-manager
+          image: ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG:=mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.1.5}
+          imagePullPolicy: IfNotPresent
+          command: ["cloud-controller-manager"]
+          args:
+            - "--allocate-node-cidrs=true"
+            - "--cloud-config=/etc/kubernetes/azure.json"
+            - "--cloud-provider=azure"
+            - "--cluster-cidr=2001:1234:5678:9a40::/58"
+            - "--bind-address=::"
+            - "--cluster-name=${CLUSTER_NAME}"
+            - "--controllers=*,-cloud-node" # disable cloud-node controller
+            - "--configure-cloud-routes=true" # "false" for Azure CNI and "true" for other network plugins
+            - "--leader-elect=true"
+            - "--node-cidr-mask-size=0"
+            - "--route-reconciliation-period=10s"
+            - "--v=2"
+            - "--port=10267"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "4"
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 10267
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: etc-kubernetes
+              mountPath: /etc/kubernetes
+            - name: etc-ssl
+              mountPath: /etc/ssl
+              readOnly: true
+            - name: msi
+              mountPath: /var/lib/waagent/ManagedIdentity-Settings
+              readOnly: true
+      volumes:
         - name: etc-kubernetes
-          mountPath: /etc/kubernetes
+          hostPath:
+            path: /etc/kubernetes
         - name: etc-ssl
-          mountPath: /etc/ssl
-          readOnly: true
+          hostPath:
+            path: /etc/ssl
         - name: msi
-          mountPath: /var/lib/waagent/ManagedIdentity-Settings
-          readOnly: true
-  volumes:
-    - name: etc-kubernetes
-      hostPath:
-        path: /etc/kubernetes
-    - name: etc-ssl
-      hostPath:
-        path: /etc/ssl
-    - name: msi
-      hostPath:
-        path: /var/lib/waagent/ManagedIdentity-Settings
+          hostPath:
+            path: /var/lib/waagent/ManagedIdentity-Settings

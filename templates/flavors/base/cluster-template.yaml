@@ -4,7 +4,8 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    cni: "calico"
+    cni: calico
+    ccm: external
 spec:
   clusterNetwork:
     pods:
@@ -53,14 +54,14 @@ spec:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
-          cloud-provider: azure
+          cloud-provider: external
           cloud-config: /etc/kubernetes/azure.json
           azure-container-registry-config: /etc/kubernetes/azure.json
     joinConfiguration:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
-          cloud-provider: azure
+          cloud-provider: external
           cloud-config: /etc/kubernetes/azure.json
           azure-container-registry-config: /etc/kubernetes/azure.json
     clusterConfiguration:
@@ -76,7 +77,7 @@ spec:
             readOnly: true
       controllerManager:
         extraArgs:
-          cloud-provider: azure
+          cloud-provider: external
           cloud-config: /etc/kubernetes/azure.json
           allocate-node-cidrs: "false"
           cluster-name: ${CLUSTER_NAME}

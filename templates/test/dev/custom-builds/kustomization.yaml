@@ -1,6 +1,6 @@
 namespace: default
 resources:
-  - ../../../test/ci/prow
+  - ../../../test/ci/prow-in-tree-cloud-provider
 patchesStrategicMerge:
   - patches/machine-deployment-pr-version.yaml
 patches:
