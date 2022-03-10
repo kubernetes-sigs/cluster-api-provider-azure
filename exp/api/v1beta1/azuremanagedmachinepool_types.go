@@ -85,6 +85,10 @@ type AzureManagedMachinePoolSpec struct {
 	// +kubebuilder:default=Managed
 	// +optional
 	OsDiskType *string `json:"osDiskType,omitempty"`
+
+	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
+	// +optional
+	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.

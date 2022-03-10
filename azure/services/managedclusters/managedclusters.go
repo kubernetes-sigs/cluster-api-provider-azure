@@ -276,6 +276,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			MaxPods:             pool.MaxPods,
 			OrchestratorVersion: pool.Version,
 			OsDiskType:          containerservice.OSDiskType(to.String(pool.OsDiskType)),
+			EnableUltraSSD:      pool.EnableUltraSSD,
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}

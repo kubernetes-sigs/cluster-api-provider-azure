@@ -91,6 +91,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			MaxPods:             agentPoolSpec.MaxPods,
 			OsDiskType:          containerservice.OSDiskType(to.String(agentPoolSpec.OsDiskType)),
 			NodeLabels:          agentPoolSpec.NodeLabels,
+			EnableUltraSSD:      agentPoolSpec.EnableUltraSSD,
 		},
 	}
 

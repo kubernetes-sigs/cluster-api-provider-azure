@@ -364,4 +364,8 @@ type AgentPoolSpec struct {
 
 	// OsDiskType specifies the OS disk type for each node in the pool. Allowed values are 'Ephemeral' and 'Managed'.
 	OsDiskType *string `json:"osDiskType,omitempty"`
+
+	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
+	// +optional
+	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
 }
