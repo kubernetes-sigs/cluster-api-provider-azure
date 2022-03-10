@@ -172,6 +172,32 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
+	if old.Spec.EnableUltraSSD != nil {
+		// Prevent EnabledUltraSSD modification if it was already set to some value
+		if m.Spec.EnableUltraSSD == nil {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableUltraSSD"),
+					m.Spec.EnableUltraSSD,
+					"field is immutable, unsetting is not allowed"))
+		} else if *m.Spec.EnableUltraSSD != *old.Spec.EnableUltraSSD {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableUltraSSD"),
+					m.Spec.EnableUltraSSD,
+					"field is immutable"))
+		}
+	} else {
+		if m.Spec.EnableUltraSSD != nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableUltraSSD"),
+					m.Spec.EnableUltraSSD,
+					"field is immutable, unsetting is not allowed"))
+		}
+	}
 	if len(allErrs) != 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), m.Name, allErrs)
 	}

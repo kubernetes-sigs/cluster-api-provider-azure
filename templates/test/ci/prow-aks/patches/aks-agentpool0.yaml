@@ -5,3 +5,5 @@ metadata:
 spec:
   maxPods: 30
   osDiskType: "Managed"
+  enableUltraSSD: true
+  availabilityZones: ["1", "2"]
