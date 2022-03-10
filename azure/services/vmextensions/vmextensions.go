@@ -26,6 +26,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "vmextensions"
+
 // VMExtensionScope defines the scope interface for a vm extension service.
 type VMExtensionScope interface {
 	azure.ClusterDescriber
@@ -45,6 +47,11 @@ func New(scope VMExtensionScope) *Service {
 		Scope:  scope,
 		client: newClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile creates or updates the VM extension.
@@ -92,4 +99,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 // Delete is a no-op. Extensions will be deleted as part of VM deletion.
 func (s *Service) Delete(_ context.Context) error {
 	return nil
+}
+
+// IsManaged returns always returns true as CAPZ does not support BYO VM extension.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

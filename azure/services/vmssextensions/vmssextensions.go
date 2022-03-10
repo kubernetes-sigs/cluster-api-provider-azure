@@ -25,6 +25,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "vmssextensions"
+
 // VMSSExtensionScope defines the scope interface for a vmss extension service.
 type VMSSExtensionScope interface {
 	azure.ClusterDescriber
@@ -44,6 +46,11 @@ func New(scope VMSSExtensionScope) *Service {
 		Scope:  scope,
 		client: newClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile creates or updates the VMSS extension.
@@ -69,4 +76,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 // Delete is a no-op. Extensions will be deleted as part of VMSS deletion.
 func (s *Service) Delete(_ context.Context) error {
 	return nil
+}
+
+// IsManaged returns always returns true as CAPZ does not support BYO VMSS extension.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

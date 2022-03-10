@@ -55,6 +55,11 @@ func New(scope SubnetScope) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Reconcile")
@@ -110,9 +115,11 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	if !s.Scope.IsVnetManaged() {
+	if managed, err := s.IsManaged(ctx); err == nil && !managed {
 		log.V(4).Info("Skipping subnets deletion in custom vnet mode")
 		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if subnets are managed")
 	}
 
 	specs := s.Scope.SubnetSpecs()
@@ -133,6 +140,13 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	s.Scope.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, result)
-
 	return result
+}
+
+// IsManaged returns true if the route tables' lifecycles are managed.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.IsManaged")
+	defer done()
+
+	return s.Scope.IsVnetManaged(), nil
 }

@@ -35,6 +35,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
+const serviceName = "managedclusters"
+
 var (
 	defaultUser     = "azureuser"
 	managedIdentity = "msi"
@@ -167,6 +169,11 @@ func New(scope ManagedClusterScope) *Service {
 		Scope:  scope,
 		Client: NewClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile idempotently creates or updates a managed cluster, if possible.
@@ -417,4 +424,9 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	klog.V(2).Infof("successfully deleted managed cluster %s ", s.Scope.ClusterName())
 	return nil
+}
+
+// IsManaged returns always returns true as CAPZ does not support BYO managed cluster.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

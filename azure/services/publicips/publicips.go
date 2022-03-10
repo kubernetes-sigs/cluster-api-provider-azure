@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "publicips"
+
 // PublicIPScope defines the scope interface for a public IP service.
 type PublicIPScope interface {
 	azure.ClusterDescriber
@@ -47,6 +49,11 @@ func New(scope PublicIPScope) *Service {
 		Scope:  scope,
 		Client: NewClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile gets/creates/updates a public ip.
@@ -148,4 +155,9 @@ func (s *Service) isIPManaged(ctx context.Context, ipName string) (bool, error) 
 	}
 	tags := converters.MapToTags(ip.Tags)
 	return tags.HasOwned(s.Scope.ClusterName()), nil
+}
+
+// IsManaged returns always returns true as public IPs are managed on a one-by-one basis.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

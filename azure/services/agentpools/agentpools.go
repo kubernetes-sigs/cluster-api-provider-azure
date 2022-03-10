@@ -31,6 +31,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "agentpools"
+
 // ManagedMachinePoolScope defines the scope interface for a managed machine pool.
 type ManagedMachinePoolScope interface {
 	azure.ClusterDescriber
@@ -55,6 +57,11 @@ func New(scope ManagedMachinePoolScope) *Service {
 		scope:  scope,
 		Client: NewClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile idempotently creates or updates a agent pool, if possible.

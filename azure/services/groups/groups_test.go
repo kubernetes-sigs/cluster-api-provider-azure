@@ -27,7 +27,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups/mock_groups"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -74,8 +73,8 @@ func TestReconcileGroups(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.GroupSpec().Return(&fakeGroupSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeGroupSpec, serviceName).Return(nil, nil)
-				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, serviceName, nil)
+				r.CreateResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
 			},
 		},
 		{
@@ -83,8 +82,8 @@ func TestReconcileGroups(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.GroupSpec().Return(&fakeGroupSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeGroupSpec, serviceName).Return(nil, internalError)
-				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, serviceName, internalError)
+				r.CreateResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil, internalError)
+				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, internalError)
 			},
 		},
 	}
@@ -140,13 +139,13 @@ func TestDeleteGroups(t *testing.T) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(sampleManagedGroup, nil)
 				s.ClusterName().Return("test-cluster")
-				r.DeleteResource(gomockinternal.AContext(), &fakeGroupSpec, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, nil)
+				r.DeleteResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
 			},
 		},
 		{
 			name:          "resource group is not managed by capz",
-			expectedError: azure.ErrNotOwned.Error(),
+			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(sampleBYOGroup, nil)
@@ -167,8 +166,8 @@ func TestDeleteGroups(t *testing.T) {
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(resources.Group{}, notFoundError)
-				s.DeleteLongRunningOperationState("test-group", serviceName)
-				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, nil)
+				s.DeleteLongRunningOperationState("test-group", ServiceName)
+				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
 			},
 		},
 		{
@@ -178,8 +177,8 @@ func TestDeleteGroups(t *testing.T) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(sampleManagedGroup, nil)
 				s.ClusterName().Return("test-cluster")
-				r.DeleteResource(gomockinternal.AContext(), &fakeGroupSpec, serviceName).Return(internalError)
-				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, gomockinternal.ErrStrEq("#: Internal Server Error: StatusCode=500"))
+				r.DeleteResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(internalError)
+				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, gomockinternal.ErrStrEq("#: Internal Server Error: StatusCode=500"))
 			},
 		},
 	}

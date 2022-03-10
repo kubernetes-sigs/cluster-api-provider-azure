@@ -67,7 +67,7 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 	g := NewWithT(t)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(subject).NotTo(BeNil())
-	g.Expect(subject.virtualMachinesScaleSetSvc).NotTo(BeNil())
+	g.Expect(subject.services).NotTo(HaveLen(0))
 	g.Expect(subject.skuCache).NotTo(BeNil())
 }
 

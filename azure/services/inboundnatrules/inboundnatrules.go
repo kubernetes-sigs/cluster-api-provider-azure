@@ -54,6 +54,11 @@ func New(scope InboundNatScope) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile gets/creates/updates an inbound NAT rule.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.Service.Reconcile")
@@ -132,4 +137,9 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	s.Scope.UpdateDeleteStatus(infrav1.InboundNATRulesReadyCondition, serviceName, result)
 	return result
+}
+
+// IsManaged returns always returns true as CAPZ does not support BYO inbound NAT rules.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

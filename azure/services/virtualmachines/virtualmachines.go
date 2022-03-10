@@ -67,6 +67,11 @@ func New(scope VMScope) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.Reconcile")
@@ -219,4 +224,9 @@ func getResourceNameByID(resourceID string) string {
 	explodedResourceID := strings.Split(resourceID, "/")
 	resourceName := explodedResourceID[len(explodedResourceID)-1]
 	return resourceName
+}
+
+// IsManaged returns always returns true as CAPZ does not support BYO VM.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

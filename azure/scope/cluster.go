@@ -860,8 +860,6 @@ func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1.ConditionType, ser
 	switch {
 	case err == nil:
 		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
 	default:
@@ -874,8 +872,6 @@ func (s *ClusterScope) UpdatePutStatus(condition clusterv1.ConditionType, servic
 	switch {
 	case err == nil:
 		conditions.MarkTrue(s.AzureCluster, condition)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(s.AzureCluster, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
 	default:
@@ -888,8 +884,6 @@ func (s *ClusterScope) UpdatePatchStatus(condition clusterv1.ConditionType, serv
 	switch {
 	case err == nil:
 		conditions.MarkTrue(s.AzureCluster, condition)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
 	default:

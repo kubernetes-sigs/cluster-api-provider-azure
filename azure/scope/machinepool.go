@@ -626,8 +626,6 @@ func (m *MachinePoolScope) UpdateDeleteStatus(condition clusterv1.ConditionType,
 	switch {
 	case err == nil:
 		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
 	default:
@@ -640,8 +638,6 @@ func (m *MachinePoolScope) UpdatePutStatus(condition clusterv1.ConditionType, se
 	switch {
 	case err == nil:
 		conditions.MarkTrue(m.AzureMachinePool, condition)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
 	default:
@@ -654,8 +650,6 @@ func (m *MachinePoolScope) UpdatePatchStatus(condition clusterv1.ConditionType, 
 	switch {
 	case err == nil:
 		conditions.MarkTrue(m.AzureMachinePool, condition)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
 	default:

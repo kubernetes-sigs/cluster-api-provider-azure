@@ -705,8 +705,6 @@ func (s *ManagedControlPlaneScope) UpdateDeleteStatus(condition clusterv1.Condit
 	switch {
 	case err == nil:
 		conditions.MarkFalse(s.PatchTarget, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(s.PatchTarget, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
 	default:
@@ -719,8 +717,6 @@ func (s *ManagedControlPlaneScope) UpdatePutStatus(condition clusterv1.Condition
 	switch {
 	case err == nil:
 		conditions.MarkTrue(s.PatchTarget, condition)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(s.PatchTarget, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
 	default:
@@ -733,8 +729,6 @@ func (s *ManagedControlPlaneScope) UpdatePatchStatus(condition clusterv1.Conditi
 	switch {
 	case err == nil:
 		conditions.MarkTrue(s.PatchTarget, condition)
-	case errors.Is(err, azure.ErrNotOwned):
-		// do nothing
 	case azure.IsOperationNotDoneError(err):
 		conditions.MarkFalse(s.PatchTarget, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
 	default:

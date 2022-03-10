@@ -54,6 +54,11 @@ func NewService(scope ScaleSetVMScope) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.Reconcile")

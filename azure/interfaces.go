@@ -24,18 +24,17 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-// Reconciler is a generic interface used by components offering a type of service.
-// Example: virtualnetworks service would offer Reconcile/Delete methods.
+// Reconciler is a generic interface for a controller reconciler which has Reconcile and Delete methods.
 type Reconciler interface {
 	Reconcile(ctx context.Context) error
 	Delete(ctx context.Context) error
 }
 
-// CredentialGetter is a Service which knows how to retrieve credentials for an Azure
-// resource in a resource group.
-type CredentialGetter interface {
+// ServiceReconciler is an Azure service reconciler which can reconcile an Azure service.
+type ServiceReconciler interface {
+	Name() string
+	IsManaged(ctx context.Context) (bool, error)
 	Reconciler
-	GetCredentials(ctx context.Context, group string, cluster string) ([]byte, error)
 }
 
 // Authorizer is an interface which can get the subscription ID, base URI, and authorizer for an Azure service.

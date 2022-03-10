@@ -57,6 +57,11 @@ func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile creates or updates availability sets.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "availabilitysets.Service.Reconcile")
@@ -113,4 +118,9 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	s.Scope.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, resultingErr)
 	return resultingErr
+}
+
+// IsManaged returns always returns true as CAPZ does not support BYO availability set.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

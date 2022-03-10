@@ -27,6 +27,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "tags"
+
 // TagScope defines the scope interface for a tags service.
 type TagScope interface {
 	azure.Authorizer
@@ -48,6 +50,11 @@ func New(scope TagScope) *Service {
 		Scope:  scope,
 		client: newClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile ensures tags are correct.
@@ -186,4 +193,9 @@ func tagsChanged(lastAppliedTags map[string]interface{}, desiredTags map[string]
 	// We made it through the loop, and everything that was in desiredTags, was also
 	// in dst. Nothing changed.
 	return changed, createdOrUpdated, deleted, newAnnotation
+}
+
+// IsManaged returns always returns true as CAPZ does not support BYO tags.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

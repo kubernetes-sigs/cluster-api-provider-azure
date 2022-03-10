@@ -28,6 +28,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const serviceName = "privatedns"
+
 // Scope defines the scope interface for a private dns service.
 type Scope interface {
 	azure.ClusterDescriber
@@ -46,6 +48,11 @@ func New(scope Scope) *Service {
 		Scope:  scope,
 		client: newClient(scope),
 	}
+}
+
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
 }
 
 // Reconcile creates or updates the private zone, links it to the vnet, and creates DNS records.
@@ -218,4 +225,10 @@ func (s *Service) isVnetLinkManaged(ctx context.Context, resourceGroupName, zone
 	}
 	tags := converters.MapToTags(zone.Tags)
 	return tags.HasOwned(s.Scope.ClusterName()), nil
+}
+
+// IsManaged returns always returns true.
+// TODO: separate private DNS and VNet links so we can implement the IsManaged method for each.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }

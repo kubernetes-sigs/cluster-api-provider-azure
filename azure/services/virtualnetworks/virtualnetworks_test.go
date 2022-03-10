@@ -27,7 +27,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks/mock_virtualnetworks"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -153,7 +152,7 @@ func TestDeleteVnet(t *testing.T) {
 			name:          "delete vnet succeeds, should not return an error",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VNetSpec().Return(&fakeVNetSpec)
+				s.VNetSpec().Times(2).Return(&fakeVNetSpec)
 				m.Get(gomockinternal.AContext(), &fakeVNetSpec).Return(managedVnet, nil)
 				s.ClusterName().Return("test-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil)
@@ -164,7 +163,7 @@ func TestDeleteVnet(t *testing.T) {
 			name:          "delete vnet fails, should return an error",
 			expectedError: internalError.Error(),
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VNetSpec().Return(&fakeVNetSpec)
+				s.VNetSpec().Times(2).Return(&fakeVNetSpec)
 				m.Get(gomockinternal.AContext(), &fakeVNetSpec).Return(managedVnet, nil)
 				s.ClusterName().Return("test-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(internalError)
@@ -175,7 +174,7 @@ func TestDeleteVnet(t *testing.T) {
 			name:          "vnet is not managed, do nothing",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VNetSpec().Return(&fakeVNetSpec)
+				s.VNetSpec().Times(2).Return(&fakeVNetSpec)
 				m.Get(gomockinternal.AContext(), &fakeVNetSpec).Return(customVnet, nil)
 				s.ClusterName().Return("test-cluster")
 			},
@@ -215,44 +214,43 @@ func TestDeleteVnet(t *testing.T) {
 func TestIsVnetManaged(t *testing.T) {
 	testcases := []struct {
 		name          string
-		vnetSpec      azure.ResourceSpecGetter
 		expectedError string
 		result        bool
 		expect        func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder)
 	}{
 		{
 			name:          "spec is nil",
-			vnetSpec:      nil,
 			result:        false,
 			expectedError: "cannot get vnet to check if it is managed: spec is nil",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder) {
+				s.VNetSpec().Return(nil)
 			},
 		},
 		{
 			name:          "managed vnet returns true",
-			vnetSpec:      &fakeVNetSpec,
 			result:        true,
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder) {
+				s.VNetSpec().Return(&fakeVNetSpec)
 				m.Get(gomockinternal.AContext(), &fakeVNetSpec).Return(managedVnet, nil)
 				s.ClusterName().Return("test-cluster")
 			},
 		},
 		{
 			name:          "custom vnet returns false",
-			vnetSpec:      &fakeVNetSpec,
 			result:        false,
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder) {
+				s.VNetSpec().Return(&fakeVNetSpec)
 				m.Get(gomockinternal.AContext(), &fakeVNetSpec).Return(customVnet, nil)
 				s.ClusterName().Return("test-cluster")
 			},
 		},
 		{
 			name:          "GET fails returns an error",
-			vnetSpec:      &fakeVNetSpec,
 			expectedError: internalError.Error(),
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder) {
+				s.VNetSpec().Return(&fakeVNetSpec)
 				m.Get(gomockinternal.AContext(), &fakeVNetSpec).Return(network.VirtualNetwork{}, internalError)
 			},
 		},
@@ -275,7 +273,7 @@ func TestIsVnetManaged(t *testing.T) {
 				Getter: getterMock,
 			}
 
-			result, err := s.IsManaged(context.TODO(), tc.vnetSpec)
+			result, err := s.IsManaged(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

@@ -50,6 +50,11 @@ func New(scope DiskScope) *Service {
 	}
 }
 
+// Name returns the service name.
+func (s *Service) Name() string {
+	return serviceName
+}
+
 // Reconcile on disk is currently no-op. OS disks should only be deleted and will create with the VM automatically.
 func (s *Service) Reconcile(ctx context.Context) error {
 	_, _, done := tele.StartSpanWithLogger(ctx, "disks.Service.Reconcile")
@@ -85,4 +90,9 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 	s.Scope.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, result)
 	return result
+}
+
+// IsManaged returns always returns true as CAPZ does not support BYO disk.
+func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	return true, nil
 }
