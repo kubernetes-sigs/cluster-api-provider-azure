@@ -41,7 +41,6 @@ import (
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -167,24 +166,9 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 		return helper.Patch(ctx, owningMachinePool)
 	}, 3*time.Minute, 3*time.Second).Should(Succeed())
 
-	By(fmt.Sprintf("checking for a machine to start draining for machine pool: %s/%s", amp.Namespace, amp.Name))
-	Eventually(func() error {
-		ampmls, err := getAzureMachinePoolMachines(ctx, mgmtClusterProxy, workloadClusterProxy, amp)
-		if err != nil {
-			LogWarning(errors.Wrap(err, "failed to list the azure machine pool machines").Error())
-			return err
-		}
+	// TODO setup a watcher to validate expected 2nd order drain outcomes
+	// https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2159
 
-		for _, machine := range ampmls {
-			if conditions.Has(&machine, clusterv1.DrainingSucceededCondition) && conditions.IsFalse(&machine, clusterv1.DrainingSucceededCondition) {
-				return nil // started draining the node prior to delete
-			}
-		}
-
-		return errors.New("no machine has started to drain")
-	}, waitForDrainOperationTimeout, waitForDrainSleepBetweenRetries).Should(Succeed())
-
-	// TODO setup a watcher to detect the terminal drain success state
 }
 
 func labelNodesWithMachinePoolName(ctx context.Context, workloadClient client.Client, mpName string, ampms []infrav1exp.AzureMachinePoolMachine) {
