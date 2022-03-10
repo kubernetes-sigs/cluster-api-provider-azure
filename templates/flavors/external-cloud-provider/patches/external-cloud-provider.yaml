@@ -29,6 +29,10 @@ spec:
       controllerManager:
         extraArgs:
           cloud-provider: external
+    preKubeadmCommands:
+    - apt update
+    - apt install -y netbase
+    - apt install -y nfs-common
   version: "${KUBERNETES_VERSION}"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -43,3 +47,7 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
             azure-container-registry-config: /etc/kubernetes/azure.json
+      preKubeadmCommands:
+      - apt update
+      - apt install -y netbase
+      - apt install -y nfs-common
