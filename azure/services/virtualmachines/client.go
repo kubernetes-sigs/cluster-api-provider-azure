@@ -95,9 +95,8 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Delete")
 	defer done()
 
-	// TODO: pass variable to force the deletion or not
-	// now we are not forcing.
-	deleteFuture, err := ac.virtualmachines.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName(), to.BoolPtr(false))
+	forceDelete := to.BoolPtr(true)
+	deleteFuture, err := ac.virtualmachines.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName(), forceDelete)
 	if err != nil {
 		return nil, err
 	}
