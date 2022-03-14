@@ -17,6 +17,7 @@ limitations under the License.
 package converters
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
@@ -26,6 +27,97 @@ import (
 )
 
 func Test_ImageToPlan(t *testing.T) {
+	cases := []struct {
+		name      string
+		image     *infrav1.Image
+		expect    func(*GomegaWithT, *compute.ImageReference)
+		expectErr string
+	}{
+		{
+			name: "Should return a specific image reference if image id is specified",
+			image: &infrav1.Image{
+				ID: to.StringPtr("fake-id"),
+				SharedGallery: &infrav1.AzureSharedGalleryImage{
+					SubscriptionID: "fake-sub-id",
+					ResourceGroup:  "fake-rg",
+					Gallery:        "fake-gallery-name",
+					Name:           "fake-image-name",
+					Version:        "v1.0.0",
+				},
+			},
+			expect: func(g *GomegaWithT, result *compute.ImageReference) {
+				g.Expect(result).To(Equal(&compute.ImageReference{
+					ID: to.StringPtr("fake-id"),
+				}))
+			},
+			expectErr: "",
+		},
+		{
+			name: "Should return a market place image reference if Marketplace is specified",
+			image: &infrav1.Image{
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					Publisher: "my-publisher",
+					Offer:     "my-offer",
+					SKU:       "my-sku",
+					Version:   "v1.0.0",
+				},
+			},
+			expect: func(g *GomegaWithT, result *compute.ImageReference) {
+				g.Expect(result).To(Equal(&compute.ImageReference{
+					Publisher: to.StringPtr("my-publisher"),
+					Offer:     to.StringPtr("my-offer"),
+					Sku:       to.StringPtr("my-sku"),
+					Version:   to.StringPtr("v1.0.0"),
+				}))
+			},
+			expectErr: "",
+		},
+		{
+			name: "Should return a SIG image reference if shared gallery is specified",
+			image: &infrav1.Image{
+				SharedGallery: &infrav1.AzureSharedGalleryImage{
+					SubscriptionID: "fake-sub-id",
+					ResourceGroup:  "fake-rg",
+					Gallery:        "fake-gallery-name",
+					Name:           "fake-image-name",
+					Version:        "v1.0.0",
+				},
+			},
+			expect: func(g *GomegaWithT, result *compute.ImageReference) {
+				ID := to.StringPtr(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s"+
+					"/images/%s/versions/%s", "fake-sub-id", "fake-rg", "fake-gallery-name", "fake-image-name", "v1.0.0"))
+				g.Expect(result.ID).To(Equal(ID))
+			},
+			expectErr: "",
+		},
+		{
+			name:      "Should return error if image is not specified",
+			expectErr: "unable to convert image as no options set",
+			image:     &infrav1.Image{},
+			expect: func(g *GomegaWithT, result *compute.ImageReference) {
+				// no-op
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			result, err := ImageToSDK(c.image)
+			if c.expectErr != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(c.expectErr))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+			c.expect(g, result)
+		})
+	}
+}
+
+func Test_ImageToSDK(t *testing.T) {
 	cases := []struct {
 		name   string
 		image  *infrav1.Image

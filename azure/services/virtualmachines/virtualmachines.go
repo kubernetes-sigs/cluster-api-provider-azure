@@ -94,10 +94,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if !ok {
 			return errors.Errorf("%T is not a compute.VirtualMachine", result)
 		}
-		infraVM, err := converters.SDKToVM(vm)
-		if err != nil {
-			return err
-		}
+		infraVM := converters.SDKToVM(vm)
 		s.Scope.SetProviderID(azure.ProviderIDPrefix + infraVM.ID)
 		s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
 
