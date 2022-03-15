@@ -3,6 +3,7 @@
 envsubst_cmd = "./hack/tools/bin/envsubst"
 kubectl_cmd = "./hack/tools/bin/kubectl"
 tools_bin = "./hack/tools/bin"
+clusterctl_cmd = "clusterctl"
 
 load("ext://uibutton", "cmd_button", "text_input", "location")
 
@@ -268,46 +269,51 @@ def flavors():
     flavor_dirs = settings.get("flavor_dirs", ["./templates"])
     for flavor_dir in flavor_dirs:
         template_list = [item for item in listdir(flavor_dir)]
-        template_list = [template for template in template_list if os.path.basename(template).endswith("yaml")]
+        template_list = [template_name for template_name in template_list if os.path.basename(template_name).endswith("yaml")]
         
-        for template in template_list:
-            deploy_worker_templates(template, substitutions)
+        for template_name in template_list:
+            deploy_worker_templates(template_name, substitutions)
 
-def deploy_worker_templates(template, substitutions):
+def deploy_worker_templates(template_name, substitutions):
     # validate template exists
-    if not os.path.exists(template):
-        fail(template + " not found")
+    if not os.path.exists(template_name):
+        fail(template_name + " not found")
 
-    yaml = str(read_file(template))
-    flavor = os.path.basename(template).replace("cluster-template-", "").replace(".yaml", "")
+    yaml = str(read_file(template_name))
+    flavor = os.path.basename(template_name).replace("cluster-template-", "").replace(".yaml", "")
 
     # for the base cluster-template, flavor is "default"
     flavor = os.path.basename(flavor).replace("cluster-template", "default")
 
+    # 1. Set global subs
+    # 2. Set subs for each specific worker template
+    # 3. Set subs for metadata
+    
     # azure account and ssh replacements
     for substitution in substitutions:
         value = substitutions[substitution]
-        yaml = yaml.replace("${" + substitution + "}", value)
+        os.environ[substitution] = value
+        # yaml = yaml.replace("${" + substitution + "}", value)
 
-    # if metadata defined for worker-templates in tilt_settings
-    if "worker-templates" in settings:
-        # first priority replacements defined per template
-        if "flavors" in settings.get("worker-templates", {}):
-            substitutions = settings.get("worker-templates").get("flavors").get(flavor, {})
-            for substitution in substitutions:
-                value = substitutions[substitution]
-                yaml = yaml.replace("${" + substitution + "}", value)
+    # # if metadata defined for worker-templates in tilt_settings
+    # if "worker-templates" in settings:
+    #     # first priority replacements defined per template
+    #     if "flavors" in settings.get("worker-templates", {}):
+    #         substitutions = settings.get("worker-templates").get("flavors").get(flavor, {})
+    #         for substitution in substitutions:
+    #             value = substitutions[substitution]
+    #             yaml = yaml.replace("${" + substitution + "}", value)
 
-        # second priority replacements defined common to templates
-        if "metadata" in settings.get("worker-templates", {}):
-            substitutions = settings.get("worker-templates").get("metadata", {})
-            for substitution in substitutions:
-                value = substitutions[substitution]
-                yaml = yaml.replace("${" + substitution + "}", value)
+    #     # second priority replacements defined common to templates
+    #     if "metadata" in settings.get("worker-templates", {}):
+    #         substitutions = settings.get("worker-templates").get("metadata", {})
+    #         for substitution in substitutions:
+    #             value = substitutions[substitution]
+    #             yaml = yaml.replace("${" + substitution + "}", value)
 
     # programmatically define any remaining vars
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
-    substitutions = {
+    default_substitutions = {
         "AZURE_LOCATION": "eastus",
         "AZURE_VNET_NAME": "${CLUSTER_NAME}-vnet",
         "AZURE_RESOURCE_GROUP": "${CLUSTER_NAME}-rg",
@@ -320,20 +326,26 @@ def deploy_worker_templates(template, substitutions):
 
     if flavor == "aks":
         # AKS version support is usually a bit behind CAPI version, so use an older version
-        substitutions["KUBERNETES_VERSION"] = settings.get("aks_kubernetes_version")
+        default_substitutions["KUBERNETES_VERSION"] = settings.get("aks_kubernetes_version")
 
-    for substitution in substitutions:
-        value = substitutions[substitution]
-        yaml = yaml.replace("${" + substitution + "}", value)
+    for substitution in default_substitutions:
+        value = default_substitutions[substitution]
+        os.environ[substitution] = value
+        # yaml = yaml.replace("${" + substitution + "}", value)
 
     yaml = yaml.replace('"', '\\"')  # add escape character to double quotes in yaml
-    deploy_flavor_template(flavor, yaml)
+    deploy_flavor_template(flavor, template_name)
 
-def deploy_flavor_template(flavor, yaml):
-    apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+def deploy_flavor_template(flavor, template_name):
+    print("Flavor is " + flavor)
+    print("Template name is " + template_name)
+    apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; " + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_name + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+    # Second round of envsubst to replace any vars that point to CLUSTER_NAME
+    # apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors;" + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_name + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
 
     delete_clusters_cmd = 'DELETED=$(echo "$(bash -c "' + kubectl_cmd + ' get clusters --no-headers -o custom-columns=":metadata.name"")" | grep -E "^' + flavor + '-[[:digit:]]{1,5}$"); if [ -z "$DELETED" ]; then echo "Nothing to delete for flavor ' + flavor + '"; else echo "Deleting clusters:\n$DELETED\n"; echo $DELETED | xargs -L1 ' + kubectl_cmd + ' delete cluster; fi; echo "\n"'
 
+    print("Cmd is " + apply_cluster_template_cmd)
     local_resource(
         name = flavor,
         cmd = apply_cluster_template_cmd,
@@ -342,26 +354,26 @@ def deploy_flavor_template(flavor, yaml):
         labels = ["flavors"],
     )
 
-    cmd_button(flavor + ":apply",
-        argv=["sh", "-c", apply_cluster_template_cmd],
-        resource=flavor,
-        icon_name="add_box",
-        text="Create flavor cluster",
-    )
+    # cmd_button(flavor + ":apply",
+    #     argv=["sh", "-c", apply_cluster_template_cmd],
+    #     resource=flavor,
+    #     icon_name="add_box",
+    #     text="Create flavor cluster",
+    # )
 
-    cmd_button(flavor + ":delete",
-        argv=["sh", "-c", delete_clusters_cmd],
-        resource=flavor,
-        icon_name="delete_forever",
-        text="Delete `" + flavor + "` clusters",
-    )
+    # cmd_button(flavor + ":delete",
+    #     argv=["sh", "-c", delete_clusters_cmd],
+    #     resource=flavor,
+    #     icon_name="delete_forever",
+    #     text="Delete `" + flavor + "` clusters",
+    # )
 
-    cmd_button(flavor + ":delete-all",
-        argv=["sh", "-c", kubectl_cmd + " delete clusters --all --wait=false"],
-        resource=flavor,
-        icon_name="delete_sweep",
-        text="Delete all flavor clusters",
-    )
+    # cmd_button(flavor + ":delete-all",
+    #     argv=["sh", "-c", kubectl_cmd + " delete clusters --all --wait=false"],
+    #     resource=flavor,
+    #     icon_name="delete_sweep",
+    #     text="Delete all flavor clusters",
+    # )
 
 def base64_encode(to_encode):
     encode_blob = local("echo '{}' | tr -d '\n' | base64 - | tr -d '\n'".format(to_encode), quiet = True, echo_off = True)
