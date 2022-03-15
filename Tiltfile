@@ -4,6 +4,8 @@ envsubst_cmd = "./hack/tools/bin/envsubst"
 kubectl_cmd = "./hack/tools/bin/kubectl"
 tools_bin = "./hack/tools/bin"
 
+load("ext://uibutton", "cmd_button", "text_input", "location")
+
 #Add tools to path
 os.putenv("PATH", os.getenv("PATH") + ":" + tools_bin)
 
@@ -263,19 +265,13 @@ def flavors():
         os.environ.update({az_key_b64_name: base64_encode_file(default_key_path)})
         os.environ.update({az_key_name: read_file_from_path(default_key_path)})
 
-    template_list = [item for item in listdir("./templates")]
-    template_list = [template for template in template_list if os.path.basename(template).endswith("yaml")]
-
-    for template in template_list:
-        deploy_worker_templates(template, substitutions)
-
-    local_resource(
-        name = "delete-all-workload-clusters",
-        cmd = kubectl_cmd + " delete clusters --all --wait=false",
-        auto_init = False,
-        trigger_mode = TRIGGER_MODE_MANUAL,
-        labels = ["flavors"],
-    )
+    flavor_dirs = settings.get("flavor_dirs", ["./templates"])
+    for flavor_dir in flavor_dirs:
+        template_list = [item for item in listdir(flavor_dir)]
+        template_list = [template for template in template_list if os.path.basename(template).endswith("yaml")]
+        
+        for template in template_list:
+            deploy_worker_templates(template, substitutions)
 
 def deploy_worker_templates(template, substitutions):
     # validate template exists
@@ -331,12 +327,40 @@ def deploy_worker_templates(template, substitutions):
         yaml = yaml.replace("${" + substitution + "}", value)
 
     yaml = yaml.replace('"', '\\"')  # add escape character to double quotes in yaml
+    deploy_flavor_template(flavor, yaml)
+
+def deploy_flavor_template(flavor, yaml):
+    apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+
+    delete_clusters_cmd = 'DELETED=$(echo "$(bash -c "' + kubectl_cmd + ' get clusters --no-headers -o custom-columns=":metadata.name"")" | grep -E "^' + flavor + '-[[:digit:]]{1,5}$"); if [ -z "$DELETED" ]; then echo "Nothing to delete for flavor ' + flavor + '"; else echo "Deleting clusters:\n$DELETED\n"; echo $DELETED | xargs -L1 ' + kubectl_cmd + ' delete cluster; fi; echo "\n"'
+
     local_resource(
-        name = os.path.basename(flavor),
-        cmd = "RANDOM=$(bash -c 'echo $RANDOM'); CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\"",
+        name = flavor,
+        cmd = apply_cluster_template_cmd,
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL,
         labels = ["flavors"],
+    )
+
+    cmd_button(flavor + ":apply",
+        argv=["sh", "-c", apply_cluster_template_cmd],
+        resource=flavor,
+        icon_name="add_box",
+        text="Create flavor cluster",
+    )
+
+    cmd_button(flavor + ":delete",
+        argv=["sh", "-c", delete_clusters_cmd],
+        resource=flavor,
+        icon_name="delete_forever",
+        text="Delete `" + flavor + "` clusters",
+    )
+
+    cmd_button(flavor + ":delete-all",
+        argv=["sh", "-c", kubectl_cmd + " delete clusters --all --wait=false"],
+        resource=flavor,
+        icon_name="delete_sweep",
+        text="Delete all flavor clusters",
     )
 
 def base64_encode(to_encode):
