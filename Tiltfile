@@ -290,7 +290,6 @@ def deploy_worker_templates(template_path, kustomize_substitutions):
     # 3. Set subs for metadata
 
     substitution_arr = []
-    # programmatically define defaults remaining vars
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     default_substitutions = {
         "AZURE_LOCATION": "eastus",
@@ -306,52 +305,34 @@ def deploy_worker_templates(template_path, kustomize_substitutions):
     if flavor == "aks":
         # AKS version support is usually a bit behind CAPI version, so use an older version
         default_substitutions["KUBERNETES_VERSION"] = settings.get("aks_kubernetes_version")
-    substitution_arr.append(default_substitutions)
-    # for substitution in default_substitutions:
-    #     value = default_substitutions[substitution]
-    #     # if substitution not in os.environ:
-    #     os.environ[substitution] = value
-    
 
+    # Lowest priority is the default substitutions
+    substitution_arr.append(default_substitutions)
 
     flavor_specific_substitutions = {}
     # if metadata defined for worker-templates in tilt_settings
     if "worker-templates" in settings:
-        # second priority replacements defined common to templates
+        # Next priority is the metadata substitutions
         if "metadata" in settings.get("worker-templates", {}):
             metadata_substitutions = settings.get("worker-templates").get("metadata", {})
             substitution_arr.append(metadata_substitutions)
 
-        # first priority replacements defined per template
+        # Second highest priority is the flavor specific substitutions
         if "flavors" in settings.get("worker-templates", {}):
             flavor_specific_substitutions = settings.get("worker-templates").get("flavors").get(flavor, {})
             substitution_arr.append(flavor_specific_substitutions)
 
+    # Top priority is kustomize_substitutions
     substitution_arr.append(kustomize_substitutions)
-    # # azure account and ssh replacements
-    # for substitution in kustomize_substitutions:
-    #     value = kustomize_substitutions[substitution]
-    #     os.environ[substitution] = value
-    #     # yaml = yaml.replace("${" + substitution + "}", value)
 
-    # yaml = yaml.replace('"', '\\"')  # add escape character to double quotes in yaml
-    deploy_flavor_template(flavor, template_path, substitution_arr)
-
-def deploy_flavor_template(flavor, template_path, substitution_arr):
-    # print("Flavor is " + flavor)
-    # print("Template name is " + template_path)
     substitution_cmd = ""
     for substitution_dict in substitution_arr:
         substitution_cmd += " ".join([ key + "=" + value + ";" for key, value in substitution_dict.items() ])
+    deploy_flavor_template(flavor, template_path, substitution_cmd)
 
-
-    # flavor_sub_cmd = " ".join([ key + "=" + value + ";" for key, value in flavor_specific_substitutions.items() ])
-    # print("Flavor specific substitutions are " + flavor_sub_cmd)
+def deploy_flavor_template(flavor, template_path, substitution_cmd):
     apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; " + substitution_cmd + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_path + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
     
-    # Second round of envsubst to replace any vars that point to CLUSTER_NAME
-    # apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors;" + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_path + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
-
     delete_clusters_cmd = 'DELETED=$(echo "$(bash -c "' + kubectl_cmd + ' get clusters --no-headers -o custom-columns=":metadata.name"")" | grep -E "^' + flavor + '-[[:digit:]]{1,5}$"); if [ -z "$DELETED" ]; then echo "Nothing to delete for flavor ' + flavor + '"; else echo "Deleting clusters:\n$DELETED\n"; echo $DELETED | xargs -L1 ' + kubectl_cmd + ' delete cluster; fi; echo "\n"'
 
     print("Cmd is " + apply_cluster_template_cmd)
