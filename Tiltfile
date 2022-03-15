@@ -269,18 +269,18 @@ def flavors():
     flavor_dirs = settings.get("flavor_dirs", ["./templates"])
     for flavor_dir in flavor_dirs:
         template_list = [item for item in listdir(flavor_dir)]
-        template_list = [template_name for template_name in template_list if os.path.basename(template_name).endswith("yaml")]
+        template_list = [template_path for template_path in template_list if os.path.basename(template_path).endswith("yaml")]
         
-        for template_name in template_list:
-            deploy_worker_templates(template_name, substitutions)
+        for template_path in template_list:
+            deploy_worker_templates(template_path, substitutions)
 
-def deploy_worker_templates(template_name, substitutions):
+def deploy_worker_templates(template_path, kustomize_substitutions):
     # validate template exists
-    if not os.path.exists(template_name):
-        fail(template_name + " not found")
+    if not os.path.exists(template_path):
+        fail(template_path + " not found")
 
-    yaml = str(read_file(template_name))
-    flavor = os.path.basename(template_name).replace("cluster-template-", "").replace(".yaml", "")
+    yaml = str(read_file(template_path))
+    flavor = os.path.basename(template_path).replace("cluster-template-", "").replace(".yaml", "")
 
     # for the base cluster-template, flavor is "default"
     flavor = os.path.basename(flavor).replace("cluster-template", "default")
@@ -288,30 +288,9 @@ def deploy_worker_templates(template_name, substitutions):
     # 1. Set global subs
     # 2. Set subs for each specific worker template
     # 3. Set subs for metadata
-    
-    # azure account and ssh replacements
-    for substitution in substitutions:
-        value = substitutions[substitution]
-        os.environ[substitution] = value
-        # yaml = yaml.replace("${" + substitution + "}", value)
 
-    # # if metadata defined for worker-templates in tilt_settings
-    # if "worker-templates" in settings:
-    #     # first priority replacements defined per template
-    #     if "flavors" in settings.get("worker-templates", {}):
-    #         substitutions = settings.get("worker-templates").get("flavors").get(flavor, {})
-    #         for substitution in substitutions:
-    #             value = substitutions[substitution]
-    #             yaml = yaml.replace("${" + substitution + "}", value)
-
-    #     # second priority replacements defined common to templates
-    #     if "metadata" in settings.get("worker-templates", {}):
-    #         substitutions = settings.get("worker-templates").get("metadata", {})
-    #         for substitution in substitutions:
-    #             value = substitutions[substitution]
-    #             yaml = yaml.replace("${" + substitution + "}", value)
-
-    # programmatically define any remaining vars
+    substitution_arr = []
+    # programmatically define defaults remaining vars
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     default_substitutions = {
         "AZURE_LOCATION": "eastus",
@@ -327,21 +306,51 @@ def deploy_worker_templates(template_name, substitutions):
     if flavor == "aks":
         # AKS version support is usually a bit behind CAPI version, so use an older version
         default_substitutions["KUBERNETES_VERSION"] = settings.get("aks_kubernetes_version")
+    substitution_arr.append(default_substitutions)
+    # for substitution in default_substitutions:
+    #     value = default_substitutions[substitution]
+    #     # if substitution not in os.environ:
+    #     os.environ[substitution] = value
+    
 
-    for substitution in default_substitutions:
-        value = default_substitutions[substitution]
-        os.environ[substitution] = value
-        # yaml = yaml.replace("${" + substitution + "}", value)
 
-    yaml = yaml.replace('"', '\\"')  # add escape character to double quotes in yaml
-    deploy_flavor_template(flavor, template_name)
+    flavor_specific_substitutions = {}
+    # if metadata defined for worker-templates in tilt_settings
+    if "worker-templates" in settings:
+        # second priority replacements defined common to templates
+        if "metadata" in settings.get("worker-templates", {}):
+            metadata_substitutions = settings.get("worker-templates").get("metadata", {})
+            substitution_arr.append(metadata_substitutions)
 
-def deploy_flavor_template(flavor, template_name):
-    print("Flavor is " + flavor)
-    print("Template name is " + template_name)
-    apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; " + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_name + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+        # first priority replacements defined per template
+        if "flavors" in settings.get("worker-templates", {}):
+            flavor_specific_substitutions = settings.get("worker-templates").get("flavors").get(flavor, {})
+            substitution_arr.append(flavor_specific_substitutions)
+
+    substitution_arr.append(kustomize_substitutions)
+    # # azure account and ssh replacements
+    # for substitution in kustomize_substitutions:
+    #     value = kustomize_substitutions[substitution]
+    #     os.environ[substitution] = value
+    #     # yaml = yaml.replace("${" + substitution + "}", value)
+
+    # yaml = yaml.replace('"', '\\"')  # add escape character to double quotes in yaml
+    deploy_flavor_template(flavor, template_path, substitution_arr)
+
+def deploy_flavor_template(flavor, template_path, substitution_arr):
+    # print("Flavor is " + flavor)
+    # print("Template name is " + template_path)
+    substitution_cmd = ""
+    for substitution_dict in substitution_arr:
+        substitution_cmd += " ".join([ key + "=" + value + ";" for key, value in substitution_dict.items() ])
+
+
+    # flavor_sub_cmd = " ".join([ key + "=" + value + ";" for key, value in flavor_specific_substitutions.items() ])
+    # print("Flavor specific substitutions are " + flavor_sub_cmd)
+    apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; " + substitution_cmd + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_path + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+    
     # Second round of envsubst to replace any vars that point to CLUSTER_NAME
-    # apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors;" + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_name + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+    # apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors;" + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_path + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
 
     delete_clusters_cmd = 'DELETED=$(echo "$(bash -c "' + kubectl_cmd + ' get clusters --no-headers -o custom-columns=":metadata.name"")" | grep -E "^' + flavor + '-[[:digit:]]{1,5}$"); if [ -z "$DELETED" ]; then echo "Nothing to delete for flavor ' + flavor + '"; else echo "Deleting clusters:\n$DELETED\n"; echo $DELETED | xargs -L1 ' + kubectl_cmd + ' delete cluster; fi; echo "\n"'
 
@@ -354,26 +363,26 @@ def deploy_flavor_template(flavor, template_name):
         labels = ["flavors"],
     )
 
-    # cmd_button(flavor + ":apply",
-    #     argv=["sh", "-c", apply_cluster_template_cmd],
-    #     resource=flavor,
-    #     icon_name="add_box",
-    #     text="Create flavor cluster",
-    # )
+    cmd_button(flavor + ":apply",
+        argv=["sh", "-c", apply_cluster_template_cmd],
+        resource=flavor,
+        icon_name="add_box",
+        text="Create flavor cluster",
+    )
 
-    # cmd_button(flavor + ":delete",
-    #     argv=["sh", "-c", delete_clusters_cmd],
-    #     resource=flavor,
-    #     icon_name="delete_forever",
-    #     text="Delete `" + flavor + "` clusters",
-    # )
+    cmd_button(flavor + ":delete",
+        argv=["sh", "-c", delete_clusters_cmd],
+        resource=flavor,
+        icon_name="delete_forever",
+        text="Delete `" + flavor + "` clusters",
+    )
 
-    # cmd_button(flavor + ":delete-all",
-    #     argv=["sh", "-c", kubectl_cmd + " delete clusters --all --wait=false"],
-    #     resource=flavor,
-    #     icon_name="delete_sweep",
-    #     text="Delete all flavor clusters",
-    # )
+    cmd_button(flavor + ":delete-all",
+        argv=["sh", "-c", kubectl_cmd + " delete clusters --all --wait=false"],
+        resource=flavor,
+        icon_name="delete_sweep",
+        text="Delete all flavor clusters",
+    )
 
 def base64_encode(to_encode):
     encode_blob = local("echo '{}' | tr -d '\n' | base64 - | tr -d '\n'".format(to_encode), quiet = True, echo_off = True)
