@@ -13,15 +13,14 @@ aliases:
     - CecileRobertMichon
     - enxebre
     - fabriziopandini
+    - sbueringer
     - vincepri
   cluster-api-azure-maintainers:
     - alexeldeib
     - CecileRobertMichon
     - devigned
-    - nader-ziada
     - shysank
   cluster-api-azure-reviewers:
     - jackfrancis
     - jsturtevant
-    - juan-lee
     - mboersma
