@@ -3,7 +3,7 @@
 envsubst_cmd = "./hack/tools/bin/envsubst"
 kubectl_cmd = "./hack/tools/bin/kubectl"
 tools_bin = "./hack/tools/bin"
-clusterctl_cmd = "clusterctl"
+clusterctl_cmd = "clusterctl" # TODO: where should we get the clusterctl binary from?
 
 load("ext://uibutton", "cmd_button", "text_input", "location")
 
@@ -285,11 +285,22 @@ def deploy_worker_templates(template_path, kustomize_substitutions):
     # for the base cluster-template, flavor is "default"
     flavor = os.path.basename(flavor).replace("cluster-template", "default")
 
-    # 1. Set global subs
-    # 2. Set subs for each specific worker template
-    # 3. Set subs for metadata
+    substitution_arr = [] # Highest priority substitutions are variables defined in the shell, i.e. .bashrc or .zshrc
 
-    substitution_arr = []
+    flavor_specific_substitutions = {}
+    # if substitutions are defined in `tilt-settings.json`, use those
+    if "worker_template_substitutions" in settings:
+        # Second highest priority are substitutions defined specific to this flavor
+        if "flavors" in settings.get("worker_template_substitutions", {}):
+            flavor_specific_substitutions = settings.get("worker_template_substitutions").get("flavors").get(flavor, {})
+            substitution_arr.append(flavor_specific_substitutions)
+
+        # Next priority are substitutions for all flavors
+        if "general" in settings.get("worker_template_substitutions", {}):
+            general_substitutions = settings.get("worker_template_substitutions").get("general", {})
+            substitution_arr.append(general_substitutions)
+
+
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     default_substitutions = {
         "AZURE_LOCATION": "eastus",
@@ -309,33 +320,17 @@ def deploy_worker_templates(template_path, kustomize_substitutions):
     # Lowest priority is the default substitutions
     substitution_arr.append(default_substitutions)
 
-    flavor_specific_substitutions = {}
-    # if metadata defined for worker-templates in tilt_settings
-    if "worker-templates" in settings:
-        # Next priority is the metadata substitutions
-        if "metadata" in settings.get("worker-templates", {}):
-            metadata_substitutions = settings.get("worker-templates").get("metadata", {})
-            substitution_arr.append(metadata_substitutions)
-
-        # Second highest priority is the flavor specific substitutions
-        if "flavors" in settings.get("worker-templates", {}):
-            flavor_specific_substitutions = settings.get("worker-templates").get("flavors").get(flavor, {})
-            substitution_arr.append(flavor_specific_substitutions)
-
-    # Top priority is kustomize_substitutions
-    substitution_arr.append(kustomize_substitutions)
-
     substitution_cmd = ""
     for substitution_dict in substitution_arr:
-        substitution_cmd += " ".join([ key + "=" + value + ";" for key, value in substitution_dict.items() ])
+        substitution_cmd += " ".join([ "export " + key + '="${' + key + ':-' + value + '}";' for key, value in substitution_dict.items() ])
+
     deploy_flavor_template(flavor, template_path, substitution_cmd)
 
 def deploy_flavor_template(flavor, template_path, substitution_cmd):
-    apply_cluster_template_cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; " + substitution_cmd + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_path + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+    apply_cluster_template_cmd = "export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; " + substitution_cmd + clusterctl_cmd + " generate cluster $CLUSTER_NAME --from " + template_path + " > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
     
     delete_clusters_cmd = 'DELETED=$(echo "$(bash -c "' + kubectl_cmd + ' get clusters --no-headers -o custom-columns=":metadata.name"")" | grep -E "^' + flavor + '-[[:digit:]]{1,5}$"); if [ -z "$DELETED" ]; then echo "Nothing to delete for flavor ' + flavor + '"; else echo "Deleting clusters:\n$DELETED\n"; echo $DELETED | xargs -L1 ' + kubectl_cmd + ' delete cluster; fi; echo "\n"'
 
-    print("Cmd is " + apply_cluster_template_cmd)
     local_resource(
         name = flavor,
         cmd = apply_cluster_template_cmd,
