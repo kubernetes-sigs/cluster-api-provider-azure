@@ -262,6 +262,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a management clust
 	# apply CNI ClusterResourceSets
 	kubectl create configmap calico-addon --from-file=templates/addons/calico.yaml
 	kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml
+	kubectl create configmap calico-dual-stack-addon --from-file=templates/addons/calico-dual-stack.yaml
 	kubectl create configmap calico-windows-addon --from-file=templates/addons/windows/calico
 	kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel
 
@@ -455,6 +456,7 @@ generate-addons: fetch-calico-manifests ## Generate metric-server, calico calico
 	$(KUSTOMIZE) build $(ADDONS_DIR)/metrics-server > $(ADDONS_DIR)/metrics-server/metrics-server.yaml
 	$(KUSTOMIZE) build $(ADDONS_DIR)/calico > $(ADDONS_DIR)/calico.yaml
 	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-ipv6 > $(ADDONS_DIR)/calico-ipv6.yaml
+	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-dual-stack > $(ADDONS_DIR)/calico-dual-stack.yaml
 
 # When updating this, make sure to also update the Windows image version in templates/addons/windows/calico.
 CALICO_VERSION := v3.22.1
