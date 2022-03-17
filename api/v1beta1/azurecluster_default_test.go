@@ -1596,7 +1596,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.cluster.setNodeOutboundLBDefaults()
+			tc.cluster.SetNodeOutboundLBDefaults()
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
@@ -1728,7 +1728,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.cluster.setControlPlaneOutboundLBDefaults()
+			tc.cluster.SetControlPlaneOutboundLBDefaults()
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
