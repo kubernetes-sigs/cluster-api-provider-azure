@@ -39,9 +39,17 @@ To test changes made to the [Azure cloud provider](https://github.com/kubernetes
 
 Then, use the `external-cloud-provider` flavor to create a cluster:
 
+// TODO the below `make create-workload-cluster` command doesn't actually work
+
 ```bash
-AZURE_CLOUD_CONTROLLER_MANAGER_IMG=myrepo/my-ccm:v0.0.1 \
-AZURE_CLOUD_NODE_MANAGER_IMG=myrepo/my-cnm:v0.0.1 \
-CLUSTER_TEMPLATE=cluster-template-external-cloud-provider.yaml \
-make create-workload-cluster
+$ export CLUSTER_NAME=my-cluster-out-of-tree
+$ export CLUSTER_TEMPLATE=cluster-template-external-cloud-provider.yaml
+$ make create-workload-cluster
+```
+After the cluster has provisioned, install the cloud-provider-azure components using the capz-tested helm chart:
+
+```bash
+$ helm install cloud-provider-azure templates/helm/cloud-provider-azure \
+--set capz.clusterName=$CLUSTER_NAME --set cloudProviderAzure.cloudControllerManager.image=myrepo/my-ccm:v0.0.1 \
+--set capz.clusterName=$CLUSTER_NAME --set cloudProviderAzure.cloudNodeManager.image=myrepo/my-cnm:v0.0.1 \
 ```

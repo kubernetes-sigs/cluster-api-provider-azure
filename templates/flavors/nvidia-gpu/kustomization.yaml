@@ -3,22 +3,12 @@ resources:
   - ../base
   - ../../azure-cluster-identity
   - machine-deployment.yaml
-  - gpu-operator-resources-set.yaml
-
+patches:
+- path: patches/node-storage-type.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    version: v1beta1
+    kind: AzureMachineTemplate
+    name: ".*-md-0"
 patchesStrategicMerge:
-  - patches/cluster.yaml
-  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml  
-
-configMapGenerator:
-  - name: nvidia-clusterpolicy-crd
-    files:
-      - clusterpolicy-crd.yaml
-  - name: nvidia-gpu-operator-components
-    files:
-      - gpu-operator-components.yaml
-generatorOptions:
-  disableNameSuffixHash: true
-  labels:
-    type: generated
-  annotations:
-    note: generated
+  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml

@@ -20,11 +20,11 @@ set -o pipefail
 # set -o verbose
 
 root=$(dirname "${BASH_SOURCE[0]}")/..
-gpudir=${root}/templates/flavors/nvidia-gpu
+gpudir=${root}templates/test/ci/prow-nvidia-gpu
 workdir=${gpudir}/tmp
 namespace=gpu-operator-resources
 # See https://github.com/NVIDIA/gpu-operator/releases for available versions of the gpu-operator chart.
-gpu_operator_version=${1:-1.9.1}  
+gpu_operator_version=${1:-1.9.1}
 
 helm repo add nvidia https://nvidia.github.io/gpu-operator \
     && helm repo update

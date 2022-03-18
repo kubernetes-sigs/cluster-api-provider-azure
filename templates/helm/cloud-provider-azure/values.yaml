@@ -1,0 +1,7 @@
+capz:
+  clusterName: "external-cloud-provider"
+cloudProviderAzure:
+  cloudControllerManager:
+    image: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.1.5"
+  cloudNodeManager:
+    image: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.1.5"

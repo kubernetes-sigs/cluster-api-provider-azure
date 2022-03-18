@@ -1,0 +1,16 @@
+apiVersion: v1
+description: A Helm chart for installing kubernetes-sigs/cloud-provider-azure components
+name: cloud-provider-azure
+version: 0.0.1-alpha.1
+maintainers:
+  - name: Jack Francis
+    email: jackfrancis@gmail.com
+home: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/helm/cloud-provider-azure/README.md
+sources:
+  - https://github.com/kubernetes-sigs/cluster-api-provider-azure
+  - https://github.com/kubernetes-sigs/cloud-provider-azure
+keywords:
+  - cloud-provider-azure
+  - capz
+  - cluster-api-provider-azure
+  - cluster-api

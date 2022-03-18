@@ -47,10 +47,6 @@ azuremachinetemplate.infrastructure.cluster.x-k8s.io/azure-gpu-control-plane ser
 machinedeployment.cluster.x-k8s.io/azure-gpu-md-0 serverside-applied
 azuremachinetemplate.infrastructure.cluster.x-k8s.io/azure-gpu-md-0 serverside-applied
 kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/azure-gpu-md-0 serverside-applied
-clusterresourceset.addons.cluster.x-k8s.io/crs-gpu-operator serverside-applied
-configmap/nvidia-clusterpolicy-crd serverside-applied
-configmap/nvidia-gpu-operator-components serverside-applied
-clusterresourceset.addons.cluster.x-k8s.io/azure-gpu-crs-0 serverside-applied
 ```
 
 <aside class="note">
@@ -76,23 +72,59 @@ azure-gpu-md-0-f6b88dd78-vmkph   azure:////subscriptions/<subscription_id>/resou
 ```
 
 Install a [CNI](https://cluster-api.sigs.k8s.io/user/quick-start.html#deploy-a-cni-solution) of your choice.
-Once the nodes are `Ready`, run the following commands against the workload cluster to check if all the `gpu-operator` resources are installed:
+Once the nodes are `Ready`, run the following commands against the workload cluster to install the `gpu-operator` components:
+
+We're going to use helm to install the official nvidia chart. If you don't have helm, [install it now](https://helm.sh/docs/intro/install/):
+
+ - `brew install helm` on MacOS
+ - `choco install kubernetes-helm` on Windows
+ - [Installation instructions for Linux](https://helm.sh/docs/intro/install/#from-source-linux-macos)
+
+Now that we have helm, we can install gpu-operator. First we make sure our KUBECONFIG is pointing to our target cluster:
 
 ```bash
 $ clusterctl get kubeconfig azure-gpu > azure-gpu-cluster.conf
 $ export KUBECONFIG=azure-gpu-cluster.conf
-$ kubectl get pods | grep gpu-operator
-default                  gpu-operator-1612821988-node-feature-discovery-master-664dnsmww   1/1     Running                 0          107m
-default                  gpu-operator-1612821988-node-feature-discovery-worker-64mcz       1/1     Running                 0          107m
-default                  gpu-operator-1612821988-node-feature-discovery-worker-h5rws       1/1     Running                 0          107m
+```
+
+Now we can run `helm install`:
+
+```bash
+$ helm install --repo https://nvidia.github.io/gpu-operator gpu-operator --create-namespace --namespace gpu-operator-resources --generate-name
+NAME: gpu-operator-1647645444
+LAST DEPLOYED: Fri Mar 18 16:17:28 2022
+NAMESPACE: gpu-operator-resources
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+```
+
+It will take a few mins, but eventually you should see a bunch of components running, and successful (with a pod status of `Completed`) validator pods:
+
+```bash
 $ kubectl get pods -n gpu-operator-resources
-NAME                                       READY   STATUS      RESTARTS   AGE
-gpu-feature-discovery-66d4f                1/1     Running     0          2s
-nvidia-container-toolkit-daemonset-lxpkx   1/1     Running     0          3m11s
-nvidia-dcgm-exporter-wwnsw                 1/1     Running     0          5s
-nvidia-device-plugin-daemonset-lpdwz       1/1     Running     0          13s
-nvidia-device-plugin-validation            0/1     Completed   0          10s
-nvidia-driver-daemonset-w6lpb              1/1     Running     0          3m16s
+NAME                                                              READY   STATUS      RESTARTS   AGE
+gpu-feature-discovery-2gf4s                                       1/1     Running     0          6m7s
+gpu-feature-discovery-76x2j                                       1/1     Running     0          6m8s
+gpu-operator-1647645444-node-feature-discovery-master-8477dndrv   1/1     Running     0          6m50s
+gpu-operator-1647645444-node-feature-discovery-worker-2jsxv       1/1     Running     0          6m50s
+gpu-operator-1647645444-node-feature-discovery-worker-pkl9n       1/1     Running     0          6m50s
+gpu-operator-1647645444-node-feature-discovery-worker-rb5rh       1/1     Running     0          6m50s
+gpu-operator-84b88fc49c-m2bs2                                     1/1     Running     0          6m50s
+nvidia-container-toolkit-daemonset-2hv8w                          1/1     Running     0          6m8s
+nvidia-container-toolkit-daemonset-l52k4                          1/1     Running     0          6m7s
+nvidia-cuda-validator-kzz84                                       0/1     Completed   0          2m14s
+nvidia-cuda-validator-z725g                                       0/1     Completed   0          2m11s
+nvidia-dcgm-exporter-7sbb9                                        1/1     Running     0          6m7s
+nvidia-dcgm-exporter-f2bh4                                        1/1     Running     0          6m8s
+nvidia-device-plugin-daemonset-58dx5                              1/1     Running     0          6m7s
+nvidia-device-plugin-daemonset-kvtd2                              1/1     Running     0          6m8s
+nvidia-device-plugin-validator-gf2k5                              0/1     Completed   0          77s
+nvidia-device-plugin-validator-hsk7g                              0/1     Completed   0          102s
+nvidia-driver-daemonset-kqz6q                                     1/1     Running     0          6m7s
+nvidia-driver-daemonset-l2w96                                     1/1     Running     0          6m8s
+nvidia-operator-validator-69wqw                                   1/1     Running     0          6m7s
+nvidia-operator-validator-zl4zd                                   1/1     Running     0          6m8s
 ```
 
 Then run the following commands against the workload cluster to verify that the
@@ -100,24 +132,25 @@ Then run the following commands against the workload cluster to verify that the
 has initialized and the `nvidia.com/gpu` resource is available:
 
 ```bash
-$ kubectl -n kube-system get po | grep nvidia
-kube-system   nvidia-device-plugin-daemonset-d5dn6                    1/1     Running   0          16m
 $ kubectl get nodes
-NAME                            STATUS   ROLES    AGE   VERSION
-azure-gpu-control-plane-nnb57   Ready    master   42m   v1.22.1
-azure-gpu-md-0-gcc8v            Ready    <none>   38m   v1.22.1
-$ kubectl get node azure-gpu-md-0-gcc8v -o jsonpath={.status.allocatable} | jq
+NAME                                  STATUS   ROLES                  AGE   VERSION
+nvidia-gpu-4538-control-plane-s4d4f   Ready    control-plane,master   16m   v1.22.6
+nvidia-gpu-4538-md-0-mswnp            Ready    <none>                 14m   v1.22.6
+nvidia-gpu-4538-md-0-qjbg6            Ready    <none>                 14m   v1.22.6
+$ kubectl get node nvidia-gpu-4538-md-0-mswnp -o jsonpath={.status.allocatable} | jq
 {
-  "attachable-volumes-azure-disk": "12",
+  "attachable-volumes-azure-disk": "24",
   "cpu": "6",
   "ephemeral-storage": "119716326407",
   "hugepages-1Gi": "0",
   "hugepages-2Mi": "0",
-  "memory": "115312060Ki",
+  "memory": "57475348Ki",
   "nvidia.com/gpu": "1",
   "pods": "110"
 }
 ```
+
+The important bit is the `"nvidia.com/gpu": "1",` line above.
 
 ### Run a test app
 
