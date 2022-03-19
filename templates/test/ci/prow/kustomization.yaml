@@ -8,7 +8,7 @@ resources:
   - mhc.yaml
   - cni-resource-set.yaml
   - ../../../azure-cluster-identity
-  - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
+  - ../clusterresourcesets/windows/csi-proxy/csi-proxy-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
@@ -30,12 +30,12 @@ patches:
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:
-      - resources=../../../addons/calico.yaml
-      - windows-cni=../../../addons/windows/calico/calico.yaml
-      - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
+      - resources=../clusterresourcesets/calico.yaml
+      - windows-cni=../clusterresourcesets/windows/calico/calico.yaml
+      - proxy=../clusterresourcesets/windows/calico/kube-proxy-windows.yaml
   - name: csi-proxy-addon
     files:
-      - csi-proxy=../../../addons/windows/csi-proxy/csi-proxy.yaml
+      - csi-proxy=../clusterresourcesets/windows/csi-proxy/csi-proxy.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:

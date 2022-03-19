@@ -20,8 +20,8 @@ patches:
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-flannel
     files:
-      - cni=../../../addons/windows/flannel/flannel.yaml
-      - proxy=../../../addons/windows/flannel/kube-proxy-windows.yaml
+      - cni=../clusterresourcesets/windows/flannel/flannel.yaml
+      - proxy=../clusterresourcesets/windows/flannel/kube-proxy-windows.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:

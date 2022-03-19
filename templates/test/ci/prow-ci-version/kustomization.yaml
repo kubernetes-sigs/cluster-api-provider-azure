@@ -3,8 +3,8 @@ kind: Kustomization
 namespace: default
 resources:
   - ../prow
-  - ../../../addons/metrics-server/metrics-server-resource-set.yaml
-  - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
+  - ../clusterresourcesets/metrics-server/metrics-server-resource-set.yaml
+  - ../clusterresourcesets/windows/containerd-logging/containerd-logger-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
@@ -43,10 +43,10 @@ configMapGenerator:
       - kube-proxy-patch=../patches/windows-kubeproxy-ci.yaml
   - name: metrics-server-${CLUSTER_NAME}
     files:
-      - metrics-server=../../../addons/metrics-server/metrics-server.yaml
+      - metrics-server=../clusterresourcesets/metrics-server/metrics-server.yaml
   - name: containerd-logger-${CLUSTER_NAME}
     files:
-      - containerd-windows-logger=../../../addons/windows/containerd-logging/containerd-logger.yaml
+      - containerd-windows-logger=../clusterresourcesets/windows/containerd-logging/containerd-logger.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:

@@ -230,22 +230,22 @@ def create_identity_secret():
 def create_crs():
     # create config maps
     local(kubectl_cmd + " delete configmaps calico-addon --ignore-not-found=true")
-    local(kubectl_cmd + " create configmap calico-addon --from-file=templates/addons/calico.yaml")
+    local(kubectl_cmd + " create configmap calico-addon --from-file=templates/test/ci/clusterresourcesets/calico.yaml")
     local(kubectl_cmd + " delete configmaps calico-ipv6-addon --ignore-not-found=true")
-    local(kubectl_cmd + " create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml")
+    local(kubectl_cmd + " create configmap calico-ipv6-addon --from-file=templates/test/ci/clusterresourcesets/calico-ipv6.yaml")
     local(kubectl_cmd + " delete configmaps flannel-windows-addon --ignore-not-found=true")
     local(kubectl_cmd + " delete configmaps csi-proxy-addon --ignore-not-found=true")
-    local(kubectl_cmd + " create configmap csi-proxy-addon --from-file=templates/addons/windows/csi-proxy/csi-proxy.yaml")
+    local(kubectl_cmd + " create configmap csi-proxy-addon --from-file=templates/test/ci/clusterresourcesets/windows/csi-proxy/csi-proxy.yaml")
 
     # need to set version for kube-proxy on windows.
     os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))
-    local(kubectl_cmd + " create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
-    local(kubectl_cmd + " create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
+    local(kubectl_cmd + " create configmap flannel-windows-addon --from-file=templates/test/ci/clusterresourcesets/windows/flannel/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
+    local(kubectl_cmd + " create configmap calico-windows-addon --from-file=templates/test/ci/clusterresourcesets/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
 
     # set up crs
-    local(kubectl_cmd + " apply -f templates/addons/calico-resource-set.yaml")
-    local(kubectl_cmd + " apply -f templates/addons/flannel-resource-set.yaml")
-    local(kubectl_cmd + " apply -f templates/addons/windows/csi-proxy/csi-proxy-resource-set.yaml")
+    local(kubectl_cmd + " apply -f templates/test/ci/clusterresourcesets/calico-resource-set.yaml")
+    local(kubectl_cmd + " apply -f templates/test/ci/clusterresourcesets/flannel-resource-set.yaml")
+    local(kubectl_cmd + " apply -f templates/test/ci/clusterresourcesets/windows/csi-proxy/csi-proxy-resource-set.yaml")
 
 # create flavor resources from cluster-template files in the templates directory
 def flavors():

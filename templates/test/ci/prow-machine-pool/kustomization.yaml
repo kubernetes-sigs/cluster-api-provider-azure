@@ -7,15 +7,15 @@ resources:
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/cluster-cni.yaml
-  - ../patches/controller-manager.yaml  
+  - ../patches/controller-manager.yaml
   - ../patches/machine-pool-worker-counts.yaml
   - ../patches/windows-containerd-patch.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:
-      - resources=../../../addons/calico.yaml
-      - windows-cni=../../../addons/windows/calico/calico.yaml
-      - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
+      - resources=../clusterresourcesets/calico.yaml
+      - windows-cni=../clusterresourcesets/windows/calico/calico.yaml
+      - proxy=../clusterresourcesets/windows/calico/kube-proxy-windows.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:

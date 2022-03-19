@@ -14,7 +14,7 @@ patchesStrategicMerge:
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:
-      - resources=../../../addons/calico.yaml
+      - resources=../clusterresourcesets/calico.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:
