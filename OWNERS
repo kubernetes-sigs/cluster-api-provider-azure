@@ -15,7 +15,3 @@ emeritus_approvers:
   - justaugustus
   - nader-ziada
   - ncdc
-
-labels:
-  - sig/cluster-lifecycle
-  - area/provider/azure
