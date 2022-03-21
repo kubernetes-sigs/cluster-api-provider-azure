@@ -111,3 +111,8 @@ type ResourceSpecGetter interface {
 	// If no update is needed on the resource, Parameters should return nil.
 	Parameters(existing interface{}) (params interface{}, err error)
 }
+
+// UserDataResolver is an interface for resolving user data for VMs.
+type UserDataResolver interface {
+	ResolveUserData() (string, error)
+}

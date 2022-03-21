@@ -43,6 +43,8 @@ const (
 	DefaultImagePublisherID = "cncf-upstream"
 	// LatestVersion is the image version latest.
 	LatestVersion = "latest"
+	// DefaultChunkSize is the default chunk size for bootstrap secret data.
+	DefaultChunkSize = 15000
 )
 
 const (
