@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vault"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -940,4 +941,19 @@ func (s *ClusterScope) TagsSpecs() []azure.TagsSpec {
 // SecureBootstrapEnabled returns if secure bootstrapping is enabled for the cluster.
 func (s *ClusterScope) SecureBootstrapEnabled() bool {
 	return s.AzureCluster.Spec.SecureBootstrapEnabled
+}
+
+// VaultSpec returns the vault specs for the cluster.
+func (s *ClusterScope) VaultSpec() azure.ResourceSpecGetter {
+	if !s.SecureBootstrapEnabled() {
+		return nil
+	}
+
+	return &vault.Spec{
+		Name:          azure.GenerateVaultName(s.ClusterName()),
+		ResourceGroup: s.ResourceGroup(),
+		Location:      s.Location(),
+		ClusterName:   s.ClusterName(),
+		TenantID:      s.TenantID(),
+	}
 }

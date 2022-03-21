@@ -116,6 +116,8 @@ const (
 	RoleAssignmentReadyCondition clusterv1.ConditionType = "RoleAssignmentReady"
 	// DisksReadyCondition means the disks exist and are ready to be used.
 	DisksReadyCondition clusterv1.ConditionType = "DisksReady"
+	// VaultReadyCondition means the vault exists and is ready to be used.
+	VaultReadyCondition clusterv1.ConditionType = "VaultReady"
 	// NetworkInterfaceReadyCondition means the network interfaces exist and are ready to be used.
 	NetworkInterfaceReadyCondition clusterv1.ConditionType = "NetworkInterfacesReady"
 

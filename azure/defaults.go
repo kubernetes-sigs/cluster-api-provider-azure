@@ -190,6 +190,11 @@ func GenerateAvailabilitySetName(clusterName, nodeGroup string) string {
 	return fmt.Sprintf("%s_%s-as", clusterName, nodeGroup)
 }
 
+// GenerateVaultName generates vault name for the cluster.
+func GenerateVaultName(clusterName string) string {
+	return fmt.Sprintf("%s-vault", clusterName)
+}
+
 // WithIndex appends the index as suffix to a generated name.
 func WithIndex(name string, n int) string {
 	return fmt.Sprintf("%s-%d", name, n)

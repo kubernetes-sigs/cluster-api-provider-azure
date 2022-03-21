@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vault"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -68,6 +69,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			loadbalancers.New(scope),
 			privatedns.New(scope),
 			bastionhosts.New(scope),
+			vault.New(scope),
 			tags.New(scope),
 		},
 		skuCache: skuCache,

@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vault"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -354,5 +355,84 @@ func TestOutboundLBName(t *testing.T) {
 			got := clusterScope.OutboundLBName(tc.role)
 			g.Expect(tc.expected).Should(Equal(got))
 		})
+	}
+}
+
+func TestVaultSpec(t *testing.T) {
+	tests := []struct {
+		name         string
+		azureCluster infrav1.AzureCluster
+		expected     *vault.Spec
+	}{
+		{
+			name:         "should return nil if secure bootstrap is disabled (disabled by default)",
+			azureCluster: infrav1.AzureCluster{},
+			expected:     nil,
+		},
+		{
+			name: "should return vault spec if secure bootstrap is enabled",
+			azureCluster: infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						Location: "eastus",
+					},
+					ResourceGroup:          "my-rg",
+					SecureBootstrapEnabled: true,
+				}},
+			expected: &vault.Spec{
+				Name:          "my-cluster-vault",
+				ClusterName:   "my-cluster",
+				ResourceGroup: "my-rg",
+				Location:      "eastus",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		g := NewWithT(t)
+		scheme := runtime.NewScheme()
+		_ = infrav1.AddToScheme(scheme)
+		_ = clusterv1.AddToScheme(scheme)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-cluster",
+				Namespace: "default",
+			},
+		}
+
+		tc.azureCluster.ObjectMeta = metav1.ObjectMeta{
+			Name: cluster.Name,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "cluster.x-k8s.io/v1beta1",
+					Kind:       "Cluster",
+					Name:       "my-cluster",
+				},
+			},
+		}
+		tc.azureCluster.Spec.SubscriptionID = "my-subscription"
+
+		initObjects := []runtime.Object{cluster, &tc.azureCluster}
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+		clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+			AzureClients: AzureClients{
+				Authorizer: autorest.NullAuthorizer{},
+			},
+			Cluster:      cluster,
+			AzureCluster: &tc.azureCluster,
+			Client:       fakeClient,
+		})
+		g.Expect(err).ToNot(HaveOccurred())
+
+		if tc.expected == nil {
+			g.Expect(clusterScope.VaultSpec()).Should(BeNil())
+		} else {
+			g.Expect(clusterScope.VaultSpec()).Should(Equal(tc.expected))
+		}
 	}
 }

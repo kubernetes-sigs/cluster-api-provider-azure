@@ -289,3 +289,8 @@ func TestMSCorrelationIDSendDecorator(t *testing.T) {
 		receivedReq.Header.Get(string(tele.CorrIDKeyVal)),
 	).To(Equal(string(corrID)))
 }
+
+func TestGenerateVaultName(t *testing.T) {
+	g := NewWithT(t)
+	g.Expect(GenerateVaultName("my-cluster")).Should(Equal("my-cluster-vault"))
+}
