@@ -936,3 +936,8 @@ func (s *ClusterScope) TagsSpecs() []azure.TagsSpec {
 		},
 	}
 }
+
+// SecureBootstrapEnabled returns if secure bootstrapping is enabled for the cluster.
+func (s *ClusterScope) SecureBootstrapEnabled() bool {
+	return s.AzureCluster.Spec.SecureBootstrapEnabled
+}

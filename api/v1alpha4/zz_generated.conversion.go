@@ -841,6 +841,7 @@ func autoConvert_v1beta1_AzureClusterSpec_To_v1alpha4_AzureClusterSpec(in *v1bet
 	if err := apiv1alpha4.Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}
+	// WARNING: in.SecureBootstrapEnabled requires manual conversion: does not exist in peer-type
 	return nil
 }
 

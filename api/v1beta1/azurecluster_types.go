@@ -49,6 +49,11 @@ type AzureClusterSpec struct {
 	// this when creating an AzureCluster as CAPZ will set this for you. However, if it is set, CAPZ will not change it.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
+
+	// SecureBootstrapEnabled controls if bootstrap data for cluster machines should be secured by Azure KeyVault. When enabled,
+	// CAPZ stores machine bootstrap data as a secret in KeyVault, configures a cloud init boot hook script to fetch the secrets
+	// from KeyVault, and delete them once complete. Disabled by default.
+	SecureBootstrapEnabled bool `json:"secureBootstrapEnabled,omitempty"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster.

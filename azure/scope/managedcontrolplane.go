@@ -781,3 +781,8 @@ func (s *ManagedControlPlaneScope) TagsSpecs() []azure.TagsSpec {
 		},
 	}
 }
+
+// SecureBootstrapEnabled returns if secure bootstrapping is enabled for the cluster.
+func (s *ManagedControlPlaneScope) SecureBootstrapEnabled() bool {
+	return false // not applicable for a managed control plane
+}
