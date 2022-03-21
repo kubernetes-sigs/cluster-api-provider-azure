@@ -659,6 +659,53 @@ func TestParameters(t *testing.T) {
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: vm size Standard_D2v3 does not support ultra disks in location test-location. select a different vm size or disable ultra disks. Object will not be requeued",
 		},
+		{
+			name: "can create a vm with secure bootstrap enabled",
+			spec: &VMSpec{
+				Name:                    "my-vm",
+				Role:                    infrav1.Node,
+				NICIDs:                  []string{"my-nic"},
+				SSHKeyData:              "fakesshpublickey",
+				Size:                    "Standard_D2v3",
+				Zone:                    "1",
+				Image:                   &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Identity:                infrav1.VMIdentityUserAssigned,
+				UserAssignedIdentities:  []infrav1.UserAssignedIdentity{{ProviderID: "my-user-id"}},
+				SKU:                     validSKU,
+				SecureBootstrapEnabled:  true,
+				BootstrapDataCompressed: []byte("bootstrap data compressed which will be stored in a secret"),
+				Initializer:             azure.Cloudinit,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
+				g.Expect(result.(compute.VirtualMachine).Identity.Type).To(Equal(compute.ResourceIdentityTypeUserAssigned))
+				g.Expect(result.(compute.VirtualMachine).Identity.UserAssignedIdentities).To(Equal(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{"my-user-id": {}}))
+			},
+			expectedError: "",
+		},
+		{
+			name: "cannot create a vm with secure bootstrap enabled if user identity is not used",
+			spec: &VMSpec{
+				Name:                    "my-vm",
+				Role:                    infrav1.Node,
+				NICIDs:                  []string{"my-nic"},
+				SSHKeyData:              "fakesshpublickey",
+				Size:                    "Standard_D2v3",
+				Zone:                    "1",
+				Image:                   &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Identity:                infrav1.VMIdentitySystemAssigned,
+				SKU:                     validSKU,
+				SecureBootstrapEnabled:  true,
+				BootstrapDataCompressed: []byte("bootstrap data compressed which will be stored in a secret"),
+				Initializer:             azure.Cloudinit,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "failed to generate OS Profile: secure bootstrap cannot be used with identity of type \"SystemAssigned\", only UserAssigned identity is allowed",
+		},
 	}
 	for _, tc := range testcases {
 		tc := tc

@@ -365,3 +365,6 @@ type AgentPoolSpec struct {
 	// OsDiskType specifies the OS disk type for each node in the pool. Allowed values are 'Ephemeral' and 'Managed'.
 	OsDiskType *string `json:"osDiskType,omitempty"`
 }
+
+// InstanceInitializer represents the type of initializer used to initialize VMs.
+type InstanceInitializer string

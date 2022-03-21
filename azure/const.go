@@ -28,4 +28,7 @@ const (
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 	// for annotation formatting rules.
 	RGTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-rg"
+
+	// Cloudinit represents cloudinit instance initializer.
+	Cloudinit InstanceInitializer = "Cloudinit"
 )

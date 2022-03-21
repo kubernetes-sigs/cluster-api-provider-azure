@@ -26,33 +26,38 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/cloudinit"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 )
 
 // VMSpec defines the specification for a Virtual Machine.
 type VMSpec struct {
-	Name                   string
-	ResourceGroup          string
-	Location               string
-	ClusterName            string
-	Role                   string
-	NICIDs                 []string
-	SSHKeyData             string
-	Size                   string
-	AvailabilitySetID      string
-	Zone                   string
-	Identity               infrav1.VMIdentity
-	OSDisk                 infrav1.OSDisk
-	DataDisks              []infrav1.DataDisk
-	UserAssignedIdentities []infrav1.UserAssignedIdentity
-	SpotVMOptions          *infrav1.SpotVMOptions
-	SecurityProfile        *infrav1.SecurityProfile
-	AdditionalTags         infrav1.Tags
-	SKU                    resourceskus.SKU
-	Image                  *infrav1.Image
-	BootstrapData          string
-	ProviderID             string
+	Name                    string
+	ResourceGroup           string
+	Location                string
+	ClusterName             string
+	Role                    string
+	NICIDs                  []string
+	SSHKeyData              string
+	Size                    string
+	AvailabilitySetID       string
+	Zone                    string
+	Identity                infrav1.VMIdentity
+	OSDisk                  infrav1.OSDisk
+	DataDisks               []infrav1.DataDisk
+	UserAssignedIdentities  []infrav1.UserAssignedIdentity
+	SpotVMOptions           *infrav1.SpotVMOptions
+	SecurityProfile         *infrav1.SecurityProfile
+	AdditionalTags          infrav1.Tags
+	SKU                     resourceskus.SKU
+	Image                   *infrav1.Image
+	BootstrapData           string
+	BootstrapDataCompressed []byte
+	ProviderID              string
+	SubscriptionID          string
+	SecureBootstrapEnabled  bool
+	Initializer             azure.InstanceInitializer
 }
 
 // ResourceName returns the name of the virtual machine.
@@ -240,10 +245,19 @@ func (s *VMSpec) generateOSProfile() (*compute.OSProfile, error) {
 		return nil, errors.Wrap(err, "failed to decode ssh public key")
 	}
 
+	resolver, err := s.getUserdataResolver()
+	if err != nil {
+		return nil, err
+	}
+	userData, err := resolver.ResolveUserData()
+	if err != nil {
+		return nil, err
+	}
+
 	osProfile := &compute.OSProfile{
 		ComputerName:  to.StringPtr(s.Name),
 		AdminUsername: to.StringPtr(azure.DefaultUserName),
-		CustomData:    to.StringPtr(s.BootstrapData),
+		CustomData:    to.StringPtr(userData),
 	}
 
 	switch s.OSDisk.OSType {
@@ -274,6 +288,31 @@ func (s *VMSpec) generateOSProfile() (*compute.OSProfile, error) {
 	}
 
 	return osProfile, nil
+}
+
+func (s *VMSpec) getUserdataResolver() (azure.UserDataResolver, error) {
+	if !s.SecureBootstrapEnabled {
+		return cloudinit.SimpleUserDataResolver{
+			Data: s.BootstrapData,
+		}, nil
+	}
+
+	if s.Identity != infrav1.VMIdentityUserAssigned || len(s.UserAssignedIdentities) == 0 {
+		return nil, errors.Errorf("secure bootstrap cannot be used with identity of type %q, "+
+			"only UserAssigned identity is allowed", s.Identity)
+	}
+
+	switch s.Initializer {
+	case azure.Cloudinit:
+		return cloudinit.SecureUserDataResolver{
+			Data:        s.BootstrapDataCompressed,
+			Identity:    s.UserAssignedIdentities[0].ProviderID,
+			ClusterName: s.ClusterName,
+			MachineName: s.Name,
+		}, nil
+	default:
+		return nil, errors.Errorf("unsupported cloud instance initializer %s", s.Initializer)
+	}
 }
 
 func (s *VMSpec) generateSecurityProfile() (*compute.SecurityProfile, error) {

@@ -170,11 +170,15 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 		SecurityProfile:        m.AzureMachine.Spec.SecurityProfile,
 		AdditionalTags:         m.AdditionalTags(),
 		ProviderID:             m.ProviderID(),
+		SubscriptionID:         m.SubscriptionID(),
+		SecureBootstrapEnabled: m.SecureBootstrapEnabled(),
+		Initializer:            azure.Cloudinit,
 	}
 	if m.cache != nil {
 		spec.SKU = m.cache.VMSKU
 		spec.Image = m.cache.VMImage
 		spec.BootstrapData = m.cache.BootstrapData
+		spec.BootstrapDataCompressed = m.cache.BootstrapDataCompressed
 	}
 	return spec
 }
