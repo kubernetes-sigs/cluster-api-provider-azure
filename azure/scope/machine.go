@@ -35,7 +35,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/secrets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
+	"sigs.k8s.io/cluster-api-provider-azure/util/data"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -97,10 +99,11 @@ type MachineScope struct {
 
 // MachineCache stores common machine information so we don't have to hit the API multiple times within the same reconcile loop.
 type MachineCache struct {
-	BootstrapData      string
-	VMImage            *infrav1.Image
-	VMSKU              resourceskus.SKU
-	availabilitySetSKU resourceskus.SKU
+	BootstrapData           string
+	BootstrapDataCompressed []byte
+	VMImage                 *infrav1.Image
+	VMSKU                   resourceskus.SKU
+	availabilitySetSKU      resourceskus.SKU
 }
 
 // InitMachineCache sets cached information about the machine to be used in the scope.
@@ -113,6 +116,11 @@ func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 		m.cache = &MachineCache{}
 
 		m.cache.BootstrapData, err = m.GetBootstrapData(ctx)
+		if err != nil {
+			return err
+		}
+
+		m.cache.BootstrapDataCompressed, err = data.GzipBytes([]byte(m.cache.BootstrapData))
 		if err != nil {
 			return err
 		}
@@ -694,4 +702,23 @@ func (m *MachineScope) UpdatePatchStatus(condition clusterv1.ConditionType, serv
 	default:
 		conditions.MarkFalse(m.AzureMachine, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
 	}
+}
+
+// SecretSpecs returns the bootstrap secret specs for the machine.
+func (m *MachineScope) SecretSpecs() []azure.ResourceSpecGetter {
+	if !m.SecureBootstrapEnabled() {
+		return []azure.ResourceSpecGetter{}
+	}
+
+	chunks := data.SplitIntoChunks(m.cache.BootstrapDataCompressed, azure.DefaultChunkSize)
+	var secretSpecs = make([]azure.ResourceSpecGetter, len(chunks))
+	for i, c := range chunks {
+		secretSpecs[i] = secrets.SecretSpec{
+			Name:      azure.WithIndex(azure.GenerateBootstrapSecretName(m.Name()), c.Index),
+			VaultName: azure.GenerateVaultName(m.ClusterName()),
+			Value:     string(c.Data),
+		}
+	}
+
+	return secretSpecs
 }

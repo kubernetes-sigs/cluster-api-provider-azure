@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/secrets"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -2109,6 +2110,84 @@ func TestDiskSpecs(t *testing.T) {
 
 			t.Parallel()
 			result := tt.machineScope.DiskSpecs()
+			g.Expect(result).To(BeEquivalentTo(tt.want))
+		})
+	}
+}
+
+func TestSecretSpecs(t *testing.T) {
+	testcases := []struct {
+		name         string
+		machineScope MachineScope
+		want         []azure.ResourceSpecGetter
+	}{
+		{
+			name: "return empty if secure bootstrapping is disabled",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							SecureBootstrapEnabled: false,
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-azure-machine",
+					},
+					Spec: infrav1.AzureMachineSpec{},
+				},
+				cache: &MachineCache{
+					BootstrapDataCompressed: []byte{},
+				},
+			},
+			want: []azure.ResourceSpecGetter{},
+		},
+		{
+			name: "return secret specs",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cluster",
+						},
+						Spec: infrav1.AzureClusterSpec{
+							SecureBootstrapEnabled: true,
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-azure-machine",
+					},
+					Spec: infrav1.AzureMachineSpec{},
+				},
+				cache: &MachineCache{
+					BootstrapDataCompressed: []byte{1, 2, 3},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				secrets.SecretSpec{
+					Name:      "my-azure-machine-bootstrap-secret-0",
+					VaultName: "my-cluster-vault",
+					Value:     string([]byte{1, 2, 3}),
+				},
+			},
+		},
+	}
+
+	for _, tt := range testcases {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			t.Parallel()
+			result := tt.machineScope.SecretSpecs()
 			g.Expect(result).To(BeEquivalentTo(tt.want))
 		})
 	}

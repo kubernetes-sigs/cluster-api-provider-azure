@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/secrets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
@@ -59,6 +60,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 			networkinterfaces.New(machineScope, cache),
 			availabilitysets.New(machineScope, cache),
 			disks.New(machineScope),
+			secrets.New(machineScope),
 			virtualmachines.New(machineScope),
 			roleassignments.New(machineScope),
 			vmextensions.New(machineScope),

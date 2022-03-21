@@ -118,6 +118,8 @@ const (
 	DisksReadyCondition clusterv1.ConditionType = "DisksReady"
 	// VaultReadyCondition means the vault exists and is ready to be used.
 	VaultReadyCondition clusterv1.ConditionType = "VaultReady"
+	// SecretReadyCondition means the vault exists and is ready to be used.
+	SecretReadyCondition clusterv1.ConditionType = "SecretReady"
 	// NetworkInterfaceReadyCondition means the network interfaces exist and are ready to be used.
 	NetworkInterfaceReadyCondition clusterv1.ConditionType = "NetworkInterfacesReady"
 

@@ -294,3 +294,8 @@ func TestGenerateVaultName(t *testing.T) {
 	g := NewWithT(t)
 	g.Expect(GenerateVaultName("my-cluster")).Should(Equal("my-cluster-vault"))
 }
+
+func TestGenerateBootstrapSecretName(t *testing.T) {
+	g := NewWithT(t)
+	g.Expect(GenerateBootstrapSecretName("my-azure-machine")).Should(Equal("my-azure-machine-bootstrap-secret"))
+}

@@ -195,6 +195,11 @@ func GenerateVaultName(clusterName string) string {
 	return fmt.Sprintf("%s-vault", clusterName)
 }
 
+// GenerateBootstrapSecretName generates the secret name for storing bootstrap secret.
+func GenerateBootstrapSecretName(machineName string) string {
+	return fmt.Sprintf("%s-bootstrap-secret", machineName)
+}
+
 // WithIndex appends the index as suffix to a generated name.
 func WithIndex(name string, n int) string {
 	return fmt.Sprintf("%s-%d", name, n)
