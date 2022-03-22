@@ -248,6 +248,20 @@ func (mr *MockRoleAssignmentScopeMockRecorder) RoleAssignmentSpecs() *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RoleAssignmentSpecs", reflect.TypeOf((*MockRoleAssignmentScope)(nil).RoleAssignmentSpecs))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockRoleAssignmentScope) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockRoleAssignmentScopeMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockRoleAssignmentScope)(nil).SecureBootstrapEnabled))
+}
+
 // SubscriptionID mocks base method.
 func (m *MockRoleAssignmentScope) SubscriptionID() string {
 	m.ctrl.T.Helper()

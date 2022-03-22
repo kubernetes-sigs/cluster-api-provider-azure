@@ -248,6 +248,20 @@ func (mr *MockScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockScope)(nil).ResourceGroup))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockScope) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockScopeMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockScope)(nil).SecureBootstrapEnabled))
+}
+
 // SubscriptionID mocks base method.
 func (m *MockScope) SubscriptionID() string {
 	m.ctrl.T.Helper()

@@ -289,6 +289,20 @@ func (mr *MockScaleSetVMScopeMockRecorder) ScaleSetName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetName", reflect.TypeOf((*MockScaleSetVMScope)(nil).ScaleSetName))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockScaleSetVMScope) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockScaleSetVMScopeMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockScaleSetVMScope)(nil).SecureBootstrapEnabled))
+}
+
 // SetLongRunningOperationState mocks base method.
 func (m *MockScaleSetVMScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 	m.ctrl.T.Helper()

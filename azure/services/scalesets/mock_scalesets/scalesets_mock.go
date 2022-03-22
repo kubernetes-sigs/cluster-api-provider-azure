@@ -333,6 +333,20 @@ func (mr *MockScaleSetScopeMockRecorder) ScaleSetSpec() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetSpec", reflect.TypeOf((*MockScaleSetScope)(nil).ScaleSetSpec))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockScaleSetScope) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockScaleSetScopeMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockScaleSetScope)(nil).SecureBootstrapEnabled))
+}
+
 // SetAnnotation mocks base method.
 func (m *MockScaleSetScope) SetAnnotation(arg0, arg1 string) {
 	m.ctrl.T.Helper()

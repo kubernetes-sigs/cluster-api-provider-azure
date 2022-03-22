@@ -746,6 +746,20 @@ func (mr *MockClusterDescriberMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockClusterDescriber)(nil).ResourceGroup))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockClusterDescriber) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockClusterDescriberMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockClusterDescriber)(nil).SecureBootstrapEnabled))
+}
+
 // SubscriptionID mocks base method.
 func (m *MockClusterDescriber) SubscriptionID() string {
 	m.ctrl.T.Helper()
@@ -1244,6 +1258,20 @@ func (mr *MockClusterScoperMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockClusterScoper)(nil).ResourceGroup))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockClusterScoper) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockClusterScoperMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockClusterScoper)(nil).SecureBootstrapEnabled))
+}
+
 // SetSubnet mocks base method.
 func (m *MockClusterScoper) SetSubnet(arg0 v1beta1.SubnetSpec) {
 	m.ctrl.T.Helper()
@@ -1404,4 +1432,42 @@ func (m *MockResourceSpecGetter) ResourceName() string {
 func (mr *MockResourceSpecGetterMockRecorder) ResourceName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceName", reflect.TypeOf((*MockResourceSpecGetter)(nil).ResourceName))
+}
+
+// MockUserDataResolver is a mock of UserDataResolver interface.
+type MockUserDataResolver struct {
+	ctrl     *gomock.Controller
+	recorder *MockUserDataResolverMockRecorder
+}
+
+// MockUserDataResolverMockRecorder is the mock recorder for MockUserDataResolver.
+type MockUserDataResolverMockRecorder struct {
+	mock *MockUserDataResolver
+}
+
+// NewMockUserDataResolver creates a new mock instance.
+func NewMockUserDataResolver(ctrl *gomock.Controller) *MockUserDataResolver {
+	mock := &MockUserDataResolver{ctrl: ctrl}
+	mock.recorder = &MockUserDataResolverMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUserDataResolver) EXPECT() *MockUserDataResolverMockRecorder {
+	return m.recorder
+}
+
+// ResolveUserData mocks base method.
+func (m *MockUserDataResolver) ResolveUserData() (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResolveUserData")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResolveUserData indicates an expected call of ResolveUserData.
+func (mr *MockUserDataResolverMockRecorder) ResolveUserData() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveUserData", reflect.TypeOf((*MockUserDataResolver)(nil).ResolveUserData))
 }

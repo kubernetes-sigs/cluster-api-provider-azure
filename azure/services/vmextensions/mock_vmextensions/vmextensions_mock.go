@@ -235,6 +235,20 @@ func (mr *MockVMExtensionScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockVMExtensionScope)(nil).ResourceGroup))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockVMExtensionScope) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockVMExtensionScopeMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockVMExtensionScope)(nil).SecureBootstrapEnabled))
+}
+
 // SetBootstrapConditions mocks base method.
 func (m *MockVMExtensionScope) SetBootstrapConditions(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()

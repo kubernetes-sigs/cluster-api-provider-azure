@@ -443,6 +443,20 @@ func (mr *MockLBScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockLBScope)(nil).ResourceGroup))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockLBScope) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockLBScopeMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockLBScope)(nil).SecureBootstrapEnabled))
+}
+
 // SetLongRunningOperationState mocks base method.
 func (m *MockLBScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 	m.ctrl.T.Helper()

@@ -309,6 +309,20 @@ func (mr *MockManagedClusterScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockManagedClusterScope)(nil).ResourceGroup))
 }
 
+// SecureBootstrapEnabled mocks base method.
+func (m *MockManagedClusterScope) SecureBootstrapEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SecureBootstrapEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SecureBootstrapEnabled indicates an expected call of SecureBootstrapEnabled.
+func (mr *MockManagedClusterScopeMockRecorder) SecureBootstrapEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecureBootstrapEnabled", reflect.TypeOf((*MockManagedClusterScope)(nil).SecureBootstrapEnabled))
+}
+
 // SetControlPlaneEndpoint mocks base method.
 func (m *MockManagedClusterScope) SetControlPlaneEndpoint(arg0 v1beta10.APIEndpoint) {
 	m.ctrl.T.Helper()
