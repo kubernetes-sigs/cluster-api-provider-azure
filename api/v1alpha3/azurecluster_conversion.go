@@ -42,11 +42,34 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 			dst.Annotations = nil
 		}
 	}
+
+	// set default control plane outbound lb for private v1alpha3 clusters.
+	if src.Spec.NetworkSpec.APIServerLB.Type == Internal {
+		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = &infrav1beta1.LoadBalancerSpec{
+			FrontendIPsCount: pointer.Int32Ptr(1),
+		}
+		// We also need to set the defaults here because "get" won't set defaults, and hence there is no mismatch when a client
+		// gets a v1alpha3 cluster.
+		dst.SetControlPlaneOutboundLBDefaults()
+	}
+
+	// set default node plane outbound lb for all v1alpha3 clusters.
+	dst.Spec.NetworkSpec.NodeOutboundLB = &infrav1beta1.LoadBalancerSpec{
+		FrontendIPsCount: pointer.Int32Ptr(1),
+	}
+	// We also need to set the defaults here because "get" won't set defaults, and hence there is no mismatch when a client
+	// gets a v1alpha3 cluster.
+	dst.SetNodeOutboundLBDefaults()
+
 	// Manually restore data.
 	restored := &infrav1beta1.AzureCluster{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
+
+	// override outbound lb if it's present in restored.
+	dst.Spec.NetworkSpec.ControlPlaneOutboundLB = restored.Spec.NetworkSpec.ControlPlaneOutboundLB
+	dst.Spec.NetworkSpec.NodeOutboundLB = restored.Spec.NetworkSpec.NodeOutboundLB
 
 	dst.Spec.NetworkSpec.PrivateDNSZoneName = restored.Spec.NetworkSpec.PrivateDNSZoneName
 
@@ -54,24 +77,6 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst.Spec.NetworkSpec.APIServerLB.IdleTimeoutInMinutes = restored.Spec.NetworkSpec.APIServerLB.IdleTimeoutInMinutes
 	dst.Spec.CloudProviderConfigOverrides = restored.Spec.CloudProviderConfigOverrides
 	dst.Spec.BastionSpec = restored.Spec.BastionSpec
-
-	// set default control plane outbound lb for private v1alpha3 clusters
-	if src.Spec.NetworkSpec.APIServerLB.Type == Internal && restored.Spec.NetworkSpec.ControlPlaneOutboundLB == nil {
-		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = &infrav1beta1.LoadBalancerSpec{
-			FrontendIPsCount: pointer.Int32Ptr(1),
-		}
-	} else {
-		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = restored.Spec.NetworkSpec.ControlPlaneOutboundLB
-	}
-
-	// set default node plane outbound lb for all v1alpha3 clusters
-	if restored.Spec.NetworkSpec.NodeOutboundLB == nil {
-		dst.Spec.NetworkSpec.NodeOutboundLB = &infrav1beta1.LoadBalancerSpec{
-			FrontendIPsCount: pointer.Int32Ptr(1),
-		}
-	} else {
-		dst.Spec.NetworkSpec.NodeOutboundLB = restored.Spec.NetworkSpec.NodeOutboundLB
-	}
 
 	// Here we manually restore outbound security rules. Since v1alpha3 only supports ingress ("Inbound") rules, all v1alpha4/v1beta1 outbound rules are dropped when an AzureCluster
 	// is converted to v1alpha3. We loop through all security group rules. For all previously existing outbound rules we restore the full rule.

@@ -55,8 +55,8 @@ func (c *AzureCluster) setNetworkSpecDefaults() {
 	c.setSubnetDefaults()
 	c.setVnetPeeringDefaults()
 	c.setAPIServerLBDefaults()
-	c.setNodeOutboundLBDefaults()
-	c.setControlPlaneOutboundLBDefaults()
+	c.SetNodeOutboundLBDefaults()
+	c.SetControlPlaneOutboundLBDefaults()
 }
 
 func (c *AzureCluster) setResourceGroupDefault() {
@@ -205,7 +205,7 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 	}
 }
 
-func (c *AzureCluster) setNodeOutboundLBDefaults() {
+func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 	if c.Spec.NetworkSpec.NodeOutboundLB == nil {
 		if c.Spec.NetworkSpec.APIServerLB.Type == Internal {
 			return
@@ -245,7 +245,7 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
 }
 
-func (c *AzureCluster) setControlPlaneOutboundLBDefaults() {
+func (c *AzureCluster) SetControlPlaneOutboundLBDefaults() {
 	// public clusters don't need control plane outbound lb
 	if c.Spec.NetworkSpec.APIServerLB.Type == Public {
 		return
