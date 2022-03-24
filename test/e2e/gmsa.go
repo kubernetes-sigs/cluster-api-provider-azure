@@ -30,7 +30,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -101,11 +100,10 @@ func configureGmsa(ctx context.Context, workloadProxy, bootstrapClusterProxy fra
 	gmsaNode, windowsNodes := labelGmsaTestNode(ctx, workloadProxy)
 	dropGmsaSpecOnTestNode(gmsaNode, clusterHostName, gmsaSpecFile)
 	configureCoreDNS(ctx, workloadProxy, config)
-	peerDomainVnet(ctx, config, clusterName, subId, networkClient)
 
 	for _, n := range windowsNodes.Items {
 		hostname := getHostName(&n)
-		setUpWorkerNodeIdentities(ctx, vmClient, clusterName, hostname, config)
+		// until https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2182
 		updateWorkerNodeDNS(config, clusterHostName, hostname)
 	}
 
@@ -119,35 +117,6 @@ func updateWorkerNodeDNS(config *clusterctl.E2EConfig, clusterHostName string, w
 	Expect(err).NotTo(HaveOccurred())
 	defer f.Close()
 	err = execOnHost(clusterHostName, workerNodeHostName, "22", f, dnsCmd)
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func peerDomainVnet(ctx context.Context, config *clusterctl.E2EConfig, rgName string, subId string, networkClient network.VirtualNetworkPeeringsClient) {
-	gmsaRG := "gmsa-dc-" + config.GetVariable("GMSA_ID")
-	gmsaDomainNetwork := "dc-" + config.GetVariable("GMSA_ID") + "-vnet"
-	clusterVnetName := rgName + "-vnet"
-
-	fmt.Fprintf(GinkgoWriter, "INFO: Peer networks %s\n", config.GetVariable("GMSA_DNS_IP"))
-	gmsaVnetId := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", subId, gmsaRG, gmsaDomainNetwork)
-	gmsaPeering := network.VirtualNetworkPeering{
-		VirtualNetworkPeeringPropertiesFormat: &network.VirtualNetworkPeeringPropertiesFormat{
-			RemoteVirtualNetwork: &network.SubResource{
-				ID: to.StringPtr(gmsaVnetId),
-			},
-		},
-	}
-	_, err := networkClient.CreateOrUpdate(ctx, rgName, clusterVnetName, "gmsa-peering", gmsaPeering, network.SyncRemoteAddressSpaceTrue)
-	Expect(err).NotTo(HaveOccurred())
-
-	clusterVnetId := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", subId, rgName, clusterVnetName)
-	clusterPeering := network.VirtualNetworkPeering{
-		VirtualNetworkPeeringPropertiesFormat: &network.VirtualNetworkPeeringPropertiesFormat{
-			RemoteVirtualNetwork: &network.SubResource{
-				ID: to.StringPtr(clusterVnetId),
-			},
-		},
-	}
-	_, err = networkClient.CreateOrUpdate(ctx, gmsaRG, gmsaDomainNetwork, "gmsa-cluster-peering", clusterPeering, network.SyncRemoteAddressSpaceTrue)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -219,34 +188,6 @@ func labelGmsaTestNode(ctx context.Context, workloadProxy framework.ClusterProxy
 	Expect(err).NotTo(HaveOccurred())
 	Expect(gmsaNode).NotTo(BeNil())
 	return gmsaNode, windowsNodes
-}
-
-func setUpWorkerNodeIdentities(ctx context.Context, vmClient compute.VirtualMachinesClient, rgName string, hostname string, config *clusterctl.E2EConfig) {
-	fmt.Fprintf(GinkgoWriter, "INFO: Assigning gmsa identity to cluster vms\n")
-	vm, err := vmClient.Get(ctx, rgName, hostname, "")
-	Expect(err).NotTo(HaveOccurred())
-	existingIdentities := map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{}
-	if vm.Identity != nil && (*vm.Identity).UserAssignedIdentities != nil {
-		existingIdentities = (*vm.Identity).UserAssignedIdentities
-	}
-
-	gmsaIdentity := config.GetVariable("GMSA_IDENTITY_ID")
-	_, exists := existingIdentities[gmsaIdentity]
-	if !exists {
-		userIdentitiesMap := make(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue, len(existingIdentities)+1)
-		// copy over existing so we don't overwrite
-		for key, _ := range existingIdentities {
-			userIdentitiesMap[key] = &compute.VirtualMachineIdentityUserAssignedIdentitiesValue{}
-		}
-		// add gmsa identity
-		userIdentitiesMap[gmsaIdentity] = &compute.VirtualMachineIdentityUserAssignedIdentitiesValue{}
-		vmClient.Update(ctx, rgName, *vm.Name, compute.VirtualMachineUpdate{
-			Identity: &compute.VirtualMachineIdentity{
-				Type:                   compute.ResourceIdentityTypeUserAssigned,
-				UserAssignedIdentities: userIdentitiesMap,
-			},
-		})
-	}
 }
 
 func getHostName(gmsaNode *corev1.Node) string {

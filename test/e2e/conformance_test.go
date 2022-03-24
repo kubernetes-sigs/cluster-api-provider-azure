@@ -113,7 +113,7 @@ var _ = Describe("Conformance Tests", func() {
 		kubernetesVersion := e2eConfig.GetVariable(capi_e2e.KubernetesVersion)
 		flavor := clusterctl.DefaultFlavor
 		if isWindows(kubetestConfigFilePath) {
-			flavor = getWindowsFlavor()
+			flavor = getWindowsFlavor(kubetestConfigFilePath)
 		}
 
 		// clusters with CI artifacts or PR artifacts are based on a known CI version
@@ -130,7 +130,7 @@ var _ = Describe("Conformance Tests", func() {
 			}
 
 			if isWindows(kubetestConfigFilePath) {
-				flavor = flavor + "-" + getWindowsFlavor()
+				flavor = flavor + "-" + getWindowsFlavor(kubetestConfigFilePath)
 			}
 		}
 
@@ -269,12 +269,18 @@ var _ = Describe("Conformance Tests", func() {
 // getWindowsFlavor helps choose the correct deployment files. Windows has multiple OS and runtime options that need
 // to be run for conformance.  Current valid options are blank (dockershim) and containerd.  In future will have options
 // for OS version
-func getWindowsFlavor() string {
+func getWindowsFlavor(kubetestConfigFilePath string) string {
+	base := "windows"
+	if strings.Contains(kubetestConfigFilePath, "windows-serial-slow") {
+		base = base + "-gmsa"
+	}
+
 	additionalWindowsFlavor := os.Getenv("WINDOWS_FLAVOR")
 	if additionalWindowsFlavor != "" {
-		return "windows" + "-" + additionalWindowsFlavor
+		return base + "-" + additionalWindowsFlavor
 	}
-	return "windows"
+
+	return base
 }
 
 func isWindows(kubetestConfigFilePath string) bool {

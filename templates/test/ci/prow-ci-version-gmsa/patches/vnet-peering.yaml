@@ -1,0 +1,11 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  networkSpec:
+    vnet:
+      peerings:
+      - resourceGroup: ${GMSA_NODE_RG}
+        remoteVnetName: dc-${GMSA_ID}-vnet

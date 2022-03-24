@@ -161,6 +161,8 @@ providers:
         targetName: "cluster-template-conformance-ci-artifacts-windows-containerd-2022.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version.yaml"
         targetName: "cluster-template-conformance-ci-artifacts-windows-containerd.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version-gmsa.yaml"
+        targetName: "cluster-template-conformance-ci-artifacts-windows-gmsa-containerd.yaml"
       - sourcePath: "${PWD}/templates/test/dev/cluster-template-custom-builds.yaml"
         targetName: "cluster-template-conformance-presubmit-artifacts.yaml"
       - sourcePath: "${PWD}/templates/test/dev/cluster-template-custom-builds.yaml"
@@ -213,7 +215,6 @@ variables:
   SECURITY_SCAN_CONTAINER: "${SECURITY_SCAN_CONTAINER:-quay.io/armosec/kubescape:v1.0.138}"
   # GMSA
   GMSA_KEYVAULT_URL: "https://${CI_RG}-gmsa.vault.azure.net"
-  GMSA_IDENTITY_ID: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/gmsa-user-identity"
   GMSA_DNS_IP: "${GMSA_DNS_IP}"
   GMSA_ID: "${GMSA_ID}"
 
