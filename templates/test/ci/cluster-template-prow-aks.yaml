@@ -72,6 +72,10 @@ metadata:
   name: agentpool0
   namespace: default
 spec:
+  availabilityZones:
+  - "1"
+  - "2"
+  enableUltraSSD: true
   maxPods: 30
   mode: System
   osDiskSizeGB: 30

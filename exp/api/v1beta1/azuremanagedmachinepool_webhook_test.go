@@ -357,6 +357,90 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Unexpected error, value EnableUltraSSD is unchanged",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Unexpected error, value EnableUltraSSD is unchanged",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(false),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(false),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(false),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(true),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "EnableUltraSSD feature is immutable and currently disabled on this agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "EnableUltraSSD feature is immutable and currently disabled on this agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: nil,
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: nil,
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableUltraSSD: to.BoolPtr(true),
+				},
+			},
+			wantErr: true,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
