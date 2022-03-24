@@ -1189,7 +1189,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				},
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.20.1", "dockershim")
+				image, _ := azure.GetDefaultWindowsImage("1.20.1", "dockershim", "")
 				return image
 			}(),
 			wantErr: false,
@@ -1217,7 +1217,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				},
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.22.1", "containerd")
+				image, _ := azure.GetDefaultWindowsImage("1.22.1", "containerd", "")
 				return image
 			}(),
 			wantErr: false,
@@ -1248,7 +1248,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				},
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.22.1", "dockershim")
+				image, _ := azure.GetDefaultWindowsImage("1.22.1", "dockershim", "")
 				return image
 			}(),
 			wantErr: false,
@@ -1279,7 +1279,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				},
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.21.1", "dockershim")
+				image, _ := azure.GetDefaultWindowsImage("1.21.1", "dockershim", "")
 				return image
 			}(),
 			wantErr: false,
@@ -1311,6 +1311,68 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 			},
 			want:    nil,
 			wantErr: true,
+		},
+		{
+			name: "if no image is specified and os specified is windows with windowsServerVersion annotation set to 2019, retrurns 2019 image",
+			machineScope: MachineScope{
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: clusterv1.MachineSpec{
+						Version: pointer.String("1.23.3"),
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+						Annotations: map[string]string{
+							"windowsServerVersion": "windows-2019",
+						},
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: azure.WindowsOS,
+						},
+					},
+				},
+			},
+			want: func() *infrav1.Image {
+				image, _ := azure.GetDefaultWindowsImage("1.23.3", "", "windows-2019")
+				return image
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "if no image is specified and os specified is windows with windowsServerVersion annotation set to 2022, retrurns 2022 image",
+			machineScope: MachineScope{
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: clusterv1.MachineSpec{
+						Version: pointer.String("1.23.3"),
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+						Annotations: map[string]string{
+							"windowsServerVersion": "windows-2022",
+						},
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: azure.WindowsOS,
+						},
+					},
+				},
+			},
+			want: func() *infrav1.Image {
+				image, _ := azure.GetDefaultWindowsImage("1.23.3", "", "windows-2022")
+				return image
+			}(),
+			wantErr: false,
 		},
 		{
 			name: "if no image and OS is specified, returns linux image",

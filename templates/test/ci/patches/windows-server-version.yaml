@@ -1,0 +1,9 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-win
+spec:
+  template:
+    metadata:
+      annotations:
+        windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}

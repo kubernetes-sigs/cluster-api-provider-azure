@@ -34,8 +34,7 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 
 	var tests = []struct {
 		k8sVersion     string
-		os             string
-		osVersion      string
+		osAndVersion   string
 		expectedResult string
 		expectedError  bool
 	}{
@@ -43,50 +42,43 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			k8sVersion:     "v1.14.9",
 			expectedResult: "k8s-1dot14dot9-ubuntu-1804",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "1804",
+			osAndVersion:   "ubuntu-1804",
 		},
 		{
 			k8sVersion:     "v1.14.10",
 			expectedResult: "k8s-1dot14dot10-ubuntu-1804",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "1804",
+			osAndVersion:   "ubuntu-1804",
 		},
 		{
 			k8sVersion:     "v1.15.6",
 			expectedResult: "k8s-1dot15dot6-ubuntu-1804",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "1804",
+			osAndVersion:   "ubuntu-1804",
 		},
 		{
 			k8sVersion:     "v1.15.7",
 			expectedResult: "k8s-1dot15dot7-ubuntu-1804",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "1804",
+			osAndVersion:   "ubuntu-1804",
 		},
 		{
 			k8sVersion:     "v1.16.3",
 			expectedResult: "k8s-1dot16dot3-ubuntu-1804",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "1804",
+			osAndVersion:   "ubuntu-1804",
 		},
 		{
 			k8sVersion:     "v1.16.4",
 			expectedResult: "k8s-1dot16dot4-ubuntu-1804",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "1804",
+			osAndVersion:   "ubuntu-1804",
 		},
 		{
 			k8sVersion:     "1.12.0",
 			expectedResult: "k8s-1dot12dot0-ubuntu-1804",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "1804",
+			osAndVersion:   "ubuntu-1804",
 		},
 		{
 			k8sVersion:     "1.1.notvalid.semver",
@@ -97,42 +89,37 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			k8sVersion:     "v1.19.3",
 			expectedResult: "k8s-1dot19dot3-windows-2019",
 			expectedError:  false,
-			os:             "windows",
-			osVersion:      "2019",
+			osAndVersion:   "windows-2019",
 		},
 		{
 			k8sVersion:     "v1.20.8",
 			expectedResult: "k8s-1dot20dot8-windows-2019",
 			expectedError:  false,
-			os:             "windows",
-			osVersion:      "2019",
+			osAndVersion:   "windows-2019",
 		},
 		{
 			k8sVersion:     "v1.21.2",
 			expectedResult: "k8s-1dot21dot2-windows-2019",
 			expectedError:  false,
-			os:             "windows",
-			osVersion:      "2019",
+			osAndVersion:   "windows-2019",
 		},
 		{
 			k8sVersion:     "v1.20.8",
 			expectedResult: "k8s-1dot20dot8-ubuntu-2004",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "2004",
+			osAndVersion:   "ubuntu-2004",
 		},
 		{
 			k8sVersion:     "v1.21.2",
 			expectedResult: "k8s-1dot21dot2-ubuntu-2004",
 			expectedError:  false,
-			os:             "ubuntu",
-			osVersion:      "2004",
+			osAndVersion:   "ubuntu-2004",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.k8sVersion, func(t *testing.T) {
-			id, err := getDefaultImageSKUID(test.k8sVersion, test.os, test.osVersion)
+			id, err := getDefaultImageSKUID(test.k8sVersion, test.osAndVersion)
 
 			if test.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -288,4 +275,95 @@ func TestMSCorrelationIDSendDecorator(t *testing.T) {
 	g.Expect(
 		receivedReq.Header.Get(string(tele.CorrIDKeyVal)),
 	).To(Equal(string(corrID)))
+}
+
+func TestGetDefaultWindowsImage(t *testing.T) {
+	g := NewWithT(t)
+
+	var tests = []struct {
+		name          string
+		k8sVersion    string
+		runtime       string
+		osVersion     string
+		expectedSKU   string
+		expectedError bool
+	}{
+		{
+			name:          "no k8sVersion",
+			k8sVersion:    "1.1.1.1.1.1",
+			runtime:       "",
+			osVersion:     "",
+			expectedSKU:   "",
+			expectedError: true,
+		},
+		{
+			name:          "1.21.* - default runtime - default osVersion",
+			k8sVersion:    "v1.21.4",
+			runtime:       "",
+			osVersion:     "",
+			expectedSKU:   "k8s-1dot21dot4-windows-2019",
+			expectedError: false,
+		},
+		{
+			name:          "1.21.* - dockershim runtime - default osVersion",
+			k8sVersion:    "v1.21.4",
+			runtime:       "dockershim",
+			osVersion:     "",
+			expectedSKU:   "k8s-1dot21dot4-windows-2019",
+			expectedError: false,
+		},
+		{
+			name:          "1.21.* - containerd runtime - default osVersion",
+			k8sVersion:    "v1.21.4",
+			runtime:       "containerd",
+			osVersion:     "",
+			expectedSKU:   "",
+			expectedError: true,
+		},
+		{
+			name:          "1.23.* - containerd runtime - default osVersion",
+			k8sVersion:    "v1.23.2",
+			runtime:       "containerd",
+			osVersion:     "",
+			expectedSKU:   "k8s-1dot23dot2-windows-2019-containerd",
+			expectedError: false,
+		},
+		{
+			name:          "1.23.* - default runtime - 2019 osVersion",
+			k8sVersion:    "v1.23.2",
+			runtime:       "",
+			osVersion:     "windows-2019",
+			expectedSKU:   "k8s-1dot23dot2-windows-2019-containerd",
+			expectedError: false,
+		},
+		{
+			name:          "1.23.* - default runtime - 2022 osVersion",
+			k8sVersion:    "v1.23.2",
+			runtime:       "",
+			osVersion:     "windows-2022",
+			expectedSKU:   "k8s-1dot23dot2-windows-2022-containerd",
+			expectedError: false,
+		},
+		{
+			name:          "1.23.* - containerd runtime - 2022 osVersion",
+			k8sVersion:    "v1.23.2",
+			runtime:       "containerd",
+			osVersion:     "windows-2022",
+			expectedSKU:   "k8s-1dot23dot2-windows-2022-containerd",
+			expectedError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			image, err := GetDefaultWindowsImage(test.k8sVersion, test.runtime, test.osVersion)
+
+			if test.expectedError {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(image.Marketplace.SKU).To(Equal(test.expectedSKU))
+			}
+		})
+	}
 }

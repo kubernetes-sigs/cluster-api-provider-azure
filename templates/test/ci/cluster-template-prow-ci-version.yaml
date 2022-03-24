@@ -400,6 +400,10 @@ metadata:
   namespace: default
 spec:
   template:
+    metadata:
+      annotations:
+        runtime: containerd
+        windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
     spec:
       image:
         marketplace:

@@ -53,6 +53,12 @@ const (
 )
 
 const (
+	// DefaultWindowsOsAndVersion is the default Windows Server version to use when
+	// genearating default images for Windows nodes.
+	DefaultWindowsOsAndVersion = "windows-2019"
+)
+
+const (
 	// Global is the Azure global location value.
 	Global = "global"
 )
@@ -277,12 +283,13 @@ func AvailabilitySetID(subscriptionID, resourceGroup, availabilitySetName string
 }
 
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
-func getDefaultImageSKUID(k8sVersion, os, osVersion string) (string, error) {
+// note: osAndVersion is expected to be in the format of {os}-{version} (ex: unbuntu-2004 or windows-2022)
+func getDefaultImageSKUID(k8sVersion, osAndVersion string) (string, error) {
 	version, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to parse Kubernetes version \"%s\" in spec, expected valid SemVer string", k8sVersion)
 	}
-	return fmt.Sprintf("k8s-%ddot%ddot%d-%s-%s", version.Major, version.Minor, version.Patch, os, osVersion), nil
+	return fmt.Sprintf("k8s-%ddot%ddot%d-%s", version.Major, version.Minor, version.Patch, osAndVersion), nil
 }
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
@@ -301,7 +308,7 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 		osVersion = "1804"
 	}
 
-	skuID, err := getDefaultImageSKUID(k8sVersion, "ubuntu", osVersion)
+	skuID, err := getDefaultImageSKUID(k8sVersion, fmt.Sprintf("ubuntu-%s", osVersion))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get default image")
 	}
@@ -319,7 +326,7 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 }
 
 // GetDefaultWindowsImage returns the default image spec for Windows.
-func GetDefaultWindowsImage(k8sVersion, runtime string) (*infrav1.Image, error) {
+func GetDefaultWindowsImage(k8sVersion, runtime, osAndVersion string) (*infrav1.Image, error) {
 	v122 := semver.MustParse("1.22.0")
 	v, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
@@ -331,7 +338,11 @@ func GetDefaultWindowsImage(k8sVersion, runtime string) (*infrav1.Image, error) 
 		return nil, errors.New("containerd image only supported in 1.22+")
 	}
 
-	skuID, err := getDefaultImageSKUID(k8sVersion, "windows", "2019")
+	if osAndVersion == "" {
+		osAndVersion = DefaultWindowsOsAndVersion
+	}
+
+	skuID, err := getDefaultImageSKUID(k8sVersion, osAndVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get default image")
 	}

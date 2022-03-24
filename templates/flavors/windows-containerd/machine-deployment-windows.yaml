@@ -30,6 +30,9 @@ metadata:
     runtime: containerd
 spec:
   template:
+    metadata:
+      annotations:
+        runtime: containerd
     spec:
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
       osDisk:
