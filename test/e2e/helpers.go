@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -29,10 +30,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 
+	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
+
+	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/compute/mgmt/compute"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
@@ -55,6 +62,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -618,6 +626,14 @@ func publicKeyFile(file string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(signer), nil
 }
 
+// validateStableReleaseString validates the string format that declares "get be the latest stable release for this <Major>.<Minor>"
+// it should be called wherever we process a stable version string expression like "stable-1.22"
+func validateStableReleaseString(stableVersion string) (bool, []string) {
+	stableReleaseFormat := regexp.MustCompile(`^stable-(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
+	matches := stableReleaseFormat.FindStringSubmatch(stableVersion)
+	return len(matches) > 0, matches
+}
+
 // resolveCIVersion resolves kubernetes version labels (e.g. latest, latest-1.xx) to the corresponding CI version numbers.
 // Go implementation of https://github.com/kubernetes-sigs/cluster-api/blob/d1dc87d5df3ab12a15ae5b63e50541a191b7fec4/scripts/ci-e2e-lib.sh#L75-L95.
 func resolveCIVersion(label string) (string, error) {
@@ -681,6 +697,115 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 	}
 
 	return filepath.Join(path, "repo-list.yaml"), nil
+}
+
+// resolveKubernetesVersions looks at Kubernetes versions set as variables in the e2e config and sets them to a valid k8s version
+// that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
+func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
+	ubuntuSkus := getImageSkusInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiOfferName)
+	ubuntuVersions := parseImageSkuNames(ubuntuSkus)
+
+	windowsSkus := getImageSkusInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiWindowsOfferName)
+	windowsVersions := parseImageSkuNames(windowsSkus)
+
+	// find the intersection of ubuntu and windows versions available, since we need an image for both.
+	var versions semver.Versions
+	for k, v := range ubuntuVersions {
+		if _, ok := windowsVersions[k]; ok {
+			versions = append(versions, v)
+		}
+	}
+
+	if config.HasVariable(capi_e2e.KubernetesVersion) {
+		resolveKubernetesVersion(config, versions, capi_e2e.KubernetesVersion)
+	}
+	if config.HasVariable(capi_e2e.KubernetesVersionUpgradeFrom) {
+		resolveKubernetesVersion(config, versions, capi_e2e.KubernetesVersionUpgradeFrom)
+	}
+	if config.HasVariable(capi_e2e.KubernetesVersionUpgradeTo) {
+		resolveKubernetesVersion(config, versions, capi_e2e.KubernetesVersionUpgradeTo)
+	}
+}
+
+func resolveKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
+	v := getLatestSkuForMinor(config.GetVariable(varName), versions)
+	if _, ok := os.LookupEnv(varName); ok {
+		Expect(os.Setenv(varName, v)).To(Succeed())
+	}
+	config.Variables[varName] = v
+}
+
+// getImageSkusInOffer returns all skus for an offer that have at least one image.
+func getImageSkusInOffer(ctx context.Context, location, publisher, offer string) []string {
+	settings, err := auth.GetSettingsFromEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	subscriptionID := settings.GetSubscriptionID()
+	authorizer, err := settings.GetAuthorizer()
+	Expect(err).NotTo(HaveOccurred())
+	imagesClient := compute.NewVirtualMachineImagesClient(subscriptionID)
+	imagesClient.Authorizer = authorizer
+
+	Byf("Finding image skus for offer %s/%s in %s", publisher, offer, location)
+
+	res, err := imagesClient.ListSkus(ctx, location, publisher, offer)
+	Expect(err).NotTo(HaveOccurred())
+
+	var skus []string
+	if res.Value != nil {
+		skus = make([]string, len(*res.Value))
+		for i, sku := range *res.Value {
+			// we have to do this to make sure the SKU has existing images
+			// see https://github.com/Azure/azure-cli/issues/20115.
+			res, err := imagesClient.List(ctx, location, publisher, offer, *sku.Name, "", nil, "")
+			Expect(err).NotTo(HaveOccurred())
+			if res.Value != nil && len(*res.Value) > 0 {
+				skus[i] = *sku.Name
+			}
+		}
+	}
+	return skus
+}
+
+// parseImageSkuNames parses SKU names in format "k8s-1dot17dot2-os-123" to extract the Kubernetes version.
+// it returns a sorted list of all k8s versions found.
+func parseImageSkuNames(skus []string) map[string]semver.Version {
+	capiSku := regexp.MustCompile(`^k8s-(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)-[a-z]*.*$`)
+	versions := make(map[string]semver.Version, len(skus))
+	for _, sku := range skus {
+		match := capiSku.FindStringSubmatch(sku)
+		if len(match) != 0 {
+			stringVer := fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3])
+			versions[stringVer] = semver.MustParse(stringVer)
+		}
+	}
+
+	return versions
+}
+
+// getLatestSkuForMinor gets the latest available patch version in the provided list of sku versions that corresponds to the provided k8s version.
+func getLatestSkuForMinor(version string, skus semver.Versions) string {
+	isStable, match := validateStableReleaseString(version)
+	if isStable {
+		// if the version is in the format "stable-1.21", we find the latest 1.21.x version.
+		major, err := strconv.ParseUint(match[1], 10, 64)
+		Expect(err).NotTo(HaveOccurred())
+		minor, err := strconv.ParseUint(match[2], 10, 64)
+		Expect(err).NotTo(HaveOccurred())
+		semver.Sort(skus)
+		for i := len(skus) - 1; i >= 0; i-- {
+			if skus[i].Major == major && skus[i].Minor == minor {
+				version = "v" + skus[i].String()
+				break
+			}
+		}
+	} else if v, err := semver.ParseTolerant(version); err == nil {
+		if len(v.Pre) == 0 {
+			// if the version is in the format "v1.21.2", we make sure we have an existing image for it.
+			Expect(skus).To(ContainElement(v), fmt.Sprintf("Provided Kubernetes version %s does not have a corresponding VM image in the capi offer", version))
+		}
+	}
+	// otherwise, we just return the version as-is. This allows for versions in other formats, such as "latest" or "latest-1.21".
+	return version
 }
 
 // getPodLogs returns the logs of a pod, or an error in string format.
