@@ -5,6 +5,12 @@
 ### Requirements
 
 - A [Microsoft Azure account](https://azure.microsoft.com/en-us/)
+  - Note: If using a new subscription, make sure to [register](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types) the following resource providers:
+    - `Microsoft.Compute`
+    - `Microsoft.Network`
+    - `Microsoft.ContainerService`
+    - `Microsoft.ManagedIdentity`
+    - `Microsoft.Authorization`
 - Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
 - A [supported version](https://github.com/kubernetes-sigs/cluster-api-provider-azure#support-policy) of `clusterctl`
 
