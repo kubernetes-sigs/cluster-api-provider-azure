@@ -6,16 +6,12 @@
 
       Stop-Service kubelet -Force
 
-      $$CI_VERSION="${CI_VERSION}"
-      if($$CI_VERSION -ne "")
+      $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+      $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+      foreach ( $$binary in $$binaries )
       {
-        $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-        $$ci_url="https://storage.googleapis.com/k8s-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
-        foreach ( $$binary in $$binaries )
-        {
-          echo "downloading binary: $$ci_url/$$binary.exe"
-          curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
-        }
+        echo "installing binary: $$binary ${KUBE_GIT_VERSION}"
+        curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
       }
 
       $$CONTAINERD_URL="${WINDOWS_CONTAINERD_URL}"
@@ -24,7 +20,6 @@
         echo "downloading containerd: $$CONTAINERD_URL"
         curl.exe --retry 10 --retry-delay 5 -L "$$CONTAINERD_URL" --output "c:/k/containerd.tar.gz"
         tar.exe -zxvf c:/k/containerd.tar.gz -C "c:/Program Files/containerd" --strip-components 1
-
         Start-Service containerd
       }
 
