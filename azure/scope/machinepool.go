@@ -31,6 +31,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	machinepool "sigs.k8s.io/cluster-api-provider-azure/azure/scope/strategies/machinepool_deployments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -569,17 +570,30 @@ func (m *MachinePoolScope) SaveVMImageToStatus(image *infrav1.Image) {
 }
 
 // RoleAssignmentSpecs returns the role assignment specs.
-func (m *MachinePoolScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
-	if m.AzureMachinePool.Spec.Identity == infrav1.VMIdentitySystemAssigned {
-		return []azure.RoleAssignmentSpec{
-			{
-				MachineName:  m.Name(),
-				Name:         m.AzureMachinePool.Spec.RoleAssignmentName,
-				ResourceType: azure.VirtualMachineScaleSet,
-			},
+func (m *MachinePoolScope) RoleAssignmentSpecs(principalID *string) []azure.ResourceSpecGetter {
+	roles := make([]azure.ResourceSpecGetter, 1)
+	if m.HasSystemAssignedIdentity() {
+		roles[0] = &roleassignments.RoleAssignmentSpec{
+			Name:          m.AzureMachinePool.Spec.RoleAssignmentName,
+			MachineName:   m.Name(),
+			ResourceGroup: m.ResourceGroup(),
+			ResourceType:  azure.VirtualMachineScaleSet,
+			PrincipalID:   principalID,
 		}
+		return roles
 	}
-	return []azure.RoleAssignmentSpec{}
+	return []azure.ResourceSpecGetter{}
+}
+
+// RoleAssignmentResourceType returns the role assignment resource type.
+func (m *MachinePoolScope) RoleAssignmentResourceType() string {
+	return azure.VirtualMachineScaleSet
+}
+
+// HasSystemAssignedIdentity returns true if the azure machine pool has system
+// assigned identity.
+func (m *MachinePoolScope) HasSystemAssignedIdentity() bool {
+	return m.AzureMachinePool.Spec.Identity == infrav1.VMIdentitySystemAssigned
 }
 
 // VMSSExtensionSpecs returns the vmss extension specs.

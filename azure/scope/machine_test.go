@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -381,7 +382,7 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		machineScope MachineScope
-		want         []azure.RoleAssignmentSpec
+		want         []azure.ResourceSpecGetter
 	}{
 		{
 			name: "returns empty if VM identity is system assigned",
@@ -393,7 +394,7 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.RoleAssignmentSpec{},
+			want: []azure.ResourceSpecGetter{},
 		},
 		{
 			name: "returns RoleAssignmentSpec if VM identity is not system assigned",
@@ -408,19 +409,37 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 						RoleAssignmentName: "azure-role-assignment-name",
 					},
 				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+						},
+					},
+				},
 			},
-			want: []azure.RoleAssignmentSpec{
-				{
-					MachineName:  "machine-name",
-					Name:         "azure-role-assignment-name",
-					ResourceType: azure.VirtualMachine,
+			want: []azure.ResourceSpecGetter{
+				&roleassignments.RoleAssignmentSpec{
+					ResourceType:     azure.VirtualMachine,
+					MachineName:      "machine-name",
+					Name:             "azure-role-assignment-name",
+					ResourceGroup:    "my-rg",
+					Scope:            azure.GenerateSubscriptionScope("123"),
+					RoleDefinitionID: azure.GenerateContributorRoleDefinitionID("123"),
+					PrincipalID:      to.StringPtr("fakePrincipalID"),
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.machineScope.RoleAssignmentSpecs(); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.machineScope.RoleAssignmentSpecs(to.StringPtr("fakePrincipalID")); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("RoleAssignmentSpecs() = %v, want %v", got, tt.want)
 			}
 		})

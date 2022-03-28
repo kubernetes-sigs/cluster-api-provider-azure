@@ -28,7 +28,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
@@ -91,7 +90,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 
 	// check if there is an ongoing long running operation
 	var (
-		future      = s.Scope.GetLongRunningOperationState(s.Scope.ScaleSetSpec().Name, scope.ScalesetsServiceName)
+		future      = s.Scope.GetLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName)
 		fetchedVMSS *azure.VMSS
 	)
 
@@ -146,7 +145,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	}
 
 	// if we get to here, we have completed any long running VMSS operations (creates / updates)
-	s.Scope.DeleteLongRunningOperationState(s.Scope.ScaleSetSpec().Name, scope.ScalesetsServiceName)
+	s.Scope.DeleteLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName)
 	return nil
 }
 
@@ -173,7 +172,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}()
 
 	// check if there is an ongoing long running operation
-	future := s.Scope.GetLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
+	future := s.Scope.GetLongRunningOperationState(vmssSpec.Name, serviceName)
 	if future != nil {
 		// if the operation is not complete this will return an error
 		_, err := s.GetResultIfDone(ctx, future)
@@ -182,7 +181,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		}
 
 		// ScaleSet has been deleted
-		s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
+		s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, serviceName)
 		return nil
 	}
 
@@ -206,7 +205,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	// future is either nil, or the result of the future is complete
-	s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
+	s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, serviceName)
 	return nil
 }
 

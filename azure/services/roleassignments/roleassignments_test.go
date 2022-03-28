@@ -18,10 +18,10 @@ package roleassignments
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -40,72 +40,83 @@ var (
 		Name:          "test-vm",
 		ResourceGroup: "my-rg",
 	}
+	fakePrincipalID     = "fake-p-id"
+	fakeRoleAssignment1 = RoleAssignmentSpec{
+		MachineName:   "test-vm",
+		ResourceGroup: "my-rg",
+		ResourceType:  azure.VirtualMachine,
+		PrincipalID:   to.StringPtr("fake-principal-id"),
+	}
+	fakeRoleAssignment2 = RoleAssignmentSpec{
+		MachineName:   "test-vmss",
+		ResourceGroup: "my-rg",
+		ResourceType:  azure.VirtualMachineScaleSet,
+	}
+
+	emptyRoleAssignmentSpec = RoleAssignmentSpec{}
+	fakeRoleAssignmentSpecs = []azure.ResourceSpecGetter{&fakeRoleAssignment1, &fakeRoleAssignment2, &emptyRoleAssignmentSpec}
 )
 
 func TestReconcileRoleAssignmentsVM(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_async.MockGetterMockRecorder)
+		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "create a role assignment",
 			expectedError: "",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_async.MockGetterMockRecorder) {
+
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
+				m *mock_async.MockGetterMockRecorder,
+				r *mock_async.MockReconcilerMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
-				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
-					{
-						MachineName:  "test-vm",
-						ResourceType: azure.VirtualMachine,
-					},
-				})
-				v.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
+				s.Name().Return(fakeRoleAssignment1.MachineName)
+				s.HasSystemAssignedIdentity().Return(true)
+				s.RoleAssignmentResourceType().Return("VirtualMachine")
+				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[:1])
+				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
 					Identity: &compute.VirtualMachineIdentity{
-						PrincipalID: to.StringPtr("000"),
+						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
-				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
-					Properties: &authorization.RoleAssignmentProperties{
-						RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
-						PrincipalID:      to.StringPtr("000"),
-					},
-				}))
+				r.CreateResource(gomockinternal.AContext(), &fakeRoleAssignment1, serviceName).Return(&fakeRoleAssignment1, nil)
 			},
 		},
 		{
 			name:          "error getting VM",
-			expectedError: "cannot get VM to assign role to system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_async.MockGetterMockRecorder) {
+			expectedError: "failed to assign role to system assigned identity: failed to get principal ID for VM: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
+				m *mock_async.MockGetterMockRecorder,
+				r *mock_async.MockReconcilerMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
-				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
-					{
-						MachineName:  "test-vm",
-						ResourceType: azure.VirtualMachine,
-					},
-				})
-				v.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				s.Name().Return(fakeRoleAssignment1.MachineName)
+				s.HasSystemAssignedIdentity().Return(true)
+				s.RoleAssignmentResourceType().Return("VirtualMachine")
+				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
 			name:          "return error when creating a role assignment",
-			expectedError: "cannot assign role to VM system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_async.MockGetterMockRecorder) {
+			expectedError: "cannot assign role to VirtualMachine system assigned identity: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
+				m *mock_async.MockGetterMockRecorder,
+				r *mock_async.MockReconcilerMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
-				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
-					{
-						MachineName:  "test-vm",
-						ResourceType: azure.VirtualMachine,
-					},
-				})
-				v.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
+				s.Name().Return(fakeRoleAssignment1.MachineName)
+				s.RoleAssignmentResourceType().Return("VirtualMachine")
+				s.HasSystemAssignedIdentity().Return(true)
+				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[0:1])
+				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
 					Identity: &compute.VirtualMachineIdentity{
-						PrincipalID: to.StringPtr("000"),
+						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
-				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{})).Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				r.CreateResource(gomockinternal.AContext(), &fakeRoleAssignment1, serviceName).Return(&RoleAssignmentSpec{},
+					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -118,15 +129,15 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_roleassignments.NewMockRoleAssignmentScope(mockCtrl)
-			clientMock := mock_roleassignments.NewMockclient(mockCtrl)
 			vmGetterMock := mock_async.NewMockGetter(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), vmGetterMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), vmGetterMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
 				Scope:                 scopeMock,
-				client:                clientMock,
 				virtualMachinesGetter: vmGetterMock,
+				Reconciler:            asyncMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -139,70 +150,65 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 		})
 	}
 }
+
 func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 	testcases := []struct {
-		name          string
-		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder)
+		name   string
+		expect func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder,
+			mvmss *mock_scalesets.MockClientMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "create a role assignment",
 			expectedError: "",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
-				s.SubscriptionID().AnyTimes().Return("12345")
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
+				r *mock_async.MockReconcilerMockRecorder,
+				mvmss *mock_scalesets.MockClientMockRecorder) {
+				s.HasSystemAssignedIdentity().Return(true)
+				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[1:2])
+				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
 				s.ResourceGroup().Return("my-rg")
-				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
-					{
-						MachineName:  "test-vmss",
-						ResourceType: azure.VirtualMachineScaleSet,
-					},
-				})
-				v.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
+				s.Name().Return("test-vmss")
+				mvmss.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
 					Identity: &compute.VirtualMachineScaleSetIdentity{
-						PrincipalID: to.StringPtr("000"),
+						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
-				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
-					Properties: &authorization.RoleAssignmentProperties{
-						RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
-						PrincipalID:      to.StringPtr("000"),
-					},
-				}))
+				r.CreateResource(gomockinternal.AContext(), &fakeRoleAssignment2, serviceName).Return(&fakeRoleAssignment2, nil)
 			},
 		},
 		{
 			name:          "error getting VMSS",
-			expectedError: "cannot get VMSS to assign role to system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
-				s.SubscriptionID().AnyTimes().Return("12345")
+			expectedError: "failed to assign role to system assigned identity: failed to get principal ID for VMSS: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
+				r *mock_async.MockReconcilerMockRecorder,
+				mvmss *mock_scalesets.MockClientMockRecorder) {
+				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
 				s.ResourceGroup().Return("my-rg")
-				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
-					{
-						MachineName:  "test-vmss",
-						ResourceType: azure.VirtualMachineScaleSet,
-					},
-				})
-				v.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				s.Name().Return("test-vmss")
+				s.HasSystemAssignedIdentity().Return(true)
+				mvmss.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{},
+					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
 			name:          "return error when creating a role assignment",
-			expectedError: "cannot assign role to VMSS system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
-				s.SubscriptionID().AnyTimes().Return("12345")
+			expectedError: fmt.Sprintf("cannot assign role to %s system assigned identity: #: Internal Server Error: StatusCode=500", azure.VirtualMachineScaleSet),
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
+				r *mock_async.MockReconcilerMockRecorder,
+				mvmss *mock_scalesets.MockClientMockRecorder) {
+				s.HasSystemAssignedIdentity().Return(true)
+				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[1:2])
+				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
 				s.ResourceGroup().Return("my-rg")
-				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
-					{
-						MachineName:  "test-vmss",
-						ResourceType: azure.VirtualMachineScaleSet,
-					},
-				})
-				v.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
+				s.Name().Return("test-vmss")
+				mvmss.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
 					Identity: &compute.VirtualMachineScaleSetIdentity{
-						PrincipalID: to.StringPtr("000"),
+						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
-				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{})).Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				r.CreateResource(gomockinternal.AContext(), &fakeRoleAssignment2, serviceName).Return(&RoleAssignmentSpec{},
+					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -215,15 +221,15 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_roleassignments.NewMockRoleAssignmentScope(mockCtrl)
-			clientMock := mock_roleassignments.NewMockclient(mockCtrl)
-			vmssMock := mock_scalesets.NewMockClient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			vmMock := mock_scalesets.NewMockClient(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), vmssMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT(), vmMock.EXPECT())
 
 			s := &Service{
 				Scope:                        scopeMock,
-				client:                       clientMock,
-				virtualMachineScaleSetClient: vmssMock,
+				Reconciler:                   asyncMock,
+				virtualMachineScaleSetClient: vmMock,
 			}
 
 			err := s.Reconcile(context.TODO())

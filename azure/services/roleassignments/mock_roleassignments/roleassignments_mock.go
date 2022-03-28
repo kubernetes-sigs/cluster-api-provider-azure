@@ -27,6 +27,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // MockRoleAssignmentScope is a mock of RoleAssignmentScope interface.
@@ -52,20 +53,6 @@ func (m *MockRoleAssignmentScope) EXPECT() *MockRoleAssignmentScopeMockRecorder 
 	return m.recorder
 }
 
-// AdditionalTags mocks base method.
-func (m *MockRoleAssignmentScope) AdditionalTags() v1beta1.Tags {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
-	return ret0
-}
-
-// AdditionalTags indicates an expected call of AdditionalTags.
-func (mr *MockRoleAssignmentScopeMockRecorder) AdditionalTags() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockRoleAssignmentScope)(nil).AdditionalTags))
-}
-
 // Authorizer mocks base method.
 func (m *MockRoleAssignmentScope) Authorizer() autorest.Authorizer {
 	m.ctrl.T.Helper()
@@ -78,20 +65,6 @@ func (m *MockRoleAssignmentScope) Authorizer() autorest.Authorizer {
 func (mr *MockRoleAssignmentScopeMockRecorder) Authorizer() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockRoleAssignmentScope)(nil).Authorizer))
-}
-
-// AvailabilitySetEnabled mocks base method.
-func (m *MockRoleAssignmentScope) AvailabilitySetEnabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
-func (mr *MockRoleAssignmentScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockRoleAssignmentScope)(nil).AvailabilitySetEnabled))
 }
 
 // BaseURI mocks base method.
@@ -150,46 +123,44 @@ func (mr *MockRoleAssignmentScopeMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockRoleAssignmentScope)(nil).CloudEnvironment))
 }
 
-// CloudProviderConfigOverrides mocks base method.
-func (m *MockRoleAssignmentScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockRoleAssignmentScope) DeleteLongRunningOperationState(arg0, arg1 string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockRoleAssignmentScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockRoleAssignmentScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockRoleAssignmentScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret0, _ := ret[0].(*v1beta1.Future)
 	return ret0
 }
 
-// CloudProviderConfigOverrides indicates an expected call of CloudProviderConfigOverrides.
-func (mr *MockRoleAssignmentScopeMockRecorder) CloudProviderConfigOverrides() *gomock.Call {
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockRoleAssignmentScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudProviderConfigOverrides", reflect.TypeOf((*MockRoleAssignmentScope)(nil).CloudProviderConfigOverrides))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockRoleAssignmentScope)(nil).GetLongRunningOperationState), arg0, arg1)
 }
 
-// ClusterName mocks base method.
-func (m *MockRoleAssignmentScope) ClusterName() string {
+// HasSystemAssignedIdentity mocks base method.
+func (m *MockRoleAssignmentScope) HasSystemAssignedIdentity() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClusterName")
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "HasSystemAssignedIdentity")
+	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// ClusterName indicates an expected call of ClusterName.
-func (mr *MockRoleAssignmentScopeMockRecorder) ClusterName() *gomock.Call {
+// HasSystemAssignedIdentity indicates an expected call of HasSystemAssignedIdentity.
+func (mr *MockRoleAssignmentScopeMockRecorder) HasSystemAssignedIdentity() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockRoleAssignmentScope)(nil).ClusterName))
-}
-
-// FailureDomains mocks base method.
-func (m *MockRoleAssignmentScope) FailureDomains() []string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// FailureDomains indicates an expected call of FailureDomains.
-func (mr *MockRoleAssignmentScopeMockRecorder) FailureDomains() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockRoleAssignmentScope)(nil).FailureDomains))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasSystemAssignedIdentity", reflect.TypeOf((*MockRoleAssignmentScope)(nil).HasSystemAssignedIdentity))
 }
 
 // HashKey mocks base method.
@@ -206,18 +177,18 @@ func (mr *MockRoleAssignmentScopeMockRecorder) HashKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockRoleAssignmentScope)(nil).HashKey))
 }
 
-// Location mocks base method.
-func (m *MockRoleAssignmentScope) Location() string {
+// Name mocks base method.
+func (m *MockRoleAssignmentScope) Name() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Location")
+	ret := m.ctrl.Call(m, "Name")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// Location indicates an expected call of Location.
-func (mr *MockRoleAssignmentScopeMockRecorder) Location() *gomock.Call {
+// Name indicates an expected call of Name.
+func (mr *MockRoleAssignmentScopeMockRecorder) Name() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockRoleAssignmentScope)(nil).Location))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockRoleAssignmentScope)(nil).Name))
 }
 
 // ResourceGroup mocks base method.
@@ -234,18 +205,44 @@ func (mr *MockRoleAssignmentScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockRoleAssignmentScope)(nil).ResourceGroup))
 }
 
-// RoleAssignmentSpecs mocks base method.
-func (m *MockRoleAssignmentScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
+// RoleAssignmentResourceType mocks base method.
+func (m *MockRoleAssignmentScope) RoleAssignmentResourceType() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RoleAssignmentSpecs")
-	ret0, _ := ret[0].([]azure.RoleAssignmentSpec)
+	ret := m.ctrl.Call(m, "RoleAssignmentResourceType")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// RoleAssignmentResourceType indicates an expected call of RoleAssignmentResourceType.
+func (mr *MockRoleAssignmentScopeMockRecorder) RoleAssignmentResourceType() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RoleAssignmentResourceType", reflect.TypeOf((*MockRoleAssignmentScope)(nil).RoleAssignmentResourceType))
+}
+
+// RoleAssignmentSpecs mocks base method.
+func (m *MockRoleAssignmentScope) RoleAssignmentSpecs(principalID *string) []azure.ResourceSpecGetter {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RoleAssignmentSpecs", principalID)
+	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
 	return ret0
 }
 
 // RoleAssignmentSpecs indicates an expected call of RoleAssignmentSpecs.
-func (mr *MockRoleAssignmentScopeMockRecorder) RoleAssignmentSpecs() *gomock.Call {
+func (mr *MockRoleAssignmentScopeMockRecorder) RoleAssignmentSpecs(principalID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RoleAssignmentSpecs", reflect.TypeOf((*MockRoleAssignmentScope)(nil).RoleAssignmentSpecs))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RoleAssignmentSpecs", reflect.TypeOf((*MockRoleAssignmentScope)(nil).RoleAssignmentSpecs), principalID)
+}
+
+// SetLongRunningOperationState mocks base method.
+func (m *MockRoleAssignmentScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockRoleAssignmentScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockRoleAssignmentScope)(nil).SetLongRunningOperationState), arg0)
 }
 
 // SubscriptionID mocks base method.
@@ -274,4 +271,40 @@ func (m *MockRoleAssignmentScope) TenantID() string {
 func (mr *MockRoleAssignmentScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockRoleAssignmentScope)(nil).TenantID))
+}
+
+// UpdateDeleteStatus mocks base method.
+func (m *MockRoleAssignmentScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
+}
+
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockRoleAssignmentScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockRoleAssignmentScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockRoleAssignmentScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockRoleAssignmentScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockRoleAssignmentScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockRoleAssignmentScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockRoleAssignmentScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockRoleAssignmentScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }

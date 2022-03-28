@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -288,17 +289,32 @@ func (m *MachineScope) DiskSpecs() []azure.ResourceSpecGetter {
 }
 
 // RoleAssignmentSpecs returns the role assignment specs.
-func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
-	if m.AzureMachine.Spec.Identity == infrav1.VMIdentitySystemAssigned {
-		return []azure.RoleAssignmentSpec{
-			{
-				MachineName:  m.Name(),
-				Name:         m.AzureMachine.Spec.RoleAssignmentName,
-				ResourceType: azure.VirtualMachine,
-			},
+func (m *MachineScope) RoleAssignmentSpecs(principalID *string) []azure.ResourceSpecGetter {
+	roles := make([]azure.ResourceSpecGetter, 1)
+	if m.HasSystemAssignedIdentity() {
+		roles[0] = &roleassignments.RoleAssignmentSpec{
+			Name:             m.AzureMachine.Spec.RoleAssignmentName,
+			MachineName:      m.Name(),
+			ResourceType:     azure.VirtualMachine,
+			ResourceGroup:    m.ResourceGroup(),
+			Scope:            azure.GenerateSubscriptionScope(m.SubscriptionID()),
+			RoleDefinitionID: azure.GenerateContributorRoleDefinitionID(m.SubscriptionID()),
+			PrincipalID:      principalID,
 		}
+		return roles
 	}
-	return []azure.RoleAssignmentSpec{}
+	return []azure.ResourceSpecGetter{}
+}
+
+// RoleAssignmentResourceType returns the role assignment resource type.
+func (m *MachineScope) RoleAssignmentResourceType() string {
+	return azure.VirtualMachine
+}
+
+// HasSystemAssignedIdentity returns true if the azure machine has
+// system assigned identity.
+func (m *MachineScope) HasSystemAssignedIdentity() bool {
+	return m.AzureMachine.Spec.Identity == infrav1.VMIdentitySystemAssigned
 }
 
 // VMExtensionSpecs returns the vm extension specs.
