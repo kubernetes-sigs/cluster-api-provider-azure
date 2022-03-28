@@ -475,6 +475,8 @@ spec:
         path: C:/create-temp-folder.ps1
         permissions: "0744"
       - content: |
+          $ErrorActionPreference = 'Stop'
+
           Stop-Service kubelet -Force
 
           $$CI_VERSION="${CI_VERSION}"
@@ -497,7 +499,7 @@ spec:
           kubeadm.exe version -o=short
           kubectl.exe version --client=true --short=true
           kubelet.exe --version
-        path: C:/replace-k8s-binaries.ps1
+        path: C:/replace-ci-binaries.ps1
         permissions: "0744"
       joinConfiguration:
         nodeRegistration:
@@ -511,7 +513,7 @@ spec:
       preKubeadmCommands:
       - powershell c:/create-external-network.ps1
       - powershell C:/create-temp-folder.ps1
-      - powershell C:/replace-k8s-binaries.ps1
+      - powershell C:/replace-ci-binaries.ps1
       users:
       - groups: Administrators
         name: capi
