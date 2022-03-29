@@ -259,7 +259,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 
 	cluster.Default()
 	azureCluster.Default()
-	azureCluster.ClusterName = "testCluster"
+	cluster.Name = "testCluster"
 
 	scheme := setupScheme(g)
 	kubeclient := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -293,7 +293,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cloudConfig.Data).NotTo(BeNil())
 
-			if err := reconcileAzureSecret(context.Background(), kubeclient, owner, cloudConfig, azureCluster.ClusterName); err != nil {
+			if err := reconcileAzureSecret(context.Background(), kubeclient, owner, cloudConfig, cluster.Name); err != nil {
 				t.Error(err)
 			}
 
