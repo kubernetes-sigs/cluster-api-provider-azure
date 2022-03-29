@@ -104,7 +104,7 @@ If you think you have found a bug please follow the instructions below.
 - Please spend a small amount of time giving due diligence to the issue tracker. Your issue might be a duplicate.
 - Get the logs from the cluster controllers. Please paste this into your issue.
 - Open a [bug report][bug_report].
-- Remember users might be searching for your issue in the future, so please give it a meaningful title to helps others.
+- Remember users might be searching for your issue in the future, so please give it a meaningful title to help others.
 - Feel free to reach out to the cluster-api community on [kubernetes slack][slack_info].
 
 ### Tracking new features
@@ -113,7 +113,7 @@ We also use the issue tracker to track features. If you have an idea for a featu
 
 - Open a [feature request][feature_request].
 - Remember users might be searching for your issue in the future, so please
-  give it a meaningful title to helps others.
+  give it a meaningful title to help others.
 - Clearly define the use case, using concrete examples. EG: I type `this` and
   cluster-api-provider-azure does `that`.
 - Some of our larger features will require some design. If you would like to
