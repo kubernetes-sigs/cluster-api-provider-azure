@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -264,20 +265,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	for i := range managedClusterSpec.AgentPools {
 		pool := managedClusterSpec.AgentPools[i]
-		profile := containerservice.ManagedClusterAgentPoolProfile{
-			Name:                &pool.Name,
-			VMSize:              &pool.SKU,
-			OsDiskSizeGB:        &pool.OSDiskSizeGB,
-			Count:               &pool.Replicas,
-			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-			VnetSubnetID:        &managedClusterSpec.VnetSubnetID,
-			Mode:                containerservice.AgentPoolMode(pool.Mode),
-			AvailabilityZones:   &pool.AvailabilityZones,
-			MaxPods:             pool.MaxPods,
-			OrchestratorVersion: pool.Version,
-			OsDiskType:          containerservice.OSDiskType(to.String(pool.OsDiskType)),
-			EnableUltraSSD:      pool.EnableUltraSSD,
-		}
+		profile := converters.AgentPoolToManagedClusterAgentPoolProfile(pool)
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
 

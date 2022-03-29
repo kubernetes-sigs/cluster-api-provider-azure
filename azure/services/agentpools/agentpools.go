@@ -22,11 +22,11 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -73,27 +73,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer done()
 
 	agentPoolSpec := s.scope.AgentPoolSpec()
-	profile := containerservice.AgentPool{
-		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
-			VMSize:              &agentPoolSpec.SKU,
-			OsType:              containerservice.OSTypeLinux,
-			OsDiskSizeGB:        &agentPoolSpec.OSDiskSizeGB,
-			Count:               &agentPoolSpec.Replicas,
-			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-			OrchestratorVersion: agentPoolSpec.Version,
-			VnetSubnetID:        &agentPoolSpec.VnetSubnetID,
-			Mode:                containerservice.AgentPoolMode(agentPoolSpec.Mode),
-			EnableAutoScaling:   agentPoolSpec.EnableAutoScaling,
-			MaxCount:            agentPoolSpec.MaxCount,
-			MinCount:            agentPoolSpec.MinCount,
-			NodeTaints:          &agentPoolSpec.NodeTaints,
-			AvailabilityZones:   &agentPoolSpec.AvailabilityZones,
-			MaxPods:             agentPoolSpec.MaxPods,
-			OsDiskType:          containerservice.OSDiskType(to.String(agentPoolSpec.OsDiskType)),
-			NodeLabels:          agentPoolSpec.NodeLabels,
-			EnableUltraSSD:      agentPoolSpec.EnableUltraSSD,
-		},
-	}
+	profile := converters.AgentPoolToContainerServiceAgentPool(agentPoolSpec)
 
 	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
