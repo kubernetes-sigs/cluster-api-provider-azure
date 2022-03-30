@@ -21,13 +21,13 @@ package e2e
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/types"
 	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -226,8 +226,14 @@ func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfi
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	maxVersion, err := GetWorkingAKSKubernetesVersion(ctx, subscriptionID, location, e2eAKSVersion)
-	Expect(err).NotTo(HaveOccurred())
+	var maxVersion string
+	if e2eAKSVersion == "latest" {
+		maxVersion, err = GetLatestStableAKSKubernetesVersion(ctx, subscriptionID, location)
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		maxVersion, err = GetWorkingAKSKubernetesVersion(ctx, subscriptionID, location, e2eAKSVersion)
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	return maxVersion, nil
 }
@@ -249,17 +255,17 @@ func byClusterOptions(name, namespace string) []client.ListOption {
 func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, location, version string) (string, error) {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "GetSettingsFromEnvironment failed.")
 	}
 	authorizer, err := settings.GetAuthorizer()
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Failed to create an Authorizer.")
 	}
 	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
 	containerServiceClient.Authorizer = authorizer
 	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Failed to list Orchestrators.")
 	}
 
 	var latestStableVersionDesired bool
@@ -302,5 +308,46 @@ func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, locatio
 		return "", errors.New(fmt.Sprintf("No AKS versions found for %s", semver.MajorMinor(baseVersion)))
 	}
 
+	return maxVersion, nil
+}
+
+// GetLatestStableAKSKubernetesVersion returns the latest stable available Kubernetes version of AKS.
+func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, location string) (string, error) {
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return "", errors.Wrap(err, "GetSettingsFromEnvironment failed.")
+	}
+	authorizer, err := settings.GetAuthorizer()
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to create an Authorizer.")
+	}
+	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
+	containerServiceClient.Authorizer = authorizer
+	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to list Orchestrators.")
+	}
+
+	var orchestratorversions []string
+	var foundWorkingVersion bool
+	var orchVersion string
+	var maxVersion string
+
+	for _, o := range *result.Orchestrators {
+		orchVersion = *o.OrchestratorVersion
+		// semver comparisons require a "v" prefix
+		if orchVersion[:1] != "v" && o.IsPreview == nil {
+			orchVersion = fmt.Sprintf("v%s", *o.OrchestratorVersion)
+		}
+		orchestratorversions = append(orchestratorversions, orchVersion)
+	}
+	semver.Sort(orchestratorversions)
+	maxVersion = orchestratorversions[len(orchestratorversions)-1]
+	if semver.IsValid(maxVersion) {
+		foundWorkingVersion = true
+	}
+	if !foundWorkingVersion {
+		return "", errors.New(fmt.Sprintf("Latest stable AKS version not found."))
+	}
 	return maxVersion, nil
 }
