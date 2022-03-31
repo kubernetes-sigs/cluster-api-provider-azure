@@ -76,5 +76,8 @@ make clean
 echo "================ KIND RESET ==============="
 make kind-reset
 
+echo "================ INSTALL TOOLS ==============="
+make install-tools
+
 echo "================ CREATE CLUSTER ==============="
 make create-cluster

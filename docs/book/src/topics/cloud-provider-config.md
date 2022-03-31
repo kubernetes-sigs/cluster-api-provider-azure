@@ -71,7 +71,15 @@ All cloud provider config values can be customized by creating the `${RESOURCE}-
 
 To deploy a cluster using [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), create a cluster configuration with the [external cloud provider template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-external-cloud-provider.yaml).
 
-After deploying the cluster, you should eventually see a set of pods like the following in a `Running` state:
+After the cluster has provisioned, install the `cloud-provider-azure` components using the official helm chart:
+
+```bash
+helm install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}
+```
+
+The Helm chart will pick the right version of `cloud-controller-manager` and `cloud-node-manager` to work with the version of Kubernetes your cluster is running.
+
+After running `helm install`, you should eventually see a set of pods like these in a `Running` state:
 
 ```bash
 kube-system   cloud-controller-manager                                            1/1     Running   0          41s
@@ -80,6 +88,10 @@ kube-system   cloud-node-manager-hbbqt                                          
 kube-system   cloud-node-manager-mfsdg                                            1/1     Running   0          39s
 kube-system   cloud-node-manager-qrz74                                            1/1     Running   0          24s
 ```
+
+For more information see the official [`cloud-provider-azure` helm chart documentation](https://github.com/kubernetes-sigs/cloud-provider-azure/tree/master/helm/cloud-provider-azure).
+
+If you're not familiar with using Helm to manage Kubernetes applications as packages, there's lots of good [Helm documentation on the official website](https://helm.sh/docs/).
 
 ## Storage Drivers
 

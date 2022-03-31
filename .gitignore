@@ -29,6 +29,7 @@ kind.kubeconfig
 minikube.kubeconfig
 kubeconfig
 !kubeconfig/
+*.kubeconfig
 
 # ssh keys
 .ssh*

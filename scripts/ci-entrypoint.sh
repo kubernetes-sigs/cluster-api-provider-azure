@@ -22,12 +22,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Install kubectl
+# Install kubectl and helm
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
-cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
-# export the variable so it is available in bash -c wait_for_nodes below
+HELM="${REPO_ROOT}/hack/tools/bin/helm"
+cd "${REPO_ROOT}" && make "${KUBECTL##*/}"; make "${HELM##*/}"
+# export the variables so they are available in bash -c wait_for_nodes below
 export KUBECTL
+export HELM
 
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
@@ -90,7 +92,8 @@ select_cluster_template() {
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-external-cloud-provider.yaml"
         # shellcheck source=scripts/ci-build-azure-ccm.sh
         source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
-        echo "Using CCM image ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG} and CNM image ${AZURE_CLOUD_NODE_MANAGER_IMG} to build external cloud provider cluster"
+        echo "Will use the ${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG} cloud-controller-manager image for external cloud-provider-cluster"
+        echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG} cloud-node-manager image for external cloud-provider-azure cluster"
     fi
 
     if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
@@ -151,6 +154,17 @@ create_cluster
 
 # export the target cluster KUBECONFIG if not already set
 export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
+
+# install cloud-provider-azure components, if using out-of-tree
+if [[ -n "${TEST_CCM:-}" ]]; then
+  echo "Installing cloud-provider-azure components via helm"
+  "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName="${CLUSTER_NAME}" --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
+--set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
+--set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
+--set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
+--set cloudControllerManager.imageTag="${IMAGE_TAG}" \
+--set cloudNodeManager.imageTag="${IMAGE_TAG}"
+fi
 
 export -f wait_for_nodes
 timeout --foreground 1800 bash -c wait_for_nodes

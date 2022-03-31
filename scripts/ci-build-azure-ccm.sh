@@ -31,9 +31,9 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 : "${REGISTRY:?Environment variable empty or not defined.}"
 
 # cloud controller manager image
-declare CCM_IMAGE_NAME=azure-cloud-controller-manager
+export CCM_IMAGE_NAME=azure-cloud-controller-manager
 # cloud node manager image
-declare CNM_IMAGE_NAME=azure-cloud-node-manager
+export CNM_IMAGE_NAME=azure-cloud-node-manager
 declare -a IMAGES=("${CCM_IMAGE_NAME}" "${CNM_IMAGE_NAME}")
 
 setup() {
@@ -43,8 +43,6 @@ setup() {
     export IMAGE_REGISTRY=${REGISTRY}
     pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && IMAGE_TAG=$(git rev-parse --short=7 HEAD) && export IMAGE_TAG && popd
     echo "Image Tag is ${IMAGE_TAG}"
-    export AZURE_CLOUD_CONTROLLER_MANAGER_IMG=${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG}
-    export AZURE_CLOUD_NODE_MANAGER_IMG=${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG}
 }
 
 main() {
