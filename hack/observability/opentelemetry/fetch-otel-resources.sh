@@ -18,13 +18,13 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CHART_RELEASE=${CHART_RELEASE:-0.9.2}
+CHART_RELEASE=${CHART_RELEASE:-0.13.1}
 OTEL_ROOT=$(dirname "${BASH_SOURCE[0]}")
 CHART_ROOT=$OTEL_ROOT/chart
 
 rm -rf "$CHART_ROOT"
 # "tar" has no POSIX standard, so use only basic options and test with both BSD and GNU.
 wget -qO- https://github.com/open-telemetry/opentelemetry-helm-charts/releases/download/opentelemetry-collector-"$CHART_RELEASE"/opentelemetry-collector-"$CHART_RELEASE".tgz \
-  | tar xvz -C "$OTEL_ROOT"
+  | tar xvz -C "$OTEL_ROOT" --exclude "ci" --exclude "examples" -
 mv "$OTEL_ROOT"/opentelemetry-collector "$CHART_ROOT"
 wget -q https://raw.githubusercontent.com/open-telemetry/opentelemetry-helm-charts/main/LICENSE -P "$CHART_ROOT"

@@ -140,9 +140,8 @@ affinity: {}
 priorityClassName: ""
 
 extraEnvs: []
-extraConfigMapMounts: []
-extraHostPathMounts: []
-secretMounts: []
+extraVolumes: []
+extraVolumeMounts: []
 
 # Configuration for ports, shared between agentCollector, standaloneCollector and service.
 # Can be overridden here or for agentCollector and standaloneCollector independently.
@@ -206,6 +205,9 @@ agentCollector:
   podAnnotations: {}
 
   podLabels: {}
+
+  # Host networking requested for this pod. Use the host's network namespace.
+  hostNetwork: false
 
   # Configuration override that will be merged into the agent's default config
   configOverride: {}
