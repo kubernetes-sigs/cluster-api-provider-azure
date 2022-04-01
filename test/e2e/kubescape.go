@@ -123,6 +123,21 @@ func KubescapeSpec(ctx context.Context, inputGetter func() KubescapeSpecInput) {
 				Resources: []string{rbacv1.ResourceAll},
 				Verbs:     []string{"get", "list", "describe"},
 			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{"namespaces"},
+				Verbs:     []string{"create", "delete"},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{"pods"},
+				Verbs:     []string{"watch"},
+			},
+			{
+				APIGroups: []string{"apps"},
+				Resources: []string{"daemonsets"},
+				Verbs:     []string{"create", "delete"},
+			},
 		},
 	}
 	_, err = clusterRolesClient.Create(ctx, clusterRole, metav1.CreateOptions{})
@@ -140,7 +155,8 @@ func KubescapeSpec(ctx context.Context, inputGetter func() KubescapeSpecInput) {
 
 	Log("Creating a security scan job")
 	jobsClient := clientset.BatchV1().Jobs(corev1.NamespaceDefault)
-	args := []string{"scan", "framework", "nsa", "--enable-host-scan", "--exclude-namespaces", "kube-system,kube-public"}
+	cmd := []string{"/usr/bin/kubescape"}
+	args := []string{"scan", "--enable-host-scan", "--exclude-namespaces", "kube-system,kube-public"}
 	if failThreshold < 100 {
 		args = append(args, "--fail-threshold", strconv.Itoa(failThreshold))
 	}
@@ -151,9 +167,10 @@ func KubescapeSpec(ctx context.Context, inputGetter func() KubescapeSpecInput) {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  specName,
-							Image: input.Container,
-							Args:  args,
+							Name:    specName,
+							Image:   input.Container,
+							Command: cmd,
+							Args:    args,
 						},
 					},
 					NodeSelector:       map[string]string{corev1.LabelOSStable: "linux"},
