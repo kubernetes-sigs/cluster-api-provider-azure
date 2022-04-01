@@ -28,7 +28,7 @@ import (
 
 // AzureMachineTemplateImmutableMsg ...
 const (
-	AzureMachineTemplateImmutableMsg          = "AzureMachineTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/change-machine-template.html"
+	AzureMachineTemplateImmutableMsg          = "AzureMachineTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/updating-machine-templates.html"
 	AzureMachineTemplateRoleAssignmentNameMsg = "AzureMachineTemplate spec.template.spec.roleAssignmentName field can't be set"
 )
 
