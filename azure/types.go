@@ -82,20 +82,6 @@ type TagsSpec struct {
 	Annotation string
 }
 
-// PrivateDNSSpec defines the specification for a private DNS zone.
-type PrivateDNSSpec struct {
-	ZoneName string
-	Links    []PrivateDNSLinkSpec
-	Records  []infrav1.AddressRecord
-}
-
-// PrivateDNSLinkSpec defines the specification for a virtual network link in a private DNS zone.
-type PrivateDNSLinkSpec struct {
-	VNetName          string
-	VNetResourceGroup string
-	LinkName          string
-}
-
 // ExtensionSpec defines the specification for a VM or VMScaleSet extension.
 type ExtensionSpec struct {
 	Name              string

@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 // Run go generate to regenerate this mock.
-//go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_privatedns -source ../client.go Client
 //go:generate ../../../../hack/tools/bin/mockgen -destination privatedns_mock.go -package mock_privatedns -source ../privatedns.go Scope
-//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt privatedns_mock.go > _privatedns_mock.go && mv _privatedns_mock.go privatedns_mock.go"
 package mock_privatedns //nolint
