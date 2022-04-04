@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -131,12 +132,6 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 		return reconcile.Result{}, err
 	}
 
-	// Construct secret for this machine
-	userAssignedIdentityIfExists := ""
-	if len(azureMachinePool.Spec.UserAssignedIdentities) > 0 {
-		userAssignedIdentityIfExists = azureMachinePool.Spec.UserAssignedIdentities[0].ProviderID
-	}
-
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       r.Client,
@@ -145,6 +140,18 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")
+	}
+
+	// Construct secret for this machine
+	userAssignedIdentityIfExists := ""
+	if len(azureMachinePool.Spec.UserAssignedIdentities) > 0 {
+		// TODO: remove this ClientID lookup code when the fixed cloud-provider-azure is default
+		idsClient := identities.NewClient(clusterScope)
+		userAssignedIdentityIfExists, err = idsClient.GetClientID(
+			ctx, azureMachinePool.Spec.UserAssignedIdentities[0].ProviderID)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "failed to get user-assigned identity ClientID")
+		}
 	}
 
 	apiVersion, kind := infrav1.GroupVersion.WithKind("AzureMachinePool").ToAPIVersionAndKind()
