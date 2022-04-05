@@ -19,8 +19,8 @@ aliases:
     - alexeldeib
     - CecileRobertMichon
     - devigned
+    - mboersma
     - shysank
   cluster-api-azure-reviewers:
     - jackfrancis
     - jsturtevant
-    - mboersma
