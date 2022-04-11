@@ -262,6 +262,9 @@ metadata:
   namespace: default
 spec:
   template:
+    metadata:
+      annotations:
+        runtime: containerd
     spec:
       osDisk:
         diskSizeGB: 128

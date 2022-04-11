@@ -19,6 +19,7 @@ patchesStrategicMerge:
   - ../../../flavors/base-windows-containerd/kubeadm-control-plane.yaml
   - ../patches/windows-containerd-patch.yaml
   - ../patches/windows-csi-proxy-enabled.yaml
+  - ../patches/windows-server-version.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
