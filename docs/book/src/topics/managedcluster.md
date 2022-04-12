@@ -35,7 +35,7 @@ export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
 # this example uses an sdk authentication file and parses the subscriptionId with jq
 # this file may be created using
 #
-# `az ad sp create-for-rbac --role Contributor --sdk-auth > sp.json`
+# `az ad sp create-for-rbac --role Contributor --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}" --sdk-auth > sp.json`
 #
 # when logged in with a service principal, it's also available using
 #

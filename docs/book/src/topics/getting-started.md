@@ -46,7 +46,7 @@ An Azure Service Principal is needed for deploying Azure resources. The below in
   NOTE: the "owner" role is required to be able to create role assignments for [system-assigned managed identity](vm-identity.md).
 
   ```bash
-  az ad sp create-for-rbac --role contributor
+  az ad sp create-for-rbac --role contributor --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}"
   ```
 
   6. Save the output from the above command in environment variables.
