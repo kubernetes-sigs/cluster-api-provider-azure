@@ -125,6 +125,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			},
 		}
 
+		// Auto scaler enabled, no need to reconcile on node pool count
+		if profile.MinCount != nil && profile.MaxCount != nil{
+			normalizedProfile.Count = existingPool.Count
+		}
+
 		// Diff and check if we require an update
 		diff := cmp.Diff(normalizedProfile, existingProfile)
 		if diff != "" {
