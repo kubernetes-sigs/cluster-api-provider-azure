@@ -49,8 +49,15 @@ setup() {
 
 main() {
     if [[ "$(can_reuse_artifacts)" == "false" ]]; then
-        echo "Building Azure cloud controller manager and cloud node manager..."
-        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" image push
+        echo "Build Linux Azure amd64 cloud controller manager"
+        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
+        if [[ -n "${TEST_WINDOWS:-}" ]]; then
+            echo "Building Linux amd64 and Windows ltsc2022 amd64 cloud node managers"
+            make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-ltsc2022-amd64 manifest-node-manager-image-windows-ltsc2022-amd64
+        else
+            echo "Building Linux amd64 cloud node manager"
+            make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-push-name-amd64
+        fi
     fi
 }
 
