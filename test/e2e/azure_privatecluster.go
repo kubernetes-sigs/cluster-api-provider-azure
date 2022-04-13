@@ -149,7 +149,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 			ControlPlaneMachineCount: pointer.Int64Ptr(3),
 			WorkerMachineCount:       pointer.Int64Ptr(1),
 		},
-		WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-cluster"),
+		WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-private-cluster"),
 		WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane"),
 		WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
 	}, result)
