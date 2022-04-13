@@ -26,6 +26,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
+// This is a test comment. Please ignore.
+
 func TestFuzzyConversion(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()
