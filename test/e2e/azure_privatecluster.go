@@ -284,6 +284,20 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 				Priority:                 pointer.Int32Ptr(2201),
 			},
 		},
+		{
+			Name: pointer.StringPtr("block_outbound"),
+			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+				Description:              pointer.StringPtr("Deny Outbound traffic outside the VNet"),
+				SourcePortRange:          pointer.StringPtr("*"),
+				DestinationPortRange:     pointer.StringPtr("*"),
+				SourceAddressPrefix:      pointer.StringPtr("*"),
+				DestinationAddressPrefix: pointer.StringPtr("Internet"),
+				Protocol:                 network.SecurityRuleProtocolAsterisk,
+				Access:                   network.SecurityRuleAccessDeny,
+				Direction:                network.SecurityRuleDirectionOutbound,
+				Priority:                 pointer.Int32Ptr(2300),
+			},
+		},
 	}
 	nsgFuture, err := nsgClient.CreateOrUpdate(ctx, groupName, nsgName, network.SecurityGroup{
 		Location: pointer.StringPtr(os.Getenv(AzureLocation)),
