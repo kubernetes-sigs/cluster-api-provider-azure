@@ -191,11 +191,9 @@ clean-temporary: ## Remove all temporary files and folders.
 clean-release: ## Remove the release folder.
 	rm -rf $(RELEASE_DIR)
 
-APIDIFF_OLD_COMMIT ?= $(shell git rev-parse origin/main)
-
 .PHONY: apidiff
 apidiff: $(GO_APIDIFF) ## Check for API differences.
-	$(GO_APIDIFF) $(APIDIFF_OLD_COMMIT) --print-compatible
+	$(GO_APIDIFF) $(shell git rev-parse origin/main) --print-compatible
 
 .PHONY: format-tiltfile
 format-tiltfile: ## Format the Tiltfile.
