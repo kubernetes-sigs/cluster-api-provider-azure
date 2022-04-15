@@ -108,6 +108,10 @@ KUBECTL_VER := v1.22.4
 KUBECTL_BIN := kubectl
 KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
+HELM_VER := v3.8.1
+HELM_BIN := helm
+HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
+
 YQ_VER := v4.14.2
 YQ_BIN := yq
 YQ :=  $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER)
@@ -186,6 +190,7 @@ clean-bin: ## Remove all generated binaries.
 clean-temporary: ## Remove all temporary files and folders.
 	rm -f minikube.kubeconfig
 	rm -f kubeconfig
+	rm -f *.kubeconfig
 
 .PHONY: clean-release
 clean-release: ## Remove the release folder.
@@ -235,6 +240,9 @@ verify-tiltfile: ## Verify Tiltfile format.
 ## --------------------------------------
 
 ##@ Development:
+
+.PHONY: install-tools # populate hack/tools/bin
+install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO)
 
 .PHONY: create-management-cluster
 create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a management cluster.
@@ -545,7 +553,7 @@ release: clean-release  ## Builds and push container images using the latest git
 
 .PHONY: release-manifests
 release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publish with a release.
-	kustomize build config/default > $(RELEASE_DIR)/infrastructure-components.yaml
+	$(KUSTOMIZE) build config/default > $(RELEASE_DIR)/infrastructure-components.yaml
 
 .PHONY: release-templates
 release-templates: $(RELEASE_DIR)
@@ -616,7 +624,7 @@ test-cover: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run tests with cod
 	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: test-e2e-run
-test-e2e-run: generate-e2e-templates $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(GINKGO) ## Run e2e tests.
+test-e2e-run: generate-e2e-templates install-tools ## Run e2e tests.
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
     $(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) $(GINKGO_ARGS) ./test/e2e -- \
     	-e2e.artifacts-folder="$(ARTIFACTS)" \
@@ -668,7 +676,7 @@ kind-create: $(KUBECTL) ## Create capz kind cluster if needed.
 	./scripts/kind-with-registry.sh
 
 .PHONY: tilt-up
-tilt-up: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) kind-create ## Start tilt and build kind cluster if needed.
+tilt-up: install-tools kind-create ## Start tilt and build kind cluster if needed.
 	EXP_CLUSTER_RESOURCE_SET=true EXP_AKS=true EXP_MACHINE_POOL=true tilt up
 
 .PHONY: delete-cluster
@@ -698,6 +706,7 @@ release-notes: $(RELEASE_NOTES) ## Build a local copy of release notes.
 goapi-diff: $(GO_APIDIFF) ## Build a local copy of go api-diff.
 ginkgo: $(GINKGO) ## Build a local copy of ginkgo.
 kubectl: $(KUBECTL) ## Build a local copy of kubectl.
+helm: $(HELM) ## Build a local copy of helm.
 yq: $(YQ) ## Build a local copy of yq.
 
 $(CONVERSION_VERIFIER): go.mod
@@ -740,11 +749,23 @@ $(KUBECTL): ## Build kubectl from tools folder.
 	ln -sf $(KUBECTL) $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)
 	chmod +x $(KUBECTL) $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)
 
+$(HELM): ## Put helm into tools folder.
+	mkdir -p $(TOOLS_BIN_DIR)
+	rm -f "$(TOOLS_BIN_DIR)/$(HELM_BIN)*"
+	curl -fsSL -o $(TOOLS_BIN_DIR)/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+	chmod 700 $(TOOLS_BIN_DIR)/get_helm.sh
+	USE_SUDO=false HELM_INSTALL_DIR=$(TOOLS_BIN_DIR) DESIRED_VERSION=$(HELM_VER) BINARY_NAME=$(HELM_BIN)-$(HELM_VER) $(TOOLS_BIN_DIR)/get_helm.sh
+	ln -sf $(HELM) $(TOOLS_BIN_DIR)/$(HELM_BIN)
+	rm -f $(TOOLS_BIN_DIR)/get_helm.sh
+
 .PHONY: $(ENVSUBST_BIN)
 $(ENVSUBST_BIN): $(ENVSUBST)
 
 .PHONY: $(KUBECTL_BIN)
 $(KUBECTL_BIN): $(KUBECTL)
+
+.PHONY: $(HELM_BIN)
+$(HELM_BIN): $(HELM)
 
 .PHONY: $(GO_APIDIFF_BIN)
 $(GO_APIDIFF_BIN): $(GO_APIDIFF)
