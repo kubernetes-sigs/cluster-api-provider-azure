@@ -165,7 +165,7 @@ var _ = Describe("Workload cluster creation", func() {
 						Flavor:                   "custom-vnet",
 						Namespace:                namespace.Name,
 						ClusterName:              clusterName,
-						KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+						KubernetesVersion:        "v1.23.5", // TODO: add pause 3.6 image to 1.22
 						ControlPlaneMachineCount: pointer.Int64Ptr(1),
 						WorkerMachineCount:       pointer.Int64Ptr(1),
 					},

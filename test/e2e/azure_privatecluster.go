@@ -285,9 +285,23 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 			},
 		},
 		{
+			Name: pointer.StringPtr("allow_vnet_outbound"),
+			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+				Description:              pointer.StringPtr("Allow Outbound traffic inside the VNet"),
+				SourcePortRange:          pointer.StringPtr("*"),
+				DestinationPortRange:     pointer.StringPtr("*"),
+				SourceAddressPrefix:      pointer.StringPtr("*"),
+				DestinationAddressPrefix: pointer.StringPtr("VirtualNetwork"),
+				Protocol:                 network.SecurityRuleProtocolAsterisk,
+				Access:                   network.SecurityRuleAccessAllow,
+				Direction:                network.SecurityRuleDirectionOutbound,
+				Priority:                 pointer.Int32Ptr(2300),
+			},
+		},
+		{
 			Name: pointer.StringPtr("block_outbound"),
 			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-				Description:              pointer.StringPtr("Deny Outbound traffic outside the VNet"),
+				Description:              pointer.StringPtr("Deny Outbound traffic to the Internet"),
 				SourcePortRange:          pointer.StringPtr("*"),
 				DestinationPortRange:     pointer.StringPtr("*"),
 				SourceAddressPrefix:      pointer.StringPtr("*"),
@@ -295,7 +309,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 				Protocol:                 network.SecurityRuleProtocolAsterisk,
 				Access:                   network.SecurityRuleAccessDeny,
 				Direction:                network.SecurityRuleDirectionOutbound,
-				Priority:                 pointer.Int32Ptr(2300),
+				Priority:                 pointer.Int32Ptr(2301),
 			},
 		},
 	}
