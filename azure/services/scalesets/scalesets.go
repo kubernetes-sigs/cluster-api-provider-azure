@@ -46,7 +46,7 @@ type (
 		SaveVMImageToStatus(*infrav1.Image)
 		MaxSurge() (int, error)
 		ScaleSetSpec() azure.ScaleSetSpec
-		VMSSExtensionSpecs() []azure.ExtensionSpec
+		VMSSExtensionSpecs() []azure.ResourceSpecGetter
 		SetAnnotation(string, string)
 		SetProviderID(string)
 		SetVMSSState(*azure.VMSS)
@@ -144,8 +144,12 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		}
 	}
 
-	// if we get to here, we have completed any long running VMSS operations (creates / updates)
+	// If we get to here, we have completed any long running VMSS operations (creates / updates)
 	s.Scope.DeleteLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName)
+	// This also means that the VMSS extensions were successfully installed
+	// Note: we want to handle UpdatePutStatus when VMSSExtensions have an error when scalesets become an async service
+	s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+
 	return nil
 }
 
@@ -182,6 +186,9 @@ func (s *Service) Delete(ctx context.Context) error {
 
 		// ScaleSet has been deleted
 		s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, serviceName)
+		// Note: we want to handle UpdateDeleteStatus when VMSSExtensions have an error when scalesets become an async service
+		s.Scope.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+
 		return nil
 	}
 
@@ -206,6 +213,9 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	// future is either nil, or the result of the future is complete
 	s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, serviceName)
+	// Note: we want to handle UpdateDeleteStatus when VMSSExtensions have an error when scalesets become an async service
+	s.Scope.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+
 	return nil
 }
 
@@ -370,7 +380,10 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		vmssSpec.AcceleratedNetworking = &accelNet
 	}
 
-	extensions := s.generateExtensions()
+	extensions, err := s.generateExtensions()
+	if err != nil {
+		return compute.VirtualMachineScaleSet{}, err
+	}
 
 	storageProfile, err := s.generateStorageProfile(ctx, vmssSpec, sku)
 	if err != nil {
@@ -543,22 +556,22 @@ func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *i
 	return converters.SDKToVMSS(vmss, vmssInstances), nil
 }
 
-func (s *Service) generateExtensions() []compute.VirtualMachineScaleSetExtension {
+func (s *Service) generateExtensions() ([]compute.VirtualMachineScaleSetExtension, error) {
 	extensions := make([]compute.VirtualMachineScaleSetExtension, len(s.Scope.VMSSExtensionSpecs()))
 	for i, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
 		extensionSpec := extensionSpec
-		extensions[i] = compute.VirtualMachineScaleSetExtension{
-			Name: &extensionSpec.Name,
-			VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
-				Publisher:          to.StringPtr(extensionSpec.Publisher),
-				Type:               to.StringPtr(extensionSpec.Name),
-				TypeHandlerVersion: to.StringPtr(extensionSpec.Version),
-				Settings:           nil,
-				ProtectedSettings:  extensionSpec.ProtectedSettings,
-			},
+		parameters, err := extensionSpec.Parameters(nil)
+		if err != nil {
+			return nil, err
 		}
+		vmssextension, ok := parameters.(compute.VirtualMachineScaleSetExtension)
+		if !ok {
+			return nil, errors.Errorf("%T is not a compute.VirtualMachineScaleSetExtension", parameters)
+		}
+		extensions[i] = vmssextension
 	}
-	return extensions
+
+	return extensions, nil
 }
 
 // generateStorageProfile generates a pointer to a compute.VirtualMachineScaleSetStorageProfile which can utilized for VM creation.

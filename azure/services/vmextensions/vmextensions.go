@@ -19,10 +19,11 @@ package vmextensions
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -30,22 +31,23 @@ const serviceName = "vmextensions"
 
 // VMExtensionScope defines the scope interface for a vm extension service.
 type VMExtensionScope interface {
-	azure.ClusterDescriber
-	VMExtensionSpecs() []azure.ExtensionSpec
-	SetBootstrapConditions(context.Context, string, string) error
+	azure.Authorizer
+	azure.AsyncStatusUpdater
+	VMExtensionSpecs() []azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope VMExtensionScope
-	client
+	async.Reconciler
 }
 
 // New creates a new vm extension service.
 func New(scope VMExtensionScope) *Service {
+	client := newClient(scope)
 	return &Service{
-		Scope:  scope,
-		client: newClient(scope),
+		Scope:      scope,
+		Reconciler: async.New(scope, client, client),
 	}
 }
 
@@ -56,47 +58,41 @@ func (s *Service) Name() string {
 
 // Reconcile creates or updates the VM extension.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "vmextensions.Service.Reconcile")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "vmextensions.Service.Reconcile")
 	defer done()
 
-	for _, extensionSpec := range s.Scope.VMExtensionSpecs() {
-		if existing, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.VMName, extensionSpec.Name); err == nil {
-			// check the extension status and set the associated conditions.
-			if retErr := s.Scope.SetBootstrapConditions(ctx, to.String(existing.ProvisioningState), extensionSpec.Name); retErr != nil {
-				return retErr
-			}
-			// if the extension already exists, do not update it.
-			continue
-		} else if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to get vm extension %s on vm %s", extensionSpec.Name, extensionSpec.VMName)
-		}
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	defer cancel()
 
-		log.V(2).Info("creating VM extension", "vm extension", extensionSpec.Name)
-		err := s.client.CreateOrUpdateAsync(
-			ctx,
-			s.Scope.ResourceGroup(),
-			extensionSpec.VMName,
-			extensionSpec.Name,
-			compute.VirtualMachineExtension{
-				VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
-					Publisher:          to.StringPtr(extensionSpec.Publisher),
-					Type:               to.StringPtr(extensionSpec.Name),
-					TypeHandlerVersion: to.StringPtr(extensionSpec.Version),
-					Settings:           nil,
-					ProtectedSettings:  extensionSpec.ProtectedSettings,
-				},
-				Location: to.StringPtr(s.Scope.Location()),
-			},
-		)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create VM extension %s on VM %s in resource group %s", extensionSpec.Name, extensionSpec.VMName, s.Scope.ResourceGroup())
-		}
-		log.V(2).Info("successfully created VM extension", "vm extension", extensionSpec.Name)
+	specs := s.Scope.VMExtensionSpecs()
+	if len(specs) == 0 {
+		return nil
 	}
-	return nil
+
+	// We go through the list of ExtensionSpecs to reconcile each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
+	var resultErr error
+	for _, extensionSpec := range specs {
+		_, err := s.CreateResource(ctx, extensionSpec, serviceName)
+		if err != nil {
+			if !azure.IsOperationNotDoneError(err) || resultErr == nil {
+				resultErr = err
+			}
+		}
+	}
+
+	if azure.IsOperationNotDoneError(resultErr) {
+		resultErr = errors.Wrapf(resultErr, "extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM")
+	} else if resultErr != nil {
+		resultErr = errors.Wrapf(resultErr, "extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more")
+	}
+
+	s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, resultErr)
+	return resultErr
 }
 
-// Delete is a no-op. Extensions will be deleted as part of VM deletion.
+// Delete is a no-op. VM Extensions will be deleted as part of VM deletion.
 func (s *Service) Delete(_ context.Context) error {
 	return nil
 }

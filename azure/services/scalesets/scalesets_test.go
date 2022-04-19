@@ -221,6 +221,7 @@ func TestReconcileVMSS(t *testing.T) {
 
 				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
 				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
 		{
@@ -234,6 +235,7 @@ func TestReconcileVMSS(t *testing.T) {
 
 				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
 				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
 		{
@@ -576,6 +578,7 @@ func TestDeleteVMSS(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-existing-rg", "my-existing-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.DeleteLongRunningOperationState("my-existing-vmss", serviceName)
+				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
 		{
@@ -1218,15 +1221,18 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 	s.Location().AnyTimes().Return("test-location")
 	s.ClusterName().Return("my-cluster")
 	s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
-	s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
-		{
-			Name:      "someExtension",
-			VMName:    "my-vmss",
-			Publisher: "somePublisher",
-			Version:   "someVersion",
-			ProtectedSettings: map[string]string{
-				"commandToExecute": "echo hello",
+	s.VMSSExtensionSpecs().Return([]azure.ResourceSpecGetter{
+		&VMSSExtensionSpec{
+			ExtensionSpec: azure.ExtensionSpec{
+				Name:      "someExtension",
+				VMName:    "my-vmss",
+				Publisher: "somePublisher",
+				Version:   "someVersion",
+				ProtectedSettings: map[string]string{
+					"commandToExecute": "echo hello",
+				},
 			},
+			ResourceGroup: "my-rg",
 		},
 	}).AnyTimes()
 }
