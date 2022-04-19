@@ -33,15 +33,9 @@ const (
 	retryBackoffSteps           = 3
 )
 
-// retryWithExponentialBackOff retries the function until it returns nil,
-// or until the number of attempts (steps) has reached the maximum value.
-func retryWithExponentialBackOff(fn func() error) error {
-	backoff := wait.Backoff{
-		Duration: retryBackoffInitialDuration,
-		Factor:   retryBackoffFactor,
-		Jitter:   retryBackoffJitter,
-		Steps:    retryBackoffSteps,
-	}
+// retryWithTimeout retries the function until it returns true,
+// or a timeout is reached.
+func retryWithTimeout(interval, timeout time.Duration, fn func() error) error {
 	retryFn := func(fn func() error) func() (bool, error) {
 		return func() (bool, error) {
 			err := fn()
@@ -51,5 +45,5 @@ func retryWithExponentialBackOff(fn func() error) error {
 			return false, err
 		}
 	}
-	return wait.ExponentialBackoff(backoff, retryFn(fn))
+	return wait.PollImmediate(interval, timeout, retryFn(fn))
 }
