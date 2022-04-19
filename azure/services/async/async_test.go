@@ -120,8 +120,33 @@ func TestProcessOngoingOperation(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
 				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
-				s.DeleteLongRunningOperationState("test-resource", "test-service")
 				c.Result(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{}), infrav1.DeleteFuture).Return(&fakeExistingResource, nil)
+				s.DeleteLongRunningOperationState("test-resource", "test-service")
+			},
+		},
+		{
+			name:           "resource was deleted by an external process",
+			expectedError:  fakeNotFoundError.Error(),
+			expectedResult: nil,
+			resourceName:   "test-resource",
+			serviceName:    "test-service",
+			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
+				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
+				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
+				c.Result(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{}), infrav1.DeleteFuture).Return(nil, fakeNotFoundError)
+				s.DeleteLongRunningOperationState("test-resource", "test-service")
+			},
+		},
+		{
+			name:           "failed to get resulting resource",
+			expectedError:  fakeInternalError.Error(),
+			expectedResult: nil,
+			resourceName:   "test-resource",
+			serviceName:    "test-service",
+			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
+				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
+				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
+				c.Result(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{}), infrav1.DeleteFuture).Return(nil, fakeInternalError)
 			},
 		},
 	}

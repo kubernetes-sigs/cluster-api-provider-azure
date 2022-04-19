@@ -79,7 +79,10 @@ func processOngoingOperation(ctx context.Context, scope FutureScope, client Futu
 	// Resource has been created/deleted/updated.
 	log.V(2).Info("long running operation has completed", "service", serviceName, "resource", resourceName)
 	result, err = client.Result(ctx, sdkFuture, future.Type)
-	if err == nil {
+	if err == nil || azure.ResourceNotFound(err) {
+		// Once we have the result, we can delete the long running operation state.
+		// If the resource is not found, we also reset the long-running operation state so we can attempt to create it again.
+		// This can happen if the resource was deleted by another process before we could get the result.
 		scope.DeleteLongRunningOperationState(resourceName, serviceName)
 	}
 	return result, err
