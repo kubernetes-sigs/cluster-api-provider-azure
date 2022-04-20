@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -47,6 +48,11 @@ import (
 
 // AzureLogCollector collects logs from a CAPZ workload cluster.
 type AzureLogCollector struct{}
+
+const (
+	collectLogInterval = 3 * time.Second
+	collectLogTimeout  = 1 * time.Minute
+)
 
 var _ framework.ClusterLogCollector = &AzureLogCollector{}
 
@@ -118,18 +124,22 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
 func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
-	Logf("INFO: Collecting logs for node %s in cluster %s in namespace %s\n", hostname, cluster.Name, cluster.Namespace)
+	nodeOSType := "Linux"
+	if isWindows {
+		nodeOSType = "Windows"
+	}
+	Logf("INFO: Collecting logs for %s node %s in cluster %s in namespace %s\n", nodeOSType, hostname, cluster.Name, cluster.Namespace)
 
 	controlPlaneEndpoint := cluster.Spec.ControlPlaneEndpoint.Host
 
 	execToPathFn := func(outputFileName, command string, args ...string) func() error {
 		return func() error {
-			f, err := fileOnHost(filepath.Join(outputPath, outputFileName))
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			return retryWithExponentialBackOff(func() error {
+			return retryWithTimeout(collectLogInterval, collectLogTimeout, func() error {
+				f, err := fileOnHost(filepath.Join(outputPath, outputFileName))
+				if err != nil {
+					return err
+				}
+				defer f.Close()
 				return execOnHost(controlPlaneEndpoint, hostname, sshPort, f, command, args...)
 			})
 		}
