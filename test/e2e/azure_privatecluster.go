@@ -287,12 +287,12 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 		{
 			Name: pointer.StringPtr("allow_vnet_outbound"),
 			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-				Description:              pointer.StringPtr("Allow Outbound traffic inside the VNet"),
+				Description:              pointer.StringPtr("Allow Outbound traffic to the load balancer"),
 				SourcePortRange:          pointer.StringPtr("*"),
-				DestinationPortRange:     pointer.StringPtr("*"),
+				DestinationPortRange:     pointer.StringPtr("6443"),
 				SourceAddressPrefix:      pointer.StringPtr("*"),
-				DestinationAddressPrefix: pointer.StringPtr("VirtualNetwork"),
-				Protocol:                 network.SecurityRuleProtocolAsterisk,
+				DestinationAddressPrefix: pointer.StringPtr(fmt.Sprintf("AzureCloud.%s", os.Getenv(AzureLocation))),
+				Protocol:                 network.SecurityRuleProtocolTCP,
 				Access:                   network.SecurityRuleAccessAllow,
 				Direction:                network.SecurityRuleDirectionOutbound,
 				Priority:                 pointer.Int32Ptr(2300),
