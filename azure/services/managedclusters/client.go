@@ -60,12 +60,12 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, name string) 
 	return ac.managedclusters.Get(ctx, resourceGroupName, name)
 }
 
-// GetCredentials fetches the admin kubeconfig for a managed cluster.
+// GetCredentials fetches a user kubeconfig for a managed cluster.
 func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, name string) ([]byte, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.AzureClient.GetCredentials")
 	defer done()
 
-	credentialList, err := ac.managedclusters.ListClusterAdminCredentials(ctx, resourceGroupName, name, "")
+	credentialList, err := ac.managedclusters.ListClusterUserCredentials(ctx, resourceGroupName, name, "")
 	if err != nil {
 		return nil, err
 	}
