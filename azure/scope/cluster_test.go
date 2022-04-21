@@ -42,9 +42,20 @@ import (
 
 func specToString(spec azure.ResourceSpecGetter) string {
 	var sb strings.Builder
-	sb.WriteString("[ ")
+	sb.WriteString("{ ")
 	sb.WriteString(fmt.Sprintf("%+v ", spec))
+	sb.WriteString("}")
+	return sb.String()
+}
+
+func specArrayToString(specs []azure.ResourceSpecGetter) string {
+	var sb strings.Builder
+	sb.WriteString("[\n")
+	for _, spec := range specs {
+		sb.WriteString(fmt.Sprintf("\t%+v\n", specToString(spec)))
+	}
 	sb.WriteString("]")
+
 	return sb.String()
 }
 

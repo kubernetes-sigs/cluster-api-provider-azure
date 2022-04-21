@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -317,13 +318,17 @@ func (m *MachineScope) HasSystemAssignedIdentity() bool {
 	return m.AzureMachine.Spec.Identity == infrav1.VMIdentitySystemAssigned
 }
 
-// VMExtensionSpecs returns the vm extension specs.
-func (m *MachineScope) VMExtensionSpecs() []azure.ExtensionSpec {
-	var extensionSpecs = []azure.ExtensionSpec{}
-	extensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment(), m.Name())
+// VMExtensionSpecs returns the VM extension specs.
+func (m *MachineScope) VMExtensionSpecs() []azure.ResourceSpecGetter {
+	var extensionSpecs = []azure.ResourceSpecGetter{}
+	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment(), m.Name())
 
-	if extensionSpec != nil {
-		extensionSpecs = append(extensionSpecs, *extensionSpec)
+	if bootstrapExtensionSpec != nil {
+		extensionSpecs = append(extensionSpecs, &vmextensions.VMExtensionSpec{
+			ExtensionSpec: *bootstrapExtensionSpec,
+			ResourceGroup: m.ResourceGroup(),
+			Location:      m.Location(),
+		})
 	}
 
 	return extensionSpecs

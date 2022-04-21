@@ -446,10 +446,10 @@ func (mr *MockScaleSetScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interf
 }
 
 // VMSSExtensionSpecs mocks base method.
-func (m *MockScaleSetScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
+func (m *MockScaleSetScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VMSSExtensionSpecs")
-	ret0, _ := ret[0].([]azure.ExtensionSpec)
+	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
 	return ret0
 }
 

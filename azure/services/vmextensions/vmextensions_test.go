@@ -21,179 +21,101 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions/mock_vmextensions"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+)
+
+var (
+	extensionSpec1 = VMExtensionSpec{
+		ExtensionSpec: azure.ExtensionSpec{
+			Name:      "my-extension-1",
+			VMName:    "my-vm",
+			Publisher: "some-publisher",
+			Version:   "1.0",
+		},
+		ResourceGroup: "my-rg",
+		Location:      "test-location",
+	}
+
+	extensionSpec2 = VMExtensionSpec{
+		ExtensionSpec: azure.ExtensionSpec{
+			Name:      "my-extension-2",
+			VMName:    "my-vm",
+			Publisher: "other-publisher",
+			Version:   "2.0",
+		},
+		ResourceGroup: "my-rg",
+		Location:      "test-location",
+	}
+
+	internalError        = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	extensionFailedError = errors.Wrapf(internalError, "extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more")
+
+	notDoneError          = azure.NewOperationNotDoneError(&infrav1.Future{})
+	extensionNotDoneError = errors.Wrapf(notDoneError, "extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM")
 )
 
 func TestReconcileVMExtension(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder)
+		expect        func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "extension is in succeeded state",
 			expectedError: "",
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
-				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
-					{
-						Name:      "my-extension-1",
-						VMName:    "my-vm",
-						Publisher: "some-publisher",
-						Version:   "1.0",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("test-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").Return(compute.VirtualMachineExtension{
-					VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
-						Publisher:         to.StringPtr("some-publisher"),
-						Type:              to.StringPtr("my-extension-1"),
-						ProvisioningState: to.StringPtr(string(compute.ProvisioningStateSucceeded)),
-					},
-					ID:   to.StringPtr("fake/id"),
-					Name: to.StringPtr("my-extension-1"),
-				}, nil)
-				s.SetBootstrapConditions(gomockinternal.AContext(), string(compute.ProvisioningStateSucceeded), "my-extension-1")
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1})
+				r.CreateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "extension is in failed state",
-			expectedError: "",
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
-				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
-					{
-						Name:      "my-extension-1",
-						VMName:    "my-vm",
-						Publisher: "some-publisher",
-						Version:   "1.0",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("test-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").Return(compute.VirtualMachineExtension{
-					VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
-						Publisher:         to.StringPtr("some-publisher"),
-						Type:              to.StringPtr("my-extension-1"),
-						ProvisioningState: to.StringPtr(string(compute.ProvisioningStateFailed)),
-					},
-					ID:   to.StringPtr("fake/id"),
-					Name: to.StringPtr("my-extension-1"),
-				}, nil)
-				s.SetBootstrapConditions(gomockinternal.AContext(), string(compute.ProvisioningStateFailed), "my-extension-1")
+			expectedError: extensionFailedError.Error(),
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1})
+				r.CreateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, internalError)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, gomockinternal.ErrStrEq(extensionFailedError.Error()))
 			},
 		},
 		{
 			name:          "extension is still creating",
-			expectedError: "",
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
-				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
-					{
-						Name:      "my-extension-1",
-						VMName:    "my-vm",
-						Publisher: "some-publisher",
-						Version:   "1.0",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("test-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").Return(compute.VirtualMachineExtension{
-					VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
-						Publisher:         to.StringPtr("some-publisher"),
-						Type:              to.StringPtr("my-extension-1"),
-						ProvisioningState: to.StringPtr(string(compute.ProvisioningStateCreating)),
-					},
-					ID:   to.StringPtr("fake/id"),
-					Name: to.StringPtr("my-extension-1"),
-				}, nil)
-				s.SetBootstrapConditions(gomockinternal.AContext(), string(compute.ProvisioningStateCreating), "my-extension-1")
+			expectedError: extensionNotDoneError.Error(),
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1})
+				r.CreateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, notDoneError)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, gomockinternal.ErrStrEq(extensionNotDoneError.Error()))
 			},
 		},
 		{
 			name:          "reconcile multiple extensions",
 			expectedError: "",
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
-				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
-					{
-						Name:      "my-extension-1",
-						VMName:    "my-vm",
-						Publisher: "some-publisher",
-						Version:   "1.0",
-					},
-					{
-						Name:      "other-extension",
-						VMName:    "my-vm",
-						Publisher: "other-publisher",
-						Version:   "2.0",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("test-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
-					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension").
-					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1, &extensionSpec2})
+				r.CreateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, nil)
+				r.CreateResource(gomockinternal.AContext(), &extensionSpec2, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
 		{
-			name:          "error getting the extension",
-			expectedError: "failed to get vm extension my-extension-1 on vm my-vm: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
-				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
-					{
-						Name:      "my-extension-1",
-						VMName:    "my-vm",
-						Publisher: "some-publisher",
-						Version:   "1.0",
-					},
-					{
-						Name:      "other-extension",
-						VMName:    "my-vm",
-						Publisher: "other-publisher",
-						Version:   "2.0",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("test-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
-					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-			},
-		},
-		{
-			name:          "error creating the extension",
-			expectedError: "failed to create VM extension my-extension-1 on VM my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
-				s.VMExtensionSpecs().Return([]azure.ExtensionSpec{
-					{
-						Name:      "my-extension-1",
-						VMName:    "my-vm",
-						Publisher: "some-publisher",
-						Version:   "1.0",
-					},
-					{
-						Name:      "other-extension",
-						VMName:    "my-vm",
-						Publisher: "other-publisher",
-						Version:   "2.0",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.Location().AnyTimes().Return("test-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
-					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			name:          "error creating the first extension",
+			expectedError: extensionFailedError.Error(),
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1, &extensionSpec2})
+				r.CreateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, internalError)
+				r.CreateResource(gomockinternal.AContext(), &extensionSpec2, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, gomockinternal.ErrStrEq(extensionFailedError.Error()))
 			},
 		},
 	}
-
 	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
@@ -203,13 +125,13 @@ func TestReconcileVMExtension(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_vmextensions.NewMockVMExtensionScope(mockCtrl)
-			clientMock := mock_vmextensions.NewMockclient(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
 			s := &Service{
-				Scope:  scopeMock,
-				client: clientMock,
+				Scope:      scopeMock,
+				Reconciler: asyncMock,
 			}
 
 			err := s.Reconcile(context.TODO())

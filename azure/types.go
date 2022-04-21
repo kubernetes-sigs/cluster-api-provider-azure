@@ -82,7 +82,7 @@ type TagsSpec struct {
 	Annotation string
 }
 
-// ExtensionSpec defines the specification for a VM or VMScaleSet extension.
+// ExtensionSpec defines the specification for a VM or VMSS extension.
 type ExtensionSpec struct {
 	Name              string
 	VMName            string

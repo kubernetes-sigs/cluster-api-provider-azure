@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmssextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -48,7 +47,6 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 		services: []azure.ServiceReconciler{
 			scalesets.New(machinePoolScope, cache),
 			roleassignments.New(machinePoolScope),
-			vmssextensions.New(machinePoolScope),
 		},
 		skuCache: cache,
 	}, nil

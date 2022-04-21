@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -624,7 +625,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 	tests := []struct {
 		name             string
 		machinePoolScope MachinePoolScope
-		want             []azure.ExtensionSpec
+		want             []azure.ResourceSpecGetter
 	}{
 		{
 			name: "If OS type is Linux and cloud is AzurePublicCloud, it returns ExtensionSpec",
@@ -650,17 +651,25 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+						},
+					},
 				},
 			},
-			want: []azure.ExtensionSpec{
-				{
-					Name:      "CAPZ.Linux.Bootstrapping",
-					VMName:    "machinepool-name",
-					Publisher: "Microsoft.Azure.ContainerUpstream",
-					Version:   "1.0",
-					ProtectedSettings: map[string]string{
-						"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+			want: []azure.ResourceSpecGetter{
+				&scalesets.VMSSExtensionSpec{
+					ExtensionSpec: azure.ExtensionSpec{
+						Name:      "CAPZ.Linux.Bootstrapping",
+						VMName:    "machinepool-name",
+						Publisher: "Microsoft.Azure.ContainerUpstream",
+						Version:   "1.0",
+						ProtectedSettings: map[string]string{
+							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+						},
 					},
+					ResourceGroup: "my-rg",
 				},
 			},
 		},
@@ -688,9 +697,14 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+						},
+					},
 				},
 			},
-			want: []azure.ExtensionSpec{},
+			want: []azure.ResourceSpecGetter{},
 		},
 		{
 			name: "If OS type is Windows and cloud is AzurePublicCloud, it returns ExtensionSpec",
@@ -717,18 +731,26 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+						},
+					},
 				},
 			},
-			want: []azure.ExtensionSpec{
-				{
-					Name: "CAPZ.Windows.Bootstrapping",
-					// Note: machine pool names longer than 9 characters get truncated. See MachinePoolScope::Name() for more details.
-					VMName:    "winpool",
-					Publisher: "Microsoft.Azure.ContainerUpstream",
-					Version:   "1.0",
-					ProtectedSettings: map[string]string{
-						"commandToExecute": azure.WindowsBootstrapExtensionCommand,
+			want: []azure.ResourceSpecGetter{
+				&scalesets.VMSSExtensionSpec{
+					ExtensionSpec: azure.ExtensionSpec{
+						Name: "CAPZ.Windows.Bootstrapping",
+						// Note: machine pool names longer than 9 characters get truncated. See MachinePoolScope::Name() for more details.
+						VMName:    "winpool",
+						Publisher: "Microsoft.Azure.ContainerUpstream",
+						Version:   "1.0",
+						ProtectedSettings: map[string]string{
+							"commandToExecute": azure.WindowsBootstrapExtensionCommand,
+						},
 					},
+					ResourceGroup: "my-rg",
 				},
 			},
 		},
@@ -756,9 +778,14 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+						},
+					},
 				},
 			},
-			want: []azure.ExtensionSpec{},
+			want: []azure.ResourceSpecGetter{},
 		},
 		{
 			name: "If OS type is not Linux or Windows and cloud is AzurePublicCloud, it returns empty",
@@ -784,9 +811,14 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+						},
+					},
 				},
 			},
-			want: []azure.ExtensionSpec{},
+			want: []azure.ResourceSpecGetter{},
 		},
 		{
 			name: "If OS type is not Windows or Linux and cloud is not AzurePublicCloud, it returns empty",
@@ -812,15 +844,20 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+						},
+					},
 				},
 			},
-			want: []azure.ExtensionSpec{},
+			want: []azure.ResourceSpecGetter{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.machinePoolScope.VMSSExtensionSpecs(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("VMSSExtensionSpecs() = %v, want %v", got, tt.want)
+				t.Errorf("VMSSExtensionSpecs() = \n%s, want \n%s", specArrayToString(got), specArrayToString(tt.want))
 			}
 		})
 	}

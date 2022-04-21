@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	machinepool "sigs.k8s.io/cluster-api-provider-azure/azure/scope/strategies/machinepool_deployments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -598,12 +599,15 @@ func (m *MachinePoolScope) HasSystemAssignedIdentity() bool {
 }
 
 // VMSSExtensionSpecs returns the vmss extension specs.
-func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
-	var extensionSpecs = []azure.ExtensionSpec{}
-	extensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name())
+func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
+	var extensionSpecs = []azure.ResourceSpecGetter{}
+	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name())
 
-	if extensionSpec != nil {
-		extensionSpecs = append(extensionSpecs, *extensionSpec)
+	if bootstrapExtensionSpec != nil {
+		extensionSpecs = append(extensionSpecs, &scalesets.VMSSExtensionSpec{
+			ExtensionSpec: *bootstrapExtensionSpec,
+			ResourceGroup: m.ResourceGroup(),
+		})
 	}
 
 	return extensionSpecs
