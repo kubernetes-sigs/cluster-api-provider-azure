@@ -9,6 +9,7 @@ resources:
   - cni-resource-set.yaml
   - ../../../azure-cluster-identity
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
+  - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
@@ -18,6 +19,7 @@ patchesStrategicMerge:
   - ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
   - ../../../flavors/base-windows-containerd/kubeadm-control-plane.yaml
   - ../patches/windows-containerd-patch.yaml
+  - ../patches/windows-enable-containerd-logger.yaml
   - ../patches/windows-csi-proxy-enabled.yaml
   - ../patches/windows-server-version.yaml
 patches:
@@ -37,6 +39,9 @@ configMapGenerator:
   - name: csi-proxy-addon
     files:
       - csi-proxy=../../../addons/windows/csi-proxy/csi-proxy.yaml
+  - name: containerd-logger-${CLUSTER_NAME}
+    files:
+      - containerd-windows-logger=../../../addons/windows/containerd-logging/containerd-logger.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:
