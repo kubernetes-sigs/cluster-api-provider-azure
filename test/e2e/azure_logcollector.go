@@ -108,14 +108,19 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 	}
 
 	for i, instance := range mp.Spec.ProviderIDList {
-		hostname := mp.Status.NodeRefs[i].Name
+		if mp.Status.NodeRefs != nil && len(mp.Status.NodeRefs) >= (i+1) {
+			hostname := mp.Status.NodeRefs[i].Name
 
-		if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
-			errors = append(errors, err)
-		}
+			if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
+				errors = append(errors, err)
+			}
 
-		if err := collectVMSSBootLog(ctx, instance, filepath.Join(outputPath, hostname)); err != nil {
-			errors = append(errors, err)
+			if err := collectVMSSBootLog(ctx, instance, filepath.Join(outputPath, hostname)); err != nil {
+				errors = append(errors, err)
+			}
+		} else {
+			Logf("MachinePool instance %s does not have a corresponding NodeRef", instance)
+			Logf("Skipping log collection for MachinePool instance %s", instance)
 		}
 	}
 
@@ -128,7 +133,7 @@ func collectLogsFromNode(ctx context.Context, managementClusterClient client.Cli
 	if isWindows {
 		nodeOSType = "Windows"
 	}
-	Logf("INFO: Collecting logs for %s node %s in cluster %s in namespace %s\n", nodeOSType, hostname, cluster.Name, cluster.Namespace)
+	Logf("Collecting logs for %s node %s in cluster %s in namespace %s\n", nodeOSType, hostname, cluster.Name, cluster.Namespace)
 
 	controlPlaneEndpoint := cluster.Spec.ControlPlaneEndpoint.Host
 
@@ -165,7 +170,7 @@ func getHostname(m *clusterv1.Machine, isWindows bool) string {
 		if len(m.Status.Addresses) > 0 {
 			hostname = m.Status.Addresses[0].Address
 		} else {
-			Logf("INFO: Unable to collect logs as node doesn't have addresses")
+			Logf("Unable to collect logs as node doesn't have addresses")
 		}
 	}
 	return hostname
@@ -342,7 +347,7 @@ func windowsNetworkLogs(execToPathFn func(outputFileName string, command string,
 
 // collectVMBootLog collects boot logs of the vm by using azure boot diagnostics.
 func collectVMBootLog(ctx context.Context, am *v1beta1.AzureMachine, outputPath string) error {
-	Logf("INFO: Collecting boot logs for AzureMachine %s\n", am.GetName())
+	Logf("Collecting boot logs for AzureMachine %s\n", am.GetName())
 
 	resourceId := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
 	resource, err := autorest.ParseResourceID(resourceId)
@@ -380,7 +385,7 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 		return errors.Wrap(err, "failed to parse resource id")
 	}
 
-	Logf("INFO: Collecting boot logs for VMSS instance %s of scale set %s\n", instanceId, resource.ResourceName)
+	Logf("Collecting boot logs for VMSS instance %s of scale set %s\n", instanceId, resource.ResourceName)
 
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
