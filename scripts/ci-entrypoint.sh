@@ -98,7 +98,7 @@ select_cluster_template() {
 
     if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
         if [[ "${CLUSTER_TEMPLATE}" =~ "prow" ]]; then
-            export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-machine-pool}"
+            export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-machine-pool-windows}"
         elif [[ "${CLUSTER_TEMPLATE}" =~ "custom-builds" ]]; then
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
         fi

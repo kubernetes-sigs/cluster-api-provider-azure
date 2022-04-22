@@ -321,7 +321,7 @@ var _ = Describe("Workload cluster creation", func() {
 					ClusterctlConfigPath:     clusterctlConfigPath,
 					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
 					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-					Flavor:                   "machine-pool",
+					Flavor:                   "machine-pool-windows",
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
