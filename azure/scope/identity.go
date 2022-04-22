@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 
+	aadpodid "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity"
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -87,10 +88,6 @@ func NewAzureClusterCredentialsProvider(ctx context.Context, kubeClient client.C
 		return nil, errors.Errorf("failed to retrieve AzureClusterIdentity external object %q/%q: %v", key.Namespace, key.Name, err)
 	}
 
-	if identity.Spec.Type != infrav1.ServicePrincipal {
-		return nil, errors.New("AzureClusterIdentity is not of type Service Principal")
-	}
-
 	return &AzureClusterCredentialsProvider{
 		AzureCredentialsProvider{
 			Client:   kubeClient,
@@ -123,10 +120,6 @@ func NewManagedControlPlaneCredentialsProvider(ctx context.Context, kubeClient c
 		return nil, errors.Errorf("failed to retrieve AzureClusterIdentity external object %q/%q: %v", key.Namespace, key.Name, err)
 	}
 
-	if identity.Spec.Type != infrav1.ServicePrincipal {
-		return nil, errors.New("AzureClusterIdentity is not of type Service Principal")
-	}
-
 	return &ManagedControlPlaneCredentialsProvider{
 		AzureCredentialsProvider{
 			Client:   kubeClient,
@@ -145,7 +138,7 @@ func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Conte
 func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
 	var spt *adal.ServicePrincipalToken
 	switch p.Identity.Spec.Type {
-	case infrav1.ServicePrincipal:
+	case infrav1.ServicePrincipal, infrav1.ServicePrincipalCertificate:
 		if err := createAzureIdentityWithBindings(ctx, p.Identity, resourceManagerEndpoint, activeDirectoryEndpoint, clusterMeta, p.Client); err != nil {
 			return nil, err
 		}
@@ -283,13 +276,15 @@ func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1
 
 func getAzureIdentityType(identity *infrav1.AzureClusterIdentity) (aadpodv1.IdentityType, error) {
 	switch identity.Spec.Type {
-	case infrav1.ServicePrincipal:
-		return aadpodv1.ServicePrincipal, nil
 	case infrav1.UserAssignedMSI:
 		return aadpodv1.UserAssignedMSI, nil
+	case infrav1.ServicePrincipal:
+		return aadpodv1.ServicePrincipal, nil
+	case infrav1.ServicePrincipalCertificate:
+		return aadpodv1.IdentityType(aadpodid.ServicePrincipalCertificate), nil
 	}
 
-	return 0, errors.New("AzureIdentity does not have a vaild type")
+	return -1, errors.New("AzureIdentity does not have a valid type")
 }
 
 // IsClusterNamespaceAllowed indicates if the cluster namespace is allowed.
