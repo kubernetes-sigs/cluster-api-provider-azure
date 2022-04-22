@@ -238,12 +238,12 @@ func windowsK8sLogs(execToPathFn func(outputFileName string, command string, arg
 			"Get-WinEvent", "-LogName Microsoft-Windows-Hyper-V-Compute-Operational | Select-Object -Property TimeCreated, Id, LevelDisplayName, Message | Sort-Object TimeCreated | Format-Table -Wrap -Autosize",
 		),
 		execToPathFn(
-			"docker.log",
-			"get-eventlog", "-LogName Application -Source Docker | Select-Object Index, TimeGenerated, EntryType, Message | Sort-Object Index | Format-Table -Wrap -Autosize",
+			"containers.log",
+			"ctr.exe", "-n k8s.io containers list",
 		),
 		execToPathFn(
-			"containers.log",
-			"docker", "ps -a",
+			"hcsshim-taskss.log",
+			"ctr.exe", "-n k8s.io tasks list",
 		),
 		execToPathFn(
 			"containers-hcs.log",
