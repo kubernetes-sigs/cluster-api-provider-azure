@@ -33,17 +33,20 @@ const (
 	retryBackoffSteps           = 3
 )
 
-// retryWithTimeout retries the function until it returns true,
-// or a timeout is reached.
+// retryWithTimeout retries a function that returns an error until a timeout is reached
 func retryWithTimeout(interval, timeout time.Duration, fn func() error) error {
-	retryFn := func(fn func() error) func() (bool, error) {
-		return func() (bool, error) {
-			err := fn()
-			if err == nil {
-				return true, nil
-			}
-			return false, err
+	var pollError error
+	err := wait.PollImmediate(collectLogInterval, collectLogTimeout, func() (bool, error) {
+		pollError = nil
+		err := fn()
+		if err != nil {
+			pollError = err
+			return false, nil
 		}
+		return true, nil
+	})
+	if pollError != nil {
+		return pollError
 	}
-	return wait.PollImmediate(interval, timeout, retryFn(fn))
+	return err
 }
