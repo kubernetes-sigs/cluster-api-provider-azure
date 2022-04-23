@@ -123,7 +123,7 @@ Alternatively, you can also use the `system-assigned-identity` flavor to build a
 
 ### Service Principal (not recommended)
 
-A service principal is an identity in AAD which is described by a tenant ID and client (or "app") ID. It can have one or more associated secrets or certificates. The set of these values will enable the holder to exchange the values for a JWT token to communicate with Azure. The user generally creates a service principal, saves the credentials, and then uses the credentials in applications. To read more about Service Principals and AD Applications see ["Application and service principal objects in Azure Active Directory"](https://azure.microsoft.com/en-us/documentation/articles/active-directory-application-objects/).
+A service principal is an identity in AAD which is described by a tenant ID and client (or "app") ID. It can have one or more associated secrets or certificates. The set of these values will enable the holder to exchange the values for a JWT token to communicate with Azure. The user generally creates a service principal, saves the credentials, and then uses the credentials in applications. To read more about Service Principals and AD Applications see ["Application and service principal objects in Azure Active Directory"](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals).
 
 <aside class="note warning">
 
