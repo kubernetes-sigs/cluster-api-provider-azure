@@ -2,7 +2,6 @@ namespace: default
 resources:
   - ../../../test/ci/prow
   - ../../../addons/metrics-server/metrics-server-resource-set.yaml
-  - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
 patchesStrategicMerge:
   - patches/machine-deployment-pr-version.yaml
   - patches/machine-deployment-pr-version-windows.yaml
@@ -10,7 +9,6 @@ patchesStrategicMerge:
   - ../../../test/ci/patches/machine-deployment-worker-counts.yaml
   - ../../../test/ci/patches/metrics-server-enabled-cluster.yaml
   - ../../../test/ci/patches/controller-manager-featuregates.yaml
-  - ../../../test/ci/patches/windows-containerd-enabled-cluster.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
@@ -40,9 +38,6 @@ configMapGenerator:
   - name: metrics-server-${CLUSTER_NAME}
     files:
       - metrics-server=../../../addons/metrics-server/metrics-server.yaml
-  - name: containerd-logger-${CLUSTER_NAME}
-    files:
-      - containerd-windows-logger=../../../addons/windows/containerd-logging/containerd-logger.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:
