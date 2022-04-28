@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	aadpodid "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity"
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -213,6 +214,36 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 			},
 		},
 		{
+			name: "create service principal with certificate identity",
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-identity",
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:         infrav1.ServicePrincipalCertificate,
+					ResourceID:   "my-resource-id",
+					ClientID:     "my-client-id",
+					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					TenantID:     "my-tenant-id",
+				},
+			},
+			identityType:            aadpodv1.IdentityType(aadpodid.ServicePrincipalCertificate),
+			resourceManagerEndpoint: "public-cloud-endpoint",
+			activeDirectoryEndpoint: "active-directory-endpoint",
+			clusterMeta: metav1.ObjectMeta{
+				Name:      "cluster-name",
+				Namespace: "my-namespace",
+			},
+			copiedIdentity: metav1.ObjectMeta{
+				Name:      "cluster-name-my-namespace-test-identity",
+				Namespace: "capz-system",
+			},
+			binding: metav1.ObjectMeta{
+				Name:      "cluster-name-my-namespace-test-identity-binding",
+				Namespace: "capz-system",
+			},
+		},
+		{
 			name: "invalid identity type",
 			identity: &infrav1.AzureClusterIdentity{
 				ObjectMeta: metav1.ObjectMeta{
@@ -226,7 +257,7 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 					TenantID:     "my-tenant-id",
 				},
 			},
-			identityType: 0,
+			identityType: -1,
 			expectedErr:  true,
 		},
 	}

@@ -422,18 +422,21 @@ const (
 )
 
 // IdentityType represents different types of identities.
-// +kubebuilder:validation:Enum=ServicePrincipal;ManualServicePrincipal;UserAssignedMSI
+// +kubebuilder:validation:Enum=ServicePrincipal;ManualServicePrincipal;ServicePrincipalCertificate
 type IdentityType string
 
 const (
 	// UserAssignedMSI represents a user-assigned identity.
 	UserAssignedMSI IdentityType = "UserAssignedMSI"
 
-	// ServicePrincipal represents a service principal.
+	// ServicePrincipal represents a service principal using a client password as secret.
 	ServicePrincipal IdentityType = "ServicePrincipal"
 
 	// ManualServicePrincipal represents a manual service principal.
 	ManualServicePrincipal IdentityType = "ManualServicePrincipal"
+
+	// ServicePrincipalCertificate represents a service principal using a certificate as secret.
+	ServicePrincipalCertificate IdentityType = "ServicePrincipalCertificate"
 )
 
 // OSDisk defines the operating system disk for a VM.
