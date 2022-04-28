@@ -238,11 +238,11 @@ func windowsK8sLogs(execToPathFn func(outputFileName string, command string, arg
 			"Get-WinEvent", "-LogName Microsoft-Windows-Hyper-V-Compute-Operational | Select-Object -Property TimeCreated, Id, LevelDisplayName, Message | Sort-Object TimeCreated | Format-Table -Wrap -Autosize",
 		),
 		execToPathFn(
-			"containers.log",
+			"containerd-containers.log",
 			"ctr.exe", "-n k8s.io containers list",
 		),
 		execToPathFn(
-			"hcsshim-taskss.log",
+			"containerd-tasks.log",
 			"ctr.exe", "-n k8s.io tasks list",
 		),
 		execToPathFn(
