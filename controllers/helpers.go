@@ -370,7 +370,7 @@ type CloudProviderConfig struct {
 	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
 	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
 	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
-	UserAssignedIdentityID       string `json:"userAssignedIdentityId,omitempty"`
+	UserAssignedIdentityID       string `json:"userAssignedIdentityID,omitempty"`
 	CloudProviderRateLimitConfig
 	BackOffConfig
 }
