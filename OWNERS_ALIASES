@@ -23,4 +23,5 @@ aliases:
     - shysank
   cluster-api-azure-reviewers:
     - jackfrancis
+    - Jont828
     - jsturtevant
