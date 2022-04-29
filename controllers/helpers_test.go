@@ -542,7 +542,7 @@ const (
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true,
-    "userAssignedIdentityId": "foobar"
+    "userAssignedIdentityID": "foobar"
 }`
 	userAssignedWorkerNodeCloudConfig = `{
     "cloud": "AzurePublicCloud",
@@ -561,7 +561,7 @@ const (
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true,
-    "userAssignedIdentityId": "foobar"
+    "userAssignedIdentityID": "foobar"
 }`
 	spCustomVnetControlPlaneCloudConfig = `{
     "cloud": "AzurePublicCloud",
