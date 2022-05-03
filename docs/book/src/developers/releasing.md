@@ -22,7 +22,7 @@
 - Create tag with git
   - `export RELEASE_TAG=v1.2.3` (the tag of the release to be cut)
   - `git tag -s ${RELEASE_TAG} -m "${RELEASE_TAG}"`
-  - `-s` creates a signed tag, you must have a GPG key [added to your GitHub account](https://docs.github.com/en/enterprise/2.16/user/github/authenticating-to-github/generating-a-new-gpg-key)
+  - `-s` creates a signed tag, you must have a GPG key [added to your GitHub account](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-new-gpg-key-to-your-github-account)
   - `git push upstream ${RELEASE_TAG}`
 
 This will automatically trigger a [Github Action](https://github.com/kubernetes-sigs/cluster-api-provider-azure/actions) to create a draft release.
