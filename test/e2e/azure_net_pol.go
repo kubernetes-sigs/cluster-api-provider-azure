@@ -44,7 +44,7 @@ const (
 	PolicyDir = "workloads/policies"
 )
 
-// AzureLBSpecInput is the input for AzureLBSpec.
+// AzureNetPolSpecInput is the input for AzureNetPolSpec.
 type AzureNetPolSpecInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 	Namespace             *corev1.Namespace
