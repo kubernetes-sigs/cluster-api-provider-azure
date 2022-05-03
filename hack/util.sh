@@ -31,7 +31,7 @@ capz::util::should_build_kubernetes() {
     if [[ -n "${TEST_K8S:-}" ]]; then
         echo "true" && return
     fi
-    # JOB_TYPE, REPO_OWNER, and REPO_NAME are enviornment variables set by a prow job -
+    # JOB_TYPE, REPO_OWNER, and REPO_NAME are environment variables set by a prow job -
     # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
     if [[ "${JOB_TYPE:-}" == "presubmit" ]] && [[ "${REPO_OWNER:-}/${REPO_NAME:-}" == "kubernetes/kubernetes" ]]; then
         echo "true" && return

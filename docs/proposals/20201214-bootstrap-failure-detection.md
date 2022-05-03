@@ -63,7 +63,7 @@ For more info see https://docs.microsoft.com/en-us/azure/service-bus-messaging/ 
 
 #### Pub Sub Cons:
 - Complicated, lots of additional moving pieces:
-- Might have to write our own OS-specific tools to consume bootstrap logs and publish them, and those tools would be installed by additional VM Extentions, or add'l cloud-init configuration
+- Might have to write our own OS-specific tools to consume bootstrap logs and publish them, and those tools would be installed by additional VM Extensions, or add'l cloud-init configuration
 - Add’l IaaS cost
 
 ### Option 3: Azure Custom Script Extensions
@@ -133,7 +133,7 @@ At a very high level, this is what we want our capz-named Azure VM Extension to 
   - Again, we assume using a common exit code for all failure states is acceptable for the initial scope of this work
 - Set appropriate AzureMachine (and possibly Machine?) conditions
 
-VM Boot Diagnostics should be used in conjunction with the extension. The VM extension provides a simple pass/fail signal that can be used by CAPZ to set conditions and indicate bootstrap status. Boot Diagnostics can provide a quick look at what went wrong to the user by displaying cloud-init logs without needing to SSH into the VM. In the future, boot diagnostics might even used to stream logs programatically at the AzureMachine level.
+VM Boot Diagnostics should be used in conjunction with the extension. The VM extension provides a simple pass/fail signal that can be used by CAPZ to set conditions and indicate bootstrap status. Boot Diagnostics can provide a quick look at what went wrong to the user by displaying cloud-init logs without needing to SSH into the VM. In the future, boot diagnostics might even used to stream logs programmatically at the AzureMachine level.
 
 
 ## Questions

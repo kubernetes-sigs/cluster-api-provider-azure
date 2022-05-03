@@ -42,7 +42,7 @@ const (
 	WaitingForClusterInfrastructureReason = "WaitingForClusterInfrastructure"
 	// WaitingForBootstrapDataReason used when machine is waiting for bootstrap data to be ready before proceeding.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
-	// BootstrapSucceededCondition reports the result of the execution of the boostrap data on the machine.
+	// BootstrapSucceededCondition reports the result of the execution of the bootstrap data on the machine.
 	BootstrapSucceededCondition clusterv1.ConditionType = "BootstrapSucceeded"
 	// BootstrapInProgressReason is used to indicate the bootstrap data has not finished executing.
 	BootstrapInProgressReason = "BootstrapInProgress"

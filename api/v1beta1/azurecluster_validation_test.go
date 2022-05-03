@@ -588,7 +588,7 @@ func TestValidateSubnetCIDR(t *testing.T) {
 			},
 		},
 		{
-			name:             "subnet cidr in atleast one vnet's range in case of multiple vnet cidr blocks",
+			name:             "subnet cidr in at least one vnet's range in case of multiple vnet cidr blocks",
 			vnetCidrBlocks:   []string{"10.0.0.0/8", "11.0.0.0/8"},
 			subnetCidrBlocks: []string{"10.1.0.0/16", "10.0.0.0/16", "11.1.0.0/16"},
 			wantErr:          false,

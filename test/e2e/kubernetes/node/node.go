@@ -63,7 +63,7 @@ func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (wi
 	kernalVersion := result.Items[0].Status.NodeInfo.KernelVersion
 	kernalVersions := strings.Split(kernalVersion, ".")
 	if len(kernalVersions) != 4 {
-		return windows.Unknown, fmt.Errorf("Not a valid Windows kernal version: %s", kernalVersion)
+		return windows.Unknown, fmt.Errorf("Not a valid Windows kernel version: %s", kernalVersion)
 	}
 
 	switch kernalVersions[2] {

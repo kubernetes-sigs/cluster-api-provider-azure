@@ -192,7 +192,7 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 				mockNodeGetter.EXPECT().GetNodeByProviderID(gomock2.AContext(), FakeProviderID).Return(nil, errors.New("boom"))
 				return nil, ampm
 			},
-			Err: "failed to to get node by providerID or object reference: boom",
+			Err: "failed to get node by providerID or object reference: boom",
 		},
 		{
 			Name: "should not mark AMPM ready if node is not ready",

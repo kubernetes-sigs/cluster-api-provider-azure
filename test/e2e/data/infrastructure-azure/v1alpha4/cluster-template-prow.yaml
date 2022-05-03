@@ -541,7 +541,7 @@ data:
     'BPFExtToServiceConnmark in BPF mode, control a 32bit\n                    mark
     that is set on connections from an external client to a local\n                    service.
     This mark allows us to control how packets of that connection\n                    are
-    routed within the host and how is routing intepreted by RPF\n                    check.
+    routed within the host and how is routing interpreted by RPF\n                    check.
     [Default: 0]'\n                  type: integer\n                bpfExternalServiceMode:\n
     \                 description: 'BPFExternalServiceMode in BPF mode, controls how
     connections\n                  from outside the cluster to services (node ports

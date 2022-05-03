@@ -281,7 +281,7 @@ func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
 	}
 
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrap(err, "failed to to get node by providerID or object reference")
+		return errors.Wrap(err, "failed to get node by providerID or object reference")
 	}
 
 	if node != nil {

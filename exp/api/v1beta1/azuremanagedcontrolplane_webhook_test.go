@@ -112,7 +112,7 @@ func TestValidatingWebhook(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name: "not following the kuberntes Version pattern",
+			name: "not following the Kubernetes Version pattern",
 			amcp: AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP: pointer.StringPtr("192.168.0.0"),
@@ -631,7 +631,6 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.18.0",
 					AADProfile: &AADProfile{
-
 						Managed: false,
 						AdminGroupObjectIDs: []string{
 							"616077a8-5db7-4c98-b856-b34619afg75h",

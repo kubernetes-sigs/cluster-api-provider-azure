@@ -101,7 +101,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
 	})
 
-	// Management clusters do not support Windows nodes becuase of cert manager
+	// Management clusters do not support Windows nodes because of cert manager
 	// We are using the capi specs located in test/e2e/data/infrastructure-azure/v1beta1 that only have linux nodes
 	// to act as the management cluster until Windows nodes are supported for management nodes
 	// Tracking support for cert manager: https://github.com/jetstack/cert-manager/issues/3606
