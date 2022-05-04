@@ -379,8 +379,7 @@ spec:
   selector: {}
   template:
     metadata:
-      labels:
-        windows-healthcheck: "true"
+      labels: {}
     spec:
       bootstrap:
         configRef:
