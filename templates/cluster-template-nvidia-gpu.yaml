@@ -357,13 +357,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -486,7 +487,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -498,7 +499,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -510,12 +511,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -535,25 +538,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -570,7 +577,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -579,7 +587,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -601,7 +610,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -625,6 +635,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -636,6 +648,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -679,13 +703,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -803,7 +828,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -815,7 +840,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -827,12 +852,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -852,25 +879,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -887,7 +918,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -896,7 +928,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -918,7 +951,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -942,6 +976,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -953,6 +989,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -987,13 +1035,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -1111,7 +1160,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -1123,7 +1172,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -1135,12 +1184,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -1160,25 +1211,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -1195,7 +1250,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -1204,7 +1260,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -1226,7 +1283,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -1250,6 +1308,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -1261,6 +1321,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -1306,13 +1378,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -1415,6 +1488,13 @@ data:
                         items:
                           type: string
                         type: array
+                      kernelModuleConfig:
+                        description: 'Optional: Kernel module configuration parameters
+                          for the NVIDIA driver'
+                        properties:
+                          name:
+                            type: string
+                        type: object
                       licensingConfig:
                         description: 'Optional: Licensing configuration for vGPU drivers'
                         properties:
@@ -1440,14 +1520,15 @@ data:
                                   type: string
                                 value:
                                   description: 'Variable references $(VAR_NAME) are expanded
-                                    using the previous defined environment variables in
-                                    the container and any service environment variables.
+                                    using the previously defined environment variables
+                                    in the container and any service environment variables.
                                     If a variable cannot be resolved, the reference in
-                                    the input string will be unchanged. The $(VAR_NAME)
-                                    syntax can be escaped with a double $$, ie: $$(VAR_NAME).
-                                    Escaped references will never be expanded, regardless
-                                    of whether the variable exists or not. Defaults to
-                                    "".'
+                                    the input string will be unchanged. Double $$ are
+                                    reduced to a single $, which allows for escaping the
+                                    $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce
+                                    the string literal "$(VAR_NAME)". Escaped references
+                                    will never be expanded, regardless of whether the
+                                    variable exists or not. Defaults to "".'
                                   type: string
                                 valueFrom:
                                   description: Source for the environment variable's value.
@@ -1595,7 +1676,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -1607,7 +1688,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -1619,12 +1700,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -1644,25 +1727,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -1679,7 +1766,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -1688,7 +1776,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -1710,7 +1799,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -1734,6 +1824,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -1745,6 +1837,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -1773,6 +1877,147 @@ data:
                             type: string
                         type: object
                     type: object
+                  gds:
+                    description: GPUDirectStorage defines the spec for GDS components(Experimental)
+                    properties:
+                      args:
+                        description: 'Optional: List of arguments'
+                        items:
+                          type: string
+                        type: array
+                      enabled:
+                        description: Enabled indicates if GPUDirect Storage is enabled
+                          through GPU operator
+                        type: boolean
+                      env:
+                        description: 'Optional: List of environment variables'
+                        items:
+                          description: EnvVar represents an environment variable present
+                            in a Container.
+                          properties:
+                            name:
+                              description: Name of the environment variable. Must be a
+                                C_IDENTIFIER.
+                              type: string
+                            value:
+                              description: 'Variable references $(VAR_NAME) are expanded
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
+                              type: string
+                            valueFrom:
+                              description: Source for the environment variable's value.
+                                Cannot be used if value is not empty.
+                              properties:
+                                configMapKeyRef:
+                                  description: Selects a key of a ConfigMap.
+                                  properties:
+                                    key:
+                                      description: The key to select.
+                                      type: string
+                                    name:
+                                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Add other useful fields. apiVersion, kind,
+                                        uid?'
+                                      type: string
+                                    optional:
+                                      description: Specify whether the ConfigMap or its
+                                        key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                fieldRef:
+                                  description: 'Selects a field of the pod: supports metadata.name,
+                                    metadata.namespace, `metadata.labels[''<KEY>'']`,
+                                    `metadata.annotations[''<KEY>'']`, spec.nodeName,
+                                    spec.serviceAccountName, status.hostIP, status.podIP,
+                                    status.podIPs.'
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in the
+                                        specified API version.
+                                      type: string
+                                  required:
+                                  - fieldPath
+                                  type: object
+                                resourceFieldRef:
+                                  description: 'Selects a resource of the container: only
+                                    resources limits and requests (limits.cpu, limits.memory,
+                                    limits.ephemeral-storage, requests.cpu, requests.memory
+                                    and requests.ephemeral-storage) are currently supported.'
+                                  properties:
+                                    containerName:
+                                      description: 'Container name: required for volumes,
+                                        optional for env vars'
+                                      type: string
+                                    divisor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: Specifies the output format of the
+                                        exposed resources, defaults to "1"
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    resource:
+                                      description: 'Required: resource to select'
+                                      type: string
+                                  required:
+                                  - resource
+                                  type: object
+                                secretKeyRef:
+                                  description: Selects a key of a secret in the pod's
+                                    namespace
+                                  properties:
+                                    key:
+                                      description: The key of the secret to select from.  Must
+                                        be a valid secret key.
+                                      type: string
+                                    name:
+                                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Add other useful fields. apiVersion, kind,
+                                        uid?'
+                                      type: string
+                                    optional:
+                                      description: Specify whether the Secret or its key
+                                        must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      image:
+                        description: Driver image name
+                        pattern: '[a-zA-Z0-9\-]+'
+                        type: string
+                      imagePullPolicy:
+                        description: Image pull policy
+                        type: string
+                      imagePullSecrets:
+                        description: Image pull secrets
+                        items:
+                          type: string
+                        type: array
+                      repository:
+                        description: Driver image repository
+                        type: string
+                      version:
+                        description: Driver image tag
+                        type: string
+                    type: object
                   gfd:
                     description: GPUFeatureDiscovery spec
                     properties:
@@ -1793,13 +2038,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -1917,7 +2163,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -1929,7 +2175,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -1941,12 +2187,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -1966,25 +2214,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -2001,7 +2253,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -2010,7 +2263,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -2032,7 +2286,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -2056,6 +2311,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -2067,6 +2324,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -2124,13 +2393,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -2256,7 +2526,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -2268,7 +2538,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -2280,12 +2550,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -2305,25 +2577,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -2340,7 +2616,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -2349,7 +2626,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -2371,7 +2649,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -2395,6 +2674,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -2406,6 +2687,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -2444,13 +2737,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -2568,7 +2862,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -2580,7 +2874,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -2592,12 +2886,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -2617,25 +2913,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -2652,7 +2952,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -2661,7 +2962,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -2683,7 +2985,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -2707,6 +3010,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -2718,6 +3023,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -2804,13 +3121,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -2928,7 +3246,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -2940,7 +3258,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -2952,12 +3270,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -2977,25 +3297,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -3012,7 +3336,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -3021,7 +3346,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -3043,7 +3369,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -3067,6 +3394,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -3078,6 +3407,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -3115,14 +3456,15 @@ data:
                                   type: string
                                 value:
                                   description: 'Variable references $(VAR_NAME) are expanded
-                                    using the previous defined environment variables in
-                                    the container and any service environment variables.
+                                    using the previously defined environment variables
+                                    in the container and any service environment variables.
                                     If a variable cannot be resolved, the reference in
-                                    the input string will be unchanged. The $(VAR_NAME)
-                                    syntax can be escaped with a double $$, ie: $$(VAR_NAME).
-                                    Escaped references will never be expanded, regardless
-                                    of whether the variable exists or not. Defaults to
-                                    "".'
+                                    the input string will be unchanged. Double $$ are
+                                    reduced to a single $, which allows for escaping the
+                                    $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce
+                                    the string literal "$(VAR_NAME)". Escaped references
+                                    will never be expanded, regardless of whether the
+                                    variable exists or not. Defaults to "".'
                                   type: string
                                 valueFrom:
                                   description: Source for the environment variable's value.
@@ -3232,14 +3574,15 @@ data:
                                   type: string
                                 value:
                                   description: 'Variable references $(VAR_NAME) are expanded
-                                    using the previous defined environment variables in
-                                    the container and any service environment variables.
+                                    using the previously defined environment variables
+                                    in the container and any service environment variables.
                                     If a variable cannot be resolved, the reference in
-                                    the input string will be unchanged. The $(VAR_NAME)
-                                    syntax can be escaped with a double $$, ie: $$(VAR_NAME).
-                                    Escaped references will never be expanded, regardless
-                                    of whether the variable exists or not. Defaults to
-                                    "".'
+                                    the input string will be unchanged. Double $$ are
+                                    reduced to a single $, which allows for escaping the
+                                    $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce
+                                    the string literal "$(VAR_NAME)". Escaped references
+                                    will never be expanded, regardless of whether the
+                                    variable exists or not. Defaults to "".'
                                   type: string
                                 valueFrom:
                                   description: Source for the environment variable's value.
@@ -3346,13 +3689,14 @@ data:
                               type: string
                             value:
                               description: 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in the
-                                container and any service environment variables. If a
-                                variable cannot be resolved, the reference in the input
-                                string will be unchanged. The $(VAR_NAME) syntax can be
-                                escaped with a double $$, ie: $$(VAR_NAME). Escaped references
-                                will never be expanded, regardless of whether the variable
-                                exists or not. Defaults to "".'
+                                using the previously defined environment variables in
+                                the container and any service environment variables. If
+                                a variable cannot be resolved, the reference in the input
+                                string will be unchanged. Double $$ are reduced to a single
+                                $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless
+                                of whether the variable exists or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description: Source for the environment variable's value.
@@ -3470,14 +3814,15 @@ data:
                                   type: string
                                 value:
                                   description: 'Variable references $(VAR_NAME) are expanded
-                                    using the previous defined environment variables in
-                                    the container and any service environment variables.
+                                    using the previously defined environment variables
+                                    in the container and any service environment variables.
                                     If a variable cannot be resolved, the reference in
-                                    the input string will be unchanged. The $(VAR_NAME)
-                                    syntax can be escaped with a double $$, ie: $$(VAR_NAME).
-                                    Escaped references will never be expanded, regardless
-                                    of whether the variable exists or not. Defaults to
-                                    "".'
+                                    the input string will be unchanged. Double $$ are
+                                    reduced to a single $, which allows for escaping the
+                                    $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce
+                                    the string literal "$(VAR_NAME)". Escaped references
+                                    will never be expanded, regardless of whether the
+                                    variable exists or not. Defaults to "".'
                                   type: string
                                 valueFrom:
                                   description: Source for the environment variable's value.
@@ -3587,7 +3932,7 @@ data:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             description: 'Limits describes the maximum amount of compute
-                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                           requests:
                             additionalProperties:
@@ -3599,7 +3944,7 @@ data:
                             description: 'Requests describes the minimum amount of compute
                               resources required. If Requests is omitted for a container,
                               it defaults to Limits if that is explicitly specified, otherwise
-                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       securityContext:
@@ -3611,12 +3956,14 @@ data:
                               This bool directly controls if the no_new_privs flag will
                               be set on the container process. AllowPrivilegeEscalation
                               is true always when the container is: 1) run as Privileged
-                              2) has CAP_SYS_ADMIN'
+                              2) has CAP_SYS_ADMIN Note that this field cannot be set
+                              when spec.os.name is windows.'
                             type: boolean
                           capabilities:
                             description: The capabilities to add/drop when running containers.
                               Defaults to the default set of capabilities granted by the
-                              container runtime.
+                              container runtime. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               add:
                                 description: Added capabilities
@@ -3636,25 +3983,29 @@ data:
                           privileged:
                             description: Run container in privileged mode. Processes in
                               privileged containers are essentially equivalent to root
-                              on the host. Defaults to false.
+                              on the host. Defaults to false. Note that this field cannot
+                              be set when spec.os.name is windows.
                             type: boolean
                           procMount:
                             description: procMount denotes the type of proc mount to use
                               for the containers. The default is DefaultProcMount which
                               uses the container runtime defaults for readonly paths and
                               masked paths. This requires the ProcMountType feature flag
-                              to be enabled.
+                              to be enabled. Note that this field cannot be set when spec.os.name
+                              is windows.
                             type: string
                           readOnlyRootFilesystem:
                             description: Whether this container has a read-only root filesystem.
-                              Default is false.
+                              Default is false. Note that this field cannot be set when
+                              spec.os.name is windows.
                             type: boolean
                           runAsGroup:
                             description: The GID to run the entrypoint of the container
                               process. Uses runtime default if unset. May also be set
                               in PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             format: int64
                             type: integer
                           runAsNonRoot:
@@ -3671,7 +4022,8 @@ data:
                               process. Defaults to user specified in image metadata if
                               unspecified. May also be set in PodSecurityContext.  If
                               set in both SecurityContext and PodSecurityContext, the
-                              value specified in SecurityContext takes precedence.
+                              value specified in SecurityContext takes precedence. Note
+                              that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
                           seLinuxOptions:
@@ -3680,7 +4032,8 @@ data:
                               SELinux context for each container.  May also be set in
                               PodSecurityContext.  If set in both SecurityContext and
                               PodSecurityContext, the value specified in SecurityContext
-                              takes precedence.
+                              takes precedence. Note that this field cannot be set when
+                              spec.os.name is windows.
                             properties:
                               level:
                                 description: Level is SELinux level label that applies
@@ -3702,7 +4055,8 @@ data:
                           seccompProfile:
                             description: The seccomp options to use by this container.
                               If seccomp options are provided at both the pod & container
-                              level, the container options override the pod options.
+                              level, the container options override the pod options. Note
+                              that this field cannot be set when spec.os.name is windows.
                             properties:
                               localhostProfile:
                                 description: localhostProfile indicates a profile defined
@@ -3726,6 +4080,8 @@ data:
                               containers. If unspecified, the options from the PodSecurityContext
                               will be used. If set in both SecurityContext and PodSecurityContext,
                               the value specified in SecurityContext takes precedence.
+                              Note that this field cannot be set when spec.os.name is
+                              linux.
                             properties:
                               gmsaCredentialSpec:
                                 description: GMSACredentialSpec is where the GMSA admission
@@ -3737,6 +4093,18 @@ data:
                                 description: GMSACredentialSpecName is the name of the
                                   GMSA credential spec to use.
                                 type: string
+                              hostProcess:
+                                description: HostProcess determines if a container should
+                                  be run as a 'Host Process' container. This field is
+                                  alpha-level and will only be honored by components that
+                                  enable the WindowsHostProcessContainers feature flag.
+                                  Setting this field without the feature flag will result
+                                  in errors when validating the Pod. All of a Pod's containers
+                                  must have the same effective HostProcess value (it is
+                                  not allowed to have a mix of HostProcess containers
+                                  and non-HostProcess containers).  In addition, if HostProcess
+                                  is true then HostNetwork must also be set to true.
+                                type: boolean
                               runAsUserName:
                                 description: The UserName in Windows to run the entrypoint
                                   of the container process. Defaults to the user specified
@@ -3762,14 +4130,15 @@ data:
                                   type: string
                                 value:
                                   description: 'Variable references $(VAR_NAME) are expanded
-                                    using the previous defined environment variables in
-                                    the container and any service environment variables.
+                                    using the previously defined environment variables
+                                    in the container and any service environment variables.
                                     If a variable cannot be resolved, the reference in
-                                    the input string will be unchanged. The $(VAR_NAME)
-                                    syntax can be escaped with a double $$, ie: $$(VAR_NAME).
-                                    Escaped references will never be expanded, regardless
-                                    of whether the variable exists or not. Defaults to
-                                    "".'
+                                    the input string will be unchanged. Double $$ are
+                                    reduced to a single $, which allows for escaping the
+                                    $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce
+                                    the string literal "$(VAR_NAME)". Escaped references
+                                    will never be expanded, regardless of whether the
+                                    variable exists or not. Defaults to "".'
                                   type: string
                                 valueFrom:
                                   description: Source for the environment variable's value.
@@ -3882,6 +4251,10 @@ data:
               status:
                 description: ClusterPolicyStatus defines the observed state of ClusterPolicy
                 properties:
+                  namespace:
+                    description: Namespace indicates a namespace in which the operator
+                      is installed
+                    type: string
                   state:
                     description: State indicates status of ClusterPolicy
                     enum:
@@ -3920,196 +4293,322 @@ data:
     \"gpu-operator\"\n    openshift.io/cluster-monitoring: \"true\"\n---\n# Source:
     gpu-operator/charts/node-feature-discovery/templates/clusterrole.yaml\napiVersion:
     rbac.authorization.k8s.io/v1\nkind: ClusterRole\nmetadata:\n  name: gpu-operator-node-feature-discovery\n
-    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n
+    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.10.1\n
     \   app.kubernetes.io/name: node-feature-discovery\n    app.kubernetes.io/instance:
-    gpu-operator\n    app.kubernetes.io/version: \"v0.8.2\"\n    app.kubernetes.io/managed-by:
+    gpu-operator\n    app.kubernetes.io/version: \"v0.10.1\"\n    app.kubernetes.io/managed-by:
     Helm\nrules:\n- apiGroups:\n  - \"\"\n  resources:\n  - nodes\n  # when using
     command line flag --resource-labels to create extended resources\n  # you will
     need to uncomment \"- nodes/status\"\n  # - nodes/status\n  verbs:\n  - get\n
-    \ - patch\n  - update\n  - list\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/clusterrolebinding.yaml\napiVersion:
+    \ - patch\n  - update\n  - list\n- apiGroups:\n  - nfd.k8s-sigs.io\n  resources:\n
+    \ - nodefeaturerules\n  verbs:\n  - get\n  - list\n  - watch\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/clusterrolebinding.yaml\napiVersion:
     rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata:\n  name: gpu-operator-node-feature-discovery\n
-    \ labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n    app.kubernetes.io/name:
+    \ labels:\n    helm.sh/chart: node-feature-discovery-0.10.1\n    app.kubernetes.io/name:
     node-feature-discovery\n    app.kubernetes.io/instance: gpu-operator\n    app.kubernetes.io/version:
-    \"v0.8.2\"\n    app.kubernetes.io/managed-by: Helm\nroleRef:\n  apiGroup: rbac.authorization.k8s.io\n
+    \"v0.10.1\"\n    app.kubernetes.io/managed-by: Helm\nroleRef:\n  apiGroup: rbac.authorization.k8s.io\n
     \ kind: ClusterRole\n  name: gpu-operator-node-feature-discovery\nsubjects:\n-
-    kind: ServiceAccount\n  name: node-feature-discovery\n  namespace: gpu-operator-resources\n---\n#
-    Source: gpu-operator/charts/node-feature-discovery/templates/master.yaml\napiVersion:
+    kind: ServiceAccount\n  name: gpu-operator-node-feature-discovery\n  namespace:
+    gpu-operator-resources\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/master.yaml\napiVersion:
     apps/v1\nkind: Deployment\nmetadata:\n  name:  gpu-operator-node-feature-discovery-master\n
-    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n
+    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.10.1\n
     \   app.kubernetes.io/name: node-feature-discovery\n    app.kubernetes.io/instance:
-    gpu-operator\n    app.kubernetes.io/version: \"v0.8.2\"\n    app.kubernetes.io/managed-by:
+    gpu-operator\n    app.kubernetes.io/version: \"v0.10.1\"\n    app.kubernetes.io/managed-by:
     Helm\n    role: master\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n
     \     app.kubernetes.io/name: node-feature-discovery\n      app.kubernetes.io/instance:
     gpu-operator\n      role: master\n  template:\n    metadata:\n      labels:\n
     \       app.kubernetes.io/name: node-feature-discovery\n        app.kubernetes.io/instance:
     gpu-operator\n        role: master\n      annotations:\n        {}\n    spec:\n
-    \     serviceAccountName: node-feature-discovery\n      securityContext:\n        {}\n
-    \     containers:\n        - name: master\n          securityContext:\n            allowPrivilegeEscalation:
-    false\n            capabilities:\n              drop:\n              - ALL\n            readOnlyRootFilesystem:
-    true\n            runAsNonRoot: true\n          image: \"k8s.gcr.io/nfd/node-feature-discovery:v0.8.2\"\n
-    \         imagePullPolicy: IfNotPresent\n          ports:\n          - containerPort:
+    \     serviceAccountName: gpu-operator-node-feature-discovery\n      securityContext:\n
+    \       {}\n      containers:\n        - name: master\n          securityContext:\n
+    \           allowPrivilegeEscalation: false\n            capabilities:\n              drop:\n
+    \             - ALL\n            readOnlyRootFilesystem: true\n            runAsNonRoot:
+    true\n          image: \"k8s.gcr.io/nfd/node-feature-discovery:v0.10.1\"\n          imagePullPolicy:
+    IfNotPresent\n          livenessProbe:\n            exec:\n              command:\n
+    \             - \"/usr/bin/grpc_health_probe\"\n              - \"-addr=:8080\"\n
+    \           initialDelaySeconds: 10\n            periodSeconds: 10\n          readinessProbe:\n
+    \           exec:\n              command:\n              - \"/usr/bin/grpc_health_probe\"\n
+    \             - \"-addr=:8080\"\n            initialDelaySeconds: 5\n            periodSeconds:
+    10\n            failureThreshold: 10\n          ports:\n          - containerPort:
     8080\n            name: grpc\n            namespace: gpu-operator-resources\n
     \         env:\n          - name: NODE_NAME\n            valueFrom:\n              fieldRef:\n
     \               fieldPath: spec.nodeName\n          command:\n            - \"nfd-master\"\n
-    \         resources:\n            {}\n          args:\n            - \"--extra-label-ns=nvidia.com\"\n##
-    Enable TLS authentication\n## The example below assumes having the root certificate
-    named ca.crt stored in\n## a ConfigMap named nfd-ca-cert, and, the TLS authentication
-    credentials stored\n## in a TLS Secret named nfd-master-cert.\n## Additional hardening
-    can be enabled by specifying --verify-node-name in\n## args, in which case node
-    name will be checked against the worker's\n## TLS certificate.\n#            -
-    \"--ca-file=/etc/kubernetes/node-feature-discovery/trust/ca.crt\"\n#            -
-    \"--key-file=/etc/kubernetes/node-feature-discovery/certs/tls.key\"\n#            -
-    \"--cert-file=/etc/kubernetes/node-feature-discovery/certs/tls.crt\"\n#          volumeMounts:\n#
-    \           - name: nfd-ca-cert\n#              mountPath: \"/etc/kubernetes/node-feature-discovery/trust\"\n#
-    \             readOnly: true\n#            - name: nfd-master-cert\n#              mountPath:
-    \"/etc/kubernetes/node-feature-discovery/certs\"\n#              readOnly: true\n#
-    \     volumes:\n#        - name: nfd-ca-cert\n#          configMap:\n#            name:
-    nfd-ca-cert\n#        - name: nfd-master-cert\n#          secret:\n#            secretName:
-    nfd-master-cert\n      affinity:\n        nodeAffinity:\n          preferredDuringSchedulingIgnoredDuringExecution:\n
+    \         resources:\n            {}\n          args:\n            - \"--extra-label-ns=nvidia.com\"\n
+    \           ## By default, disable NodeFeatureRules controller for other than
+    the default instances\n            - \"-featurerules-controller=true\"\n      affinity:\n
+    \       nodeAffinity:\n          preferredDuringSchedulingIgnoredDuringExecution:\n
     \         - preference:\n              matchExpressions:\n              - key:
     node-role.kubernetes.io/master\n                operator: In\n                values:\n
-    \               - \"\"\n            weight: 1\n      tolerations:\n        - effect:
-    NoSchedule\n          key: node-role.kubernetes.io/master\n          operator:
-    Equal\n          value: \"\"\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/nfd-worker-conf.yaml\napiVersion:
-    v1\nkind: ConfigMap\nmetadata:\n  name: nfd-worker-conf\n  namespace: gpu-operator-resources\n
-    \ labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n    app.kubernetes.io/name:
-    node-feature-discovery\n    app.kubernetes.io/instance: gpu-operator\n    app.kubernetes.io/version:
-    \"v0.8.2\"\n    app.kubernetes.io/managed-by: Helm\ndata:\n  nfd-worker.conf:
-    |-\n    sources:\n      pci:\n        deviceClassWhitelist:\n        - \"02\"\n
-    \       - \"0200\"\n        - \"0207\"\n        - \"0300\"\n        - \"0302\"\n
-    \       deviceLabelFields:\n        - vendor\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/service.yaml\napiVersion:
-    v1\nkind: Service\nmetadata:\n  name: gpu-operator-node-feature-discovery-master\n
-    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n
+    \               - \"\"\n            weight: 1\n          - preference:\n              matchExpressions:\n
+    \             - key: node-role.kubernetes.io/control-plane\n                operator:
+    In\n                values:\n                - \"\"\n            weight: 1\n      tolerations:\n
+    \       - effect: NoSchedule\n          key: node-role.kubernetes.io/master\n
+    \         operator: Equal\n          value: \"\"\n        - effect: NoSchedule\n
+    \         key: node-role.kubernetes.io/control-plane\n          operator: Equal\n
+    \         value: \"\"\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/nfd-worker-conf.yaml\napiVersion:
+    v1\nkind: ConfigMap\nmetadata:\n  name: gpu-operator-node-feature-discovery-worker-conf\n
+    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.10.1\n
     \   app.kubernetes.io/name: node-feature-discovery\n    app.kubernetes.io/instance:
-    gpu-operator\n    app.kubernetes.io/version: \"v0.8.2\"\n    app.kubernetes.io/managed-by:
+    gpu-operator\n    app.kubernetes.io/version: \"v0.10.1\"\n    app.kubernetes.io/managed-by:
+    Helm\ndata:\n  nfd-worker.conf: |-\n    sources:\n      pci:\n        deviceClassWhitelist:\n
+    \       - \"02\"\n        - \"0200\"\n        - \"0207\"\n        - \"0300\"\n
+    \       - \"0302\"\n        deviceLabelFields:\n        - vendor\n---\n# Source:
+    gpu-operator/charts/node-feature-discovery/templates/nodefeaturerule-crd.yaml\napiVersion:
+    apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  annotations:\n
+    \   controller-gen.kubebuilder.io/version: v0.7.0\n  creationTimestamp: null\n
+    \ name: nodefeaturerules.nfd.k8s-sigs.io\n  namespace: gpu-operator-resources\nspec:\n
+    \ group: nfd.k8s-sigs.io\n  names:\n    kind: NodeFeatureRule\n    listKind: NodeFeatureRuleList\n
+    \   plural: nodefeaturerules\n    singular: nodefeaturerule\n  scope: Cluster\n
+    \ versions:\n  - name: v1alpha1\n    schema:\n      openAPIV3Schema:\n        description:
+    NodeFeatureRule resource specifies a configuration for feature-based\n          customization
+    of node objects, such as node labeling.\n        properties:\n          apiVersion:\n
+    \           description: 'APIVersion defines the versioned schema of this representation\n
+    \             of an object. Servers should convert recognized schemas to the latest\n
+    \             internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'\n
+    \           type: string\n          kind:\n            description: 'Kind is a
+    string value representing the REST resource this\n              object represents.
+    Servers may infer this from the endpoint the client\n              submits requests
+    to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'\n
+    \           type: string\n          metadata:\n            type: object\n          spec:\n
+    \           description: NodeFeatureRuleSpec describes a NodeFeatureRule.\n            properties:\n
+    \             rules:\n                description: Rules is a list of node customization
+    rules.\n                items:\n                  description: Rule defines a
+    rule for node customization such as\n                    labeling.\n                  properties:\n
+    \                   labels:\n                      additionalProperties:\n                        type:
+    string\n                      description: Labels to create if the rule matches.\n
+    \                     type: object\n                    labelsTemplate:\n                      description:
+    LabelsTemplate specifies a template to expand for\n                        dynamically
+    generating multiple labels. Data (after template\n                        expansion)
+    must be keys with an optional value (<key>[=<value>])\n                        separated
+    by newlines.\n                      type: string\n                    matchAny:\n
+    \                     description: MatchAny specifies a list of matchers one of
+    which\n                        must match.\n                      items:\n                        description:
+    MatchAnyElem specifies one sub-matcher of MatchAny.\n                        properties:\n
+    \                         matchFeatures:\n                            description:
+    MatchFeatures specifies a set of matcher\n                              terms
+    all of which must match.\n                            items:\n                              description:
+    FeatureMatcherTerm defines requirements\n                                against
+    one feature set. All requirements (specified\n                                as
+    MatchExpressions) are evaluated against each element\n                                in
+    the feature set.\n                              properties:\n                                feature:\n
+    \                                 type: string\n                                matchExpressions:\n
+    \                                 additionalProperties:\n                                    description:
+    \"MatchExpression specifies an expression\n                                      to
+    evaluate against a set of input values. It\n                                      contains
+    an operator that is applied when matching\n                                      the
+    input and an array of values that the operator\n                                      evaluates
+    the input against. \\n NB: CreateMatchExpression\n                                      or
+    MustCreateMatchExpression() should be used\n                                      for
+    \    creating new instances. NB: Validate()\n                                      must
+    be called if Op or Value fields are modified\n                                      or
+    if a new     instance is created from scratch\n                                      without
+    using the helper functions.\"\n                                    properties:\n
+    \                                     op:\n                                        description:
+    Op is the operator to be applied.\n                                        enum:\n
+    \                                       - In\n                                        -
+    NotIn\n                                        - InRegexp\n                                        -
+    Exists\n                                        - DoesNotExist\n                                        -
+    Gt\n                                        - Lt\n                                        -
+    GtLt\n                                        - IsTrue\n                                        -
+    IsFalse\n                                        type: string\n                                      value:\n
+    \                                       description: Value is the list of values
+    that\n                                          the operand evaluates the input
+    against.\n                                          Value should be empty if the
+    operator is\n                                          Exists, DoesNotExist, IsTrue
+    or IsFalse.\n                                          Value should contain exactly
+    one element\n                                          if the operator is Gt or
+    Lt and exactly\n                                          two elements if the
+    operator is GtLt. In\n                                          other cases Value
+    should contain at least\n                                          one element.\n
+    \                                       items:\n                                          type:
+    string\n                                        type: array\n                                    required:\n
+    \                                   - op\n                                    type:
+    object\n                                  description: MatchExpressionSet contains
+    a set of\n                                    MatchExpressions, each of which
+    is evaluated against\n                                    a set of input values.\n
+    \                                 type: object\n                              required:\n
+    \                             - feature\n                              - matchExpressions\n
+    \                             type: object\n                            type:
+    array\n                        required:\n                        - matchFeatures\n
+    \                       type: object\n                      type: array\n                    matchFeatures:\n
+    \                     description: MatchFeatures specifies a set of matcher terms\n
+    \                       all of which must match.\n                      items:\n
+    \                       description: FeatureMatcherTerm defines requirements against\n
+    \                         one feature set. All requirements (specified as MatchExpressions)\n
+    \                         are evaluated against each element in the feature set.\n
+    \                       properties:\n                          feature:\n                            type:
+    string\n                          matchExpressions:\n                            additionalProperties:\n
+    \                             description: \"MatchExpression specifies an expression\n
+    \                               to evaluate against a set of input values. It
+    contains\n                                an operator that is applied when matching
+    the input\n                                and an array of values that the operator
+    evaluates\n                                the input against. \\n NB: CreateMatchExpression
+    or\n                                MustCreateMatchExpression() should be used
+    for     creating\n                                new instances. NB: Validate()
+    must be called if Op\n                                or Value fields are modified
+    or if a new     instance\n                                is created from scratch
+    without using the helper functions.\"\n                              properties:\n
+    \                               op:\n                                  description:
+    Op is the operator to be applied.\n                                  enum:\n                                  -
+    In\n                                  - NotIn\n                                  -
+    InRegexp\n                                  - Exists\n                                  -
+    DoesNotExist\n                                  - Gt\n                                  -
+    Lt\n                                  - GtLt\n                                  -
+    IsTrue\n                                  - IsFalse\n                                  type:
+    string\n                                value:\n                                  description:
+    Value is the list of values that the\n                                    operand
+    evaluates the input against. Value should\n                                    be
+    empty if the operator is Exists, DoesNotExist,\n                                    IsTrue
+    or IsFalse. Value should contain exactly\n                                    one
+    element if the operator is Gt or Lt and exactly\n                                    two
+    elements if the operator is GtLt. In other\n                                    cases
+    Value should contain at least one element.\n                                  items:\n
+    \                                   type: string\n                                  type:
+    array\n                              required:\n                              -
+    op\n                              type: object\n                            description:
+    MatchExpressionSet contains a set of MatchExpressions,\n                              each
+    of which is evaluated against a set of input values.\n                            type:
+    object\n                        required:\n                        - feature\n
+    \                       - matchExpressions\n                        type: object\n
+    \                     type: array\n                    name:\n                      description:
+    Name of the rule.\n                      type: string\n                    vars:\n
+    \                     additionalProperties:\n                        type: string\n
+    \                     description: Vars is the variables to store if the rule
+    matches.\n                        Variables do not directly inflict any changes
+    in the node\n                        object. However, they can be referenced from
+    other rules enabling\n                        more complex rule hierarchies, without
+    exposing intermediary\n                        output values as labels.\n                      type:
+    object\n                    varsTemplate:\n                      description:
+    VarsTemplate specifies a template to expand for\n                        dynamically
+    generating multiple variables. Data (after template\n                        expansion)
+    must be keys with an optional value (<key>[=<value>])\n                        separated
+    by newlines.\n                      type: string\n                  required:\n
+    \                 - name\n                  type: object\n                type:
+    array\n            required:\n            - rules\n            type: object\n
+    \       required:\n        - spec\n        type: object\n    served: true\n    storage:
+    true\nstatus:\n  acceptedNames:\n    kind: \"\"\n    plural: \"\"\n  conditions:
+    []\n  storedVersions: []\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/service.yaml\napiVersion:
+    v1\nkind: Service\nmetadata:\n  name: gpu-operator-node-feature-discovery-master\n
+    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.10.1\n
+    \   app.kubernetes.io/name: node-feature-discovery\n    app.kubernetes.io/instance:
+    gpu-operator\n    app.kubernetes.io/version: \"v0.10.1\"\n    app.kubernetes.io/managed-by:
     Helm\n    role: master\nspec:\n  type: ClusterIP\n  ports:\n    - port: 8080\n
     \     targetPort: grpc\n      protocol: TCP\n      name: grpc\n      namespace:
     gpu-operator-resources\n  selector:\n    app.kubernetes.io/name: node-feature-discovery\n
     \   app.kubernetes.io/instance: gpu-operator\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/serviceaccount.yaml\napiVersion:
-    v1\nkind: ServiceAccount\nmetadata:\n  name: node-feature-discovery\n  namespace:
-    gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n
+    v1\nkind: ServiceAccount\nmetadata:\n  name: gpu-operator-node-feature-discovery\n
+    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.10.1\n
     \   app.kubernetes.io/name: node-feature-discovery\n    app.kubernetes.io/instance:
-    gpu-operator\n    app.kubernetes.io/version: \"v0.8.2\"\n    app.kubernetes.io/managed-by:
+    gpu-operator\n    app.kubernetes.io/version: \"v0.10.1\"\n    app.kubernetes.io/managed-by:
     Helm\n---\n# Source: gpu-operator/charts/node-feature-discovery/templates/worker.yaml\napiVersion:
     apps/v1\nkind: DaemonSet\nmetadata:\n  name:  gpu-operator-node-feature-discovery-worker\n
-    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.8.2\n
+    \ namespace: gpu-operator-resources\n  labels:\n    helm.sh/chart: node-feature-discovery-0.10.1\n
     \   app.kubernetes.io/name: node-feature-discovery\n    app.kubernetes.io/instance:
-    gpu-operator\n    app.kubernetes.io/version: \"v0.8.2\"\n    app.kubernetes.io/managed-by:
+    gpu-operator\n    app.kubernetes.io/version: \"v0.10.1\"\n    app.kubernetes.io/managed-by:
     Helm\n    role: worker\nspec:\n  selector:\n    matchLabels:\n      app.kubernetes.io/name:
     node-feature-discovery\n      app.kubernetes.io/instance: gpu-operator\n      role:
     worker\n  template:\n    metadata:\n      labels:\n        app.kubernetes.io/name:
     node-feature-discovery\n        app.kubernetes.io/instance: gpu-operator\n        role:
     worker\n      annotations:\n        {}\n    spec:\n      dnsPolicy: ClusterFirstWithHostNet\n
-    \     securityContext:\n        {}\n      containers:\n      - name: worker\n
-    \       securityContext:\n            allowPrivilegeEscalation: false\n            capabilities:\n
-    \             drop:\n              - ALL\n            readOnlyRootFilesystem:
-    true\n            runAsNonRoot: true\n        image: \"k8s.gcr.io/nfd/node-feature-discovery:v0.8.2\"\n
-    \       imagePullPolicy: IfNotPresent\n        env:\n        - name: NODE_NAME\n
-    \         valueFrom:\n            fieldRef:\n              fieldPath: spec.nodeName\n
-    \       resources:\n            {}\n        command:\n        - \"nfd-worker\"\n
-    \       args:\n        - \"--sleep-interval=60s\"\n        - \"--server=gpu-operator-node-feature-discovery-master:8080\"\n##
-    Enable TLS authentication (1/3)\n## The example below assumes having the root
-    certificate named ca.crt stored in\n## a ConfigMap named nfd-ca-cert, and, the
-    TLS authentication credentials stored\n## in a TLS Secret named nfd-worker-cert\n#
-    \         - \"--ca-file=/etc/kubernetes/node-feature-discovery/trust/ca.crt\"\n#
-    \         - \"--key-file=/etc/kubernetes/node-feature-discovery/certs/tls.key\"\n#
-    \         - \"--cert-file=/etc/kubernetes/node-feature-discovery/certs/tls.crt\"\n
-    \       volumeMounts:\n        - name: host-boot\n          mountPath: \"/host-boot\"\n
-    \         readOnly: true\n        - name: host-os-release\n          mountPath:
-    \"/host-etc/os-release\"\n          readOnly: true\n        - name: host-sys\n
-    \         mountPath: \"/host-sys\"\n          readOnly: true\n        - name:
-    source-d\n          mountPath: \"/etc/kubernetes/node-feature-discovery/source.d/\"\n
+    \     serviceAccountName: gpu-operator-node-feature-discovery\n      securityContext:\n
+    \       {}\n      containers:\n      - name: worker\n        securityContext:\n
+    \           allowPrivilegeEscalation: false\n            capabilities:\n              drop:\n
+    \             - ALL\n            readOnlyRootFilesystem: true\n            runAsNonRoot:
+    true\n        image: \"k8s.gcr.io/nfd/node-feature-discovery:v0.10.1\"\n        imagePullPolicy:
+    IfNotPresent\n        env:\n        - name: NODE_NAME\n          valueFrom:\n
+    \           fieldRef:\n              fieldPath: spec.nodeName\n        resources:\n
+    \           {}\n        command:\n        - \"nfd-worker\"\n        args:\n        -
+    \"--server=gpu-operator-node-feature-discovery-master:8080\"\n        volumeMounts:\n
+    \       - name: host-boot\n          mountPath: \"/host-boot\"\n          readOnly:
+    true\n        - name: host-os-release\n          mountPath: \"/host-etc/os-release\"\n
+    \         readOnly: true\n        - name: host-sys\n          mountPath: \"/host-sys\"\n
+    \         readOnly: true\n        - name: host-usr-lib\n          mountPath: \"/host-usr/lib\"\n
+    \         readOnly: true\n        - name: source-d\n          mountPath: \"/etc/kubernetes/node-feature-discovery/source.d/\"\n
     \         readOnly: true\n        - name: features-d\n          mountPath: \"/etc/kubernetes/node-feature-discovery/features.d/\"\n
     \         readOnly: true\n        - name: nfd-worker-conf\n          mountPath:
-    \"/etc/kubernetes/node-feature-discovery\"\n          readOnly: true\n## Enable
-    TLS authentication (2/3)\n#        - name: nfd-ca-cert\n#          mountPath:
-    \"/etc/kubernetes/node-feature-discovery/trust\"\n#          readOnly: true\n#
-    \       - name: nfd-worker-cert\n#          mountPath: \"/etc/kubernetes/node-feature-discovery/certs\"\n#
-    \         readOnly: true\n      volumes:\n        - name: host-boot\n          hostPath:\n
-    \           path: \"/boot\"\n        - name: host-os-release\n          hostPath:\n
-    \           path: \"/etc/os-release\"\n        - name: host-sys\n          hostPath:\n
-    \           path: \"/sys\"\n        - name: source-d\n          hostPath:\n            path:
-    \"/etc/kubernetes/node-feature-discovery/source.d/\"\n        - name: features-d\n
-    \         hostPath:\n            path: \"/etc/kubernetes/node-feature-discovery/features.d/\"\n
-    \       - name: nfd-worker-conf\n          configMap:\n            name: nfd-worker-conf\n
+    \"/etc/kubernetes/node-feature-discovery\"\n          readOnly: true\n      volumes:\n
+    \       - name: host-boot\n          hostPath:\n            path: \"/boot\"\n
+    \       - name: host-os-release\n          hostPath:\n            path: \"/etc/os-release\"\n
+    \       - name: host-sys\n          hostPath:\n            path: \"/sys\"\n        -
+    name: host-usr-lib\n          hostPath:\n            path: \"/usr/lib\"\n        -
+    name: source-d\n          hostPath:\n            path: \"/etc/kubernetes/node-feature-discovery/source.d/\"\n
+    \       - name: features-d\n          hostPath:\n            path: \"/etc/kubernetes/node-feature-discovery/features.d/\"\n
+    \       - name: nfd-worker-conf\n          configMap:\n            name: gpu-operator-node-feature-discovery-worker-conf\n
     \           namespace: gpu-operator-resources\n            items:\n              -
-    key: nfd-worker.conf\n                path: nfd-worker.conf\n## Enable TLS authentication
-    (3/3)\n#        - name: nfd-ca-cert\n#          configMap:\n#            name:
-    nfd-ca-cert\n#        - name: nfd-worker-cert\n#          secret:\n#            secretName:
-    nfd-worker-cert\n      tolerations:\n        - effect: NoSchedule\n          key:
-    node-role.kubernetes.io/master\n          operator: Equal\n          value: \"\"\n
-    \       - effect: NoSchedule\n          key: nvidia.com/gpu\n          operator:
-    Equal\n          value: present\n---\n# Source: gpu-operator/templates/clusterpolicy.yaml\napiVersion:
-    nvidia.com/v1\nkind: ClusterPolicy\nmetadata:\n  name: cluster-policy\n  namespace:
-    gpu-operator-resources\n  labels:\n    app.kubernetes.io/component: \"gpu-operator\"\n
-    \   \nspec:\n  operator:\n    defaultRuntime: docker\n    runtimeClass: nvidia\n
-    \   initContainer:\n      repository: nvcr.io/nvidia\n      image: cuda\n      version:
-    11.4.2-base-ubi8\n      imagePullPolicy: IfNotPresent\n  daemonsets:\n    tolerations:
-    \n      - effect: NoSchedule\n        key: nvidia.com/gpu\n        operator: Exists\n
-    \   priorityClassName: system-node-critical\n  validator:\n    repository: nvcr.io/nvidia/cloud-native\n
-    \   image: gpu-operator-validator\n    version: v1.9.1\n    imagePullPolicy: IfNotPresent\n
-    \   securityContext: \n      privileged: true\n      seLinuxOptions:\n        level:
-    s0\n    plugin:\n      env: \n        - name: WITH_WORKLOAD\n          value:
-    \"true\"\n  mig:\n    strategy: single\n  psp:\n    enabled: false\n  driver:\n
-    \   enabled: true\n    repository: nvcr.io/nvidia\n    image: driver\n    version:
-    470.82.01\n    imagePullPolicy: IfNotPresent\n    rdma:\n      enabled: false\n
-    \     useHostMofed: false\n    manager:\n      repository: nvcr.io/nvidia/cloud-native\n
-    \     image: k8s-driver-manager\n      version: v0.2.0\n      imagePullPolicy:
-    IfNotPresent\n      env: \n        - name: ENABLE_AUTO_DRAIN\n          value:
-    \"true\"\n        - name: DRAIN_USE_FORCE\n          value: \"false\"\n        -
-    name: DRAIN_POD_SELECTOR_LABEL\n          value: \"\"\n        - name: DRAIN_TIMEOUT_SECONDS\n
-    \         value: 0s\n        - name: DRAIN_DELETE_EMPTYDIR_DATA\n          value:
-    \"false\"\n    repoConfig: \n      configMapName: \"\"\n    certConfig: \n      name:
-    \"\"\n    licensingConfig: \n      configMapName: \"\"\n      nlsEnabled: false\n
-    \   virtualTopology: \n      config: \"\"\n    securityContext: \n      privileged:
-    true\n      seLinuxOptions:\n        level: s0\n  toolkit:\n    enabled: true\n
-    \   repository: nvcr.io/nvidia/k8s\n    image: container-toolkit\n    version:
-    1.7.2-ubuntu18.04\n    imagePullPolicy: IfNotPresent\n    securityContext: \n
-    \     privileged: true\n      seLinuxOptions:\n        level: s0\n  devicePlugin:\n
-    \   repository: nvcr.io/nvidia\n    image: k8s-device-plugin\n    version: v0.10.0-ubi8\n
+    key: nfd-worker.conf\n                path: nfd-worker.conf\n      tolerations:\n
+    \       - effect: NoSchedule\n          key: node-role.kubernetes.io/master\n
+    \         operator: Equal\n          value: \"\"\n        - effect: NoSchedule\n
+    \         key: nvidia.com/gpu\n          operator: Equal\n          value: present\n---\n#
+    Source: gpu-operator/templates/clusterpolicy.yaml\napiVersion: nvidia.com/v1\nkind:
+    ClusterPolicy\nmetadata:\n  name: cluster-policy\n  namespace: gpu-operator-resources\n
+    \ labels:\n    app.kubernetes.io/component: \"gpu-operator\"\n    \nspec:\n  operator:\n
+    \   defaultRuntime: docker\n    runtimeClass: nvidia\n    initContainer:\n      repository:
+    nvcr.io/nvidia\n      image: cuda\n      version: \"11.4.2-base-ubi8\"\n      imagePullPolicy:
+    IfNotPresent\n  daemonsets:\n    tolerations: \n      - effect: NoSchedule\n        key:
+    nvidia.com/gpu\n        operator: Exists\n    priorityClassName: system-node-critical\n
+    \ validator:\n    repository: nvcr.io/nvidia/cloud-native\n    image: gpu-operator-validator\n
+    \   version: \"v1.10.1\"\n    imagePullPolicy: IfNotPresent\n    securityContext:
+    \n      privileged: true\n      seLinuxOptions:\n        level: s0\n    plugin:\n
+    \     env: \n        - name: WITH_WORKLOAD\n          value: \"true\"\n  mig:\n
+    \   strategy: single\n  psp:\n    enabled: false\n  driver:\n    enabled: true\n
+    \   repository: nvcr.io/nvidia\n    image: driver\n    version: \"510.47.03\"\n
+    \   imagePullPolicy: IfNotPresent\n    rdma:\n      enabled: false\n      useHostMofed:
+    false\n    manager:\n      repository: nvcr.io/nvidia/cloud-native\n      image:
+    k8s-driver-manager\n      version: \"v0.3.0\"\n      imagePullPolicy: IfNotPresent\n
+    \     env: \n        - name: ENABLE_AUTO_DRAIN\n          value: \"true\"\n        -
+    name: DRAIN_USE_FORCE\n          value: \"false\"\n        - name: DRAIN_POD_SELECTOR_LABEL\n
+    \         value: \"\"\n        - name: DRAIN_TIMEOUT_SECONDS\n          value:
+    0s\n        - name: DRAIN_DELETE_EMPTYDIR_DATA\n          value: \"false\"\n    repoConfig:
+    \n      configMapName: \"\"\n    certConfig: \n      name: \"\"\n    licensingConfig:
+    \n      configMapName: \"\"\n      nlsEnabled: false\n    virtualTopology: \n
+    \     config: \"\"\n    kernelModuleConfig: \n      name: \"\"\n    securityContext:
+    \n      privileged: true\n      seLinuxOptions:\n        level: s0\n  toolkit:\n
+    \   enabled: true\n    repository: nvcr.io/nvidia/k8s\n    image: container-toolkit\n
+    \   version: \"v1.9.0-ubuntu18.04\"\n    imagePullPolicy: IfNotPresent\n    securityContext:
+    \n      privileged: true\n      seLinuxOptions:\n        level: s0\n  devicePlugin:\n
+    \   repository: nvcr.io/nvidia\n    image: k8s-device-plugin\n    version: \"v0.11.0-ubi8\"\n
     \   imagePullPolicy: IfNotPresent\n    securityContext: \n      privileged: true\n
     \   env: \n      - name: PASS_DEVICE_SPECS\n        value: \"true\"\n      - name:
     FAIL_ON_INIT_ERROR\n        value: \"true\"\n      - name: DEVICE_LIST_STRATEGY\n
     \       value: envvar\n      - name: DEVICE_ID_STRATEGY\n        value: uuid\n
     \     - name: NVIDIA_VISIBLE_DEVICES\n        value: all\n      - name: NVIDIA_DRIVER_CAPABILITIES\n
     \       value: all\n  dcgm:\n    enabled: false\n    repository: nvcr.io/nvidia/cloud-native\n
-    \   image: dcgm\n    version: 2.3.1-ubuntu20.04\n    imagePullPolicy: IfNotPresent\n
+    \   image: dcgm\n    version: \"2.3.4-1-ubuntu20.04\"\n    imagePullPolicy: IfNotPresent\n
     \   hostPort: 5555\n  dcgmExporter:\n    repository: nvcr.io/nvidia/k8s\n    image:
-    dcgm-exporter\n    version: 2.3.1-2.6.1-ubuntu20.04\n    imagePullPolicy: IfNotPresent\n
-    \   env: \n      - name: DCGM_EXPORTER_LISTEN\n        value: :9400\n      - name:
-    DCGM_EXPORTER_KUBERNETES\n        value: \"true\"\n      - name: DCGM_EXPORTER_COLLECTORS\n
-    \       value: /etc/dcgm-exporter/dcp-metrics-included.csv\n  gfd:\n    repository:
-    nvcr.io/nvidia\n    image: gpu-feature-discovery\n    version: v0.4.1\n    imagePullPolicy:
-    IfNotPresent\n    env: \n      - name: GFD_SLEEP_INTERVAL\n        value: 60s\n
-    \     - name: GFD_FAIL_ON_INIT_ERROR\n        value: \"true\"\n  migManager:\n
-    \   enabled: true\n    repository: nvcr.io/nvidia/cloud-native\n    image: k8s-mig-manager\n
-    \   version: v0.2.0-ubuntu20.04\n    imagePullPolicy: IfNotPresent\n    securityContext:
-    \n      privileged: true\n    env: \n      - name: WITH_REBOOT\n        value:
-    \"false\"\n    config: \n      name: \"\"\n    gpuClientsConfig: \n      name:
-    \"\"\n  nodeStatusExporter:\n    enabled: false\n    repository: nvcr.io/nvidia/cloud-native\n
-    \   image: gpu-operator-validator\n    version: v1.9.1\n    imagePullPolicy: IfNotPresent\n---\n#
-    Source: gpu-operator/templates/operator.yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n
-    \ name: gpu-operator\n  namespace: gpu-operator-resources\n  labels:\n    app.kubernetes.io/component:
-    \"gpu-operator\"\n    \nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n
-    \     \n      app.kubernetes.io/component: \"gpu-operator\"\n      app: \"gpu-operator\"\n
-    \ template:\n    metadata:\n      labels:\n        \n        app.kubernetes.io/component:
-    \"gpu-operator\"\n        app: \"gpu-operator\"\n      annotations:\n        openshift.io/scc:
-    restricted-readonly\n    spec:\n      serviceAccountName: gpu-operator\n      priorityClassName:
-    system-node-critical\n      containers:\n      - name: gpu-operator\n        image:
-    nvcr.io/nvidia/gpu-operator:v1.9.1\n        imagePullPolicy: IfNotPresent\n        command:
-    [\"gpu-operator\"]\n        args:\n        - --leader-elect\n        env:\n        -
-    name: WATCH_NAMESPACE\n          value: \"\"\n        - name: OPERATOR_NAMESPACE\n
-    \         valueFrom:\n            fieldRef:\n              fieldPath: metadata.namespace\n
-    \       volumeMounts:\n          - name: host-os-release\n            mountPath:
-    \"/host-etc/os-release\"\n            readOnly: true\n        livenessProbe:\n
-    \         httpGet:\n            path: /healthz\n            port: 8081\n          initialDelaySeconds:
-    15\n          periodSeconds: 20\n        readinessProbe:\n          httpGet:\n
-    \           path: /readyz\n            port: 8081\n          initialDelaySeconds:
-    5\n          periodSeconds: 10\n        resources:\n          limits:\n            cpu:
-    500m\n            memory: 350Mi\n          requests:\n            cpu: 200m\n
-    \           memory: 100Mi\n        ports:\n          - name: metrics\n            containerPort:
-    8080\n      volumes:\n        - name: host-os-release\n          hostPath:\n            path:
-    \"/etc/os-release\"\n      affinity:\n        nodeAffinity:\n          preferredDuringSchedulingIgnoredDuringExecution:\n
+    dcgm-exporter\n    version: \"2.3.4-2.6.4-ubuntu20.04\"\n    imagePullPolicy:
+    IfNotPresent\n    env: \n      - name: DCGM_EXPORTER_LISTEN\n        value: :9400\n
+    \     - name: DCGM_EXPORTER_KUBERNETES\n        value: \"true\"\n      - name:
+    DCGM_EXPORTER_COLLECTORS\n        value: /etc/dcgm-exporter/dcp-metrics-included.csv\n
+    \ gfd:\n    repository: nvcr.io/nvidia\n    image: gpu-feature-discovery\n    version:
+    \"v0.5.0\"\n    imagePullPolicy: IfNotPresent\n    env: \n      - name: GFD_SLEEP_INTERVAL\n
+    \       value: 60s\n      - name: GFD_FAIL_ON_INIT_ERROR\n        value: \"true\"\n
+    \ migManager:\n    enabled: true\n    repository: nvcr.io/nvidia/cloud-native\n
+    \   image: k8s-mig-manager\n    version: \"v0.3.0-ubuntu20.04\"\n    imagePullPolicy:
+    IfNotPresent\n    securityContext: \n      privileged: true\n    env: \n      -
+    name: WITH_REBOOT\n        value: \"false\"\n    config: \n      name: \"\"\n
+    \   gpuClientsConfig: \n      name: \"\"\n  nodeStatusExporter:\n    enabled:
+    false\n    repository: nvcr.io/nvidia/cloud-native\n    image: gpu-operator-validator\n
+    \   version: \"v1.10.1\"\n    imagePullPolicy: IfNotPresent\n---\n# Source: gpu-operator/templates/operator.yaml\napiVersion:
+    apps/v1\nkind: Deployment\nmetadata:\n  name: gpu-operator\n  namespace: gpu-operator-resources\n
+    \ labels:\n    app.kubernetes.io/component: \"gpu-operator\"\n    \nspec:\n  replicas:
+    1\n  selector:\n    matchLabels:\n      \n      app.kubernetes.io/component: \"gpu-operator\"\n
+    \     app: \"gpu-operator\"\n  template:\n    metadata:\n      labels:\n        \n
+    \       app.kubernetes.io/component: \"gpu-operator\"\n        app: \"gpu-operator\"\n
+    \     annotations:\n        openshift.io/scc: restricted-readonly\n    spec:\n
+    \     serviceAccountName: gpu-operator\n      priorityClassName: system-node-critical\n
+    \     containers:\n      - name: gpu-operator\n        image: nvcr.io/nvidia/gpu-operator:v1.10.1\n
+    \       imagePullPolicy: IfNotPresent\n        command: [\"gpu-operator\"]\n        args:\n
+    \       - --leader-elect\n        env:\n        - name: WATCH_NAMESPACE\n          value:
+    \"\"\n        - name: OPERATOR_NAMESPACE\n          valueFrom:\n            fieldRef:\n
+    \             fieldPath: metadata.namespace\n        volumeMounts:\n          -
+    name: host-os-release\n            mountPath: \"/host-etc/os-release\"\n            readOnly:
+    true\n        livenessProbe:\n          httpGet:\n            path: /healthz\n
+    \           port: 8081\n          initialDelaySeconds: 15\n          periodSeconds:
+    20\n        readinessProbe:\n          httpGet:\n            path: /readyz\n            port:
+    8081\n          initialDelaySeconds: 5\n          periodSeconds: 10\n        resources:\n
+    \         limits:\n            cpu: 500m\n            memory: 350Mi\n          requests:\n
+    \           cpu: 200m\n            memory: 100Mi\n        ports:\n          -
+    name: metrics\n            containerPort: 8080\n      volumes:\n        - name:
+    host-os-release\n          hostPath:\n            path: \"/etc/os-release\"\n
+    \     affinity:\n        nodeAffinity:\n          preferredDuringSchedulingIgnoredDuringExecution:\n
     \         - preference:\n              matchExpressions:\n              - key:
     node-role.kubernetes.io/master\n                operator: In\n                values:\n
     \               - \"\"\n            weight: 1\n      tolerations:\n        - effect:
