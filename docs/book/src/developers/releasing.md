@@ -1,6 +1,11 @@
 # Release Process
 
-## Change milestone
+## Update metadata.yaml (skip for patch releases)
+
+- Make sure the [metadata.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/metadata.yaml) file is up to date and contains the new release with the correct cluster-api contract version.
+  - If not, open a [PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1928) to add it.
+
+## Change milestone (skip for patch releases)
 
 - Create a new GitHub milestone for the next release
 - Change milestone applier so new changes can be applied to the appropriate release
