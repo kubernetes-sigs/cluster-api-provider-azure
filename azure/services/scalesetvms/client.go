@@ -103,7 +103,7 @@ func (ac *azureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 			VirtualMachineScaleSetVMsDeleteFuture: future,
 		}
 	default:
-		return compute.VirtualMachineScaleSetVM{}, errors.Errorf("unknown furture type %q", future.Type)
+		return compute.VirtualMachineScaleSetVM{}, errors.Errorf("unknown future type %q", future.Type)
 	}
 
 	done, err := genericFuture.DoneWithContext(ctx, ac.scalesetvms)

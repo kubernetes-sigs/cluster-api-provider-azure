@@ -93,7 +93,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err == nil {
 			natGateway, ok := result.(network.NatGateway)
 			if !ok {
-				// Return out of loop since this would be an unexepcted fatal error
+				// Return out of loop since this would be an unexpected fatal error
 				resultingErr = errors.Errorf("created resource %T is not a network.NatGateway", result)
 				break
 			}

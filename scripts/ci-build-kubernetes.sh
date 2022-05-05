@@ -33,7 +33,7 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 : "${AZURE_STORAGE_ACCOUNT:?Environment variable empty or not defined.}"
 : "${AZURE_STORAGE_KEY:?Environment variable empty or not defined.}"
 : "${REGISTRY:?Environment variable empty or not defined.}"
-# JOB_NAME is an enviornment variable set by a prow job -
+# JOB_NAME is an environment variable set by a prow job -
 # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
 : "${JOB_NAME:?Environment variable empty or not defined.}"
 

@@ -42,7 +42,7 @@ kind: AzureManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
 ---
-# We provision a default machine pool with no boostrap data (AKS will provide it).
+# We provision a default machine pool with no bootstrap data (AKS will provide it).
 # We specify an AzureManagedMachinePool as the infrastructure machine it, which
 # will be reflected in Azure as VMSS node pools attached to an AKS cluster.
 apiVersion: cluster.x-k8s.io/v1beta1

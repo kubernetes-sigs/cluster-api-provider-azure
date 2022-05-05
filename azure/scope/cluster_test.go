@@ -2112,7 +2112,7 @@ func TestFailureDomains(t *testing.T) {
 			},
 		},
 		{
-			name:                 "Mutiple failure domains present in azure cluster status",
+			name:                 "Multiple failure domains present in azure cluster status",
 			expectFailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
 			clusterName:          "my-cluster",
 			azureClusterStatus: infrav1.AzureClusterStatus{

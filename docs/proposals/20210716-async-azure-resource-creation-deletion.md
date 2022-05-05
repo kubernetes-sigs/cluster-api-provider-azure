@@ -316,5 +316,5 @@ This is not mutually exclusive with the proposal above. In fact, it might be a g
 
 ## <a name='ImplementationHistory'></a>Implementation History
 
-- 2020/12/04: Inital POC [PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1067) for AzureMachinePool opened
+- 2020/12/04: Initial POC [PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1067) for AzureMachinePool opened
 - 2021/07/16: Initial proposal

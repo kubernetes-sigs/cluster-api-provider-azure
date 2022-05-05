@@ -69,7 +69,7 @@ type DiscoverAndWaitForControlPlaneMachinesInput struct {
 }
 
 // DiscoverAndWaitForControlPlaneInitialized gets the azure managed control plane associated with the cluster,
-// and waits for atleast one control plane machine to be up.
+// and waits for at least one control plane machine to be up.
 func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input DiscoverAndWaitForControlPlaneMachinesInput, intervals ...interface{}) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneInitialized")
 	Expect(input.Lister).ToNot(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
@@ -145,9 +145,9 @@ type WaitForControlPlaneAndMachinesReadyInput struct {
 	Namespace    string
 }
 
-// WaitForAtLeastOneControlPlaneAndMachineToExist waits for atleast one control plane machine to be provisioned.
+// WaitForAtLeastOneControlPlaneAndMachineToExist waits for at least one control plane machine to be provisioned.
 func WaitForAtLeastOneControlPlaneAndMachineToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, intervals ...interface{}) {
-	By("Waiting for atleast one control plane node to exist")
+	By("Waiting for at least one control plane node to exist")
 	WaitForControlPlaneMachinesToExist(ctx, input, atLeastOne, intervals...)
 }
 

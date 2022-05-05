@@ -32,7 +32,7 @@ type AzureManagedControlPlaneSpec struct {
 	ResourceGroupName string `json:"resourceGroupName"`
 
 	// NodeResourceGroupName is the name of the resource group
-	// containining cluster IaaS resources. Will be populated to default
+	// containing cluster IaaS resources. Will be populated to default
 	// in webhook.
 	NodeResourceGroupName string `json:"nodeResourceGroupName"`
 

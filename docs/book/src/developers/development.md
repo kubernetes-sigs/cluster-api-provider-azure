@@ -134,7 +134,7 @@ Install [Helm](https://helm.sh/docs/intro/install/):
  - `choco install kubernetes-helm` on Windows
  - [Install Instruction](https://helm.sh/docs/intro/install/#from-source-linux-macos) on Linux
 
-You would require installation of Helm for succesfully setting up Tilt.
+You would require installation of Helm for successfully setting up Tilt.
 
 ### Using Tilt
 
@@ -371,8 +371,8 @@ export WORKER_MACHINE_COUNT=2
 export KUBERNETES_VERSION="v1.22.1"
 
 # Identity secret.
-export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret" 
-export CLUSTER_IDENTITY_NAME="cluster-identity" 
+export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
+export CLUSTER_IDENTITY_NAME="cluster-identity"
 export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
 
 # Generate SSH key.
@@ -392,7 +392,7 @@ or the use of `envsubst` to replace these values
 
 ##### Creating the cluster
 
-⚠️ Make sure you followed the previous two steps to build the dev image and set the required environment variables before proceding.
+⚠️ Make sure you followed the previous two steps to build the dev image and set the required environment variables before proceeding.
 
 Ensure dev environment has been reset:
 
@@ -435,7 +435,7 @@ defer done()
 ```
 
 The code above creates a context with a new span stored in the context.Context value bag. If a span already existed in
-the `ctx` arguement, then the new span would take on the parentID of the existing span, otherwise the new span
+the `ctx` argument, then the new span would take on the parentID of the existing span, otherwise the new span
 becomes a "root span", one that does not have a parent. The span is also created with labels, or tags, which
 provide metadata about the span and can be used to query in many distributed tracing systems.
 
@@ -492,7 +492,7 @@ You can optionally set the following variables:
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
 | `E2E_CONF_FILE`            | The path of the [E2E configuration file](https://cluster-api.sigs.k8s.io/developer/e2e.html#defining-an-e2e-config-file). | `${GOPATH}/src/sigs.k8s.io/cluster-api-provider-azure/test/e2e/config/azure-dev.yaml` |
 | `SKIP_CLEANUP`             | Set to `true` if you do not want the bootstrap and workload clusters to be cleaned up after running E2E tests.            | `false`                                                                               |
-| `SKIP_CREATE_MGMT_CLUSTER` | Skip management cluster creation. If skipping managment cluster creation you must specify `KUBECONFIG` and `SKIP_CLEANUP` | `false`                                                                               |
+| `SKIP_CREATE_MGMT_CLUSTER` | Skip management cluster creation. If skipping management cluster creation you must specify `KUBECONFIG` and `SKIP_CLEANUP` | `false`                                                                               |
 | `LOCAL_ONLY`               | Use Kind local registry and run the subset of tests which don't require a remotely pushed controller image.               | `true`                                                                                |
 | `REGISTRY`                 | Registry to push the controller image.                                                                                    | `capzci.azurecr.io/ci-e2e`                                                            |
 | `CLUSTER_NAME`             | Name of an existing workload cluster.  Must be set to run specs against existing workload cluster. Use in conjunction with `SKIP_CREATE_MGMT_CLUSTER`, `GINKGO_FOCUS`, `CLUSTER_NAMESPACE` and `KUBECONFIG`. Must specify **only one** e2e spec to run against with `GINKGO_FOCUS` such as `export GINKGO_FOCUS=Creating.a.VMSS.cluster.with.a.single.control.plane.node`. |
@@ -532,7 +532,7 @@ With the following environment variables defined, CAPZ runs `./scripts/ci-build-
 |-------------------------|------------|
 | `AZURE_STORAGE_ACCOUNT` | Your Azure storage account name |
 | `AZURE_STORAGE_KEY`     | Your Azure storage key |
-| `JOB_NAME`              | `test` (an enviroment variable used by CI, can be any non-empty string) |
+| `JOB_NAME`              | `test` (an environment variable used by CI, can be any non-empty string) |
 | `LOCAL_ONLY`            | `false`    |
 | `REGISTRY`              | Your Registry |
 | `TEST_K8S`              | `true`     |
@@ -558,7 +558,7 @@ You can optionally set the following variables:
 | `EXP_MACHINE_POOL`          | Use [Machine Pool](../topics/machinepools.md) for worker machines.                                                                            |
 | `TEST_WINDOWS`                  | Build a cluster that has Windows worker nodes.          |
 | `REGISTRY`                  | Registry to push any custom k8s images or cloud provider images built.                                                                     |
-| `CLUSTER_TEMPLATE`          | Use a custom cluster template. By default, the script will choose the appropriate cluster template based on existing environment variabes. |
+| `CLUSTER_TEMPLATE`          | Use a custom cluster template. By default, the script will choose the appropriate cluster template based on existing environment variables. |
 
 You can also customize the configuration of the CAPZ cluster (assuming that `SKIP_CREATE_WORKLOAD_CLUSTER` is not set). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
 

@@ -81,7 +81,7 @@ The Windows HostProcess Container feature is Alpha for Kubernetes v1.22 and Beta
 
 Current requirements:
 
-- Kuberentes 1.22+
+- Kubernetes 1.22+
 - containerd 1.6+ 
 - `WindowsHostProcessContainers` feature-gate (Alpha for v1.22) turned on for kube-apiserver and kubelet if using Kubernetes 1.22
 
