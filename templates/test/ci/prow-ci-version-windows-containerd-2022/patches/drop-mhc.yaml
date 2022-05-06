@@ -1,0 +1,4 @@
+# not including in WS 2022 image so we can test cloudbase-init patch with this image
+# https://github.com/cloudbase/cloudbase-init/issues/94#issuecomment-1115930324
+- op: remove
+  path: "/spec/template/metadata/labels/windows-healthcheck"
