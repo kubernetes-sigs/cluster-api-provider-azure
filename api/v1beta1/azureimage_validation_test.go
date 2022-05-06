@@ -41,10 +41,12 @@ func TestImageTooManyDetails(t *testing.T) {
 
 	image := &Image{
 		Marketplace: &AzureMarketplaceImage{
-			Offer:     "OFFER",
-			Publisher: "PUBLISHER",
-			SKU:       "SKU",
-			Version:   "1.0.0.",
+			ImagePlan: ImagePlan{
+				Offer:     "OFFER",
+				Publisher: "PUBLISHER",
+				SKU:       "SKU",
+			},
+			Version: "1.0.0.",
 		},
 		SharedGallery: &AzureSharedGalleryImage{
 			Gallery:        "GALLERY",
@@ -167,10 +169,12 @@ func createTestSharedImage(subscriptionID, resourceGroup, name, gallery, version
 func createTestMarketPlaceImage(publisher, offer, sku, version string) *Image {
 	return &Image{
 		Marketplace: &AzureMarketplaceImage{
-			Publisher: publisher,
-			Offer:     offer,
-			SKU:       sku,
-			Version:   version,
+			ImagePlan: ImagePlan{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       sku,
+			},
+			Version: version,
 		},
 	}
 }

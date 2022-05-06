@@ -144,3 +144,19 @@ func Convert_v1beta1_ManagedDiskParameters_To_v1alpha3_ManagedDisk(in *v1beta1.M
 	out.DiskEncryptionSet = (*DiskEncryptionSetParameters)(in.DiskEncryptionSet)
 	return nil
 }
+
+func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s apiconversion.Scope) error {
+	out.Offer = in.ImagePlan.Offer
+	out.Publisher = in.ImagePlan.Publisher
+	out.SKU = in.ImagePlan.SKU
+
+	return autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in, out, s)
+}
+
+func Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1beta1.AzureMarketplaceImage, s apiconversion.Scope) error {
+	out.ImagePlan.Offer = in.Offer
+	out.ImagePlan.Publisher = in.Publisher
+	out.ImagePlan.SKU = in.SKU
+
+	return autoConvert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in, out, s)
+}

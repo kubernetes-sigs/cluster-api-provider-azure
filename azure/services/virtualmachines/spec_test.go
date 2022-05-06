@@ -483,9 +483,11 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Image: &infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
-						Publisher:       "fake-publisher",
-						Offer:           "my-offer",
-						SKU:             "sku-id",
+						ImagePlan: infrav1.ImagePlan{
+							Publisher: "fake-publisher",
+							Offer:     "my-offer",
+							SKU:       "sku-id",
+						},
 						Version:         "1.0",
 						ThirdPartyImage: true,
 					},

@@ -60,10 +60,12 @@ func (s *Service) GetDefaultUbuntuImage(ctx context.Context, location, k8sVersio
 
 	defaultImage := &infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: publisher,
-			Offer:     offer,
-			SKU:       skuID,
-			Version:   version,
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       skuID,
+			},
+			Version: version,
 		},
 	}
 
@@ -101,10 +103,12 @@ func (s *Service) GetDefaultWindowsImage(ctx context.Context, location, k8sVersi
 
 	defaultImage := &infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: publisher,
-			Offer:     offer,
-			SKU:       skuID,
-			Version:   version,
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       skuID,
+			},
+			Version: version,
 		},
 	}
 

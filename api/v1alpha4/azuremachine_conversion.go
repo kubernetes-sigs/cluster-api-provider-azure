@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha4
 
 import (
+	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
@@ -43,4 +44,20 @@ func (src *AzureMachineList) ConvertTo(dstRaw conversion.Hub) error {
 func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.AzureMachineList)
 	return Convert_v1beta1_AzureMachineList_To_v1alpha4_AzureMachineList(src, dst, nil)
+}
+
+func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s apiconversion.Scope) error {
+	out.Offer = in.ImagePlan.Offer
+	out.Publisher = in.ImagePlan.Publisher
+	out.SKU = in.ImagePlan.SKU
+
+	return autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in, out, s)
+}
+
+func Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1beta1.AzureMarketplaceImage, s apiconversion.Scope) error {
+	out.ImagePlan.Offer = in.Offer
+	out.ImagePlan.Publisher = in.Publisher
+	out.ImagePlan.SKU = in.SKU
+
+	return autoConvert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in, out, s)
 }

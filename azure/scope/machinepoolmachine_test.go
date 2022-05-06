@@ -249,10 +249,12 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 					State: v1beta1.Succeeded,
 					Image: v1beta1.Image{
 						Marketplace: &v1beta1.AzureMarketplaceImage{
-							Publisher: "cncf-upstream",
-							Offer:     "capi",
-							SKU:       "k8s-1dot19dot11-ubuntu-1804",
-							Version:   "latest",
+							ImagePlan: v1beta1.ImagePlan{
+								Publisher: "cncf-upstream",
+								Offer:     "capi",
+								SKU:       "k8s-1dot19dot11-ubuntu-1804",
+							},
+							Version: "latest",
 						},
 					},
 				}, ampm

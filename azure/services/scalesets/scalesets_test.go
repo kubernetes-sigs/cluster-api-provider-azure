@@ -699,7 +699,7 @@ func getFakeSkus() []compute.ResourceSku {
 				{
 					Location: to.StringPtr("test-location"),
 					Zones:    &[]string{"1", "3"},
-					//ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+					// ZoneDetails: &[]compute.ResourceSkuZoneDetails{
 					//    {
 					//        	Capabilities: &[]compute.ResourceSkuCapabilities{
 					//        		{
@@ -1190,10 +1190,12 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 	setupVMSSExpectationsWithoutVMImage(s)
 	image := &infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: "fake-publisher",
-			Offer:     "my-offer",
-			SKU:       "sku-id",
-			Version:   "1.0",
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: "fake-publisher",
+				Offer:     "my-offer",
+				SKU:       "sku-id",
+			},
+			Version: "1.0",
 		},
 	}
 	s.GetVMImage(gomockinternal.AContext()).Return(image, nil).AnyTimes()
@@ -1204,10 +1206,12 @@ func setupUpdateVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder
 	setupVMSSExpectationsWithoutVMImage(s)
 	image := &infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: "fake-publisher",
-			Offer:     "my-offer",
-			SKU:       "sku-id",
-			Version:   "2.0",
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: "fake-publisher",
+				Offer:     "my-offer",
+				SKU:       "sku-id",
+			},
+			Version: "2.0",
 		},
 	}
 	s.GetVMImage(gomockinternal.AContext()).Return(image, nil).AnyTimes()

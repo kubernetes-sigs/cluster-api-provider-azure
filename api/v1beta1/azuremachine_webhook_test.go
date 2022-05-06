@@ -573,10 +573,12 @@ func createMachineWithSharedImage(subscriptionID, resourceGroup, name, gallery, 
 func createMachineWithMarketPlaceImage(publisher, offer, sku, version string) *AzureMachine {
 	image := &Image{
 		Marketplace: &AzureMarketplaceImage{
-			Publisher: publisher,
-			Offer:     offer,
-			SKU:       sku,
-			Version:   version,
+			ImagePlan: ImagePlan{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       sku,
+			},
+			Version: version,
 		},
 	}
 

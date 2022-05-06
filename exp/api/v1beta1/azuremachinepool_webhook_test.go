@@ -278,10 +278,12 @@ func TestAzureMachinePool_Default(t *testing.T) {
 func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
 	image := infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: publisher,
-			Offer:     offer,
-			SKU:       sku,
-			Version:   version,
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       sku,
+			},
+			Version: version,
 		},
 	}
 

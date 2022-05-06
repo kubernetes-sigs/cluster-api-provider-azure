@@ -284,9 +284,11 @@ func TestMachinePoolScope_SaveVMImageToStatus(t *testing.T) {
 		}
 		image = &infrav1.Image{
 			Marketplace: &infrav1.AzureMarketplaceImage{
-				Publisher:       "cncf-upstream",
-				Offer:           "capi",
-				SKU:             "k8s-1dot19dot11-ubuntu-1804",
+				ImagePlan: infrav1.ImagePlan{
+					Publisher: "cncf-upstream",
+					Offer:     "capi",
+					SKU:       "k8s-1dot19dot11-ubuntu-1804",
+				},
 				Version:         "latest",
 				ThirdPartyImage: false,
 			},
@@ -322,9 +324,11 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 				image := &infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
-						Publisher:       "cncf-upstream",
-						Offer:           "capi",
-						SKU:             "k8s-1dot19dot11-ubuntu-1804",
+						ImagePlan: infrav1.ImagePlan{
+							Publisher: "cncf-upstream",
+							Offer:     "capi",
+							SKU:       "k8s-1dot19dot11-ubuntu-1804",
+						},
 						Version:         "latest",
 						ThirdPartyImage: false,
 					},
@@ -339,9 +343,11 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 				mp.Spec.Template.Spec.Version = to.StringPtr("v1.19.11")
 				amp.Spec.Template.Image = &infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
-						Publisher:       "cncf-upstream",
-						Offer:           "capi",
-						SKU:             "k8s-1dot19dot19-ubuntu-1804",
+						ImagePlan: infrav1.ImagePlan{
+							Publisher: "cncf-upstream",
+							Offer:     "capi",
+							SKU:       "k8s-1dot19dot19-ubuntu-1804",
+						},
 						Version:         "latest",
 						ThirdPartyImage: false,
 					},
@@ -351,9 +357,11 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 				image := &infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
-						Publisher:       "cncf-upstream",
-						Offer:           "capi",
-						SKU:             "k8s-1dot19dot19-ubuntu-1804",
+						ImagePlan: infrav1.ImagePlan{
+							Publisher: "cncf-upstream",
+							Offer:     "capi",
+							SKU:       "k8s-1dot19dot19-ubuntu-1804",
+						},
 						Version:         "latest",
 						ThirdPartyImage: false,
 					},

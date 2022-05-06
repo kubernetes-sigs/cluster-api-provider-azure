@@ -326,8 +326,7 @@ type Image struct {
 	Marketplace *AzureMarketplaceImage `json:"marketplace,omitempty"`
 }
 
-// AzureMarketplaceImage defines an image in the Azure Marketplace to use for VM creation.
-type AzureMarketplaceImage struct {
+type ImagePlan struct {
 	// Publisher is the name of the organization that created the image
 	// +kubebuilder:validation:MinLength=1
 	Publisher string `json:"publisher"`
@@ -339,6 +338,12 @@ type AzureMarketplaceImage struct {
 	// For example, 18.04-LTS, 2019-Datacenter
 	// +kubebuilder:validation:MinLength=1
 	SKU string `json:"sku"`
+}
+
+// AzureMarketplaceImage defines an image in the Azure Marketplace to use for VM creation.
+type AzureMarketplaceImage struct {
+	ImagePlan `json:",inline"`
+
 	// Version specifies the version of an image sku. The allowed formats
 	// are Major.Minor.Build or 'latest'. Major, Minor, and Build are decimal numbers.
 	// Specify 'latest' to use the latest version of an image available at deploy time.

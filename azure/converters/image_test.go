@@ -72,9 +72,11 @@ func Test_ImageToPlan(t *testing.T) {
 			name: "Should return nil for a Marketplace first party image",
 			image: &infrav1.Image{
 				Marketplace: &infrav1.AzureMarketplaceImage{
-					Publisher:       "my-publisher",
-					Offer:           "my-offer",
-					SKU:             "my-sku",
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "my-publisher",
+						Offer:     "my-offer",
+						SKU:       "my-sku",
+					},
 					Version:         "v0.5.0",
 					ThirdPartyImage: false,
 				},
@@ -87,9 +89,11 @@ func Test_ImageToPlan(t *testing.T) {
 			name: "Should return a plan for a Marketplace third party image",
 			image: &infrav1.Image{
 				Marketplace: &infrav1.AzureMarketplaceImage{
-					Publisher:       "my-publisher",
-					Offer:           "my-offer",
-					SKU:             "my-sku",
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "my-publisher",
+						Offer:     "my-offer",
+						SKU:       "my-sku",
+					},
 					Version:         "v0.5.0",
 					ThirdPartyImage: true,
 				},
