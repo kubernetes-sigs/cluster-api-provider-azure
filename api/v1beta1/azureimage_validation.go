@@ -38,7 +38,7 @@ func ValidateImage(image *Image, fldPath *field.Path) field.ErrorList {
 		allErrs = append(allErrs, validateSharedGalleryImage(image, fldPath)...)
 	}
 	if image.ID != nil {
-		allErrs = append(allErrs, validateSpecifcImage(image, fldPath)...)
+		allErrs = append(allErrs, validateSpecificImage(image, fldPath)...)
 	}
 
 	return allErrs
@@ -115,7 +115,7 @@ func validateMarketplaceImage(image *Image, fldPath *field.Path) field.ErrorList
 	return allErrs
 }
 
-func validateSpecifcImage(image *Image, fldPath *field.Path) field.ErrorList {
+func validateSpecificImage(image *Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if *image.ID == "" {
