@@ -148,9 +148,11 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 
 	clusterNormalized := &containerservice.ManagedCluster{
 		ManagedClusterProperties: propertiesNormalized,
+		Tags:                     managedCluster.Tags,
 	}
 	existingMCClusterNormalized := &containerservice.ManagedCluster{
 		ManagedClusterProperties: existingMCPropertiesNormalized,
+		Tags:                     existingMC.Tags,
 	}
 
 	if managedCluster.Sku != nil {
@@ -212,7 +214,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			Type: containerservice.ResourceIdentityTypeSystemAssigned,
 		},
 		Location: &managedClusterSpec.Location,
-		Tags:     *to.StringMapPtr(managedClusterSpec.Tags),
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 			NodeResourceGroup: &managedClusterSpec.NodeResourceGroupName,
 			EnableRBAC:        to.BoolPtr(true),
@@ -238,6 +239,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				NetworkPolicy:   containerservice.NetworkPolicy(managedClusterSpec.NetworkPolicy),
 			},
 		},
+	}
+
+	if tags := *to.StringMapPtr(managedClusterSpec.Tags); len(tags) != 0 {
+		managedCluster.Tags = tags
 	}
 
 	if managedClusterSpec.PodCIDR != "" {
