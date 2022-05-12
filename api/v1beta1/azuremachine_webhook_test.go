@@ -40,12 +40,12 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 	}{
 		{
 			name:    "azuremachine with marketplace image - full",
-			machine: createMachineWithtMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0"),
+			machine: createMachineWithMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0"),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with marketplace image - missing publisher",
-			machine: createMachineWithtMarketPlaceImage("", "OFFER1235", "SKU1235", "2.0.0"),
+			machine: createMachineWithMarketPlaceImage("", "OFFER1235", "SKU1235", "2.0.0"),
 			wantErr: true,
 		},
 		{
@@ -570,7 +570,7 @@ func createMachineWithSharedImage(subscriptionID, resourceGroup, name, gallery, 
 	}
 }
 
-func createMachineWithtMarketPlaceImage(publisher, offer, sku, version string) *AzureMachine {
+func createMachineWithMarketPlaceImage(publisher, offer, sku, version string) *AzureMachine {
 	image := &Image{
 		Marketplace: &AzureMarketplaceImage{
 			Publisher: publisher,
