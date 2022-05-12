@@ -467,7 +467,7 @@ generate-addons: fetch-calico-manifests ## Generate metric-server, calico calico
 	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-dual-stack > $(ADDONS_DIR)/calico-dual-stack.yaml
 
 # When updating this, make sure to also update the Windows image version in templates/addons/windows/calico.
-CALICO_VERSION := v3.22.1
+CALICO_VERSION := v3.23.0
 
 .PHONY: fetch-calico-manifests
 fetch-calico-manifests: ## Get Calico release manifests and unzip them.
