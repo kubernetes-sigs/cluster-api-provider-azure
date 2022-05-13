@@ -66,7 +66,8 @@ type AzureManagedControlPlaneSpec struct {
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
-	SSHPublicKey string `json:"sshPublicKey"`
+	// +optional
+	SSHPublicKey *string `json:"sshPublicKey,omitempty"`
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
 	// It must be within the Kubernetes service address range specified in serviceCidr.
@@ -81,6 +82,18 @@ type AzureManagedControlPlaneSpec struct {
 	// AadProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
 	// +optional
 	AADProfile *AADProfile `json:"aadProfile,omitempty"`
+
+	// Sku is the SKU of the AKS to be provisioned.
+	// +optional
+	Sku *SKU `json:"sku,omitempty"`
+
+	// LoadBalancerProfile is the profile of the cluster load balancer.
+	// +optional
+	LoadBalancerProfile *LoadBalancerProfile `json:"loadBalancerProfile,omitempty"`
+
+	// APIServerAccessProfile is the access profile for AKS API server.
+	// +optional
+	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
@@ -94,17 +107,68 @@ type AADProfile struct {
 	AdminGroupObjectIDs []string `json:"adminGroupObjectIDs"`
 }
 
+// SKU - AKS SKU.
+type SKU struct {
+	// Tier - Tier of a managed cluster SKU.
+	// +kubebuilder:validation:Enum=Free;Paid
+	Tier string `json:"tier"`
+}
+
+// LoadBalancerProfile - Profile of the cluster load balancer.
+type LoadBalancerProfile struct {
+	// ManagedOutboundIPs - Desired managed outbound IPs for the cluster load balancer.
+	// +optional
+	ManagedOutboundIPs *int32 `json:"managedOutboundIPs,omitempty"`
+
+	// OutboundIPPrefixes - Desired outbound IP Prefix resources for the cluster load balancer.
+	// +optional
+	OutboundIPPrefixes []string `json:"outboundIPPrefixes,omitempty"`
+
+	// OutboundIPs - Desired outbound IP resources for the cluster load balancer.
+	// +optional
+	OutboundIPs []string `json:"outboundIPs,omitempty"`
+
+	// EffectiveOutboundIPs - The effective outbound IP resources of the cluster load balancer.
+	// +optional
+	EffectiveOutboundIPs []string `json:"effectiveOutboundIPs,omitempty"`
+
+	// AllocatedOutboundPorts - Desired number of allocated SNAT ports per VM. Allowed values must be in the range of 0 to 64000 (inclusive). The default value is 0 which results in Azure dynamically allocating ports.
+	// +optional
+	AllocatedOutboundPorts *int32 `json:"allocatedOutboundPorts,omitempty"`
+
+	// IdleTimeoutInMinutes - Desired outbound flow idle timeout in minutes. Allowed values must be in the range of 4 to 120 (inclusive). The default value is 30 minutes.
+	// +optional
+	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
+}
+
+// APIServerAccessProfile - access profile for AKS API server.
+type APIServerAccessProfile struct {
+	// AuthorizedIPRanges - Authorized IP Ranges to kubernetes API server.
+	// +optional
+	AuthorizedIPRanges []string `json:"authorizedIPRanges,omitempty"`
+	// EnablePrivateCluster - Whether to create the cluster as a private cluster or not.
+	// +optional
+	EnablePrivateCluster *bool `json:"enablePrivateCluster,omitempty"`
+	// PrivateDNSZone - Private dns zone mode for private cluster.
+	// +kubebuilder:validation:Enum=System;None
+	// +optional
+	PrivateDNSZone *string `json:"privateDNSZone,omitempty"`
+	// EnablePrivateClusterPublicFQDN - Whether to create additional public FQDN for private cluster or not.
+	// +optional
+	EnablePrivateClusterPublicFQDN *bool `json:"enablePrivateClusterPublicFQDN,omitempty"`
+}
+
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
 type ManagedControlPlaneVirtualNetwork struct {
-	Name      string                    `json:"name"`
-	CIDRBlock string                    `json:"cidrBlock"`
-	Subnet    ManagedControlPlaneSubnet `json:"subnet,omitempty"`
+	Name       string                      `json:"name"`
+	CIDRBlocks []string                    `json:"cidrBlocks"`
+	Subnets    []ManagedControlPlaneSubnet `json:"subnets,omitempty"`
 }
 
 // ManagedControlPlaneSubnet describes a subnet for an AKS cluster.
 type ManagedControlPlaneSubnet struct {
-	Name      string `json:"name"`
-	CIDRBlock string `json:"cidrBlock"`
+	Name       string   `json:"name"`
+	CIDRBlocks []string `json:"cidrBlocks"`
 }
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.

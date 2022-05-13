@@ -23,9 +23,12 @@ import (
 	"net"
 	"strings"
 
+	"github.com/Azure/go-autorest/autorest/to"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2/klogr"
@@ -116,7 +119,7 @@ type ManagedControlPlaneScope struct {
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	PatchTarget      client.Object
 
-	SystemNodePools []infrav1exp.AzureManagedMachinePool
+	AllNodePools []infrav1exp.AzureManagedMachinePool
 }
 
 // ResourceGroup returns the managed control plane's resource group.
@@ -187,19 +190,28 @@ func (s *ManagedControlPlaneScope) Close(ctx context.Context) error {
 	return s.PatchObject(ctx)
 }
 
+// GetVNetResourceGroup returns the vNet resource group name.
+func (s *ManagedControlPlaneScope) GetVNetResourceGroup() string {
+	if s.ControlPlane.Spec.VirtualNetwork.ResourceGroupName != nil {
+		s.Logger.Info("User specified vNet ResourceGroupName %s", *s.ControlPlane.Spec.VirtualNetwork.ResourceGroupName)
+		return *s.ControlPlane.Spec.VirtualNetwork.ResourceGroupName
+	}
+	return s.ControlPlane.Spec.ResourceGroupName
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 	return &infrav1.VnetSpec{
-		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
+		ResourceGroup: s.GetVNetResourceGroup(),
 		Name:          s.ControlPlane.Spec.VirtualNetwork.Name,
-		CIDRBlocks:    []string{s.ControlPlane.Spec.VirtualNetwork.CIDRBlock},
+		CIDRBlocks:    s.ControlPlane.Spec.VirtualNetwork.CIDRBlocks,
 	}
 }
 
 // VNetSpec returns the virtual network spec.
 func (s *ManagedControlPlaneScope) VNetSpec() azure.VNetSpec {
 	return azure.VNetSpec{
-		ResourceGroup: s.Vnet().ResourceGroup,
+		ResourceGroup: s.GetVNetResourceGroup(),
 		Name:          s.Vnet().Name,
 		CIDRs:         s.Vnet().CIDRBlocks,
 	}
@@ -222,13 +234,16 @@ func (s *ManagedControlPlaneScope) NodeNatGateway() infrav1.NatGateway {
 
 // SubnetSpecs returns the subnets specs.
 func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
-	return []azure.SubnetSpec{
-		{
-			Name:     s.NodeSubnet().Name,
-			CIDRs:    s.NodeSubnet().CIDRBlocks,
+	nodeSubnets := s.NodeSubnets()
+	subnetSpecs := make([]azure.SubnetSpec, len(nodeSubnets))
+	for i := range nodeSubnets {
+		subnetSpecs[i] = azure.SubnetSpec{
+			Name:     nodeSubnets[i].Name,
+			CIDRs:    nodeSubnets[i].CIDRBlocks,
 			VNetName: s.Vnet().Name,
-		},
+		}
 	}
+	return subnetSpecs
 }
 
 // Subnets returns the subnets specs.
@@ -236,12 +251,16 @@ func (s *ManagedControlPlaneScope) Subnets() infrav1.Subnets {
 	return infrav1.Subnets{}
 }
 
-// NodeSubnet returns the cluster node subnet.
-func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
-	return infrav1.SubnetSpec{
-		Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
-		CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
+// NodeSubnets returns the cluster node subnets.
+func (s *ManagedControlPlaneScope) NodeSubnets() []infrav1.SubnetSpec {
+	subnetSpecs := make([]infrav1.SubnetSpec, len(s.ControlPlane.Spec.VirtualNetwork.Subnets))
+	for i := range s.ControlPlane.Spec.VirtualNetwork.Subnets {
+		subnetSpecs[i] = infrav1.SubnetSpec{
+			Name:       s.ControlPlane.Spec.VirtualNetwork.Subnets[i].Name,
+			CIDRBlocks: s.ControlPlane.Spec.VirtualNetwork.Subnets[i].CIDRBlocks,
+		}
 	}
+	return subnetSpecs
 }
 
 // SetSubnet sets the passed subnet spec into the scope.
@@ -255,22 +274,14 @@ func (s *ManagedControlPlaneScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 	return infrav1.SubnetSpec{}
 }
 
-// NodeSubnets returns the subnets with the node role.
-func (s *ManagedControlPlaneScope) NodeSubnets() []infrav1.SubnetSpec {
-	return []infrav1.SubnetSpec{
-		{
-			Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
-			CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
-		},
-	}
-}
-
 // Subnet returns the subnet with the provided name.
 func (s *ManagedControlPlaneScope) Subnet(name string) infrav1.SubnetSpec {
 	subnet := infrav1.SubnetSpec{}
-	if name == s.ControlPlane.Spec.VirtualNetwork.Subnet.Name {
-		subnet.Name = s.ControlPlane.Spec.VirtualNetwork.Subnet.Name
-		subnet.CIDRBlocks = []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock}
+	for i := range s.ControlPlane.Spec.VirtualNetwork.Subnets {
+		if name == s.ControlPlane.Spec.VirtualNetwork.Subnets[i].Name {
+			subnet.Name = s.ControlPlane.Spec.VirtualNetwork.Subnets[i].Name
+			subnet.CIDRBlocks = s.ControlPlane.Spec.VirtualNetwork.Subnets[i].CIDRBlocks
+		}
 	}
 
 	return subnet
@@ -327,9 +338,13 @@ func (s *ManagedControlPlaneScope) CloudProviderConfigOverrides() *infrav1.Cloud
 
 // ManagedClusterSpec returns the managed cluster spec.
 func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpec, error) {
-	decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(s.ControlPlane.Spec.SSHPublicKey)
-	if err != nil {
-		return azure.ManagedClusterSpec{}, errors.Wrap(err, "failed to decode SSHPublicKey")
+	var sshPublicKey *string
+	if s.ControlPlane.Spec.SSHPublicKey != nil {
+		decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(*s.ControlPlane.Spec.SSHPublicKey)
+		if err != nil {
+			return azure.ManagedClusterSpec{}, errors.Wrap(err, "failed to decode SSHPublicKey")
+		}
+		sshPublicKey = to.StringPtr(string(decodedSSHPublicKey))
 	}
 
 	managedClusterSpec := azure.ManagedClusterSpec{
@@ -339,15 +354,17 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		Location:              s.ControlPlane.Spec.Location,
 		Tags:                  s.ControlPlane.Spec.AdditionalTags,
 		Version:               strings.TrimPrefix(s.ControlPlane.Spec.Version, "v"),
-		SSHPublicKey:          string(decodedSSHPublicKey),
+		SSHPublicKey:          sshPublicKey,
 		DNSServiceIP:          s.ControlPlane.Spec.DNSServiceIP,
 		VnetSubnetID: azure.SubnetID(
 			s.ControlPlane.Spec.SubscriptionID,
-			s.ControlPlane.Spec.ResourceGroupName,
+			s.GetVNetResourceGroup(),
 			s.ControlPlane.Spec.VirtualNetwork.Name,
-			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			s.ControlPlane.Spec.VirtualNetwork.Subnets[0].Name,
 		),
+		DisableLocalAccounts: s.ControlPlane.Spec.DisableLocalAccounts,
 	}
+	s.Logger.Info("managed cluster vnet subnet id %s", managedClusterSpec.VnetSubnetID)
 
 	if s.ControlPlane.Spec.NetworkPlugin != nil {
 		managedClusterSpec.NetworkPlugin = *s.ControlPlane.Spec.NetworkPlugin
@@ -404,16 +421,41 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		}
 	}
 
+	if s.ControlPlane.Spec.Sku != nil {
+		managedClusterSpec.Sku = &azure.SKU{
+			Tier: s.ControlPlane.Spec.Sku.Tier,
+		}
+	}
+
+	if s.ControlPlane.Spec.LoadBalancerProfile != nil {
+		managedClusterSpec.LoadBalancerProfile = &azure.LoadBalancerProfile{
+			ManagedOutboundIPs:     s.ControlPlane.Spec.LoadBalancerProfile.ManagedOutboundIPs,
+			OutboundIPPrefixes:     s.ControlPlane.Spec.LoadBalancerProfile.OutboundIPPrefixes,
+			OutboundIPs:            s.ControlPlane.Spec.LoadBalancerProfile.OutboundIPs,
+			EffectiveOutboundIPs:   s.ControlPlane.Spec.LoadBalancerProfile.EffectiveOutboundIPs,
+			AllocatedOutboundPorts: s.ControlPlane.Spec.LoadBalancerProfile.AllocatedOutboundPorts,
+			IdleTimeoutInMinutes:   s.ControlPlane.Spec.LoadBalancerProfile.IdleTimeoutInMinutes,
+		}
+	}
+
+	if s.ControlPlane.Spec.APIServerAccessProfile != nil {
+		managedClusterSpec.APIServerAccessProfile = &azure.APIServerAccessProfile{
+			AuthorizedIPRanges:             s.ControlPlane.Spec.APIServerAccessProfile.AuthorizedIPRanges,
+			EnablePrivateCluster:           s.ControlPlane.Spec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 s.ControlPlane.Spec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: s.ControlPlane.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+	}
+
 	return managedClusterSpec, nil
 }
 
-// GetSystemAgentPoolSpecs gets a slice of azure.AgentPoolSpec for system agent pools.
-func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
-	if len(s.SystemNodePools) == 0 {
+// GetAgentPoolSpecs gets azure.AgentPoolSpec for the list of agent pools.
+func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
+	if len(s.AllNodePools) == 0 {
 		opt1 := client.InNamespace(s.ControlPlane.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
-			infrav1exp.LabelAgentPoolMode: string(infrav1exp.NodePoolModeSystem),
-			clusterv1.ClusterLabelName:    s.Cluster.Name,
+			clusterv1.ClusterLabelName: s.Cluster.Name,
 		})
 
 		ammpList := &infrav1exp.AzureManagedMachinePoolList{}
@@ -422,16 +464,13 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 			return nil, err
 		}
 
-		if ammpList == nil || len(ammpList.Items) == 0 {
-			return nil, errors.New("failed to fetch azuremanagedMachine pool with mode:System, require at least 1 system node pool")
-		}
-
-		s.SystemNodePools = ammpList.Items
+		s.AllNodePools = ammpList.Items
 	}
 
 	ammps := []azure.AgentPoolSpec{}
 
-	for _, pool := range s.SystemNodePools {
+	foundSystemPool := false
+	for _, pool := range s.AllNodePools {
 		// Fetch the owning MachinePool.
 
 		ownerPool, err := capiexputil.GetOwnerMachinePool(ctx, s.Client, pool.ObjectMeta)
@@ -444,11 +483,23 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 			continue
 		}
 
+		if pool.Spec.Mode == string(infrav1exp.NodePoolModeSystem) {
+			foundSystemPool = true
+		}
+
+		var name string
+		if pool.Spec.Name != nil {
+			name = *pool.Spec.Name
+		} else {
+			name = pool.Name
+		}
+
 		ammp := azure.AgentPoolSpec{
-			Name:         pool.Name,
+			Name:         name,
 			SKU:          pool.Spec.SKU,
 			Replicas:     1,
 			OSDiskSizeGB: 0,
+			Mode:         pool.Spec.Mode,
 		}
 
 		// Set optional values
@@ -460,7 +511,71 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 			ammp.Replicas = *ownerPool.Spec.Replicas
 		}
 
+		if ownerPool.Spec.Template.Spec.Version != nil {
+			version := *ownerPool.Spec.Template.Spec.Version
+			if semver.Compare(version, s.ControlPlane.Spec.Version) > 0 {
+				return nil, errors.New("MachinePool version cannot be greater than the AzureManagedControlPlane version")
+			}
+			ammp.Version = to.StringPtr(strings.TrimPrefix(version, "v"))
+		}
+
+		if pool.Spec.MaxCount != nil {
+			ammp.MaxCount = pool.Spec.MaxCount
+		}
+
+		if pool.Spec.MinCount != nil {
+			ammp.MinCount = pool.Spec.MinCount
+		}
+
+		if pool.Spec.EnableAutoScaling != nil {
+			ammp.EnableAutoScaling = pool.Spec.EnableAutoScaling
+		}
+
+		if pool.Spec.EnableFIPS != nil {
+			ammp.EnableFIPS = pool.Spec.EnableFIPS
+		}
+
+		if pool.Spec.EnableNodePublicIP != nil {
+			ammp.EnableNodePublicIP = pool.Spec.EnableNodePublicIP
+		}
+
+		if pool.Spec.NodeLabels != nil {
+			ammp.NodeLabels = pool.Spec.NodeLabels
+		}
+
+		if pool.Spec.NodeTaints != nil {
+			ammp.NodeTaints = pool.Spec.NodeTaints
+		}
+
+		if pool.Spec.OsDiskType != nil {
+			ammp.OsDiskType = pool.Spec.OsDiskType
+		}
+
+		if pool.Spec.AvailabilityZones != nil {
+			ammp.AvailabilityZones = pool.Spec.AvailabilityZones
+		}
+
+		if pool.Spec.VnetSubnetID != nil {
+			ammp.VnetSubnetID = *pool.Spec.VnetSubnetID
+		}
+
+		if pool.Spec.MaxPods != nil {
+			ammp.MaxPods = pool.Spec.MaxPods
+		}
+
+		if pool.Spec.Mode == string(infrav1exp.NodePoolModeUser) && pool.Spec.ScaleSetPriority != nil {
+			ammp.ScaleSetPriority = pool.Spec.ScaleSetPriority
+		}
+
+		if pool.Spec.KubeletConfig != nil {
+			ammp.KubeletConfig = (*infrav1.KubeletConfig)(pool.Spec.KubeletConfig)
+		}
+
 		ammps = append(ammps, ammp)
+	}
+
+	if !foundSystemPool {
+		return nil, errors.New("failed to fetch azuremanagedMachine pool with mode:System, require at least 1 system node pool")
 	}
 
 	return ammps, nil
@@ -479,24 +594,84 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 		replicas = *s.MachinePool.Spec.Replicas
 	}
 
+	var name string
+	if s.InfraMachinePool.Spec.Name != nil {
+		name = *s.InfraMachinePool.Spec.Name
+	} else {
+		name = s.InfraMachinePool.Name
+	}
+
 	agentPoolSpec := azure.AgentPoolSpec{
-		Name:          s.InfraMachinePool.Name,
+		Name:          name,
 		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
 		Cluster:       s.ControlPlane.Name,
 		SKU:           s.InfraMachinePool.Spec.SKU,
 		Replicas:      replicas,
 		Version:       normalizedVersion,
-		VnetSubnetID: azure.SubnetID(
-			s.ControlPlane.Spec.SubscriptionID,
-			s.ControlPlane.Spec.ResourceGroupName,
-			s.ControlPlane.Spec.VirtualNetwork.Name,
-			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
-		),
-		Mode: s.InfraMachinePool.Spec.Mode,
+		Mode:          s.InfraMachinePool.Spec.Mode,
 	}
 
 	if s.InfraMachinePool.Spec.OSDiskSizeGB != nil {
 		agentPoolSpec.OSDiskSizeGB = *s.InfraMachinePool.Spec.OSDiskSizeGB
+	}
+
+	if s.InfraMachinePool.Spec.MaxCount != nil {
+		agentPoolSpec.MaxCount = s.InfraMachinePool.Spec.MaxCount
+	}
+
+	if s.InfraMachinePool.Spec.MinCount != nil {
+		agentPoolSpec.MinCount = s.InfraMachinePool.Spec.MinCount
+	}
+
+	if s.InfraMachinePool.Spec.EnableAutoScaling != nil {
+		agentPoolSpec.EnableAutoScaling = s.InfraMachinePool.Spec.EnableAutoScaling
+	}
+
+	if s.InfraMachinePool.Spec.EnableFIPS != nil {
+		agentPoolSpec.EnableFIPS = s.InfraMachinePool.Spec.EnableFIPS
+	}
+
+	if s.InfraMachinePool.Spec.EnableNodePublicIP != nil {
+		agentPoolSpec.EnableNodePublicIP = s.InfraMachinePool.Spec.EnableNodePublicIP
+	}
+
+	if s.InfraMachinePool.Spec.NodeLabels != nil {
+		agentPoolSpec.NodeLabels = s.InfraMachinePool.Spec.NodeLabels
+	}
+
+	if s.InfraMachinePool.Spec.NodeTaints != nil {
+		agentPoolSpec.NodeTaints = s.InfraMachinePool.Spec.NodeTaints
+	}
+
+	if s.InfraMachinePool.Spec.OsDiskType != nil {
+		agentPoolSpec.OsDiskType = s.InfraMachinePool.Spec.OsDiskType
+	}
+
+	if s.InfraMachinePool.Spec.VnetSubnetID != nil {
+		agentPoolSpec.VnetSubnetID = *s.InfraMachinePool.Spec.VnetSubnetID
+	} else {
+		agentPoolSpec.VnetSubnetID = azure.SubnetID(
+			s.ControlPlane.Spec.SubscriptionID,
+			s.GetVNetResourceGroup(),
+			s.ControlPlane.Spec.VirtualNetwork.Name,
+			s.ControlPlane.Spec.VirtualNetwork.Subnets[0].Name,
+		)
+	}
+
+	if s.InfraMachinePool.Spec.AvailabilityZones != nil {
+		agentPoolSpec.AvailabilityZones = s.InfraMachinePool.Spec.AvailabilityZones
+	}
+
+	if s.InfraMachinePool.Spec.ScaleSetPriority != nil {
+		agentPoolSpec.ScaleSetPriority = s.InfraMachinePool.Spec.ScaleSetPriority
+	}
+
+	if s.InfraMachinePool.Spec.MaxPods != nil {
+		agentPoolSpec.MaxPods = s.InfraMachinePool.Spec.MaxPods
+	}
+
+	if s.InfraMachinePool.Spec.KubeletConfig != nil {
+		agentPoolSpec.KubeletConfig = (*infrav1.KubeletConfig)(s.InfraMachinePool.Spec.KubeletConfig)
 	}
 
 	return agentPoolSpec

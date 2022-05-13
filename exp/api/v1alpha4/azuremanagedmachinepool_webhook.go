@@ -18,6 +18,7 @@ package v1alpha4
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -51,10 +52,34 @@ func (r *AzureManagedMachinePool) Default(client client.Client) {
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 	azuremanagedmachinepoollog.Info("validate create", "name", r.Name)
+	var allErrs field.ErrorList
+	// If AutoScaling is disabled, both MinCount and MaxCount should not be set
+	if (r.Spec.MaxCount != nil || r.Spec.MinCount != nil) && (r.Spec.EnableAutoScaling == nil || !*r.Spec.EnableAutoScaling) {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "EnableAutoScaling"),
+				r.Spec.EnableAutoScaling,
+				"MaxCount and MinCount cannot be set when AutoScaling is disabled"))
+	}
+
+	// If AutoScaling is enabled, both MinCount and MaxCount should be set
+	if r.Spec.EnableAutoScaling != nil && (r.Spec.MaxCount == nil || r.Spec.MinCount == nil) && *r.Spec.EnableAutoScaling {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "EnableAutoScaling"),
+				r.Spec.EnableAutoScaling,
+				"MaxCount and MinCount must be set when AutoScaling is enabled"))
+	}
+
+	if len(allErrs) != 0 {
+		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), r.Name, allErrs)
+	}
+
 	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+//gocyclo:ignore
 func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client client.Client) error {
 	old := oldRaw.(*AzureManagedMachinePool)
 	var allErrs field.ErrorList
@@ -86,6 +111,166 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
+	if !reflect.DeepEqual(r.Spec.NodeTaints, old.Spec.NodeTaints) {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "NodeTaints"),
+				r.Spec.NodeTaints,
+				"field is immutable"))
+	}
+
+	if old.Spec.VnetSubnetID == nil && r.Spec.VnetSubnetID != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "VnetSubnetID"),
+				r.Spec.VnetSubnetID,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.VnetSubnetID != nil {
+		if r.Spec.VnetSubnetID == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "VnetSubnetID"),
+					r.Spec.VnetSubnetID,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.VnetSubnetID != *old.Spec.VnetSubnetID {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "VnetSubnetID"),
+					r.Spec.VnetSubnetID,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.MaxPods == nil && r.Spec.MaxPods != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "MaxPods"),
+				r.Spec.MaxPods,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.MaxPods != nil {
+		if r.Spec.MaxPods == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "MaxPods"),
+					r.Spec.MaxPods,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.MaxPods != *old.Spec.MaxPods {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "MaxPods"),
+					r.Spec.MaxPods,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.EnableFIPS == nil && r.Spec.EnableFIPS != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "EnableFIPS"),
+				r.Spec.EnableFIPS,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.EnableFIPS != nil {
+		if r.Spec.EnableFIPS == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableFIPS"),
+					r.Spec.EnableFIPS,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.EnableFIPS != *old.Spec.EnableFIPS {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableFIPS"),
+					r.Spec.EnableFIPS,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.EnableNodePublicIP == nil && r.Spec.EnableNodePublicIP != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "EnableNodePublicIP"),
+				r.Spec.EnableNodePublicIP,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.EnableNodePublicIP != nil {
+		if r.Spec.EnableNodePublicIP == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableNodePublicIP"),
+					r.Spec.EnableNodePublicIP,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.EnableNodePublicIP != *old.Spec.EnableNodePublicIP {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableNodePublicIP"),
+					r.Spec.EnableNodePublicIP,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.OsDiskType == nil && r.Spec.OsDiskType != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "OsDiskType"),
+				r.Spec.OsDiskType,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.OsDiskType != nil {
+		if r.Spec.OsDiskType == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "OsDiskType"),
+					r.Spec.OsDiskType,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.OsDiskType != *old.Spec.OsDiskType {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "OsDiskType"),
+					r.Spec.OsDiskType,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.ScaleSetPriority == nil && r.Spec.ScaleSetPriority != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "ScaleSetPriority"),
+				r.Spec.ScaleSetPriority,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.ScaleSetPriority != nil {
+		if r.Spec.ScaleSetPriority == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "ScaleSetPriority"),
+					r.Spec.ScaleSetPriority,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.ScaleSetPriority != *old.Spec.ScaleSetPriority {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "ScaleSetPriority"),
+					r.Spec.ScaleSetPriority,
+					"field is immutable"))
+		}
+	}
+
+	if !reflect.DeepEqual(r.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "AvailabilityZones"),
+				r.Spec.AvailabilityZones,
+				"field is immutable"))
+	}
+
 	if r.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Mode == string(NodePoolModeSystem) {
 		// validate for last system node pool
 		if err := r.validateLastSystemNodePool(client); err != nil {
@@ -100,7 +285,7 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), r.Name, allErrs)
 	}
 
-	return nil
+	return r.ValidateCreate(client)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.

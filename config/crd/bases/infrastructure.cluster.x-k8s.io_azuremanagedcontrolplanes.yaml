@@ -66,6 +66,32 @@ spec:
                   resources managed by the Azure provider, in addition to the ones
                   added by default.
                 type: object
+              apiServerAccessProfile:
+                description: APIServerAccessProfile is the access profile for AKS
+                  API server.
+                properties:
+                  authorizedIPRanges:
+                    description: AuthorizedIPRanges - Authorized IP Ranges to kubernetes
+                      API server.
+                    items:
+                      type: string
+                    type: array
+                  enablePrivateCluster:
+                    description: EnablePrivateCluster - Whether to create the cluster
+                      as a private cluster or not.
+                    type: boolean
+                  enablePrivateClusterPublicFQDN:
+                    description: EnablePrivateClusterPublicFQDN - Whether to create
+                      additional public FQDN for private cluster or not.
+                    type: boolean
+                  privateDNSZone:
+                    description: PrivateDNSZone - Private dns zone mode for private
+                      cluster.
+                    enum:
+                    - System
+                    - None
+                    type: string
+                type: object
               controlPlaneEndpoint:
                 description: ControlPlaneEndpoint represents the endpoint used to
                   communicate with the control plane.
@@ -86,6 +112,47 @@ spec:
                   DNS service. It must be within the Kubernetes service address range
                   specified in serviceCidr.
                 type: string
+              loadBalancerProfile:
+                description: LoadBalancerProfile is the profile of the cluster load
+                  balancer.
+                properties:
+                  allocatedOutboundPorts:
+                    description: AllocatedOutboundPorts - Desired number of allocated
+                      SNAT ports per VM. Allowed values must be in the range of 0
+                      to 64000 (inclusive). The default value is 0 which results in
+                      Azure dynamically allocating ports.
+                    format: int32
+                    type: integer
+                  effectiveOutboundIPs:
+                    description: EffectiveOutboundIPs - The effective outbound IP
+                      resources of the cluster load balancer.
+                    items:
+                      type: string
+                    type: array
+                  idleTimeoutInMinutes:
+                    description: IdleTimeoutInMinutes - Desired outbound flow idle
+                      timeout in minutes. Allowed values must be in the range of 4
+                      to 120 (inclusive). The default value is 30 minutes.
+                    format: int32
+                    type: integer
+                  managedOutboundIPs:
+                    description: ManagedOutboundIPs - Desired managed outbound IPs
+                      for the cluster load balancer.
+                    format: int32
+                    type: integer
+                  outboundIPPrefixes:
+                    description: OutboundIPPrefixes - Desired outbound IP Prefix resources
+                      for the cluster load balancer.
+                    items:
+                      type: string
+                    type: array
+                  outboundIPs:
+                    description: OutboundIPs - Desired outbound IP resources for the
+                      cluster load balancer.
+                    items:
+                      type: string
+                    type: array
+                type: object
               loadBalancerSKU:
                 description: LoadBalancerSKU is the SKU of the loadBalancer to be
                   provisioned.
@@ -118,6 +185,18 @@ spec:
                 description: ResourceGroupName is the name of the Azure resource group
                   for this AKS Cluster.
                 type: string
+              sku:
+                description: Sku is the SKU of the AKS to be provisioned.
+                properties:
+                  tier:
+                    description: Tier - Tier of a managed cluster SKU.
+                    enum:
+                    - Free
+                    - Paid
+                    type: string
+                required:
+                - tier
+                type: object
               sshPublicKey:
                 description: SSHPublicKey is a string literal containing an ssh public
                   key base64 encoded.
@@ -134,31 +213,36 @@ spec:
                 description: VirtualNetwork describes the vnet for the AKS cluster.
                   Will be created if it does not exist.
                 properties:
-                  cidrBlock:
-                    type: string
+                  cidrBlocks:
+                    items:
+                      type: string
+                    type: array
                   name:
                     type: string
-                  subnet:
-                    description: ManagedControlPlaneSubnet describes a subnet for
-                      an AKS cluster.
-                    properties:
-                      cidrBlock:
-                        type: string
-                      name:
-                        type: string
-                    required:
-                    - cidrBlock
-                    - name
-                    type: object
+                  subnets:
+                    items:
+                      description: ManagedControlPlaneSubnet describes a subnet for
+                        an AKS cluster.
+                      properties:
+                        cidrBlocks:
+                          items:
+                            type: string
+                          type: array
+                        name:
+                          type: string
+                      required:
+                      - cidrBlocks
+                      - name
+                      type: object
+                    type: array
                 required:
-                - cidrBlock
+                - cidrBlocks
                 - name
                 type: object
             required:
             - location
             - nodeResourceGroupName
             - resourceGroupName
-            - sshPublicKey
             - version
             type: object
           status:
@@ -226,6 +310,32 @@ spec:
                   resources managed by the Azure provider, in addition to the ones
                   added by default.
                 type: object
+              apiServerAccessProfile:
+                description: APIServerAccessProfile is the access profile for AKS
+                  API server.
+                properties:
+                  authorizedIPRanges:
+                    description: AuthorizedIPRanges - Authorized IP Ranges to kubernetes
+                      API server.
+                    items:
+                      type: string
+                    type: array
+                  enablePrivateCluster:
+                    description: EnablePrivateCluster - Whether to create the cluster
+                      as a private cluster or not.
+                    type: boolean
+                  enablePrivateClusterPublicFQDN:
+                    description: EnablePrivateClusterPublicFQDN - Whether to create
+                      additional public FQDN for private cluster or not.
+                    type: boolean
+                  privateDNSZone:
+                    description: PrivateDNSZone - Private dns zone mode for private
+                      cluster.
+                    enum:
+                    - System
+                    - None
+                    type: string
+                type: object
               controlPlaneEndpoint:
                 description: ControlPlaneEndpoint represents the endpoint used to
                   communicate with the control plane.
@@ -241,6 +351,11 @@ spec:
                 - host
                 - port
                 type: object
+              disableLocalAccounts:
+                description: DisableLocalAccounts - If set to true, getting static
+                  credential will be disabled for this cluster. Expected to only be
+                  used for AAD clusters.
+                type: boolean
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
                   DNS service. It must be within the Kubernetes service address range
@@ -283,6 +398,47 @@ spec:
                     description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
                     type: string
                 type: object
+              loadBalancerProfile:
+                description: LoadBalancerProfile is the profile of the cluster load
+                  balancer.
+                properties:
+                  allocatedOutboundPorts:
+                    description: AllocatedOutboundPorts - Desired number of allocated
+                      SNAT ports per VM. Allowed values must be in the range of 0
+                      to 64000 (inclusive). The default value is 0 which results in
+                      Azure dynamically allocating ports.
+                    format: int32
+                    type: integer
+                  effectiveOutboundIPs:
+                    description: EffectiveOutboundIPs - The effective outbound IP
+                      resources of the cluster load balancer.
+                    items:
+                      type: string
+                    type: array
+                  idleTimeoutInMinutes:
+                    description: IdleTimeoutInMinutes - Desired outbound flow idle
+                      timeout in minutes. Allowed values must be in the range of 4
+                      to 120 (inclusive). The default value is 30 minutes.
+                    format: int32
+                    type: integer
+                  managedOutboundIPs:
+                    description: ManagedOutboundIPs - Desired managed outbound IPs
+                      for the cluster load balancer.
+                    format: int32
+                    type: integer
+                  outboundIPPrefixes:
+                    description: OutboundIPPrefixes - Desired outbound IP Prefix resources
+                      for the cluster load balancer.
+                    items:
+                      type: string
+                    type: array
+                  outboundIPs:
+                    description: OutboundIPs - Desired outbound IP resources for the
+                      cluster load balancer.
+                    items:
+                      type: string
+                    type: array
+                type: object
               loadBalancerSKU:
                 description: LoadBalancerSKU is the SKU of the loadBalancer to be
                   provisioned.
@@ -315,6 +471,18 @@ spec:
                 description: ResourceGroupName is the name of the Azure resource group
                   for this AKS Cluster.
                 type: string
+              sku:
+                description: Sku is the SKU of the AKS to be provisioned.
+                properties:
+                  tier:
+                    description: Tier - Tier of a managed cluster SKU.
+                    enum:
+                    - Free
+                    - Paid
+                    type: string
+                required:
+                - tier
+                type: object
               sshPublicKey:
                 description: SSHPublicKey is a string literal containing an ssh public
                   key base64 encoded.
@@ -331,30 +499,39 @@ spec:
                 description: VirtualNetwork describes the vnet for the AKS cluster.
                   Will be created if it does not exist.
                 properties:
-                  cidrBlock:
-                    type: string
+                  cidrBlocks:
+                    items:
+                      type: string
+                    type: array
                   name:
                     type: string
-                  subnet:
-                    description: ManagedControlPlaneSubnet describes a subnet for
-                      an AKS cluster.
-                    properties:
-                      cidrBlock:
-                        type: string
-                      name:
-                        type: string
-                    required:
-                    - cidrBlock
-                    - name
-                    type: object
+                  resourceGroupName:
+                    description: ResourceGroupName is the name of the Azure resource
+                      group of the vNet.
+                    type: string
+                  subnets:
+                    items:
+                      description: ManagedControlPlaneSubnet describes a subnet for
+                        an AKS cluster.
+                      properties:
+                        cidrBlocks:
+                          items:
+                            type: string
+                          type: array
+                        name:
+                          type: string
+                      required:
+                      - cidrBlocks
+                      - name
+                      type: object
+                    type: array
                 required:
-                - cidrBlock
+                - cidrBlocks
                 - name
                 type: object
             required:
             - location
             - resourceGroupName
-            - sshPublicKey
             - version
             type: object
           status:

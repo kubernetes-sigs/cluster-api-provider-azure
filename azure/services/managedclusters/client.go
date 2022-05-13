@@ -66,7 +66,7 @@ func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 	ctx, span := tele.Tracer().Start(ctx, "managedclusters.AzureClient.GetCredentials")
 	defer span.End()
 
-	credentialList, err := ac.managedclusters.ListClusterAdminCredentials(ctx, resourceGroupName, name, "")
+	credentialList, err := ac.managedclusters.ListClusterUserCredentials(ctx, resourceGroupName, name, "")
 	if err != nil {
 		return nil, err
 	}

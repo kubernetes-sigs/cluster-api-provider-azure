@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	"errors"
 	"net"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -65,20 +66,21 @@ func (r *AzureManagedControlPlane) Default() {
 		NetworkPolicy := "calico"
 		r.Spec.NetworkPolicy = &NetworkPolicy
 	}
+	if r.Spec.Sku == nil {
+		r.Spec.Sku = &SKU{
+			Tier: "Free",
+		}
+	}
 
 	if r.Spec.Version != "" && !strings.HasPrefix(r.Spec.Version, "v") {
 		normalizedVersion := "v" + r.Spec.Version
 		r.Spec.Version = normalizedVersion
 	}
 
-	err := r.setDefaultSSHPublicKey()
-	if err != nil {
-		azuremanagedcontrolplanelog.Error(err, "SetDefaultSshPublicKey failed")
-	}
-
 	r.setDefaultNodeResourceGroupName()
 	r.setDefaultVirtualNetwork()
-	r.setDefaultSubnet()
+	r.setDefaultSubnets()
+	r.setDefaultLoadBalancerProfile()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1alpha4,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -130,15 +132,18 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 				"field is immutable"))
 	}
 
-	if old.Spec.SSHPublicKey != "" {
-		// Prevent SSH key modification if it was already set to some value
-		if r.Spec.SSHPublicKey != old.Spec.SSHPublicKey {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "SSHPublicKey"),
-					r.Spec.SSHPublicKey,
-					"field is immutable"))
-		}
+	if !reflect.DeepEqual(r.Spec.SSHPublicKey, old.Spec.SSHPublicKey) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "SSHPublicKey"),
+				r.Spec.SSHPublicKey, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(r.Spec.VirtualNetwork, old.Spec.VirtualNetwork) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "VirtualNetwork"),
+				r.Spec.VirtualNetwork, "field is immutable"),
+		)
 	}
 
 	if old.Spec.DNSServiceIP != nil {
@@ -242,6 +247,10 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 		}
 	}
 
+	if errs := r.validateAPIServerAccessProfileUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if len(allErrs) == 0 {
 		return r.Validate()
 	}
@@ -262,6 +271,10 @@ func (r *AzureManagedControlPlane) Validate() error {
 		r.validateVersion,
 		r.validateDNSServiceIP,
 		r.validateSSHKey,
+		r.validateLoadBalancerProfile,
+		r.validateAPIServerAccessProfile,
+		r.validateVnet,
+		r.validateSubnets,
 	}
 
 	var errs []error
@@ -295,8 +308,8 @@ func (r *AzureManagedControlPlane) validateVersion() error {
 
 // ValidateSSHKey validates an SSHKey.
 func (r *AzureManagedControlPlane) validateSSHKey() error {
-	if r.Spec.SSHPublicKey != "" {
-		sshKey := r.Spec.SSHPublicKey
+	if r.Spec.SSHPublicKey != nil {
+		sshKey := *r.Spec.SSHPublicKey
 		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
 			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
 			azuremachinepoollog.Info("Invalid sshKey: %s", agg.Error())
@@ -305,4 +318,123 @@ func (r *AzureManagedControlPlane) validateSSHKey() error {
 	}
 
 	return nil
+}
+
+// ValidateLoadBalancerProfile validates a LoadBalancerProfile.
+func (r *AzureManagedControlPlane) validateLoadBalancerProfile() error {
+	if r.Spec.LoadBalancerProfile != nil {
+		var allErrs field.ErrorList
+
+		if r.Spec.LoadBalancerProfile.ManagedOutboundIPs != nil {
+			if *r.Spec.LoadBalancerProfile.ManagedOutboundIPs < 1 || *r.Spec.LoadBalancerProfile.ManagedOutboundIPs > 100 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "LoadBalancerProfile", "ManagedOutboundIPs"), *r.Spec.LoadBalancerProfile.ManagedOutboundIPs, "value should be in between 1 and 100"))
+			}
+		}
+
+		if r.Spec.LoadBalancerProfile.AllocatedOutboundPorts != nil {
+			if *r.Spec.LoadBalancerProfile.AllocatedOutboundPorts < 0 || *r.Spec.LoadBalancerProfile.AllocatedOutboundPorts > 64000 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "LoadBalancerProfile", "AllocatedOutboundPorts"), *r.Spec.LoadBalancerProfile.AllocatedOutboundPorts, "value should be in between 0 and 64000"))
+			}
+		}
+
+		if r.Spec.LoadBalancerProfile.IdleTimeoutInMinutes != nil {
+			if *r.Spec.LoadBalancerProfile.IdleTimeoutInMinutes < 4 || *r.Spec.LoadBalancerProfile.IdleTimeoutInMinutes > 120 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "LoadBalancerProfile", "IdleTimeoutInMinutes"), *r.Spec.LoadBalancerProfile.IdleTimeoutInMinutes, "value should be in between 4 and 120"))
+			}
+		}
+
+		if len(allErrs) > 0 {
+			agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+			azuremanagedcontrolplanelog.Info("Invalid loadBalancerProfile: %s", agg.Error())
+			return agg
+		}
+	}
+
+	return nil
+}
+
+// validateAPIServerAccessProfile validates an APIServerAccessProfile.
+func (r *AzureManagedControlPlane) validateAPIServerAccessProfile() error {
+	if r.Spec.APIServerAccessProfile != nil {
+		var allErrs field.ErrorList
+		for _, ipRange := range r.Spec.APIServerAccessProfile.AuthorizedIPRanges {
+			if _, _, err := net.ParseCIDR(ipRange); err != nil {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "APIServerAccessProfile", "AuthorizedIPRanges"), ipRange, "invalid CIDR format"))
+			}
+		}
+		if len(allErrs) > 0 {
+			agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+			azuremanagedcontrolplanelog.Info("Invalid apiServerAccessProfile: %s", agg.Error())
+			return agg
+		}
+	}
+	return nil
+}
+
+// validateVnet validates virtual network.
+func (r *AzureManagedControlPlane) validateVnet() error {
+	var allErrs field.ErrorList
+	for _, cidr := range r.Spec.VirtualNetwork.CIDRBlocks {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "CIDRBlocks"), cidr, "invalid CIDR format"))
+		}
+	}
+	if len(allErrs) > 0 {
+		agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+		azuremanagedcontrolplanelog.Info("Invalid VirtualNetwork: %s", agg.Error())
+		return agg
+	}
+	return nil
+}
+
+// validateSubnets validates subnets.
+func (r *AzureManagedControlPlane) validateSubnets() error {
+	var allErrs field.ErrorList
+	for _, subnet := range r.Spec.VirtualNetwork.Subnets {
+		if len(subnet.CIDRBlocks) == 0 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "Subnets"), subnet, "subnet must have at least one CIDR block"))
+		}
+		for _, cidr := range subnet.CIDRBlocks {
+			if _, _, err := net.ParseCIDR(cidr); err != nil {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "Subnets", "CIDRBlocks"), cidr, "invalid CIDR format"))
+			}
+		}
+	}
+	if len(allErrs) > 0 {
+		agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+		azuremanagedcontrolplanelog.Info("Invalid Subnets: %s", agg.Error())
+		return agg
+	}
+	return nil
+}
+
+// validateAPIServerAccessProfileUpdate validates update to APIServerAccessProfile.
+func (r *AzureManagedControlPlane) validateAPIServerAccessProfileUpdate(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+
+	newAPIServerAccessProfileNormalized := &APIServerAccessProfile{}
+	oldAPIServerAccessProfileNormalized := &APIServerAccessProfile{}
+	if r.Spec.APIServerAccessProfile != nil {
+		newAPIServerAccessProfileNormalized = &APIServerAccessProfile{
+			EnablePrivateCluster:           r.Spec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 r.Spec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: r.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+	}
+	if old.Spec.APIServerAccessProfile != nil {
+		oldAPIServerAccessProfileNormalized = &APIServerAccessProfile{
+			EnablePrivateCluster:           old.Spec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 old.Spec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: old.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+	}
+
+	if !reflect.DeepEqual(newAPIServerAccessProfileNormalized, oldAPIServerAccessProfileNormalized) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "APIServerAccessProfile"),
+				r.Spec.APIServerAccessProfile, "fields (except for AuthorizedIPRanges) are immutable"),
+		)
+	}
+
+	return allErrs
 }

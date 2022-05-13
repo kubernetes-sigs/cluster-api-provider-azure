@@ -50,6 +50,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*APIServerAccessProfile)(nil), (*v1alpha4.APIServerAccessProfile)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_APIServerAccessProfile_To_v1alpha4_APIServerAccessProfile(a.(*APIServerAccessProfile), b.(*v1alpha4.APIServerAccessProfile), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1alpha4.APIServerAccessProfile)(nil), (*APIServerAccessProfile)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_APIServerAccessProfile_To_v1alpha3_APIServerAccessProfile(a.(*v1alpha4.APIServerAccessProfile), b.(*APIServerAccessProfile), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*AzureMachinePool)(nil), (*v1alpha4.AzureMachinePool)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_AzureMachinePool_To_v1alpha4_AzureMachinePool(a.(*AzureMachinePool), b.(*v1alpha4.AzureMachinePool), scope)
 	}); err != nil {
@@ -195,11 +205,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureManagedMachinePoolSpec)(nil), (*AzureManagedMachinePoolSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMachinePoolSpec(a.(*v1alpha4.AzureManagedMachinePoolSpec), b.(*AzureManagedMachinePoolSpec), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*AzureManagedMachinePoolStatus)(nil), (*v1alpha4.AzureManagedMachinePoolStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_AzureManagedMachinePoolStatus_To_v1alpha4_AzureManagedMachinePoolStatus(a.(*AzureManagedMachinePoolStatus), b.(*v1alpha4.AzureManagedMachinePoolStatus), scope)
 	}); err != nil {
@@ -207,6 +212,26 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureManagedMachinePoolStatus)(nil), (*AzureManagedMachinePoolStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_AzureManagedMachinePoolStatus_To_v1alpha3_AzureManagedMachinePoolStatus(a.(*v1alpha4.AzureManagedMachinePoolStatus), b.(*AzureManagedMachinePoolStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*KubeletConfig)(nil), (*v1alpha4.KubeletConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_KubeletConfig_To_v1alpha4_KubeletConfig(a.(*KubeletConfig), b.(*v1alpha4.KubeletConfig), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1alpha4.KubeletConfig)(nil), (*KubeletConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_KubeletConfig_To_v1alpha3_KubeletConfig(a.(*v1alpha4.KubeletConfig), b.(*KubeletConfig), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*LoadBalancerProfile)(nil), (*v1alpha4.LoadBalancerProfile)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_LoadBalancerProfile_To_v1alpha4_LoadBalancerProfile(a.(*LoadBalancerProfile), b.(*v1alpha4.LoadBalancerProfile), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1alpha4.LoadBalancerProfile)(nil), (*LoadBalancerProfile)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_LoadBalancerProfile_To_v1alpha3_LoadBalancerProfile(a.(*v1alpha4.LoadBalancerProfile), b.(*LoadBalancerProfile), scope)
 	}); err != nil {
 		return err
 	}
@@ -225,8 +250,13 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.ManagedControlPlaneVirtualNetwork)(nil), (*ManagedControlPlaneVirtualNetwork)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork(a.(*v1alpha4.ManagedControlPlaneVirtualNetwork), b.(*ManagedControlPlaneVirtualNetwork), scope)
+	if err := s.AddGeneratedConversionFunc((*SKU)(nil), (*v1alpha4.SKU)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_SKU_To_v1alpha4_SKU(a.(*SKU), b.(*v1alpha4.SKU), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1alpha4.SKU)(nil), (*SKU)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_SKU_To_v1alpha3_SKU(a.(*v1alpha4.SKU), b.(*SKU), scope)
 	}); err != nil {
 		return err
 	}
@@ -270,8 +300,18 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*v1alpha4.AzureManagedMachinePoolSpec)(nil), (*AzureManagedMachinePoolSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMachinePoolSpec(a.(*v1alpha4.AzureManagedMachinePoolSpec), b.(*AzureManagedMachinePoolSpec), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*clusterapiproviderazureapiv1alpha4.Image)(nil), (*clusterapiproviderazureapiv1alpha3.Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_Image_To_v1alpha3_Image(a.(*clusterapiproviderazureapiv1alpha4.Image), b.(*clusterapiproviderazureapiv1alpha3.Image), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1alpha4.ManagedControlPlaneVirtualNetwork)(nil), (*ManagedControlPlaneVirtualNetwork)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork(a.(*v1alpha4.ManagedControlPlaneVirtualNetwork), b.(*ManagedControlPlaneVirtualNetwork), scope)
 	}); err != nil {
 		return err
 	}
@@ -303,6 +343,32 @@ func autoConvert_v1alpha4_AADProfile_To_v1alpha3_AADProfile(in *v1alpha4.AADProf
 // Convert_v1alpha4_AADProfile_To_v1alpha3_AADProfile is an autogenerated conversion function.
 func Convert_v1alpha4_AADProfile_To_v1alpha3_AADProfile(in *v1alpha4.AADProfile, out *AADProfile, s conversion.Scope) error {
 	return autoConvert_v1alpha4_AADProfile_To_v1alpha3_AADProfile(in, out, s)
+}
+
+func autoConvert_v1alpha3_APIServerAccessProfile_To_v1alpha4_APIServerAccessProfile(in *APIServerAccessProfile, out *v1alpha4.APIServerAccessProfile, s conversion.Scope) error {
+	out.AuthorizedIPRanges = *(*[]string)(unsafe.Pointer(&in.AuthorizedIPRanges))
+	out.EnablePrivateCluster = (*bool)(unsafe.Pointer(in.EnablePrivateCluster))
+	out.PrivateDNSZone = (*string)(unsafe.Pointer(in.PrivateDNSZone))
+	out.EnablePrivateClusterPublicFQDN = (*bool)(unsafe.Pointer(in.EnablePrivateClusterPublicFQDN))
+	return nil
+}
+
+// Convert_v1alpha3_APIServerAccessProfile_To_v1alpha4_APIServerAccessProfile is an autogenerated conversion function.
+func Convert_v1alpha3_APIServerAccessProfile_To_v1alpha4_APIServerAccessProfile(in *APIServerAccessProfile, out *v1alpha4.APIServerAccessProfile, s conversion.Scope) error {
+	return autoConvert_v1alpha3_APIServerAccessProfile_To_v1alpha4_APIServerAccessProfile(in, out, s)
+}
+
+func autoConvert_v1alpha4_APIServerAccessProfile_To_v1alpha3_APIServerAccessProfile(in *v1alpha4.APIServerAccessProfile, out *APIServerAccessProfile, s conversion.Scope) error {
+	out.AuthorizedIPRanges = *(*[]string)(unsafe.Pointer(&in.AuthorizedIPRanges))
+	out.EnablePrivateCluster = (*bool)(unsafe.Pointer(in.EnablePrivateCluster))
+	out.PrivateDNSZone = (*string)(unsafe.Pointer(in.PrivateDNSZone))
+	out.EnablePrivateClusterPublicFQDN = (*bool)(unsafe.Pointer(in.EnablePrivateClusterPublicFQDN))
+	return nil
+}
+
+// Convert_v1alpha4_APIServerAccessProfile_To_v1alpha3_APIServerAccessProfile is an autogenerated conversion function.
+func Convert_v1alpha4_APIServerAccessProfile_To_v1alpha3_APIServerAccessProfile(in *v1alpha4.APIServerAccessProfile, out *APIServerAccessProfile, s conversion.Scope) error {
+	return autoConvert_v1alpha4_APIServerAccessProfile_To_v1alpha3_APIServerAccessProfile(in, out, s)
 }
 
 func autoConvert_v1alpha3_AzureMachinePool_To_v1alpha4_AzureMachinePool(in *AzureMachinePool, out *v1alpha4.AzureMachinePool, s conversion.Scope) error {
@@ -735,10 +801,13 @@ func autoConvert_v1alpha3_AzureManagedControlPlaneSpec_To_v1alpha4_AzureManagedC
 	out.AdditionalTags = *(*clusterapiproviderazureapiv1alpha4.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.NetworkPlugin = (*string)(unsafe.Pointer(in.NetworkPlugin))
 	out.NetworkPolicy = (*string)(unsafe.Pointer(in.NetworkPolicy))
-	out.SSHPublicKey = in.SSHPublicKey
+	out.SSHPublicKey = (*string)(unsafe.Pointer(in.SSHPublicKey))
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	out.AADProfile = (*v1alpha4.AADProfile)(unsafe.Pointer(in.AADProfile))
+	out.Sku = (*v1alpha4.SKU)(unsafe.Pointer(in.Sku))
+	out.LoadBalancerProfile = (*v1alpha4.LoadBalancerProfile)(unsafe.Pointer(in.LoadBalancerProfile))
+	out.APIServerAccessProfile = (*v1alpha4.APIServerAccessProfile)(unsafe.Pointer(in.APIServerAccessProfile))
 	return nil
 }
 
@@ -762,11 +831,15 @@ func autoConvert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedC
 	out.AdditionalTags = *(*clusterapiproviderazureapiv1alpha3.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.NetworkPlugin = (*string)(unsafe.Pointer(in.NetworkPlugin))
 	out.NetworkPolicy = (*string)(unsafe.Pointer(in.NetworkPolicy))
-	out.SSHPublicKey = in.SSHPublicKey
+	out.SSHPublicKey = (*string)(unsafe.Pointer(in.SSHPublicKey))
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	// WARNING: in.IdentityRef requires manual conversion: does not exist in peer-type
 	out.AADProfile = (*AADProfile)(unsafe.Pointer(in.AADProfile))
+	out.Sku = (*SKU)(unsafe.Pointer(in.Sku))
+	out.LoadBalancerProfile = (*LoadBalancerProfile)(unsafe.Pointer(in.LoadBalancerProfile))
+	out.APIServerAccessProfile = (*APIServerAccessProfile)(unsafe.Pointer(in.APIServerAccessProfile))
+	// WARNING: in.DisableLocalAccounts requires manual conversion: does not exist in peer-type
 	return nil
 }
 
@@ -826,7 +899,17 @@ func Convert_v1alpha4_AzureManagedMachinePool_To_v1alpha3_AzureManagedMachinePoo
 
 func autoConvert_v1alpha3_AzureManagedMachinePoolList_To_v1alpha4_AzureManagedMachinePoolList(in *AzureManagedMachinePoolList, out *v1alpha4.AzureManagedMachinePoolList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1alpha4.AzureManagedMachinePool)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1alpha4.AzureManagedMachinePool, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha3_AzureManagedMachinePool_To_v1alpha4_AzureManagedMachinePool(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -837,7 +920,17 @@ func Convert_v1alpha3_AzureManagedMachinePoolList_To_v1alpha4_AzureManagedMachin
 
 func autoConvert_v1alpha4_AzureManagedMachinePoolList_To_v1alpha3_AzureManagedMachinePoolList(in *v1alpha4.AzureManagedMachinePoolList, out *AzureManagedMachinePoolList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]AzureManagedMachinePool)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]AzureManagedMachinePool, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha4_AzureManagedMachinePool_To_v1alpha3_AzureManagedMachinePool(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -851,6 +944,19 @@ func autoConvert_v1alpha3_AzureManagedMachinePoolSpec_To_v1alpha4_AzureManagedMa
 	out.SKU = in.SKU
 	out.OSDiskSizeGB = (*int32)(unsafe.Pointer(in.OSDiskSizeGB))
 	out.ProviderIDList = *(*[]string)(unsafe.Pointer(&in.ProviderIDList))
+	out.MaxCount = (*int32)(unsafe.Pointer(in.MaxCount))
+	out.MinCount = (*int32)(unsafe.Pointer(in.MinCount))
+	out.EnableAutoScaling = (*bool)(unsafe.Pointer(in.EnableAutoScaling))
+	out.EnableNodePublicIP = (*bool)(unsafe.Pointer(in.EnableNodePublicIP))
+	out.EnableFIPS = (*bool)(unsafe.Pointer(in.EnableFIPS))
+	out.OsDiskType = (*string)(unsafe.Pointer(in.OsDiskType))
+	out.NodeLabels = *(*map[string]*string)(unsafe.Pointer(&in.NodeLabels))
+	out.NodeTaints = *(*[]string)(unsafe.Pointer(&in.NodeTaints))
+	out.VnetSubnetID = (*string)(unsafe.Pointer(in.VnetSubnetID))
+	out.AvailabilityZones = *(*[]string)(unsafe.Pointer(&in.AvailabilityZones))
+	out.ScaleSetPriority = (*string)(unsafe.Pointer(in.ScaleSetPriority))
+	out.MaxPods = (*int32)(unsafe.Pointer(in.MaxPods))
+	out.KubeletConfig = (*v1alpha4.KubeletConfig)(unsafe.Pointer(in.KubeletConfig))
 	return nil
 }
 
@@ -860,16 +966,25 @@ func Convert_v1alpha3_AzureManagedMachinePoolSpec_To_v1alpha4_AzureManagedMachin
 }
 
 func autoConvert_v1alpha4_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMachinePoolSpec(in *v1alpha4.AzureManagedMachinePoolSpec, out *AzureManagedMachinePoolSpec, s conversion.Scope) error {
+	// WARNING: in.Name requires manual conversion: does not exist in peer-type
 	out.Mode = in.Mode
 	out.SKU = in.SKU
 	out.OSDiskSizeGB = (*int32)(unsafe.Pointer(in.OSDiskSizeGB))
+	out.MaxCount = (*int32)(unsafe.Pointer(in.MaxCount))
+	out.MinCount = (*int32)(unsafe.Pointer(in.MinCount))
+	out.EnableAutoScaling = (*bool)(unsafe.Pointer(in.EnableAutoScaling))
+	out.EnableNodePublicIP = (*bool)(unsafe.Pointer(in.EnableNodePublicIP))
+	out.EnableFIPS = (*bool)(unsafe.Pointer(in.EnableFIPS))
+	out.OsDiskType = (*string)(unsafe.Pointer(in.OsDiskType))
+	out.NodeLabels = *(*map[string]*string)(unsafe.Pointer(&in.NodeLabels))
+	out.NodeTaints = *(*[]string)(unsafe.Pointer(&in.NodeTaints))
+	out.VnetSubnetID = (*string)(unsafe.Pointer(in.VnetSubnetID))
+	out.AvailabilityZones = *(*[]string)(unsafe.Pointer(&in.AvailabilityZones))
+	out.ScaleSetPriority = (*string)(unsafe.Pointer(in.ScaleSetPriority))
+	out.MaxPods = (*int32)(unsafe.Pointer(in.MaxPods))
+	out.KubeletConfig = (*KubeletConfig)(unsafe.Pointer(in.KubeletConfig))
 	out.ProviderIDList = *(*[]string)(unsafe.Pointer(&in.ProviderIDList))
 	return nil
-}
-
-// Convert_v1alpha4_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMachinePoolSpec is an autogenerated conversion function.
-func Convert_v1alpha4_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMachinePoolSpec(in *v1alpha4.AzureManagedMachinePoolSpec, out *AzureManagedMachinePoolSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMachinePoolSpec(in, out, s)
 }
 
 func autoConvert_v1alpha3_AzureManagedMachinePoolStatus_To_v1alpha4_AzureManagedMachinePoolStatus(in *AzureManagedMachinePoolStatus, out *v1alpha4.AzureManagedMachinePoolStatus, s conversion.Scope) error {
@@ -898,9 +1013,79 @@ func Convert_v1alpha4_AzureManagedMachinePoolStatus_To_v1alpha3_AzureManagedMach
 	return autoConvert_v1alpha4_AzureManagedMachinePoolStatus_To_v1alpha3_AzureManagedMachinePoolStatus(in, out, s)
 }
 
+func autoConvert_v1alpha3_KubeletConfig_To_v1alpha4_KubeletConfig(in *KubeletConfig, out *v1alpha4.KubeletConfig, s conversion.Scope) error {
+	out.CPUManagerPolicy = (*string)(unsafe.Pointer(in.CPUManagerPolicy))
+	out.CPUCfsQuota = (*bool)(unsafe.Pointer(in.CPUCfsQuota))
+	out.CPUCfsQuotaPeriod = (*string)(unsafe.Pointer(in.CPUCfsQuotaPeriod))
+	out.ImageGcHighThreshold = (*int32)(unsafe.Pointer(in.ImageGcHighThreshold))
+	out.ImageGcLowThreshold = (*int32)(unsafe.Pointer(in.ImageGcLowThreshold))
+	out.TopologyManagerPolicy = (*string)(unsafe.Pointer(in.TopologyManagerPolicy))
+	out.AllowedUnsafeSysctls = (*[]string)(unsafe.Pointer(in.AllowedUnsafeSysctls))
+	out.FailSwapOn = (*bool)(unsafe.Pointer(in.FailSwapOn))
+	out.ContainerLogMaxSizeMB = (*int32)(unsafe.Pointer(in.ContainerLogMaxSizeMB))
+	out.ContainerLogMaxFiles = (*int32)(unsafe.Pointer(in.ContainerLogMaxFiles))
+	out.PodMaxPids = (*int32)(unsafe.Pointer(in.PodMaxPids))
+	return nil
+}
+
+// Convert_v1alpha3_KubeletConfig_To_v1alpha4_KubeletConfig is an autogenerated conversion function.
+func Convert_v1alpha3_KubeletConfig_To_v1alpha4_KubeletConfig(in *KubeletConfig, out *v1alpha4.KubeletConfig, s conversion.Scope) error {
+	return autoConvert_v1alpha3_KubeletConfig_To_v1alpha4_KubeletConfig(in, out, s)
+}
+
+func autoConvert_v1alpha4_KubeletConfig_To_v1alpha3_KubeletConfig(in *v1alpha4.KubeletConfig, out *KubeletConfig, s conversion.Scope) error {
+	out.CPUManagerPolicy = (*string)(unsafe.Pointer(in.CPUManagerPolicy))
+	out.CPUCfsQuota = (*bool)(unsafe.Pointer(in.CPUCfsQuota))
+	out.CPUCfsQuotaPeriod = (*string)(unsafe.Pointer(in.CPUCfsQuotaPeriod))
+	out.ImageGcHighThreshold = (*int32)(unsafe.Pointer(in.ImageGcHighThreshold))
+	out.ImageGcLowThreshold = (*int32)(unsafe.Pointer(in.ImageGcLowThreshold))
+	out.TopologyManagerPolicy = (*string)(unsafe.Pointer(in.TopologyManagerPolicy))
+	out.AllowedUnsafeSysctls = (*[]string)(unsafe.Pointer(in.AllowedUnsafeSysctls))
+	out.FailSwapOn = (*bool)(unsafe.Pointer(in.FailSwapOn))
+	out.ContainerLogMaxSizeMB = (*int32)(unsafe.Pointer(in.ContainerLogMaxSizeMB))
+	out.ContainerLogMaxFiles = (*int32)(unsafe.Pointer(in.ContainerLogMaxFiles))
+	out.PodMaxPids = (*int32)(unsafe.Pointer(in.PodMaxPids))
+	return nil
+}
+
+// Convert_v1alpha4_KubeletConfig_To_v1alpha3_KubeletConfig is an autogenerated conversion function.
+func Convert_v1alpha4_KubeletConfig_To_v1alpha3_KubeletConfig(in *v1alpha4.KubeletConfig, out *KubeletConfig, s conversion.Scope) error {
+	return autoConvert_v1alpha4_KubeletConfig_To_v1alpha3_KubeletConfig(in, out, s)
+}
+
+func autoConvert_v1alpha3_LoadBalancerProfile_To_v1alpha4_LoadBalancerProfile(in *LoadBalancerProfile, out *v1alpha4.LoadBalancerProfile, s conversion.Scope) error {
+	out.ManagedOutboundIPs = (*int32)(unsafe.Pointer(in.ManagedOutboundIPs))
+	out.OutboundIPPrefixes = *(*[]string)(unsafe.Pointer(&in.OutboundIPPrefixes))
+	out.OutboundIPs = *(*[]string)(unsafe.Pointer(&in.OutboundIPs))
+	out.EffectiveOutboundIPs = *(*[]string)(unsafe.Pointer(&in.EffectiveOutboundIPs))
+	out.AllocatedOutboundPorts = (*int32)(unsafe.Pointer(in.AllocatedOutboundPorts))
+	out.IdleTimeoutInMinutes = (*int32)(unsafe.Pointer(in.IdleTimeoutInMinutes))
+	return nil
+}
+
+// Convert_v1alpha3_LoadBalancerProfile_To_v1alpha4_LoadBalancerProfile is an autogenerated conversion function.
+func Convert_v1alpha3_LoadBalancerProfile_To_v1alpha4_LoadBalancerProfile(in *LoadBalancerProfile, out *v1alpha4.LoadBalancerProfile, s conversion.Scope) error {
+	return autoConvert_v1alpha3_LoadBalancerProfile_To_v1alpha4_LoadBalancerProfile(in, out, s)
+}
+
+func autoConvert_v1alpha4_LoadBalancerProfile_To_v1alpha3_LoadBalancerProfile(in *v1alpha4.LoadBalancerProfile, out *LoadBalancerProfile, s conversion.Scope) error {
+	out.ManagedOutboundIPs = (*int32)(unsafe.Pointer(in.ManagedOutboundIPs))
+	out.OutboundIPPrefixes = *(*[]string)(unsafe.Pointer(&in.OutboundIPPrefixes))
+	out.OutboundIPs = *(*[]string)(unsafe.Pointer(&in.OutboundIPs))
+	out.EffectiveOutboundIPs = *(*[]string)(unsafe.Pointer(&in.EffectiveOutboundIPs))
+	out.AllocatedOutboundPorts = (*int32)(unsafe.Pointer(in.AllocatedOutboundPorts))
+	out.IdleTimeoutInMinutes = (*int32)(unsafe.Pointer(in.IdleTimeoutInMinutes))
+	return nil
+}
+
+// Convert_v1alpha4_LoadBalancerProfile_To_v1alpha3_LoadBalancerProfile is an autogenerated conversion function.
+func Convert_v1alpha4_LoadBalancerProfile_To_v1alpha3_LoadBalancerProfile(in *v1alpha4.LoadBalancerProfile, out *LoadBalancerProfile, s conversion.Scope) error {
+	return autoConvert_v1alpha4_LoadBalancerProfile_To_v1alpha3_LoadBalancerProfile(in, out, s)
+}
+
 func autoConvert_v1alpha3_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(in *ManagedControlPlaneSubnet, out *v1alpha4.ManagedControlPlaneSubnet, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
+	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
 	return nil
 }
 
@@ -911,7 +1096,7 @@ func Convert_v1alpha3_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneS
 
 func autoConvert_v1alpha4_ManagedControlPlaneSubnet_To_v1alpha3_ManagedControlPlaneSubnet(in *v1alpha4.ManagedControlPlaneSubnet, out *ManagedControlPlaneSubnet, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
+	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
 	return nil
 }
 
@@ -922,10 +1107,8 @@ func Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1alpha3_ManagedControlPlaneS
 
 func autoConvert_v1alpha3_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork(in *ManagedControlPlaneVirtualNetwork, out *v1alpha4.ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
-	if err := Convert_v1alpha3_ManagedControlPlaneSubnet_To_v1alpha4_ManagedControlPlaneSubnet(&in.Subnet, &out.Subnet, s); err != nil {
-		return err
-	}
+	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
+	out.Subnets = *(*[]v1alpha4.ManagedControlPlaneSubnet)(unsafe.Pointer(&in.Subnets))
 	return nil
 }
 
@@ -936,14 +1119,28 @@ func Convert_v1alpha3_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedContr
 
 func autoConvert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork(in *v1alpha4.ManagedControlPlaneVirtualNetwork, out *ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
 	out.Name = in.Name
-	out.CIDRBlock = in.CIDRBlock
-	if err := Convert_v1alpha4_ManagedControlPlaneSubnet_To_v1alpha3_ManagedControlPlaneSubnet(&in.Subnet, &out.Subnet, s); err != nil {
-		return err
-	}
+	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
+	out.Subnets = *(*[]ManagedControlPlaneSubnet)(unsafe.Pointer(&in.Subnets))
+	// WARNING: in.ResourceGroupName requires manual conversion: does not exist in peer-type
 	return nil
 }
 
-// Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork is an autogenerated conversion function.
-func Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork(in *v1alpha4.ManagedControlPlaneVirtualNetwork, out *ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
-	return autoConvert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork(in, out, s)
+func autoConvert_v1alpha3_SKU_To_v1alpha4_SKU(in *SKU, out *v1alpha4.SKU, s conversion.Scope) error {
+	out.Tier = in.Tier
+	return nil
+}
+
+// Convert_v1alpha3_SKU_To_v1alpha4_SKU is an autogenerated conversion function.
+func Convert_v1alpha3_SKU_To_v1alpha4_SKU(in *SKU, out *v1alpha4.SKU, s conversion.Scope) error {
+	return autoConvert_v1alpha3_SKU_To_v1alpha4_SKU(in, out, s)
+}
+
+func autoConvert_v1alpha4_SKU_To_v1alpha3_SKU(in *v1alpha4.SKU, out *SKU, s conversion.Scope) error {
+	out.Tier = in.Tier
+	return nil
+}
+
+// Convert_v1alpha4_SKU_To_v1alpha3_SKU is an autogenerated conversion function.
+func Convert_v1alpha4_SKU_To_v1alpha3_SKU(in *v1alpha4.SKU, out *SKU, s conversion.Scope) error {
+	return autoConvert_v1alpha4_SKU_To_v1alpha3_SKU(in, out, s)
 }

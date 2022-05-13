@@ -259,19 +259,20 @@ func main() {
 	restConfig := ctrl.GetConfigOrDie()
 	restConfig.UserAgent = "cluster-api-provider-azure-manager"
 	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
-		Scheme:                  scheme,
-		MetricsBindAddress:      metricsAddr,
-		LeaderElection:          enableLeaderElection,
-		LeaderElectionID:        "controller-leader-election-capz",
-		LeaderElectionNamespace: leaderElectionNamespace,
-		LeaseDuration:           &leaderElectionLeaseDuration,
-		RenewDeadline:           &leaderElectionRenewDeadline,
-		RetryPeriod:             &leaderElectionRetryPeriod,
-		SyncPeriod:              &syncPeriod,
-		Namespace:               watchNamespace,
-		HealthProbeBindAddress:  healthAddr,
-		Port:                    webhookPort,
-		EventBroadcaster:        broadcaster,
+		Scheme:                     scheme,
+		MetricsBindAddress:         metricsAddr,
+		LeaderElection:             enableLeaderElection,
+		LeaderElectionID:           "controller-leader-election-capz",
+		LeaderElectionResourceLock: "configmaps",
+		LeaderElectionNamespace:    leaderElectionNamespace,
+		LeaseDuration:              &leaderElectionLeaseDuration,
+		RenewDeadline:              &leaderElectionRenewDeadline,
+		RetryPeriod:                &leaderElectionRetryPeriod,
+		SyncPeriod:                 &syncPeriod,
+		Namespace:                  watchNamespace,
+		HealthProbeBindAddress:     healthAddr,
+		Port:                       webhookPort,
+		EventBroadcaster:           broadcaster,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

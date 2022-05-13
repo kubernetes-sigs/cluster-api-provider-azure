@@ -39,14 +39,18 @@ import (
 
 func TestReconcile(t *testing.T) {
 	provisioningstatetestcases := []struct {
-		name                     string
-		agentpoolSpec            azure.AgentPoolSpec
-		provisioningStatesToTest []string
-		expectedError            string
-		expect                   func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string)
+		name                          string
+		managedControlPlaneSubnetSpec azure.SubnetSpec
+		agentpoolSpec                 azure.AgentPoolSpec
+		provisioningStatesToTest      []string
+		expectedError                 string
+		expect                        func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string)
 	}{
 		{
 			name: "agentpool in terminal provisioning state",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentpoolSpec: azure.AgentPoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -63,6 +67,9 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "agentpool in nonterminal provisioning state",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentpoolSpec: azure.AgentPoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -97,6 +104,13 @@ func TestReconcile(t *testing.T) {
 						},
 						Spec: infraexpv1.AzureManagedControlPlaneSpec{
 							ResourceGroupName: tc.agentpoolSpec.ResourceGroup,
+							VirtualNetwork: infraexpv1.ManagedControlPlaneVirtualNetwork{
+								Subnets: []infraexpv1.ManagedControlPlaneSubnet{
+									{
+										Name: tc.managedControlPlaneSubnetSpec.Name,
+									},
+								},
+							},
 						},
 					},
 					MachinePool: &capiexp.MachinePool{},
@@ -126,13 +140,17 @@ func TestReconcile(t *testing.T) {
 	}
 
 	testcases := []struct {
-		name           string
-		agentPoolsSpec azure.AgentPoolSpec
-		expectedError  string
-		expect         func(m *mock_agentpools.MockClientMockRecorder)
+		name                          string
+		managedControlPlaneSubnetSpec azure.SubnetSpec
+		agentPoolsSpec                azure.AgentPoolSpec
+		expectedError                 string
+		expect                        func(m *mock_agentpools.MockClientMockRecorder)
 	}{
 		{
 			name: "no agentpool exists",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -146,6 +164,9 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "fail to get existing agent pool",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
@@ -162,6 +183,9 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "can create an Agent Pool",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
@@ -179,6 +203,9 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "fail to create an Agent Pool",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
@@ -196,6 +223,9 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "fail to update an Agent Pool",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
@@ -221,6 +251,9 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "no update needed on Agent Pool",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
@@ -267,6 +300,13 @@ func TestReconcile(t *testing.T) {
 					},
 					Spec: infraexpv1.AzureManagedControlPlaneSpec{
 						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
+						VirtualNetwork: infraexpv1.ManagedControlPlaneVirtualNetwork{
+							Subnets: []infraexpv1.ManagedControlPlaneSubnet{
+								{
+									Name: tc.managedControlPlaneSubnetSpec.Name,
+								},
+							},
+						},
 					},
 				},
 				MachinePool: &capiexp.MachinePool{
@@ -310,13 +350,17 @@ func TestReconcile(t *testing.T) {
 
 func TestDeleteAgentPools(t *testing.T) {
 	testcases := []struct {
-		name           string
-		agentPoolsSpec azure.AgentPoolSpec
-		expectedError  string
-		expect         func(m *mock_agentpools.MockClientMockRecorder)
+		name                          string
+		managedControlPlaneSubnetSpec azure.SubnetSpec
+		agentPoolsSpec                azure.AgentPoolSpec
+		expectedError                 string
+		expect                        func(m *mock_agentpools.MockClientMockRecorder)
 	}{
 		{
 			name: "successfully delete an existing agent pool",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
@@ -329,6 +373,9 @@ func TestDeleteAgentPools(t *testing.T) {
 		},
 		{
 			name: "agent pool already deleted",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
@@ -342,6 +389,9 @@ func TestDeleteAgentPools(t *testing.T) {
 		},
 		{
 			name: "agent pool deletion fails",
+			managedControlPlaneSubnetSpec: azure.SubnetSpec{
+				Name: "my-subnet",
+			},
 			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
@@ -371,6 +421,13 @@ func TestDeleteAgentPools(t *testing.T) {
 					},
 					Spec: infraexpv1.AzureManagedControlPlaneSpec{
 						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
+						VirtualNetwork: infraexpv1.ManagedControlPlaneVirtualNetwork{
+							Subnets: []infraexpv1.ManagedControlPlaneSubnet{
+								{
+									Name: tc.managedControlPlaneSubnetSpec.Name,
+								},
+							},
+						},
 					},
 				},
 				MachinePool: &capiexp.MachinePool{},

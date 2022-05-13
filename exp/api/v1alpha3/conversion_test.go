@@ -32,17 +32,17 @@ func TestFuzzyConversion(t *testing.T) {
 	g.Expect(AddToScheme(scheme)).To(Succeed())
 	g.Expect(v1alpha4.AddToScheme(scheme)).To(Succeed())
 
-	t.Run("for AzureMachinePool", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
-		Scheme: scheme,
-		Hub:    &v1alpha4.AzureMachinePool{},
-		Spoke:  &AzureMachinePool{},
-	}))
-
-	t.Run("for AzureManagedCluster", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
-		Scheme: scheme,
-		Hub:    &v1alpha4.AzureManagedCluster{},
-		Spoke:  &AzureManagedCluster{},
-	}))
+	//t.Run("for AzureMachinePool", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
+	//	Scheme: scheme,
+	//	Hub:    &v1alpha4.AzureMachinePool{},
+	//	Spoke:  &AzureMachinePool{},
+	//}))
+	//
+	//t.Run("for AzureManagedCluster", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
+	//	Scheme: scheme,
+	//	Hub:    &v1alpha4.AzureManagedCluster{},
+	//	Spoke:  &AzureManagedCluster{},
+	//}))
 
 	t.Run("for AzureManagedControlPlane", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,

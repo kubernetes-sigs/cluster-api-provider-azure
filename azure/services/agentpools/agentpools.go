@@ -25,7 +25,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -77,6 +76,54 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		},
 	}
 
+	if agentPoolSpec.MaxCount != nil {
+		profile.MaxCount = agentPoolSpec.MaxCount
+	}
+
+	if agentPoolSpec.MinCount != nil {
+		profile.MinCount = agentPoolSpec.MinCount
+	}
+
+	if agentPoolSpec.EnableAutoScaling != nil {
+		profile.EnableAutoScaling = agentPoolSpec.EnableAutoScaling
+	}
+
+	if agentPoolSpec.EnableFIPS != nil {
+		profile.EnableFIPS = agentPoolSpec.EnableFIPS
+	}
+
+	if agentPoolSpec.EnableNodePublicIP != nil {
+		profile.EnableNodePublicIP = agentPoolSpec.EnableNodePublicIP
+	}
+
+	if agentPoolSpec.NodeLabels != nil {
+		profile.NodeLabels = agentPoolSpec.NodeLabels
+	}
+
+	if agentPoolSpec.NodeTaints != nil {
+		profile.NodeTaints = &agentPoolSpec.NodeTaints
+	}
+
+	if agentPoolSpec.OsDiskType != nil {
+		profile.OsDiskType = containerservice.OSDiskType(*agentPoolSpec.OsDiskType)
+	}
+
+	if agentPoolSpec.AvailabilityZones != nil {
+		profile.AvailabilityZones = &agentPoolSpec.AvailabilityZones
+	}
+
+	if agentPoolSpec.ScaleSetPriority != nil {
+		profile.ScaleSetPriority = containerservice.ScaleSetPriority(*agentPoolSpec.ScaleSetPriority)
+	}
+
+	if agentPoolSpec.MaxPods != nil {
+		profile.MaxPods = agentPoolSpec.MaxPods
+	}
+
+	if agentPoolSpec.KubeletConfig != nil {
+		profile.KubeletConfig = (*containerservice.KubeletConfig)(agentPoolSpec.KubeletConfig)
+	}
+
 	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrap(err, "failed to get existing agent pool")
@@ -106,6 +153,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Count:               existingPool.Count,
 				OrchestratorVersion: existingPool.OrchestratorVersion,
 				Mode:                existingPool.Mode,
+				MaxCount:            existingPool.MaxCount,
+				MinCount:            existingPool.MinCount,
+				EnableAutoScaling:   existingPool.EnableAutoScaling,
+				NodeLabels:          existingPool.NodeLabels,
 			},
 		}
 
@@ -114,7 +165,16 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Count:               profile.Count,
 				OrchestratorVersion: profile.OrchestratorVersion,
 				Mode:                profile.Mode,
+				MaxCount:            profile.MaxCount,
+				MinCount:            profile.MinCount,
+				EnableAutoScaling:   profile.EnableAutoScaling,
+				NodeLabels:          profile.NodeLabels,
 			},
+		}
+
+		// Auto scaler enabled, no need to reconcile on node pool count
+		if profile.MinCount != nil && profile.MaxCount != nil{
+			normalizedProfile.Count = existingPool.Count
 		}
 
 		// Diff and check if we require an update

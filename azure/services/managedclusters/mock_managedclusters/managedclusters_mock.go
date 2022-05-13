@@ -213,6 +213,21 @@ func (mr *MockManagedClusterScopeMockRecorder) Error(err, msg interface{}, keysA
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockManagedClusterScope)(nil).Error), varargs...)
 }
 
+// GetAgentPoolSpecs mocks base method.
+func (m *MockManagedClusterScope) GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentPoolSpecs", ctx)
+	ret0, _ := ret[0].([]azure.AgentPoolSpec)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentPoolSpecs indicates an expected call of GetAgentPoolSpecs.
+func (mr *MockManagedClusterScopeMockRecorder) GetAgentPoolSpecs(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentPoolSpecs", reflect.TypeOf((*MockManagedClusterScope)(nil).GetAgentPoolSpecs), ctx)
+}
+
 // GetKubeConfigData mocks base method.
 func (m *MockManagedClusterScope) GetKubeConfigData() []byte {
 	m.ctrl.T.Helper()
@@ -225,21 +240,6 @@ func (m *MockManagedClusterScope) GetKubeConfigData() []byte {
 func (mr *MockManagedClusterScopeMockRecorder) GetKubeConfigData() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKubeConfigData", reflect.TypeOf((*MockManagedClusterScope)(nil).GetKubeConfigData))
-}
-
-// GetSystemAgentPoolSpecs mocks base method.
-func (m *MockManagedClusterScope) GetSystemAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSystemAgentPoolSpecs", ctx)
-	ret0, _ := ret[0].([]azure.AgentPoolSpec)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSystemAgentPoolSpecs indicates an expected call of GetSystemAgentPoolSpecs.
-func (mr *MockManagedClusterScopeMockRecorder) GetSystemAgentPoolSpecs(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSystemAgentPoolSpecs", reflect.TypeOf((*MockManagedClusterScope)(nil).GetSystemAgentPoolSpecs), ctx)
 }
 
 // HashKey mocks base method.
