@@ -287,7 +287,13 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a management clust
 .PHONY: create-workload-cluster
 create-workload-cluster: $(ENVSUBST) ## Create a workload cluster.
 	# Create workload Cluster.
-	$(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | kubectl apply -f -
+	@if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
+		$(ENVSUBST) < "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" | kubectl apply -f -; \
+	elif [ -f "$(CLUSTER_TEMPLATE)" ]; then \
+		$(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | kubectl apply -f -; \
+	else \
+		curl --retry "$(CURL_RETRIES)" "$(CLUSTER_TEMPLATE)" | "$(ENVSUBST)" | kubectl apply -f -; \
+	fi
 
 	# Wait for the kubeconfig to become available.
 	timeout --foreground 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"

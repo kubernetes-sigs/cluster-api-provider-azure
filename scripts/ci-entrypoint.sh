@@ -54,6 +54,13 @@ setup() {
     # setup REGISTRY for custom images.
     : "${REGISTRY:?Environment variable empty or not defined.}"
     "${REPO_ROOT}/hack/ensure-acr-login.sh"
+    if [[ -n "${TEST_CCM:-}" ]]; then
+        # shellcheck source=scripts/ci-build-azure-ccm.sh
+        source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
+        echo "Will use the ${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG} cloud-controller-manager image for external cloud-provider-cluster"
+        echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG} cloud-node-manager image for external cloud-provider-azure cluster"
+    fi
+
     if [[ -z "${CLUSTER_TEMPLATE:-}" ]]; then
         select_cluster_template
     fi
@@ -65,6 +72,12 @@ setup() {
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
     export EXP_CLUSTER_RESOURCE_SET="true"
+
+    # this requires k8s 1.22+
+    if [[ -n "${TEST_WINDOWS:-}" ]]; then
+        export WINDOWS_WORKER_MACHINE_COUNT="${WINDOWS_WORKER_MACHINE_COUNT:-2}"
+        export K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
+    fi
 }
 
 select_cluster_template() {
@@ -90,10 +103,6 @@ select_cluster_template() {
 
     if [[ -n "${TEST_CCM:-}" ]]; then
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-external-cloud-provider.yaml"
-        # shellcheck source=scripts/ci-build-azure-ccm.sh
-        source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
-        echo "Will use the ${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG} cloud-controller-manager image for external cloud-provider-cluster"
-        echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG} cloud-node-manager image for external cloud-provider-azure cluster"
     fi
 
     if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
@@ -102,12 +111,6 @@ select_cluster_template() {
         elif [[ "${CLUSTER_TEMPLATE}" =~ "custom-builds" ]]; then
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
         fi
-    fi
-
-    # this requires k8s 1.22+
-    if [[ -n "${TEST_WINDOWS:-}" ]]; then
-        export WINDOWS_WORKER_MACHINE_COUNT="${WINDOWS_WORKER_MACHINE_COUNT:-2}"
-        export K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
     fi
 }
 
@@ -157,8 +160,8 @@ export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 
 # install cloud-provider-azure components, if using out-of-tree
 if [[ -n "${TEST_CCM:-}" ]]; then
-  echo "Installing cloud-provider-azure components via helm"
-  "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName="${CLUSTER_NAME}" --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
+    echo "Installing cloud-provider-azure components via helm"
+    "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName="${CLUSTER_NAME}" --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
 --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
 --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
 --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
