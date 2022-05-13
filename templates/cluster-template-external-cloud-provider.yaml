@@ -55,7 +55,7 @@ spec:
       apiServer:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json

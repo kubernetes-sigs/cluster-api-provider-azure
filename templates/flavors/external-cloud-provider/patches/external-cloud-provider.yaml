@@ -26,6 +26,8 @@ spec:
     clusterConfiguration:
       apiServer:
         timeoutForControlPlane: 20m
+        extraArgs:
+          cloud-provider: external
       controllerManager:
         extraArgs:
           cloud-provider: external
