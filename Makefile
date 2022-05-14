@@ -289,6 +289,7 @@ create-workload-cluster: $(ENVSUBST) ## Create a workload cluster.
 	# Create workload Cluster.
 	$(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | kubectl apply -f -
 
+	sleep 5
 	# Wait for the kubeconfig to become available.
 	timeout --foreground 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
