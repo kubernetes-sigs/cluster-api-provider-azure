@@ -558,7 +558,7 @@ You can optionally set the following variables:
 | `EXP_MACHINE_POOL`          | Use [Machine Pool](../topics/machinepools.md) for worker machines.                                                                            |
 | `TEST_WINDOWS`                  | Build a cluster that has Windows worker nodes.          |
 | `REGISTRY`                  | Registry to push any custom k8s images or cloud provider images built.                                                                     |
-| `CLUSTER_TEMPLATE`          | Use a custom cluster template. By default, the script will choose the appropriate cluster template based on existing environment variables. |
+| `CLUSTER_TEMPLATE`          | Use a custom cluster template. It can be a path to a template under templates/, a path on the host or a link. If the value is not set, the script will choose the appropriate cluster template based on existing environment variables. |
 
 You can also customize the configuration of the CAPZ cluster (assuming that `SKIP_CREATE_WORKLOAD_CLUSTER` is not set). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
 
