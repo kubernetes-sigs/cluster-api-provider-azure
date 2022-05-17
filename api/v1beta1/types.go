@@ -318,12 +318,43 @@ type Image struct {
 	ID *string `json:"id,omitempty"`
 
 	// SharedGallery specifies an image to use from an Azure Shared Image Gallery
+	// Deprecated: use ComputeGallery instead.
 	// +optional
 	SharedGallery *AzureSharedGalleryImage `json:"sharedGallery,omitempty"`
 
 	// Marketplace specifies an image to use from the Azure Marketplace
 	// +optional
 	Marketplace *AzureMarketplaceImage `json:"marketplace,omitempty"`
+
+	// ComputeGallery specifies an image to use from the Azure Compute Gallery
+	// +optional
+	ComputeGallery *AzureComputeGalleryImage `json:"computeGallery,omitempty"`
+}
+
+// AzureComputeGalleryImage defines an image in the Azure Compute Gallery to use for VM creation.
+type AzureComputeGalleryImage struct {
+	// Gallery specifies the name of the compute image gallery that contains the image
+	// +kubebuilder:validation:MinLength=1
+	Gallery string `json:"gallery"`
+	// Name is the name of the image
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+	// Version specifies the version of the marketplace image. The allowed formats
+	// are Major.Minor.Build or 'latest'. Major, Minor, and Build are decimal numbers.
+	// Specify 'latest' to use the latest version of an image available at deploy time.
+	// Even if you use 'latest', the VM image will not automatically update after deploy
+	// time even if a new version becomes available.
+	// +kubebuilder:validation:MinLength=1
+	Version string `json:"version"`
+	// SubscriptionID is the identifier of the subscription that contains the private compute gallery.
+	// +kubebuilder:validation:MinLength=1
+	SubscriptionID *string `json:"subscriptionID,omitempty"`
+	// ResourceGroup specifies the resource group containing the private compute gallery.
+	// +kubebuilder:validation:MinLength=1
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+	// Plan contains plan information.
+	// +optional
+	Plan *ImagePlan `json:"plan,omitempty"`
 }
 
 type ImagePlan struct {

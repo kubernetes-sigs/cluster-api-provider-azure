@@ -62,14 +62,22 @@ func validateSingleDetailsOnly(image *Image, fldPath *field.Path) field.ErrorLis
 
 	if image.SharedGallery != nil {
 		if imageDetailsFound {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("SharedGallery"), "SharedGallery cannot be used as an image ID or Marketplace images has been specified"))
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("SharedGallery"), "SharedGallery cannot be used as an image ID, Marketplace or ComputeGallery images has been specified"))
+		} else {
+			imageDetailsFound = true
+		}
+	}
+
+	if image.ComputeGallery != nil {
+		if imageDetailsFound {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("ComputeGallery"), "ComputeGallery cannot be used as an image ID, Marketplace or SharedGallery images has been specified"))
 		} else {
 			imageDetailsFound = true
 		}
 	}
 
 	if !imageDetailsFound {
-		allErrs = append(allErrs, field.Required(fldPath, "You must supply a ID, Marketplace or SharedGallery image details"))
+		allErrs = append(allErrs, field.Required(fldPath, "You must supply a ID, Marketplace or ComputeGallery image details"))
 	}
 
 	return allErrs

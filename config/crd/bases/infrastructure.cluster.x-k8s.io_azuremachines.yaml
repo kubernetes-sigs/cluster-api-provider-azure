@@ -1144,6 +1144,68 @@ spec:
                   VM creation. If image details are omitted the image will default
                   the Azure Marketplace "capi" offer, which is based on Ubuntu.
                 properties:
+                  computeGallery:
+                    description: ComputeGallery specifies an image to use from the
+                      Azure Compute Gallery
+                    properties:
+                      gallery:
+                        description: Gallery specifies the name of the compute image
+                          gallery that contains the image
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name is the name of the image
+                        minLength: 1
+                        type: string
+                      plan:
+                        description: Plan contains plan information.
+                        properties:
+                          offer:
+                            description: Offer specifies the name of a group of related
+                              images created by the publisher. For example, UbuntuServer,
+                              WindowsServer
+                            minLength: 1
+                            type: string
+                          publisher:
+                            description: Publisher is the name of the organization
+                              that created the image
+                            minLength: 1
+                            type: string
+                          sku:
+                            description: SKU specifies an instance of an offer, such
+                              as a major release of a distribution. For example, 18.04-LTS,
+                              2019-Datacenter
+                            minLength: 1
+                            type: string
+                        required:
+                        - offer
+                        - publisher
+                        - sku
+                        type: object
+                      resourceGroup:
+                        description: ResourceGroup specifies the resource group containing
+                          the private compute gallery.
+                        minLength: 1
+                        type: string
+                      subscriptionID:
+                        description: SubscriptionID is the identifier of the subscription
+                          that contains the private compute gallery.
+                        minLength: 1
+                        type: string
+                      version:
+                        description: Version specifies the version of the marketplace
+                          image. The allowed formats are Major.Minor.Build or 'latest'.
+                          Major, Minor, and Build are decimal numbers. Specify 'latest'
+                          to use the latest version of an image available at deploy
+                          time. Even if you use 'latest', the VM image will not automatically
+                          update after deploy time even if a new version becomes available.
+                        minLength: 1
+                        type: string
+                    required:
+                    - gallery
+                    - name
+                    - version
+                    type: object
                   id:
                     description: ID specifies an image to use by ID
                     type: string
@@ -1190,8 +1252,8 @@ spec:
                     - version
                     type: object
                   sharedGallery:
-                    description: SharedGallery specifies an image to use from an Azure
-                      Shared Image Gallery
+                    description: 'SharedGallery specifies an image to use from an
+                      Azure Shared Image Gallery Deprecated: use ComputeGallery instead.'
                     properties:
                       gallery:
                         description: Gallery specifies the name of the shared image

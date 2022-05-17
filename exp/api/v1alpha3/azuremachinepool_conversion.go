@@ -72,6 +72,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Image.SharedGallery.SKU = restored.Spec.Template.Image.SharedGallery.SKU
 	}
 
+	if dst.Spec.Template.Image != nil && restored.Spec.Template.Image.ComputeGallery != nil {
+		dst.Spec.Template.Image.ComputeGallery = restored.Spec.Template.Image.ComputeGallery
+	}
+
 	if len(dst.Annotations) == 0 {
 		dst.Annotations = nil
 	}
