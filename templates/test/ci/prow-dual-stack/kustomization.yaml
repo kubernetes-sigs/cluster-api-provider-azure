@@ -8,6 +8,8 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/cluster-cni.yaml
+  - patches/azure-machine-template-control-plane.yaml
+  - patches/azure-machine-template.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:

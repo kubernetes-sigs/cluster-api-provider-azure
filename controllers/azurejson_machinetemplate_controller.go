@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api/util"
@@ -143,7 +144,13 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Construct secret for this machine template
 	userAssignedIdentityIfExists := ""
 	if len(azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities) > 0 {
-		userAssignedIdentityIfExists = azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities[0].ProviderID
+		// TODO: remove this ClientID lookup code when the fixed cloud-provider-azure is default
+		idsClient := identities.NewClient(clusterScope)
+		userAssignedIdentityIfExists, err = idsClient.GetClientID(
+			ctx, azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities[0].ProviderID)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "failed to get user-assigned identity ClientID")
+		}
 	}
 
 	if azureMachineTemplate.Spec.Template.Spec.Identity == infrav1.VMIdentityNone {
