@@ -40,6 +40,9 @@ func ValidateImage(image *Image, fldPath *field.Path) field.ErrorList {
 	if image.ID != nil {
 		allErrs = append(allErrs, validateSpecificImage(image, fldPath)...)
 	}
+	if image.ComputeGallery != nil {
+		allErrs = append(allErrs, validateComputeGalleryImage(image, fldPath)...)
+	}
 
 	return allErrs
 }
@@ -78,6 +81,19 @@ func validateSingleDetailsOnly(image *Image, fldPath *field.Path) field.ErrorLis
 
 	if !imageDetailsFound {
 		allErrs = append(allErrs, field.Required(fldPath, "You must supply a ID, Marketplace or ComputeGallery image details"))
+	}
+
+	return allErrs
+}
+
+func validateComputeGalleryImage(image *Image, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if image.ComputeGallery.SubscriptionID != nil && image.ComputeGallery.ResourceGroup == nil {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("ResourceGroup"), "", "ResourceGroup cannot be empty when SubscriptionID is specified"))
+	}
+	if image.ComputeGallery.ResourceGroup != nil && image.ComputeGallery.SubscriptionID == nil {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("SubscriptionID"), "", "SubscriptionID cannot be empty when ResourceGroup is specified"))
 	}
 
 	return allErrs

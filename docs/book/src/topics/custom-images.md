@@ -172,6 +172,53 @@ spec:
           thirdPartyImage: true
 ```
 
+### Using Azure Community Gallery
+
+To use an image from [Azure Community Gallery][azure-community-gallery], set `name` field to gallery's public name and don't set `subscriptionID` and `resourceGroup` fields:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: capz-community-gallery-example
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          gallery: testGallery-3282f15c-906a-4c4b-b206-eb3c51adb5be
+          name: capi-flatcar-stable-3139.2.0
+          version: 0.3.1651499183
+```
+
+If the image you want to use is based on an image released by a third party publisher such as for example
+`Flatcar Linux` by `Kinvolk`, then you need to specify the `publisher`, `offer`, and `sku` fields as well:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: capz-community-gallery-example
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          gallery: testGallery-3282f15c-906a-4c4b-b206-eb3c51adb5be
+          name: capi-flatcar-stable-3139.2.0
+          version: 0.3.1651499183
+          plan:
+            publisher: kinvolk
+            offer: flatcar-container-linux-free
+            sku: stable
+```
+
+This will make API calls to create Virtual Machines or Virtual Machine Scale Sets to have the `Plan` correctly set.
+
+In the case of a third party image, you must accept the license terms with the [Azure CLI][azure-cli] before consuming it.
+
+[azure-cli]: https://docs.microsoft.com/en-us/cli/azure/vm/image/terms?view=azure-cli-latest
+[azure-community-gallery]: https://docs.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery#community
 [azure-marketplace]: https://docs.microsoft.com/azure/marketplace/marketplace-publishers-guide
 [azure-capi-images]: https://image-builder.sigs.k8s.io/capi/providers/azure.html
 [azure-compute-gallery]: https://docs.microsoft.com/azure/virtual-machines/linux/shared-image-galleries

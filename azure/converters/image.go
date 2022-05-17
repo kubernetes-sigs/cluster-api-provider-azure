@@ -64,14 +64,25 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 		}, nil
 	}
 
+	// For private Azure Compute Gallery consumption both resource group and subscription ID must be provided.
+	// If they are not, we assume use of community gallery.
+	if image.ComputeGallery.ResourceGroup != nil && image.ComputeGallery.SubscriptionID != nil {
+		return &compute.ImageReference{
+			ID: to.StringPtr(fmt.Sprintf(idTemplate,
+				image.ComputeGallery.SubscriptionID,
+				image.ComputeGallery.ResourceGroup,
+				image.ComputeGallery.Gallery,
+				image.ComputeGallery.Name,
+				image.ComputeGallery.Version,
+			)),
+		}, nil
+	}
+
 	return &compute.ImageReference{
-		ID: to.StringPtr(fmt.Sprintf(idTemplate,
-			image.ComputeGallery.SubscriptionID,
-			image.ComputeGallery.ResourceGroup,
+		CommunityGalleryImageID: to.StringPtr(fmt.Sprintf("/CommunityGalleries/%s/Images/%s/Versions/%s",
 			image.ComputeGallery.Gallery,
 			image.ComputeGallery.Name,
-			image.ComputeGallery.Version,
-		)),
+			image.ComputeGallery.Version)),
 	}, nil
 }
 

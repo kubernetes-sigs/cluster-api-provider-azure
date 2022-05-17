@@ -1185,12 +1185,10 @@ spec:
                       resourceGroup:
                         description: ResourceGroup specifies the resource group containing
                           the private compute gallery.
-                        minLength: 1
                         type: string
                       subscriptionID:
                         description: SubscriptionID is the identifier of the subscription
                           that contains the private compute gallery.
-                        minLength: 1
                         type: string
                       version:
                         description: Version specifies the version of the marketplace

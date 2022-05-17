@@ -347,10 +347,10 @@ type AzureComputeGalleryImage struct {
 	// +kubebuilder:validation:MinLength=1
 	Version string `json:"version"`
 	// SubscriptionID is the identifier of the subscription that contains the private compute gallery.
-	// +kubebuilder:validation:MinLength=1
+	// +optional
 	SubscriptionID *string `json:"subscriptionID,omitempty"`
 	// ResourceGroup specifies the resource group containing the private compute gallery.
-	// +kubebuilder:validation:MinLength=1
+	// +optional
 	ResourceGroup *string `json:"resourceGroup,omitempty"`
 	// Plan contains plan information.
 	// +optional
