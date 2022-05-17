@@ -79,7 +79,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			},
 			Expect: func(g *gomega.GomegaWithT, actual error) {
 				g.Expect(actual).To(gomega.HaveOccurred())
-				g.Expect(actual.Error()).To(gomega.ContainSubstring("You must supply a ID, Marketplace or ComputeGallery image details"))
+				g.Expect(actual.Error()).To(gomega.ContainSubstring("You must supply an ID, Marketplace or ComputeGallery image details"))
 			},
 		},
 		{
