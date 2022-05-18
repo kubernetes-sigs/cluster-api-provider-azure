@@ -47,12 +47,6 @@ source "${REPO_ROOT}/hack/util.sh"
 : "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
 : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
-# all test regions must support AvailabilityZones
-get_random_region() {
-    local REGIONS=("eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2")
-    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
-}
-
 export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
 
 if [[ "${LOCAL_ONLY}" == "true" ]]; then
@@ -71,7 +65,7 @@ defaultTag=$(date -u '+%Y%m%d%H%M%S')
 export TAG="${defaultTag:-dev}"
 export GINKGO_NODES=1
 
-export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
+export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export WINDOWS="${WINDOWS:-false}"

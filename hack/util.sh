@@ -38,3 +38,9 @@ capz::util::should_build_kubernetes() {
     fi
     echo "false"
 }
+
+# all test regions must support AvailabilityZones
+capz::util::get_random_region() {
+    local REGIONS=("eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2")
+    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
+}
