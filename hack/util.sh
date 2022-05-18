@@ -61,3 +61,10 @@ capz::util::generate_ssh_key() {
     AZURE_SSH_PUBLIC_KEY=$(tr -d '\r\n' < "${AZURE_SSH_PUBLIC_KEY_FILE}")
     export AZURE_SSH_PUBLIC_KEY
 }
+
+capz::util::ensure_azure_envs() {
+    : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
+    : "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
+    : "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
+    : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
+}

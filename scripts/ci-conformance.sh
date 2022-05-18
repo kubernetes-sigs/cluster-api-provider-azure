@@ -42,10 +42,7 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 source "${REPO_ROOT}/hack/util.sh"
 
 # Verify the required Environment Variables are present.
-: "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
-: "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
-: "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
-: "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
+capz::util::ensure_azure_envs
 
 export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
 
