@@ -17,6 +17,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+# shellcheck source=hack/util.sh
+source "${REPO_ROOT}/hack/util.sh"
+
 # Verify the required Environment Variables are present.
 : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
 : "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
@@ -56,16 +60,7 @@ export CLUSTER_IDENTITY_NAME=${CLUSTER_IDENTITY_NAME:="cluster-identity"}
 export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
 
 # Generate SSH key.
-SSH_KEY_FILE=${SSH_KEY_FILE:-""}
-if [ -z "$SSH_KEY_FILE" ]; then
-    SSH_KEY_FILE=.sshkey
-    rm -f "${SSH_KEY_FILE}" 2>/dev/null
-    ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
-    echo "Machine SSH key generated in ${SSH_KEY_FILE}"
-fi
-
-AZURE_SSH_PUBLIC_KEY_B64=$(base64 "${SSH_KEY_FILE}.pub" | tr -d '\r\n')
-export AZURE_SSH_PUBLIC_KEY_B64
+capz::util::generate_ssh_key
 
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build

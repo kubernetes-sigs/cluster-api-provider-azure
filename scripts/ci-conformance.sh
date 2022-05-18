@@ -71,19 +71,7 @@ export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export WINDOWS="${WINDOWS:-false}"
 
 # Generate SSH key.
-AZURE_SSH_PUBLIC_KEY_FILE=${AZURE_SSH_PUBLIC_KEY_FILE:-""}
-if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
-    SSH_KEY_FILE=.sshkey
-    rm -f "${SSH_KEY_FILE}" 2>/dev/null
-    ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
-    AZURE_SSH_PUBLIC_KEY_FILE="${SSH_KEY_FILE}.pub"
-fi
-AZURE_SSH_PUBLIC_KEY_B64=$(base64 "${AZURE_SSH_PUBLIC_KEY_FILE}" | tr -d '\r\n')
-export AZURE_SSH_PUBLIC_KEY_B64
-
-# Windows sets the public key via cloudbase-init which take the raw text as input
-AZURE_SSH_PUBLIC_KEY=$(< "${AZURE_SSH_PUBLIC_KEY_FILE}" tr -d '\r\n')
-export AZURE_SSH_PUBLIC_KEY
+capz::util::generate_ssh_key
 
 cleanup() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
