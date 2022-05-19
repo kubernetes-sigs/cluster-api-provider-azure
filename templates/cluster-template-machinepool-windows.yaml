@@ -2,14 +2,16 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
-    cni: flannel-windows
+    cni: calico
+    csi-proxy: enabled
+    windows: enabled
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 10.244.0.0/16
+      - 192.168.0.0/16
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
@@ -55,6 +57,7 @@ spec:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
+          feature-gates: WindowsHostProcessContainers=true
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -63,11 +66,10 @@ spec:
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
-          allocate-node-cidrs: "true"
+          allocate-node-cidrs: "false"
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
           cluster-name: ${CLUSTER_NAME}
-          configure-cloud-routes: "false"
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -96,18 +98,6 @@ spec:
         overwrite: false
         tableType: gpt
     files:
-    - content: |
-        network:
-          version: 2
-          ethernets:
-            eth0:
-              mtu: 1400
-              match:
-                macaddress: MACADDRESS
-              set-name: eth0
-      owner: root:root
-      path: /etc/netplan/60-eth0.yaml
-      permissions: "0644"
     - contentFrom:
         secret:
           key: control-plane-azure.json
@@ -132,10 +122,7 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands:
-    - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
-    - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
-    - netplan apply
+    postKubeadmCommands: []
     preKubeadmCommands: []
   machineTemplate:
     infrastructureRef:
@@ -162,22 +149,6 @@ spec:
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureClusterIdentity
-metadata:
-  labels:
-    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
-  name: ${CLUSTER_IDENTITY_NAME}
-  namespace: default
-spec:
-  allowedNamespaces: {}
-  clientID: ${AZURE_CLIENT_ID}
-  clientSecret:
-    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
-    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
-  tenantID: ${AZURE_TENANT_ID}
-  type: ServicePrincipal
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -208,6 +179,12 @@ metadata:
   namespace: default
 spec:
   location: ${AZURE_LOCATION}
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     osDisk:
       diskSizeGB: 30
@@ -231,18 +208,6 @@ spec:
     owner: root:root
     path: /etc/kubernetes/azure.json
     permissions: "0644"
-  - content: |
-      network:
-        version: 2
-        ethernets:
-          eth0:
-            mtu: 1400
-            match:
-              macaddress: MACADDRESS
-            set-name: eth0
-    owner: root:root
-    path: /etc/netplan/60-eth0.yaml
-    permissions: "0644"
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
@@ -250,11 +215,22 @@ spec:
         cloud-config: /etc/kubernetes/azure.json
         cloud-provider: azure
       name: '{{ ds.meta_data["local_hostname"] }}'
-  postKubeadmCommands:
-  - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
-  - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
-  - netplan apply
-  useExperimentalRetryJoin: true
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -282,7 +258,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   annotations:
-    runtime: dockershim
+    runtime: containerd
   name: ${CLUSTER_NAME}-mp-win
   namespace: default
 spec:
@@ -310,24 +286,22 @@ spec:
     owner: root:root
     path: c:/k/azure.json
     permissions: "0644"
-  - content: |-
-      # required as a work around for Flannel and Wins bugs
-      # https://github.com/coreos/flannel/issues/1359
-      # https://github.com/kubernetes-sigs/sig-windows-tools/issues/103#issuecomment-709426828
-      ipmo C:\k\debug\hns.psm1;
-      New-HnsNetwork -Type Overlay -AddressPrefix "192.168.255.0/30" -Gateway "192.168.255.1" -Name "External" -AdapterName "Ethernet 2" -SubnetPolicies @(@{Type = "VSID"; VSID = 9999; })
-    path: C:/create-external-network.ps1
+  - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+    path: C:/defender-exclude-calico.ps1
     permissions: "0744"
   joinConfiguration:
     nodeRegistration:
+      criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         azure-container-registry-config: c:/k/azure.json
         cloud-config: c:/k/azure.json
         cloud-provider: azure
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:1.4.1
+        feature-gates: WindowsHostProcessContainers=true
+        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START
+  - powershell C:/defender-exclude-calico.ps1
   preKubeadmCommands:
   - powershell c:/create-external-network.ps1
   users:
