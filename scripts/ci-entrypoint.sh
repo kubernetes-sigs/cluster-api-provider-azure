@@ -44,12 +44,6 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 # shellcheck source=hack/util.sh
 source "${REPO_ROOT}/hack/util.sh"
 
-# all test regions must support AvailabilityZones
-get_random_region() {
-    local REGIONS=("eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2")
-    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
-}
-
 setup() {
     # setup REGISTRY for custom images.
     : "${REGISTRY:?Environment variable empty or not defined.}"
@@ -67,7 +61,7 @@ setup() {
 
     export CLUSTER_NAME="${CLUSTER_NAME:-capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')}"
     export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
-    export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
+    export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"

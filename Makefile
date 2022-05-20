@@ -272,10 +272,8 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a management clust
 	kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml
 	kubectl create configmap calico-dual-stack-addon --from-file=templates/addons/calico-dual-stack.yaml
 	kubectl create configmap calico-windows-addon --from-file=templates/addons/windows/calico
-	kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/flannel
 
 	kubectl apply -f templates/addons/calico-resource-set.yaml
-	kubectl apply -f templates/addons/flannel-resource-set.yaml
 
 	# Wait for CAPZ deployments
 	kubectl wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
