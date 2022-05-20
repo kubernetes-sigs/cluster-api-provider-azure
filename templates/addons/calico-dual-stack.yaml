@@ -4157,7 +4157,18 @@ data:
           "mtu": 1500,
           "ipam": {
               "type": "host-local",
-              "subnet": "usePodCidrIPv6"
+              "ranges": [
+                [
+                  {
+                    "subnet": "usePodCidr"
+                  }
+                ],
+                [
+                  {
+                    "subnet": "usePodCidrIPv6"
+                  }
+                ]
+              ]
           },
           "policy": {
               "type": "k8s"
