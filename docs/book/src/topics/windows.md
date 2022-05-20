@@ -6,7 +6,7 @@ CAPZ enables you to create Windows Kubernetes clusters on Microsoft Azure. We re
 
 ### Using Containerd for Windows Clusters
 
-To deploy a cluster using Windows, use the [Windows flavor template](../../../../templates/cluster-template-machinepool-windows.yaml).
+To deploy a cluster using Windows, use the [Windows flavor template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-windows.yaml).
 
 ## Deploy a workload
 
