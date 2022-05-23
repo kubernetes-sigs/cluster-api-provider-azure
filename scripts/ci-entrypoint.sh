@@ -85,12 +85,16 @@ select_cluster_template() {
         # shellcheck source=scripts/ci-build-kubernetes.sh
         source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
         export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds.yaml"
-    elif [[ -n "${CI_VERSION:-}" ]] || [[ -n "${USE_CI_ARTIFACTS:-}" ]]; then
+    elif [[ -n "${CI_VERSION:-}" ]] || [[ -n "${USE_CI_ARTIFACTS:-}" ]] || [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]]; then
         # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
         GOPATH="$(go env GOPATH)"
-        KUBERNETES_BRANCH="$(cd "${GOPATH}/src/k8s.io/kubernetes" && git rev-parse --abbrev-ref HEAD)"
+        if ls "${GOPATH}"/src/k8s.io/kubernetes; then
+            KUBERNETES_BRANCH="$(cd "${GOPATH}/src/k8s.io/kubernetes" && git rev-parse --abbrev-ref HEAD)"
+        fi
         if [[ "${KUBERNETES_BRANCH:-}" =~ "release-" ]]; then
             CI_VERSION_URL="https://dl.k8s.io/ci/latest-${KUBERNETES_BRANCH/release-}.txt"
+        elif [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]]; then
+            CI_VERSION_URL="https://dl.k8s.io/ci/${KUBERNETES_VERSION}.txt"
         else
             CI_VERSION_URL="https://dl.k8s.io/ci/latest.txt"
         fi
@@ -102,7 +106,8 @@ select_cluster_template() {
     fi
 
     if [[ -n "${TEST_CCM:-}" ]]; then
-        export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-external-cloud-provider.yaml"
+        # use the correct external-cloud-provider template
+        export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-external-cloud-provider}"
     fi
 
     if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
