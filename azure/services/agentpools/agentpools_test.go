@@ -91,7 +91,7 @@ func TestReconcile(t *testing.T) {
 				defer mockCtrl.Finish()
 
 				agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
-				machinePoolScope := &scope.ManagedControlPlaneScope{
+				machinePoolScope := &scope.ManagedMachinePoolScope{
 					ControlPlane: &infraexpv1.AzureManagedControlPlane{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: tc.agentpoolSpec.Cluster,
@@ -276,7 +276,7 @@ func TestReconcile(t *testing.T) {
 			osDiskSizeGB := tc.agentPoolsSpec.OSDiskSizeGB
 
 			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
-			machinePoolScope := &scope.ManagedControlPlaneScope{
+			machinePoolScope := &scope.ManagedMachinePoolScope{
 				ControlPlane: &infraexpv1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tc.agentPoolsSpec.Cluster,
@@ -383,7 +383,7 @@ func TestDeleteAgentPools(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			agentPoolsMock := mock_agentpools.NewMockClient(mockCtrl)
-			machinePoolScope := &scope.ManagedControlPlaneScope{
+			machinePoolScope := &scope.ManagedMachinePoolScope{
 				ControlPlane: &infraexpv1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tc.agentPoolsSpec.Cluster,

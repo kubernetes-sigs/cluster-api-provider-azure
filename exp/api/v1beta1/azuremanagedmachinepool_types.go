@@ -146,6 +146,7 @@ type AzureManagedMachinePoolStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:printcolumn:name="Mode",type="string",JSONPath=".spec.mode"
 // +kubebuilder:resource:path=azuremanagedmachinepools,scope=Namespaced,categories=cluster-api,shortName=ammp
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status

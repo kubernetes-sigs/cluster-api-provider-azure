@@ -97,6 +97,12 @@ type ClusterScoper interface {
 	NetworkDescriber
 }
 
+// ManagedClusterScoper defines the interface for ManagedClusterScope.
+type ManagedClusterScoper interface {
+	ClusterDescriber
+	NodeResourceGroup() string
+}
+
 // ResourceSpecGetter is an interface for getting all the required information to create/update/delete an Azure resource.
 type ResourceSpecGetter interface {
 	// ResourceName returns the name of the resource.
@@ -110,4 +116,11 @@ type ResourceSpecGetter interface {
 	// If the resource does not exist, or we do not care about existing parameters to update the resource, existing should be nil.
 	// If no update is needed on the resource, Parameters should return nil.
 	Parameters(existing interface{}) (params interface{}, err error)
+}
+
+// ResourceSpecGetterWithHeaders is a ResourceSpecGetter that can return custom headers to be added to API calls.
+type ResourceSpecGetterWithHeaders interface {
+	ResourceSpecGetter
+	// CustomHeaders returns the headers that should be added to Azure API calls.
+	CustomHeaders() map[string]string
 }

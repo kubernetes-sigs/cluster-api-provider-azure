@@ -17,7 +17,9 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net"
 	"reflect"
 	"regexp"
@@ -28,8 +30,9 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var kubeSemver = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
@@ -43,10 +46,8 @@ func (m *AzureManagedControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) err
 
 // +kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,verbs=create;update,versions=v1beta1,name=default.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Defaulter = &AzureManagedControlPlane{}
-
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (m *AzureManagedControlPlane) Default() {
+func (m *AzureManagedControlPlane) Default(_ client.Client) {
 	if m.Spec.NetworkPlugin == nil {
 		networkPlugin := "azure"
 		m.Spec.NetworkPlugin = &networkPlugin
@@ -66,7 +67,7 @@ func (m *AzureManagedControlPlane) Default() {
 	}
 
 	if err := m.setDefaultSSHPublicKey(); err != nil {
-		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "SetDefaultSshPublicKey failed")
+		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "setDefaultSSHPublicKey failed")
 	}
 
 	m.setDefaultNodeResourceGroupName()
@@ -77,15 +78,13 @@ func (m *AzureManagedControlPlane) Default() {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1beta1,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Validator = &AzureManagedControlPlane{}
-
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureManagedControlPlane) ValidateCreate() error {
-	return m.Validate()
+func (m *AzureManagedControlPlane) ValidateCreate(client client.Client) error {
+	return m.Validate(client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
+func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client client.Client) error {
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureManagedControlPlane)
 
@@ -238,30 +237,31 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 	}
 
 	if len(allErrs) == 0 {
-		return m.Validate()
+		return m.Validate(client)
 	}
 
 	return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), m.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureManagedControlPlane) ValidateDelete() error {
+func (m *AzureManagedControlPlane) ValidateDelete(_ client.Client) error {
 	return nil
 }
 
 // Validate the Azure Machine Pool and return an aggregate error.
-func (m *AzureManagedControlPlane) Validate() error {
-	validators := []func() error{
+func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
+	validators := []func(client client.Client) error{
 		m.validateVersion,
 		m.validateDNSServiceIP,
 		m.validateSSHKey,
 		m.validateLoadBalancerProfile,
 		m.validateAPIServerAccessProfile,
+		m.validateManagedClusterNetwork,
 	}
 
 	var errs []error
 	for _, validator := range validators {
-		if err := validator(); err != nil {
+		if err := validator(cli); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -269,8 +269,8 @@ func (m *AzureManagedControlPlane) Validate() error {
 	return kerrors.NewAggregate(errs)
 }
 
-// validate DNSServiceIP.
-func (m *AzureManagedControlPlane) validateDNSServiceIP() error {
+// validateDNSServiceIP validates the DNSServiceIP.
+func (m *AzureManagedControlPlane) validateDNSServiceIP(_ client.Client) error {
 	if m.Spec.DNSServiceIP != nil {
 		if net.ParseIP(*m.Spec.DNSServiceIP) == nil {
 			return errors.New("DNSServiceIP must be a valid IP")
@@ -280,7 +280,8 @@ func (m *AzureManagedControlPlane) validateDNSServiceIP() error {
 	return nil
 }
 
-func (m *AzureManagedControlPlane) validateVersion() error {
+// validateVersion validates the Kubernetes version.
+func (m *AzureManagedControlPlane) validateVersion(_ client.Client) error {
 	if !kubeSemver.MatchString(m.Spec.Version) {
 		return errors.New("must be a valid semantic version")
 	}
@@ -288,8 +289,8 @@ func (m *AzureManagedControlPlane) validateVersion() error {
 	return nil
 }
 
-// ValidateSSHKey validates an SSHKey.
-func (m *AzureManagedControlPlane) validateSSHKey() error {
+// validateSSHKey validates an SSHKey.
+func (m *AzureManagedControlPlane) validateSSHKey(_ client.Client) error {
 	if m.Spec.SSHPublicKey != "" {
 		sshKey := m.Spec.SSHPublicKey
 		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
@@ -300,8 +301,8 @@ func (m *AzureManagedControlPlane) validateSSHKey() error {
 	return nil
 }
 
-// ValidateLoadBalancerProfile validates a LoadBalancerProfile.
-func (m *AzureManagedControlPlane) validateLoadBalancerProfile() error {
+// validateLoadBalancerProfile validates a LoadBalancerProfile.
+func (m *AzureManagedControlPlane) validateLoadBalancerProfile(_ client.Client) error {
 	if m.Spec.LoadBalancerProfile != nil {
 		var errs []error
 		var allErrs field.ErrorList
@@ -350,7 +351,7 @@ func (m *AzureManagedControlPlane) validateLoadBalancerProfile() error {
 }
 
 // validateAPIServerAccessProfile validates an APIServerAccessProfile.
-func (m *AzureManagedControlPlane) validateAPIServerAccessProfile() error {
+func (m *AzureManagedControlPlane) validateAPIServerAccessProfile(_ client.Client) error {
 	if m.Spec.APIServerAccessProfile != nil {
 		var allErrs field.ErrorList
 		for _, ipRange := range m.Spec.APIServerAccessProfile.AuthorizedIPRanges {
@@ -361,6 +362,71 @@ func (m *AzureManagedControlPlane) validateAPIServerAccessProfile() error {
 		if len(allErrs) > 0 {
 			return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
 		}
+	}
+	return nil
+}
+
+// validateManagedClusterNetwork validates the Cluster network values.
+func (m *AzureManagedControlPlane) validateManagedClusterNetwork(cli client.Client) error {
+	ctx := context.Background()
+
+	// Fetch the Cluster.
+	clusterName, ok := m.Labels[clusterv1.ClusterLabelName]
+	if !ok {
+		return nil
+	}
+
+	ownerCluster := &clusterv1.Cluster{}
+	key := client.ObjectKey{
+		Namespace: m.Namespace,
+		Name:      clusterName,
+	}
+
+	if err := cli.Get(ctx, key, ownerCluster); err != nil {
+		return err
+	}
+
+	var (
+		allErrs     field.ErrorList
+		serviceCIDR string
+	)
+
+	if clusterNetwork := ownerCluster.Spec.ClusterNetwork; clusterNetwork != nil {
+		if clusterNetwork.Services != nil {
+			// A user may provide zero or one CIDR blocks. If they provide an empty array,
+			// we ignore it and use the default. AKS doesn't support > 1 Service/Pod CIDR.
+			if len(clusterNetwork.Services.CIDRBlocks) > 1 {
+				allErrs = append(allErrs, field.TooMany(field.NewPath("Cluster", "Spec", "ClusterNetwork", "Services", "CIDRBlocks"), len(clusterNetwork.Services.CIDRBlocks), 1))
+			}
+			if len(clusterNetwork.Services.CIDRBlocks) == 1 {
+				serviceCIDR = clusterNetwork.Services.CIDRBlocks[0]
+			}
+		}
+		if clusterNetwork.Pods != nil {
+			// A user may provide zero or one CIDR blocks. If they provide an empty array,
+			// we ignore it and use the default. AKS doesn't support > 1 Service/Pod CIDR.
+			if len(clusterNetwork.Pods.CIDRBlocks) > 1 {
+				allErrs = append(allErrs, field.TooMany(field.NewPath("Cluster", "Spec", "ClusterNetwork", "Pods", "CIDRBlocks"), len(clusterNetwork.Pods.CIDRBlocks), 1))
+			}
+		}
+	}
+
+	if m.Spec.DNSServiceIP != nil {
+		if serviceCIDR == "" {
+			allErrs = append(allErrs, field.Required(field.NewPath("Cluster", "Spec", "ClusterNetwork", "Services", "CIDRBlocks"), "service CIDR must be specified if specifying DNSServiceIP"))
+		}
+		_, cidr, err := net.ParseCIDR(serviceCIDR)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Cluster", "Spec", "ClusterNetwork", "Services", "CIDRBlocks"), serviceCIDR, fmt.Sprintf("failed to parse cluster service cidr: %v", err)))
+		}
+		ip := net.ParseIP(*m.Spec.DNSServiceIP)
+		if !cidr.Contains(ip) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Cluster", "Spec", "ClusterNetwork", "Services", "CIDRBlocks"), serviceCIDR, "DNSServiceIP must reside within the associated cluster serviceCIDR"))
+		}
+	}
+
+	if len(allErrs) > 0 {
+		return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
 	}
 	return nil
 }

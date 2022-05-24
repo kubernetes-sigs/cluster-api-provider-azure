@@ -232,9 +232,6 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 	}
 
 	if err := cli.Get(ctx, key, ownerCluster); err != nil {
-		if azure.ResourceNotFound(err) {
-			return nil
-		}
 		return err
 	}
 

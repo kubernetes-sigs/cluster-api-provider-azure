@@ -54,7 +54,7 @@ type AzureManagedMachinePoolReconciler struct {
 	createAzureManagedMachinePoolService azureManagedMachinePoolServiceCreator
 }
 
-type azureManagedMachinePoolServiceCreator func(managedControlPlaneScope *scope.ManagedControlPlaneScope) (*azureManagedMachinePoolService, error)
+type azureManagedMachinePoolServiceCreator func(managedMachinePoolScope *scope.ManagedMachinePoolScope) (*azureManagedMachinePoolService, error)
 
 // NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance.
 func NewAzureManagedMachinePoolReconciler(client client.Client, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureManagedMachinePoolReconciler {
@@ -195,17 +195,29 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 		return reconcile.Result{}, nil
 	}
 
-	// Create the scope.
-	mcpScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
-		Client:           ammpr.Client,
-		ControlPlane:     controlPlane,
-		Cluster:          ownerCluster,
-		MachinePool:      ownerPool,
-		InfraMachinePool: infraPool,
-		PatchTarget:      infraPool,
+	// create the managed control plane scope
+	managedControlPlaneScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
+		Client:       ammpr.Client,
+		ControlPlane: controlPlane,
+		Cluster:      ownerCluster,
 	})
 	if err != nil {
-		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")
+		return reconcile.Result{}, errors.Wrap(err, "failed to create ManagedControlPlane scope")
+	}
+
+	// Create the scope.
+	mcpScope, err := scope.NewManagedMachinePoolScope(ctx, scope.ManagedMachinePoolScopeParams{
+		Client:       ammpr.Client,
+		ControlPlane: controlPlane,
+		Cluster:      ownerCluster,
+		ManagedMachinePool: scope.ManagedMachinePool{
+			MachinePool:      ownerPool,
+			InfraMachinePool: infraPool,
+		},
+		ManagedControlPlaneScope: managedControlPlaneScope,
+	})
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create ManagedMachinePool scope")
 	}
 
 	// Always patch when exiting so we can persist changes to finalizers and status
@@ -224,7 +236,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	return ammpr.reconcileNormal(ctx, mcpScope)
 }
 
-func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
+func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context, scope *scope.ManagedMachinePoolScope) (reconcile.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePoolReconciler.reconcileNormal")
 	defer done()
 
@@ -269,7 +281,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 	return reconcile.Result{}, nil
 }
 
-func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
+func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, scope *scope.ManagedMachinePoolScope) (reconcile.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePoolReconciler.reconcileDelete")
 	defer done()
 
