@@ -66,6 +66,12 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	helmAction "helm.sh/helm/v3/pkg/action"
+	helmLoader "helm.sh/helm/v3/pkg/chart/loader"
+	helmCli "helm.sh/helm/v3/pkg/cli"
+	helmVals "helm.sh/helm/v3/pkg/cli/values"
+	helmGetter "helm.sh/helm/v3/pkg/getter"
 )
 
 const (
@@ -822,4 +828,91 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 		return fmt.Sprintf("error copying logs for pod %s: %v", pod.Name, err)
 	}
 	return b.String()
+}
+
+// InstallHelmChart takes a helm repo URL, a chart name, and release name, and installs a helm release onto the E2E workload cluster
+func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, repoURL, chartName, releaseName string, values []string) {
+	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+	kubeConfigPath := clusterProxy.GetKubeconfigPath()
+	settings := helmCli.New()
+	settings.KubeConfig = kubeConfigPath
+	actionConfig := new(helmAction.Configuration)
+	err := actionConfig.Init(settings.RESTClientGetter(), "default", "secret", Logf)
+	Expect(err).To(BeNil())
+	i := helmAction.NewInstall(actionConfig)
+	i.RepoURL = repoURL
+	i.ReleaseName = releaseName
+	Eventually(func() error {
+		cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
+		if err != nil {
+			return err
+		}
+		p := helmGetter.All(settings)
+		valueOpts := &helmVals.Options{}
+		valueOpts.Values = values
+		vals, err := valueOpts.MergeValues(p)
+		if err != nil {
+			return err
+		}
+		chartRequested, err := helmLoader.Load(cp)
+		if err != nil {
+			return err
+		}
+		release, err := i.RunWithContext(ctx, chartRequested, vals)
+		if err != nil {
+			return err
+		}
+		Logf(release.Info.Description)
+		return nil
+	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
+}
+
+// WaitForWorkloadClusterKubeconfigSecret retries during E2E until the workload cluster kubeconfig secret exists
+func WaitForWorkloadClusterKubeconfigSecret(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput) {
+	// Ensure the workload cluster kubeconfig secret exists before getting the workload cluster clusterProxy object
+	Eventually(func() error {
+		cl := input.ClusterProxy.GetClient()
+		secret := &corev1.Secret{}
+		key := client.ObjectKey{
+			Name:      fmt.Sprintf("%s-kubeconfig", input.ConfigCluster.ClusterName),
+			Namespace: input.ConfigCluster.Namespace,
+		}
+		err := cl.Get(ctx, key, secret)
+		if err != nil {
+			return err
+		}
+		return nil
+	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
+}
+
+// WaitForDaemonset retries during E2E until a daemonset's pods are all Running
+func WaitForDaemonset(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cl client.Client, name, namespace string) {
+	// Ensure the workload cluster kubeconfig secret exists before getting the workload cluster clusterProxy object
+	Eventually(func() bool {
+		ds := &appsv1.DaemonSet{}
+		if err := cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, ds); err != nil {
+			return false
+		}
+		if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {
+			return true
+		}
+		return false
+	}, input.WaitForControlPlaneIntervals...).Should(Equal(true))
+}
+
+// podListHasNumPods fulfills the cluster-api PodListCondition type spec
+// given a list of pods, we validate for an exact number of those pods in a Running state
+func podListHasNumPods(numPods int) func(pl *corev1.PodList) error {
+	return func(pl *corev1.PodList) error {
+		var runningPods int
+		for _, p := range pl.Items {
+			if p.Status.Phase == corev1.PodRunning {
+				runningPods++
+			}
+		}
+		if runningPods != numPods {
+			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
+		}
+		return nil
+	}
 }
