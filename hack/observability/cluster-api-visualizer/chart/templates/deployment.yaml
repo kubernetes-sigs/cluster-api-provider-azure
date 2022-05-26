@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capi-visualizer
+  labels:
+    {{ .Values.label.key }}: {{ .Values.label.value }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{ .Values.label.key }}: {{ .Values.label.value }}
+  template:
+    metadata:
+      labels:
+        {{ .Values.label.key }}: {{ .Values.label.value }}
+    spec:
+      containers:
+      - name: capi-visualizer
+        image: "{{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 8081
+        env:
+        - name: KUBECONFIG
+          value: "/mnt/kubeconfig"
+        volumeMounts:
+          - mountPath: "/mnt"
+            name: management-kubeconfig
+            readOnly: true
+      volumes:
+      - name: management-kubeconfig
+        secret:
+          secretName: management-kubeconfig

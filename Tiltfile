@@ -144,6 +144,17 @@ def observability():
             "resources.limits.memory=256Mi",
         ],
     ))
+
+    internal_kubeconfig = str(local("kind get kubeconfig --name ${KIND_CLUSTER_NAME:-capz} --internal"))
+    k8s_yaml(helm(
+        "./hack/observability/cluster-api-visualizer/chart",
+        name = "visualize-cluster",
+        namespace = "capz-system",
+        set = [
+            "kubeconfig=" + internal_kubeconfig,
+        ],
+    ))
+
     k8s_resource(
         workload = "jaeger-all-in-one",
         new_name = "traces: jaeger-all-in-one",
@@ -160,6 +171,12 @@ def observability():
     )
     k8s_resource(workload = "opentelemetry-collector", labels = ["observability"])
     k8s_resource(workload = "opentelemetry-collector-agent", labels = ["observability"])
+    k8s_resource(
+        workload = "capi-visualizer",
+        new_name = "visualize-cluster",
+        port_forwards = [port_forward(local_port = 8000, container_port = 8081, name = "View visualization")],
+        labels = ["observability"],
+    )
 
     k8s_resource(workload = "capz-controller-manager", labels = ["cluster-api"])
     k8s_resource(workload = "capz-nmi", labels = ["cluster-api"])
