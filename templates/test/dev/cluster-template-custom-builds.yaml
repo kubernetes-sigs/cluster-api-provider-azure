@@ -394,23 +394,37 @@ spec:
       - content: |
           $ErrorActionPreference = 'Stop'
 
-          Stop-Service kubelet -Force
-
-          $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-          $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
-          foreach ( $$binary in $$binaries )
-          {
-            echo "installing binary: $$binary ${KUBE_GIT_VERSION}"
-            curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
-          }
-
           $$CONTAINERD_URL="${WINDOWS_CONTAINERD_URL}"
           if($$CONTAINERD_URL -ne ""){
+            # Kubelet service depends on contianerd service so make a best effort attempt to stop it
+            Stop-Service kubelet -Force -ErrorAction SilentlyContinue
             Stop-Service containerd -Force
             echo "downloading containerd: $$CONTAINERD_URL"
             curl.exe --retry 10 --retry-delay 5 -L "$$CONTAINERD_URL" --output "c:/k/containerd.tar.gz"
             tar.exe -zxvf c:/k/containerd.tar.gz -C "c:/Program Files/containerd" --strip-components 1
+
             Start-Service containerd
+          }
+
+          containerd.exe --version
+          containerd-shim-runhcs-v1.exe --version
+        path: C:/replace-containerd.ps1
+        permissions: "0744"
+      - content: |
+          $ErrorActionPreference = 'Stop'
+
+          Stop-Service kubelet -Force
+
+          $$CI_VERSION="${CI_VERSION}"
+          if($$CI_VERSION -ne "")
+          {
+            $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+            $$ci_url="https://storage.googleapis.com/k8s-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
+            foreach ( $$binary in $$binaries )
+            {
+              echo "downloading binary: $$ci_url/$$binary.exe"
+              curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+            }
           }
 
           # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
@@ -422,8 +436,6 @@ spec:
           kubectl.exe version --client=true --short=true
           kubelet.exe --version
           kube-proxy.exe --version
-          containerd.exe --version
-          containerd-shim-runhcs-v1.exe --version
         path: C:/replace-ci-binaries.ps1
         permissions: "0744"
       joinConfiguration:
@@ -442,6 +454,7 @@ spec:
       - powershell C:/defender-exclude-calico.ps1
       preKubeadmCommands:
       - powershell C:/create-temp-folder.ps1
+      - powershell C:/replace-containerd.ps1
       - powershell C:/replace-ci-binaries.ps1
       users:
       - groups: Administrators
