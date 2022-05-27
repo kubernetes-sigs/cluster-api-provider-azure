@@ -138,7 +138,7 @@ func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Conte
 func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
 	var spt *adal.ServicePrincipalToken
 	switch p.Identity.Spec.Type {
-	case infrav1.ServicePrincipal, infrav1.ServicePrincipalCertificate:
+	case infrav1.ServicePrincipal, infrav1.ServicePrincipalCertificate, infrav1.UserAssignedMSI:
 		if err := createAzureIdentityWithBindings(ctx, p.Identity, resourceManagerEndpoint, activeDirectoryEndpoint, clusterMeta, p.Client); err != nil {
 			return nil, err
 		}
@@ -185,17 +185,19 @@ func (p *AzureCredentialsProvider) GetClientID() string {
 // NOTE: this only works if the Identity references a Service Principal Client Secret.
 // If using another type of credentials, such a Certificate, we return an empty string.
 func (p *AzureCredentialsProvider) GetClientSecret(ctx context.Context) (string, error) {
-	secretRef := p.Identity.Spec.ClientSecret
-	key := types.NamespacedName{
-		Namespace: secretRef.Namespace,
-		Name:      secretRef.Name,
-	}
-	secret := &corev1.Secret{}
+	if secretRef := p.Identity.Spec.ClientSecret; secretRef.Name != "" {
+		key := types.NamespacedName{
+			Namespace: secretRef.Namespace,
+			Name:      secretRef.Name,
+		}
+		secret := &corev1.Secret{}
 
-	if err := p.Client.Get(ctx, key, secret); err != nil {
-		return "", errors.Wrap(err, "Unable to fetch ClientSecret")
+		if err := p.Client.Get(ctx, key, secret); err != nil {
+			return "", errors.Wrap(err, "Unable to fetch ClientSecret")
+		}
+		return string(secret.Data[azureSecretKey]), nil
 	}
-	return string(secret.Data[azureSecretKey]), nil
+	return "", nil
 }
 
 // GetTenantID returns the Tenant ID associated with the AzureCredentialsProvider's Identity.
