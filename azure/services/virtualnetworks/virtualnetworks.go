@@ -40,6 +40,7 @@ type VNetScope interface {
 	VNetSpec() azure.ResourceSpecGetter
 	ClusterName() string
 	IsVnetManaged() bool
+	UpdateSubnetCIDRs(string, []string)
 }
 
 // Service provides operations on Azure resources.
@@ -91,6 +92,15 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			prefixes = to.StringSlice(existingVnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
 		}
 		vnet.CIDRBlocks = prefixes
+
+		// Update the subnet CIDRs if they already exist.
+		// This makes sure the subnet CIDRs are up to date and there are no validation errors when updating the VNet.
+		// Subnets that are not part of this cluster spec are silently ignored.
+		if existingVnet.Subnets != nil {
+			for _, subnet := range *existingVnet.Subnets {
+				s.Scope.UpdateSubnetCIDRs(to.String(subnet.Name), converters.GetSubnetAddresses(subnet))
+			}
+		}
 	}
 
 	if s.Scope.IsVnetManaged() {
