@@ -289,7 +289,7 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 				err = createAzureIdentityWithBindings(context.TODO(), tc.identity, tc.resourceManagerEndpoint, tc.activeDirectoryEndpoint, tc.clusterMeta, fakeClient)
 				g.Expect(err).To(BeNil())
 			} else {
-				g.Expect(err).ToNot(BeNil())
+				g.Expect(err).NotTo(BeNil())
 			}
 		})
 	}

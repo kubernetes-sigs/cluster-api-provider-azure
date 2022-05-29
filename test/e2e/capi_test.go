@@ -318,8 +318,8 @@ func getPreInitFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
 		Expect(err).NotTo(HaveOccurred())
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
-		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentitySecretName, IdentitySecretName)).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentitySecretNamespace, "default")).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
+		Expect(os.Setenv(ClusterIdentitySecretName, IdentitySecretName)).To(Succeed())
+		Expect(os.Setenv(ClusterIdentitySecretNamespace, "default")).To(Succeed())
 	}
 }

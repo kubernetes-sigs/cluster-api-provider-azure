@@ -50,7 +50,7 @@ func InstallCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.Ap
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
 	workloadClusterClient := clusterProxy.GetClient()
 	cloudControllerManagerPodLabel, err := labels.Parse("component=cloud-controller-manager")
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	framework.WaitForPodListCondition(ctx, framework.WaitForPodListConditionInput{
 		Lister: workloadClusterClient,
 		ListOptions: &client.ListOptions{
@@ -59,7 +59,7 @@ func InstallCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.Ap
 		},
 		Condition: podListHasNumPods(1),
 	}, input.WaitForControlPlaneIntervals...)
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	By(fmt.Sprintf("Waiting for Ready cloud-node-manager daemonset pods"))
 	for _, ds := range []string{"cloud-node-manager", "cloud-node-manager-windows"} {
 		WaitForDaemonset(ctx, input, workloadClusterClient, ds, "kube-system")

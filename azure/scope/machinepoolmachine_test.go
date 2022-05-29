@@ -127,7 +127,7 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 				g.Expect(err).To(MatchError(c.Err))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(s).ToNot(BeNil())
+				g.Expect(s).NotTo(BeNil())
 			}
 		})
 	}
@@ -298,7 +298,7 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 			params.AzureMachinePoolMachine = ampm
 			s, err := NewMachinePoolMachineScope(params)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(s).ToNot(BeNil())
+			g.Expect(s).NotTo(BeNil())
 			s.instance = instance
 			s.workloadNodeGetter = mockClient
 
@@ -396,7 +396,7 @@ func TestMachinePoolMachineScope_CordonAndDrain(t *testing.T) {
 			params.AzureMachinePoolMachine = ampm
 			s, err := NewMachinePoolMachineScope(params)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(s).ToNot(BeNil())
+			g.Expect(s).NotTo(BeNil())
 			s.workloadNodeGetter = mockClient
 
 			err = s.CordonAndDrain(context.TODO())

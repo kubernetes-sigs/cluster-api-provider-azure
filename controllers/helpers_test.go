@@ -318,9 +318,9 @@ func TestReconcileAzureSecret(t *testing.T) {
 
 func setupScheme(g *WithT) *runtime.Scheme {
 	scheme := runtime.NewScheme()
-	g.Expect(clientgoscheme.AddToScheme(scheme)).ToNot(HaveOccurred())
-	g.Expect(infrav1.AddToScheme(scheme)).ToNot(HaveOccurred())
-	g.Expect(clusterv1.AddToScheme(scheme)).ToNot(HaveOccurred())
+	g.Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
+	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	g.Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 

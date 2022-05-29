@@ -347,7 +347,7 @@ func initScheme() *runtime.Scheme {
 
 func loadE2EConfig(configPath string) *clusterctl.E2EConfig {
 	config := clusterctl.LoadE2EConfig(context.TODO(), clusterctl.LoadE2EConfigInput{ConfigPath: configPath})
-	Expect(config).ToNot(BeNil(), "Failed to load E2E config from %s", configPath)
+	Expect(config).NotTo(BeNil(), "Failed to load E2E config from %s", configPath)
 
 	resolveKubernetesVersions(config)
 
@@ -380,14 +380,14 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, scheme *runtime.Scheme,
 			RequiresDockerSock: config.HasDockerProvider(),
 			Images:             config.Images,
 		})
-		Expect(clusterProvider).ToNot(BeNil(), "Failed to create a bootstrap cluster")
+		Expect(clusterProvider).NotTo(BeNil(), "Failed to create a bootstrap cluster")
 
 		kubeconfigPath = clusterProvider.GetKubeconfigPath()
 		Expect(kubeconfigPath).To(BeAnExistingFile(), "Failed to get the kubeconfig file for the bootstrap cluster")
 	}
 
 	clusterProxy := NewAzureClusterProxy("bootstrap", kubeconfigPath, scheme)
-	Expect(clusterProxy).ToNot(BeNil(), "Failed to get a bootstrap cluster proxy")
+	Expect(clusterProxy).NotTo(BeNil(), "Failed to get a bootstrap cluster proxy")
 
 	return clusterProvider, clusterProxy
 }

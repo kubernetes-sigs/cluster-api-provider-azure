@@ -454,7 +454,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 				logMock.EXPECT().Info(4, "gk does not match", "gk", ampGK, "infraGK", gomock.Any())
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
-				g.Expect(reqs).To(HaveLen(0))
+				g.Expect(reqs).To(BeEmpty())
 			},
 		},
 		{
@@ -468,7 +468,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 				logMock.EXPECT().Info(4, "attempt to map incorrect type", "type", "*v1beta1.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
-				g.Expect(reqs).To(HaveLen(0))
+				g.Expect(reqs).To(BeEmpty())
 			},
 		},
 	}
@@ -529,7 +529,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 				logMock.EXPECT().Info(4, "gk does not match", "gk", ampGK, "infraGK", gomock.Any())
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
-				g.Expect(reqs).To(HaveLen(0))
+				g.Expect(reqs).To(BeEmpty())
 			},
 		},
 		{
@@ -543,7 +543,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 				logMock.EXPECT().Info(4, "attempt to map incorrect type", "type", "*v1beta1.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
-				g.Expect(reqs).To(HaveLen(0))
+				g.Expect(reqs).To(BeEmpty())
 			},
 		},
 	}
@@ -590,7 +590,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 				return sink, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
-				g.Expect(reqs).To(HaveLen(0))
+				g.Expect(reqs).To(BeEmpty())
 			},
 		},
 		{
@@ -610,7 +610,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 				return sink, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
-				g.Expect(reqs).To(HaveLen(0))
+				g.Expect(reqs).To(BeEmpty())
 			},
 		},
 		{
@@ -634,7 +634,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 				return sink, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
-				g.Expect(reqs).To(HaveLen(0))
+				g.Expect(reqs).To(BeEmpty())
 			},
 		},
 		{
@@ -660,7 +660,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 				return sink, mockCtrl, fakeClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
-				g.Expect(reqs).To(HaveLen(0))
+				g.Expect(reqs).To(BeEmpty())
 			},
 		},
 		{

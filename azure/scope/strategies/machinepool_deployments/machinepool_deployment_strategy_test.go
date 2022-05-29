@@ -277,7 +277,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
 				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
 			},
-			want: HaveLen(0),
+			want: BeEmpty(),
 		},
 		{
 			name:            "if Azure is deleting 2 machines, but we have already marked their AzureMachinePoolMachine equivalents for deletion, nothing to do; this is the case where capz has not yet caught up to Azure",
@@ -289,7 +289,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: infrav1.Deleting, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
 				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: infrav1.Deleting, DeletionTime: &deleteTime, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
 			},
-			want: HaveLen(0),
+			want: BeEmpty(),
 		},
 		{
 			name:            "if Azure is deleting 2 machines, we want to delete their AzureMachinePoolMachine equivalents",
@@ -342,7 +342,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
 				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
 			},
-			want: HaveLen(0),
+			want: BeEmpty(),
 		},
 		{
 			name:            "if maxUnavailable is 2, and there are 2 with the latest model == false, delete 2.",
@@ -378,7 +378,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
 				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
 			},
-			want: HaveLen(0),
+			want: BeEmpty(),
 		},
 	}
 

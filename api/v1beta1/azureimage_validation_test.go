@@ -33,7 +33,7 @@ func TestImageOptional(t *testing.T) {
 	extension := test{}
 
 	errs := ValidateImage(extension.Image, field.NewPath("image"))
-	g.Expect(errs).To(HaveLen(0))
+	g.Expect(errs).To(BeEmpty())
 }
 
 func TestImageTooManyDetails(t *testing.T) {

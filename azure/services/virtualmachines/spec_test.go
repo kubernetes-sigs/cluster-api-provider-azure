@@ -219,7 +219,7 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
 				g.Expect(result.(compute.VirtualMachine).Identity.Type).To(Equal(compute.ResourceIdentityTypeSystemAssigned))
-				g.Expect(result.(compute.VirtualMachine).Identity.UserAssignedIdentities).To(HaveLen(0))
+				g.Expect(result.(compute.VirtualMachine).Identity.UserAssignedIdentities).To(BeEmpty())
 			},
 			expectedError: "",
 		},

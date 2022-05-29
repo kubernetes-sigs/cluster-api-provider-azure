@@ -57,6 +57,6 @@ func TestValidateUpdate(t *testing.T) {
 
 	t.Run("template is immutable", func(t *testing.T) {
 		g := NewWithT(t)
-		g.Expect(newClusterTemplate.ValidateUpdate(oldClusterTemplate)).ToNot(Succeed())
+		g.Expect(newClusterTemplate.ValidateUpdate(oldClusterTemplate)).NotTo(Succeed())
 	})
 }

@@ -177,7 +177,7 @@ func TestAPIServerHost(t *testing.T) {
 			AzureCluster: &tc.azureCluster,
 			Client:       fakeClient,
 		})
-		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 
 		g.Expect(clusterScope.APIServerHost()).Should(Equal(tc.want))
 	}

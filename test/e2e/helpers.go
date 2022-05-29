@@ -377,8 +377,8 @@ func getClusterName(prefix, specName string) string {
 	}
 	fmt.Fprintf(GinkgoWriter, "INFO: Cluster name is %s\n", clusterName)
 
-	Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
-	Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureResourceGroup, clusterName)).To(Succeed())
+	Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).To(Succeed())
 	return clusterName
 }
 

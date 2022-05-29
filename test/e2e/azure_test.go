@@ -58,9 +58,9 @@ var _ = Describe("Workload cluster creation", func() {
 		logCheckpoint(specTimes)
 
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
-		Expect(e2eConfig).ToNot(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
+		Expect(e2eConfig).NotTo(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
 		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
-		Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
+		Expect(bootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
 		Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
 
@@ -106,10 +106,10 @@ var _ = Describe("Workload cluster creation", func() {
 		}
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
-		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
+		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).To(Succeed())
+		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).To(Succeed())
+		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).To(Succeed())
 		additionalCleanup = nil
 	})
 
@@ -131,8 +131,8 @@ var _ = Describe("Workload cluster creation", func() {
 			ArtifactFolder:    artifactFolder,
 		}
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
-		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
+		Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
 
 		Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
 		Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
@@ -145,7 +145,7 @@ var _ = Describe("Workload cluster creation", func() {
 			It("Creates a public management cluster in a custom vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
 				Context("Creating a custom virtual network", func() {
-					Expect(os.Setenv(AzureCustomVNetName, "custom-vnet")).NotTo(HaveOccurred())
+					Expect(os.Setenv(AzureCustomVNetName, "custom-vnet")).To(Succeed())
 					additionalCleanup = SetupExistingVNet(ctx,
 						"10.0.0.0/16",
 						map[string]string{fmt.Sprintf("%s-controlplane-subnet", os.Getenv(AzureCustomVNetName)): "10.0.0.0/24"},

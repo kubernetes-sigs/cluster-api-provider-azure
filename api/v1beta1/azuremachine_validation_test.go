@@ -60,9 +60,9 @@ func TestAzureMachine_ValidateSSHKey(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := ValidateSSHKey(tc.sshKey, field.NewPath("sshPublicKey"))
 			if tc.wantErr {
-				g.Expect(err).ToNot(HaveLen(0))
+				g.Expect(err).NotTo(BeEmpty())
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -137,9 +137,9 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := ValidateOSDisk(test.osDisk, field.NewPath("osDisk"))
 			if test.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
+				g.Expect(err).NotTo(BeEmpty())
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -391,9 +391,9 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := ValidateDataDisks(test.disks, field.NewPath("dataDisks"))
 			if test.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
+				g.Expect(err).NotTo(BeEmpty())
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -446,9 +446,9 @@ func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := ValidateSystemAssignedIdentity(tc.Identity, tc.old, tc.roleAssignmentName, field.NewPath("sshPublicKey"))
 			if tc.wantErr {
-				g.Expect(err).ToNot(HaveLen(0))
+				g.Expect(err).NotTo(BeEmpty())
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -642,9 +642,9 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := ValidateDataDisksUpdate(test.oldDisks, test.disks, field.NewPath("dataDisks"))
 			if test.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
+				g.Expect(err).NotTo(BeEmpty())
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
