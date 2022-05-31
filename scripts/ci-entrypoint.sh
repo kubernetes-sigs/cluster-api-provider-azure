@@ -64,6 +64,7 @@ setup() {
     export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
+    export CCM_COUNT="${CCM_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
     export EXP_CLUSTER_RESOURCE_SET="true"
 
@@ -160,12 +161,15 @@ export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 # install cloud-provider-azure components, if using out-of-tree
 if [[ -n "${TEST_CCM:-}" ]]; then
     echo "Installing cloud-provider-azure components via helm"
-    "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName="${CLUSTER_NAME}" --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
+    "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name \
+--set infra.clusterName="${CLUSTER_NAME}" \
+--set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
 --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
 --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
 --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
 --set cloudControllerManager.imageTag="${IMAGE_TAG}" \
---set cloudNodeManager.imageTag="${IMAGE_TAG}"
+--set cloudNodeManager.imageTag="${IMAGE_TAG}" \
+--set cloudControllerManager.replicas="${CCM_COUNT}"
 fi
 
 export -f wait_for_nodes
