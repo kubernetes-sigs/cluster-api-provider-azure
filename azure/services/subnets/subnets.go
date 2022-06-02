@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -89,15 +90,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if !ok {
 				return errors.Errorf("%T is not a network.Subnet", result)
 			}
-			var addresses []string
-			if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefix != nil {
-				addresses = []string{to.String(subnet.SubnetPropertiesFormat.AddressPrefix)}
-			} else if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
-				addresses = to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
-			}
-
 			s.Scope.UpdateSubnetID(subnetSpec.ResourceName(), to.String(subnet.ID))
-			s.Scope.UpdateSubnetCIDRs(subnetSpec.ResourceName(), addresses)
+			s.Scope.UpdateSubnetCIDRs(subnetSpec.ResourceName(), converters.GetSubnetAddresses(subnet))
 		}
 	}
 

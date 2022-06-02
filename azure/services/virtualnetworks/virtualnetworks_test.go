@@ -56,6 +56,28 @@ var (
 			"foo":       to.StringPtr("bar"),
 			"something": to.StringPtr("else"),
 		},
+		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+			AddressSpace: &network.AddressSpace{
+				AddressPrefixes: &[]string{"fake-cidr"},
+			},
+			Subnets: &[]network.Subnet{
+				{
+					Name: to.StringPtr("test-subnet"),
+					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+						AddressPrefix: to.StringPtr("subnet-cidr"),
+					},
+				},
+				{
+					Name: to.StringPtr("test-subnet-2"),
+					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+						AddressPrefixes: &[]string{
+							"subnet-cidr-1",
+							"subnet-cidr-2",
+						},
+					},
+				},
+			},
+		},
 	}
 	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
 )
@@ -100,6 +122,18 @@ func TestReconcileVnet(t *testing.T) {
 				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, internalError)
 				s.IsVnetManaged().Return(true)
 				s.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, internalError)
+			},
+		},
+		{
+			name:          "existing vnet should update subnet CIDR blocks",
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.VNetSpec().Return(&fakeVNetSpec)
+				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(customVnet, nil)
+				s.Vnet().Return(&infrav1.VnetSpec{})
+				s.UpdateSubnetCIDRs("test-subnet", []string{"subnet-cidr"})
+				s.UpdateSubnetCIDRs("test-subnet-2", []string{"subnet-cidr-1", "subnet-cidr-2"})
+				s.IsVnetManaged().Return(false)
 			},
 		},
 	}

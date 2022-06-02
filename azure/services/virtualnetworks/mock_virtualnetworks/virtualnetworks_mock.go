@@ -267,6 +267,18 @@ func (mr *MockVNetScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockVNetScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
 
+// UpdateSubnetCIDRs mocks base method.
+func (m *MockVNetScope) UpdateSubnetCIDRs(arg0 string, arg1 []string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateSubnetCIDRs", arg0, arg1)
+}
+
+// UpdateSubnetCIDRs indicates an expected call of UpdateSubnetCIDRs.
+func (mr *MockVNetScopeMockRecorder) UpdateSubnetCIDRs(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubnetCIDRs", reflect.TypeOf((*MockVNetScope)(nil).UpdateSubnetCIDRs), arg0, arg1)
+}
+
 // VNetSpec mocks base method.
 func (m *MockVNetScope) VNetSpec() azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
