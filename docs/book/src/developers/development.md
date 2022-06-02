@@ -266,6 +266,8 @@ To view metrics in the Prometheus interface, open the Tilt web interface, select
 "metrics: prometheus-operator" resource, and click "View metrics" near the top of the screen. Or
 visit http://localhost:9090/ in your browser. <!-- markdown-link-check-disable-line -->
 
+To view cluster resources using the [Cluster API Visualizer](https://github.com/Jont828/cluster-api-visualizer), select the "visualize-cluster" resource and click "View visualization" or visit "http://localhost:8000/" in your browser. <!-- markdown-link-check-disable-line -->
+
 #### Debugging
 
 You can debug CAPZ (or another provider / core CAPI) by running the controllers with delve. When developing using Tilt this is easily done by using the **debug** configuration section in your **tilt-settings.json** file. For example:
