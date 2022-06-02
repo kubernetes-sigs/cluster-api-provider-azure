@@ -111,6 +111,8 @@ select_cluster_template() {
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
         fi
     fi
+
+    echo "Using cluster template: ${CLUSTER_TEMPLATE}"
 }
 
 create_cluster() {
