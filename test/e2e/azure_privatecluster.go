@@ -74,7 +74,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	)
 
 	input = inputGetter()
-	Expect(input).ToNot(BeNil())
+	Expect(input).NotTo(BeNil())
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
 	By("creating a Kubernetes client to the workload cluster")
@@ -128,12 +128,12 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 	By("Creating a private workload cluster")
 	clusterName = fmt.Sprintf("capz-e2e-%s-%s", util.RandomString(6), "private")
-	Expect(os.Setenv(AzureVNetName, clusterName+"-vnet")).NotTo(HaveOccurred())
-	Expect(os.Setenv(AzureVNetCidr, "10.255.0.0/16")).NotTo(HaveOccurred())
-	Expect(os.Setenv(AzureInternalLBIP, "10.255.0.100")).NotTo(HaveOccurred())
-	Expect(os.Setenv(AzureCPSubnetCidr, "10.255.0.0/24")).NotTo(HaveOccurred())
-	Expect(os.Setenv(AzureNodeSubnetCidr, "10.255.1.0/24")).NotTo(HaveOccurred())
-	Expect(os.Setenv(AzureBastionSubnetCidr, "10.255.255.224/27")).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureVNetName, clusterName+"-vnet")).To(Succeed())
+	Expect(os.Setenv(AzureVNetCidr, "10.255.0.0/16")).To(Succeed())
+	Expect(os.Setenv(AzureInternalLBIP, "10.255.0.100")).To(Succeed())
+	Expect(os.Setenv(AzureCPSubnetCidr, "10.255.0.0/24")).To(Succeed())
+	Expect(os.Setenv(AzureNodeSubnetCidr, "10.255.1.0/24")).To(Succeed())
+	Expect(os.Setenv(AzureBastionSubnetCidr, "10.255.255.224/27")).To(Succeed())
 	result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
 	clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 		ClusterProxy: publicClusterProxy,
@@ -155,7 +155,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	}, result)
 	cluster = result.Cluster
 
-	Expect(cluster).ToNot(BeNil())
+	Expect(cluster).NotTo(BeNil())
 
 	defer func() {
 		// Delete the private cluster, so that all of the Azure resources will be cleaned up when the public
@@ -375,22 +375,22 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 		Logf("deleting an existing virtual network %q", os.Getenv(AzureCustomVNetName))
 		vFuture, err := vnetClient.Delete(ctx, groupName, os.Getenv(AzureCustomVNetName))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(vFuture.WaitForCompletionRef(ctx, vnetClient.Client)).ToNot(HaveOccurred())
+		Expect(vFuture.WaitForCompletionRef(ctx, vnetClient.Client)).To(Succeed())
 
 		Logf("deleting an existing route table %q", routeTableName)
 		rtFuture, err := routetableClient.Delete(ctx, groupName, routeTableName)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(rtFuture.WaitForCompletionRef(ctx, routetableClient.Client)).ToNot(HaveOccurred())
+		Expect(rtFuture.WaitForCompletionRef(ctx, routetableClient.Client)).To(Succeed())
 
 		Logf("deleting an existing network security group %q", nsgNodeName)
 		nsgFuture, err := nsgClient.Delete(ctx, groupName, nsgNodeName)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)).NotTo(HaveOccurred())
+		Expect(nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)).To(Succeed())
 
 		Logf("deleting an existing network security group %q", nsgName)
 		nsgFuture, err = nsgClient.Delete(ctx, groupName, nsgName)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)).NotTo(HaveOccurred())
+		Expect(nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)).To(Succeed())
 
 		Logf("verifying the existing resource group %q is empty", groupName)
 		resClient := resources.NewClient(subscriptionID)
@@ -426,12 +426,12 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 			}
 			return foundResources, nil
 			// add some tolerance for Azure caching of resource group resource caching
-		}, deleteOperationTimeout, retryableOperationTimeout).Should(HaveLen(0), "Expect the manually created resource group is empty after removing the manually created resources.")
+		}, deleteOperationTimeout, retryableOperationTimeout).Should(BeEmpty(), "Expect the manually created resource group is empty after removing the manually created resources.")
 
 		Logf("deleting the existing resource group %q", groupName)
 		grpFuture, err := groupClient.Delete(ctx, groupName)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(grpFuture.WaitForCompletionRef(ctx, nsgClient.Client)).NotTo(HaveOccurred())
+		Expect(grpFuture.WaitForCompletionRef(ctx, nsgClient.Client)).To(Succeed())
 	}
 }
 

@@ -88,7 +88,7 @@ func AzureMachinePoolDrainSpec(ctx context.Context, inputGetter func() AzureMach
 
 	By(fmt.Sprintf("listing AzureMachinePools in the cluster in namespace %s", input.Namespace.Name))
 	ampList := &v1beta1.AzureMachinePoolList{}
-	Expect(bootstrapClusterProxy.GetClient().List(ctx, ampList, client.InNamespace(input.Namespace.Name), client.MatchingLabels(labels))).ToNot(HaveOccurred())
+	Expect(bootstrapClusterProxy.GetClient().List(ctx, ampList, client.InNamespace(input.Namespace.Name), client.MatchingLabels(labels))).To(Succeed())
 	for _, amp := range ampList.Items {
 		testMachinePoolCordonAndDrain(ctx, bootstrapClusterProxy, workloadClusterProxy, amp)
 	}
@@ -106,7 +106,7 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 		}()
 
 		machinePoolReplicas = func() int32 {
-			Expect(owningMachinePool.Spec.Replicas).ToNot(BeNil(), "owning machine pool replicas must not be nil")
+			Expect(owningMachinePool.Spec.Replicas).NotTo(BeNil(), "owning machine pool replicas must not be nil")
 			Expect(*owningMachinePool.Spec.Replicas).To(BeNumerically(">=", 2), "owning machine pool replicas must be greater than or equal to 2")
 			return *owningMachinePool.Spec.Replicas
 		}()
@@ -299,7 +299,7 @@ func deployHttpService(ctx context.Context, clientset *kubernetes.Clientset, isW
 	WaitForServiceAvailable(ctx, elbSvcInput, e2eConfig.GetIntervals(AzureMachinePoolDrainSpecName, "wait-service")...)
 
 	return webDeploymentBuilder, deployment, service, func() {
-		Expect(servicesClient.Delete(ctx, elbService.Name, metav1.DeleteOptions{})).ToNot(HaveOccurred())
-		Expect(webDeploymentBuilder.Client(clientset).Delete(ctx, deployment.Name, metav1.DeleteOptions{})).ToNot(HaveOccurred())
+		Expect(servicesClient.Delete(ctx, elbService.Name, metav1.DeleteOptions{})).To(Succeed())
+		Expect(webDeploymentBuilder.Client(clientset).Delete(ctx, deployment.Name, metav1.DeleteOptions{})).To(Succeed())
 	}
 }

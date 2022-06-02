@@ -42,7 +42,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	}
 	var client client.Client
 	ammp.Default(client)
-	g.Expect(ammp.Labels).ToNot(BeNil())
+	g.Expect(ammp.Labels).NotTo(BeNil())
 	val, ok := ammp.Labels[LabelAgentPoolMode]
 	g.Expect(ok).To(BeTrue())
 	g.Expect(val).To(Equal("System"))

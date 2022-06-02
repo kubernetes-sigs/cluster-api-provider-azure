@@ -87,7 +87,7 @@ func TestNewService(t *testing.T) {
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 	actual := NewService(mpms)
-	g.Expect(actual).ToNot(BeNil())
+	g.Expect(actual).NotTo(BeNil())
 }
 
 func TestService_Reconcile(t *testing.T) {

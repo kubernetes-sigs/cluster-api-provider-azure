@@ -93,7 +93,7 @@ func TestClusterNameValidation(t *testing.T) {
 
 			allErrs := azureCluster.validateClusterName()
 			if tc.wantErr {
-				g.Expect(allErrs).ToNot(BeNil())
+				g.Expect(allErrs).NotTo(BeNil())
 			} else {
 				g.Expect(allErrs).To(BeNil())
 			}
@@ -143,7 +143,7 @@ func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		err := testCase.cluster.validateCluster(nil)
-		g.Expect(err).ToNot(BeNil())
+		g.Expect(err).NotTo(BeNil())
 	})
 }
 
@@ -403,7 +403,7 @@ func TestValidateVnetCIDR(t *testing.T) {
 			if testCase.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -601,7 +601,7 @@ func TestValidateSubnetCIDR(t *testing.T) {
 				// Searches for expected error in list of thrown errors
 				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -869,7 +869,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -950,7 +950,7 @@ func TestPrivateDNSZoneName(t *testing.T) {
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -1108,7 +1108,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -1189,7 +1189,7 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}
@@ -1280,7 +1280,7 @@ func TestValidateCloudProviderConfigOverrides(t *testing.T) {
 			if testCase.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
 			} else {
-				g.Expect(err).To(HaveLen(0))
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}

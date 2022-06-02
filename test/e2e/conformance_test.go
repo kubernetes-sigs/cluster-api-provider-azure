@@ -58,9 +58,9 @@ var _ = Describe("Conformance Tests", func() {
 
 	BeforeEach(func() {
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
-		Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. BootstrapClusterProxy can't be nil")
-		Expect(kubetestConfigFilePath).ToNot(BeNil(), "Invalid argument. kubetestConfigFilePath can't be nil")
-		Expect(e2eConfig).ToNot(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
+		Expect(bootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. BootstrapClusterProxy can't be nil")
+		Expect(kubetestConfigFilePath).NotTo(BeNil(), "Invalid argument. kubetestConfigFilePath can't be nil")
+		Expect(e2eConfig).NotTo(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
 		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
 
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
@@ -76,8 +76,8 @@ var _ = Describe("Conformance Tests", func() {
 		namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterName, bootstrapClusterProxy, artifactFolder)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
-		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
+		Expect(os.Setenv(AzureResourceGroup, clusterName)).To(Succeed())
+		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).To(Succeed())
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
@@ -94,10 +94,10 @@ var _ = Describe("Conformance Tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
-		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
+		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).To(Succeed())
+		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).To(Succeed())
+		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).To(Succeed())
 	})
 
 	Measure(specName, func(b Benchmarker) {
@@ -247,8 +247,8 @@ var _ = Describe("Conformance Tests", func() {
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 
-		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
+		Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
 	})
 
 })

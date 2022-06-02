@@ -67,7 +67,7 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 	g := NewWithT(t)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(subject).NotTo(BeNil())
-	g.Expect(subject.services).NotTo(HaveLen(0))
+	g.Expect(subject.services).NotTo(BeEmpty())
 	g.Expect(subject.skuCache).NotTo(BeNil())
 }
 
@@ -79,7 +79,7 @@ func newScheme(g *GomegaWithT) *runtime.Scheme {
 		infrav1.AddToScheme,
 		infrav1exp.AddToScheme,
 	} {
-		g.Expect(f(scheme)).ToNot(HaveOccurred())
+		g.Expect(f(scheme)).To(Succeed())
 	}
 	return scheme
 }

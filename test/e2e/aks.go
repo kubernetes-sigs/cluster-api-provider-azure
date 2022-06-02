@@ -72,15 +72,15 @@ type DiscoverAndWaitForControlPlaneMachinesInput struct {
 // and waits for at least one control plane machine to be up.
 func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input DiscoverAndWaitForControlPlaneMachinesInput, intervals ...interface{}) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneInitialized")
-	Expect(input.Lister).ToNot(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
-	Expect(input.Cluster).ToNot(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
+	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
+	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
 
 	controlPlane := GetAzureManagedControlPlaneByCluster(ctx, GetAzureManagedControlPlaneByClusterInput{
 		Lister:      input.Lister,
 		ClusterName: input.Cluster.Name,
 		Namespace:   input.Cluster.Namespace,
 	})
-	Expect(controlPlane).ToNot(BeNil())
+	Expect(controlPlane).NotTo(BeNil())
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAtLeastOneControlPlaneAndMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
@@ -96,15 +96,15 @@ func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input Discov
 // and waits for all the control plane machines to be up.
 func DiscoverAndWaitForControlPlaneReady(ctx context.Context, input DiscoverAndWaitForControlPlaneMachinesInput, intervals ...interface{}) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneReady")
-	Expect(input.Lister).ToNot(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneReady")
-	Expect(input.Cluster).ToNot(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneReady")
+	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneReady")
+	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneReady")
 
 	controlPlane := GetAzureManagedControlPlaneByCluster(ctx, GetAzureManagedControlPlaneByClusterInput{
 		Lister:      input.Lister,
 		ClusterName: input.Cluster.Name,
 		Namespace:   input.Cluster.Namespace,
 	})
-	Expect(controlPlane).ToNot(BeNil())
+	Expect(controlPlane).NotTo(BeNil())
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
@@ -129,7 +129,7 @@ type GetAzureManagedControlPlaneByClusterInput struct {
 func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureManagedControlPlaneByClusterInput) *infraexpv1.AzureManagedControlPlane {
 	controlPlaneList := &infraexpv1.AzureManagedControlPlaneList{}
 	Expect(input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)).To(Succeed(), "Failed to list AzureManagedControlPlane object for Cluster %s/%s", input.Namespace, input.ClusterName)
-	Expect(len(controlPlaneList.Items)).ToNot(BeNumerically(">", 1), "Cluster %s/%s should not have more than 1 AzureManagedControlPlane object", input.Namespace, input.ClusterName)
+	Expect(len(controlPlaneList.Items)).NotTo(BeNumerically(">", 1), "Cluster %s/%s should not have more than 1 AzureManagedControlPlane object", input.Namespace, input.ClusterName)
 	if len(controlPlaneList.Items) == 1 {
 		return &controlPlaneList.Items[0]
 	}

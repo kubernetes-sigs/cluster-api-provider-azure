@@ -37,7 +37,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				return new(exp.AzureMachinePool)
 			},
 			Expect: func(g *gomega.GomegaWithT, actual error) {
-				g.Expect(actual).ToNot(gomega.HaveOccurred())
+				g.Expect(actual).NotTo(gomega.HaveOccurred())
 			},
 		},
 		{
@@ -60,7 +60,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				}
 			},
 			Expect: func(g *gomega.GomegaWithT, actual error) {
-				g.Expect(actual).ToNot(gomega.HaveOccurred())
+				g.Expect(actual).NotTo(gomega.HaveOccurred())
 			},
 		},
 		{
@@ -91,7 +91,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				}
 			},
 			Expect: func(g *gomega.GomegaWithT, actual error) {
-				g.Expect(actual).ToNot(gomega.HaveOccurred())
+				g.Expect(actual).NotTo(gomega.HaveOccurred())
 			},
 		},
 		{
