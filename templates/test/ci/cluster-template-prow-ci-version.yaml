@@ -409,7 +409,7 @@ spec:
         marketplace:
           offer: capi-windows
           publisher: cncf-upstream
-          sku: k8s-1dot23dot3-windows-2019-containerd
+          sku: k8s-1dot23dot3-${WINDOWS_SERVER_VERSION:=windows-2019}-containerd
           version: latest
       osDisk:
         diskSizeGB: 128
