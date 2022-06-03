@@ -22,9 +22,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/blang/semver"
-	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
@@ -282,88 +279,6 @@ func NATRuleID(subscriptionID, resourceGroup, loadBalancerName, natRuleName stri
 // AvailabilitySetID returns the azure resource ID for a given availability set.
 func AvailabilitySetID(subscriptionID, resourceGroup, availabilitySetName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/availabilitySets/%s", subscriptionID, resourceGroup, availabilitySetName)
-}
-
-// GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
-// note: osAndVersion is expected to be in the format of {os}-{version} (ex: unbuntu-2004 or windows-2022)
-func getDefaultImageSKUID(k8sVersion, osAndVersion string) (string, error) {
-	version, err := semver.ParseTolerant(k8sVersion)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to parse Kubernetes version \"%s\" in spec, expected valid SemVer string", k8sVersion)
-	}
-	return fmt.Sprintf("k8s-%ddot%ddot%d-%s", version.Major, version.Minor, version.Patch, osAndVersion), nil
-}
-
-// GetDefaultUbuntuImage returns the default image spec for Ubuntu.
-func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
-	v, err := semver.ParseTolerant(k8sVersion)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to parse Kubernetes version \"%s\"", k8sVersion)
-	}
-	// Default to Ubuntu 20.04 LTS, except for k8s versions which have only 18.04 reference images.
-	osVersion := "2004"
-	if (v.Major == 1 && v.Minor == 21 && v.Patch < 2) ||
-		(v.Major == 1 && v.Minor == 20 && v.Patch < 8) ||
-		(v.Major == 1 && v.Minor == 19 && v.Patch < 12) ||
-		(v.Major == 1 && v.Minor == 18 && v.Patch < 20) ||
-		(v.Major == 1 && v.Minor < 18) {
-		osVersion = "1804"
-	}
-
-	skuID, err := getDefaultImageSKUID(k8sVersion, fmt.Sprintf("ubuntu-%s", osVersion))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get default image")
-	}
-
-	defaultImage := &infrav1.Image{
-		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: DefaultImagePublisherID,
-			Offer:     DefaultImageOfferID,
-			SKU:       skuID,
-			Version:   LatestVersion,
-		},
-	}
-
-	return defaultImage, nil
-}
-
-// GetDefaultWindowsImage returns the default image spec for Windows.
-func GetDefaultWindowsImage(k8sVersion, runtime, osAndVersion string) (*infrav1.Image, error) {
-	v122 := semver.MustParse("1.22.0")
-	v, err := semver.ParseTolerant(k8sVersion)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to parse Kubernetes version \"%s\"", k8sVersion)
-	}
-
-	// If containerd is specified we don't currently support less than 1.22
-	if v.LE(v122) && runtime == "containerd" {
-		return nil, errors.New("containerd image only supported in 1.22+")
-	}
-
-	if osAndVersion == "" {
-		osAndVersion = DefaultWindowsOsAndVersion
-	}
-
-	skuID, err := getDefaultImageSKUID(k8sVersion, osAndVersion)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get default image")
-	}
-
-	// Starting with 1.22 we default to containerd for Windows unless the runtime flag is set.
-	if v.GTE(v122) && runtime != "dockershim" {
-		skuID += "-containerd"
-	}
-
-	defaultImage := &infrav1.Image{
-		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: DefaultImagePublisherID,
-			Offer:     DefaultWindowsImageOfferID,
-			SKU:       skuID,
-			Version:   LatestVersion,
-		},
-	}
-
-	return defaultImage, nil
 }
 
 // GetBootstrappingVMExtension returns the CAPZ Bootstrapping VM extension.
