@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	mock_scope "sigs.k8s.io/cluster-api-provider-azure/azure/scope/mocks"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -127,7 +128,7 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 				g.Expect(err).To(MatchError(c.Err))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(s).ToNot(BeNil())
+				g.Expect(s).NotTo(BeNil())
 			}
 		})
 	}
@@ -138,15 +139,15 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 	_ = capiv1exp.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 
-	var (
-		clusterScope = ClusterScope{
-			Cluster: &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster-foo",
-				},
-			},
-		}
-	)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	clusterScope := mock_azure.NewMockClusterScoper(mockCtrl)
+	clusterScope.EXPECT().Authorizer().AnyTimes()
+	clusterScope.EXPECT().BaseURI().AnyTimes()
+	clusterScope.EXPECT().Location().AnyTimes()
+	clusterScope.EXPECT().SubscriptionID().AnyTimes()
+	clusterScope.EXPECT().ClusterName().Return("cluster-foo").AnyTimes()
 
 	cases := []struct {
 		Name   string
@@ -274,7 +275,7 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 				g          = NewWithT(t)
 				params     = MachinePoolMachineScopeParams{
 					Client:       fake.NewClientBuilder().WithScheme(scheme).Build(),
-					ClusterScope: &clusterScope,
+					ClusterScope: clusterScope,
 					MachinePool: &capiv1exp.MachinePool{
 						Spec: capiv1exp.MachinePoolSpec{
 							Template: clusterv1.MachineTemplateSpec{
@@ -396,7 +397,7 @@ func TestMachinePoolMachineScope_CordonAndDrain(t *testing.T) {
 			params.AzureMachinePoolMachine = ampm
 			s, err := NewMachinePoolMachineScope(params)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(s).ToNot(BeNil())
+			g.Expect(s).NotTo(BeNil())
 			s.workloadNodeGetter = mockClient
 
 			err = s.CordonAndDrain(context.TODO())

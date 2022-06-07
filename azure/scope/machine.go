@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -696,7 +697,7 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 
 // GetVMImage returns the image from the machine configuration, or a default one.
 func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
-	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.GetVMImage")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.GetVMImage")
 	defer done()
 
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
@@ -704,15 +705,17 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 		return m.AzureMachine.Spec.Image, nil
 	}
 
+	svc := virtualmachineimages.New(m)
+
 	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS {
 		runtime := m.AzureMachine.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachine.Annotations["windowsServerVersion"]
 		log.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		return azure.GetDefaultWindowsImage(to.String(m.Machine.Spec.Version), runtime, windowsServerVersion)
+		return svc.GetDefaultWindowsImage(ctx, m.Location(), to.String(m.Machine.Spec.Version), runtime, windowsServerVersion)
 	}
 
 	log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
-	return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
+	return svc.GetDefaultUbuntuImage(ctx, m.Location(), to.String(m.Machine.Spec.Version))
 }
 
 // SetSubnetName defaults the AzureMachine subnet name to the name of one the subnets with the machine role when there is only one of them.
