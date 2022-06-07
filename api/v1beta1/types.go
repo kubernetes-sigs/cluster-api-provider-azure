@@ -543,6 +543,22 @@ type SubnetSpec struct {
 	SubnetClassSpec `json:",inline"`
 }
 
+// Network Interfaces to attach to each VM
+// +optional
+type AzureNetworkInterface struct {
+	SubnetName            string          `json:"subnetName,omitempty"`
+	IpConfigs             []AzureIPConfig `json:"ipConfigs,omitempty"`
+	AcceleratedNetworking *bool           `json:"acceleratedNetworking,omitempty"`
+	Id                    string          `json:"id,omitempty"`
+}
+
+// IP Configuration defines options to confiure a network interface
+type AzureIPConfig struct {
+	PrivateIP       string `json:"privateIP,omitempty"`
+	PublicIP        bool   `json:"publicIP,omitempty"`
+	PublicIPAddress string `json:"publicIPAddress,omitempty"`
+}
+
 // GetControlPlaneSubnet returns the cluster control plane subnet.
 func (n *NetworkSpec) GetControlPlaneSubnet() (SubnetSpec, error) {
 	for _, sn := range n.Subnets {

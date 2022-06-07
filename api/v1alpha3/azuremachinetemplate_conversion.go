@@ -50,6 +50,10 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Spec.Image.SharedGallery.SKU = restored.Spec.Template.Spec.Image.SharedGallery.SKU
 	}
 
+	if restored.Spec.Template.Spec.NetworkInterfaces != nil {
+		dst.Spec.Template.Spec.NetworkInterfaces = restored.Spec.Template.Spec.NetworkInterfaces
+	}
+
 	dst.Spec.Template.Spec.SubnetName = restored.Spec.Template.Spec.SubnetName
 	dst.Spec.Template.ObjectMeta = restored.Spec.Template.ObjectMeta
 

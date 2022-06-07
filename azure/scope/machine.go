@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,7 +37,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -220,47 +220,114 @@ func (m *MachineScope) InboundNatSpecs(portsInUse map[int32]struct{}) []azure.Re
 
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
-	spec := &networkinterfaces.NICSpec{
-		Name:                  azure.GenerateNICName(m.Name()),
-		ResourceGroup:         m.ResourceGroup(),
-		Location:              m.Location(),
-		SubscriptionID:        m.SubscriptionID(),
-		MachineName:           m.Name(),
-		VNetName:              m.Vnet().Name,
-		VNetResourceGroup:     m.Vnet().ResourceGroup,
-		SubnetName:            m.AzureMachine.Spec.SubnetName,
-		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
-		IPv6Enabled:           m.IsIPv6Enabled(),
-		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
-	}
 
-	if m.Role() == infrav1.ControlPlane {
-		spec.PublicLBName = m.OutboundLBName(m.Role())
-		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-		if m.IsAPIServerPrivate() {
-			spec.InternalLBName = m.APIServerLBName()
-			spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
-		} else {
-			spec.PublicLBNATRuleName = m.Name()
-			spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+	nicSpecs := []azure.ResourceSpecGetter{}
+
+	if len(m.AzureMachine.Spec.NetworkInterfaces) < 1 {
+		spec := &networkinterfaces.NICSpec{
+			Name:                  azure.GenerateNICName(m.Name()),
+			ResourceGroup:         m.ResourceGroup(),
+			Location:              m.Location(),
+			SubscriptionID:        m.SubscriptionID(),
+			MachineName:           m.Name(),
+			VNetName:              m.Vnet().Name,
+			VNetResourceGroup:     m.Vnet().ResourceGroup,
+			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+			IPv6Enabled:           m.IsIPv6Enabled(),
+			EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
+			SubnetName:            m.Subnet().Name,
 		}
+		if m.Role() == infrav1.ControlPlane {
+			spec.PublicLBName = m.OutboundLBName(m.Role())
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+			if m.IsAPIServerPrivate() {
+				spec.InternalLBName = m.APIServerLBName()
+				spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+			} else {
+				spec.PublicLBNATRuleName = m.Name()
+				spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+			}
+		}
+
+		// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
+			spec.PublicLBName = m.OutboundLBName(m.Role())
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+		}
+
+		if m.cache != nil {
+			spec.SKU = &m.cache.VMSKU
+		}
+
+		if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
+			spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
+		}
+		return append(nicSpecs, spec)
 	}
 
-	// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
-	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
-		spec.PublicLBName = m.OutboundLBName(m.Role())
-		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-	}
+	for i, n := range m.AzureMachine.Spec.NetworkInterfaces {
+		if n.Id != "" {
+			continue
+		}
+		spec := &networkinterfaces.NICSpec{
+			Name:                  azure.GenerateNICName(m.Name()) + "-" + strconv.Itoa(i),
+			ResourceGroup:         m.ResourceGroup(),
+			Location:              m.Location(),
+			SubscriptionID:        m.SubscriptionID(),
+			MachineName:           m.Name(),
+			VNetName:              m.Vnet().Name,
+			VNetResourceGroup:     m.Vnet().ResourceGroup,
+			AcceleratedNetworking: n.AcceleratedNetworking,
+			IPv6Enabled:           m.IsIPv6Enabled(),
+			EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
+			IPConfigs:             []networkinterfaces.IPConfig{},
+		}
 
-	if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
-		spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
-	}
+		if n.SubnetName == "" {
+			spec.SubnetName = m.Subnet().Name
+		} else {
+			spec.SubnetName = n.SubnetName
+		}
 
-	if m.cache != nil {
-		spec.SKU = &m.cache.VMSKU
-	}
+		// Check for control plane interface setup on interface 0
+		if m.Role() == infrav1.ControlPlane && i == 0 {
+			spec.PublicLBName = m.OutboundLBName(m.Role())
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+			if m.IsAPIServerPrivate() {
+				spec.InternalLBName = m.APIServerLBName()
+				spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+			} else {
+				spec.PublicLBNATRuleName = m.Name()
+				spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+			}
+		}
 
-	return []azure.ResourceSpecGetter{spec}
+		// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP && i == 0 {
+			spec.PublicLBName = m.OutboundLBName(m.Role())
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+		}
+
+		// Preserve behavior if AllocatePublicIP is used on interface 0
+		if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP && i == 0 {
+			spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
+		}
+
+		if m.cache != nil {
+			spec.SKU = &m.cache.VMSKU
+		}
+
+		for _, c := range n.IpConfigs {
+			config := networkinterfaces.IPConfig{
+				PublicIP:        c.PublicIP,
+				PrivateIP:       c.PrivateIP,
+				PublicIPAddress: c.PublicIPAddress,
+			}
+			spec.IPConfigs = append(spec.IPConfigs, config)
+		}
+		nicSpecs = append(nicSpecs, spec)
+	}
+	return nicSpecs
 }
 
 // NICIDs returns the NIC resource IDs.
@@ -269,6 +336,11 @@ func (m *MachineScope) NICIDs() []string {
 	nicIDs := make([]string, len(nicspecs))
 	for i, nic := range nicspecs {
 		nicIDs[i] = azure.NetworkInterfaceID(m.SubscriptionID(), nic.ResourceGroupName(), nic.ResourceName())
+	}
+	for _, n := range m.AzureMachine.Spec.NetworkInterfaces {
+		if n.Id != "" {
+			nicIDs = append(nicIDs, n.Id)
+		}
 	}
 	return nicIDs
 }
@@ -624,7 +696,7 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 
 // GetVMImage returns the image from the machine configuration, or a default one.
 func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.GetVMImage")
+	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.GetVMImage")
 	defer done()
 
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
@@ -632,17 +704,15 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 		return m.AzureMachine.Spec.Image, nil
 	}
 
-	svc := virtualmachineimages.New(m)
-
 	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS {
 		runtime := m.AzureMachine.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachine.Annotations["windowsServerVersion"]
 		log.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		return svc.GetDefaultWindowsImage(ctx, m.Location(), to.String(m.Machine.Spec.Version), runtime, windowsServerVersion)
+		return azure.GetDefaultWindowsImage(to.String(m.Machine.Spec.Version), runtime, windowsServerVersion)
 	}
 
 	log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
-	return svc.GetDefaultUbuntuImage(ctx, m.Location(), to.String(m.Machine.Spec.Version))
+	return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
 }
 
 // SetSubnetName defaults the AzureMachine subnet name to the name of one the subnets with the machine role when there is only one of them.

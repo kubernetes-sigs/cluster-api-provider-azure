@@ -33,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -97,6 +96,48 @@ func TestMachinePoolScope_Name(t *testing.T) {
 		})
 	}
 }
+func TestMachinePoolScope_MultipleInterfaces(t *testing.T) {
+	tests := []struct {
+		name             string
+		machinePoolScope MachinePoolScope
+		want             int
+	}{
+		{
+			name: "two network interfaces",
+			machinePoolScope: MachinePoolScope{
+				MachinePool: nil,
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "dual nics",
+					},
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							NetworkInterfaces: []infrav1.AzureNetworkInterface{
+								{
+									SubnetName: "control-plane-subnet",
+								},
+								{
+									SubnetName: "node-subnet",
+								},
+							},
+						},
+					},
+				},
+				ClusterScoper: nil,
+			},
+			want: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := len(tt.machinePoolScope.AzureMachinePool.Spec.Template.NetworkInterfaces)
+			if got != tt.want {
+				t.Errorf("MachinePoolScope.Name() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 	cases := []struct {
@@ -124,7 +165,7 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
 				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapInProgressReason))
 				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)
-				g.Expect(severity).NotTo(BeNil())
+				g.Expect(severity).ToNot(BeNil())
 				g.Expect(*severity).To(Equal(clusterv1.ConditionSeverityInfo))
 			},
 		},
@@ -138,7 +179,7 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
 				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapFailedReason))
 				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)
-				g.Expect(severity).NotTo(BeNil())
+				g.Expect(severity).ToNot(BeNil())
 				g.Expect(*severity).To(Equal(clusterv1.ConditionSeverityError))
 			},
 		},
@@ -299,15 +340,6 @@ func TestMachinePoolScope_SaveVMImageToStatus(t *testing.T) {
 }
 
 func TestMachinePoolScope_GetVMImage(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	clusterMock := mock_azure.NewMockClusterScoper(mockCtrl)
-	clusterMock.EXPECT().Authorizer().AnyTimes()
-	clusterMock.EXPECT().BaseURI().AnyTimes()
-	clusterMock.EXPECT().Location().AnyTimes()
-	clusterMock.EXPECT().SubscriptionID().AnyTimes()
-
 	cases := []struct {
 		Name   string
 		Setup  func(mp *clusterv1exp.MachinePool, amp *infrav1exp.AzureMachinePool)
@@ -398,7 +430,6 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 			s := &MachinePoolScope{
 				MachinePool:      mp,
 				AzureMachinePool: amp,
-				ClusterScoper:    clusterMock,
 			}
 			image, err := s.GetVMImage(context.TODO())
 			c.Verify(g, amp, image, err)

@@ -33,7 +33,6 @@ import (
 	machinepool "sigs.k8s.io/cluster-api-provider-azure/azure/scope/strategies/machinepool_deployments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -128,6 +127,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		SpotVMOptions:                m.AzureMachinePool.Spec.Template.SpotVMOptions,
 		FailureDomains:               m.MachinePool.Spec.FailureDomains,
 		TerminateNotificationTimeout: m.AzureMachinePool.Spec.Template.TerminateNotificationTimeout,
+		NetworkInterfaces:            m.AzureMachinePool.Spec.Template.NetworkInterfaces,
 	}
 }
 
@@ -547,8 +547,6 @@ func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, erro
 		return m.AzureMachinePool.Spec.Template.Image, nil
 	}
 
-	svc := virtualmachineimages.New(m)
-
 	var (
 		err          error
 		defaultImage *infrav1.Image
@@ -557,9 +555,9 @@ func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, erro
 		runtime := m.AzureMachinePool.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachinePool.Annotations["windowsServerVersion"]
 		log.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		defaultImage, err = svc.GetDefaultWindowsImage(ctx, m.Location(), to.String(m.MachinePool.Spec.Template.Spec.Version), runtime, windowsServerVersion)
+		defaultImage, err = azure.GetDefaultWindowsImage(to.String(m.MachinePool.Spec.Template.Spec.Version), runtime, windowsServerVersion)
 	} else {
-		defaultImage, err = svc.GetDefaultUbuntuImage(ctx, m.Location(), to.String(m.MachinePool.Spec.Template.Spec.Version))
+		defaultImage, err = azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
 	}
 
 	if err != nil {

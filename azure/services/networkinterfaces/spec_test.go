@@ -177,12 +177,14 @@ func TestParameters(t *testing.T) {
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+						Primary:                     nil,
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(false),
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+									Primary:                         to.BoolPtr(true),
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/cluster-name-outboundBackendPool")}},
 									PrivateIPAllocationMethod:       network.IPAllocationMethodStatic,
 									PrivateIPAddress:                to.StringPtr("fake.static.ip"),
@@ -206,10 +208,12 @@ func TestParameters(t *testing.T) {
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(false),
+						Primary:                     nil,
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+									Primary:                         to.BoolPtr(true),
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/cluster-name-outboundBackendPool")}},
 									PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
 									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
@@ -232,10 +236,12 @@ func TestParameters(t *testing.T) {
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(false),
+						Primary:                     nil,
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+									Primary:                     to.BoolPtr(true),
 									Subnet:                      &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
 									PrivateIPAllocationMethod:   network.IPAllocationMethodDynamic,
 									LoadBalancerInboundNatRules: &[]network.InboundNatRule{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/inboundNatRules/azure-test1")}},
@@ -259,12 +265,14 @@ func TestParameters(t *testing.T) {
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+						Primary:                     nil,
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(false),
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+									Primary:                         to.BoolPtr(true),
 									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
 									PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
@@ -285,12 +293,14 @@ func TestParameters(t *testing.T) {
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+						Primary:                     nil,
 						EnableAcceleratedNetworking: to.BoolPtr(false),
 						EnableIPForwarding:          to.BoolPtr(false),
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+									Primary:                         to.BoolPtr(true),
 									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
 									PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
@@ -311,12 +321,14 @@ func TestParameters(t *testing.T) {
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+						Primary:                     nil,
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(true),
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+									Primary:                         to.BoolPtr(true),
 									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
 									PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
