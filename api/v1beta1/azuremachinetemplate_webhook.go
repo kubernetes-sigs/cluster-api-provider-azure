@@ -64,6 +64,20 @@ func (r *AzureMachineTemplate) ValidateCreate(ctx context.Context, obj runtime.O
 		)
 	}
 
+	if (r.Spec.Template.Spec.NetworkInterfaces != nil) && len(r.Spec.Template.Spec.NetworkInterfaces) > 0 && r.Spec.Template.Spec.SubnetName != "" {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces"), r.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine SubnetName"))
+	}
+
+	if (r.Spec.Template.Spec.NetworkInterfaces != nil) && len(r.Spec.Template.Spec.NetworkInterfaces) > 0 && r.Spec.Template.Spec.AcceleratedNetworking != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "acceleratedNetworking"), r.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine AcceleratedNetworking"))
+	}
+
+	for i, networkInterface := range r.Spec.Template.Spec.NetworkInterfaces {
+		if networkInterface.PrivateIPConfigs < 1 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces", "privateIPConfigs"), r.Spec.Template.Spec.NetworkInterfaces[i].PrivateIPConfigs, "networkInterface privateIPConfigs must be set to a minimum value of 1"))
+		}
+	}
+
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -128,5 +142,6 @@ func (r *AzureMachineTemplate) Default(ctx context.Context, obj runtime.Object) 
 	}
 	t.Spec.Template.Spec.SetDefaultCachingType()
 	t.Spec.Template.Spec.SetDataDisksDefaults()
+	t.Spec.Template.Spec.SetNetworkInterfacesDefaults()
 	return nil
 }

@@ -62,6 +62,10 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Spec.SpotVMOptions.EvictionPolicy = restored.Spec.Template.Spec.SpotVMOptions.EvictionPolicy
 	}
 
+	if restored.Spec.Template.Spec.NetworkInterfaces != nil {
+		dst.Spec.Template.Spec.NetworkInterfaces = restored.Spec.Template.Spec.NetworkInterfaces
+	}
+
 	return nil
 }
 

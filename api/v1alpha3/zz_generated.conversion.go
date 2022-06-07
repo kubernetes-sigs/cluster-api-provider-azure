@@ -925,6 +925,7 @@ func autoConvert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1bet
 	// WARNING: in.SubnetName requires manual conversion: does not exist in peer-type
 	// WARNING: in.DNSServers requires manual conversion: does not exist in peer-type
 	// WARNING: in.VMExtensions requires manual conversion: does not exist in peer-type
+	// WARNING: in.NetworkInterfaces requires manual conversion: does not exist in peer-type
 	return nil
 }
 

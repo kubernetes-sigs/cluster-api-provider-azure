@@ -278,6 +278,9 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "fake ssh key",
+							NetworkInterfaces: []NetworkInterface{{
+								PrivateIPConfigs: 1,
+							}},
 						},
 					},
 				},
@@ -327,6 +330,157 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "NewTemplate",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureMachineTemplate with legacy subnetName updated to new networkInterfaces",
+			oldTemplate: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks:             []DataDisk{},
+							SSHPublicKey:          "fake ssh key",
+							SubnetName:            "subnet1",
+							AcceleratedNetworking: to.BoolPtr(true),
+						},
+					},
+				},
+			},
+			template: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks:             []DataDisk{},
+							SSHPublicKey:          "fake ssh key",
+							SubnetName:            "",
+							AcceleratedNetworking: nil,
+							NetworkInterfaces: []NetworkInterface{
+								{
+									SubnetName:            "subnet1",
+									AcceleratedNetworking: to.BoolPtr(true),
+									PrivateIPConfigs:      1,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureMachineTemplate with legacy AcceleratedNetworking updated to new networkInterfaces",
+			oldTemplate: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks:             []DataDisk{},
+							SSHPublicKey:          "fake ssh key",
+							SubnetName:            "",
+							AcceleratedNetworking: to.BoolPtr(true),
+							NetworkInterfaces:     []NetworkInterface{},
+						},
+					},
+				},
+			},
+			template: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks:             []DataDisk{},
+							SSHPublicKey:          "fake ssh key",
+							SubnetName:            "",
+							AcceleratedNetworking: nil,
+							NetworkInterfaces: []NetworkInterface{
+								{
+									SubnetName:            "",
+									AcceleratedNetworking: to.BoolPtr(true),
+									PrivateIPConfigs:      1,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureMachineTemplate with modified networkInterfaces is immutable",
+			oldTemplate: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks:    []DataDisk{},
+							SSHPublicKey: "fake ssh key",
+							NetworkInterfaces: []NetworkInterface{
+								{
+									SubnetName:            "subnet1",
+									AcceleratedNetworking: to.BoolPtr(true),
+									PrivateIPConfigs:      1,
+								},
+							},
+						},
+					},
+				},
+			},
+			template: &AzureMachineTemplate{
+				Spec: AzureMachineTemplateSpec{
+					Template: AzureMachineTemplateResource{
+						Spec: AzureMachineSpec{
+							VMSize:        "size",
+							FailureDomain: &failureDomain,
+							OSDisk: OSDisk{
+								OSType:      "type",
+								DiskSizeGB:  to.Int32Ptr(11),
+								CachingType: "None",
+							},
+							DataDisks:    []DataDisk{},
+							SSHPublicKey: "fake ssh key",
+							NetworkInterfaces: []NetworkInterface{
+								{
+									SubnetName:            "subnet2",
+									AcceleratedNetworking: to.BoolPtr(true),
+									PrivateIPConfigs:      1,
+								},
+							},
+						},
+					},
 				},
 			},
 			wantErr: true,

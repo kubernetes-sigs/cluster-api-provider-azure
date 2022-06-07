@@ -174,7 +174,10 @@ func GenerateVNetLinkName(vnetName string) string {
 }
 
 // GenerateNICName generates the name of a network interface based on the name of a VM.
-func GenerateNICName(machineName string) string {
+func GenerateNICName(machineName string, multiNIC bool, index int) string {
+	if multiNIC {
+		return fmt.Sprintf("%s-nic-%d", machineName, index)
+	}
 	return fmt.Sprintf("%s-nic", machineName)
 }
 

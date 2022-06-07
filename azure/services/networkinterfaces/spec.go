@@ -18,6 +18,7 @@ package networkinterfaces
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -52,6 +53,13 @@ type NICSpec struct {
 	DNSServers                []string
 	AdditionalTags            infrav1.Tags
 	ClusterName               string
+	IPConfigs                 []IPConfig
+}
+
+// IPConfig defines the specification for an IP address configuration.
+type IPConfig struct {
+	PrivateIP       *string
+	PublicIPAddress *string
 }
 
 // ResourceName returns the name of the network interface.
@@ -79,17 +87,19 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 		return nil, nil
 	}
 
-	nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
+	primaryIPConfig := &network.InterfaceIPConfigurationPropertiesFormat{
+		Primary: to.BoolPtr(true),
+	}
 
 	subnet := &network.Subnet{
 		ID: to.StringPtr(azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNetName, s.SubnetName)),
 	}
-	nicConfig.Subnet = subnet
+	primaryIPConfig.Subnet = subnet
 
-	nicConfig.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
+	primaryIPConfig.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
 	if s.StaticIPAddress != "" {
-		nicConfig.PrivateIPAllocationMethod = network.IPAllocationMethodStatic
-		nicConfig.PrivateIPAddress = to.StringPtr(s.StaticIPAddress)
+		primaryIPConfig.PrivateIPAllocationMethod = network.IPAllocationMethodStatic
+		primaryIPConfig.PrivateIPAddress = to.StringPtr(s.StaticIPAddress)
 	}
 
 	backendAddressPools := []network.BackendAddressPool{}
@@ -101,7 +111,7 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 				})
 		}
 		if s.PublicLBNATRuleName != "" {
-			nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
+			primaryIPConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 				{
 					ID: to.StringPtr(azure.NATRuleID(s.SubscriptionID, s.ResourceGroup, s.PublicLBName, s.PublicLBNATRuleName)),
 				},
@@ -114,10 +124,10 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 				ID: to.StringPtr(azure.AddressPoolID(s.SubscriptionID, s.ResourceGroup, s.InternalLBName, s.InternalLBAddressPoolName)),
 			})
 	}
-	nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
+	primaryIPConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 	if s.PublicIPName != "" {
-		nicConfig.PublicIPAddress = &network.PublicIPAddress{
+		primaryIPConfig.PublicIPAddress = &network.PublicIPAddress{
 			ID: to.StringPtr(azure.PublicIPID(s.SubscriptionID, s.ResourceGroup, s.PublicIPName)),
 		}
 	}
@@ -140,10 +150,43 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 	ipConfigurations := []network.InterfaceIPConfiguration{
 		{
 			Name:                                     to.StringPtr("pipConfig"),
-			InterfaceIPConfigurationPropertiesFormat: nicConfig,
+			InterfaceIPConfigurationPropertiesFormat: primaryIPConfig,
 		},
 	}
 
+	// Build additional IPConfigs if more than 1 is specified
+	for i := 1; i < len(s.IPConfigs); i++ {
+		c := s.IPConfigs[i]
+		newIPConfigPropertiesFormat := &network.InterfaceIPConfigurationPropertiesFormat{}
+		newIPConfigPropertiesFormat.Subnet = subnet
+		config := network.InterfaceIPConfiguration{
+			Name:                                     to.StringPtr(s.Name + "-" + strconv.Itoa(i)),
+			InterfaceIPConfigurationPropertiesFormat: newIPConfigPropertiesFormat,
+		}
+		if c.PrivateIP != nil && *c.PrivateIP != "" {
+			config.InterfaceIPConfigurationPropertiesFormat.PrivateIPAllocationMethod = network.IPAllocationMethodStatic
+			config.InterfaceIPConfigurationPropertiesFormat.PrivateIPAddress = c.PrivateIP
+		} else {
+			config.InterfaceIPConfigurationPropertiesFormat.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
+		}
+
+		if c.PublicIPAddress != nil && *c.PublicIPAddress != "" {
+			config.InterfaceIPConfigurationPropertiesFormat.PublicIPAddress = &network.PublicIPAddress{
+				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
+					IPAddress:                c.PublicIPAddress,
+				},
+			}
+		} else if c.PublicIPAddress != nil {
+			config.InterfaceIPConfigurationPropertiesFormat.PublicIPAddress = &network.PublicIPAddress{
+				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+					PublicIPAllocationMethod: network.IPAllocationMethodDynamic,
+				},
+			}
+		}
+		config.InterfaceIPConfigurationPropertiesFormat.Primary = to.BoolPtr(false)
+		ipConfigurations = append(ipConfigurations, config)
+	}
 	if s.IPv6Enabled {
 		ipv6Config := network.InterfaceIPConfiguration{
 			Name: to.StringPtr("ipConfigv6"),

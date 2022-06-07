@@ -58,6 +58,18 @@ var (
 		AcceleratedNetworking: nil,
 		SKU:                   &fakeSku,
 	}
+	fakeNICSpec3 = NICSpec{
+		Name:                  "nic-3",
+		ResourceGroup:         "my-rg",
+		Location:              "fake-location",
+		SubscriptionID:        "123",
+		MachineName:           "azure-test1",
+		VNetName:              "my-vnet",
+		VNetResourceGroup:     "my-rg",
+		AcceleratedNetworking: nil,
+		SKU:                   &fakeSku,
+		IPConfigs:             []IPConfig{{}, {}},
+	}
 	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 )
 
@@ -80,6 +92,15 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
+			},
+		},
+		{
+			name:          "successfully create a network interface with multiple IPConfigs",
+			expectedError: "",
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec3})
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNICSpec3, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},

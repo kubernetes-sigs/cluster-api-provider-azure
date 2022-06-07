@@ -54,7 +54,30 @@ func ValidateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateNetwork(spec.SubnetName, spec.AcceleratedNetworking, spec.NetworkInterfaces, field.NewPath("networkInterfaces")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	return allErrs
+}
+
+// ValidateNetwork validates the network configuration.
+func ValidateNetwork(subnetName string, acceleratedNetworking *bool, networkInterfaces []NetworkInterface, fldPath *field.Path) field.ErrorList {
+	if (networkInterfaces != nil) && len(networkInterfaces) > 0 && subnetName != "" {
+		return field.ErrorList{field.Invalid(fldPath, networkInterfaces, "cannot set both networkInterfaces and machine subnetName")}
+	}
+
+	if (networkInterfaces != nil) && len(networkInterfaces) > 0 && acceleratedNetworking != nil {
+		return field.ErrorList{field.Invalid(fldPath, networkInterfaces, "cannot set both networkInterfaces and machine acceleratedNetworking")}
+	}
+
+	for _, nic := range networkInterfaces {
+		if nic.PrivateIPConfigs < 1 {
+			return field.ErrorList{field.Invalid(fldPath, networkInterfaces, "number of privateIPConfigs per interface must be at least 1")}
+		}
+	}
+
+	return field.ErrorList{}
 }
 
 // ValidateSSHKey validates an SSHKey.
