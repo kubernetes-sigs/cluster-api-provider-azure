@@ -59,13 +59,30 @@ setup() {
         echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG} cloud-node-manager image for external cloud-provider-azure cluster"
     fi
 
+    if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
+        # shellcheck source=scripts/ci-build-kubernetes.sh
+        source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
+    fi
+
+    if [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]]; then
+        CI_VERSION_URL="https://dl.k8s.io/ci/${KUBERNETES_VERSION}.txt"
+        export CI_VERSION="${CI_VERSION:-$(curl -sSL "${CI_VERSION_URL}")}"
+    fi
+    if [[ -n "${CI_VERSION:-}" ]]; then
+        echo "Using CI_VERSION ${CI_VERSION}"
+        export KUBERNETES_VERSION="${CI_VERSION}"
+    fi
+    echo "Using KUBERNETES_VERSION ${KUBERNETES_VERSION:-}"
+
     if [[ -z "${CLUSTER_TEMPLATE:-}" ]]; then
         select_cluster_template
     fi
+    echo "Using cluster template: ${CLUSTER_TEMPLATE}"
 
     export CLUSTER_NAME="${CLUSTER_NAME:-capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')}"
     export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
     export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
+    echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
@@ -74,29 +91,22 @@ setup() {
     # this requires k8s 1.22+
     if [[ -n "${TEST_WINDOWS:-}" ]]; then
         export WINDOWS_WORKER_MACHINE_COUNT="${WINDOWS_WORKER_MACHINE_COUNT:-2}"
-        export K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
+        if [[ -n "${K8S_FEATURE_GATES:-}" ]]; then
+            export K8S_FEATURE_GATES="${K8S_FEATURE_GATES:-},WindowsHostProcessContainers=true"
+        else
+            export K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
+        fi
     fi
 }
 
 select_cluster_template() {
     if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
-        # shellcheck source=scripts/ci-build-kubernetes.sh
-        source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
         export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds.yaml"
-    elif [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]] || [[ -n "${CI_VERSION:-}" ]]; then
+    elif [[ -n "${CI_VERSION:-}" ]]; then
         # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-ci-version.yaml"
-        if [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]]; then
-            CI_VERSION_URL="https://dl.k8s.io/ci/${KUBERNETES_VERSION}.txt"
-        fi
     else
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow.yaml"
-    fi
-    if [[ -n "${CI_VERSION:-}" ]] || [[ -n "${CI_VERSION_URL:-}" ]]; then
-        export CI_VERSION="${CI_VERSION:-$(curl -sSL "${CI_VERSION_URL}")}"
-        echo "using CI_VERSION ${CI_VERSION}"
-        export KUBERNETES_VERSION="${CI_VERSION}"
-        echo "using KUBERNETES_VERSION ${KUBERNETES_VERSION}"
     fi
 
     if [[ -n "${TEST_CCM:-}" ]]; then
@@ -111,8 +121,6 @@ select_cluster_template() {
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
         fi
     fi
-
-    echo "Using cluster template: ${CLUSTER_TEMPLATE}"
 }
 
 create_cluster() {
@@ -139,6 +147,11 @@ cleanup() {
 }
 
 on_exit() {
+    if [[ -n ${KUBECONFIG:-} ]]; then
+        "${KUBECTL}" get nodes -owide || echo "Unable to get nodes"
+        "${KUBECTL}" get pods -A -owide || echo "Unable to get pods"
+    fi
+
     unset KUBECONFIG
     "${REPO_ROOT}/hack/log/log-dump.sh" || true
     # cleanup
