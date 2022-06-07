@@ -547,12 +547,12 @@ type SubnetSpec struct {
 // +optional
 type AzureNetworkInterface struct {
 	SubnetName            string          `json:"subnetName,omitempty"`
-	IpConfigs             []AzureIPConfig `json:"ipConfigs,omitempty"`
+	IPConfigs             []AzureIPConfig `json:"ipConfigs,omitempty"`
 	AcceleratedNetworking *bool           `json:"acceleratedNetworking,omitempty"`
-	Id                    string          `json:"id,omitempty"`
+	ID                    string          `json:"id,omitempty"`
 }
 
-// IP Configuration defines options to confiure a network interface
+// IP Configuration defines options to confiure a network interface.
 type AzureIPConfig struct {
 	PrivateIP       string `json:"privateIP,omitempty"`
 	PublicIP        bool   `json:"publicIP,omitempty"`

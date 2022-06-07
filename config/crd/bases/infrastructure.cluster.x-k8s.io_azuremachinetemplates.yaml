@@ -1042,7 +1042,7 @@ spec:
                             ipConfigs:
                               items:
                                 description: IP Configuration defines options to confiure
-                                  a network interface
+                                  a network interface.
                                 properties:
                                   privateIP:
                                     type: string

@@ -1647,11 +1647,16 @@ spec:
                     description: Network Interfaces to attach to the to a virtual
                       machine
                     items:
+                      description: Network Interfaces to attach to each VM
                       properties:
                         acceleratedNetworking:
                           type: boolean
+                        id:
+                          type: string
                         ipConfigs:
                           items:
+                            description: IP Configuration defines options to confiure
+                              a network interface.
                             properties:
                               privateIP:
                                 type: string

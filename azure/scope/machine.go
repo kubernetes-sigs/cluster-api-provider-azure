@@ -221,7 +221,6 @@ func (m *MachineScope) InboundNatSpecs(portsInUse map[int32]struct{}) []azure.Re
 
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
-
 	nicSpecs := []azure.ResourceSpecGetter{}
 
 	if len(m.AzureMachine.Spec.NetworkInterfaces) < 1 {
@@ -267,7 +266,7 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 	}
 
 	for i, n := range m.AzureMachine.Spec.NetworkInterfaces {
-		if n.Id != "" {
+		if n.ID != "" {
 			continue
 		}
 		spec := &networkinterfaces.NICSpec{
@@ -318,7 +317,7 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 			spec.SKU = &m.cache.VMSKU
 		}
 
-		for _, c := range n.IpConfigs {
+		for _, c := range n.IPConfigs {
 			config := networkinterfaces.IPConfig{
 				PublicIP:        c.PublicIP,
 				PrivateIP:       c.PrivateIP,
@@ -339,8 +338,8 @@ func (m *MachineScope) NICIDs() []string {
 		nicIDs[i] = azure.NetworkInterfaceID(m.SubscriptionID(), nic.ResourceGroupName(), nic.ResourceName())
 	}
 	for _, n := range m.AzureMachine.Spec.NetworkInterfaces {
-		if n.Id != "" {
-			nicIDs = append(nicIDs, n.Id)
+		if n.ID != "" {
+			nicIDs = append(nicIDs, n.ID)
 		}
 	}
 	return nicIDs

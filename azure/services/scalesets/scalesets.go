@@ -459,15 +459,15 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 			nicConfig := compute.VirtualMachineScaleSetNetworkConfiguration{}
 			nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties = &compute.VirtualMachineScaleSetNetworkConfigurationProperties{}
 			nicConfig.Name = to.StringPtr(vmssSpec.Name + "-" + strconv.Itoa(i))
-			if n.Id != "" {
-				nicConfig.ID = &n.Id
+			if n.ID != "" {
+				nicConfig.ID = &n.ID
 			} else {
 				if to.Bool(n.AcceleratedNetworking) {
 					nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = to.BoolPtr(true)
 				} else {
 					nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = to.BoolPtr(false)
 				}
-				if len(n.IpConfigs) == 0 {
+				if len(n.IPConfigs) == 0 {
 					nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.IPConfigurations = &[]compute.VirtualMachineScaleSetIPConfiguration{
 						{
 							Name: to.StringPtr(vmssSpec.Name + "-" + strconv.Itoa(i)),
@@ -483,7 +483,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 					}
 				} else {
 					ipconfigs := []compute.VirtualMachineScaleSetIPConfiguration{}
-					for j, _ := range n.IpConfigs {
+					for j := range n.IPConfigs {
 						ipconfig := compute.VirtualMachineScaleSetIPConfiguration{
 							VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{},
 						}

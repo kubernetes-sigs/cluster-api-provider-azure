@@ -143,11 +143,11 @@ func (s *NICSpec) Parameters(existing interface{}) (parameters interface{}, err 
 	}
 
 	for i, c := range s.IPConfigs {
-		newIpConfigPropertiesFormat := &network.InterfaceIPConfigurationPropertiesFormat{}
-		newIpConfigPropertiesFormat.Subnet = subnet
+		newIPConfigPropertiesFormat := &network.InterfaceIPConfigurationPropertiesFormat{}
+		newIPConfigPropertiesFormat.Subnet = subnet
 		config := network.InterfaceIPConfiguration{
 			Name:                                     to.StringPtr(s.Name + "-" + strconv.Itoa(i)),
-			InterfaceIPConfigurationPropertiesFormat: newIpConfigPropertiesFormat,
+			InterfaceIPConfigurationPropertiesFormat: newIPConfigPropertiesFormat,
 		}
 		if c.PrivateIP == "" {
 			config.InterfaceIPConfigurationPropertiesFormat.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
