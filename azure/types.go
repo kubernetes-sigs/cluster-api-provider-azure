@@ -20,6 +20,7 @@ import (
 	"reflect"
 
 	"github.com/google/go-cmp/cmp"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -127,6 +128,7 @@ type ScaleSetSpec struct {
 	SecurityProfile              *infrav1.SecurityProfile
 	SpotVMOptions                *infrav1.SpotVMOptions
 	FailureDomains               []string
+	NetworkInterfaces            []v1beta1.AzureNetworkInterface
 }
 
 // TagsSpec defines the specification for a set of tags.
