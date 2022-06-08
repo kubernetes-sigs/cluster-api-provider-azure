@@ -19,7 +19,7 @@ package resourceskus
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -57,7 +57,7 @@ func (ac *AzureClient) List(ctx context.Context, filter string) ([]compute.Resou
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourceskus.AzureClient.List")
 	defer done()
 
-	iter, err := ac.skus.ListComplete(ctx, filter)
+	iter, err := ac.skus.ListComplete(ctx, filter, "true")
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list resource skus")
 	}
