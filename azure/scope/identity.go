@@ -185,7 +185,8 @@ func (p *AzureCredentialsProvider) GetClientID() string {
 // NOTE: this only works if the Identity references a Service Principal Client Secret.
 // If using another type of credentials, such a Certificate, we return an empty string.
 func (p *AzureCredentialsProvider) GetClientSecret(ctx context.Context) (string, error) {
-	if secretRef := p.Identity.Spec.ClientSecret; secretRef.Name != "" {
+	if p.hasClientSecret() {
+		secretRef := p.Identity.Spec.ClientSecret
 		key := types.NamespacedName{
 			Namespace: secretRef.Namespace,
 			Name:      secretRef.Name,
@@ -203,6 +204,12 @@ func (p *AzureCredentialsProvider) GetClientSecret(ctx context.Context) (string,
 // GetTenantID returns the Tenant ID associated with the AzureCredentialsProvider's Identity.
 func (p *AzureCredentialsProvider) GetTenantID() string {
 	return p.Identity.Spec.TenantID
+}
+
+// hasClientSecret returns true if the identity has a Service Principal Client Secret.
+// This does not include service principals with certificates or managed identities.
+func (p *AzureCredentialsProvider) hasClientSecret() bool {
+	return p.Identity.Spec.Type == infrav1.ServicePrincipal || p.Identity.Spec.Type == infrav1.ManualServicePrincipal
 }
 
 func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1.AzureClusterIdentity, resourceManagerEndpoint, activeDirectoryEndpoint string, clusterMeta metav1.ObjectMeta,

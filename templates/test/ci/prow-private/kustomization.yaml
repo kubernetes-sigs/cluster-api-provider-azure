@@ -10,6 +10,12 @@ patchesStrategicMerge:
   - ../patches/cluster-cni.yaml
   - patches/bastion.yaml
   - patches/vnet-peerings.yaml
+  - ../patches/uami-md-0.yaml
+  - ../patches/uami-control-plane.yaml
+patches:
+  - path: patches/user-assigned.yaml
+    target:
+      kind: AzureClusterIdentity
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:
