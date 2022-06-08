@@ -1,8 +1,6 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    cni: calico-ipv6
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -66,6 +64,7 @@ spec:
           bind-address: '::'
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
+          feature-gates: WindowsHostProcessContainers=true
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json

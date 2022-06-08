@@ -846,7 +846,9 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	err := actionConfig.Init(settings.RESTClientGetter(), "default", "secret", Logf)
 	Expect(err).To(BeNil())
 	i := helmAction.NewInstall(actionConfig)
-	i.RepoURL = repoURL
+	if repoURL != "" {
+		i.RepoURL = repoURL
+	}
 	i.ReleaseName = releaseName
 	Eventually(func() error {
 		cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
@@ -893,7 +895,6 @@ func WaitForWorkloadClusterKubeconfigSecret(ctx context.Context, input clusterct
 
 // WaitForDaemonset retries during E2E until a daemonset's pods are all Running
 func WaitForDaemonset(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cl client.Client, name, namespace string) {
-	// Ensure the workload cluster kubeconfig secret exists before getting the workload cluster clusterProxy object
 	Eventually(func() bool {
 		ds := &appsv1.DaemonSet{}
 		if err := cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, ds); err != nil {
@@ -906,19 +907,16 @@ func WaitForDaemonset(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	}, input.WaitForControlPlaneIntervals...).Should(Equal(true))
 }
 
-// podListHasNumPods fulfills the cluster-api PodListCondition type spec
-// given a list of pods, we validate for an exact number of those pods in a Running state
-func podListHasNumPods(numPods int) func(pl *corev1.PodList) error {
-	return func(pl *corev1.PodList) error {
-		var runningPods int
-		for _, p := range pl.Items {
-			if p.Status.Phase == corev1.PodRunning {
-				runningPods++
-			}
+// WaitForDeployment retries during E2E until a deployments's pods are all Running
+func WaitForDeployment(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cl client.Client, name, namespace string) {
+	Eventually(func() bool {
+		d := &appsv1.Deployment{}
+		if err := cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, d); err != nil {
+			return false
 		}
-		if runningPods != numPods {
-			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
+		if d.Status.Replicas == d.Status.ReadyReplicas {
+			return true
 		}
-		return nil
-	}
+		return false
+	}, input.WaitForControlPlaneIntervals...).Should(Equal(true))
 }

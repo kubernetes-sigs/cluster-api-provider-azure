@@ -1,8 +1,6 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    cni: calico
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -55,6 +53,7 @@ spec:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
+          feature-gates: WindowsHostProcessContainers=true
           oidc-client-id: ${AZURE_SERVER_APP_ID}
           oidc-groups-claim: groups
           oidc-issuer-url: https://sts.windows.net/${AZURE_TENANT_ID}/

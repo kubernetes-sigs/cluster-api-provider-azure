@@ -3,8 +3,6 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
-  labels:
-    cni: "calico"
 spec:
   clusterNetwork:
     pods:
@@ -69,6 +67,7 @@ spec:
         extraArgs:
           cloud-provider: azure
           cloud-config: /etc/kubernetes/azure.json
+          feature-gates: "WindowsHostProcessContainers=true"
         extraVolumes:
           - hostPath: /etc/kubernetes/azure.json
             mountPath: /etc/kubernetes/azure.json

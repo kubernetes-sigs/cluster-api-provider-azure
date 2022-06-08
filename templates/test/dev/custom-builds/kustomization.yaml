@@ -31,10 +31,6 @@ patches:
     namespace: default
   path: ../../ci/prow-ci-version/patches/kubeadm-bootstrap-windows-k8s-ci-binaries.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
-    behavior: merge
-    files:
-      - kube-proxy-patch=../../../test/ci/patches/windows-kubeproxy-ci.yaml
   - name: metrics-server-${CLUSTER_NAME}
     files:
       - metrics-server=../../../addons/metrics-server/metrics-server.yaml

@@ -35,10 +35,6 @@ patches:
     name: .*-control-plane
   path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
-    behavior: merge
-    files:
-      - kube-proxy-patch=../patches/windows-kubeproxy-ci.yaml
   - name: metrics-server-${CLUSTER_NAME}
     files:
       - metrics-server=../../../addons/metrics-server/metrics-server.yaml

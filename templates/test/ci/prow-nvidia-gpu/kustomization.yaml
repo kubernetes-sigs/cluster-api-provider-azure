@@ -3,10 +3,8 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/nvidia-gpu
-  - ../prow/cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
-  - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
 patches:
 - path: patches/node-storage-type.yaml
@@ -15,13 +13,3 @@ patches:
     version: v1beta1
     kind: AzureMachineTemplate
     name: ".*-md-0"
-configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
-    files:
-      - resources=../../../addons/calico.yaml
-generatorOptions:
-  disableNameSuffixHash: true
-  labels:
-    type: generated
-  annotations:
-    note: generated

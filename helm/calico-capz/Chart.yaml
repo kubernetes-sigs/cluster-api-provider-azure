@@ -1,0 +1,15 @@
+apiVersion: v1
+description: A Helm chart for installing calico CNI onto capz clusters
+home: https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/helm/calico-capz/README.md
+keywords:
+- calico
+- capz
+- cluster-api-provider-azure
+- cluster-api
+maintainers:
+- email: jackfrancis@gmail.com
+  name: Jack Francis
+name: calico-capz
+sources:
+- https://github.com/kubernetes-sigs/cluster-api-provider-azure
+version: 3.20

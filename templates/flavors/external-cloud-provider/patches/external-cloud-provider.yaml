@@ -4,7 +4,6 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    cni: "calico"
     ccm: "external"
 ---
 kind: KubeadmControlPlane

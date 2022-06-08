@@ -3,7 +3,6 @@ kind: Cluster
 metadata:
   labels:
     ccm: external
-    cni: calico
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -56,6 +55,7 @@ spec:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: external
+          feature-gates: WindowsHostProcessContainers=true
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json

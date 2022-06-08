@@ -7,7 +7,6 @@ resources:
   - ../../../flavors/windows/machine-deployment-windows.yaml
   - mhc.yaml
   - mhc-windows.yaml
-  - cni-resource-set.yaml
   - ../../../azure-cluster-identity
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
   - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
@@ -15,7 +14,6 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
   - ../patches/mhc-windows.yaml
-  - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
   - ../patches/machine-deployment-worker-counts.yaml
   - ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
@@ -40,11 +38,6 @@ patches:
     namespace: default
   path: ../patches/kubeadm-bootstrap-windows-containerd.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
-    files:
-      - resources=../../../addons/calico.yaml
-      - windows-cni=../../../addons/windows/calico/calico.yaml
-      - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
   - name: csi-proxy-addon
     files:
       - csi-proxy=../../../addons/windows/csi-proxy/csi-proxy.yaml

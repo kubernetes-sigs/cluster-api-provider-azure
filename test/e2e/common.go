@@ -27,6 +27,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -36,10 +37,13 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/net"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	kubeadmv1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -211,4 +215,64 @@ func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string
 	Expect(err).NotTo(HaveOccurred())
 
 	return config
+}
+
+// EnsureControlPlaneInitialized waits for the cluster KubeadmControlPlane object to be initialized
+// and then installs cloud-provider-azure components via helm
+// Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
+// in the flow of a clusterctl.ApplyClusterTemplateAndWait E2E test scenario
+func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
+	getter := input.ClusterProxy.GetClient()
+	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+		Getter:    getter,
+		Name:      input.ConfigCluster.ClusterName,
+		Namespace: input.ConfigCluster.Namespace,
+	})
+	kubeadmControlPlane := &kubeadmv1.KubeadmControlPlane{}
+	key := crclient.ObjectKey{
+		Namespace: cluster.Spec.ControlPlaneRef.Namespace,
+		Name:      cluster.Spec.ControlPlaneRef.Name,
+	}
+	Eventually(func() error {
+		return getter.Get(ctx, key, kubeadmControlPlane)
+	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+	InstallCalicoHelmChart(ctx, input, kubeadmControlPlane)
+	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] == "external" {
+		InstallCloudProviderAzureHelmChart(ctx, input)
+	}
+	discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
+
+}
+
+func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
+	result.ControlPlane = framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
+		Lister:  input.ClusterProxy.GetClient(),
+		Cluster: result.Cluster,
+	}, input.WaitForControlPlaneIntervals...)
+}
+
+func isDualStackCluster(clusterCidrConfig string) bool {
+	cidrs := strings.Split(clusterCidrConfig, ",")
+	if len(cidrs) < 2 {
+		return false
+	}
+	for _, cidr := range cidrs {
+		if net.IsIPv6CIDRString(cidr) {
+			return true
+		}
+	}
+	return false
+}
+
+func isIPv6Cluster(clusterCidrConfig string) bool {
+	cidrs := strings.Split(clusterCidrConfig, ",")
+	if len(cidrs) > 1 {
+		return false
+	}
+	for _, cidr := range cidrs {
+		if net.IsIPv6CIDRString(cidr) {
+			return true
+		}
+	}
+	return false
 }

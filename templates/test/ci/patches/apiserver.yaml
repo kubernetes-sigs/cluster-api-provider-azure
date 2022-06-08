@@ -7,4 +7,4 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          feature-gates: MixedProtocolLBService=true 
+          feature-gates: MixedProtocolLBService=true,WindowsHostProcessContainers=true
