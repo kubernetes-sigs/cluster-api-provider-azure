@@ -294,6 +294,25 @@ spec:
           New-Item -ItemType Directory -Force -Path C:\tmp\
         path: C:/create-temp-folder.ps1
         permissions: "0744"
+      - content: |
+          $ErrorActionPreference = 'Stop'
+
+          $$CONTAINERD_URL="${WINDOWS_CONTAINERD_URL}"
+          if($$CONTAINERD_URL -ne ""){
+            # Kubelet service depends on contianerd service so make a best effort attempt to stop it
+            Stop-Service kubelet -Force -ErrorAction SilentlyContinue
+            Stop-Service containerd -Force
+            echo "downloading containerd: $$CONTAINERD_URL"
+            curl.exe --retry 10 --retry-delay 5 -L "$$CONTAINERD_URL" --output "c:/k/containerd.tar.gz"
+            tar.exe -zxvf c:/k/containerd.tar.gz -C "c:/Program Files/containerd" --strip-components 1
+
+            Start-Service containerd
+          }
+
+          containerd.exe --version
+          containerd-shim-runhcs-v1.exe --version
+        path: C:/replace-containerd.ps1
+        permissions: "0744"
       joinConfiguration:
         nodeRegistration:
           criSocket: npipe:////./pipe/containerd-containerd
@@ -310,6 +329,7 @@ spec:
       - powershell C:/defender-exclude-calico.ps1
       preKubeadmCommands:
       - powershell C:/create-temp-folder.ps1
+      - powershell C:/replace-containerd.ps1
       users:
       - groups: Administrators
         name: capi

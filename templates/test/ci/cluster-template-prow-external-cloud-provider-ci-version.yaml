@@ -452,6 +452,25 @@ spec:
       - content: |
           $ErrorActionPreference = 'Stop'
 
+          $$CONTAINERD_URL="${WINDOWS_CONTAINERD_URL}"
+          if($$CONTAINERD_URL -ne ""){
+            # Kubelet service depends on contianerd service so make a best effort attempt to stop it
+            Stop-Service kubelet -Force -ErrorAction SilentlyContinue
+            Stop-Service containerd -Force
+            echo "downloading containerd: $$CONTAINERD_URL"
+            curl.exe --retry 10 --retry-delay 5 -L "$$CONTAINERD_URL" --output "c:/k/containerd.tar.gz"
+            tar.exe -zxvf c:/k/containerd.tar.gz -C "c:/Program Files/containerd" --strip-components 1
+
+            Start-Service containerd
+          }
+
+          containerd.exe --version
+          containerd-shim-runhcs-v1.exe --version
+        path: C:/replace-containerd.ps1
+        permissions: "0744"
+      - content: |
+          $ErrorActionPreference = 'Stop'
+
           Stop-Service kubelet -Force
 
           $$CI_VERSION="${CI_VERSION}"
@@ -466,16 +485,6 @@ spec:
             }
           }
 
-          $$CONTAINERD_URL="${WINDOWS_CONTAINERD_URL}"
-          if($$CONTAINERD_URL -ne ""){
-            Stop-Service containerd -Force
-            echo "downloading containerd: $$CONTAINERD_URL"
-            curl.exe --retry 10 --retry-delay 5 -L "$$CONTAINERD_URL" --output "c:/k/containerd.tar.gz"
-            tar.exe -zxvf c:/k/containerd.tar.gz -C "c:/Program Files/containerd" --strip-components 1
-
-            Start-Service containerd
-          }
-
           # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
           # that is applied at at this stage (windows-kubeproxy-ci.yaml)
           ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
@@ -485,8 +494,6 @@ spec:
           kubectl.exe version --client=true --short=true
           kubelet.exe --version
           kube-proxy.exe --version
-          containerd.exe --version
-          containerd-shim-runhcs-v1.exe --version
         path: C:/replace-ci-binaries.ps1
         permissions: "0744"
       joinConfiguration:
@@ -505,6 +512,7 @@ spec:
       - powershell C:/defender-exclude-calico.ps1
       preKubeadmCommands:
       - powershell C:/create-temp-folder.ps1
+      - powershell C:/replace-containerd.ps1
       - powershell C:/replace-ci-binaries.ps1
       users:
       - groups: Administrators

@@ -448,6 +448,8 @@ spec:
     path: C:/defender-exclude-calico.ps1
     permissions: "0744"
   - content: |
+      $ErrorActionPreference = 'Stop'
+
       Stop-Service kubelet -Force
 
       $$CI_VERSION="${CI_VERSION}"
