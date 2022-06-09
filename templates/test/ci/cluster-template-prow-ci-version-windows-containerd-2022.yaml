@@ -269,8 +269,8 @@ spec:
         marketplace:
           offer: capi
           publisher: cncf-upstream
-          sku: k8s-1dot18dot8-ubuntu-1804
-          version: 2020.08.17
+          sku: ubuntu-1804-gen1
+          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -411,7 +411,7 @@ spec:
         marketplace:
           offer: capi-windows
           publisher: cncf-upstream
-          sku: k8s-1dot23dot3-windows-2022-containerd
+          sku: windows-2022-containerd-gen1
           version: latest
       osDisk:
         diskSizeGB: 128
