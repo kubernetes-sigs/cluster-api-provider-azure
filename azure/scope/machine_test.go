@@ -24,16 +24,20 @@ import (
 	autorestazure "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages/mock_virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -1188,11 +1192,21 @@ func TestMachineScope_VMState(t *testing.T) {
 }
 
 func TestMachineScope_GetVMImage(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	clusterMock := mock_azure.NewMockClusterScoper(mockCtrl)
+	clusterMock.EXPECT().Authorizer().AnyTimes()
+	clusterMock.EXPECT().BaseURI().AnyTimes()
+	clusterMock.EXPECT().Location().AnyTimes()
+	clusterMock.EXPECT().SubscriptionID().AnyTimes()
+	svc := virtualmachineimages.Service{Client: mock_virtualmachineimages.NewMockClient(mockCtrl)}
+
 	tests := []struct {
 		name         string
 		machineScope MachineScope
 		want         *infrav1.Image
-		wantErr      bool
+		expectedErr  string
 	}{
 		{
 			name: "returns AzureMachine image is found if present in the AzureMachine spec",
@@ -1211,7 +1225,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 			want: &infrav1.Image{
 				ID: pointer.StringPtr("1"),
 			},
-			wantErr: false,
+			expectedErr: "",
 		},
 		{
 			name: "if no image is specified and os specified is windows with version below 1.22, returns windows dockershim image",
@@ -1234,12 +1248,13 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						},
 					},
 				},
+				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.20.1", "dockershim", "")
+				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.20.1", "dockershim", "")
 				return image
 			}(),
-			wantErr: false,
+			expectedErr: "",
 		},
 		{
 			name: "if no image is specified and os specified is windows with version is 1.22+ with no annotation, returns windows containerd image",
@@ -1262,12 +1277,13 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						},
 					},
 				},
+				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.22.1", "containerd", "")
+				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.22.1", "containerd", "")
 				return image
 			}(),
-			wantErr: false,
+			expectedErr: "",
 		},
 		{
 			name: "if no image is specified and os specified is windows with version is 1.22+ with annotation dockershim, returns windows dockershim image",
@@ -1293,12 +1309,13 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						},
 					},
 				},
+				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.22.1", "dockershim", "")
+				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.22.1", "dockershim", "")
 				return image
 			}(),
-			wantErr: false,
+			expectedErr: "",
 		},
 		{
 			name: "if no image is specified and os specified is windows with version is less and 1.22 with annotation dockershim, returns windows dockershim image",
@@ -1324,12 +1341,13 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						},
 					},
 				},
+				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.21.1", "dockershim", "")
+				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.21.1", "dockershim", "")
 				return image
 			}(),
-			wantErr: false,
+			expectedErr: "",
 		},
 		{
 			name: "if no image is specified and os specified is windows with version is less and 1.22 with annotation containerd, returns error",
@@ -1355,9 +1373,10 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						},
 					},
 				},
+				ClusterScoper: clusterMock,
 			},
-			want:    nil,
-			wantErr: true,
+			want:        nil,
+			expectedErr: "containerd image only supported in 1.22+",
 		},
 		{
 			name: "if no image is specified and os specified is windows with windowsServerVersion annotation set to 2019, retrurns 2019 image",
@@ -1383,12 +1402,13 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						},
 					},
 				},
+				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.23.3", "", "windows-2019")
+				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.23.3", "", "windows-2019")
 				return image
 			}(),
-			wantErr: false,
+			expectedErr: "",
 		},
 		{
 			name: "if no image is specified and os specified is windows with windowsServerVersion annotation set to 2022, retrurns 2022 image",
@@ -1414,12 +1434,13 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						},
 					},
 				},
+				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultWindowsImage("1.23.3", "", "windows-2022")
+				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.23.3", "", "windows-2022")
 				return image
 			}(),
-			wantErr: false,
+			expectedErr: "",
 		},
 		{
 			name: "if no image and OS is specified, returns linux image",
@@ -1437,24 +1458,20 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 				},
+				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := azure.GetDefaultUbuntuImage("1.20.1")
+				image, _ := svc.GetDefaultUbuntuImage(context.TODO(), "", "1.20.1")
 				return image
 			}(),
-			wantErr: false,
+			expectedErr: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotImage, err := tt.machineScope.GetVMImage(context.TODO())
-			gotError := false
-			if err != nil {
-				gotError = true
-			}
-
-			if gotError != tt.wantErr {
-				t.Errorf("GetVMImage(), gotError = %v, wantError %v", gotError, tt.wantErr)
+			if (err == nil && tt.expectedErr != "") || (err != nil && tt.expectedErr != err.Error()) {
+				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
 			}
 			if !reflect.DeepEqual(gotImage, tt.want) {
 				t.Errorf("GetVMImage(), gotImage = %v, wantImage %v", gotImage, tt.want)
