@@ -612,6 +612,11 @@ func TestRouteTableSpecs(t *testing.T) {
 		{
 			name: "returns specified route tables if present",
 			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						ResourceGroup: "my-rg",
@@ -639,14 +644,18 @@ func TestRouteTableSpecs(t *testing.T) {
 			},
 			want: []azure.ResourceSpecGetter{
 				&routetables.RouteTableSpec{
-					Name:          "fake-route-table-1",
-					ResourceGroup: "my-rg",
-					Location:      "centralIndia",
+					Name:           "fake-route-table-1",
+					ResourceGroup:  "my-rg",
+					Location:       "centralIndia",
+					ClusterName:    "my-cluster",
+					AdditionalTags: make(infrav1.Tags),
 				},
 				&routetables.RouteTableSpec{
-					Name:          "fake-route-table-2",
-					ResourceGroup: "my-rg",
-					Location:      "centralIndia",
+					Name:           "fake-route-table-2",
+					ResourceGroup:  "my-rg",
+					Location:       "centralIndia",
+					ClusterName:    "my-cluster",
+					AdditionalTags: make(infrav1.Tags),
 				},
 			},
 		},

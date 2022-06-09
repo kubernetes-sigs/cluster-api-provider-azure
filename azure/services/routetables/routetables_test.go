@@ -35,11 +35,16 @@ var (
 		Name:          "test-rt-1",
 		ResourceGroup: "test-rg",
 		Location:      "fake-location",
+		ClusterName:   "test-cluster",
+		AdditionalTags: map[string]string{
+			"foo": "bar",
+		},
 	}
 	fakeRT2 = RouteTableSpec{
 		Name:          "test-rt-2",
 		ResourceGroup: "test-rg",
 		Location:      "fake-location",
+		ClusterName:   "test-cluster",
 	}
 	errFake      = errors.New("this is an error")
 	notDoneError = azure.NewOperationNotDoneError(&infrav1.Future{})
