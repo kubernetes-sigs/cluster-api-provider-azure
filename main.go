@@ -496,24 +496,23 @@ func registerWebhooks(mgr manager.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureClusterIdentity")
 		os.Exit(1)
 	}
-	// just use CAPI MachinePool feature flag rather than create a new one
-	if feature.Gates.Enabled(capifeature.MachinePool) {
-		if err := (&infrav1beta1exp.AzureMachinePool{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
-			os.Exit(1)
-		}
-
-		if err := (&infrav1beta1exp.AzureMachinePoolMachine{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePoolMachine")
-			os.Exit(1)
-		}
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
+	// is going to prevent creating or updating new objects in case the feature flag is disabled
+	if err := (&infrav1beta1exp.AzureMachinePool{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
+		os.Exit(1)
 	}
 
-	if feature.Gates.Enabled(feature.AKS) {
-		if err := (&infrav1beta1exp.AzureManagedCluster{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedCluster")
-			os.Exit(1)
-		}
+	if err := (&infrav1beta1exp.AzureMachinePoolMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePoolMachine")
+		os.Exit(1)
+	}
+
+	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the webhook
+	// is going to prevent creating or updating new objects in case the feature flag is disabled
+	if err := (&infrav1beta1exp.AzureManagedCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedCluster")
+		os.Exit(1)
 	}
 
 	if feature.Gates.Enabled(feature.AKS) {
