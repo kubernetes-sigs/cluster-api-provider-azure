@@ -28,10 +28,12 @@ import (
 
 // NSGSpec defines the specification for a security group.
 type NSGSpec struct {
-	Name          string
-	SecurityRules infrav1.SecurityRules
-	Location      string
-	ResourceGroup string
+	Name           string
+	SecurityRules  infrav1.SecurityRules
+	Location       string
+	ClusterName    string
+	ResourceGroup  string
+	AdditionalTags infrav1.Tags
 }
 
 // ResourceName returns the name of the security group.
@@ -89,6 +91,12 @@ func (s *NSGSpec) Parameters(existing interface{}) (interface{}, error) {
 			SecurityRules: &securityRules,
 		},
 		Etag: etag,
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			ClusterName: s.ClusterName,
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			Name:        to.StringPtr(s.Name),
+			Additional:  s.AdditionalTags,
+		})),
 	}, nil
 }
 
