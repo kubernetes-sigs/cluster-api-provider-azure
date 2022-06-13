@@ -21,9 +21,15 @@ import (
 
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilfeature "k8s.io/component-base/featuregate/testing"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
+	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
+
 	g := NewWithT(t)
 
 	tests := []struct {
