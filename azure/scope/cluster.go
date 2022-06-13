@@ -242,9 +242,11 @@ func (s *ClusterScope) RouteTableSpecs() []azure.ResourceSpecGetter {
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		if subnet.RouteTable.Name != "" {
 			specs = append(specs, &routetables.RouteTableSpec{
-				Name:          subnet.RouteTable.Name,
-				Location:      s.Location(),
-				ResourceGroup: s.ResourceGroup(),
+				Name:           subnet.RouteTable.Name,
+				Location:       s.Location(),
+				ResourceGroup:  s.ResourceGroup(),
+				ClusterName:    s.ClusterName(),
+				AdditionalTags: s.AdditionalTags(),
 			})
 		}
 	}
