@@ -176,6 +176,17 @@ func getHostname(m *clusterv1.Machine, isWindows bool) string {
 	return hostname
 }
 
+func getAzureCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*v1beta1.AzureCluster, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}
+
+	azCluster := &v1beta1.AzureCluster{}
+	err := managementClusterClient.Get(context.TODO(), key, azCluster)
+	return azCluster, err
+}
+
 func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*v1beta1.AzureMachine, error) {
 	key := client.ObjectKey{
 		Namespace: m.Spec.InfrastructureRef.Namespace,

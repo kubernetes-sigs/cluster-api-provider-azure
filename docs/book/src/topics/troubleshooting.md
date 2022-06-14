@@ -155,10 +155,12 @@ ssh -J capi@${apiserver} capi@${node}
 
 ## Automated log collection
 
-As part of [CI](../../../../scripts/ci-e2e.sh) there is a [log collection script](../../../../hack/log/log-dump.sh) which you can also leverage to pull all the logs for machines which will dump logs to `${PWD}/_artifacts}` by default:
+As part of CI there is a [log collection tool](https://github.com/kubernetes-sigs/cluster-api-provider-azure/tree/main/test/logger.go) <!-- markdown-link-check-disable-line -->
+which you can also leverage to pull all the logs for machines which will dump logs to `${PWD}/_artifacts}` by default. The following works 
+if your kubeconfig is configured with the management cluster.  See the tool for more settings.
 
 ```bash
-./hack/log/log-dump.sh
+go run -tags e2e ./test/logger.go --name <workload-cluster-name> --namespace <workload-cluster-namespace>
 ```
 
-There are also some [provided scripts](../../../../hack/debugging/Readme.md) that can help automate a few common tasks.
+There are also some [provided scripts](https://github.com/kubernetes-sigs/cluster-api-provider-azure/tree/main/hack/debugging) that can help automate a few common tasks.

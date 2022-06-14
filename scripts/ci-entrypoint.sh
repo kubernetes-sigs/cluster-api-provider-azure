@@ -158,8 +158,12 @@ on_exit() {
         "${KUBECTL}" get nodes -owide || echo "Unable to get nodes"
         "${KUBECTL}" get pods -A -owide || echo "Unable to get pods"
     fi
+
+    # unset kubeconfig which is currently pointing at workload cluster.
+    # we want to be pointing at the management cluster (kind in this case)
     unset KUBECONFIG
-    "${REPO_ROOT}/hack/log/log-dump.sh" || true
+    go run -tags e2e "${REPO_ROOT}"/test/logger.go --name "${CLUSTER_NAME}" --namespace default
+    "${REPO_ROOT}/hack/log/redact.sh" || true
     # cleanup
     if [[ -z "${SKIP_CLEANUP:-}" ]]; then
         cleanup
