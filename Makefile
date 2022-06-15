@@ -122,7 +122,7 @@ ETCD=$(TOOLS_BIN_DIR)/etcd
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
 STAGING_REGISTRY := gcr.io/k8s-staging-cluster-api-azure
-PROD_REGISTRY := us.gcr.io/k8s-artifacts-prod/cluster-api-azure
+PROD_REGISTRY := registry.k8s.io/cluster-api-azure
 IMAGE_NAME ?= cluster-api-azure-controller
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
 TAG ?= dev

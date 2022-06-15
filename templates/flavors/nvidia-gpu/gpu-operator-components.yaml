@@ -103,7 +103,7 @@ spec:
               - ALL
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-          image: "k8s.gcr.io/nfd/node-feature-discovery:v0.10.1"
+          image: "registry.k8s.io/nfd/node-feature-discovery:v0.10.1"
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
@@ -492,7 +492,7 @@ spec:
               - ALL
             readOnlyRootFilesystem: true
             runAsNonRoot: true
-        image: "k8s.gcr.io/nfd/node-feature-discovery:v0.10.1"
+        image: "registry.k8s.io/nfd/node-feature-discovery:v0.10.1"
         imagePullPolicy: IfNotPresent
         env:
         - name: NODE_NAME
