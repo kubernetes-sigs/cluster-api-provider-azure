@@ -234,8 +234,8 @@ spec:
         marketplace:
           offer: capi
           publisher: cncf-upstream
-          sku: k8s-1dot18dot8-ubuntu-1804
-          version: 2020.08.17
+          sku: ubuntu-1804-gen1
+          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
