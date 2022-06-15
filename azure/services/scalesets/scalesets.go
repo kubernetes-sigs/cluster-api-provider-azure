@@ -485,10 +485,22 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 					ipconfigs := []compute.VirtualMachineScaleSetIPConfiguration{}
 					for j := range n.IPConfigs {
 						ipconfig := compute.VirtualMachineScaleSetIPConfiguration{
-							VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{},
+							Name: to.StringPtr(fmt.Sprintf("ipConfig%v", j)),
+							VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+								PrivateIPAddressVersion: compute.IPVersionIPv4,
+								Subnet: &compute.APIEntityReference{
+									ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
+								},
+							},
 						}
 						if j == 0 {
 							ipconfig.Primary = to.BoolPtr(true)
+							if i == 0 {
+								// only set Load Balancer Backend Address Pool on primary nic/ipconfig
+								ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
+							}
+						} else {
+							ipconfig.Primary = to.BoolPtr(false)
 						}
 						ipconfig.Subnet = &compute.APIEntityReference{
 							ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
