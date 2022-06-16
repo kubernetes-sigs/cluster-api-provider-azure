@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
@@ -41,10 +42,12 @@ func TestImageTooManyDetails(t *testing.T) {
 
 	image := &Image{
 		Marketplace: &AzureMarketplaceImage{
-			Offer:     "OFFER",
-			Publisher: "PUBLISHER",
-			SKU:       "SKU",
-			Version:   "1.0.0.",
+			ImagePlan: ImagePlan{
+				Offer:     "OFFER",
+				Publisher: "PUBLISHER",
+				SKU:       "SKU",
+			},
+			Version: "1.0.0.",
 		},
 		SharedGallery: &AzureSharedGalleryImage{
 			Gallery:        "GALLERY",
@@ -56,6 +59,36 @@ func TestImageTooManyDetails(t *testing.T) {
 	}
 
 	g.Expect(ValidateImage(image, field.NewPath("image"))).To(HaveLen(1))
+}
+
+func TestComputeImageGalleryValid(t *testing.T) {
+	g := NewWithT(t)
+
+	testCases := map[string]struct {
+		image          *Image
+		expectedErrors int
+	}{
+		"AzureComputeGalleryImage - fully specified community image": {
+			expectedErrors: 0,
+			image:          createTestComputeImage(nil, nil),
+		},
+		"AzureComputeGalleryImage - fully specified private image": {
+			expectedErrors: 0,
+			image:          createTestComputeImage(to.StringPtr("SUB1234"), to.StringPtr("RG1234")),
+		},
+		"AzureComputeGalleryImage - private image with missing subscription": {
+			expectedErrors: 1,
+			image:          createTestComputeImage(nil, to.StringPtr("RG1234")),
+		},
+		"AzureComputeGalleryImage - private image with missing resource group": {
+			expectedErrors: 1,
+			image:          createTestComputeImage(to.StringPtr("SUB1234"), nil),
+		},
+	}
+
+	for _, tc := range testCases {
+		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(HaveLen(tc.expectedErrors))
+	}
 }
 
 func TestSharedImageGalleryValid(t *testing.T) {
@@ -152,6 +185,18 @@ func TestImageByIDValid(t *testing.T) {
 	}
 }
 
+func createTestComputeImage(subscriptionID, resourceGroup *string) *Image {
+	return &Image{
+		ComputeGallery: &AzureComputeGalleryImage{
+			Name:           "IMAGENAME",
+			Gallery:        "GALLERY9876",
+			Version:        "1.0.0",
+			SubscriptionID: subscriptionID,
+			ResourceGroup:  resourceGroup,
+		},
+	}
+}
+
 func createTestSharedImage(subscriptionID, resourceGroup, name, gallery, version string) *Image {
 	return &Image{
 		SharedGallery: &AzureSharedGalleryImage{
@@ -167,10 +212,12 @@ func createTestSharedImage(subscriptionID, resourceGroup, name, gallery, version
 func createTestMarketPlaceImage(publisher, offer, sku, version string) *Image {
 	return &Image{
 		Marketplace: &AzureMarketplaceImage{
-			Publisher: publisher,
-			Offer:     offer,
-			SKU:       sku,
-			Version:   version,
+			ImagePlan: ImagePlan{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       sku,
+			},
+			Version: version,
 		},
 	}
 }

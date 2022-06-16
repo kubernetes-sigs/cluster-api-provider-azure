@@ -99,9 +99,11 @@ func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool
 	return infrav1.Image{
 		ID: sdkImageRef.ID,
 		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher:       to.String(sdkImageRef.Publisher),
-			Offer:           to.String(sdkImageRef.Offer),
-			SKU:             to.String(sdkImageRef.Sku),
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: to.String(sdkImageRef.Publisher),
+				Offer:     to.String(sdkImageRef.Offer),
+				SKU:       to.String(sdkImageRef.Sku),
+			},
 			Version:         to.String(sdkImageRef.Version),
 			ThirdPartyImage: isThirdPartyImage,
 		},

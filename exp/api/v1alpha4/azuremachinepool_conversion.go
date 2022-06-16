@@ -18,19 +18,43 @@ package v1alpha4
 
 import (
 	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).
 func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureMachinePool)
-	return Convert_v1alpha4_AzureMachinePool_To_v1beta1_AzureMachinePool(src, dst, nil)
+	if err := Convert_v1alpha4_AzureMachinePool_To_v1beta1_AzureMachinePool(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Manually restore data.
+	restored := &expv1beta1.AzureMachinePool{}
+	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
+		return err
+	}
+
+	if restored.Spec.Template.Image != nil && restored.Spec.Template.Image.ComputeGallery != nil {
+		dst.Spec.Template.Image.ComputeGallery = restored.Spec.Template.Image.ComputeGallery
+	}
+
+	if restored.Status.Image != nil && restored.Status.Image.ComputeGallery != nil {
+		dst.Status.Image.ComputeGallery = restored.Status.Image.ComputeGallery
+	}
+
+	return nil
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*expv1beta1.AzureMachinePool)
-	return Convert_v1beta1_AzureMachinePool_To_v1alpha4_AzureMachinePool(src, dst, nil)
+	if err := Convert_v1beta1_AzureMachinePool_To_v1alpha4_AzureMachinePool(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Preserve Hub data on down-conversion.
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).

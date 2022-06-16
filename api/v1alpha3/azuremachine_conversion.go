@@ -50,6 +50,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Image.SharedGallery.SKU = restored.Spec.Image.SharedGallery.SKU
 	}
 
+	if dst.Spec.Image != nil && restored.Spec.Image.ComputeGallery != nil {
+		dst.Spec.Image.ComputeGallery = restored.Spec.Image.ComputeGallery
+	}
+
 	dst.Spec.SubnetName = restored.Spec.SubnetName
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
@@ -143,4 +147,24 @@ func Convert_v1beta1_ManagedDiskParameters_To_v1alpha3_ManagedDisk(in *v1beta1.M
 	out.StorageAccountType = in.StorageAccountType
 	out.DiskEncryptionSet = (*DiskEncryptionSetParameters)(in.DiskEncryptionSet)
 	return nil
+}
+
+func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s apiconversion.Scope) error {
+	out.Offer = in.ImagePlan.Offer
+	out.Publisher = in.ImagePlan.Publisher
+	out.SKU = in.ImagePlan.SKU
+
+	return autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in, out, s)
+}
+
+func Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1beta1.AzureMarketplaceImage, s apiconversion.Scope) error {
+	out.ImagePlan.Offer = in.Offer
+	out.ImagePlan.Publisher = in.Publisher
+	out.ImagePlan.SKU = in.SKU
+
+	return autoConvert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in, out, s)
+}
+
+func Convert_v1beta1_Image_To_v1alpha3_Image(in *v1beta1.Image, out *Image, s apiconversion.Scope) error {
+	return autoConvert_v1beta1_Image_To_v1alpha3_Image(in, out, s)
 }
