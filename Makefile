@@ -333,7 +333,7 @@ delete-workload-cluster: ## Deletes the example workload Kubernetes cluster.
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites: ## Pull prerequisites for building controller-manager.
-	docker pull docker/dockerfile:1.1-experimental
+	docker pull docker/dockerfile:1.4
 	docker pull docker.io/library/golang:1.17
 	docker pull gcr.io/distroless/static:latest
 
