@@ -192,8 +192,8 @@ if [[ -n "${TEST_CCM:-}" ]]; then
 --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
 --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
 --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
---set cloudControllerManager.imageTag="${IMAGE_TAG}" \
---set cloudNodeManager.imageTag="${IMAGE_TAG}" \
+--set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
+--set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
 --set cloudControllerManager.replicas="${CCM_COUNT}"
 fi
 
