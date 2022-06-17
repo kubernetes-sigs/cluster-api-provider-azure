@@ -134,7 +134,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
-			t.Parallel()
+			// Don't add t.Parallel() here or the test will fail.
 			// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
 			// must prevent creating new objects in case the feature flag is disabled.
 			defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
