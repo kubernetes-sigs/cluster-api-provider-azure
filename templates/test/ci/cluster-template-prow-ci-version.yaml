@@ -155,7 +155,7 @@ spec:
             fi
             for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
               echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-              wget "$$CI_URL/$$CI_PACKAGE" -O "$$CI_DIR/$$CI_PACKAGE"
+              wget "$$CI_URL/$$CI_PACKAGE" -nv -O "$$CI_DIR/$$CI_PACKAGE"
               chmod +x "$$CI_DIR/$$CI_PACKAGE"
               mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
             done
@@ -328,7 +328,7 @@ spec:
               fi
               for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
                 echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-                wget "$$CI_URL/$$CI_PACKAGE" -O "$$CI_DIR/$$CI_PACKAGE"
+                wget "$$CI_URL/$$CI_PACKAGE" -nv -O "$$CI_DIR/$$CI_PACKAGE"
                 chmod +x "$$CI_DIR/$$CI_PACKAGE"
                 mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
               done
