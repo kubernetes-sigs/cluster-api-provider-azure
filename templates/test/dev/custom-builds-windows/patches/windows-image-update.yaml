@@ -12,5 +12,5 @@ spec:
         marketplace:
           publisher: cncf-upstream
           offer: capi-windows
-          sku: k8s-1dot18dot19-windows-2019
-          version: "2021.05.17"
+          sku: windows-2019-gen1
+          version: latest
