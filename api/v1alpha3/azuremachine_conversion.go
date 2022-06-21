@@ -54,6 +54,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Image.ComputeGallery = restored.Spec.Image.ComputeGallery
 	}
 
+	if restored.Spec.AdditionalCapabilities != nil {
+		dst.Spec.AdditionalCapabilities = restored.Spec.AdditionalCapabilities
+	}
+
 	dst.Spec.SubnetName = restored.Spec.SubnetName
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates

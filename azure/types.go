@@ -126,6 +126,7 @@ type ScaleSetSpec struct {
 	UserAssignedIdentities       []infrav1.UserAssignedIdentity
 	SecurityProfile              *infrav1.SecurityProfile
 	SpotVMOptions                *infrav1.SpotVMOptions
+	AdditionalCapabilities       *infrav1.AdditionalCapabilities
 	FailureDomains               []string
 }
 

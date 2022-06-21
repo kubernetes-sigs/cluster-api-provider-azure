@@ -86,6 +86,10 @@ type AzureMachineSpec struct {
 	// +optional
 	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
+	// AdditionalCapabilities specifies additional capabilities enabled or disabled on the virtual machine.
+	// +optional
+	AdditionalCapabilities *AdditionalCapabilities `json:"additionalCapabilities,omitempty"`
+
 	// AllocatePublicIP allows the ability to create dynamic public ips for machines where this value is true.
 	// +optional
 	AllocatePublicIP bool `json:"allocatePublicIP,omitempty"`
@@ -183,6 +187,15 @@ type AzureMachineStatus struct {
 	// next reconciliation loop.
 	// +optional
 	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
+}
+
+// AdditionalCapabilities enables or disables a capability on the virtual machine.
+type AdditionalCapabilities struct {
+	// UltraSSDEnabled enables or disables Azure UltraSSD capability for the virtual machine.
+	// Defaults to true if Ultra SSD data disks are specified,
+	// otherwise it doesn't set the capability on the VM.
+	// +optional
+	UltraSSDEnabled *bool `json:"ultraSSDEnabled,omitempty"`
 }
 
 // +kubebuilder:object:root=true

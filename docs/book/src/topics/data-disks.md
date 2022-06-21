@@ -31,6 +31,22 @@ To check all available vm-sizes in a given region which supports availability zo
 ```bash
 az vm list-skus -l <location> -z -s <VM-size>
 ```
+
+Provided that the chosen region and zone support Ultra disks, Azure Machine objects having Ultra disks specified as Data disks will have their virtual machines created with the `AdditionalCapabilities.UltraSSDEnabled` additional capability set to `true`. This capability can also be manually set on the Azure Machine spec and will override the automatically chosen value (if any).
+
+See [Ultra disk](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#ultra-disk) for ultra disk performance and GA scope.
+
+### Ultra disk support for Persistent Volumes
+First, to check all available vm-sizes in a given region which supports availability zone that has the `UltraSSDAvailable` capability supported, execute following using Azure CLI:
+```bash
+az vm list-skus -l <location> -z -s <VM-size>
+```
+
+Provided that the chosen region and zone support Ultra disks, Ultra disk based Persistent Volumes can be attached to Pods scheduled on specific Azure Machines, provided that the spec field `.spec.additionalCapabilities.ultraSSDEnabled` on those Machines has been set to `true`.
+NOTE: A misconfiguration or lack this field on the targeted Node's Machine will result in the Pod using the PV be unable to reach the Running Phase.
+
+See [Use ultra disks dynamically with a storage class](https://docs.microsoft.com/en-us/azure/aks/use-ultra-disks#use-ultra-disks-dynamically-with-a-storage-class) for more information on how to configure an Ultra disk based StorageClass and PersistentVolumeClaim.
+
 See [Ultra disk](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#ultra-disk) for ultra disk performance and GA scope.
 
 ## Configuring partitions, file systems and mounts 
