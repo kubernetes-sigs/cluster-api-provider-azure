@@ -917,6 +917,11 @@ func TestNSGSpecs(t *testing.T) {
 		{
 			name: "returns specified security groups if present",
 			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						ResourceGroup: "my-rg",
@@ -950,8 +955,10 @@ func TestNSGSpecs(t *testing.T) {
 							Name: "fake-rule-1",
 						},
 					},
-					ResourceGroup: "my-rg",
-					Location:      "centralIndia",
+					ResourceGroup:  "my-rg",
+					Location:       "centralIndia",
+					ClusterName:    "my-cluster",
+					AdditionalTags: make(infrav1.Tags),
 				},
 			},
 		},

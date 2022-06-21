@@ -80,6 +80,7 @@ func TestParameters(t *testing.T) {
 					otherRule,
 				},
 				ResourceGroup: "test-group",
+				ClusterName:   "my-cluster",
 			},
 			existing: network.SecurityGroup{
 				Name: to.StringPtr("test-nsg"),
@@ -104,6 +105,7 @@ func TestParameters(t *testing.T) {
 					otherRule,
 				},
 				ResourceGroup: "test-group",
+				ClusterName:   "my-cluster",
 			},
 			existing: network.SecurityGroup{
 				Name:     to.StringPtr("test-nsg"),
@@ -128,6 +130,10 @@ func TestParameters(t *testing.T) {
 							converters.SecurityRuleToSDK(otherRule),
 						},
 					},
+					Tags: map[string]*string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"Name": to.StringPtr("test-nsg"),
+					},
 				}))
 			},
 		},
@@ -141,6 +147,7 @@ func TestParameters(t *testing.T) {
 					otherRule,
 				},
 				ResourceGroup: "test-group",
+				ClusterName:   "my-cluster",
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
@@ -153,6 +160,10 @@ func TestParameters(t *testing.T) {
 						},
 					},
 					Location: to.StringPtr("test-location"),
+					Tags: map[string]*string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"Name": to.StringPtr("test-nsg"),
+					},
 				}))
 			},
 		},

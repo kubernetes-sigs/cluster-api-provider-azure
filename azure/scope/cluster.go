@@ -285,10 +285,12 @@ func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
 	nsgspecs := make([]azure.ResourceSpecGetter, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
 	for i, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		nsgspecs[i] = &securitygroups.NSGSpec{
-			Name:          subnet.SecurityGroup.Name,
-			SecurityRules: subnet.SecurityGroup.SecurityRules,
-			ResourceGroup: s.ResourceGroup(),
-			Location:      s.Location(),
+			Name:           subnet.SecurityGroup.Name,
+			SecurityRules:  subnet.SecurityGroup.SecurityRules,
+			ResourceGroup:  s.ResourceGroup(),
+			Location:       s.Location(),
+			ClusterName:    s.ClusterName(),
+			AdditionalTags: s.AdditionalTags(),
 		}
 	}
 
