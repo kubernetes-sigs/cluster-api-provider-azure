@@ -28,6 +28,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -135,6 +136,21 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			}),
 			wantErr: false,
 		},
+		{
+			name:    "azuremachinepool with valid legacy network configuration",
+			amp:     createMachinePoolWithNetworkConfig("testSubnet", []v1beta1.AzureNetworkInterface{}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with invalid legacy network configuration",
+			amp:     createMachinePoolWithNetworkConfig("testSubnet", []v1beta1.AzureNetworkInterface{{SubnetName: "testSubnet"}}),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachinepool with valid networkinterface configuration",
+			amp:     createMachinePoolWithNetworkConfig("", []v1beta1.AzureNetworkInterface{{SubnetName: "testSubnet"}}),
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -209,6 +225,24 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 				},
 			}),
 			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with valid network interface config",
+			oldAMP:  createMachinePoolWithNetworkConfig("", []v1beta1.AzureNetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("", []v1beta1.AzureNetworkInterface{{SubnetName: "testSubnet2"}}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with valid network interface config",
+			oldAMP:  createMachinePoolWithNetworkConfig("", []v1beta1.AzureNetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("subnet", []v1beta1.AzureNetworkInterface{{SubnetName: "testSubnet2"}}),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachinepool with valid network interface config",
+			oldAMP:  createMachinePoolWithNetworkConfig("subnet", []v1beta1.AzureNetworkInterface{}),
+			amp:     createMachinePoolWithNetworkConfig("subnet", []v1beta1.AzureNetworkInterface{{SubnetName: "testSubnet2"}}),
+			wantErr: true,
 		},
 	}
 	for _, tc := range tests {
@@ -298,6 +332,17 @@ func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, galle
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
+			},
+		},
+	}
+}
+
+func createMachinePoolWithNetworkConfig(subnetName string, interfaces []v1beta1.AzureNetworkInterface) *AzureMachinePool {
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				SubnetName:        subnetName,
+				NetworkInterfaces: interfaces,
 			},
 		},
 	}

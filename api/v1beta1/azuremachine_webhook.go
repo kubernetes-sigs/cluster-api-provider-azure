@@ -136,6 +136,20 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
+	if !reflect.DeepEqual(m.Spec.SubnetName, old.Spec.SubnetName) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "subnetName"),
+				m.Spec.SecurityProfile, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(m.Spec.NetworkInterfaces, old.Spec.NetworkInterfaces) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "networkInterfaces"),
+				m.Spec.SecurityProfile, "field is immutable"),
+		)
+	}
+
 	if len(allErrs) == 0 {
 		return nil
 	}

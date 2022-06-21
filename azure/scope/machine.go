@@ -283,11 +283,7 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 			IPConfigs:             []networkinterfaces.IPConfig{},
 		}
 
-		if n.SubnetName == "" {
-			spec.SubnetName = m.Subnet().Name
-		} else {
-			spec.SubnetName = n.SubnetName
-		}
+		spec.SubnetName = n.SubnetName
 
 		// Check for control plane interface setup on interface 0
 		if m.Role() == infrav1.ControlPlane && i == 0 {
