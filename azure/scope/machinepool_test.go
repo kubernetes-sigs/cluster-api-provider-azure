@@ -166,7 +166,7 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
 				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapInProgressReason))
 				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)
-				g.Expect(severity).ToNot(BeNil())
+				g.Expect(severity).NotTo(BeNil())
 				g.Expect(*severity).To(Equal(clusterv1.ConditionSeverityInfo))
 			},
 		},
@@ -180,7 +180,7 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
 				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapFailedReason))
 				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)
-				g.Expect(severity).ToNot(BeNil())
+				g.Expect(severity).NotTo(BeNil())
 				g.Expect(*severity).To(Equal(clusterv1.ConditionSeverityError))
 			},
 		},
