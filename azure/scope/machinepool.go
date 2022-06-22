@@ -128,6 +128,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		SpotVMOptions:                m.AzureMachinePool.Spec.Template.SpotVMOptions,
 		FailureDomains:               m.MachinePool.Spec.FailureDomains,
 		TerminateNotificationTimeout: m.AzureMachinePool.Spec.Template.TerminateNotificationTimeout,
+		NetworkInterfaces:            m.AzureMachinePool.Spec.Template.NetworkInterfaces,
 	}
 }
 

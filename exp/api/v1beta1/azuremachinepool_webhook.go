@@ -88,6 +88,7 @@ func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 		amp.ValidateUserAssignedIdentity,
 		amp.ValidateStrategy(),
 		amp.ValidateSystemAssignedIdentity(old),
+		amp.ValidateNetwork,
 	}
 
 	var errs []error
@@ -98,6 +99,13 @@ func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 	}
 
 	return kerrors.NewAggregate(errs)
+}
+
+func (amp *AzureMachinePool) ValidateNetwork() error {
+	if (amp.Spec.Template.NetworkInterfaces != nil) && len(amp.Spec.Template.NetworkInterfaces) > 0 && amp.Spec.Template.SubnetName != "" {
+		return errors.New("cannot set both NetworkInterfaces and machine SubnetName")
+	}
+	return nil
 }
 
 // ValidateImage of an AzureMachinePool.

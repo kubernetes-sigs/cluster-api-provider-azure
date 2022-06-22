@@ -97,6 +97,48 @@ func TestMachinePoolScope_Name(t *testing.T) {
 		})
 	}
 }
+func TestMachinePoolScope_MultipleInterfaces(t *testing.T) {
+	tests := []struct {
+		name             string
+		machinePoolScope MachinePoolScope
+		want             int
+	}{
+		{
+			name: "two network interfaces",
+			machinePoolScope: MachinePoolScope{
+				MachinePool: nil,
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "dual nics",
+					},
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							NetworkInterfaces: []infrav1.AzureNetworkInterface{
+								{
+									SubnetName: "control-plane-subnet",
+								},
+								{
+									SubnetName: "node-subnet",
+								},
+							},
+						},
+					},
+				},
+				ClusterScoper: nil,
+			},
+			want: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := len(tt.machinePoolScope.AzureMachinePool.Spec.Template.NetworkInterfaces)
+			if got != tt.want {
+				t.Errorf("MachinePoolScope.Name() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 	cases := []struct {
@@ -309,7 +351,6 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 	clusterMock.EXPECT().BaseURI().AnyTimes()
 	clusterMock.EXPECT().Location().AnyTimes()
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
-
 	cases := []struct {
 		Name   string
 		Setup  func(mp *clusterv1exp.MachinePool, amp *infrav1exp.AzureMachinePool)

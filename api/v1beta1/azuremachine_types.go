@@ -114,6 +114,8 @@ type AzureMachineSpec struct {
 	// SubnetName selects the Subnet where the VM will be placed
 	// +optional
 	SubnetName string `json:"subnetName,omitempty"`
+
+	NetworkInterfaces []AzureNetworkInterface `json:"networkInterfaces,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs.

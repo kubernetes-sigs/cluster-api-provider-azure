@@ -127,6 +127,7 @@ type ScaleSetSpec struct {
 	SecurityProfile              *infrav1.SecurityProfile
 	SpotVMOptions                *infrav1.SpotVMOptions
 	FailureDomains               []string
+	NetworkInterfaces            []infrav1.AzureNetworkInterface
 }
 
 // TagsSpec defines the specification for a set of tags.

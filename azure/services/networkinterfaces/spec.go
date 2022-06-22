@@ -17,6 +17,8 @@ limitations under the License.
 package networkinterfaces
 
 import (
+	"strconv"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -45,6 +47,14 @@ type NICSpec struct {
 	IPv6Enabled               bool
 	EnableIPForwarding        bool
 	SKU                       *resourceskus.SKU
+	IPConfigs                 []IPConfig
+	Primary                   *bool
+}
+
+type IPConfig struct {
+	PrivateIP       string
+	PublicIP        bool
+	PublicIPAddress string
 }
 
 // ResourceName returns the name of the network interface.
@@ -132,6 +142,34 @@ func (s *NICSpec) Parameters(existing interface{}) (parameters interface{}, err 
 		},
 	}
 
+	for i, c := range s.IPConfigs {
+		newIPConfigPropertiesFormat := &network.InterfaceIPConfigurationPropertiesFormat{}
+		newIPConfigPropertiesFormat.Subnet = subnet
+		config := network.InterfaceIPConfiguration{
+			Name:                                     to.StringPtr(s.Name + "-" + strconv.Itoa(i)),
+			InterfaceIPConfigurationPropertiesFormat: newIPConfigPropertiesFormat,
+		}
+		if c.PrivateIP == "" {
+			config.InterfaceIPConfigurationPropertiesFormat.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
+		} else {
+			config.InterfaceIPConfigurationPropertiesFormat.PrivateIPAllocationMethod = network.IPAllocationMethodStatic
+			config.InterfaceIPConfigurationPropertiesFormat.PrivateIPAddress = &c.PrivateIP
+		}
+
+		if c.PublicIP && c.PublicIPAddress == "" {
+			config.InterfaceIPConfigurationPropertiesFormat.PublicIPAddress = &network.PublicIPAddress{
+				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
+					IPAddress:                &c.PublicIPAddress,
+				}}
+		} else if c.PublicIP {
+			config.InterfaceIPConfigurationPropertiesFormat.PublicIPAddress = &network.PublicIPAddress{
+				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+					PublicIPAllocationMethod: network.IPAllocationMethodDynamic}}
+		}
+		config.InterfaceIPConfigurationPropertiesFormat.Primary = to.BoolPtr(false)
+		ipConfigurations = append(ipConfigurations, config)
+	}
 	if s.IPv6Enabled {
 		ipv6Config := network.InterfaceIPConfiguration{
 			Name: to.StringPtr("ipConfigv6"),
@@ -144,6 +182,7 @@ func (s *NICSpec) Parameters(existing interface{}) (parameters interface{}, err 
 
 		ipConfigurations = append(ipConfigurations, ipv6Config)
 	}
+	ipConfigurations[0].InterfaceIPConfigurationPropertiesFormat.Primary = to.BoolPtr(true)
 
 	return network.Interface{
 		Location: to.StringPtr(s.Location),

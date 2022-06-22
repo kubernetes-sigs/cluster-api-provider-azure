@@ -26,14 +26,19 @@ import (
 // ConvertTo converts this AzureMachineTemplate to the Hub version (v1beta1).
 func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.AzureMachineTemplate)
-	if err := Convert_v1alpha4_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(src, dst, nil); err != nil {
+
+	if err := autoConvert_v1alpha4_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(src, dst, nil); err != nil {
 		return err
 	}
 
-	// Restore missing fields from annotations
 	restored := &infrav1beta1.AzureMachineTemplate{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
+	}
+
+
+	if restored.Spec.Template.Spec.NetworkInterfaces != nil {
+		dst.Spec.Template.Spec.NetworkInterfaces = restored.Spec.Template.Spec.NetworkInterfaces
 	}
 
 	if dst.Spec.Template.Spec.Image != nil && restored.Spec.Template.Spec.Image.ComputeGallery != nil {

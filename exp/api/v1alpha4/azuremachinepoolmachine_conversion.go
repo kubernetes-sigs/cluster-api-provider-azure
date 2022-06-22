@@ -18,13 +18,23 @@ package v1alpha4
 
 import (
 	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this AzureMachinePoolMachine to the Hub version (v1beta1).
 func (src *AzureMachinePoolMachine) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureMachinePoolMachine)
-	return Convert_v1alpha4_AzureMachinePoolMachine_To_v1beta1_AzureMachinePoolMachine(src, dst, nil)
+	if err := Convert_v1alpha4_AzureMachinePoolMachine_To_v1beta1_AzureMachinePoolMachine(src, dst, nil); err != nil {
+		return err
+	}
+	restored := &expv1beta1.AzureMachinePoolMachine{}
+	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
+		return err
+	}
+	dst.Spec = restored.Spec
+
+	return nil
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.

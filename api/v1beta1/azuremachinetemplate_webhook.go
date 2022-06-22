@@ -57,6 +57,10 @@ func (r *AzureMachineTemplate) ValidateCreate() error {
 		)
 	}
 
+	if (r.Spec.Template.Spec.NetworkInterfaces != nil) && len(r.Spec.Template.Spec.NetworkInterfaces) > 0 && r.Spec.Template.Spec.SubnetName != "" {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces"), r.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine SubnetName"))
+	}
+
 	if len(allErrs) == 0 {
 		return nil
 	}

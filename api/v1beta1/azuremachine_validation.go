@@ -54,7 +54,18 @@ func ValidateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateNetwork(spec.SubnetName, spec.NetworkInterfaces, field.NewPath("networkInterfaces")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	return allErrs
+}
+
+func ValidateNetwork(subnetName string, networkInterfaces []AzureNetworkInterface, fldPath *field.Path) field.ErrorList {
+	if (networkInterfaces != nil) && len(networkInterfaces) > 0 && subnetName != "" {
+		return field.ErrorList{field.Invalid(fldPath, networkInterfaces, "cannot set both NetworkInterfaces and machine SubnetName")}
+	}
+	return field.ErrorList{}
 }
 
 // ValidateSSHKey validates an SSHKey.

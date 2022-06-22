@@ -36,10 +36,14 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		return err
 	}
 
+
+	if restored.Spec.NetworkInterfaces != nil {
+		dst.Spec.NetworkInterfaces = restored.Spec.NetworkInterfaces
+	}
+
 	if restored.Spec.Image != nil && restored.Spec.Image.ComputeGallery != nil {
 		dst.Spec.Image.ComputeGallery = restored.Spec.Image.ComputeGallery
 	}
-
 	return nil
 }
 
@@ -47,6 +51,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 func (dst *AzureMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.AzureMachine)
 	if err := Convert_v1beta1_AzureMachine_To_v1alpha4_AzureMachine(src, dst, nil); err != nil {
+		return err
+	}
+
+	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
 	}
 
@@ -64,6 +72,10 @@ func (src *AzureMachineList) ConvertTo(dstRaw conversion.Hub) error {
 func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.AzureMachineList)
 	return Convert_v1beta1_AzureMachineList_To_v1alpha4_AzureMachineList(src, dst, nil)
+}
+
+func Convert_v1beta1_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *v1beta1.AzureMachineSpec, out *AzureMachineSpec, s apiconversion.Scope) error {
+	return autoConvert_v1beta1_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in, out, s)
 }
 
 func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s apiconversion.Scope) error {

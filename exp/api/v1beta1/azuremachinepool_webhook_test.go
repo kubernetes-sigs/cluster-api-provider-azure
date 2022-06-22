@@ -142,6 +142,21 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			}),
 			wantErr: false,
 		},
+		{
+			name:    "azuremachinepool with valid legacy network configuration",
+			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1.AzureNetworkInterface{}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with invalid legacy network configuration",
+			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1.AzureNetworkInterface{{SubnetName: "testSubnet"}}),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachinepool with valid networkinterface configuration",
+			amp:     createMachinePoolWithNetworkConfig("", []infrav1.AzureNetworkInterface{{SubnetName: "testSubnet"}}),
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -220,6 +235,24 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 				},
 			}),
 			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with valid network interface config",
+			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1.AzureNetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("", []infrav1.AzureNetworkInterface{{SubnetName: "testSubnet2"}}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with valid network interface config",
+			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1.AzureNetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.AzureNetworkInterface{{SubnetName: "testSubnet2"}}),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachinepool with valid network interface config",
+			oldAMP:  createMachinePoolWithNetworkConfig("subnet", []infrav1.AzureNetworkInterface{}),
+			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.AzureNetworkInterface{{SubnetName: "testSubnet2"}}),
+			wantErr: true,
 		},
 	}
 	for _, tc := range tests {
@@ -315,6 +348,17 @@ func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, galle
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
+			},
+		},
+	}
+}
+
+func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.AzureNetworkInterface) *AzureMachinePool {
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				SubnetName:        subnetName,
+				NetworkInterfaces: interfaces,
 			},
 		},
 	}

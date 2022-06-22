@@ -50,6 +50,11 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Image.SharedGallery.SKU = restored.Spec.Image.SharedGallery.SKU
 	}
 
+
+	if restored.Spec.NetworkInterfaces != nil {
+		dst.Spec.NetworkInterfaces = restored.Spec.NetworkInterfaces
+  }
+
 	if dst.Spec.Image != nil && restored.Spec.Image.ComputeGallery != nil {
 		dst.Spec.Image.ComputeGallery = restored.Spec.Image.ComputeGallery
 	}

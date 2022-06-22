@@ -103,6 +103,21 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			machine: createMachineWithOsDiskCacheType("invalid_cache_type"),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachine with invalid network configuration",
+			machine: createrMachineWithNetworkConfig("subnet", []AzureNetworkInterface{{SubnetName: "subnet1"}}),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with valid legacy network configuration",
+			machine: createrMachineWithNetworkConfig("subnet", []AzureNetworkInterface{}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with valid network configuration",
+			machine: createrMachineWithNetworkConfig("", []AzureNetworkInterface{{SubnetName: "subnet"}}),
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -509,6 +524,62 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "invalidTest: azuremachine.spec.subnetName is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName: "subnet1",
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName: "subnet2",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.subnetName is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName: "subnet1",
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName: "subnet2",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.networkInterfaces is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					NetworkInterfaces: []AzureNetworkInterface{{SubnetName: "subnet"}},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					NetworkInterfaces: []AzureNetworkInterface{{SubnetName: "subnet"}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidtest: azuremachine.spec.networkInterfaces is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					NetworkInterfaces: []AzureNetworkInterface{{SubnetName: "subnet1"}},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					NetworkInterfaces: []AzureNetworkInterface{{SubnetName: "subnet2"}},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -547,6 +618,17 @@ func TestAzureMachine_Default(t *testing.T) {
 		cacheTypeSpecifiedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
 		cacheTypeSpecifiedTest.machine.Default()
 		g.Expect(cacheTypeSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal(string(possibleCachingType)))
+	}
+}
+
+func createrMachineWithNetworkConfig(subnetName string, interfaces []AzureNetworkInterface) *AzureMachine {
+	return &AzureMachine{
+		Spec: AzureMachineSpec{
+			SubnetName:        subnetName,
+			NetworkInterfaces: interfaces,
+			OSDisk:            validOSDisk,
+			SSHPublicKey:      validSSHPublicKey,
+		},
 	}
 }
 

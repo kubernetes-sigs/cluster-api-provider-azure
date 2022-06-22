@@ -87,6 +87,10 @@ type (
 		// SubnetName selects the Subnet where the VMSS will be placed
 		// +optional
 		SubnetName string `json:"subnetName,omitempty"`
+
+		// Network Interfaces to attach to the to a virtual machine
+		// +optional
+		NetworkInterfaces []infrav1.AzureNetworkInterface `json:"networkInterfaces,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.
