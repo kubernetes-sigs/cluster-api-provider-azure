@@ -301,7 +301,7 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 			params.AzureMachinePoolMachine = ampm
 			s, err := NewMachinePoolMachineScope(params)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(s).ToNot(BeNil())
+			g.Expect(s).NotTo(BeNil())
 			s.instance = instance
 			s.workloadNodeGetter = mockClient
 
