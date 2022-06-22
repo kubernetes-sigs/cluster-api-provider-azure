@@ -245,7 +245,7 @@ verify-tiltfile: ## Verify Tiltfile format.
 install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO)
 
 .PHONY: create-management-cluster
-create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a management cluster.
+create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) ## Create a management cluster.
 	# Create kind management cluster.
 	$(MAKE) kind-create
 
@@ -256,60 +256,60 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a management clust
 	./hack/create-identity-secret.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.4/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.4/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
-	$(KUSTOMIZE) build config/default | $(ENVSUBST) | kubectl apply -f -
+	$(KUSTOMIZE) build config/default | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Wait for CAPI deployments
-	kubectl wait --for=condition=Available --timeout=5m -n capi-system deployment -l cluster.x-k8s.io/provider=cluster-api
-	kubectl wait --for=condition=Available --timeout=5m -n capi-kubeadm-bootstrap-system deployment -l cluster.x-k8s.io/provider=bootstrap-kubeadm
-	kubectl wait --for=condition=Available --timeout=5m -n capi-kubeadm-control-plane-system deployment -l cluster.x-k8s.io/provider=control-plane-kubeadm
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-system deployment -l cluster.x-k8s.io/provider=cluster-api
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-kubeadm-bootstrap-system deployment -l cluster.x-k8s.io/provider=bootstrap-kubeadm
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-kubeadm-control-plane-system deployment -l cluster.x-k8s.io/provider=control-plane-kubeadm
 
 	# apply CNI ClusterResourceSets
 	source ./scripts/ci-configmap.sh
 
-	kubectl apply -f templates/addons/calico-resource-set.yaml
+	$(KUBECTL) apply -f templates/addons/calico-resource-set.yaml
 
 	# Wait for CAPZ deployments
-	kubectl wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
 
 	# required sleep for when creating management and workload cluster simultaneously
 	sleep 10
-	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-capz"'
+	@echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-capz"'
 
 .PHONY: create-workload-cluster
-create-workload-cluster: $(ENVSUBST) ## Create a workload cluster.
+create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	# Create workload Cluster.
 	@if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
-		$(ENVSUBST) < "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" | kubectl apply -f -; \
+		$(ENVSUBST) < "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" | $(KUBECTL) apply -f -; \
 	elif [ -f "$(CLUSTER_TEMPLATE)" ]; then \
-		$(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | kubectl apply -f -; \
+		$(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | $(KUBECTL) apply -f -; \
 	else \
-		curl --retry "$(CURL_RETRIES)" "$(CLUSTER_TEMPLATE)" | "$(ENVSUBST)" | kubectl apply -f -; \
+		curl --retry "$(CURL_RETRIES)" "$(CLUSTER_TEMPLATE)" | "$(ENVSUBST)" | $(KUBECTL) apply -f -; \
 	fi
 
 	# Wait for the kubeconfig to become available.
-	timeout --foreground 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
+	timeout --foreground 300 bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
-	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
+	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
+	timeout --foreground 600 bash -c "while ! $(KUBECTL) --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
 
-	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
+	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
 .PHONY: create-aks-cluster
-create-aks-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a aks cluster.
+create-aks-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) ## Create a aks cluster.
 	# Create managed Cluster.
-	$(ENVSUBST) < $(TEMPLATES_DIR)/$(MANAGED_CLUSTER_TEMPLATE) | kubectl apply -f -
+	$(ENVSUBST) < $(TEMPLATES_DIR)/$(MANAGED_CLUSTER_TEMPLATE) | $(KUBECTL) apply -f -
 
 	# Wait for the kubeconfig to become available.
-	timeout --foreground 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
+	timeout --foreground 300 bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
-	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
+	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
+	timeout --foreground 600 bash -c "while ! $(KUBECTL) --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
 
-	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
+	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
 
 .PHONY: create-cluster
@@ -321,9 +321,9 @@ create-cluster: ## Create a workload development Kubernetes cluster on Azure in 
 	create-workload-cluster
 
 .PHONY: delete-workload-cluster
-delete-workload-cluster: ## Deletes the example workload Kubernetes cluster.
+delete-workload-cluster: $(KUBECTL) ## Deletes the example workload Kubernetes cluster.
 	@echo 'Your Azure resources will now be deleted, this can take up to 20 minutes'
-	kubectl delete cluster $(CLUSTER_NAME)
+	$(KUBECTL) delete cluster $(CLUSTER_NAME)
 
 ## --------------------------------------
 ## Docker
