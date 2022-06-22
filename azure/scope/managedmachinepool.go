@@ -146,6 +146,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		SKU:           managedMachinePool.Spec.SKU,
 		Replicas:      replicas,
 		Version:       normalizedVersion,
+		OSType:        managedMachinePool.Spec.OSType,
 		VnetSubnetID: azure.SubnetID(
 			managedControlPlane.Spec.SubscriptionID,
 			managedControlPlane.Spec.ResourceGroupName,

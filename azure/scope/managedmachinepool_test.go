@@ -574,6 +574,18 @@ func getMachinePool(name string) *capiv1exp.MachinePool {
 	}
 }
 
+func getLinuxAzureMachinePool(name string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
+	managedPool.Spec.OSType = to.StringPtr(azure.LinuxOS)
+	return managedPool
+}
+
+func getWindowsAzureMachinePool(name string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
+	managedPool.Spec.OSType = to.StringPtr(azure.WindowsOS)
+	return managedPool
+}
+
 func getMachinePoolWithVersion(name, version string) *capiv1exp.MachinePool {
 	machine := getMachinePool(name)
 	machine.Spec.Template.Spec.Version = to.StringPtr(version)

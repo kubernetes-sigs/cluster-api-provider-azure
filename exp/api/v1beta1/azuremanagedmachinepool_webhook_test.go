@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -47,6 +48,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(val).To(Equal("System"))
 	g.Expect(*ammp.Spec.Name).To(Equal("fooName"))
+	g.Expect(*ammp.Spec.OSType).To(Equal(azure.LinuxOS))
 
 	t.Logf("Testing ammp defaulting webhook with empty string name specified in Spec")
 	emptyName := ""
@@ -506,6 +508,54 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					MaxPods: to.Int32Ptr(9),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "ostype Windows with System mode not allowed",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:   "System",
+					OSType: to.StringPtr(azure.WindowsOS),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "ostype windows with User mode",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:   "User",
+					OSType: to.StringPtr(azure.WindowsOS),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Windows clusters with 6char or less name",
+			ammp: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pool0",
+				},
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:   "User",
+					OSType: to.StringPtr(azure.WindowsOS),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Windows clusters with more than 6char names are not allowed",
+			ammp: &AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pool0-name-too-long",
+				},
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:   "User",
+					OSType: to.StringPtr(azure.WindowsOS),
 				},
 			},
 			wantErr:  true,

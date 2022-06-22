@@ -19,6 +19,7 @@ package v1beta1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 )
@@ -32,6 +33,9 @@ const (
 
 	// NodePoolModeUser represents mode user for azuremachinepool.
 	NodePoolModeUser NodePoolMode = "User"
+
+	// DefaultOSType represents the default operating system for azmachinepool.
+	DefaultOSType string = azure.LinuxOS
 )
 
 // NodePoolMode enumerates the values for agent pool mode.
@@ -89,6 +93,11 @@ type AzureManagedMachinePoolSpec struct {
 	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
 	// +optional
 	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
+
+	// OSType specifies the virtual machine operating system. Default to Linux. Possible values include: 'Linux', 'Windows'
+	// +kubebuilder:validation:Enum=Linux;Windows
+	// +optional
+	OSType *string `json:"osType,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.
