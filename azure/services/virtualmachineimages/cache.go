@@ -61,7 +61,7 @@ func newCache(auth azure.Authorizer) *Cache {
 	}
 }
 
-// GetCache either creates a new VM images cache or returns an existing one.
+// GetCache either creates a new VM images cache or returns the existing one.
 func GetCache(auth azure.Authorizer) (*Cache, error) {
 	var err error
 	doOnce.Do(func() {
