@@ -32,6 +32,25 @@ func Test_ImageToPlan(t *testing.T) {
 		expect func(*GomegaWithT, *compute.Plan)
 	}{
 		{
+			name: "Should return a plan for a Community Gallery image with plan details",
+			image: &infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Plan: &infrav1.ImagePlan{
+						Publisher: "my-publisher",
+						Offer:     "my-offer",
+						SKU:       "my-sku",
+					},
+				},
+			},
+			expect: func(g *GomegaWithT, result *compute.Plan) {
+				g.Expect(result).To(Equal(&compute.Plan{
+					Name:      to.StringPtr("my-sku"),
+					Publisher: to.StringPtr("my-publisher"),
+					Product:   to.StringPtr("my-offer"),
+				}))
+			},
+		},
+		{
 			name: "Should return a plan for a SIG image with plan details",
 			image: &infrav1.Image{
 				SharedGallery: &infrav1.AzureSharedGalleryImage{
@@ -72,9 +91,11 @@ func Test_ImageToPlan(t *testing.T) {
 			name: "Should return nil for a Marketplace first party image",
 			image: &infrav1.Image{
 				Marketplace: &infrav1.AzureMarketplaceImage{
-					Publisher:       "my-publisher",
-					Offer:           "my-offer",
-					SKU:             "my-sku",
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "my-publisher",
+						Offer:     "my-offer",
+						SKU:       "my-sku",
+					},
 					Version:         "v0.5.0",
 					ThirdPartyImage: false,
 				},
@@ -87,9 +108,11 @@ func Test_ImageToPlan(t *testing.T) {
 			name: "Should return a plan for a Marketplace third party image",
 			image: &infrav1.Image{
 				Marketplace: &infrav1.AzureMarketplaceImage{
-					Publisher:       "my-publisher",
-					Offer:           "my-offer",
-					SKU:             "my-sku",
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "my-publisher",
+						Offer:     "my-offer",
+						SKU:       "my-sku",
+					},
 					Version:         "v0.5.0",
 					ThirdPartyImage: true,
 				},

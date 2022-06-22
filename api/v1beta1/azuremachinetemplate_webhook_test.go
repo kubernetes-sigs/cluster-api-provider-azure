@@ -36,14 +36,14 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 		{
 			name: "azuremachinetemplate with marketplane image - full",
 			machineTemplate: createAzureMachineTemplateFromMachine(
-				createMachineWithtMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0"),
+				createMachineWithMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0"),
 			),
 			wantErr: false,
 		},
 		{
 			name: "azuremachinetemplate with marketplace image - missing publisher",
 			machineTemplate: createAzureMachineTemplateFromMachine(
-				createMachineWithtMarketPlaceImage("", "OFFER1234", "SKU1234", "1.0.0"),
+				createMachineWithMarketPlaceImage("", "OFFER1234", "SKU1234", "1.0.0"),
 			),
 			wantErr: true,
 		},

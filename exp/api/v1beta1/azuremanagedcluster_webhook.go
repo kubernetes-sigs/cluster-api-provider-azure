@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -47,6 +48,15 @@ func (r *AzureManagedCluster) ValidateCreate() error {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) error {
+	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the web hook
+	// must prevent creating new objects new case the feature flag is disabled.
+	if !feature.Gates.Enabled(feature.AKS) {
+		return field.Forbidden(
+			field.NewPath("spec"),
+			"can be set only if the AKS feature flag is enabled",
+		)
+	}
+
 	old := oldRaw.(*AzureManagedCluster)
 	var allErrs field.ErrorList
 

@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha4
 
 import (
-	machineryConversion "k8s.io/apimachinery/pkg/conversion"
+	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -26,18 +26,23 @@ import (
 // ConvertTo converts this AzureMachine to the Hub version (v1beta1).
 func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta1.AzureMachine)
-
-	if err := autoConvert_v1alpha4_AzureMachine_To_v1beta1_AzureMachine(src, dst, nil); err != nil {
+	if err := Convert_v1alpha4_AzureMachine_To_v1beta1_AzureMachine(src, dst, nil); err != nil {
 		return err
 	}
 
+	// Manually restore data from annotations
 	restored := &v1beta1.AzureMachine{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
 
+
 	if restored.Spec.NetworkInterfaces != nil {
 		dst.Spec.NetworkInterfaces = restored.Spec.NetworkInterfaces
+	}
+
+	if restored.Spec.Image != nil && restored.Spec.Image.ComputeGallery != nil {
+		dst.Spec.Image.ComputeGallery = restored.Spec.Image.ComputeGallery
 	}
 	return nil
 }
@@ -48,10 +53,13 @@ func (dst *AzureMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	if err := Convert_v1beta1_AzureMachine_To_v1alpha4_AzureMachine(src, dst, nil); err != nil {
 		return err
 	}
+
 	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
 	}
-	return nil
+
+	// Preserve Hub data on down-conversion.
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureMachineList to the Hub version (v1beta1).
@@ -66,6 +74,26 @@ func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error {
 	return Convert_v1beta1_AzureMachineList_To_v1alpha4_AzureMachineList(src, dst, nil)
 }
 
-func Convert_v1beta1_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *v1beta1.AzureMachineSpec, out *AzureMachineSpec, s machineryConversion.Scope) error {
+func Convert_v1beta1_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *v1beta1.AzureMachineSpec, out *AzureMachineSpec, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in, out, s)
+}
+
+func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s apiconversion.Scope) error {
+	out.Offer = in.ImagePlan.Offer
+	out.Publisher = in.ImagePlan.Publisher
+	out.SKU = in.ImagePlan.SKU
+
+	return autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in, out, s)
+}
+
+func Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1beta1.AzureMarketplaceImage, s apiconversion.Scope) error {
+	out.ImagePlan.Offer = in.Offer
+	out.ImagePlan.Publisher = in.Publisher
+	out.ImagePlan.SKU = in.SKU
+
+	return autoConvert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in, out, s)
+}
+
+func Convert_v1beta1_Image_To_v1alpha4_Image(in *v1beta1.Image, out *Image, s apiconversion.Scope) error {
+	return autoConvert_v1beta1_Image_To_v1alpha4_Image(in, out, s)
 }

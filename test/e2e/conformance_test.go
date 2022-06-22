@@ -203,10 +203,11 @@ var _ = Describe("Conformance Tests", func() {
 			err = node.TaintNode(workloadProxy.GetClientSet(), options, noScheduleTaint)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Windows requires a repo-list because some images are not in k8s gcr
+			// Windows requires a repo-list when running e2e tests against K8s versions prior to v1.25
+			// because some test images published to the k8s gcr do not have Windows flavors.
 			repoList, err = resolveKubetestRepoListPath(kubernetesVersion, kubetestRepoListPath)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Fprintf(GinkgoWriter, "INFO: Using repo-list %s for version %s\n", repoList, kubernetesVersion)
+			fmt.Fprintf(GinkgoWriter, "INFO: Using repo-list '%s' for version '%s'\n", repoList, kubernetesVersion)
 		}
 
 		ginkgoNodes, err := strconv.Atoi(e2eConfig.GetVariable("CONFORMANCE_NODES"))

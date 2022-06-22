@@ -12,5 +12,5 @@ spec:
         marketplace:
           publisher: cncf-upstream
           offer: capi-windows
-          sku: k8s-1dot23dot3-windows-2022-containerd
+          sku: windows-2022-containerd-gen1
           version: "latest"

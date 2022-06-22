@@ -27,7 +27,7 @@ patches:
     kind: KubeadmConfigTemplate
     name: .*-md-win
     namespace: default
-  path: patches/kubeadm-bootstrap-windows.yaml
+  path: patches/kubeadm-bootstrap-windows-k8s-ci-binaries.yaml
 - target:
     group: controlplane.cluster.x-k8s.io
     version: v1beta1

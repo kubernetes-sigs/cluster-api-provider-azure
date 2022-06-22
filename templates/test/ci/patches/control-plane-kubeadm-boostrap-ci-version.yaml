@@ -8,7 +8,7 @@
       set -o pipefail
       set -o errexit
       [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
-      
+
       # This test installs release packages or binaries that are a result of the CI and release builds.
       # It runs '... --version' commands to verify that the binaries are correctly installed
       # and finally uninstalls the packages.
@@ -43,19 +43,12 @@
           fi
           for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
             echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-            wget "$$CI_URL/$$CI_PACKAGE" -O "$$CI_DIR/$$CI_PACKAGE"
+            wget "$$CI_URL/$$CI_PACKAGE" -nv -O "$$CI_DIR/$$CI_PACKAGE"
             chmod +x "$$CI_DIR/$$CI_PACKAGE"
             mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
           done
           systemctl restart kubelet
         fi
-        for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
-          echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
-          wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
-          $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
-          $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-          $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-        done
       fi
       echo "* checking binary versions"
       echo "ctr version: " $(ctr version)

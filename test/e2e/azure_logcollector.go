@@ -58,7 +58,7 @@ var _ framework.ClusterLogCollector = &AzureLogCollector{}
 
 // CollectMachineLog collects logs from a machine.
 func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
-	var errors []error
+	var errs []error
 
 	am, err := getAzureMachine(ctx, managementClusterClient, m)
 	if err != nil {
@@ -73,19 +73,19 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClus
 	hostname := getHostname(m, isAzureMachineWindows(am))
 
 	if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isAzureMachineWindows(am), outputPath); err != nil {
-		errors = append(errors, err)
+		errs = append(errs, err)
 	}
 
 	if err := collectVMBootLog(ctx, am, outputPath); err != nil {
-		errors = append(errors, err)
+		errs = append(errs, errors.Wrap(err, "Unable to collect VM Boot Diagnostic logs"))
 	}
 
-	return kinderrors.NewAggregate(errors)
+	return kinderrors.NewAggregate(errs)
 }
 
 // CollectMachinePoolLog collects logs from a machine pool.
 func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
-	var errors []error
+	var errs []error
 	var isWindows bool
 
 	am, err := getAzureMachinePool(ctx, managementClusterClient, mp)
@@ -112,11 +112,11 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 			hostname := mp.Status.NodeRefs[i].Name
 
 			if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
-				errors = append(errors, err)
+				errs = append(errs, err)
 			}
 
 			if err := collectVMSSBootLog(ctx, instance, filepath.Join(outputPath, hostname)); err != nil {
-				errors = append(errors, err)
+				errs = append(errs, errors.Wrap(err, "Unable to collect VMSS Boot Diagnostic logs"))
 			}
 		} else {
 			Logf("MachinePool instance %s does not have a corresponding NodeRef", instance)
@@ -124,7 +124,7 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 		}
 	}
 
-	return kinderrors.NewAggregate(errors)
+	return kinderrors.NewAggregate(errs)
 }
 
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
@@ -174,6 +174,17 @@ func getHostname(m *clusterv1.Machine, isWindows bool) string {
 		}
 	}
 	return hostname
+}
+
+func getAzureCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*v1beta1.AzureCluster, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}
+
+	azCluster := &v1beta1.AzureCluster{}
+	err := managementClusterClient.Get(context.TODO(), key, azCluster)
+	return azCluster, err
 }
 
 func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*v1beta1.AzureMachine, error) {
@@ -348,6 +359,10 @@ func windowsNetworkLogs(execToPathFn func(outputFileName string, command string,
 // collectVMBootLog collects boot logs of the vm by using azure boot diagnostics.
 func collectVMBootLog(ctx context.Context, am *v1beta1.AzureMachine, outputPath string) error {
 	Logf("Collecting boot logs for AzureMachine %s\n", am.GetName())
+
+	if am == nil || am.Spec.ProviderID == nil {
+		return errors.New("AzureMachine provider ID is nil")
+	}
 
 	resourceId := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
 	resource, err := autorest.ParseResourceID(resourceId)

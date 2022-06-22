@@ -96,7 +96,7 @@ KPROMO_VER := v3.3.0-beta.3
 KPROMO_BIN := kpromo
 KPROMO := $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER)
 
-GO_APIDIFF_VER := v0.1.0
+GO_APIDIFF_VER := v0.4.0
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
@@ -122,7 +122,7 @@ ETCD=$(TOOLS_BIN_DIR)/etcd
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
 STAGING_REGISTRY := gcr.io/k8s-staging-cluster-api-azure
-PROD_REGISTRY := us.gcr.io/k8s-artifacts-prod/cluster-api-azure
+PROD_REGISTRY := registry.k8s.io/cluster-api-azure
 IMAGE_NAME ?= cluster-api-azure-controller
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
 TAG ?= dev
@@ -333,7 +333,7 @@ delete-workload-cluster: ## Deletes the example workload Kubernetes cluster.
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites: ## Pull prerequisites for building controller-manager.
-	docker pull docker/dockerfile:1.1-experimental
+	docker pull docker/dockerfile:1.4
 	docker pull docker.io/library/golang:1.17
 	docker pull gcr.io/distroless/static:latest
 

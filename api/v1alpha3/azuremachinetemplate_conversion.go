@@ -52,6 +52,9 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 
 	if restored.Spec.Template.Spec.NetworkInterfaces != nil {
 		dst.Spec.Template.Spec.NetworkInterfaces = restored.Spec.Template.Spec.NetworkInterfaces
+  }
+	if dst.Spec.Template.Spec.Image != nil && restored.Spec.Template.Spec.Image.ComputeGallery != nil {
+		dst.Spec.Template.Spec.Image.ComputeGallery = restored.Spec.Template.Spec.Image.ComputeGallery
 	}
 
 	dst.Spec.Template.Spec.SubnetName = restored.Spec.Template.Spec.SubnetName

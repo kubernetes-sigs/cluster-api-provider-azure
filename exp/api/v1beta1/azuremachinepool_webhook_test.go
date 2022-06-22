@@ -28,7 +28,10 @@ import (
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	utilfeature "k8s.io/component-base/featuregate/testing"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 )
 
 var (
@@ -36,6 +39,10 @@ var (
 )
 
 func TestAzureMachinePool_ValidateCreate(t *testing.T) {
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
+
 	g := NewWithT(t)
 
 	var (
@@ -50,12 +57,12 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	}{
 		{
 			name:    "azuremachinepool with marketplace image - full",
-			amp:     createMachinePoolWithtMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with marketplace image - missing publisher",
-			amp:     createMachinePoolWithtMarketPlaceImage("", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithMarketPlaceImage("", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
 			wantErr: true,
 		},
 		{
@@ -164,6 +171,10 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 }
 
 func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
+
 	g := NewWithT(t)
 
 	var (
@@ -257,6 +268,10 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 }
 
 func TestAzureMachinePool_Default(t *testing.T) {
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
+
 	g := NewWithT(t)
 
 	type test struct {
@@ -293,13 +308,15 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
 }
 
-func createMachinePoolWithtMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
+func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
 	image := infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: publisher,
-			Offer:     offer,
-			SKU:       sku,
-			Version:   version,
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       sku,
+			},
+			Version: version,
 		},
 	}
 

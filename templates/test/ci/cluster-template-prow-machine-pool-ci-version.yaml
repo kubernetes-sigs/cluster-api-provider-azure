@@ -153,19 +153,12 @@ spec:
             fi
             for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
               echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-              wget "$$CI_URL/$$CI_PACKAGE" -O "$$CI_DIR/$$CI_PACKAGE"
+              wget "$$CI_URL/$$CI_PACKAGE" -nv -O "$$CI_DIR/$$CI_PACKAGE"
               chmod +x "$$CI_DIR/$$CI_PACKAGE"
               mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
             done
             systemctl restart kubelet
           fi
-          for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
-            echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
-            wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
-            $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
-            $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-            $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-          done
         fi
         echo "* checking binary versions"
         echo "ctr version: " $(ctr version)
@@ -221,8 +214,8 @@ spec:
         marketplace:
           offer: capi
           publisher: cncf-upstream
-          sku: k8s-1dot18dot8-ubuntu-1804
-          version: 2020.08.17
+          sku: ubuntu-1804-gen1
+          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -269,8 +262,8 @@ spec:
       marketplace:
         offer: capi
         publisher: cncf-upstream
-        sku: k8s-1dot18dot8-ubuntu-1804
-        version: 2020.08.17
+        sku: ubuntu-1804-gen1
+        version: latest
     osDisk:
       diskSizeGB: 30
       managedDisk:
@@ -328,19 +321,12 @@ spec:
           fi
           for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
             echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-            wget "$$CI_URL/$$CI_PACKAGE" -O "$$CI_DIR/$$CI_PACKAGE"
+            wget "$$CI_URL/$$CI_PACKAGE" -nv -O "$$CI_DIR/$$CI_PACKAGE"
             chmod +x "$$CI_DIR/$$CI_PACKAGE"
             mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
           done
           systemctl restart kubelet
         fi
-        for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
-          echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
-          wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
-          $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
-          $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-          $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-        done
       fi
       echo "* checking binary versions"
       echo "ctr version: " $(ctr version)
@@ -420,8 +406,8 @@ spec:
       marketplace:
         offer: capi-windows
         publisher: cncf-upstream
-        sku: k8s-1dot23dot1-windows-2019-containerd
-        version: 2021.12.16
+        sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
+        version: latest
     osDisk:
       diskSizeGB: 30
       managedDisk:
@@ -448,6 +434,8 @@ spec:
     path: C:/defender-exclude-calico.ps1
     permissions: "0744"
   - content: |
+      $ErrorActionPreference = 'Stop'
+
       Stop-Service kubelet -Force
 
       $$CI_VERSION="${CI_VERSION}"

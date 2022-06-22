@@ -21,8 +21,11 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/onsi/gomega"
+	utilfeature "k8s.io/component-base/featuregate/testing"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 )
 
 func TestAzureMachinePool_Validate(t *testing.T) {
@@ -76,7 +79,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			},
 			Expect: func(g *gomega.GomegaWithT, actual error) {
 				g.Expect(actual).To(gomega.HaveOccurred())
-				g.Expect(actual.Error()).To(gomega.ContainSubstring("You must supply a ID, Marketplace or SharedGallery image details"))
+				g.Expect(actual.Error()).To(gomega.ContainSubstring("You must supply an ID, Marketplace or ComputeGallery image details"))
 			},
 		},
 		{
@@ -131,7 +134,10 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
-			t.Parallel()
+			// Don't add t.Parallel() here or the test will fail.
+			// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+			// must prevent creating new objects in case the feature flag is disabled.
+			defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 			g := gomega.NewGomegaWithT(t)
 			amp := c.Factory(g)
 			actualErr := amp.Validate(nil)

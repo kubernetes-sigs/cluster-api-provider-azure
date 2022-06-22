@@ -212,16 +212,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*AzureMarketplaceImage)(nil), (*v1beta1.AzureMarketplaceImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(a.(*AzureMarketplaceImage), b.(*v1beta1.AzureMarketplaceImage), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureMarketplaceImage)(nil), (*AzureMarketplaceImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(a.(*v1beta1.AzureMarketplaceImage), b.(*AzureMarketplaceImage), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*AzureSharedGalleryImage)(nil), (*v1beta1.AzureSharedGalleryImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_AzureSharedGalleryImage_To_v1beta1_AzureSharedGalleryImage(a.(*AzureSharedGalleryImage), b.(*v1beta1.AzureSharedGalleryImage), scope)
 	}); err != nil {
@@ -314,11 +304,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*Image)(nil), (*v1beta1.Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_Image_To_v1beta1_Image(a.(*Image), b.(*v1beta1.Image), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.Image)(nil), (*Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_Image_To_v1alpha4_Image(a.(*v1beta1.Image), b.(*Image), scope)
 	}); err != nil {
 		return err
 	}
@@ -427,6 +412,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*AzureMarketplaceImage)(nil), (*v1beta1.AzureMarketplaceImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(a.(*AzureMarketplaceImage), b.(*v1beta1.AzureMarketplaceImage), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*FrontendIP)(nil), (*v1beta1.FrontendIP)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_FrontendIP_To_v1beta1_FrontendIP(a.(*FrontendIP), b.(*v1beta1.FrontendIP), scope)
 	}); err != nil {
@@ -477,8 +467,18 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*v1beta1.AzureMarketplaceImage)(nil), (*AzureMarketplaceImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(a.(*v1beta1.AzureMarketplaceImage), b.(*AzureMarketplaceImage), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*v1beta1.FrontendIP)(nil), (*FrontendIP)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_FrontendIP_To_v1alpha4_FrontendIP(a.(*v1beta1.FrontendIP), b.(*FrontendIP), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta1.Image)(nil), (*Image)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_Image_To_v1alpha4_Image(a.(*v1beta1.Image), b.(*Image), scope)
 	}); err != nil {
 		return err
 	}
@@ -992,7 +992,15 @@ func autoConvert_v1alpha4_AzureMachineSpec_To_v1beta1_AzureMachineSpec(in *Azure
 	out.ProviderID = (*string)(unsafe.Pointer(in.ProviderID))
 	out.VMSize = in.VMSize
 	out.FailureDomain = (*string)(unsafe.Pointer(in.FailureDomain))
-	out.Image = (*v1beta1.Image)(unsafe.Pointer(in.Image))
+	if in.Image != nil {
+		in, out := &in.Image, &out.Image
+		*out = new(v1beta1.Image)
+		if err := Convert_v1alpha4_Image_To_v1beta1_Image(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Image = nil
+	}
 	out.Identity = v1beta1.VMIdentity(in.Identity)
 	out.UserAssignedIdentities = *(*[]v1beta1.UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
 	out.RoleAssignmentName = in.RoleAssignmentName
@@ -1020,7 +1028,15 @@ func autoConvert_v1beta1_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *v1bet
 	out.ProviderID = (*string)(unsafe.Pointer(in.ProviderID))
 	out.VMSize = in.VMSize
 	out.FailureDomain = (*string)(unsafe.Pointer(in.FailureDomain))
-	out.Image = (*Image)(unsafe.Pointer(in.Image))
+	if in.Image != nil {
+		in, out := &in.Image, &out.Image
+		*out = new(Image)
+		if err := Convert_v1beta1_Image_To_v1alpha4_Image(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Image = nil
+	}
 	out.Identity = VMIdentity(in.Identity)
 	out.UserAssignedIdentities = *(*[]UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
 	out.RoleAssignmentName = in.RoleAssignmentName
@@ -1205,31 +1221,19 @@ func Convert_v1beta1_AzureMachineTemplateSpec_To_v1alpha4_AzureMachineTemplateSp
 }
 
 func autoConvert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1beta1.AzureMarketplaceImage, s conversion.Scope) error {
-	out.Publisher = in.Publisher
-	out.Offer = in.Offer
-	out.SKU = in.SKU
+	// WARNING: in.Publisher requires manual conversion: does not exist in peer-type
+	// WARNING: in.Offer requires manual conversion: does not exist in peer-type
+	// WARNING: in.SKU requires manual conversion: does not exist in peer-type
 	out.Version = in.Version
 	out.ThirdPartyImage = in.ThirdPartyImage
 	return nil
-}
-
-// Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *v1beta1.AzureMarketplaceImage, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in, out, s)
 }
 
 func autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s conversion.Scope) error {
-	out.Publisher = in.Publisher
-	out.Offer = in.Offer
-	out.SKU = in.SKU
+	// WARNING: in.ImagePlan requires manual conversion: does not exist in peer-type
 	out.Version = in.Version
 	out.ThirdPartyImage = in.ThirdPartyImage
 	return nil
-}
-
-// Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage is an autogenerated conversion function.
-func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in *v1beta1.AzureMarketplaceImage, out *AzureMarketplaceImage, s conversion.Scope) error {
-	return autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in, out, s)
 }
 
 func autoConvert_v1alpha4_AzureSharedGalleryImage_To_v1beta1_AzureSharedGalleryImage(in *AzureSharedGalleryImage, out *v1beta1.AzureSharedGalleryImage, s conversion.Scope) error {
@@ -1499,7 +1503,15 @@ func Convert_v1beta1_Future_To_v1alpha4_Future(in *v1beta1.Future, out *Future, 
 func autoConvert_v1alpha4_Image_To_v1beta1_Image(in *Image, out *v1beta1.Image, s conversion.Scope) error {
 	out.ID = (*string)(unsafe.Pointer(in.ID))
 	out.SharedGallery = (*v1beta1.AzureSharedGalleryImage)(unsafe.Pointer(in.SharedGallery))
-	out.Marketplace = (*v1beta1.AzureMarketplaceImage)(unsafe.Pointer(in.Marketplace))
+	if in.Marketplace != nil {
+		in, out := &in.Marketplace, &out.Marketplace
+		*out = new(v1beta1.AzureMarketplaceImage)
+		if err := Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Marketplace = nil
+	}
 	return nil
 }
 
@@ -1511,13 +1523,17 @@ func Convert_v1alpha4_Image_To_v1beta1_Image(in *Image, out *v1beta1.Image, s co
 func autoConvert_v1beta1_Image_To_v1alpha4_Image(in *v1beta1.Image, out *Image, s conversion.Scope) error {
 	out.ID = (*string)(unsafe.Pointer(in.ID))
 	out.SharedGallery = (*AzureSharedGalleryImage)(unsafe.Pointer(in.SharedGallery))
-	out.Marketplace = (*AzureMarketplaceImage)(unsafe.Pointer(in.Marketplace))
+	if in.Marketplace != nil {
+		in, out := &in.Marketplace, &out.Marketplace
+		*out = new(AzureMarketplaceImage)
+		if err := Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Marketplace = nil
+	}
+	// WARNING: in.ComputeGallery requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta1_Image_To_v1alpha4_Image is an autogenerated conversion function.
-func Convert_v1beta1_Image_To_v1alpha4_Image(in *v1beta1.Image, out *Image, s conversion.Scope) error {
-	return autoConvert_v1beta1_Image_To_v1alpha4_Image(in, out, s)
 }
 
 func autoConvert_v1alpha4_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *LoadBalancerSpec, out *v1beta1.LoadBalancerSpec, s conversion.Scope) error {

@@ -34,8 +34,9 @@ import (
 
 var (
 	fakeNSG = NSGSpec{
-		Name:     "test-nsg",
-		Location: "test-location",
+		Name:        "test-nsg",
+		Location:    "test-location",
+		ClusterName: "my-cluster",
 		SecurityRules: infrav1.SecurityRules{
 			{
 				Name:             "allow_ssh",
@@ -65,6 +66,7 @@ var (
 	fakeNSG2 = NSGSpec{
 		Name:          "test-nsg-2",
 		Location:      "test-location",
+		ClusterName:   "my-cluster",
 		SecurityRules: infrav1.SecurityRules{},
 		ResourceGroup: "test-group",
 	}

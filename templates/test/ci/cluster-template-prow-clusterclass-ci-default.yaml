@@ -1,0 +1,598 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ci-default
+  namespace: default
+spec:
+  controlPlane:
+    machineInfrastructure:
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: ci-default-control-plane
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: KubeadmControlPlaneTemplate
+      name: ci-default-kubeadm-control-plane
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureClusterTemplate
+      name: ci-default-azure-cluster
+  patches:
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs
+        valueFrom:
+          template: |
+            feature-gates: {{ .k8sFeatureGates }}
+      selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: KubeadmControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+    enabledIf: '{{ if .k8sFeatureGates }}true{{end}}'
+    name: k8sFeatureGates
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/cluster-name
+        valueFrom:
+          variable: builtin.cluster.name
+      - op: replace
+        path: /spec/template/spec/kubeadmConfigSpec/files
+        valueFrom:
+          template: |
+            - contentFrom:
+                secret:
+                  key: control-plane-azure.json
+                  name: "{{ .builtin.controlPlane.machineTemplate.infrastructureRef.name }}-azure-json"
+              owner: root:root
+              path: /etc/kubernetes/azure.json
+              permissions: "0644"
+      selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: KubeadmControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+    name: controlPlaneAzureJsonSecretName
+  - definitions:
+    - jsonPatches:
+      - op: replace
+        path: /spec/template/spec/files
+        valueFrom:
+          template: |
+            - contentFrom:
+                secret:
+                  key: worker-node-azure.json
+                  name: "{{ .builtin.machineDeployment.infrastructureRef.name }}-azure-json"
+              owner: root:root
+              path: /etc/kubernetes/azure.json
+              permissions: "0644"
+      selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: KubeadmConfigTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ci-default-worker
+    name: workerAzureJsonSecretName
+  - definitions:
+    - jsonPatches:
+      - op: replace
+        path: /spec/template/spec/files
+        valueFrom:
+          template: |
+            - contentFrom:
+                secret:
+                  key: worker-node-azure.json
+                  name: "{{ .builtin.machineDeployment.infrastructureRef.name }}-azure-json"
+              owner: root:root
+              path: c:/k/azure.json
+              permissions: "0644"
+            - path: C:/defender-exclude-calico.ps1
+              permissions: "0744"
+              content: |-
+                Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+                Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
+      selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: KubeadmConfigTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ci-default-worker-win
+    name: workerAzureJsonSecretNameWin
+  - definitions:
+    - jsonPatches:
+      - op: replace
+        path: /spec/template/spec/additionalTags
+        valueFrom:
+          template: |
+            buildProvenance: {{ .buildProvenance }}
+            creationTimestamp: {{ .timestamp }}
+            jobName: {{ .jobName }}
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: additionalTags
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/identityRef/name
+        valueFrom:
+          variable: clusterIdentityRef
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: clusterIdentityRef
+  - definitions:
+    - jsonPatches:
+      - op: replace
+        path: /spec/template/spec/location
+        valueFrom:
+          variable: location
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: location
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/subscriptionID
+        valueFrom:
+          variable: subscriptionID
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: subscriptionID
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/v
+        valueFrom:
+          variable: logLevel
+      selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: KubeadmControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+    name: logLevel
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/vmSize
+        valueFrom:
+          variable: controlPlaneMachineType
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        matchResources:
+          controlPlane: true
+    name: controlPlaneMachineType
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/vmSize
+        valueFrom:
+          variable: workerMachineType
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ci-default-worker
+    name: workerMachineType
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/vmSize
+        valueFrom:
+          variable: workerMachineTypeWin
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ci-default-worker-win
+    name: workerMachineTypeWin
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/sshPublicKey
+        valueFrom:
+          variable: sshPublicKey
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ci-default-worker
+            - ci-default-worker-win
+    name: sshPublicKey
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/users
+        valueFrom:
+          template: |
+            - name: capi
+              groups: Administrators
+              sshAuthorizedKeys:
+                - {{ .sshPublicKey }}
+      selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: KubeadmConfigTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ci-default-worker-win
+    name: sshPublicKeyWin
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/files/-
+        valueFrom:
+          template: |
+            content: |
+              # /tmp is assumed created and required for upstream e2e tests to pass
+              New-Item -ItemType Directory -Force -Path C:\tmp\
+            path: C:/create-temp-folder.ps1
+            permissions: "0744"
+      - op: add
+        path: /spec/template/spec/preKubeadmCommands
+        valueFrom:
+          template: |
+            - "powershell C:/create-temp-folder.ps1"
+      selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: KubeadmConfigTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ci-default-worker-win
+    name: tmpFolder
+  variables:
+  - name: k8sFeatureGates
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: buildProvenance
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: timestamp
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: jobName
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: clusterIdentityRef
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: location
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: subscriptionID
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: logLevel
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: controlPlaneMachineType
+    required: false
+    schema:
+      openAPIV3Schema:
+        default: Standard_D2s_v3
+        type: string
+  - name: workerMachineType
+    required: false
+    schema:
+      openAPIV3Schema:
+        default: Standard_D2s_v3
+        type: string
+  - name: workerMachineTypeWin
+    required: false
+    schema:
+      openAPIV3Schema:
+        default: Standard_D2s_v3
+        type: string
+  - name: sshPublicKey
+    required: true
+    schema:
+      openAPIV3Schema:
+        default: ""
+        type: string
+  workers:
+    machineDeployments:
+    - class: ci-default-worker
+      machineHealthCheck:
+        maxUnhealthy: 100%
+        unhealthyConditions:
+        - status: "True"
+          timeout: 30s
+          type: E2ENodeUnhealthy
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ci-default-worker
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            name: ci-default-worker
+    - class: ci-default-worker-win
+      machineHealthCheck:
+        maxUnhealthy: 100%
+        unhealthyConditions:
+        - status: "True"
+          timeout: 30s
+          type: E2ENodeUnhealthy
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ci-default-worker-win
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            name: ci-default-worker-win
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlaneTemplate
+metadata:
+  name: ci-default-kubeadm-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      kubeadmConfigSpec:
+        clusterConfiguration:
+          apiServer:
+            extraArgs:
+              cloud-config: /etc/kubernetes/azure.json
+              cloud-provider: azure
+            extraVolumes:
+            - hostPath: /etc/kubernetes/azure.json
+              mountPath: /etc/kubernetes/azure.json
+              name: cloud-config
+              readOnly: true
+            timeoutForControlPlane: 20m
+          controllerManager:
+            extraArgs:
+              allocate-node-cidrs: "false"
+              cloud-config: /etc/kubernetes/azure.json
+              cloud-provider: azure
+            extraVolumes:
+            - hostPath: /etc/kubernetes/azure.json
+              mountPath: /etc/kubernetes/azure.json
+              name: cloud-config
+              readOnly: true
+          etcd:
+            local:
+              dataDir: /var/lib/etcddisk/etcd
+              extraArgs:
+                quota-backend-bytes: "8589934592"
+        diskSetup:
+          filesystems:
+          - device: /dev/disk/azure/scsi1/lun0
+            extraOpts:
+            - -E
+            - lazy_itable_init=1,lazy_journal_init=1
+            filesystem: ext4
+            label: etcd_disk
+          - device: ephemeral0.1
+            filesystem: ext4
+            label: ephemeral0
+            replaceFS: ntfs
+          partitions:
+          - device: /dev/disk/azure/scsi1/lun0
+            layout: true
+            overwrite: false
+            tableType: gpt
+        files:
+        - contentFrom:
+            secret:
+              key: control-plane-azure.json
+              name: replace_me
+          owner: root:root
+          path: /etc/kubernetes/azure.json
+          permissions: "0644"
+        initConfiguration:
+          nodeRegistration:
+            kubeletExtraArgs:
+              azure-container-registry-config: /etc/kubernetes/azure.json
+              cloud-config: /etc/kubernetes/azure.json
+              cloud-provider: azure
+            name: '{{ ds.meta_data["local_hostname"] }}'
+        joinConfiguration:
+          nodeRegistration:
+            kubeletExtraArgs:
+              azure-container-registry-config: /etc/kubernetes/azure.json
+              cloud-config: /etc/kubernetes/azure.json
+              cloud-provider: azure
+            name: '{{ ds.meta_data["local_hostname"] }}'
+        mounts:
+        - - LABEL=etcd_disk
+          - /var/lib/etcddisk
+        postKubeadmCommands: []
+        preKubeadmCommands: []
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterTemplate
+metadata:
+  name: ci-default-azure-cluster
+  namespace: default
+spec:
+  template:
+    spec:
+      additionalTags:
+        replace_me_key: replace_me_val
+      identityRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterIdentity
+      location: replace_me
+      networkSpec:
+        subnets:
+        - role: control-plane
+        - natGateway:
+            name: node-natgateway
+          role: node
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ci-default-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ""
+      vmSize: replace_me
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ci-default-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: replace_me
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      preKubeadmCommands: []
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ci-default-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ""
+      vmSize: replace_me
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ci-default-worker-win
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: replace_me
+        owner: root:root
+        path: c:/k/azure.json
+        permissions: "0644"
+      - content: |-
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
+        path: C:/defender-exclude-calico.ps1
+        permissions: "0744"
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: npipe:////./pipe/containerd-containerd
+          kubeletExtraArgs:
+            azure-container-registry-config: c:/k/azure.json
+            cloud-config: c:/k/azure.json
+            cloud-provider: azure
+            feature-gates: WindowsHostProcessContainers=true
+            v: "2"
+            windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - nssm set kubelet start SERVICE_AUTO_START
+      - powershell C:/defender-exclude-calico.ps1
+      preKubeadmCommands: []
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  annotations:
+    runtime: containerd
+  name: ci-default-worker-win
+  namespace: default
+spec:
+  template:
+    spec:
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Windows
+      sshPublicKey: ""
+      vmSize: replace_me
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal

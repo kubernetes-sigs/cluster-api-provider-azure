@@ -19,6 +19,9 @@ package v1beta1
 import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
@@ -41,6 +44,15 @@ func (ampm *AzureMachinePoolMachine) ValidateCreate() error {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (ampm *AzureMachinePoolMachine) ValidateUpdate(old runtime.Object) error {
+	// NOTE: AzureMachinePoolMachine is behind MachinePool feature gate flag; the web hook
+	// must prevent creating new objects new case the feature flag is disabled.
+	if !feature.Gates.Enabled(capifeature.MachinePool) {
+		return field.Forbidden(
+			field.NewPath("spec"),
+			"can be set only if the MachinePool feature flag is enabled",
+		)
+	}
+
 	oldMachine, ok := old.(*AzureMachinePoolMachine)
 	if !ok {
 		return errors.New("expected and AzureMachinePoolMachine")

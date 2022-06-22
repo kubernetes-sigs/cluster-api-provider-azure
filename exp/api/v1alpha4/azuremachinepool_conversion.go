@@ -26,18 +26,30 @@ import (
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).
 func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*expv1beta1.AzureMachinePool)
-	if err := autoConvert_v1alpha4_AzureMachinePool_To_v1beta1_AzureMachinePool(src, dst, nil); err != nil {
+
+	if err := Convert_v1alpha4_AzureMachinePool_To_v1beta1_AzureMachinePool(src, dst, nil); err != nil {
 		return err
 	}
 
+	// Manually restore data.
 	restored := &expv1beta1.AzureMachinePool{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
 
+
 	if restored.Spec.Template.NetworkInterfaces != nil {
 		dst.Spec.Template.NetworkInterfaces = restored.Spec.Template.NetworkInterfaces
 	}
+
+	if restored.Spec.Template.Image != nil && restored.Spec.Template.Image.ComputeGallery != nil {
+		dst.Spec.Template.Image.ComputeGallery = restored.Spec.Template.Image.ComputeGallery
+	}
+
+	if restored.Status.Image != nil && restored.Status.Image.ComputeGallery != nil {
+		dst.Status.Image.ComputeGallery = restored.Status.Image.ComputeGallery
+	}
+
 	return nil
 }
 
@@ -47,10 +59,13 @@ func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	if err := Convert_v1beta1_AzureMachinePool_To_v1alpha4_AzureMachinePool(src, dst, nil); err != nil {
 		return err
 	}
+
 	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
 	}
-	return nil
+
+	// Preserve Hub data on down-conversion.
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).

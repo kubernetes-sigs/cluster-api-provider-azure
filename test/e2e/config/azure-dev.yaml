@@ -3,11 +3,11 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
-  - name: k8s.gcr.io/cluster-api/cluster-api-controller:v1.1.4
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.1.4
     loadBehavior: tryLoad
-  - name: k8s.gcr.io/cluster-api/kubeadm-bootstrap-controller:v1.1.4
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.1.4
     loadBehavior: tryLoad
-  - name: k8s.gcr.io/cluster-api/kubeadm-control-plane-controller:v1.1.4
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.1.4
     loadBehavior: tryLoad
 
 providers:
@@ -171,6 +171,10 @@ providers:
         targetName: "cluster-template-custom-vnet.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-dual-stack.yaml"
         targetName: "cluster-template-dual-stack.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-clusterclass-ci-default.yaml"
+        targetName: "clusterclass-ci-default.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-topology.yaml"
+        targetName: "cluster-template-topology.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
@@ -187,6 +191,7 @@ variables:
   EXP_AKS: "true"
   EXP_MACHINE_POOL: "true"
   EXP_CLUSTER_RESOURCE_SET: "true"
+  CLUSTER_TOPOLOGY: "true"
   CONFORMANCE_WORKER_MACHINE_COUNT: "2"
   CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT: "${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT:-1}"
   CONFORMANCE_IMAGE: "${CONFORMANCE_IMAGE:-}"

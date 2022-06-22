@@ -2,6 +2,8 @@
   path: /spec/files/-
   value:
     content: |
+      $ErrorActionPreference = 'Stop'
+
       Stop-Service kubelet -Force
 
       $$CI_VERSION="${CI_VERSION}"

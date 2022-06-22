@@ -242,9 +242,11 @@ func (s *ClusterScope) RouteTableSpecs() []azure.ResourceSpecGetter {
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		if subnet.RouteTable.Name != "" {
 			specs = append(specs, &routetables.RouteTableSpec{
-				Name:          subnet.RouteTable.Name,
-				Location:      s.Location(),
-				ResourceGroup: s.ResourceGroup(),
+				Name:           subnet.RouteTable.Name,
+				Location:       s.Location(),
+				ResourceGroup:  s.ResourceGroup(),
+				ClusterName:    s.ClusterName(),
+				AdditionalTags: s.AdditionalTags(),
 			})
 		}
 	}
@@ -283,10 +285,12 @@ func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
 	nsgspecs := make([]azure.ResourceSpecGetter, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
 	for i, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		nsgspecs[i] = &securitygroups.NSGSpec{
-			Name:          subnet.SecurityGroup.Name,
-			SecurityRules: subnet.SecurityGroup.SecurityRules,
-			ResourceGroup: s.ResourceGroup(),
-			Location:      s.Location(),
+			Name:           subnet.SecurityGroup.Name,
+			SecurityRules:  subnet.SecurityGroup.SecurityRules,
+			ResourceGroup:  s.ResourceGroup(),
+			Location:       s.Location(),
+			ClusterName:    s.ClusterName(),
+			AdditionalTags: s.AdditionalTags(),
 		}
 	}
 

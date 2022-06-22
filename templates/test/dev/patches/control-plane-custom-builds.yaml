@@ -33,12 +33,12 @@ spec:
         systemctl restart kubelet
 
         # prepull images from gcr.io/k8s-staging-ci-images and retag it to
-        # k8s.gcr.io so kubeadm can fetch correct images no matter what
+        # registry.k8s.io so kubeadm can fetch correct images no matter what
         declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
         [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
         for IMAGE in "$${IMAGES[@]}"; do
           $${SUDO} ctr -n k8s.io images pull "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}"
-          $${SUDO} ctr -n k8s.io images tag "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}" "k8s.gcr.io/$${IMAGE}:${CI_VERSION/+/_}"
+          $${SUDO} ctr -n k8s.io images tag "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}" "registry.k8s.io/$${IMAGE}:${CI_VERSION/+/_}"
         done
 
         echo "kubeadm version: $(kubeadm version -o=short)"
@@ -79,10 +79,10 @@ spec:
   template:
     spec:
       image:
-        # we use the 1.18.8 image as a workaround there is no published marketplace image for k8s CI versions.
-        # 1.18.8 binaries and images will get replaced to the desired version by the script above.
+        # we use the latest image as a workaround there is no published marketplace image for k8s CI versions.
+        # latest binaries and images will get replaced to the desired version by the script above.
         marketplace:
           publisher: cncf-upstream
           offer: capi
-          sku: k8s-1dot18dot8-ubuntu-1804
-          version: "2020.08.17"
+          sku: ubuntu-1804-gen1
+          version: latest
