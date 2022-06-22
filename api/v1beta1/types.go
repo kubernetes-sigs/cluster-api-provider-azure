@@ -280,6 +280,16 @@ type PublicIPSpec struct {
 	Name string `json:"name"`
 	// +optional
 	DNSName string `json:"dnsName,omitempty"`
+	// +optional
+	IPTags []IPTag `json:"ipTags,omitempty"`
+}
+
+// IPTag contains the IpTag associated with the object.
+type IPTag struct {
+	// Type specifies the IP tag type. Example: FirstPartyUsage.
+	Type string `json:"type"`
+	// Tag specifies the value of the IP tag associated with the public IP. Example: SQL.
+	Tag string `json:"tag"`
 }
 
 // VMState describes the state of an Azure virtual machine.

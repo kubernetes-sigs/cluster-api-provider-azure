@@ -143,6 +143,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 				Location:       s.Location(),
 				FailureDomains: s.FailureDomains(),
 				AdditionalTags: s.AdditionalTags(),
+				IPTags:         s.APIServerPublicIP().IPTags,
 			},
 		}
 	}
@@ -167,6 +168,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 				Location:       s.Location(),
 				FailureDomains: s.FailureDomains(),
 				AdditionalTags: s.AdditionalTags(),
+				IPTags:         subnet.NatGateway.NatGatewayIP.IPTags,
 			})
 		}
 		publicIPSpecs = append(publicIPSpecs, nodeNatGatewayIPSpecs...)
@@ -183,6 +185,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 			Location:       s.Location(),
 			FailureDomains: s.FailureDomains(),
 			AdditionalTags: s.AdditionalTags(),
+			IPTags:         azureBastion.PublicIP.IPTags,
 		}
 		publicIPSpecs = append(publicIPSpecs, azureBastionPublicIP)
 	}
