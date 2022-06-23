@@ -255,6 +255,9 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) ## Create a management clust
 	# Create secret for AzureClusterIdentity
 	./hack/create-identity-secret.sh
 
+	# Create customized cloud provider configs
+	./hack/create-custom-cloud-provider-config.sh
+
 	# Deploy CAPI
 	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.4/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
