@@ -52,7 +52,7 @@ func (s *Service) GetDefaultUbuntuImage(ctx context.Context, location, k8sVersio
 
 	osVersion := getUbuntuOSVersion(v.Major, v.Minor, v.Patch)
 	publisher, offer := azure.DefaultImagePublisherID, azure.DefaultImageOfferID
-	skuID, version, err := s.getDefaultImageSKUIDAndVersion(
+	skuID, version, err := s.getSKUAndVersion(
 		ctx, location, publisher, offer, k8sVersion, fmt.Sprintf("ubuntu-%s", osVersion))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get default image")
@@ -95,7 +95,7 @@ func (s *Service) GetDefaultWindowsImage(ctx context.Context, location, k8sVersi
 	}
 
 	publisher, offer := azure.DefaultImagePublisherID, azure.DefaultWindowsImageOfferID
-	skuID, version, err := s.getDefaultImageSKUIDAndVersion(
+	skuID, version, err := s.getSKUAndVersion(
 		ctx, location, publisher, offer, k8sVersion, osAndVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get default image")
@@ -115,11 +115,13 @@ func (s *Service) GetDefaultWindowsImage(ctx context.Context, location, k8sVersi
 	return defaultImage, nil
 }
 
-// GetDefaultImageSKUID gets the SKU ID and version of the image to use for the provided version of Kubernetes.
+// getSKUAndVersion gets the SKU ID and version of the image to use for the provided version of Kubernetes.
 // note: osAndVersion is expected to be in the format of {os}-{version} (ex: ubuntu-2004 or windows-2022)
-func (s *Service) getDefaultImageSKUIDAndVersion(ctx context.Context, location, publisher, offer, k8sVersion, osAndVersion string) (string, string, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.AzureClient.getDefaultImageSKUIDAndVersion")
+func (s *Service) getSKUAndVersion(ctx context.Context, location, publisher, offer, k8sVersion, osAndVersion string) (string, string, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Service.getSKUAndVersion")
 	defer done()
+
+	log.Info("Getting VM image SKU and version", "location", location, "publisher", publisher, "offer", offer, "k8sVersion", k8sVersion, "osAndVersion", osAndVersion)
 
 	v, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
@@ -170,6 +172,8 @@ func (s *Service) getDefaultImageSKUIDAndVersion(ctx context.Context, location, 
 	if version == "" {
 		return "", "", errors.Errorf("no VM image found for publisher \"%s\" offer \"%s\" sku \"%s\" with Kubernetes version \"%s\"", publisher, offer, sku, k8sVersion)
 	}
+
+	log.Info("Found VM image SKU and version", "location", location, "publisher", publisher, "offer", offer, "sku", sku, "version", version)
 
 	return sku, version, nil
 }
