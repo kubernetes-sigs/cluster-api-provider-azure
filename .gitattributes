@@ -1,2 +1,4 @@
 # Specify generated cluster templates as generated files
 **/cluster-template-*.yaml linguist-generated
+
+*.sh text eol=lf
