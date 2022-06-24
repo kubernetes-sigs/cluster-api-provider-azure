@@ -421,16 +421,17 @@ spec:
                 type: object
               resourceID:
                 description: ResourceID is the Azure resource ID for the User Assigned
-                  MSI resource. Not currently supported.
+                  MSI resource. Only applicable when type is UserAssignedMSI.
                 type: string
               tenantID:
                 description: TenantID is the service principal primary tenant id.
                 type: string
               type:
                 description: Type is the type of Azure Identity used. ServicePrincipal,
-                  ServicePrincipalCertificate, or ManualServicePrincipal.
+                  ServicePrincipalCertificate, UserAssignedMSI or ManualServicePrincipal.
                 enum:
                 - ServicePrincipal
+                - UserAssignedMSI
                 - ManualServicePrincipal
                 - ServicePrincipalCertificate
                 type: string

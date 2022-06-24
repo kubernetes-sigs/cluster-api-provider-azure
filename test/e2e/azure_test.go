@@ -133,6 +133,10 @@ var _ = Describe("Workload cluster creation", func() {
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 		Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
 		Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
+		Expect(os.Unsetenv(ClusterIdentityName)).To(Succeed())
+		Expect(os.Unsetenv(ClusterIdentityNamespace)).To(Succeed())
+		Expect(os.Unsetenv(ClusterIdentitySecretName)).To(Succeed())
+		Expect(os.Unsetenv(ClusterIdentitySecretNamespace)).To(Succeed())
 
 		Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
 		Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
@@ -141,6 +145,8 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	if os.Getenv("LOCAL_ONLY") != "true" {
+		// This spec expects a user-assigned identity with Contributor role assignment named "cloud-provider-user-identity" in a "capz-ci"
+		// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
 		Context("Creating a private cluster [REQUIRED]", func() {
 			It("Creates a public management cluster in a custom vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
