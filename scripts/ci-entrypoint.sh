@@ -26,15 +26,14 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
 HELM="${REPO_ROOT}/hack/tools/bin/helm"
-cd "${REPO_ROOT}" && make "${KUBECTL##*/}"; make "${HELM##*/}"
+KIND="${REPO_ROOT}/hack/tools/bin/kind"
+make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${HELM##*/}" "${KIND##*/}"
 # export the variables so they are available in bash -c wait_for_nodes below
 export KUBECTL
 export HELM
 
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=hack/ensure-kind.sh
-source "${REPO_ROOT}/hack/ensure-kind.sh"
 # shellcheck source=hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 # shellcheck source=hack/ensure-tags.sh

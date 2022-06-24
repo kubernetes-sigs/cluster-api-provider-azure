@@ -3,6 +3,7 @@
 envsubst_cmd = "./hack/tools/bin/envsubst"
 kubectl_cmd = "./hack/tools/bin/kubectl"
 helm_cmd = "./hack/tools/bin/helm"
+kind_cmd = "./hack/tools/bin/kind"
 tools_bin = "./hack/tools/bin"
 
 #Add tools to path
@@ -145,7 +146,7 @@ def observability():
         ],
     ))
 
-    internal_kubeconfig = str(local("kind get kubeconfig --name ${KIND_CLUSTER_NAME:-capz} --internal"))
+    internal_kubeconfig = str(local(kind_cmd + " get kubeconfig --name ${KIND_CLUSTER_NAME:-capz} --internal"))
     k8s_yaml(helm(
         "./hack/observability/cluster-api-visualizer/chart",
         name = "visualize-cluster",
