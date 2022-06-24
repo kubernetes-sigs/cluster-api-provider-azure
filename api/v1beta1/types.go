@@ -582,10 +582,25 @@ type SubnetSpec struct {
 // Network Interfaces to attach to each VM
 // +optional
 type AzureNetworkInterface struct {
-	SubnetName            string          `json:"subnetName,omitempty"`
-	IPConfigs             []AzureIPConfig `json:"ipConfigs,omitempty"`
-	AcceleratedNetworking *bool           `json:"acceleratedNetworking,omitempty"`
-	ID                    string          `json:"id,omitempty"`
+	// The subnet to place the interface in
+	SubnetName string `json:"subnetName,omitempty"`
+
+	// Number of private IP address to attach to the interface
+	// +optional
+	PrivateIPConfigs int `json:"privateIPConfigs,omitempty"`
+
+	// Number of public IP addresses to attach to the interface
+	// +optional
+
+	PublicIPConfigs int `json:"publicIPConfigs,omitempty"`
+
+	// Enable acccelerated networking on the interface
+	// +optional
+	AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
+
+	// Attach an already provisioned interface by ID
+	// +optional
+	ID string `json:"id,omitempty"`
 }
 
 // IP Configuration defines options to confiure a network interface.

@@ -224,45 +224,7 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 	nicSpecs := []azure.ResourceSpecGetter{}
 
 	if len(m.AzureMachine.Spec.NetworkInterfaces) < 1 {
-		spec := &networkinterfaces.NICSpec{
-			Name:                  azure.GenerateNICName(m.Name()),
-			ResourceGroup:         m.ResourceGroup(),
-			Location:              m.Location(),
-			SubscriptionID:        m.SubscriptionID(),
-			MachineName:           m.Name(),
-			VNetName:              m.Vnet().Name,
-			VNetResourceGroup:     m.Vnet().ResourceGroup,
-			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
-			IPv6Enabled:           m.IsIPv6Enabled(),
-			EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
-			SubnetName:            m.Subnet().Name,
-		}
-		if m.Role() == infrav1.ControlPlane {
-			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-			if m.IsAPIServerPrivate() {
-				spec.InternalLBName = m.APIServerLBName()
-				spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
-			} else {
-				spec.PublicLBNATRuleName = m.Name()
-				spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
-			}
-		}
-
-		// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
-		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
-			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-		}
-
-		if m.cache != nil {
-			spec.SKU = &m.cache.VMSKU
-		}
-
-		if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
-			spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
-		}
-		return append(nicSpecs, spec)
+		return append(nicSpecs, getDefaultNetworkInterfaceSpec(m))
 	}
 
 	for i, n := range m.AzureMachine.Spec.NetworkInterfaces {
@@ -313,13 +275,16 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 			spec.SKU = &m.cache.VMSKU
 		}
 
-		for _, c := range n.IPConfigs {
-			config := networkinterfaces.IPConfig{
-				PublicIP:        c.PublicIP,
-				PrivateIP:       c.PrivateIP,
-				PublicIPAddress: c.PublicIPAddress,
+		// Create an IPconfig for both public + private IP pair
+		if n.PrivateIPConfigs >= n.PublicIPConfigs {
+			for i := 0; i < n.PublicIPConfigs; i++ {
+				spec.IPConfigs = append(spec.IPConfigs, networkinterfaces.IPConfig{PublicIP: true})
 			}
-			spec.IPConfigs = append(spec.IPConfigs, config)
+		}
+
+		// Create any remaining private IPConfigs
+		for i := 0; i < n.PrivateIPConfigs-n.PublicIPConfigs; i++ {
+			spec.IPConfigs = append(spec.IPConfigs, networkinterfaces.IPConfig{})
 		}
 		nicSpecs = append(nicSpecs, spec)
 	}
@@ -339,6 +304,47 @@ func (m *MachineScope) NICIDs() []string {
 		}
 	}
 	return nicIDs
+}
+func getDefaultNetworkInterfaceSpec(m *MachineScope) *networkinterfaces.NICSpec {
+	spec := &networkinterfaces.NICSpec{
+		Name:                  azure.GenerateNICName(m.Name()),
+		ResourceGroup:         m.ResourceGroup(),
+		Location:              m.Location(),
+		SubscriptionID:        m.SubscriptionID(),
+		MachineName:           m.Name(),
+		VNetName:              m.Vnet().Name,
+		VNetResourceGroup:     m.Vnet().ResourceGroup,
+		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+		IPv6Enabled:           m.IsIPv6Enabled(),
+		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
+		SubnetName:            m.Subnet().Name,
+	}
+	if m.Role() == infrav1.ControlPlane {
+		spec.PublicLBName = m.OutboundLBName(m.Role())
+		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+		if m.IsAPIServerPrivate() {
+			spec.InternalLBName = m.APIServerLBName()
+			spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+		} else {
+			spec.PublicLBNATRuleName = m.Name()
+			spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+		}
+	}
+
+	// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
+		spec.PublicLBName = m.OutboundLBName(m.Role())
+		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+	}
+
+	if m.cache != nil {
+		spec.SKU = &m.cache.VMSKU
+	}
+
+	if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
+		spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
+	}
+	return spec
 }
 
 // DiskSpecs returns the disk specs.

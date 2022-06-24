@@ -105,17 +105,17 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachine with invalid network configuration",
-			machine: createrMachineWithNetworkConfig("subnet", []AzureNetworkInterface{{SubnetName: "subnet1"}}),
+			machine: createMachineWithNetworkConfig("subnet", []AzureNetworkInterface{{SubnetName: "subnet1"}}),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with valid legacy network configuration",
-			machine: createrMachineWithNetworkConfig("subnet", []AzureNetworkInterface{}),
+			machine: createMachineWithNetworkConfig("subnet", []AzureNetworkInterface{}),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with valid network configuration",
-			machine: createrMachineWithNetworkConfig("", []AzureNetworkInterface{{SubnetName: "subnet"}}),
+			machine: createMachineWithNetworkConfig("", []AzureNetworkInterface{{SubnetName: "subnet"}}),
 			wantErr: false,
 		},
 	}
@@ -621,7 +621,7 @@ func TestAzureMachine_Default(t *testing.T) {
 	}
 }
 
-func createrMachineWithNetworkConfig(subnetName string, interfaces []AzureNetworkInterface) *AzureMachine {
+func createMachineWithNetworkConfig(subnetName string, interfaces []AzureNetworkInterface) *AzureMachine {
 	return &AzureMachine{
 		Spec: AzureMachineSpec{
 			SubnetName:        subnetName,

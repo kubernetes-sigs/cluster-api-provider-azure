@@ -467,7 +467,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 				} else {
 					nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = to.BoolPtr(false)
 				}
-				if len(n.IPConfigs) == 0 {
+				if n.PrivateIPConfigs == 0 && n.PublicIPConfigs == 0 {
 					nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.IPConfigurations = &[]compute.VirtualMachineScaleSetIPConfiguration{
 						{
 							Name: to.StringPtr(vmssSpec.Name + "-" + strconv.Itoa(i)),
@@ -483,9 +483,35 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 					}
 				} else {
 					ipconfigs := []compute.VirtualMachineScaleSetIPConfiguration{}
-					for j := range n.IPConfigs {
+					for j := 0; j < n.PublicIPConfigs; j++ {
 						ipconfig := compute.VirtualMachineScaleSetIPConfiguration{
-							Name: to.StringPtr(fmt.Sprintf("ipConfig%v", j)),
+							Name: to.StringPtr(fmt.Sprintf("public-ipConfig%v", j)),
+							VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+								PrivateIPAddressVersion: compute.IPVersionIPv4,
+								Subnet: &compute.APIEntityReference{
+									ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
+								},
+								PublicIPAddressConfiguration: &compute.VirtualMachineScaleSetPublicIPAddressConfiguration{},
+							},
+						}
+						if j == 0 {
+							ipconfig.Primary = to.BoolPtr(true)
+							if i == 0 {
+								// only set Load Balancer Backend Address Pool on primary nic/ipconfig
+								ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
+							}
+						} else {
+							ipconfig.Primary = to.BoolPtr(false)
+						}
+						ipconfig.Subnet = &compute.APIEntityReference{
+							ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
+						}
+						ipconfigs = append(ipconfigs, ipconfig)
+					}
+					// Create any remaining private IPConfigs
+					for j := 0; j < n.PrivateIPConfigs-n.PublicIPConfigs; j++ {
+						ipconfig := compute.VirtualMachineScaleSetIPConfiguration{
+							Name: to.StringPtr(fmt.Sprintf("private-ipConfig%v", j)),
 							VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 								PrivateIPAddressVersion: compute.IPVersionIPv4,
 								Subnet: &compute.APIEntityReference{

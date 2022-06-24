@@ -1099,23 +1099,20 @@ spec:
                           description: Network Interfaces to attach to each VM
                           properties:
                             acceleratedNetworking:
+                              description: Enable acccelerated networking on the interface
                               type: boolean
                             id:
+                              description: Attach an already provisioned interface
+                                by ID
                               type: string
-                            ipConfigs:
-                              items:
-                                description: IP Configuration defines options to confiure
-                                  a network interface.
-                                properties:
-                                  privateIP:
-                                    type: string
-                                  publicIP:
-                                    type: boolean
-                                  publicIPAddress:
-                                    type: string
-                                type: object
-                              type: array
+                            privateIPConfigs:
+                              description: Number of private IP address to attach
+                                to the interface
+                              type: integer
+                            publicIPConfigs:
+                              type: integer
                             subnetName:
+                              description: The subnet to place the interface in
                               type: string
                           type: object
                         type: array
