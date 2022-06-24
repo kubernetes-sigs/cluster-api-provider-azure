@@ -48,7 +48,7 @@ metadata:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: "agentpool0"
+  name: "pool0"
 spec:
   clusterName: "${CLUSTER_NAME}"
   replicas: ${WORKER_MACHINE_COUNT}
@@ -61,7 +61,7 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: "agentpool0"
+        name: "pool0"
       version: "${KUBERNETES_VERSION}"
 ---
 # The Azure-specific machine pool implementation drives the configuration of the
@@ -69,7 +69,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: "agentpool0"
+  name: "pool0"
 spec:
   mode: System
   osDiskSizeGB: 30
@@ -79,7 +79,7 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: "agentpool1"
+  name: "pool1"
 spec:
   clusterName: "${CLUSTER_NAME}"
   replicas: ${WORKER_MACHINE_COUNT}
@@ -92,14 +92,14 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: "agentpool1"
+        name: "pool1"
       version: "${KUBERNETES_VERSION}"
 ---
 # The infrastructure backing the second pool will use the same VM sku, but a larger OS disk.
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: "agentpool1"
+  name: "pool1"
 spec:
   mode: User
   osDiskSizeGB: 40
