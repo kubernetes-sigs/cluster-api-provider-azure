@@ -3,10 +3,9 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/aks
-  - patches/aks-agentpool2.yaml
+  - patches/aks-pool2.yaml
 patchesStrategicMerge:
   - ../patches/tags-aks.yaml
-  - patches/aks-agentpool0.yaml
-  - patches/aks-agentpool1.yaml
+  - patches/aks-pool0.yaml
+  - patches/aks-pool1.yaml
   - patches/addons.yaml
-
