@@ -122,12 +122,12 @@ spec:
         systemctl restart kubelet
 
         # prepull images from gcr.io/k8s-staging-ci-images and retag it to
-        # k8s.gcr.io so kubeadm can fetch correct images no matter what
+        # registry.k8s.io so kubeadm can fetch correct images no matter what
         declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
         [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
         for IMAGE in "$${IMAGES[@]}"; do
           $${SUDO} ctr -n k8s.io images pull "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}"
-          $${SUDO} ctr -n k8s.io images tag "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}" "k8s.gcr.io/$${IMAGE}:${CI_VERSION/+/_}"
+          $${SUDO} ctr -n k8s.io images tag "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}" "registry.k8s.io/$${IMAGE}:${CI_VERSION/+/_}"
         done
 
         echo "kubeadm version: $(kubeadm version -o=short)"

@@ -4326,20 +4326,20 @@ data:
     \       {}\n      containers:\n        - name: master\n          securityContext:\n
     \           allowPrivilegeEscalation: false\n            capabilities:\n              drop:\n
     \             - ALL\n            readOnlyRootFilesystem: true\n            runAsNonRoot:
-    true\n          image: \"k8s.gcr.io/nfd/node-feature-discovery:v0.10.1\"\n          imagePullPolicy:
-    IfNotPresent\n          livenessProbe:\n            exec:\n              command:\n
-    \             - \"/usr/bin/grpc_health_probe\"\n              - \"-addr=:8080\"\n
-    \           initialDelaySeconds: 10\n            periodSeconds: 10\n          readinessProbe:\n
-    \           exec:\n              command:\n              - \"/usr/bin/grpc_health_probe\"\n
-    \             - \"-addr=:8080\"\n            initialDelaySeconds: 5\n            periodSeconds:
-    10\n            failureThreshold: 10\n          ports:\n          - containerPort:
-    8080\n            name: grpc\n            namespace: gpu-operator-resources\n
-    \         env:\n          - name: NODE_NAME\n            valueFrom:\n              fieldRef:\n
-    \               fieldPath: spec.nodeName\n          command:\n            - \"nfd-master\"\n
-    \         resources:\n            {}\n          args:\n            - \"--extra-label-ns=nvidia.com\"\n
-    \           ## By default, disable NodeFeatureRules controller for other than
-    the default instances\n            - \"-featurerules-controller=true\"\n      affinity:\n
-    \       nodeAffinity:\n          preferredDuringSchedulingIgnoredDuringExecution:\n
+    true\n          image: \"registry.k8s.io/nfd/node-feature-discovery:v0.10.1\"\n
+    \         imagePullPolicy: IfNotPresent\n          livenessProbe:\n            exec:\n
+    \             command:\n              - \"/usr/bin/grpc_health_probe\"\n              -
+    \"-addr=:8080\"\n            initialDelaySeconds: 10\n            periodSeconds:
+    10\n          readinessProbe:\n            exec:\n              command:\n              -
+    \"/usr/bin/grpc_health_probe\"\n              - \"-addr=:8080\"\n            initialDelaySeconds:
+    5\n            periodSeconds: 10\n            failureThreshold: 10\n          ports:\n
+    \         - containerPort: 8080\n            name: grpc\n            namespace:
+    gpu-operator-resources\n          env:\n          - name: NODE_NAME\n            valueFrom:\n
+    \             fieldRef:\n                fieldPath: spec.nodeName\n          command:\n
+    \           - \"nfd-master\"\n          resources:\n            {}\n          args:\n
+    \           - \"--extra-label-ns=nvidia.com\"\n            ## By default, disable
+    NodeFeatureRules controller for other than the default instances\n            -
+    \"-featurerules-controller=true\"\n      affinity:\n        nodeAffinity:\n          preferredDuringSchedulingIgnoredDuringExecution:\n
     \         - preference:\n              matchExpressions:\n              - key:
     node-role.kubernetes.io/master\n                operator: In\n                values:\n
     \               - \"\"\n            weight: 1\n          - preference:\n              matchExpressions:\n
@@ -4517,16 +4517,17 @@ data:
     \       {}\n      containers:\n      - name: worker\n        securityContext:\n
     \           allowPrivilegeEscalation: false\n            capabilities:\n              drop:\n
     \             - ALL\n            readOnlyRootFilesystem: true\n            runAsNonRoot:
-    true\n        image: \"k8s.gcr.io/nfd/node-feature-discovery:v0.10.1\"\n        imagePullPolicy:
-    IfNotPresent\n        env:\n        - name: NODE_NAME\n          valueFrom:\n
-    \           fieldRef:\n              fieldPath: spec.nodeName\n        resources:\n
-    \           {}\n        command:\n        - \"nfd-worker\"\n        args:\n        -
-    \"--server=gpu-operator-node-feature-discovery-master:8080\"\n        volumeMounts:\n
-    \       - name: host-boot\n          mountPath: \"/host-boot\"\n          readOnly:
-    true\n        - name: host-os-release\n          mountPath: \"/host-etc/os-release\"\n
-    \         readOnly: true\n        - name: host-sys\n          mountPath: \"/host-sys\"\n
-    \         readOnly: true\n        - name: host-usr-lib\n          mountPath: \"/host-usr/lib\"\n
-    \         readOnly: true\n        - name: source-d\n          mountPath: \"/etc/kubernetes/node-feature-discovery/source.d/\"\n
+    true\n        image: \"registry.k8s.io/nfd/node-feature-discovery:v0.10.1\"\n
+    \       imagePullPolicy: IfNotPresent\n        env:\n        - name: NODE_NAME\n
+    \         valueFrom:\n            fieldRef:\n              fieldPath: spec.nodeName\n
+    \       resources:\n            {}\n        command:\n        - \"nfd-worker\"\n
+    \       args:\n        - \"--server=gpu-operator-node-feature-discovery-master:8080\"\n
+    \       volumeMounts:\n        - name: host-boot\n          mountPath: \"/host-boot\"\n
+    \         readOnly: true\n        - name: host-os-release\n          mountPath:
+    \"/host-etc/os-release\"\n          readOnly: true\n        - name: host-sys\n
+    \         mountPath: \"/host-sys\"\n          readOnly: true\n        - name:
+    host-usr-lib\n          mountPath: \"/host-usr/lib\"\n          readOnly: true\n
+    \       - name: source-d\n          mountPath: \"/etc/kubernetes/node-feature-discovery/source.d/\"\n
     \         readOnly: true\n        - name: features-d\n          mountPath: \"/etc/kubernetes/node-feature-discovery/features.d/\"\n
     \         readOnly: true\n        - name: nfd-worker-conf\n          mountPath:
     \"/etc/kubernetes/node-feature-discovery\"\n          readOnly: true\n      volumes:\n
