@@ -37,6 +37,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 				SKU:               "Standard_D2s_v3",
 				OSDiskSizeGB:      100,
 				Replicas:          2,
+				OSType:            to.StringPtr(azure.LinuxOS),
 				Version:           to.StringPtr("1.22.6"),
 				VnetSubnetID:      "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123",
 				Mode:              "User",
@@ -57,7 +58,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 				g.Expect(result).To(Equal(containerservice.ManagedClusterAgentPoolProfile{
 					Name:                to.StringPtr("agentpool1"),
 					VMSize:              to.StringPtr("Standard_D2s_v3"),
-					OsType:              containerservice.OSTypeLinux,
+					OsType:              azure.LinuxOS,
 					OsDiskSizeGB:        to.Int32Ptr(100),
 					Count:               to.Int32Ptr(2),
 					Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
@@ -102,6 +103,7 @@ func Test_AgentPoolToAgentPoolToContainerServiceAgentPool(t *testing.T) {
 				Name:              "agentpool1",
 				SKU:               "Standard_D2s_v3",
 				OSDiskSizeGB:      100,
+				OSType:            to.StringPtr(azure.LinuxOS),
 				Replicas:          2,
 				Version:           to.StringPtr("1.22.6"),
 				VnetSubnetID:      "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123",
@@ -122,7 +124,7 @@ func Test_AgentPoolToAgentPoolToContainerServiceAgentPool(t *testing.T) {
 				g.Expect(result).To(Equal(containerservice.AgentPool{
 					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 						VMSize:              to.StringPtr("Standard_D2s_v3"),
-						OsType:              containerservice.OSTypeLinux,
+						OsType:              azure.LinuxOS,
 						OsDiskSizeGB:        to.Int32Ptr(100),
 						Count:               to.Int32Ptr(2),
 						Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,

@@ -163,4 +163,5 @@ metadata:
   namespace: default
 spec:
   mode: User
+  osType: Windows
   sku: ${AZURE_NODE_MACHINE_TYPE}

@@ -45,6 +45,10 @@ func (m *AzureManagedMachinePool) Default(client client.Client) {
 	if m.Spec.Name == nil || *m.Spec.Name == "" {
 		m.Spec.Name = &m.Name
 	}
+
+	if m.Spec.OSType == nil {
+		m.Spec.OSType = to.StringPtr(DefaultOSType)
+	}
 }
 
 //+kubebuilder:webhook:verbs=update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,versions=v1beta1,name=validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -53,6 +57,8 @@ func (m *AzureManagedMachinePool) Default(client client.Client) {
 func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 	validators := []func() error{
 		m.validateMaxPods,
+		m.validateOSType,
+		m.validateName,
 	}
 
 	var errs []error
@@ -263,6 +269,31 @@ func (m *AzureManagedMachinePool) validateMaxPods() error {
 				field.NewPath("Spec", "MaxPods"),
 				m.Spec.MaxPods,
 				"MaxPods must be between 10 and 250")
+		}
+	}
+
+	return nil
+}
+
+func (m *AzureManagedMachinePool) validateOSType() error {
+	if m.Spec.Mode == string(NodePoolModeSystem) {
+		if m.Spec.OSType != nil && *m.Spec.OSType != azure.LinuxOS {
+			return field.Forbidden(
+				field.NewPath("Spec", "OSType"),
+				"System node pooll must have OSType 'Linux'")
+		}
+	}
+
+	return nil
+}
+
+func (m *AzureManagedMachinePool) validateName() error {
+	if m.Spec.OSType != nil && *m.Spec.OSType == azure.WindowsOS {
+		if len(m.Name) > 6 {
+			return field.Invalid(
+				field.NewPath("Name"),
+				m.Name,
+				"Windows agent pool name can not be longer than 6 characters.")
 		}
 	}
 

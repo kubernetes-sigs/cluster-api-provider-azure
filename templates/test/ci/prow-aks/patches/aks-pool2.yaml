@@ -26,3 +26,4 @@ metadata:
 spec:
   mode: User
   sku: "${AZURE_NODE_MACHINE_TYPE}"
+  osType: Windows
