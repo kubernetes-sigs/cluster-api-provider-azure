@@ -215,6 +215,14 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 					DiskSizeGB: 30,
 					Lun:        to.Int32Ptr(2),
 				},
+				{
+					NameSuffix: "testdisk3",
+					DiskSizeGB: 30,
+					ManagedDisk: &ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+					Lun: to.Int32Ptr(3),
+				},
 			},
 			output: []DataDisk{
 				{
@@ -228,6 +236,15 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 					DiskSizeGB:  30,
 					Lun:         to.Int32Ptr(2),
 					CachingType: "ReadWrite",
+				},
+				{
+					NameSuffix: "testdisk3",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(3),
+					ManagedDisk: &ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+					CachingType: "None",
 				},
 			},
 		},
