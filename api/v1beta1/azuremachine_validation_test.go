@@ -385,6 +385,51 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "valid combination of managed disk storage account type UltraSSD_LRS and cachingType None",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDiskParameters{
+						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.CachingTypesNone),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid combination of managed disk storage account type UltraSSD_LRS and cachingType ReadWrite",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDiskParameters{
+						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.CachingTypesReadWrite),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid combination of managed disk storage account type UltraSSD_LRS and cachingType ReadOnly",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDiskParameters{
+						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.CachingTypesReadOnly),
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, test := range testcases {

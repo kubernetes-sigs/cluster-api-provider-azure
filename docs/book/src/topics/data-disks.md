@@ -34,6 +34,8 @@ az vm list-skus -l <location> -z -s <VM-size>
 
 Provided that the chosen region and zone support Ultra disks, Azure Machine objects having Ultra disks specified as Data disks will have their virtual machines created with the `AdditionalCapabilities.UltraSSDEnabled` additional capability set to `true`. This capability can also be manually set on the Azure Machine spec and will override the automatically chosen value (if any).
 
+When the chosen StorageAccountType is `UltraSSD_LRS`, caching is not supported for the disk and the corresponding `cachingType` field must be set to `None`. In this configuration, if no value is set, `cachingType` will be defaulted to `None`.
+
 See [Ultra disk](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#ultra-disk) for ultra disk performance and GA scope.
 
 ### Ultra disk support for Persistent Volumes

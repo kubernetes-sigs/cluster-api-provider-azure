@@ -143,7 +143,7 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 		}
 
 		// validate cachingType
-		allErrs = append(allErrs, validateCachingType(disk.CachingType, fieldPath)...)
+		allErrs = append(allErrs, validateCachingType(disk.CachingType, fieldPath, disk.ManagedDisk)...)
 	}
 	return allErrs
 }
@@ -162,7 +162,7 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 		allErrs = append(allErrs, field.Required(fieldPath.Child("OSType"), "the OS type cannot be empty"))
 	}
 
-	allErrs = append(allErrs, validateCachingType(osDisk.CachingType, fieldPath)...)
+	allErrs = append(allErrs, validateCachingType(osDisk.CachingType, fieldPath, osDisk.ManagedDisk)...)
 
 	if osDisk.ManagedDisk != nil {
 		if errs := validateManagedDisk(osDisk.ManagedDisk, fieldPath.Child("managedDisk"), true); len(errs) > 0 {
@@ -278,9 +278,15 @@ func validateStorageAccountType(storageAccountType string, fieldPath *field.Path
 	return allErrs
 }
 
-func validateCachingType(cachingType string, fieldPath *field.Path) field.ErrorList {
+func validateCachingType(cachingType string, fieldPath *field.Path, managedDisk *ManagedDiskParameters) field.ErrorList {
 	allErrs := field.ErrorList{}
 	cachingTypeChildPath := fieldPath.Child("CachingType")
+
+	if managedDisk != nil && managedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
+		if cachingType != string(compute.CachingTypesNone) {
+			allErrs = append(allErrs, field.Invalid(cachingTypeChildPath, cachingType, fmt.Sprintf("cachingType '%s' is not supported when storageAccountType is '%s'. Allowed values are: '%s'", cachingType, compute.StorageAccountTypesUltraSSDLRS, compute.CachingTypesNone)))
+		}
+	}
 
 	for _, possibleCachingType := range compute.PossibleCachingTypesValues() {
 		if string(possibleCachingType) == cachingType {
