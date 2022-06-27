@@ -30,7 +30,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

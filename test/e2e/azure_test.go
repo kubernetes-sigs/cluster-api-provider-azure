@@ -29,7 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/cluster-api/util"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,7 +149,7 @@ var _ = Describe("Workload cluster creation", func() {
 		Context("Creating a private cluster [REQUIRED]", func() {
 			It("Creates a public management cluster in a custom vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
-				Context("Creating a custom virtual network", func() {
+				By("Creating a custom virtual network", func() {
 					Expect(os.Setenv(AzureCustomVNetName, "custom-vnet")).To(Succeed())
 					additionalCleanup = SetupExistingVNet(ctx,
 						"10.0.0.0/16",
@@ -179,7 +179,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				}, result)
 
-				Context("Creating a private cluster from the management cluster", func() {
+				By("Creating a private cluster from the management cluster", func() {
 					AzurePrivateClusterSpec(ctx, func() AzurePrivateClusterSpecInput {
 						return AzurePrivateClusterSpecInput{
 							BootstrapClusterProxy: bootstrapClusterProxy,
@@ -228,7 +228,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
-			Context("Validating failure domains", func() {
+			By("Validating failure domains", func() {
 				AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
 					return AzureFailureDomainsSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -239,7 +239,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Creating an accessible load balancer", func() {
+			By("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -250,7 +250,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Validating network policies", func() {
+			By("Validating network policies", func() {
 				AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
 					return AzureNetPolSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -261,7 +261,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Creating an accessible load balancer for windows", func() {
+			By("Creating an accessible load balancer for windows", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -300,7 +300,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
-			Context("Creating an accessible ipv6 load balancer", func() {
+			By("Creating an accessible ipv6 load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -347,7 +347,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
-			Context("Running a security scanner", func() {
+			By("Running a security scanner", func() {
 				KubescapeSpec(ctx, func() KubescapeSpecInput {
 					return KubescapeSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -360,7 +360,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Creating an accessible load balancer", func() {
+			By("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -371,7 +371,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Creating an accessible load balancer for windows", func() {
+			By("Creating an accessible load balancer for windows", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -383,7 +383,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Cordon and draining a node", func() {
+			By("Cordon and draining a node", func() {
 				AzureMachinePoolDrainSpec(ctx, func() AzureMachinePoolDrainSpecInput {
 					return AzureMachinePoolDrainSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -432,7 +432,7 @@ var _ = Describe("Workload cluster creation", func() {
 				Args: []string{"--server-side"},
 			}, result)
 
-			Context("Running a GPU-based calculation", func() {
+			By("Running a GPU-based calculation", func() {
 				AzureGPUSpec(ctx, func() AzureGPUSpecInput {
 					return AzureGPUSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -474,7 +474,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
-			Context("Creating an accessible load balancer", func() {
+			By("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -485,7 +485,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Creating a deployment that uses persistent volume", func() {
+			By("Creating a deployment that uses persistent volume", func() {
 				AzureDiskCSISpec(ctx, func() AzureDiskCSISpecInput {
 					return AzureDiskCSISpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -561,7 +561,7 @@ var _ = Describe("Workload cluster creation", func() {
 			// dual-stack external IP for dual-stack clusters is not yet supported
 			// first ip family in ipFamilies is used for the primary clusterIP and cloud-provider
 			// determines the elb/ilb ip family based on the primary clusterIP
-			Context("Creating an accessible ipv4 load balancer", func() {
+			By("Creating an accessible ipv4 load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -573,7 +573,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Creating an accessible ipv6 load balancer", func() {
+			By("Creating an accessible ipv6 load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,

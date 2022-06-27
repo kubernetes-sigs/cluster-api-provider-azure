@@ -23,7 +23,7 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 

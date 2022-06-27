@@ -41,8 +41,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/blang/semver"
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -372,15 +371,16 @@ func getAvailabilityZonesForRegion(location string, size string) ([]string, erro
 func logCheckpoint(specTimes map[string]time.Time) {
 	text := CurrentGinkgoTestDescription().TestText
 	start, started := specTimes[text]
+	suiteConfig, _ := GinkgoConfiguration()
 	if !started {
 		start = time.Now()
 		specTimes[text] = start
 		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" started at %s on Ginkgo node %d of %d\n", text,
-			start.Format(time.RFC1123), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
+			start.Format(time.RFC1123), GinkgoParallelNode(), suiteConfig.ParallelTotal)
 	} else {
 		elapsed := time.Since(start)
 		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" ran for %s on Ginkgo node %d of %d\n", text,
-			elapsed.Round(time.Second), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
+			elapsed.Round(time.Second), GinkgoParallelNode(), suiteConfig.ParallelTotal)
 	}
 }
 

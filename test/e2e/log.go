@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 )
 
 // This code was inspired from kubernetes/kubernetes, specifically https://github.com/oomichi/kubernetes/blob/master/test/e2e/framework/log.go
