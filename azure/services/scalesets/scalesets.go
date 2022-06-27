@@ -335,17 +335,30 @@ func (s *Service) validateSpec(ctx context.Context) error {
 		return azure.WithTerminalError(errors.Errorf("encryption at host is not supported for VM type %s", spec.Size))
 	}
 
-	// check the support for ultra disks based on location and vm size
-	for _, disks := range spec.DataDisks {
-		location := s.Scope.Location()
-		zones, err := s.resourceSKUCache.GetZones(ctx, location)
-		if err != nil {
-			return azure.WithTerminalError(errors.Wrapf(err, "failed to get the zones for location %s", location))
-		}
+	// Fetch location and zone to check for their support of ultra disks.
+	location := s.Scope.Location()
+	zones, err := s.resourceSKUCache.GetZones(ctx, location)
+	if err != nil {
+		return azure.WithTerminalError(errors.Wrapf(err, "failed to get the zones for location %s", location))
+	}
 
-		for _, zone := range zones {
-			if disks.ManagedDisk != nil && disks.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, zone) {
-				return azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", spec.Size, location))
+	for _, zone := range zones {
+		hasLocationCapability := sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, zone)
+		err := fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", spec.Size, location)
+
+		// Check support for ultra disks as data disks.
+		for _, disks := range spec.DataDisks {
+			if disks.ManagedDisk != nil &&
+				disks.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) &&
+				!hasLocationCapability {
+				return azure.WithTerminalError(err)
+			}
+		}
+		// Check support for ultra disks as persistent volumes.
+		if spec.AdditionalCapabilities != nil && spec.AdditionalCapabilities.UltraSSDEnabled != nil {
+			if *spec.AdditionalCapabilities.UltraSSDEnabled &&
+				!hasLocationCapability {
+				return azure.WithTerminalError(err)
 			}
 		}
 	}
@@ -491,11 +504,21 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		}
 	}
 
+	// Provisionally detect whether there is any Data Disk defined which uses UltraSSDs.
+	// If that's the case, enable the UltraSSD capability.
 	for _, dataDisk := range vmssSpec.DataDisks {
 		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
 			vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{
 				UltraSSDEnabled: to.BoolPtr(true),
 			}
+		}
+	}
+
+	// Set Additional Capabilities if any is present on the spec.
+	if vmssSpec.AdditionalCapabilities != nil {
+		// Set UltraSSDEnabled if a specific value is set on the spec for it.
+		if vmssSpec.AdditionalCapabilities.UltraSSDEnabled != nil {
+			vmss.AdditionalCapabilities.UltraSSDEnabled = vmssSpec.AdditionalCapabilities.UltraSSDEnabled
 		}
 	}
 

@@ -500,7 +500,7 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
-			name:          "fail to create a vm with ultra disk enabled",
+			name:          "fail to create a vm with ultra disk implicitly enabled by data disk, when location not supported",
 			expectedError: "reconcile error that cannot be recovered occurred: vm size VM_SIZE_USSD does not support ultra disks in location test-location. select a different vm size or disable ultra disks. Object will not be requeued",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
@@ -514,6 +514,45 @@ func TestReconcileVMSS(t *testing.T) {
 								StorageAccountType: "UltraSSD_LRS",
 							},
 						},
+					},
+				})
+				s.Location().AnyTimes().Return("test-location")
+			},
+		},
+		{
+			name:          "fail to create a vm with ultra disk explicitly enabled via additional capabilities, when location not supported",
+			expectedError: "reconcile error that cannot be recovered occurred: vm size VM_SIZE_USSD does not support ultra disks in location test-location. select a different vm size or disable ultra disks. Object will not be requeued",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       defaultVMSSName,
+					Size:       "VM_SIZE_USSD",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					AdditionalCapabilities: &infrav1.AdditionalCapabilities{
+						UltraSSDEnabled: to.BoolPtr(true),
+					},
+				})
+				s.Location().AnyTimes().Return("test-location")
+			},
+		},
+		{
+			name:          "fail to create a vm with ultra disk explicitly enabled via additional capabilities, when location not supported",
+			expectedError: "reconcile error that cannot be recovered occurred: vm size VM_SIZE_USSD does not support ultra disks in location test-location. select a different vm size or disable ultra disks. Object will not be requeued",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       defaultVMSSName,
+					Size:       "VM_SIZE_USSD",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					DataDisks: []infrav1.DataDisk{
+						{
+							ManagedDisk: &infrav1.ManagedDiskParameters{
+								StorageAccountType: "UltraSSD_LRS",
+							},
+						},
+					},
+					AdditionalCapabilities: &infrav1.AdditionalCapabilities{
+						UltraSSDEnabled: to.BoolPtr(false),
 					},
 				})
 				s.Location().AnyTimes().Return("test-location")
