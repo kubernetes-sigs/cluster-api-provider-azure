@@ -219,7 +219,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						ArtifactFolder:            artifactFolder,
 						SkipCleanup:               skipCleanup,
 						InitWithProvidersContract: "v1alpha4",
-						InitWithBinary:            "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/clusterctl-{OS}-{ARCH}",
+						InitWithBinary:            "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/clusterctl-{OS}-{ARCH}",
 						PreInit:                   getPreInitFunc(ctx),
 					}
 				})
