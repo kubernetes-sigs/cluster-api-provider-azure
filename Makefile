@@ -116,6 +116,10 @@ YQ_VER := v4.14.2
 YQ_BIN := yq
 YQ :=  $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER)
 
+KIND_VER := v0.14.0
+KIND_BIN := kind
+KIND :=  $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
+
 KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
 ETCD=$(TOOLS_BIN_DIR)/etcd
 
@@ -242,10 +246,10 @@ verify-tiltfile: ## Verify Tiltfile format.
 ##@ Development:
 
 .PHONY: install-tools # populate hack/tools/bin
-install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO)
+install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND)
 
 .PHONY: create-management-cluster
-create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) ## Create a management cluster.
+create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create a management cluster.
 	# Create kind management cluster.
 	$(MAKE) kind-create
 
@@ -262,7 +266,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) ## Create a manag
 	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.4/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAPZ
-	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
+	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
 	$(KUSTOMIZE) build config/default | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Wait for CAPI deployments
@@ -685,12 +689,12 @@ tilt-up: install-tools kind-create ## Start tilt and build kind cluster if neede
 
 .PHONY: delete-cluster
 delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "capz".
-	kind delete cluster --name=capz
+	$(KIND) delete cluster --name=capz
 
 .PHONY: kind-reset
 kind-reset: ## Destroys the "capz" and "capz-e2e" kind clusters.
-	kind delete cluster --name=capz || true
-	kind delete cluster --name=capz-e2e || true
+	$(KIND) delete cluster --name=capz || true
+	$(KIND) delete cluster --name=capz-e2e || true
 
 ## --------------------------------------
 ## Tooling Binaries
@@ -712,6 +716,7 @@ ginkgo: $(GINKGO) ## Build a local copy of ginkgo.
 kubectl: $(KUBECTL) ## Build a local copy of kubectl.
 helm: $(HELM) ## Build a local copy of helm.
 yq: $(YQ) ## Build a local copy of yq.
+kind: $(KIND) ## Build a local copy of kind.
 
 $(CONVERSION_VERIFIER): go.mod
 	cd $(TOOLS_DIR); go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier
@@ -762,6 +767,9 @@ $(HELM): ## Put helm into tools folder.
 	ln -sf $(HELM) $(TOOLS_BIN_DIR)/$(HELM_BIN)
 	rm -f $(TOOLS_BIN_DIR)/get_helm.sh
 
+$(KIND): ## Build kind into tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kind $(KIND_BIN) $(KIND_VER)
+
 .PHONY: $(ENVSUBST_BIN)
 $(ENVSUBST_BIN): $(ENVSUBST)
 
@@ -779,3 +787,6 @@ $(YQ): ## Build yq from tools folder.
 
 .PHONY: $(YQ_BIN)
 $(YQ_BIN): $(YQ) ## Building yq from the tools folder.
+
+.PHONY: $(KIND_BIN)
+$(KIND_BIN): $(KIND)
