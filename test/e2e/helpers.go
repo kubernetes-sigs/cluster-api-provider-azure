@@ -846,11 +846,13 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	settings := helmCli.New()
 	settings.KubeConfig = kubeConfigPath
 	actionConfig := new(helmAction.Configuration)
-	err := actionConfig.Init(settings.RESTClientGetter(), "default", "secret", Logf)
+	ns := "default"
+	err := actionConfig.Init(settings.RESTClientGetter(), ns, "secret", Logf)
 	Expect(err).To(BeNil())
 	i := helmAction.NewInstall(actionConfig)
 	i.RepoURL = repoURL
 	i.ReleaseName = releaseName
+	i.Namespace = ns
 	Eventually(func() error {
 		cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
 		if err != nil {
@@ -920,6 +922,23 @@ func podListHasNumPods(numPods int) func(pl *corev1.PodList) error {
 			}
 		}
 		if runningPods != numPods {
+			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
+		}
+		return nil
+	}
+}
+
+// podListHasAtLeastNumPods fulfills the cluster-api PodListCondition type spec
+// given a list of pods, we validate for at least 1 number of those pods in a Running state
+func podListHasAtLeastNumPods(numPods int) func(pl *corev1.PodList) error {
+	return func(pl *corev1.PodList) error {
+		var runningPods int
+		for _, p := range pl.Items {
+			if p.Status.Phase == corev1.PodRunning {
+				runningPods++
+			}
+		}
+		if runningPods >= numPods {
 			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
 		}
 		return nil

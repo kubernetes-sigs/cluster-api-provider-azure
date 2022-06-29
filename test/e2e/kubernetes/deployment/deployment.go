@@ -132,6 +132,21 @@ func (d *Builder) AddContainerPort(name, portName string, portNumber int32, prot
 	}
 }
 
+func (d *Builder)AddPVC(pvcName string) *Builder  {
+	volumes:= []corev1.Volume{
+		{
+			Name: "managed",
+			VolumeSource:corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvcName,
+				},
+			},
+		},
+	}
+	d.deployment.Spec.Template.Spec.Volumes = volumes
+	return d
+}
+
 func (d *Builder) Deploy(ctx context.Context, clientset *kubernetes.Clientset) (*appsv1.Deployment, error) {
 	var deployment *appsv1.Deployment
 	Eventually(func() error {

@@ -32,10 +32,18 @@ import (
 )
 
 const (
-	cloudProviderAzureHelmRepoURL    = "https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo"
-	cloudProviderAzureChartName      = "cloud-provider-azure"
-	cloudProvierAzureHelmReleaseName = "cloud-provider-azure-oot"
+	cloudProviderAzureHelmRepoURL     = "https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo"
+	cloudProviderAzureChartName       = "cloud-provider-azure"
+	cloudProviderAzureHelmReleaseName = "cloud-provider-azure-oot"
+	azureDiskCSIDriverHelmRepoURL     = "https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts"
+	azureDiskCSIDriverChartName       = "azuredisk-csi-driver"
+	azureDiskCSIDriverHelmReleaseName = "azuredisk-csi-driver-oot"
 )
+
+func InstallHelmCharts(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult){
+	InstallCloudProviderAzureHelmChart(ctx,input,result)
+	InstallAzureDiskCSIDriverHelmChart(ctx,input,result)
+}
 
 // InstallCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
 // Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
@@ -45,7 +53,7 @@ func InstallCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.Ap
 	WaitForWorkloadClusterKubeconfigSecret(ctx, input)
 	By("Installing the correct version of cloud-provider-azure components via helm")
 	values := []string{fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName)}
-	InstallHelmChart(ctx, input, cloudProviderAzureHelmRepoURL, cloudProviderAzureChartName, cloudProvierAzureHelmReleaseName, values)
+	InstallHelmChart(ctx, input, cloudProviderAzureHelmRepoURL, cloudProviderAzureChartName, cloudProviderAzureHelmReleaseName, values)
 	By("Waiting for a Running cloud-controller-manager pod")
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
 	workloadClusterClient := clusterProxy.GetClient()
@@ -65,6 +73,40 @@ func InstallCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.Ap
 		WaitForDaemonset(ctx, input, workloadClusterClient, ds, "kube-system")
 	}
 	By("Done installing cloud-provider-azure components, ensuring control plane is initialized")
+	result.ControlPlane = framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
+		Lister:  input.ClusterProxy.GetClient(),
+		Cluster: result.Cluster,
+	}, input.WaitForControlPlaneIntervals...)
+}
+
+// InstallAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
+// Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
+// in the flow of a clusterctl.ApplyClusterTemplateAndWait E2E test scenario
+func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
+	By(fmt.Sprintf("Ensuring the kubeconfig secret for cluster %s/%s exists before installing azure-disk CSI driver components", input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName))
+	WaitForWorkloadClusterKubeconfigSecret(ctx, input)
+	By("Installing the correct version of azure-disk CSI driver components via helm")
+	values := []string{fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName)}
+	InstallHelmChart(ctx, input, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, values)
+	By("Waiting for a Running azure-disk-csi controller pods")
+	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+	workloadClusterClient := clusterProxy.GetClient()
+	azurediskControllerPodLabel, err := labels.Parse("app=csi-azuredisk-controller")
+	Expect(err).NotTo(HaveOccurred())
+	framework.WaitForPodListCondition(ctx, framework.WaitForPodListConditionInput{
+		Lister: workloadClusterClient,
+		ListOptions: &client.ListOptions{
+			LabelSelector: azurediskControllerPodLabel,
+			Namespace:     "default",
+		},
+		Condition: podListHasAtLeastNumPods(1),
+	}, input.WaitForControlPlaneIntervals...)
+	Expect(err).NotTo(HaveOccurred())
+	By("Waiting for Running azure-disk-csi node pods")
+	for _, ds := range []string{"csi-azuredisk-node"} {
+		WaitForDaemonset(ctx, input, workloadClusterClient, ds, "default")
+	}
+	By("Done installing azure-disk-csi driver, ensuring control plane is initialized")
 	result.ControlPlane = framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  input.ClusterProxy.GetClient(),
 		Cluster: result.Cluster,
