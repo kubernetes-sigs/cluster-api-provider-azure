@@ -5,11 +5,3 @@ resources:
   - ../prow-ci-version
 patchesStrategicMerge:
   - patches/windows-image-update.yaml
-patches:
-- target:
-    group: cluster.x-k8s.io
-    version: v1beta1
-    kind: MachineDeployment
-    name: .*-md-win
-    namespace: default
-  path: patches/drop-mhc.yaml
