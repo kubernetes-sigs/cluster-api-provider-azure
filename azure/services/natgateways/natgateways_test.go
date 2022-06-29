@@ -45,6 +45,7 @@ var (
 		ResourceGroup:  "my-rg",
 		SubscriptionID: "my-sub",
 		Location:       "westus",
+		ClusterName:    "my-cluster",
 		NatGatewayIP:   infrav1.PublicIPSpec{Name: "pip-node-subnet"},
 	}
 	natGateway1 = network.NatGateway{

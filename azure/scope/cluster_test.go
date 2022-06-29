@@ -694,6 +694,11 @@ func TestNatGatewaySpecs(t *testing.T) {
 		{
 			name: "returns specified node NAT gateway if present",
 			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
 				AzureClients: AzureClients{
 					EnvironmentSettings: auth.EnvironmentSettings{
 						Values: map[string]string{
@@ -737,15 +742,22 @@ func TestNatGatewaySpecs(t *testing.T) {
 					ResourceGroup:  "my-rg",
 					Location:       "centralIndia",
 					SubscriptionID: "123",
+					ClusterName:    "my-cluster",
 					NatGatewayIP: infrav1.PublicIPSpec{
 						Name: "44.78.67.90",
 					},
+					AdditionalTags: make(infrav1.Tags),
 				},
 			},
 		},
 		{
 			name: "returns specified node NAT gateway if present and ignores duplicate",
 			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
 				AzureClients: AzureClients{
 					EnvironmentSettings: auth.EnvironmentSettings{
 						Values: map[string]string{
@@ -807,15 +819,22 @@ func TestNatGatewaySpecs(t *testing.T) {
 					ResourceGroup:  "my-rg",
 					Location:       "centralIndia",
 					SubscriptionID: "123",
+					ClusterName:    "my-cluster",
 					NatGatewayIP: infrav1.PublicIPSpec{
 						Name: "44.78.67.90",
 					},
+					AdditionalTags: make(infrav1.Tags),
 				},
 			},
 		},
 		{
 			name: "returns specified node NAT gateway if present and ignores control plane nat gateway",
 			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
 				AzureClients: AzureClients{
 					EnvironmentSettings: auth.EnvironmentSettings{
 						Values: map[string]string{
@@ -876,9 +895,11 @@ func TestNatGatewaySpecs(t *testing.T) {
 					ResourceGroup:  "my-rg",
 					Location:       "centralIndia",
 					SubscriptionID: "123",
+					ClusterName:    "my-cluster",
 					NatGatewayIP: infrav1.PublicIPSpec{
 						Name: "44.78.67.90",
 					},
+					AdditionalTags: make(infrav1.Tags),
 				},
 			},
 		},
