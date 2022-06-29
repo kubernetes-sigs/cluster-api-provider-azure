@@ -49,7 +49,7 @@ END
 # Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
-cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
+make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
 ## Install cert manager and wait for availability
 "${KUBECTL}" apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.0/cert-manager.yaml

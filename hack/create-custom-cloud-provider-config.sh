@@ -21,7 +21,7 @@ set +o xtrace
 # Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
-cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
+make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
 if [[ -n "${CUSTOM_CLOUD_PROVIDER_CONFIG:-}" ]]; then
   curl -sL -o tmp_azure_json "${CUSTOM_CLOUD_PROVIDER_CONFIG}"
