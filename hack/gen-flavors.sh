@@ -17,10 +17,11 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-#set -o verbose
 
 root=$(dirname "${BASH_SOURCE[0]}")/..
 kustomize="${root}/hack/tools/bin/kustomize"
+make --directory="${root}" "${kustomize##*/}"
+
 flavors_dir="${root}/templates/flavors/"
 ci_dir="${root}/templates/test/ci/"
 dev_dir="${root}/templates/test/dev/"
