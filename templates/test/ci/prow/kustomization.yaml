@@ -6,7 +6,6 @@ resources:
   - ../../../flavors/default/machine-deployment.yaml
   - ../../../flavors/windows/machine-deployment-windows.yaml
   - mhc.yaml
-  - mhc-windows.yaml
   - cni-resource-set.yaml
   - ../../../azure-cluster-identity
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
@@ -14,7 +13,6 @@ resources:
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
-  - ../patches/mhc-windows.yaml
   - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
   - ../patches/machine-deployment-worker-counts.yaml
