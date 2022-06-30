@@ -28,6 +28,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
@@ -56,6 +57,11 @@ func TestE2E(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "capz-e2e", []Reporter{junitReporter})
 }
 
+var (
+	ubuntuVersions  map[string]semver.Version
+	windowsVersions map[string]semver.Version
+)
+
 // Using a SynchronizedBeforeSuite for controlling how to create resources shared across ParallelNodes (~ginkgo threads).
 // The local clusterctl repository & the bootstrap cluster are created once and shared across all the tests.
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -64,8 +70,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(configPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
 	Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
 
+	ubuntuVersions = getVersionsInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiOfferName)
+	windowsVersions = getVersionsInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiWindowsOfferName)
 	Byf("Loading the e2e test configuration from %q", configPath)
-	e2eConfig = loadE2EConfig(configPath)
+	e2eConfig = loadE2EConfig(configPath, ubuntuVersions, windowsVersions)
 
 	Byf("Creating a clusterctl local repository into %q", artifactFolder)
 	clusterctlConfigPath = createClusterctlLocalRepository(e2eConfig, filepath.Join(artifactFolder, "repository"))
@@ -95,7 +103,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	clusterctlConfigPath = parts[2]
 	kubeconfigPath := parts[3]
 
-	e2eConfig = loadE2EConfig(configPath)
+	e2eConfig = loadE2EConfig(configPath, ubuntuVersions, windowsVersions)
 	bootstrapClusterProxy = NewAzureClusterProxy("bootstrap", kubeconfigPath, framework.WithMachineLogCollector(AzureLogCollector{}))
 })
 
@@ -113,11 +121,11 @@ var _ = SynchronizedAfterSuite(func() {
 	}
 })
 
-func loadE2EConfig(configPath string) *clusterctl.E2EConfig {
+func loadE2EConfig(configPath string, ubuntuVersions, windowsVersions map[string]semver.Version) *clusterctl.E2EConfig {
 	config := clusterctl.LoadE2EConfig(context.TODO(), clusterctl.LoadE2EConfigInput{ConfigPath: configPath})
 	Expect(config).NotTo(BeNil(), "Failed to load E2E config from %s", configPath)
 
-	resolveKubernetesVersions(config)
+	resolveKubernetesVersions(config, ubuntuVersions, windowsVersions)
 
 	return config
 }

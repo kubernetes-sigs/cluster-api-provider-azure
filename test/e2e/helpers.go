@@ -77,6 +77,7 @@ import (
 const (
 	sshPort                               = "22"
 	deleteOperationTimeout                = 20 * time.Minute
+	pullImagesRetriesTimeout              = 5 * time.Minute
 	retryableOperationTimeout             = 30 * time.Second
 	retryableOperationSleepBetweenRetries = 3 * time.Second
 )
@@ -713,10 +714,7 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 
 // resolveKubernetesVersions looks at Kubernetes versions set as variables in the e2e config and sets them to a valid k8s version
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
-func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
-	ubuntuVersions := getVersionsInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiOfferName)
-	windowsVersions := getVersionsInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiWindowsOfferName)
-
+func resolveKubernetesVersions(config *clusterctl.E2EConfig, ubuntuVersions, windowsVersions map[string]semver.Version) {
 	// find the intersection of ubuntu and windows versions available, since we need an image for both.
 	var versions semver.Versions
 	for k, v := range ubuntuVersions {
@@ -765,13 +763,29 @@ func getVersionsInOffer(ctx context.Context, location, publisher, offer string) 
 	capiVersion := regexp.MustCompile(`^(\d)(\d{1,2})\.(\d{1,2})\.\d{8}$`)
 	oldCapiSku := regexp.MustCompile(`^k8s-(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)-[a-z]*.*$`)
 	imagesClient := newImagesClient()
-	skus, err := imagesClient.ListSkus(ctx, location, publisher, offer)
+	var skus compute.ListVirtualMachineImageResource
+	var err error
+	Eventually(func() bool {
+		skus, err = imagesClient.ListSkus(ctx, location, publisher, offer)
+		if err != nil {
+			return false
+		}
+		return true
+	}, pullImagesRetriesTimeout, retryableOperationSleepBetweenRetries).Should(Equal(true))
 	Expect(err).NotTo(HaveOccurred())
 
 	if skus.Value != nil {
 		versions = make(map[string]semver.Version, len(*skus.Value))
 		for _, sku := range *skus.Value {
-			res, err := imagesClient.List(ctx, location, publisher, offer, *sku.Name, "", nil, "")
+			var res compute.ListVirtualMachineImageResource
+			var err error
+			Eventually(func() bool {
+				res, err = imagesClient.List(ctx, location, publisher, offer, *sku.Name, "", nil, "")
+				if err != nil {
+					return false
+				}
+				return true
+			}, pullImagesRetriesTimeout, retryableOperationSleepBetweenRetries).Should(Equal(true))
 			Expect(err).NotTo(HaveOccurred())
 			// Don't use SKUs without existing images. See https://github.com/Azure/azure-cli/issues/20115.
 			if res.Value != nil && len(*res.Value) > 0 {
