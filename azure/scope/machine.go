@@ -165,6 +165,7 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 		SpotVMOptions:          m.AzureMachine.Spec.SpotVMOptions,
 		SecurityProfile:        m.AzureMachine.Spec.SecurityProfile,
 		AdditionalTags:         m.AdditionalTags(),
+		AdditionalCapabilities: m.AzureMachine.Spec.AdditionalCapabilities,
 		ProviderID:             m.ProviderID(),
 	}
 	if m.cache != nil {

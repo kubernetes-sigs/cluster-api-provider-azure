@@ -26,14 +26,12 @@ set -o pipefail
 # Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
-cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
+KIND="${REPO_ROOT}/hack/tools/bin/kind"
+KUSTOMIZE="${REPO_ROOT}/hack/tools/bin/kustomize"
+make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}" "${KUSTOMIZE##*/}"
 
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=hack/ensure-kind.sh
-source "${REPO_ROOT}/hack/ensure-kind.sh"
-# shellcheck source=hack/ensure-kustomize.sh
-source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 # shellcheck source=hack/ensure-tags.sh
 source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=hack/parse-prow-creds.sh

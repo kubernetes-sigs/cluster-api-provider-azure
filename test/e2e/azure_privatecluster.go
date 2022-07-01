@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/msi/mgmt/2018-11-30/msi"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
@@ -38,7 +39,6 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -107,23 +107,21 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	}, "5s", "100ms").Should(BeNil(), "Failed to assert public API server stability")
 
 	// **************
-	spClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cluster-identity-secret-private",
-			Namespace: input.Namespace.Name,
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
+	// Get the Client ID for the user assigned identity
+	subscriptionID := os.Getenv(AzureSubscriptionId)
+	identityRG, ok := os.LookupEnv(AzureIdentityResourceGroup)
+	if !ok {
+		identityRG = "capz-ci"
 	}
-	err := publicClusterProxy.GetClient().Create(ctx, secret)
-	Expect(err).NotTo(HaveOccurred())
+	userId, ok := os.LookupEnv(AzureUserIdentity)
+	if !ok {
+		userId = "cloud-provider-user-identity"
+	}
+	resourceID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/%s", subscriptionID, identityRG, userId)
+	os.Setenv("UAMI_CLIENT_ID", getClientIDforMSI(resourceID))
 
-	identityName := e2eConfig.GetVariable(ClusterIdentityName)
-	os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
+	os.Setenv("CLUSTER_IDENTITY_NAME", "cluster-identity-user-assigned")
 	os.Setenv("CLUSTER_IDENTITY_NAMESPACE", input.Namespace.Name)
-	os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret-private")
-	os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", input.Namespace.Name)
 	//*************
 
 	By("Creating a private workload cluster")
@@ -457,4 +455,24 @@ func getAPIVersion(resourceID string) (string, error) {
 func getAPIVersionFromUserAgent(userAgent string) string {
 	splits := strings.Split(userAgent, "/")
 	return splits[len(splits)-1]
+}
+
+// getClientIDforMSI fetches the client ID of a user assigned identity.
+func getClientIDforMSI(resourceID string) string {
+	settings, err := auth.GetSettingsFromEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	subscriptionID := settings.GetSubscriptionID()
+	authorizer, err := settings.GetAuthorizer()
+	Expect(err).NotTo(HaveOccurred())
+
+	msiClient := msi.NewUserAssignedIdentitiesClient(subscriptionID)
+	msiClient.Authorizer = authorizer
+
+	parsed, err := azuresdk.ParseResourceID(resourceID)
+	Expect(err).NotTo(HaveOccurred())
+
+	id, err := msiClient.Get(context.TODO(), parsed.ResourceGroup, parsed.ResourceName)
+	Expect(err).NotTo(HaveOccurred())
+
+	return id.ClientID.String()
 }

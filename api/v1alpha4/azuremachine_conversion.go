@@ -36,7 +36,6 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		return err
 	}
 
-
 	if restored.Spec.NetworkInterfaces != nil {
 		dst.Spec.NetworkInterfaces = restored.Spec.NetworkInterfaces
 	}
@@ -44,6 +43,11 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 	if restored.Spec.Image != nil && restored.Spec.Image.ComputeGallery != nil {
 		dst.Spec.Image.ComputeGallery = restored.Spec.Image.ComputeGallery
 	}
+
+	if restored.Spec.AdditionalCapabilities != nil {
+		dst.Spec.AdditionalCapabilities = restored.Spec.AdditionalCapabilities
+	}
+
 	return nil
 }
 

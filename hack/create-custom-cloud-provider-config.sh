@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2022 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +16,18 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+set +o xtrace
 
+# Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-# shellcheck source=hack/ensure-go.sh
-source "${REPO_ROOT}/hack/ensure-go.sh"
+KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
-make --directory="${REPO_ROOT}" test
+if [[ -n "${CUSTOM_CLOUD_PROVIDER_CONFIG:-}" ]]; then
+  curl -sL -o tmp_azure_json "${CUSTOM_CLOUD_PROVIDER_CONFIG}"
+  envsubst < tmp_azure_json > azure_json
+  kubectl create secret generic "${CLUSTER_NAME}-control-plane-azure-json" \
+    --from-file=control-plane-azure.json=azure_json \
+    --from-file=worker-node-azure.json=azure_json
+  rm tmp_azure_json azure_json
+fi

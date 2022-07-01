@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
 
 // NatGatewaySpec defines the specification for a NAT gateway.
@@ -32,6 +33,8 @@ type NatGatewaySpec struct {
 	SubscriptionID string
 	Location       string
 	NatGatewayIP   infrav1.PublicIPSpec
+	ClusterName    string
+	AdditionalTags infrav1.Tags
 }
 
 // ResourceName returns the name of the NAT gateway.
@@ -74,6 +77,12 @@ func (s *NatGatewaySpec) Parameters(existing interface{}) (params interface{}, e
 				},
 			},
 		},
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			ClusterName: s.ClusterName,
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			Name:        to.StringPtr(s.Name),
+			Additional:  s.AdditionalTags,
+		})),
 	}
 
 	return natGatewayToCreate, nil

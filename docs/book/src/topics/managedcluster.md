@@ -338,6 +338,25 @@ spec:
       value: kafka
 ```
 
+### AKS Node Pool OS Type
+If your cluster uses the Azure network plugin (`AzureManagedControlPlane.networkPlugin`) you can set the operating system
+for your User nodepools. The `osType` field is immutable and only can be set at creation time, it defaults to `Linux` and
+can be either `Linux` or `Windows`.
+
+```
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: User
+  osDiskSizeGB: 30
+  sku: Standard_D2s_v3
+  osDiskType: "Ephemeral"
+  osType: Windows
+```
+
+
 ### Enable AKS features with custom headers (--aks-custom-headers)
 To enable some AKS cluster / node pool features you need to pass special headers to the cluster / node pool create request. 
 For example, to [add a node pool for GPU nodes](https://docs.microsoft.com/en-us/azure/aks/gpu-cluster#add-a-node-pool-for-gpu-nodes),
@@ -419,24 +438,25 @@ those can only be set during the creation time.
 
 Following is the list of immutable fields for managed clusters:
 
-| CRD                      | jsonPath                           | Comment                   |
-|--------------------------|------------------------------------|---------------------------|
-| AzureManagedControlPlane | .spec.subscriptionID               |                           |
-| AzureManagedControlPlane | .spec.resourceGroupName            |                           |
-| AzureManagedControlPlane | .spec.nodeResourceGroupName        |                           |
-| AzureManagedControlPlane | .spec.location                     |                           |
-| AzureManagedControlPlane | .spec.sshPublicKey                 |                           |
-| AzureManagedControlPlane | .spec.dnsServiceIP                 |                           |
-| AzureManagedControlPlane | .spec.networkPlugin                |                           |
-| AzureManagedControlPlane | .spec.networkPolicy                |                           |
-| AzureManagedControlPlane | .spec.loadBalancerSKU              |                           |
-| AzureManagedControlPlane | .spec.apiServerAccessProfile       | except AuthorizedIPRanges |
-| AzureManagedMachinePool  | .spec.sku                          |                           |
-| AzureManagedMachinePool  | .spec.osDiskSizeGB                 |                           |
-| AzureManagedMachinePool  | .spec.osDiskType                   |                           |
-| AzureManagedMachinePool  | .spec.taints                       |                           |
-| AzureManagedMachinePool  | .spec.availabilityZones            |                           |
-| AzureManagedMachinePool  | .spec.maxPods                      |                           |
+| CRD                      | jsonPath                     | Comment                   |
+|--------------------------|------------------------------|---------------------------|
+| AzureManagedControlPlane | .spec.subscriptionID         |                           |
+| AzureManagedControlPlane | .spec.resourceGroupName      |                           |
+| AzureManagedControlPlane | .spec.nodeResourceGroupName  |                           |
+| AzureManagedControlPlane | .spec.location               |                           |
+| AzureManagedControlPlane | .spec.sshPublicKey           |                           |
+| AzureManagedControlPlane | .spec.dnsServiceIP           |                           |
+| AzureManagedControlPlane | .spec.networkPlugin          |                           |
+| AzureManagedControlPlane | .spec.networkPolicy          |                           |
+| AzureManagedControlPlane | .spec.loadBalancerSKU        |                           |
+| AzureManagedControlPlane | .spec.apiServerAccessProfile | except AuthorizedIPRanges |
+| AzureManagedMachinePool  | .spec.sku                    |                           |
+| AzureManagedMachinePool  | .spec.osDiskSizeGB           |                           |
+| AzureManagedMachinePool  | .spec.osDiskType             |                           |
+| AzureManagedMachinePool  | .spec.taints                 |                           |
+| AzureManagedMachinePool  | .spec.availabilityZones      |                           |
+| AzureManagedMachinePool  | .spec.maxPods                |                           |
+| AzureManagedMachinePool  | .spec.osType                 |                           |
 
 ## Features
 

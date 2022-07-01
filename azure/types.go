@@ -105,6 +105,9 @@ type AgentPoolSpec struct {
 
 	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
 	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
+
+	// OSType specifies the operating system for the node pool. Allowed values are 'Linux' and 'Windows'
+	OSType *string `json:"osType,omitempty"`
 }
 
 // ScaleSetSpec defines the specification for a Scale Set.
@@ -126,6 +129,7 @@ type ScaleSetSpec struct {
 	UserAssignedIdentities       []infrav1.UserAssignedIdentity
 	SecurityProfile              *infrav1.SecurityProfile
 	SpotVMOptions                *infrav1.SpotVMOptions
+	AdditionalCapabilities       *infrav1.AdditionalCapabilities
 	FailureDomains               []string
 	NetworkInterfaces            []infrav1.AzureNetworkInterface
 }
