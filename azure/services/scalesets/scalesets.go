@@ -496,10 +496,13 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 						}
 						if j == 0 {
 							ipconfig.Primary = to.BoolPtr(true)
+							if i == 0 {
+								// only set Load Balancer Backend Address Pool on primary nic/ipconfig
+								ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
+							}
 						} else {
 							ipconfig.Primary = to.BoolPtr(false)
 						}
-						ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
 						ipconfig.Subnet = &compute.APIEntityReference{
 							ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
 						}
@@ -518,10 +521,13 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 						}
 						if j == 0 {
 							ipconfig.Primary = to.BoolPtr(true)
+							if i == 0 {
+								// only set Load Balancer Backend Address Pool on primary nic/ipconfig
+								ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
+							}
 						} else {
 							ipconfig.Primary = to.BoolPtr(false)
 						}
-						ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
 						ipconfig.Subnet = &compute.APIEntityReference{
 							ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
 						}

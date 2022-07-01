@@ -300,7 +300,6 @@ func TestReconcileVMSS(t *testing.T) {
 							Subnet: &compute.APIEntityReference{
 								ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
 							},
-							LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
 						},
 					},
 					{
@@ -311,7 +310,6 @@ func TestReconcileVMSS(t *testing.T) {
 							Subnet: &compute.APIEntityReference{
 								ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
 							},
-							LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
 						},
 					},
 				}
