@@ -222,54 +222,34 @@ func (m *MachineScope) InboundNatSpecs(portsInUse map[int32]struct{}) []azure.Re
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 	nicSpecs := []azure.ResourceSpecGetter{}
-
+	defaultSpec := m.DefaultNICSpec()
 	if len(m.AzureMachine.Spec.NetworkInterfaces) < 1 {
-		return append(nicSpecs, getDefaultNetworkInterfaceSpec(m))
+		return append(nicSpecs, defaultSpec)
 	}
 
 	for i, n := range m.AzureMachine.Spec.NetworkInterfaces {
+		var spec *networkinterfaces.NICSpec
 		if n.ID != "" {
 			continue
 		}
-		spec := &networkinterfaces.NICSpec{
-			Name:                  azure.GenerateNICName(m.Name()) + "-" + strconv.Itoa(i),
-			ResourceGroup:         m.ResourceGroup(),
-			Location:              m.Location(),
-			SubscriptionID:        m.SubscriptionID(),
-			MachineName:           m.Name(),
-			VNetName:              m.Vnet().Name,
-			VNetResourceGroup:     m.Vnet().ResourceGroup,
-			AcceleratedNetworking: n.AcceleratedNetworking,
-			IPv6Enabled:           m.IsIPv6Enabled(),
-			EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
-			IPConfigs:             []networkinterfaces.IPConfig{},
-		}
-
-		spec.SubnetName = n.SubnetName
-
-		// Check for control plane interface setup on interface 0
-		if m.Role() == infrav1.ControlPlane && i == 0 {
-			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-			if m.IsAPIServerPrivate() {
-				spec.InternalLBName = m.APIServerLBName()
-				spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
-			} else {
-				spec.PublicLBNATRuleName = m.Name()
-				spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+		if i == 0 {
+			spec = m.DefaultNICSpec()
+		} else {
+			spec = &networkinterfaces.NICSpec{
+				ResourceGroup:      m.ResourceGroup(),
+				Location:           m.Location(),
+				SubscriptionID:     m.SubscriptionID(),
+				MachineName:        m.Name(),
+				VNetName:           m.Vnet().Name,
+				VNetResourceGroup:  m.Vnet().ResourceGroup,
+				IPv6Enabled:        m.IsIPv6Enabled(),
+				EnableIPForwarding: m.AzureMachine.Spec.EnableIPForwarding,
 			}
 		}
-
-		// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
-		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP && i == 0 {
-			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-		}
-
-		// Preserve behavior if AllocatePublicIP is used on interface 0
-		if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP && i == 0 {
-			spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
-		}
+		spec.Name = azure.GenerateNICName(m.Name()) + "-" + strconv.Itoa(i)
+		spec.SubnetName = n.SubnetName
+		spec.IPConfigs = []networkinterfaces.IPConfig{}
+		spec.AcceleratedNetworking = n.AcceleratedNetworking
 
 		if m.cache != nil {
 			spec.SKU = &m.cache.VMSKU
@@ -305,7 +285,9 @@ func (m *MachineScope) NICIDs() []string {
 	}
 	return nicIDs
 }
-func getDefaultNetworkInterfaceSpec(m *MachineScope) *networkinterfaces.NICSpec {
+
+// DefaultNICSpec constructs a NICSpec for the default interface on a given MachineScope.
+func (m *MachineScope) DefaultNICSpec() *networkinterfaces.NICSpec {
 	spec := &networkinterfaces.NICSpec{
 		Name:                  azure.GenerateNICName(m.Name()),
 		ResourceGroup:         m.ResourceGroup(),
@@ -331,7 +313,7 @@ func getDefaultNetworkInterfaceSpec(m *MachineScope) *networkinterfaces.NICSpec 
 		}
 	}
 
-	// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+	// If the NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
 	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
 		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
@@ -733,7 +715,7 @@ func (m *MachineScope) SetSubnetName() error {
 				subnetName = subnet.Name
 			}
 		}
-		if subnetCount == 0 || subnetCount > 1 || subnetName == "" {
+		if (subnetCount == 0 || subnetCount > 1 || subnetName == "") && len(m.AzureMachine.Spec.NetworkInterfaces) == 0 {
 			return errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of the same role exist")
 		}
 

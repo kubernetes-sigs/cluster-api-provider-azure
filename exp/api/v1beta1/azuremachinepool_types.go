@@ -88,7 +88,7 @@ type (
 		// +optional
 		SubnetName string `json:"subnetName,omitempty"`
 
-		// Network Interfaces to attach to the to a virtual machine
+		// NetworkInterfaces to attach to the to a virtual machine.
 		// +optional
 		NetworkInterfaces []infrav1.AzureNetworkInterface `json:"networkInterfaces,omitempty"`
 	}

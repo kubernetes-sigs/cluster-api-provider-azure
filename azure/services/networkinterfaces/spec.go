@@ -51,6 +51,7 @@ type NICSpec struct {
 	Primary                   *bool
 }
 
+// IPConfig defines the specification for an IP address configuration.
 type IPConfig struct {
 	PrivateIP       string
 	PublicIP        bool

@@ -1096,23 +1096,23 @@ spec:
                         type: object
                       networkInterfaces:
                         items:
-                          description: Network Interfaces to attach to each VM
+                          description: AzureNetworkInterface defineds a network interface.
                           properties:
                             acceleratedNetworking:
-                              description: Enable acccelerated networking on the interface
+                              description: Enable acccelerated networking on the interface.
                               type: boolean
                             id:
                               description: Attach an already provisioned interface
-                                by ID
+                                by ID.
                               type: string
                             privateIPConfigs:
                               description: Number of private IP address to attach
-                                to the interface
+                                to the interface.
                               type: integer
                             publicIPConfigs:
                               type: integer
                             subnetName:
-                              description: The subnet to place the interface in
+                              description: The subnet to place the interface in.
                               type: string
                           type: object
                         type: array

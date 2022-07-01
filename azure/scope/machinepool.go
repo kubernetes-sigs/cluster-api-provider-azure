@@ -634,7 +634,7 @@ func (m *MachinePoolScope) SetSubnetName() error {
 		for _, subnet := range m.NodeSubnets() {
 			subnetName = subnet.Name
 		}
-		if len(m.NodeSubnets()) == 0 || len(m.NodeSubnets()) > 1 || subnetName == "" {
+		if (len(m.NodeSubnets()) == 0 || len(m.NodeSubnets()) > 1 || subnetName == "") && len(m.AzureMachinePool.Spec.Template.NetworkInterfaces) == 0 {
 			return errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of role 'node' exist")
 		}
 

@@ -496,13 +496,10 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 						}
 						if j == 0 {
 							ipconfig.Primary = to.BoolPtr(true)
-							if i == 0 {
-								// only set Load Balancer Backend Address Pool on primary nic/ipconfig
-								ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
-							}
 						} else {
 							ipconfig.Primary = to.BoolPtr(false)
 						}
+						ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
 						ipconfig.Subnet = &compute.APIEntityReference{
 							ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
 						}
@@ -521,13 +518,10 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 						}
 						if j == 0 {
 							ipconfig.Primary = to.BoolPtr(true)
-							if i == 0 {
-								// only set Load Balancer Backend Address Pool on primary nic/ipconfig
-								ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
-							}
 						} else {
 							ipconfig.Primary = to.BoolPtr(false)
 						}
+						ipconfig.LoadBalancerBackendAddressPools = &backendAddressPools
 						ipconfig.Subnet = &compute.APIEntityReference{
 							ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
 						}
@@ -544,29 +538,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations = &nicConfigs
 	} else {
 		// Set default interface configuration if no custom ones are specified
-		vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations = &[]compute.VirtualMachineScaleSetNetworkConfiguration{
-			{
-				Name: to.StringPtr(vmssSpec.Name),
-				VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
-					Primary:            to.BoolPtr(true),
-					EnableIPForwarding: to.BoolPtr(true),
-					IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
-						{
-							Name: to.StringPtr(vmssSpec.Name),
-							VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
-								Subnet: &compute.APIEntityReference{
-									ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, vmssSpec.SubnetName)),
-								},
-								Primary:                         to.BoolPtr(true),
-								PrivateIPAddressVersion:         compute.IPVersionIPv4,
-								LoadBalancerBackendAddressPools: &backendAddressPools,
-							},
-						},
-					},
-					EnableAcceleratedNetworking: vmssSpec.AcceleratedNetworking,
-				},
-			},
-		}
+		vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations = s.getVirtualMachineScaleSetDefaultNetworkConfiguration(vmssSpec)
 	}
 
 	// Assign Identity to VMSS
@@ -612,6 +584,39 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 	vmss.Tags = converters.TagsToMap(tags)
 	return vmss, nil
+}
+
+func (s *Service) getVirtualMachineScaleSetDefaultNetworkConfiguration(vmssSpec azure.ScaleSetSpec) *[]compute.VirtualMachineScaleSetNetworkConfiguration {
+	var backendAddressPools []compute.SubResource
+	if vmssSpec.PublicLBName != "" {
+		if vmssSpec.PublicLBAddressPoolName != "" {
+			backendAddressPools = append(backendAddressPools,
+				compute.SubResource{
+					ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), vmssSpec.PublicLBName, vmssSpec.PublicLBAddressPoolName)),
+				})
+		}
+	}
+	return &[]compute.VirtualMachineScaleSetNetworkConfiguration{{
+		Name: to.StringPtr(vmssSpec.Name),
+		VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
+			Primary:            to.BoolPtr(true),
+			EnableIPForwarding: to.BoolPtr(true),
+			IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
+				{
+					Name: to.StringPtr(vmssSpec.Name),
+					VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+						Subnet: &compute.APIEntityReference{
+							ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, vmssSpec.SubnetName)),
+						},
+						Primary:                         to.BoolPtr(true),
+						PrivateIPAddressVersion:         compute.IPVersionIPv4,
+						LoadBalancerBackendAddressPools: &backendAddressPools,
+					},
+				},
+			},
+			EnableAcceleratedNetworking: vmssSpec.AcceleratedNetworking,
+		},
+	}}
 }
 
 // getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances.
