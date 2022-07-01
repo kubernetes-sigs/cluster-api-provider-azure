@@ -895,6 +895,12 @@ spec:
                           - nameSuffix
                           type: object
                         type: array
+                      dnsServers:
+                        description: DNSServers adds a list of DNS Server IP addresses
+                          to the VM NICs.
+                        items:
+                          type: string
+                        type: array
                       enableIPForwarding:
                         description: EnableIPForwarding enables IP Forwarding in Azure
                           which is required for some CNI's to send traffic from a

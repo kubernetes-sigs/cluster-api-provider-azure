@@ -238,6 +238,7 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 		VNetResourceGroup:     m.Vnet().ResourceGroup,
 		SubnetName:            m.AzureMachine.Spec.SubnetName,
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+		DNSServers:            m.AzureMachine.Spec.DNSServers,
 		IPv6Enabled:           m.IsIPv6Enabled(),
 		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
 		AdditionalTags:        m.AdditionalTags(),

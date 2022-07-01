@@ -47,6 +47,7 @@ type NICSpec struct {
 	IPv6Enabled               bool
 	EnableIPForwarding        bool
 	SKU                       *resourceskus.SKU
+	DNSServers                []string
 	AdditionalTags            infrav1.Tags
 	ClusterName               string
 }
@@ -129,6 +130,11 @@ func (s *NICSpec) Parameters(existing interface{}) (parameters interface{}, err 
 		s.AcceleratedNetworking = &accelNet
 	}
 
+	dnsSettings := network.InterfaceDNSSettings{}
+	if len(s.DNSServers) > 0 {
+		dnsSettings.DNSServers = &s.DNSServers
+	}
+
 	ipConfigurations := []network.InterfaceIPConfiguration{
 		{
 			Name:                                     to.StringPtr("pipConfig"),
@@ -154,6 +160,7 @@ func (s *NICSpec) Parameters(existing interface{}) (parameters interface{}, err 
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			EnableAcceleratedNetworking: s.AcceleratedNetworking,
 			IPConfigurations:            &ipConfigurations,
+			DNSSettings:                 &dnsSettings,
 			EnableIPForwarding:          to.BoolPtr(s.EnableIPForwarding),
 		},
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{

@@ -59,6 +59,9 @@ var (
 			},
 		},
 	}
+
+	fakeCustomDNSServers = []string{"123.123.123.123", "124.124.124.124"}
+
 	fakeStaticPrivateIPNICSpec = NICSpec{
 		Name:                    "my-net-interface",
 		ResourceGroup:           "my-rg",
@@ -156,6 +159,26 @@ var (
 		EnableIPForwarding:    true,
 		ClusterName:           "my-cluster",
 	}
+
+	fakeControlPlaneCustomDNSSettingsNICSpec = NICSpec{
+		Name:                      "my-net-interface",
+		ResourceGroup:             "my-rg",
+		Location:                  "fake-location",
+		SubscriptionID:            "123",
+		MachineName:               "azure-test1",
+		SubnetName:                "my-subnet",
+		VNetName:                  "my-vnet",
+		VNetResourceGroup:         "my-rg",
+		PublicLBName:              "my-public-lb",
+		PublicLBAddressPoolName:   "my-public-lb-backendPool",
+		PublicLBNATRuleName:       "azure-test1",
+		InternalLBName:            "my-internal-lb",
+		InternalLBAddressPoolName: "my-internal-lb-backendPool",
+		AcceleratedNetworking:     nil,
+		SKU:                       &fakeSku,
+		DNSServers:                fakeCustomDNSServers,
+		ClusterName:               "my-cluster",
+	}
 )
 
 func TestParameters(t *testing.T) {
@@ -190,6 +213,7 @@ func TestParameters(t *testing.T) {
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(false),
+						DNSSettings:                 &network.InterfaceDNSSettings{},
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -221,6 +245,7 @@ func TestParameters(t *testing.T) {
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(false),
+						DNSSettings:                 &network.InterfaceDNSSettings{},
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -251,6 +276,7 @@ func TestParameters(t *testing.T) {
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(false),
+						DNSSettings:                 &network.InterfaceDNSSettings{},
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -284,6 +310,7 @@ func TestParameters(t *testing.T) {
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(false),
+						DNSSettings:                 &network.InterfaceDNSSettings{},
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -314,6 +341,7 @@ func TestParameters(t *testing.T) {
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(false),
 						EnableIPForwarding:          to.BoolPtr(false),
+						DNSSettings:                 &network.InterfaceDNSSettings{},
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -344,6 +372,7 @@ func TestParameters(t *testing.T) {
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
 						EnableIPForwarding:          to.BoolPtr(true),
+						DNSSettings:                 &network.InterfaceDNSSettings{},
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -359,6 +388,42 @@ func TestParameters(t *testing.T) {
 									Subnet:                  &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
 									Primary:                 to.BoolPtr(false),
 									PrivateIPAddressVersion: "IPv6",
+								},
+							},
+						},
+					},
+				}))
+			},
+			expectedError: "",
+		},
+		{
+			name:     "get parameters for control plane network interface with DNS servers",
+			spec:     &fakeControlPlaneCustomDNSSettingsNICSpec,
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(network.Interface{}))
+				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+					},
+					Location: to.StringPtr("fake-location"),
+					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+						EnableAcceleratedNetworking: to.BoolPtr(true),
+						EnableIPForwarding:          to.BoolPtr(false),
+						DNSSettings: &network.InterfaceDNSSettings{
+							DNSServers: to.StringSlicePtr([]string{"123.123.123.123", "124.124.124.124"}),
+						},
+						IPConfigurations: &[]network.InterfaceIPConfiguration{
+							{
+								Name: to.StringPtr("pipConfig"),
+								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+									Subnet:                      &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
+									PrivateIPAllocationMethod:   network.IPAllocationMethodDynamic,
+									LoadBalancerInboundNatRules: &[]network.InboundNatRule{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/inboundNatRules/azure-test1")}},
+									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{
+										{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/my-public-lb-backendPool")},
+										{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-internal-lb/backendAddressPools/my-internal-lb-backendPool")}},
 								},
 							},
 						},

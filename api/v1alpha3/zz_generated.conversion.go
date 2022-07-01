@@ -906,6 +906,7 @@ func autoConvert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1bet
 	out.SpotVMOptions = (*SpotVMOptions)(unsafe.Pointer(in.SpotVMOptions))
 	out.SecurityProfile = (*SecurityProfile)(unsafe.Pointer(in.SecurityProfile))
 	// WARNING: in.SubnetName requires manual conversion: does not exist in peer-type
+	// WARNING: in.DNSServers requires manual conversion: does not exist in peer-type
 	return nil
 }
 
