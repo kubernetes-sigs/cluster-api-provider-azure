@@ -225,6 +225,9 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 		if err := mcpScope.PatchObject(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
+		if err := mcpScope.PatchCAPIMachinePoolObject(ctx); err != nil && reterr == nil {
+			reterr = err
+		}
 	}()
 
 	// Handle deleted clusters
