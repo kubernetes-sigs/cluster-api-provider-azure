@@ -28,4 +28,8 @@ const (
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 	// for annotation formatting rules.
 	RGTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-rg"
+
+	// ReplicasManagedByAutoscalerAnnotation is set to true in the corresponding capi machine pool
+	// when an external autoscaler manages the node count of the associated machine pool.
+	ReplicasManagedByAutoscalerAnnotation = "cluster.x-k8s.io/replicas-managed-by-autoscaler"
 )

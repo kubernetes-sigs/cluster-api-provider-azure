@@ -69,21 +69,28 @@ func NewManagedMachinePoolScope(ctx context.Context, params ManagedMachinePoolSc
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
+	capiMachinePoolPatchHelper, err := patch.NewHelper(params.MachinePool, params.Client)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to init patch helper")
+	}
+
 	return &ManagedMachinePoolScope{
-		Client:               params.Client,
-		Cluster:              params.Cluster,
-		ControlPlane:         params.ControlPlane,
-		MachinePool:          params.MachinePool,
-		InfraMachinePool:     params.InfraMachinePool,
-		patchHelper:          helper,
-		ManagedClusterScoper: params.ManagedControlPlaneScope,
+		Client:                     params.Client,
+		Cluster:                    params.Cluster,
+		ControlPlane:               params.ControlPlane,
+		MachinePool:                params.MachinePool,
+		InfraMachinePool:           params.InfraMachinePool,
+		patchHelper:                helper,
+		capiMachinePoolPatchHelper: capiMachinePoolPatchHelper,
+		ManagedClusterScoper:       params.ManagedControlPlaneScope,
 	}, nil
 }
 
 // ManagedMachinePoolScope defines the basic context for an actuator to operate upon.
 type ManagedMachinePoolScope struct {
-	Client      client.Client
-	patchHelper *patch.Helper
+	Client                     client.Client
+	patchHelper                *patch.Helper
+	capiMachinePoolPatchHelper *patch.Helper
 
 	azure.ManagedClusterScoper
 	Cluster          *clusterv1.Cluster
@@ -231,7 +238,7 @@ func (s *ManagedMachinePoolScope) UpdateDeleteStatus(condition clusterv1.Conditi
 	}
 }
 
-// UpdatePutStatus updates a condition on the AzureManagedControlPlane status after a PUT operation.
+// UpdatePutStatus updates a condition on the AzureManagedMachinePool status after a PUT operation.
 func (s *ManagedMachinePoolScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
@@ -243,7 +250,7 @@ func (s *ManagedMachinePoolScope) UpdatePutStatus(condition clusterv1.ConditionT
 	}
 }
 
-// UpdatePatchStatus updates a condition on the AzureManagedControlPlane status after a PATCH operation.
+// UpdatePatchStatus updates a condition on the AzureManagedMachinePool status after a PATCH operation.
 func (s *ManagedMachinePoolScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
@@ -253,4 +260,33 @@ func (s *ManagedMachinePoolScope) UpdatePatchStatus(condition clusterv1.Conditio
 	default:
 		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
 	}
+}
+
+// PatchCAPIMachinePoolObject persists the capi machinepool configuration and status.
+func (s *ManagedMachinePoolScope) PatchCAPIMachinePoolObject(ctx context.Context) error {
+	return s.capiMachinePoolPatchHelper.Patch(
+		ctx,
+		s.MachinePool,
+	)
+}
+
+// UpdateCAPIMachinePoolReplicas updates the associated MachinePool replica count.
+func (s *ManagedMachinePoolScope) UpdateCAPIMachinePoolReplicas(replicas *int32) {
+	s.MachinePool.Spec.Replicas = replicas
+}
+
+// UpdateCAPIMachinePoolAnnotations updates the associated MachinePool annotation.
+func (s *ManagedMachinePoolScope) UpdateCAPIMachinePoolAnnotations(key, value string) {
+	s.MachinePool.Annotations[key] = value
+}
+
+// RemoveCAPIMachinePoolAnnotations removes the associated MachinePool annotation.
+func (s *ManagedMachinePoolScope) RemoveCAPIMachinePoolAnnotations(key string) {
+	delete(s.MachinePool.Annotations, key)
+}
+
+// GetCAPIMachinePoolAnnotations gets the associated MachinePool annotation.
+func (s *ManagedMachinePoolScope) GetCAPIMachinePoolAnnotation(key string) (bool, string) {
+	value, ok := s.MachinePool.Annotations[key]
+	return ok, value
 }
