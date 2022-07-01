@@ -245,6 +245,13 @@ spec:
                 - Ephemeral
                 - Managed
                 type: string
+              osType:
+                description: 'OSType specifies the virtual machine operating system.
+                  Default to Linux. Possible values include: ''Linux'', ''Windows'''
+                enum:
+                - Linux
+                - Windows
+                type: string
               providerIDList:
                 description: ProviderIDList is the unique identifier as specified
                   by the cloud provider.

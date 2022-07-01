@@ -294,3 +294,62 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 		})
 	}
 }
+
+func TestHasClientSecret(t *testing.T) {
+	tests := []struct {
+		name     string
+		identity *infrav1.AzureClusterIdentity
+		want     bool
+	}{
+		{
+			name: "user assigned identity",
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:       infrav1.UserAssignedMSI,
+					ResourceID: "my-resource-id",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "service principal with secret",
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:         infrav1.ServicePrincipal,
+					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "service principal with certificate",
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:         infrav1.ServicePrincipalCertificate,
+					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "manual service principal",
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:         infrav1.ManualServicePrincipal,
+					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &AzureCredentialsProvider{
+				Identity: tt.identity,
+			}
+			if got := p.hasClientSecret(); got != tt.want {
+				t.Errorf("AzureCredentialsProvider.hasClientSecret() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

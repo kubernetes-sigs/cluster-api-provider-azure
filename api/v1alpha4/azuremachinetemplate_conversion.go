@@ -45,6 +45,10 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Spec.Image.ComputeGallery = restored.Spec.Template.Spec.Image.ComputeGallery
 	}
 
+	if restored.Spec.Template.Spec.AdditionalCapabilities != nil {
+		dst.Spec.Template.Spec.AdditionalCapabilities = restored.Spec.Template.Spec.AdditionalCapabilities
+	}
+
 	dst.Spec.Template.ObjectMeta = restored.Spec.Template.ObjectMeta
 
 	return nil

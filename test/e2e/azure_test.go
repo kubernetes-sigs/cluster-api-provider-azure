@@ -27,7 +27,6 @@ import (
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
 	"sigs.k8s.io/cluster-api/util"
 
 	. "github.com/onsi/ginkgo"
@@ -133,6 +132,10 @@ var _ = Describe("Workload cluster creation", func() {
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 		Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
 		Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
+		Expect(os.Unsetenv(ClusterIdentityName)).To(Succeed())
+		Expect(os.Unsetenv(ClusterIdentityNamespace)).To(Succeed())
+		Expect(os.Unsetenv(ClusterIdentitySecretName)).To(Succeed())
+		Expect(os.Unsetenv(ClusterIdentitySecretNamespace)).To(Succeed())
 
 		Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
 		Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
@@ -141,6 +144,8 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	if os.Getenv("LOCAL_ONLY") != "true" {
+		// This spec expects a user-assigned identity with Contributor role assignment named "cloud-provider-user-identity" in a "capz-ci"
+		// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
 		Context("Creating a private cluster [REQUIRED]", func() {
 			It("Creates a public management cluster in a custom vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
@@ -431,7 +436,7 @@ var _ = Describe("Workload cluster creation", func() {
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
 	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
 	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
-	Context("Creating a cluster that uses the external cloud provider [OPTIONAL]", func() {
+	Context("Creating a cluster that uses the external cloud provider and external azurediskcsi driver [OPTIONAL]", func() {
 		It("with a 1 control plane nodes and 2 worker nodes", func() {
 			By("using user-assigned identity")
 			clusterName = getClusterName(clusterNamePrefix, "oot")
@@ -453,13 +458,24 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: InstallCloudProviderAzureHelmChart,
+					WaitForControlPlaneInitialized: InstallHelmCharts,
 				},
 			}, result)
 
 			Context("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			Context("Creating a deployment that uses persistent volume", func() {
+				AzureDiskCSISpec(ctx, func() AzureDiskCSISpecInput {
+					return AzureDiskCSISpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,

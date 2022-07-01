@@ -44,10 +44,10 @@ type AllowedNamespaces struct {
 // AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity.
 type AzureClusterIdentitySpec struct {
 	// Type is the type of Azure Identity used.
-	// ServicePrincipal, ServicePrincipalCertificate, or ManualServicePrincipal.
+	// ServicePrincipal, ServicePrincipalCertificate, UserAssignedMSI or ManualServicePrincipal.
 	Type IdentityType `json:"type"`
 	// ResourceID is the Azure resource ID for the User Assigned MSI resource.
-	// Not currently supported.
+	// Only applicable when type is UserAssignedMSI.
 	// +optional
 	ResourceID string `json:"resourceID,omitempty"`
 	// ClientID is the service principal client ID.

@@ -269,9 +269,11 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.ResourceSpecGetter {
 					ResourceGroup:  s.ResourceGroup(),
 					SubscriptionID: s.SubscriptionID(),
 					Location:       s.Location(),
+					ClusterName:    s.ClusterName(),
 					NatGatewayIP: infrav1.PublicIPSpec{
 						Name: subnet.NatGateway.NatGatewayIP.Name,
 					},
+					AdditionalTags: s.AdditionalTags(),
 				})
 			}
 		}

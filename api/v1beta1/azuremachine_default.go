@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"encoding/base64"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
@@ -67,7 +68,12 @@ func (s *AzureMachineSpec) SetDataDisksDefaults() {
 			}
 		}
 		if disk.CachingType == "" {
-			s.DataDisks[i].CachingType = "ReadWrite"
+			if s.DataDisks[i].ManagedDisk != nil &&
+				s.DataDisks[i].ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
+				s.DataDisks[i].CachingType = string(compute.CachingTypesNone)
+			} else {
+				s.DataDisks[i].CachingType = string(compute.CachingTypesReadWrite)
+			}
 		}
 	}
 }

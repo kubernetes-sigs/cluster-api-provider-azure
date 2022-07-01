@@ -134,9 +134,14 @@ spec:
         # registry.k8s.io so kubeadm can fetch correct images no matter what
         declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
         [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+        IMAGE_REGISTRY_PREFIX=registry.k8s.io
+        # Kubernetes builds from 1.20 through 1.24 are tagged with k8s.gcr.io
+        if [[ "$${CI_VERSION}" =~ ^v1\.2[0-4][\.[0-9]+ ]]; then
+          IMAGE_REGISTRY_PREFIX=k8s.gcr.io
+        fi
         for IMAGE in "$${IMAGES[@]}"; do
-          $${SUDO} ctr -n k8s.io images pull "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}"
-          $${SUDO} ctr -n k8s.io images tag "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}" "registry.k8s.io/$${IMAGE}:${CI_VERSION/+/_}"
+          $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
+          $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
         done
 
         echo "kubeadm version: $(kubeadm version -o=short)"
@@ -321,9 +326,6 @@ spec:
   replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
   selector: {}
   template:
-    metadata:
-      labels:
-        windows-healthcheck: "true"
     spec:
       bootstrap:
         configRef:
@@ -477,26 +479,6 @@ spec:
   - status: "True"
     timeout: 30s
     type: E2ENodeUnhealthy
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ${CLUSTER_NAME}-mhc-windows
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  maxUnhealthy: 100%
-  nodeStartupTimeout: 10m
-  selector:
-    matchLabels:
-      windows-healthcheck: "true"
-  unhealthyConditions:
-  - status: "false"
-    timeout: 300s
-    type: Ready
-  - status: Unknown
-    timeout: 300s
-    type: Ready
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet

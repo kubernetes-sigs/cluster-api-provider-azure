@@ -458,11 +458,11 @@ const (
 )
 
 // IdentityType represents different types of identities.
-// +kubebuilder:validation:Enum=ServicePrincipal;ManualServicePrincipal;ServicePrincipalCertificate
+// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI;ManualServicePrincipal;ServicePrincipalCertificate
 type IdentityType string
 
 const (
-	// UserAssignedMSI represents a user-assigned identity.
+	// UserAssignedMSI represents a user-assigned managed identity.
 	UserAssignedMSI IdentityType = "UserAssignedMSI"
 
 	// ServicePrincipal represents a service principal using a client password as secret.

@@ -19,9 +19,11 @@ set -o nounset
 set -o pipefail
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
 CM_NAMES=("calico-addon" "calico-ipv6-addon" "calico-dual-stack-addon" "calico-windows-addon")
 CM_FILES=("calico.yaml" "calico-ipv6.yaml" "calico-dual-stack.yaml" "windows/calico")
 for i in "${!CM_NAMES[@]}"; do
-	kubectl create configmap "${CM_NAMES[i]}" --from-file="${REPO_ROOT}/templates/addons/${CM_FILES[i]}" --dry-run -o yaml | kubectl apply -f -
+	"${KUBECTL}" create configmap "${CM_NAMES[i]}" --from-file="${REPO_ROOT}/templates/addons/${CM_FILES[i]}" --dry-run -o yaml | kubectl apply -f -
 done

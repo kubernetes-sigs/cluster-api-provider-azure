@@ -49,6 +49,7 @@ type VMSpec struct {
 	SpotVMOptions          *infrav1.SpotVMOptions
 	SecurityProfile        *infrav1.SecurityProfile
 	AdditionalTags         infrav1.Tags
+	AdditionalCapabilities *infrav1.AdditionalCapabilities
 	SKU                    resourceskus.SKU
 	Image                  *infrav1.Image
 	BootstrapData          string
@@ -306,6 +307,9 @@ func (s *VMSpec) generateNICRefs() *[]compute.NetworkInterfaceReference {
 
 func (s *VMSpec) generateAdditionalCapabilities() *compute.AdditionalCapabilities {
 	var capabilities *compute.AdditionalCapabilities
+
+	// Provisionally detect whether there is any Data Disk defined which uses UltraSSDs.
+	// If that's the case, enable the UltraSSD capability.
 	for _, dataDisk := range s.DataDisks {
 		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
 			capabilities = &compute.AdditionalCapabilities{
@@ -314,6 +318,18 @@ func (s *VMSpec) generateAdditionalCapabilities() *compute.AdditionalCapabilitie
 			break
 		}
 	}
+
+	// Set Additional Capabilities if any is present on the spec.
+	if s.AdditionalCapabilities != nil {
+		if capabilities == nil {
+			capabilities = &compute.AdditionalCapabilities{}
+		}
+		// Set UltraSSDEnabled if a specific value is set on the spec for it.
+		if s.AdditionalCapabilities.UltraSSDEnabled != nil {
+			capabilities.UltraSSDEnabled = s.AdditionalCapabilities.UltraSSDEnabled
+		}
+	}
+
 	return capabilities
 }
 

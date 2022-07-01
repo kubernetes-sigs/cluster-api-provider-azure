@@ -1046,6 +1046,7 @@ func autoConvert_v1beta1_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *v1bet
 	out.DataDisks = *(*[]DataDisk)(unsafe.Pointer(&in.DataDisks))
 	out.SSHPublicKey = in.SSHPublicKey
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))
+	// WARNING: in.AdditionalCapabilities requires manual conversion: does not exist in peer-type
 	out.AllocatePublicIP = in.AllocatePublicIP
 	out.EnableIPForwarding = in.EnableIPForwarding
 	out.AcceleratedNetworking = (*bool)(unsafe.Pointer(in.AcceleratedNetworking))

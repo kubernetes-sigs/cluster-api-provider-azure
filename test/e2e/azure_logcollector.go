@@ -129,9 +129,9 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
 func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
-	nodeOSType := "Linux"
+	nodeOSType := azure.LinuxOS
 	if isWindows {
-		nodeOSType = "Windows"
+		nodeOSType = azure.WindowsOS
 	}
 	Logf("Collecting logs for %s node %s in cluster %s in namespace %s\n", nodeOSType, hostname, cluster.Name, cluster.Namespace)
 
