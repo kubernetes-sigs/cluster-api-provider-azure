@@ -476,13 +476,22 @@ generate-addons: fetch-calico-manifests ## Generate metric-server, calico calico
 
 # When updating this, make sure to also update the Windows image version in templates/addons/windows/calico.
 CALICO_VERSION := v3.23.0
+# Where all downloaded Calico manifests are unpacked and stored.
+CALICO_RELEASES := $(ARTIFACTS)/calico
+# Path to manifests directory in a Calico release archive.
+CALICO_RELEASE_MANIFESTS_DIR := release-$(CALICO_VERSION)/manifests
+# Path where Calico manifests are stored which should be used for addons generation.
+CALICO_MANIFESTS_DIR := $(ARTIFACTS)/calico/$(CALICO_RELEASE_MANIFESTS_DIR)
 
 .PHONY: fetch-calico-manifests
-fetch-calico-manifests: ## Get Calico release manifests and unzip them.
+fetch-calico-manifests: $(CALICO_MANIFESTS_DIR) ## Get Calico release manifests and unzip them.
+	cp $(CALICO_MANIFESTS_DIR)/calico-vxlan.yaml $(ADDONS_DIR)/calico
+	cp $(CALICO_MANIFESTS_DIR)/calico-policy-only.yaml $(ADDONS_DIR)/calico-ipv6
+
+$(CALICO_MANIFESTS_DIR):
+	mkdir -p $(ARTIFACTS)/calico
 	@echo "Fetching Calico release manifests from release artifacts, this might take a minute..."
-	wget -qO- https://github.com/projectcalico/calico/releases/download/$(CALICO_VERSION)/release-$(CALICO_VERSION).tgz | tar xz release-$(CALICO_VERSION)/manifests/calico-vxlan.yaml release-$(CALICO_VERSION)/manifests/calico-policy-only.yaml
-	mv release-$(CALICO_VERSION)/manifests/calico-vxlan.yaml $(ADDONS_DIR)/calico
-	mv release-$(CALICO_VERSION)/manifests/calico-policy-only.yaml $(ADDONS_DIR)/calico-ipv6
+	wget -qO- https://github.com/projectcalico/calico/releases/download/$(CALICO_VERSION)/release-$(CALICO_VERSION).tgz | tar xz --directory $(CALICO_RELEASES) $(CALICO_RELEASE_MANIFESTS_DIR)
 
 .PHONY: modules
 modules: ## Runs go mod tidy to ensure proper vendoring.
