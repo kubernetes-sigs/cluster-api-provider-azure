@@ -32,6 +32,11 @@ export GOPROXY
 # Active module mode, as we use go modules to manage dependencies
 export GO111MODULE=on
 
+# Kubebuilder.
+export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.20.2
+export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT ?= 60s
+export KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT ?= 60s
+
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
 
@@ -120,8 +125,12 @@ KIND_VER := v0.14.0
 KIND_BIN := kind
 KIND :=  $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
-KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
-ETCD=$(TOOLS_BIN_DIR)/etcd
+SETUP_ENVTEST_VER := v0.0.0-20211110210527-619e6b92dab9
+SETUP_ENVTEST_BIN := setup-envtest
+SETUP_ENVTEST := $(abspath $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER))
+SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
+
+KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -620,23 +629,16 @@ promote-images: $(KPROMO) ## Promote images.
 ## --------------------------------------
 
 ##@ Testing:
-
 .PHONY: test
 test: generate lint go-test ## Run "generate", "lint" and "go-tests" rules.
 
-envs-test:
-export TEST_ASSET_KUBECTL = $(KUBECTL)
-export TEST_ASSET_KUBE_APISERVER = $(KUBE_APISERVER)
-export TEST_ASSET_ETCD = $(ETCD)
-
 .PHONY: go-test
-go-test: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run go tests.
-	echo $(TEST_ASSET_KUBECTL)
-	go test ./...
+go-test: $(SETUP_ENVTEST) ## Run go tests.
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
 .PHONY: test-cover
-test-cover: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run tests with code coverage and code generate reports.
-	go test -v -coverprofile=coverage.out ./...
+test-cover: $(SETUP_ENVTEST) ## Run tests with code coverage and code generate reports.
+	$(MAKE) test TEST_ARGS="$(TEST_ARGS) -coverprofile=coverage.out"
 	go tool cover -func=coverage.out -o coverage.txt
 	go tool cover -html=coverage.out -o coverage.html
 
@@ -678,9 +680,6 @@ ifneq ($(WIN_REPO_URL), )
 	curl --retry $(CURL_RETRIES) $(WIN_REPO_URL) -o $(KUBETEST_REPO_LIST_PATH)/custom-repo-list.yaml
 endif
 	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_WINDOWS_CONF_PATH) -kubetest.repo-list-path=$(KUBETEST_REPO_LIST_PATH) $(E2E_ARGS)"
-
-$(KUBE_APISERVER) $(ETCD): ## Install test asset kubectl, kube-apiserver, etcd.
-	source ./scripts/fetch_ext_bins.sh && fetch_tools
 
 ## --------------------------------------
 ## Tilt / Kind
@@ -726,6 +725,7 @@ kubectl: $(KUBECTL) ## Build a local copy of kubectl.
 helm: $(HELM) ## Build a local copy of helm.
 yq: $(YQ) ## Build a local copy of yq.
 kind: $(KIND) ## Build a local copy of kind.
+setup-envtest: $(SETUP_ENVTEST) ## Build a local copy of setup-envtest.
 
 $(CONVERSION_VERIFIER): go.mod
 	cd $(TOOLS_DIR); go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier
@@ -799,3 +799,9 @@ $(YQ_BIN): $(YQ) ## Building yq from the tools folder.
 
 .PHONY: $(KIND_BIN)
 $(KIND_BIN): $(KIND)
+
+.PHONY: $(SETUP_ENVTEST_BIN)
+$(SETUP_ENVTEST_BIN): $(SETUP_ENVTEST) ## Build a local copy of setup-envtest.
+
+$(SETUP_ENVTEST): # Build setup-envtest from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(SETUP_ENVTEST_PKG) $(SETUP_ENVTEST_BIN) $(SETUP_ENVTEST_VER)
