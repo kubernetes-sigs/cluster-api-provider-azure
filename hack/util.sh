@@ -44,6 +44,11 @@ capz::util::get_random_region() {
     local REGIONS=("canadacentral" "centralus" "eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2" "westus3")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
+# all regions below must have GPU availability for the chosen GPU VM SKU
+capz::util::get_random_region_gpu() {
+    local REGIONS=("eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2")
+    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
+}
 
 capz::util::generate_ssh_key() {
     # Generate SSH key.

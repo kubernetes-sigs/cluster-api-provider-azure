@@ -61,6 +61,7 @@ export TAG="${defaultTag:-dev}"
 export GINKGO_NODES=1
 
 export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
+export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region_gpu)}"
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export WINDOWS="${WINDOWS:-false}"

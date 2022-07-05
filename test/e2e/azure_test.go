@@ -221,7 +221,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WorkerMachineCount:       pointer.Int64Ptr(2),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane-ha"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
 
@@ -290,7 +290,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WorkerMachineCount:       pointer.Int64Ptr(1),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane-ha"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
 
@@ -412,7 +412,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-gpu-nodes"),
 				// nvidia-gpu flavor creates a config map as part of a crs, that exceeds the annotations size limit when we do kubectl apply.
 				// This is because the entire config map is stored in `last-applied` annotation for tracking.
 				// The workaround is to use server side apply by passing `--server-side` flag to kubectl apply.
@@ -488,7 +488,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating an AKS cluster [EXPERIMENTAL]", func() {
 		It("with a single control plane node and 1 node", func() {
-			clusterName = getClusterName(clusterNamePrefix, "aks")
+			clusterName = getClusterName(clusterNamePrefix, aksClusterNameSuffix)
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig)
 			Expect(err).To(BeNil())
 
@@ -539,7 +539,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WorkerMachineCount:       pointer.Int64Ptr(1),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane-ha"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
 
@@ -598,7 +598,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
 
 		})

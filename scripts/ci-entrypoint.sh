@@ -81,6 +81,8 @@ setup() {
     export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
     export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
     echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
+    export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region_gpu)}"
+    echo "Using AZURE_LOCATION_GPU: ${AZURE_LOCATION_GPU}"
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export CCM_COUNT="${CCM_COUNT:-1}"
