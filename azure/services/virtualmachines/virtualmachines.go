@@ -53,7 +53,7 @@ type Service struct {
 	Scope VMScope
 	async.Reconciler
 	interfacesGetter async.Getter
-	publicIPsClient  publicips.Client
+	publicIPsGetter  async.Getter
 }
 
 // New creates a new service.
@@ -62,7 +62,7 @@ func New(scope VMScope) *Service {
 	return &Service{
 		Scope:            scope,
 		interfacesGetter: networkinterfaces.NewClient(scope),
-		publicIPsClient:  publicips.NewClient(scope),
+		publicIPsGetter:  publicips.NewClient(scope),
 		Reconciler:       async.New(scope, Client, Client),
 	}
 }
@@ -207,10 +207,19 @@ func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName st
 	defer done()
 
 	retAddress := corev1.NodeAddress{}
-	publicIP, err := s.publicIPsClient.Get(ctx, rgName, publicIPAddressName)
+	result, err := s.publicIPsGetter.Get(ctx, &publicips.PublicIPSpec{
+		Name:          publicIPAddressName,
+		ResourceGroup: rgName,
+	})
 	if err != nil {
 		return retAddress, err
 	}
+
+	publicIP, ok := result.(network.PublicIPAddress)
+	if !ok {
+		return retAddress, errors.Errorf("%T is not a network.PublicIPAddress", result)
+	}
+
 	retAddress.Type = corev1.NodeExternalIP
 	retAddress.Address = to.String(publicIP.IPAddress)
 
