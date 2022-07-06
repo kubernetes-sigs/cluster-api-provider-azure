@@ -3,7 +3,7 @@ module sigs.k8s.io/cluster-api-provider-azure
 go 1.17
 
 require (
-	github.com/Azure/aad-pod-identity v1.8.6
+	github.com/Azure/aad-pod-identity v1.8.9
 	github.com/Azure/azure-sdk-for-go v63.4.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.23
 	github.com/Azure/go-autorest/autorest/adal v0.9.18
@@ -32,7 +32,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.4.0
 	go.opentelemetry.io/otel/sdk/metric v0.27.0
 	go.opentelemetry.io/otel/trace v1.4.0
-	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
+	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
 	golang.org/x/mod v0.5.1
 	golang.org/x/text v0.3.7
 	helm.sh/helm/v3 v3.8.1
