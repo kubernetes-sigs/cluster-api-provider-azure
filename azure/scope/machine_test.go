@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -34,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
@@ -243,7 +245,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		machineScope MachineScope
-		want         []azure.PublicIPSpec
+		want         []azure.ResourceSpecGetter
 	}{
 		{
 			name: "returns nil if AllocatePublicIP is false",
@@ -270,10 +272,58 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 						AllocatePublicIP: true,
 					},
 				},
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cluster",
+							// Note: m.ClusterName() takes the value from the Cluster object, not the AzureCluster object
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cluster",
+						},
+						Status: infrav1.AzureClusterStatus{
+							FailureDomains: map[string]clusterv1.FailureDomainSpec{
+								"failure-domain-id-1": {},
+								"failure-domain-id-2": {},
+								"failure-domain-id-3": {},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								SubscriptionID: "123",
+								Location:       "centralIndia",
+								AdditionalTags: infrav1.Tags{
+									"Name": "my-publicip-ipv6",
+									"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+								},
+							},
+							NetworkSpec: infrav1.NetworkSpec{
+								APIServerLB: infrav1.LoadBalancerSpec{
+									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+										Type: infrav1.Internal,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
-			want: []azure.PublicIPSpec{
-				{
-					Name: "pip-machine-name",
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
+					Name:           "pip-machine-name",
+					ResourceGroup:  "my-rg",
+					DNSName:        "",
+					IsIPv6:         false,
+					ClusterName:    "my-cluster",
+					Location:       "centralIndia",
+					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					AdditionalTags: infrav1.Tags{
+						"Name": "my-publicip-ipv6",
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
 				},
 			},
 		},
@@ -281,7 +331,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.machineScope.PublicIPSpecs(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("PublicIPSpecs() = %v, want %v", got, tt.want)
+				t.Errorf("PublicIPSpecs() expected but got: %s", cmp.Diff(tt.want, got))
 			}
 		})
 	}

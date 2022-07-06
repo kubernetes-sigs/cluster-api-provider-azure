@@ -23,13 +23,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-// PublicIPSpec defines the specification for a Public IP.
-type PublicIPSpec struct {
-	Name    string
-	DNSName string
-	IsIPv6  bool
-}
-
 // RoleAssignmentSpec defines the specification for a Role Assignment.
 type RoleAssignmentSpec struct {
 	MachineName  string

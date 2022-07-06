@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -35,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
@@ -120,22 +122,29 @@ func (s *ClusterScope) Authorizer() autorest.Authorizer {
 }
 
 // PublicIPSpecs returns the public IP specs.
-func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
-	var publicIPSpecs []azure.PublicIPSpec
+func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
+	var publicIPSpecs []azure.ResourceSpecGetter
 
 	// Public IP specs for control plane lb
-	var controlPlaneOutboundIPSpecs []azure.PublicIPSpec
+	var controlPlaneOutboundIPSpecs []azure.ResourceSpecGetter
 	if s.IsAPIServerPrivate() {
 		// Public IP specs for control plane outbound lb
 		if s.ControlPlaneOutboundLB() != nil {
 			controlPlaneOutboundIPSpecs = s.getOutboundLBPublicIPSpecs(s.ControlPlaneOutboundLB(), azure.GenerateControlPlaneOutboundIPName)
 		}
 	} else {
-		controlPlaneOutboundIPSpecs = []azure.PublicIPSpec{{
-			Name:    s.APIServerPublicIP().Name,
-			DNSName: s.APIServerPublicIP().DNSName,
-			IsIPv6:  false, // currently azure requires a ipv4 lb rule to enable ipv6
-		}}
+		controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{
+			&publicips.PublicIPSpec{
+				Name:           s.APIServerPublicIP().Name,
+				ResourceGroup:  s.ResourceGroup(),
+				DNSName:        s.APIServerPublicIP().DNSName,
+				IsIPv6:         false, // Currently azure requires an IPv4 lb rule to enable IPv6
+				ClusterName:    s.ClusterName(),
+				Location:       s.Location(),
+				FailureDomains: s.FailureDomains(),
+				AdditionalTags: s.AdditionalTags(),
+			},
+		}
 	}
 	publicIPSpecs = append(publicIPSpecs, controlPlaneOutboundIPSpecs...)
 
@@ -146,22 +155,34 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	}
 
 	// Public IP specs for node NAT gateways
-	var nodeNatGatewayIPSpecs []azure.PublicIPSpec
+	var nodeNatGatewayIPSpecs []azure.ResourceSpecGetter
 	for _, subnet := range s.NodeSubnets() {
 		if subnet.IsNatGatewayEnabled() {
-			nodeNatGatewayIPSpecs = append(nodeNatGatewayIPSpecs, azure.PublicIPSpec{
-				Name:    subnet.NatGateway.NatGatewayIP.Name,
-				DNSName: subnet.NatGateway.NatGatewayIP.DNSName,
+			nodeNatGatewayIPSpecs = append(nodeNatGatewayIPSpecs, &publicips.PublicIPSpec{
+				Name:           subnet.NatGateway.NatGatewayIP.Name,
+				ResourceGroup:  s.ResourceGroup(),
+				DNSName:        subnet.NatGateway.NatGatewayIP.DNSName,
+				IsIPv6:         false, // Public IP is IPv4 by default
+				ClusterName:    s.ClusterName(),
+				Location:       s.Location(),
+				FailureDomains: s.FailureDomains(),
+				AdditionalTags: s.AdditionalTags(),
 			})
 		}
 		publicIPSpecs = append(publicIPSpecs, nodeNatGatewayIPSpecs...)
 	}
 
-	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
+	if azureBastion := s.AzureBastion(); azureBastion != nil {
 		// public IP for Azure Bastion.
-		azureBastionPublicIP := azure.PublicIPSpec{
-			Name:    s.AzureCluster.Spec.BastionSpec.AzureBastion.PublicIP.Name,
-			DNSName: s.AzureCluster.Spec.BastionSpec.AzureBastion.PublicIP.DNSName,
+		azureBastionPublicIP := &publicips.PublicIPSpec{
+			Name:           azureBastion.PublicIP.Name,
+			ResourceGroup:  s.ResourceGroup(),
+			DNSName:        azureBastion.PublicIP.DNSName,
+			IsIPv6:         false, // Public IP is IPv4 by default
+			ClusterName:    s.ClusterName(),
+			Location:       s.Location(),
+			FailureDomains: s.FailureDomains(),
+			AdditionalTags: s.AdditionalTags(),
 		}
 		publicIPSpecs = append(publicIPSpecs, azureBastionPublicIP)
 	}
@@ -775,6 +796,9 @@ func (s *ClusterScope) FailureDomains() []string {
 		fds[i] = id
 		i++
 	}
+
+	sort.Strings(fds)
+
 	return fds
 }
 
@@ -845,20 +869,34 @@ func (s *ClusterScope) SetDNSName() {
 }
 
 // getOutboundLBPublicIPSpecs returns the public ip specs for a LoadBalancerSpec based on the number of frontend ips configured.
-func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalancerSpec, generateOutboundIPName func(string) string) []azure.PublicIPSpec {
-	var outboundIPSpecs []azure.PublicIPSpec
+func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalancerSpec, generateOutboundIPName func(string) string) []azure.ResourceSpecGetter {
+	var outboundIPSpecs []azure.ResourceSpecGetter
 	loadBalancerNodeOutboundIPs := outboundLB.FrontendIPsCount
 	switch {
 	case loadBalancerNodeOutboundIPs == nil || *loadBalancerNodeOutboundIPs == 0:
 		// do nothing
 	case *loadBalancerNodeOutboundIPs == 1:
-		outboundIPSpecs = append(outboundIPSpecs, azure.PublicIPSpec{
-			Name: generateOutboundIPName(s.ClusterName()),
+		outboundIPSpecs = append(outboundIPSpecs, &publicips.PublicIPSpec{
+			Name:           generateOutboundIPName(s.ClusterName()),
+			ResourceGroup:  s.ResourceGroup(),
+			ClusterName:    s.ClusterName(),
+			DNSName:        "",    // Set to default value
+			IsIPv6:         false, // Set to default value
+			Location:       s.Location(),
+			FailureDomains: s.FailureDomains(),
+			AdditionalTags: s.AdditionalTags(),
 		})
 	default:
 		for i := 0; i < int(*loadBalancerNodeOutboundIPs); i++ {
-			outboundIPSpecs = append(outboundIPSpecs, azure.PublicIPSpec{
-				Name: azure.WithIndex(generateOutboundIPName(s.ClusterName()), i+1),
+			outboundIPSpecs = append(outboundIPSpecs, &publicips.PublicIPSpec{
+				Name:           azure.WithIndex(generateOutboundIPName(s.ClusterName()), i+1),
+				ResourceGroup:  s.ResourceGroup(),
+				ClusterName:    s.ClusterName(),
+				DNSName:        "",    // Set to default value
+				IsIPv6:         false, // Set to default value
+				Location:       s.Location(),
+				FailureDomains: s.FailureDomains(),
+				AdditionalTags: s.AdditionalTags(),
 			})
 		}
 	}

@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
@@ -186,14 +187,21 @@ func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
 }
 
 // PublicIPSpecs returns the public IP specs.
-func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
-	var spec []azure.PublicIPSpec
+func (m *MachineScope) PublicIPSpecs() []azure.ResourceSpecGetter {
+	var specs []azure.ResourceSpecGetter
 	if m.AzureMachine.Spec.AllocatePublicIP {
-		spec = append(spec, azure.PublicIPSpec{
-			Name: azure.GenerateNodePublicIPName(m.Name()),
+		specs = append(specs, &publicips.PublicIPSpec{
+			Name:           azure.GenerateNodePublicIPName(m.Name()),
+			ResourceGroup:  m.ResourceGroup(),
+			ClusterName:    m.ClusterName(),
+			DNSName:        "",    // Set to default value
+			IsIPv6:         false, // Set to default value
+			Location:       m.Location(),
+			FailureDomains: m.FailureDomains(),
+			AdditionalTags: m.ClusterScoper.AdditionalTags(),
 		})
 	}
-	return spec
+	return specs
 }
 
 // InboundNatSpecs returns the inbound NAT specs.
