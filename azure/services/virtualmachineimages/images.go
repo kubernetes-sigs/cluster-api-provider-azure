@@ -87,16 +87,16 @@ func (s *Service) GetDefaultWindowsImage(ctx context.Context, location, k8sVersi
 		osAndVersion = azure.DefaultWindowsOsAndVersion
 	}
 
+	// Starting with 1.22 we default to containerd for Windows unless the runtime flag is set.
+	if v.GE(v122) && runtime != "dockershim" && !strings.HasSuffix(osAndVersion, "-containerd") {
+		osAndVersion += "-containerd"
+	}
+
 	publisher, offer := azure.DefaultImagePublisherID, azure.DefaultWindowsImageOfferID
 	skuID, version, err := s.getDefaultImageSKUIDAndVersion(
 		ctx, location, publisher, offer, k8sVersion, osAndVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get default image")
-	}
-
-	// Starting with 1.22 we default to containerd for Windows unless the runtime flag is set.
-	if v.GTE(v122) && runtime != "dockershim" {
-		skuID += "-containerd"
 	}
 
 	defaultImage := &infrav1.Image{
