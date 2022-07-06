@@ -14,17 +14,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v0.3.23 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.23/core-components.yaml
-      type: url
-      contract: v1alpha3
-      files:
-        - sourcePath: "../data/shared/v1alpha3/metadata.yaml"
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/core-components.yaml"
+    - name: v0.4.8 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/core-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -46,17 +37,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v0.3.23 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.23/bootstrap-components.yaml
-      type: url
-      contract: v1alpha3
-      files:
-        - sourcePath: "../data/shared/v1alpha3/metadata.yaml"
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/bootstrap-components.yaml"
+    - name: v0.4.8 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/bootstrap-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -77,17 +59,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v0.3.23 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.23/control-plane-components.yaml
-      type: url
-      contract: v1alpha3
-      files:
-        - sourcePath: "../data/shared/v1alpha3/metadata.yaml"
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/control-plane-components.yaml"
+    - name: v0.4.8 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/control-plane-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -108,17 +81,6 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-    - name: v0.4.15 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v0.4.15/infrastructure-components.yaml
-      type: url
-      contract: v1alpha3
-      files:
-      - sourcePath: "../data/shared/v1alpha3_provider/metadata.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1alpha3/cluster-template-prow.yaml"
-        targetName: "cluster-template.yaml"
-      replacements:
-      - old: "imagePullPolicy: Always"
-        new: "imagePullPolicy: IfNotPresent"
     - name: v0.5.3 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
       value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v0.5.3/infrastructure-components.yaml
       type: url
@@ -203,9 +165,9 @@ variables:
   CI_VERSION: ""
   # NOTE: INIT_WITH_BINARY and INIT_WITH_KUBERNETES_VERSION are only used by the clusterctl upgrade test to initialize
   # the management cluster to be upgraded.
-  INIT_WITH_BINARY: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.23/clusterctl-{OS}-{ARCH}"
-  INIT_WITH_PROVIDERS_CONTRACT: "v1alpha3"
-  INIT_WITH_KUBERNETES_VERSION: "v1.21.2"
+  INIT_WITH_BINARY: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/clusterctl-{OS}-{ARCH}"
+  INIT_WITH_PROVIDERS_CONTRACT: "v1alpha4"
+  INIT_WITH_KUBERNETES_VERSION: "v1.21.12"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   SECURITY_SCAN_FAIL_THRESHOLD: "${SECURITY_SCAN_FAIL_THRESHOLD:-100}"

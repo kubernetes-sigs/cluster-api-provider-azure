@@ -213,14 +213,12 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				})
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
 					return capi_e2e.ClusterctlUpgradeSpecInput{
-						E2EConfig:                 e2eConfig,
-						ClusterctlConfigPath:      clusterctlConfigPath,
-						BootstrapClusterProxy:     bootstrapClusterProxy,
-						ArtifactFolder:            artifactFolder,
-						SkipCleanup:               skipCleanup,
-						InitWithProvidersContract: "v1alpha4",
-						InitWithBinary:            "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/clusterctl-{OS}-{ARCH}",
-						PreInit:                   getPreInitFunc(ctx),
+						E2EConfig:             e2eConfig,
+						ClusterctlConfigPath:  clusterctlConfigPath,
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						ArtifactFolder:        artifactFolder,
+						SkipCleanup:           skipCleanup,
+						PreInit:               getPreInitFunc(ctx),
 					}
 				})
 			})
