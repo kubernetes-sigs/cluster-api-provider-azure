@@ -27,6 +27,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -75,6 +76,7 @@ const (
 	capiImagePublisher             = "cncf-upstream"
 	capiOfferName                  = "capi"
 	capiWindowsOfferName           = "capi-windows"
+	aksClusterNameSuffix           = "aks"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -158,10 +160,14 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	// While https://github.com/kubernetes-sigs/cluster-api/issues/2955 is addressed in future iterations, there is a chance
 	// that cluster variable is not set even if the cluster exists, so we are calling DeleteAllClustersAndWait
 	// instead of DeleteClusterAndWait
+	deleteTimeoutConfig := "wait-delete-cluster"
+	if strings.Contains(input.Cluster.Name, aksClusterNameSuffix) {
+		deleteTimeoutConfig = "wait-delete-cluster-aks"
+	}
 	framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
 		Client:    input.ClusterProxy.GetClient(),
 		Namespace: input.Namespace.Name,
-	}, input.IntervalsGetter(input.SpecName, "wait-delete-cluster")...)
+	}, input.IntervalsGetter(input.SpecName, deleteTimeoutConfig)...)
 
 	Byf("Deleting namespace used for hosting the %q test spec", input.SpecName)
 	framework.DeleteNamespace(ctx, framework.DeleteNamespaceInput{
