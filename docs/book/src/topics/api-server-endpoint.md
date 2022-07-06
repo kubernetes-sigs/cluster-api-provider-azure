@@ -4,12 +4,13 @@ This document describes how to configure your clusters' api server load balancer
 
 ### Load Balancer Type
 
-CAPZ supports two load balancer types, `Public` and `Internal`. `Public`, which is also the default, means that your API Server Load Balancer will have a publicly accessible IP address.
-`Internal`, also known as a "private cluster", means that the API Server endpoint will only be accessible from within the cluster's virtual network (or peered VNets).
+CAPZ supports two load balancer types, `Public` and `Internal`.
 
-A `Public` cluster will have an Azure public load balancer load balancing internet traffic to the control plane nodes.
+`Public`, which is also the default, means that your API Server Load Balancer will have a publicly accessible IP address. This Load Balancer type supports a "public cluster" configuration, which load balances internet source traffic to the apiserver across the cluster's control plane nodes.
 
-A `Private` cluster will have an Azure internal load balancer load balancing traffic inside the VNet to the control plane nodes.
+`Internal` means that the API Server endpoint will only be accessible from within the cluster's virtual network (or peered VNets). This configuration supports a "private cluster" configuration, which load balances internal VNET source traffic to the apiserver across the cluster's control plane nodes.
+
+For a more complete "private cluster" template example, you may refer to [this reference template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-private.yaml) that the capz project maintains.
 
 For more information on Azure load balancing, see [Load Balancer documentation](https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-overview).
 
@@ -17,7 +18,7 @@ For more information on Azure load balancing, see [Load Balancer documentation](
 
 <h1> Warning </h1>
 
-When creating a workload cluster with `apiServerLB` type `Internal`, the management cluster needs to be in the same VNet, or a peered VNet, as the workload cluster. Otherwise, it will not be able to access the target cluster's api server and the cluster creation will fail.  
+When creating a workload cluster with `apiServerLB` type `Internal`, the management cluster needs to be in the same VNet, or a peered VNet, as the workload cluster. Otherwise, it will not be able to access the target cluster's api server and the cluster creation will fail.
 
 </aside>
 
@@ -54,16 +55,16 @@ spec:
   networkSpec:
     vnet:
       name: my-vnet
-      cidrBlocks: 
+      cidrBlocks:
         - 172.16.0.0/16
     subnets:
       - name: my-subnet-cp
         role: control-plane
-        cidrBlocks: 
+        cidrBlocks:
           - 172.16.0.0/24
       - name: my-subnet-node
         role: node
-        cidrBlocks: 
+        cidrBlocks:
           - 172.16.2.0/24
     apiServerLB:
       type: Internal
