@@ -223,6 +223,9 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane-ha"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
 			}, result)
 
 			Context("Validating failure domains", func() {
@@ -292,6 +295,9 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane-ha"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
 			}, result)
 
 			Context("Creating an accessible ipv6 load balancer", func() {
@@ -336,6 +342,9 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
 			}, result)
 
 			Context("Running a security scanner", func() {
@@ -413,6 +422,9 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-gpu-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
 				// nvidia-gpu flavor creates a config map as part of a crs, that exceeds the annotations size limit when we do kubectl apply.
 				// This is because the entire config map is stored in `last-applied` annotation for tracking.
 				// The workaround is to use server side apply by passing `--server-side` flag to kubectl apply.
@@ -458,7 +470,7 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: InstallHelmCharts,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
 			}, result)
 
@@ -510,8 +522,8 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized:   WaitForControlPlaneInitialized,
-					WaitForControlPlaneMachinesReady: WaitForControlPlaneMachinesReady,
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				},
 			}, result)
 		})
@@ -541,6 +553,9 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane-ha"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
 			}, result)
 
 			// dual-stack external IP for dual-stack clusters is not yet supported
@@ -599,6 +614,9 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
 			}, result)
 
 		})

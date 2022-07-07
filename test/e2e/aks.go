@@ -39,41 +39,41 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// WaitForControlPlaneInitialized waits for the azure managed control plane to be initialized.
-// This will be invoked by cluster api e2e framework.
-func WaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
-	client := input.ClusterProxy.GetClient()
-	DiscoverAndWaitForControlPlaneInitialized(ctx, DiscoverAndWaitForControlPlaneMachinesInput{
-		Lister:  client,
-		Getter:  client,
-		Cluster: result.Cluster,
-	}, input.WaitForControlPlaneIntervals...)
-}
-
-// WaitForControlPlaneMachinesReady waits for the azure managed control plane to be ready.
-// This will be invoked by cluster api e2e framework.
-func WaitForControlPlaneMachinesReady(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
-	client := input.ClusterProxy.GetClient()
-	DiscoverAndWaitForControlPlaneReady(ctx, DiscoverAndWaitForControlPlaneMachinesInput{
-		Lister:  client,
-		Getter:  client,
-		Cluster: result.Cluster,
-	}, input.WaitForControlPlaneIntervals...)
-}
-
-// DiscoverAndWaitForControlPlaneMachinesInput contains the fields the required for checking the status of azure managed control plane.
-type DiscoverAndWaitForControlPlaneMachinesInput struct {
+// DiscoverAndWaitForAKSControlPlaneInput contains the fields the required for checking the status of azure managed control plane.
+type DiscoverAndWaitForAKSControlPlaneInput struct {
 	Lister  framework.Lister
 	Getter  framework.Getter
 	Cluster *clusterv1.Cluster
 }
 
-// DiscoverAndWaitForControlPlaneInitialized gets the azure managed control plane associated with the cluster,
-// and waits for at least one control plane machine to be up.
-func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input DiscoverAndWaitForControlPlaneMachinesInput, intervals ...interface{}) {
-	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneInitialized")
-	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
-	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
+// WaitForAKSControlPlaneInitialized waits for the Azure managed control plane to be initialized.
+// This will be invoked by cluster api e2e framework.
+func WaitForAKSControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
+	client := input.ClusterProxy.GetClient()
+	DiscoverAndWaitForAKSControlPlaneInitialized(ctx, DiscoverAndWaitForAKSControlPlaneInput{
+		Lister:  client,
+		Getter:  client,
+		Cluster: result.Cluster,
+	}, input.WaitForControlPlaneIntervals...)
+}
+
+// WaitForAKSControlPlaneReady waits for the azure managed control plane to be ready.
+// This will be invoked by cluster api e2e framework.
+func WaitForAKSControlPlaneReady(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
+	client := input.ClusterProxy.GetClient()
+	DiscoverAndWaitForAKSControlPlaneReady(ctx, DiscoverAndWaitForAKSControlPlaneInput{
+		Lister:  client,
+		Getter:  client,
+		Cluster: result.Cluster,
+	}, input.WaitForControlPlaneIntervals...)
+}
+
+// DiscoverAndWaitForAKSControlPlaneInitialized gets the Azure managed control plane associated with the cluster
+// and waits for at least one machine in the "system" node pool to exist.
+func DiscoverAndWaitForAKSControlPlaneInitialized(ctx context.Context, input DiscoverAndWaitForAKSControlPlaneInput, intervals ...interface{}) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForAKSControlPlaneInitialized")
+	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForAKSControlPlaneInitialized")
+	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForAKSControlPlaneInitialized")
 
 	controlPlane := GetAzureManagedControlPlaneByCluster(ctx, GetAzureManagedControlPlaneByClusterInput{
 		Lister:      input.Lister,
@@ -82,8 +82,8 @@ func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input Discov
 	})
 	Expect(controlPlane).NotTo(BeNil())
 
-	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
-	WaitForAtLeastOneControlPlaneAndMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
+	Logf("Waiting for the first AKS machine in the %s/%s 'system' node pool to exist", controlPlane.Namespace, controlPlane.Name)
+	WaitForAtLeastOneSystemNodePoolMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
 		Lister:       input.Lister,
 		Getter:       input.Getter,
 		ControlPlane: controlPlane,
@@ -92,12 +92,12 @@ func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input Discov
 	}, intervals...)
 }
 
-// DiscoverAndWaitForControlPlaneReady gets the azure managed control plane associated with the cluster,
-// and waits for all the control plane machines to be up.
-func DiscoverAndWaitForControlPlaneReady(ctx context.Context, input DiscoverAndWaitForControlPlaneMachinesInput, intervals ...interface{}) {
-	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneReady")
-	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneReady")
-	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneReady")
+// DiscoverAndWaitForAKSControlPlaneReady gets the Azure managed control plane associated with the cluster
+// and waits for all the machines in the 'system' node pool to exist.
+func DiscoverAndWaitForAKSControlPlaneReady(ctx context.Context, input DiscoverAndWaitForAKSControlPlaneInput, intervals ...interface{}) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForAKSControlPlaneReady")
+	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForAKSControlPlaneReady")
+	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForAKSControlPlaneReady")
 
 	controlPlane := GetAzureManagedControlPlaneByCluster(ctx, GetAzureManagedControlPlaneByClusterInput{
 		Lister:      input.Lister,
@@ -106,7 +106,7 @@ func DiscoverAndWaitForControlPlaneReady(ctx context.Context, input DiscoverAndW
 	})
 	Expect(controlPlane).NotTo(BeNil())
 
-	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
+	Logf("Waiting for all AKS machines in the %s/%s 'system' node pool to exist", controlPlane.Namespace, controlPlane.Name)
 	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
 		Lister:       input.Lister,
 		Getter:       input.Getter,
@@ -145,16 +145,16 @@ type WaitForControlPlaneAndMachinesReadyInput struct {
 	Namespace    string
 }
 
-// WaitForAtLeastOneControlPlaneAndMachineToExist waits for at least one control plane machine to be provisioned.
-func WaitForAtLeastOneControlPlaneAndMachineToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, intervals ...interface{}) {
-	By("Waiting for at least one control plane node to exist")
-	WaitForControlPlaneMachinesToExist(ctx, input, atLeastOne, intervals...)
+// WaitForAtLeastOneSystemNodePoolMachineToExist waits for at least one machine in the "system" node pool to exist.
+func WaitForAtLeastOneSystemNodePoolMachineToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, intervals ...interface{}) {
+	By("Waiting for at least one node to exist in the 'system' node pool")
+	WaitForAKSSystemNodePoolMachinesToExist(ctx, input, atLeastOne, intervals...)
 }
 
-// WaitForAllControlPlaneAndMachinesToExist waits for all control plane machines to be provisioned.
+// WaitForAllControlPlaneAndMachinesToExist waits for all machines in the "system" node pool to exist.
 func WaitForAllControlPlaneAndMachinesToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, intervals ...interface{}) {
-	By("Waiting for all control plane nodes to exist")
-	WaitForControlPlaneMachinesToExist(ctx, input, all, intervals...)
+	By("Waiting for all nodes to exist in the 'system' node pool")
+	WaitForAKSSystemNodePoolMachinesToExist(ctx, input, all, intervals...)
 }
 
 // controlPlaneReplicas represents the count of control plane machines.
@@ -176,8 +176,8 @@ func (r controlPlaneReplicas) value(mp *clusterv1exp.MachinePool) int {
 	return 0
 }
 
-// WaitForControlPlaneMachinesToExist waits for a certain number of control plane machines to be provisioned represented.
-func WaitForControlPlaneMachinesToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, minReplicas controlPlaneReplicas, intervals ...interface{}) {
+// WaitForAKSSystemNodePoolMachinesToExist waits for a certain number of machines in the "system" node pool to exist.
+func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, minReplicas controlPlaneReplicas, intervals ...interface{}) {
 	Eventually(func() bool {
 
 		opt1 := client.InNamespace(input.Namespace)
@@ -214,7 +214,7 @@ func WaitForControlPlaneMachinesToExist(ctx context.Context, input WaitForContro
 
 		return false
 
-	}, intervals...).Should(Equal(true), "System machine pools not ready")
+	}, intervals...).Should(Equal(true), "System machine pools not detected")
 }
 
 // GetAKSKubernetesVersion gets the kubernetes version for AKS clusters.

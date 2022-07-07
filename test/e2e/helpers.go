@@ -124,6 +124,22 @@ func WaitForDeploymentsAvailable(ctx context.Context, input WaitForDeploymentsAv
 	Logf("Deployment %s/%s is now available, took %v", namespace, name, time.Since(start))
 }
 
+// GetWaitForDeploymentsAvailableInput is a convenience func to compose a WaitForDeploymentsAvailableInput
+func GetWaitForDeploymentsAvailableInput(ctx context.Context, clusterProxy framework.ClusterProxy, name, namespace string, specName string) WaitForDeploymentsAvailableInput {
+	Expect(clusterProxy).NotTo(BeNil())
+	cl := clusterProxy.GetClient()
+	var d = &appsv1.Deployment{}
+	Eventually(func() error {
+		return cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, d)
+	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(Succeed())
+	clientset := clusterProxy.GetClientSet()
+	return WaitForDeploymentsAvailableInput{
+		Deployment: d,
+		Clientset:  clientset,
+		Getter:     cl,
+	}
+}
+
 // DescribeFailedDeployment returns detailed output to help debug a deployment failure in e2e.
 func DescribeFailedDeployment(ctx context.Context, input WaitForDeploymentsAvailableInput) string {
 	namespace, name := input.Deployment.GetNamespace(), input.Deployment.GetName()
@@ -839,7 +855,7 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 	return b.String()
 }
 
-// InstallHelmChart takes a helm repo URL, a chart name, and release name, and installs a helm release onto the E2E workload cluster
+// InstallHelmChart takes a helm repo URL, a chart name, and release name, and installs a helm release onto the E2E workload cluster.
 func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, repoURL, chartName, releaseName string, values []string) {
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
 	kubeConfigPath := clusterProxy.GetKubeconfigPath()
@@ -850,7 +866,9 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	err := actionConfig.Init(settings.RESTClientGetter(), ns, "secret", Logf)
 	Expect(err).To(BeNil())
 	i := helmAction.NewInstall(actionConfig)
-	i.RepoURL = repoURL
+	if repoURL != "" {
+		i.RepoURL = repoURL
+	}
 	i.ReleaseName = releaseName
 	i.Namespace = ns
 	Eventually(func() error {
@@ -878,27 +896,8 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
 }
 
-// WaitForWorkloadClusterKubeconfigSecret retries during E2E until the workload cluster kubeconfig secret exists
-func WaitForWorkloadClusterKubeconfigSecret(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput) {
-	// Ensure the workload cluster kubeconfig secret exists before getting the workload cluster clusterProxy object
-	Eventually(func() error {
-		cl := input.ClusterProxy.GetClient()
-		secret := &corev1.Secret{}
-		key := client.ObjectKey{
-			Name:      fmt.Sprintf("%s-kubeconfig", input.ConfigCluster.ClusterName),
-			Namespace: input.ConfigCluster.Namespace,
-		}
-		err := cl.Get(ctx, key, secret)
-		if err != nil {
-			return err
-		}
-		return nil
-	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
-}
-
-// WaitForDaemonset retries during E2E until a daemonset's pods are all Running
+// WaitForDaemonset retries during E2E until a daemonset's pods are all Running.
 func WaitForDaemonset(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cl client.Client, name, namespace string) {
-	// Ensure the workload cluster kubeconfig secret exists before getting the workload cluster clusterProxy object
 	Eventually(func() bool {
 		ds := &appsv1.DaemonSet{}
 		if err := cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, ds); err != nil {
@@ -909,38 +908,4 @@ func WaitForDaemonset(ctx context.Context, input clusterctl.ApplyClusterTemplate
 		}
 		return false
 	}, input.WaitForControlPlaneIntervals...).Should(Equal(true))
-}
-
-// podListHasNumPods fulfills the cluster-api PodListCondition type spec
-// given a list of pods, we validate for an exact number of those pods in a Running state
-func podListHasNumPods(numPods int) func(pl *corev1.PodList) error {
-	return func(pl *corev1.PodList) error {
-		var runningPods int
-		for _, p := range pl.Items {
-			if p.Status.Phase == corev1.PodRunning {
-				runningPods++
-			}
-		}
-		if runningPods != numPods {
-			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
-		}
-		return nil
-	}
-}
-
-// podListHasAtLeastNumPods fulfills the cluster-api PodListCondition type spec
-// given a list of pods, we validate for at least 1 number of those pods in a Running state
-func podListHasAtLeastNumPods(numPods int) func(pl *corev1.PodList) error {
-	return func(pl *corev1.PodList) error {
-		var runningPods int
-		for _, p := range pl.Items {
-			if p.Status.Phase == corev1.PodRunning {
-				runningPods++
-			}
-		}
-		if runningPods >= numPods {
-			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
-		}
-		return nil
-	}
 }
