@@ -391,7 +391,7 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 		if len(old.FrontendIPs) == len(lb.FrontendIPs) {
 			for i, frontEndIP := range lb.FrontendIPs {
 				oldFrontendIP := old.FrontendIPs[i]
-				if oldFrontendIP.Name != frontEndIP.Name || *oldFrontendIP.PublicIP != *frontEndIP.PublicIP {
+				if oldFrontendIP.Name != frontEndIP.Name || !reflect.DeepEqual(*oldFrontendIP.PublicIP, *frontEndIP.PublicIP) {
 					allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPs").Index(i),
 						"Node outbound load balancer FrontendIPs cannot be modified after AzureCluster creation."))
 				}

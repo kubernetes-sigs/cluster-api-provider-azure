@@ -1320,6 +1320,24 @@ spec:
                         properties:
                           dnsName:
                             type: string
+                          ipTags:
+                            items:
+                              description: IPTag contains the IpTag associated with
+                                the object.
+                              properties:
+                                tag:
+                                  description: 'Tag specifies the value of the IP
+                                    tag associated with the public IP. Example: SQL.'
+                                  type: string
+                                type:
+                                  description: 'Type specifies the IP tag type. Example:
+                                    FirstPartyUsage.'
+                                  type: string
+                              required:
+                              - tag
+                              - type
+                              type: object
+                            type: array
                           name:
                             type: string
                         required:
@@ -1354,6 +1372,25 @@ spec:
                                 properties:
                                   dnsName:
                                     type: string
+                                  ipTags:
+                                    items:
+                                      description: IPTag contains the IpTag associated
+                                        with the object.
+                                      properties:
+                                        tag:
+                                          description: 'Tag specifies the value of
+                                            the IP tag associated with the public
+                                            IP. Example: SQL.'
+                                          type: string
+                                        type:
+                                          description: 'Type specifies the IP tag
+                                            type. Example: FirstPartyUsage.'
+                                          type: string
+                                      required:
+                                      - tag
+                                      - type
+                                      type: object
+                                    type: array
                                   name:
                                     type: string
                                 required:
@@ -1656,6 +1693,25 @@ spec:
                               properties:
                                 dnsName:
                                   type: string
+                                ipTags:
+                                  items:
+                                    description: IPTag contains the IpTag associated
+                                      with the object.
+                                    properties:
+                                      tag:
+                                        description: 'Tag specifies the value of the
+                                          IP tag associated with the public IP. Example:
+                                          SQL.'
+                                        type: string
+                                      type:
+                                        description: 'Type specifies the IP tag type.
+                                          Example: FirstPartyUsage.'
+                                        type: string
+                                    required:
+                                    - tag
+                                    - type
+                                    type: object
+                                  type: array
                                 name:
                                   type: string
                               required:
@@ -1710,6 +1766,25 @@ spec:
                               properties:
                                 dnsName:
                                   type: string
+                                ipTags:
+                                  items:
+                                    description: IPTag contains the IpTag associated
+                                      with the object.
+                                    properties:
+                                      tag:
+                                        description: 'Tag specifies the value of the
+                                          IP tag associated with the public IP. Example:
+                                          SQL.'
+                                        type: string
+                                      type:
+                                        description: 'Type specifies the IP tag type.
+                                          Example: FirstPartyUsage.'
+                                        type: string
+                                    required:
+                                    - tag
+                                    - type
+                                    type: object
+                                  type: array
                                 name:
                                   type: string
                               required:
@@ -1762,6 +1837,25 @@ spec:
                               properties:
                                 dnsName:
                                   type: string
+                                ipTags:
+                                  items:
+                                    description: IPTag contains the IpTag associated
+                                      with the object.
+                                    properties:
+                                      tag:
+                                        description: 'Tag specifies the value of the
+                                          IP tag associated with the public IP. Example:
+                                          SQL.'
+                                        type: string
+                                      type:
+                                        description: 'Type specifies the IP tag type.
+                                          Example: FirstPartyUsage.'
+                                        type: string
+                                    required:
+                                    - tag
+                                    - type
+                                    type: object
+                                  type: array
                                 name:
                                   type: string
                               required:
@@ -1830,6 +1924,25 @@ spec:
                               properties:
                                 dnsName:
                                   type: string
+                                ipTags:
+                                  items:
+                                    description: IPTag contains the IpTag associated
+                                      with the object.
+                                    properties:
+                                      tag:
+                                        description: 'Tag specifies the value of the
+                                          IP tag associated with the public IP. Example:
+                                          SQL.'
+                                        type: string
+                                      type:
+                                        description: 'Type specifies the IP tag type.
+                                          Example: FirstPartyUsage.'
+                                        type: string
+                                    required:
+                                    - tag
+                                    - type
+                                    type: object
+                                  type: array
                                 name:
                                   type: string
                               required:

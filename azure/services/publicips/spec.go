@@ -36,6 +36,7 @@ type PublicIPSpec struct {
 	Location       string
 	FailureDomains []string
 	AdditionalTags infrav1.Tags
+	IPTags         []infrav1.IPTag
 }
 
 // ResourceName returns the name of the public IP.
@@ -91,6 +92,7 @@ func (s *PublicIPSpec) Parameters(existing interface{}) (params interface{}, err
 			PublicIPAddressVersion:   addressVersion,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 			DNSSettings:              dnsSettings,
+			IPTags:                   converters.IPTagsToSDK(s.IPTags),
 		},
 		Zones: to.StringSlicePtr(s.FailureDomains),
 	}, nil
