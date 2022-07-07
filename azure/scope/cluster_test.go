@@ -326,6 +326,9 @@ func TestPublicIPSpecs(t *testing.T) {
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							FrontendIPsCount: to.Int32Ptr(0),
+						},
 						APIServerLB: infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
@@ -368,7 +371,15 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
-							FrontendIPsCount:      to.Int32Ptr(1),
+							FrontendIPsCount: to.Int32Ptr(1),
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "my-frontend-ip",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "pip-my-cluster-controlplane-outbound",
+									},
+								},
+							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
 						APIServerLB: infrav1.LoadBalancerSpec{
@@ -427,7 +438,27 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
-							FrontendIPsCount:      to.Int32Ptr(3),
+							FrontendIPsCount: to.Int32Ptr(3),
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "my-frontend-ip-1",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "pip-my-cluster-controlplane-outbound-1",
+									},
+								},
+								{
+									Name: "my-frontend-ip-2",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "pip-my-cluster-controlplane-outbound-2",
+									},
+								},
+								{
+									Name: "my-frontend-ip-3",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "pip-my-cluster-controlplane-outbound-3",
+									},
+								},
+							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
 						APIServerLB: infrav1.LoadBalancerSpec{
@@ -743,7 +774,7 @@ func TestPublicIPSpecs(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 
 			if got := clusterScope.PublicIPSpecs(); !reflect.DeepEqual(got, tc.expectedPublicIPSpec) {
-				t.Errorf("PublicIPSpecs() diff between expected result and actual result: %s", cmp.Diff(tc.expectedPublicIPSpec, got))
+				t.Errorf("PublicIPSpecs() diff between expected result and actual result (%v): %s", got, cmp.Diff(tc.expectedPublicIPSpec, got))
 			}
 		})
 	}

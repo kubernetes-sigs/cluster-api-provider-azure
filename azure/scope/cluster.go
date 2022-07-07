@@ -130,7 +130,18 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 	if s.IsAPIServerPrivate() {
 		// Public IP specs for control plane outbound lb
 		if s.ControlPlaneOutboundLB() != nil {
-			controlPlaneOutboundIPSpecs = s.getOutboundLBPublicIPSpecs(s.ControlPlaneOutboundLB(), azure.GenerateControlPlaneOutboundIPName)
+			for _, ip := range s.ControlPlaneOutboundLB().FrontendIPs {
+				controlPlaneOutboundIPSpecs = append(controlPlaneOutboundIPSpecs, &publicips.PublicIPSpec{
+					Name:           ip.PublicIP.Name,
+					ResourceGroup:  s.ResourceGroup(),
+					ClusterName:    s.ClusterName(),
+					DNSName:        "",    // Set to default value
+					IsIPv6:         false, // Set to default value
+					Location:       s.Location(),
+					FailureDomains: s.FailureDomains(),
+					AdditionalTags: s.AdditionalTags(),
+				})
+			}
 		}
 	} else {
 		controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{
@@ -150,8 +161,18 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 
 	// Public IP specs for node outbound lb
 	if s.NodeOutboundLB() != nil {
-		nodeOutboundIPSpecs := s.getOutboundLBPublicIPSpecs(s.NodeOutboundLB(), azure.GenerateNodeOutboundIPName)
-		publicIPSpecs = append(publicIPSpecs, nodeOutboundIPSpecs...)
+		for _, ip := range s.NodeOutboundLB().FrontendIPs {
+			publicIPSpecs = append(publicIPSpecs, &publicips.PublicIPSpec{
+				Name:           ip.PublicIP.Name,
+				ResourceGroup:  s.ResourceGroup(),
+				ClusterName:    s.ClusterName(),
+				DNSName:        "",    // Set to default value
+				IsIPv6:         false, // Set to default value
+				Location:       s.Location(),
+				FailureDomains: s.FailureDomains(),
+				AdditionalTags: s.AdditionalTags(),
+			})
+		}
 	}
 
 	// Public IP specs for node NAT gateways
@@ -868,41 +889,6 @@ func (s *ClusterScope) SetDNSName() {
 	if !s.IsAPIServerPrivate() && s.APIServerPublicIP().DNSName == "" {
 		s.APIServerPublicIP().DNSName = s.GenerateFQDN(s.APIServerPublicIP().Name)
 	}
-}
-
-// getOutboundLBPublicIPSpecs returns the public ip specs for a LoadBalancerSpec based on the number of frontend ips configured.
-func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalancerSpec, generateOutboundIPName func(string) string) []azure.ResourceSpecGetter {
-	var outboundIPSpecs []azure.ResourceSpecGetter
-	loadBalancerNodeOutboundIPs := outboundLB.FrontendIPsCount
-	switch {
-	case loadBalancerNodeOutboundIPs == nil || *loadBalancerNodeOutboundIPs == 0:
-		// do nothing
-	case *loadBalancerNodeOutboundIPs == 1:
-		outboundIPSpecs = append(outboundIPSpecs, &publicips.PublicIPSpec{
-			Name:           generateOutboundIPName(s.ClusterName()),
-			ResourceGroup:  s.ResourceGroup(),
-			ClusterName:    s.ClusterName(),
-			DNSName:        "",    // Set to default value
-			IsIPv6:         false, // Set to default value
-			Location:       s.Location(),
-			FailureDomains: s.FailureDomains(),
-			AdditionalTags: s.AdditionalTags(),
-		})
-	default:
-		for i := 0; i < int(*loadBalancerNodeOutboundIPs); i++ {
-			outboundIPSpecs = append(outboundIPSpecs, &publicips.PublicIPSpec{
-				Name:           azure.WithIndex(generateOutboundIPName(s.ClusterName()), i+1),
-				ResourceGroup:  s.ResourceGroup(),
-				ClusterName:    s.ClusterName(),
-				DNSName:        "",    // Set to default value
-				IsIPv6:         false, // Set to default value
-				Location:       s.Location(),
-				FailureDomains: s.FailureDomains(),
-				AdditionalTags: s.AdditionalTags(),
-			})
-		}
-	}
-	return outboundIPSpecs
 }
 
 // SetLongRunningOperationState will set the future on the AzureCluster status to allow the resource to continue
