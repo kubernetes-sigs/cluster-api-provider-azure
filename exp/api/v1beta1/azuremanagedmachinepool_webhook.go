@@ -54,8 +54,8 @@ func (m *AzureManagedMachinePool) Default(client client.Client) {
 //+kubebuilder:webhook:verbs=update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,versions=v1beta1,name=validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
-	validators := []func() error{
+func (m *AzureManagedMachinePool) ValidateCreate(cli client.Client) error {
+	validators := []func(client client.Client) error{
 		m.validateMaxPods,
 		m.validateOSType,
 		m.validateName,
@@ -63,7 +63,7 @@ func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 
 	var errs []error
 	for _, validator := range validators {
-		if err := validator(); err != nil {
+		if err := validator(cli); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -262,7 +262,7 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 	return nil
 }
 
-func (m *AzureManagedMachinePool) validateMaxPods() error {
+func (m *AzureManagedMachinePool) validateMaxPods(_ client.Client) error {
 	if m.Spec.MaxPods != nil {
 		if to.Int32(m.Spec.MaxPods) < 10 || to.Int32(m.Spec.MaxPods) > 250 {
 			return field.Invalid(
@@ -275,19 +275,42 @@ func (m *AzureManagedMachinePool) validateMaxPods() error {
 	return nil
 }
 
-func (m *AzureManagedMachinePool) validateOSType() error {
+func (m *AzureManagedMachinePool) validateOSType(cli client.Client) error {
 	if m.Spec.Mode == string(NodePoolModeSystem) {
 		if m.Spec.OSType != nil && *m.Spec.OSType != azure.LinuxOS {
 			return field.Forbidden(
 				field.NewPath("Spec", "OSType"),
-				"System node pooll must have OSType 'Linux'")
+				"System node pool must have OSType 'Linux'")
+		}
+	}
+
+	if m.Spec.Mode == string(NodePoolModeUser) {
+		clusterName, ok := m.GetLabels()[clusterv1.ClusterLabelName] // no cluster name we can't perform the validation
+		if ok && m.Spec.OSType != nil && *m.Spec.OSType == azure.WindowsOS {
+			// validate using azure cni or else this will never work
+			ctx := context.Background()
+			key := client.ObjectKey{Name: clusterName, Namespace: m.Namespace}
+			azManagedControlPlane := &AzureManagedControlPlane{}
+			if err := cli.Get(ctx, key, azManagedControlPlane); err != nil {
+				if !apierrors.IsNotFound(err) {
+					return fmt.Errorf("error trying to find AzureManagedControlPlane: %s", err)
+				}
+			}
+
+			// not found will be "", anything else but "azure" won't work with windows nodes so fail with invalid
+			if to.String(azManagedControlPlane.Spec.NetworkPlugin) != "azure" {
+				return field.Invalid(
+					field.NewPath("Spec", "OSType"),
+					m.Spec.OSType,
+					"Windows OSType is only valid with NetworkPlugin=azure")
+			}
 		}
 	}
 
 	return nil
 }
 
-func (m *AzureManagedMachinePool) validateName() error {
+func (m *AzureManagedMachinePool) validateName(_ client.Client) error {
 	if m.Spec.OSType != nil && *m.Spec.OSType == azure.WindowsOS {
 		if len(m.Name) > 6 {
 			return field.Invalid(
