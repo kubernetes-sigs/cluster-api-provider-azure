@@ -271,6 +271,10 @@ spec:
           path: /run/xtables.lock
           type: FileOrCreate
         name: iptableslock
+      - name: default-path
+        hostPath:
+          path: /etc/default
+          type: DirectoryOrCreate
       - name: kubelet-config
         hostPath:
           path: /etc/default/kubelet
@@ -316,6 +320,9 @@ spec:
         volumeMounts:
         - mountPath: /run/xtables.lock
           name: iptableslock
+        - name: default-path
+          mountPath: /etc/default
+          readOnly: true
         - name: kubelet-config
           mountPath: /etc/default/kubelet
           readOnly: true
