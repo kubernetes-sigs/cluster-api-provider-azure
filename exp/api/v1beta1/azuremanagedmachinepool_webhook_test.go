@@ -99,6 +99,26 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "Cannot change OSType of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					OSType:       to.StringPtr("Linux"),
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					OSType:       to.StringPtr("Windows"),
+					Mode:         "System",
+					SKU:          "StandardD2S_V4",
+					OSDiskSizeGB: to.Int32Ptr(512),
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "Cannot change OSDiskSizeGB of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{

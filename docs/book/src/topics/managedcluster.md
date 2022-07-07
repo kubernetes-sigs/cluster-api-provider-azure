@@ -438,25 +438,26 @@ those can only be set during the creation time.
 
 Following is the list of immutable fields for managed clusters:
 
-| CRD                      | jsonPath                     | Comment                   |
-|--------------------------|------------------------------|---------------------------|
-| AzureManagedControlPlane | .spec.subscriptionID         |                           |
-| AzureManagedControlPlane | .spec.resourceGroupName      |                           |
-| AzureManagedControlPlane | .spec.nodeResourceGroupName  |                           |
-| AzureManagedControlPlane | .spec.location               |                           |
-| AzureManagedControlPlane | .spec.sshPublicKey           |                           |
-| AzureManagedControlPlane | .spec.dnsServiceIP           |                           |
-| AzureManagedControlPlane | .spec.networkPlugin          |                           |
-| AzureManagedControlPlane | .spec.networkPolicy          |                           |
-| AzureManagedControlPlane | .spec.loadBalancerSKU        |                           |
-| AzureManagedControlPlane | .spec.apiServerAccessProfile | except AuthorizedIPRanges |
-| AzureManagedMachinePool  | .spec.sku                    |                           |
-| AzureManagedMachinePool  | .spec.osDiskSizeGB           |                           |
-| AzureManagedMachinePool  | .spec.osDiskType             |                           |
-| AzureManagedMachinePool  | .spec.taints                 |                           |
-| AzureManagedMachinePool  | .spec.availabilityZones      |                           |
-| AzureManagedMachinePool  | .spec.maxPods                |                           |
-| AzureManagedMachinePool  | .spec.osType                 |                           |
+| CRD                       | jsonPath                     | Comment                   |
+|---------------------------|------------------------------|---------------------------|
+| AzureManagedControlPlane  | .name                        |                           |
+| AzureManagedControlPlane  | .spec.subscriptionID         |                           |
+| AzureManagedControlPlane  | .spec.resourceGroupName      |                           |
+| AzureManagedControlPlane  | .spec.nodeResourceGroupName  |                           |
+| AzureManagedControlPlane  | .spec.location               |                           |
+| AzureManagedControlPlane  | .spec.sshPublicKey           |                           |
+| AzureManagedControlPlane  | .spec.dnsServiceIP           |                           |
+| AzureManagedControlPlane  | .spec.networkPlugin          |                           |
+| AzureManagedControlPlane  | .spec.networkPolicy          |                           |
+| AzureManagedControlPlane  | .spec.loadBalancerSKU        |                           |
+| AzureManagedControlPlane  | .spec.apiServerAccessProfile | except AuthorizedIPRanges |
+| AzureManagedMachinePool   | .spec.sku                    |                           |
+| AzureManagedMachinePool   | .spec.osDiskSizeGB           |                           |
+| AzureManagedMachinePool   | .spec.osDiskType             |                           |
+| AzureManagedMachinePool   | .spec.taints                 |                           |
+| AzureManagedMachinePool   | .spec.availabilityZones      |                           |
+| AzureManagedMachinePool   | .spec.maxPods                |                           |
+| AzureManagedMachinePool   | .spec.osType                 |                           |
 
 ## Features
 

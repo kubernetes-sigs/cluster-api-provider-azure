@@ -300,6 +300,36 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			wantErr:  true,
 			errorLen: 1,
 		},
+		{
+			name: "invalid name with microsoft",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "microsoft-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					SSHPublicKey: generateSSHPublicKey(true),
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.23.5",
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "invalid name with windows",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "a-windows-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					SSHPublicKey: generateSSHPublicKey(true),
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.23.5",
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -721,6 +751,31 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane Name is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "new-test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					APIServerAccessProfile: &APIServerAccessProfile{
+						AuthorizedIPRanges: []string{"192.168.0.1/32"},
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tc := range tests {
