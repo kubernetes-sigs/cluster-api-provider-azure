@@ -24,7 +24,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	e2e_pvc "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/pvc"
 	e2e_sc "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/storageclass"
@@ -32,16 +34,21 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 )
 
+const (
+	DriverTypeInternal = "Internal"
+)
+
 type AzureDiskCSISpecInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 	Namespace             *corev1.Namespace
 	ClusterName           string
 	SkipCleanup           bool
+	DriverType            string
 }
 
 // AzureDiskCSISpec implements a test that verifies out of tree azure disk csi driver
 // can be used to create a PVC that is usable by a pod.
-func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecInput) {
+func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecInput) *appsv1.Deployment {
 	specName := "azurediskcsi-driver"
 	input := inputGetter()
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
@@ -52,21 +59,51 @@ func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecIn
 	clientset := clusterProxy.GetClientSet()
 	Expect(clientset).NotTo(BeNil())
 
-	By("Deploying managed disk storage class")
-	e2e_sc.Create("managedhdd").WithWaitForFirstConsumer().DeployStorageClass(clientset)
-
-	By("Deploying persistent volume claim")
-	b, err := e2e_pvc.Create("dd-managed-hdd-5g", "5Gi")
-	Expect(err).To(BeNil())
-	b.DeployPVC(clientset)
+	var pvcName string
+	if input.DriverType == DriverTypeInternal {
+		By("[In-tree]Deploying storage class and pvc")
+		By("Deploying managed disk storage class")
+		scName := "managedhdd" + util.RandomString(6)
+		e2e_sc.Create(scName).WithWaitForFirstConsumer().DeployStorageClass(clientset)
+		By("Deploying persistent volume claim")
+		pvcName = "dd-managed-hdd-5g" + util.RandomString(6)
+		pvcBuilder, err := e2e_pvc.Create(pvcName, "5Gi")
+		Expect(err).To(BeNil())
+		annotations := map[string]string{
+			"volume.beta.kubernetes.io/storage-class": scName,
+		}
+		pvcBuilder.WithAnnotations(annotations)
+		err = pvcBuilder.DeployPVC(clientset)
+		Expect(err).To(BeNil())
+	} else {
+		By("[External]Deploying storage class and pvc")
+		By("Deploying managed disk storage class")
+		scName := "oot-managedhdd" + util.RandomString(6)
+		e2e_sc.Create(scName).WithWaitForFirstConsumer().
+			WithOotProvisionerName().
+			WithOotParameters().
+			DeployStorageClass(clientset)
+		By("Deploying persistent volume claim")
+		pvcName = "oot-dd-managed-hdd-5g" + util.RandomString(6)
+		pvcBuilder, err := e2e_pvc.Create(pvcName, "5Gi")
+		Expect(err).To(BeNil())
+		pvcBuilder.WithStorageClass(scName)
+		err = pvcBuilder.DeployPVC(clientset)
+		Expect(err).To(BeNil())
+	}
 
 	By("creating a deployment that uses pvc")
 	deploymentName := "stateful" + util.RandomString(6)
-	statefulDeployment := deploymentBuilder.Create("nginx", deploymentName, corev1.NamespaceDefault).AddPVC("dd-managed-hdd-5g")
+	statefulDeployment := deploymentBuilder.Create("nginx", deploymentName, corev1.NamespaceDefault).AddPVC(pvcName)
 	deployment, err := statefulDeployment.Deploy(ctx, clientset)
 	Expect(err).NotTo(HaveOccurred())
+	waitForDeploymentAvailable(ctx, deployment, clientset, specName)
+	return deployment
+}
+
+func waitForDeploymentAvailable(ctx context.Context, deployment *appsv1.Deployment, clientset *kubernetes.Clientset, specName string) {
 	deployInput := WaitForDeploymentsAvailableInput{
-		Getter:     deploymentsClientAdapter{client: statefulDeployment.Client(clientset)},
+		Getter:     deploymentsClientAdapter{client: clientset.AppsV1().Deployments(deployment.Namespace)},
 		Deployment: deployment,
 		Clientset:  clientset,
 	}

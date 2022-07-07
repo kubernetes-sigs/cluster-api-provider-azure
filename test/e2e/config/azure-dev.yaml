@@ -127,6 +127,12 @@ providers:
         targetName: "cluster-template-conformance-presubmit-artifacts-windows-containerd.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-external-cloud-provider.yaml"
         targetName: "cluster-template-external-cloud-provider.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azurediskcsi-migration-off.yaml"
+        targetName: "cluster-template-azurediskcsi-migration-off.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-external-azurediskcsi-driver.yaml"
+        targetName: "cluster-template-external-azurediskcsi-driver.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-user-assigned-managed-identity.yaml"
+        targetName: "cluster-template-user-assigned-managed-identity.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks.yaml"
         targetName: "cluster-template-aks.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
@@ -190,4 +196,8 @@ intervals:
   default/wait-job: ["5m", "10s"]
   default/wait-service: ["15m", "10s"]
   default/wait-machine-pool-nodes: ["30m", "10s"]
+  csi-migration/wait-controlplane-upgrade: ["60m", "10s"]
+  csi-migration/wait-worker-nodes: ["60m", "10s"]
+  csi-migration/wait-control-plane: ["60m", "10s"]
+  csi-migration/wait-cluster: ["60m", "10s"]
   node-drain/wait-machine-deleted: [ "10m", "10s" ]

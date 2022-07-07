@@ -24,6 +24,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -37,6 +38,8 @@ const (
 )
 
 /*
+Example PVC spec with sc name in annotation
+---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -51,22 +54,35 @@ spec:
       storage: 5Gi
 */
 
+/*
+Example PVC spec with sc name in storageClassName field
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-azuredisk
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: managed-csi
+*/
+
 type Builder struct {
 	pvc *corev1.PersistentVolumeClaim
 }
 
 func Create(pvcName string, storageRequest string) (*Builder, error) {
-	quantity, err := resource.ParseQuantity("5Gi")
+	qunatity, err := resource.ParseQuantity(storageRequest)
 	if err != nil {
 		return nil, err
 	}
 	pvcBuilder := &Builder{
 		pvc: &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "dd-managed-hdd-5g",
-				Annotations: map[string]string{
-					"volume.beta.kubernetes.io/storage-class": "managedhdd",
-				},
+				Name: pvcName,
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
 				AccessModes: []corev1.PersistentVolumeAccessMode{
@@ -74,13 +90,23 @@ func Create(pvcName string, storageRequest string) (*Builder, error) {
 				},
 				Resources: corev1.ResourceRequirements{
 					Requests: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceStorage: quantity,
+						corev1.ResourceStorage: qunatity,
 					},
 				},
 			},
 		},
 	}
 	return pvcBuilder, nil
+}
+
+func (b *Builder) WithAnnotations(annotations map[string]string) *Builder {
+	b.pvc.Annotations = annotations
+	return b
+}
+
+func (b *Builder) WithStorageClass(scName string) *Builder {
+	b.pvc.Spec.StorageClassName = to.StringPtr(scName)
+	return b
 }
 
 func (b *Builder) DeployPVC(clientset *kubernetes.Clientset) error {

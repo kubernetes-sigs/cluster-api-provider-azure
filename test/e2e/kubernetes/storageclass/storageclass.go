@@ -31,6 +31,7 @@ import (
 )
 
 /*
+// In-tree azuredisk csi driver sc example
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
@@ -42,18 +43,33 @@ parameters:
   kind: Managed
 */
 
+/*
+// External azuredisk csi driver sc example
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: managed-csi
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: StandardSSD_LRS  # alias: storageaccounttype, available values: Standard_LRS, Premium_LRS, StandardSSD_LRS, UltraSSD_LRS
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+*/
+
 const (
 	scOperationTimeout             = 30 * time.Second
 	scOperationSleepBetweenRetries = 3 * time.Second
 	AzureDiskProvisioner           = "kubernetes.io/azure-disk"
+	OotAzureDiskProvisioner        = "disk.csi.azure.com"
 )
 
-// Builder provides a helper interface for building storage class manifest
+// Builder provides a helper interface for building storage class manifest.
 type Builder struct {
 	sc *storagev1.StorageClass
 }
 
-// Create creates a storage class builder manifest
+// Create creates a storage class builder manifest.
 func Create(scName string) *Builder {
 	scBuilder := &Builder{
 		sc: &storagev1.StorageClass{
@@ -70,14 +86,28 @@ func Create(scName string) *Builder {
 	return scBuilder
 }
 
-// WithWaitForFirstConsumer sets volume binding on first consumer
+// WithWaitForFirstConsumer sets volume binding on first consumer.
 func (d *Builder) WithWaitForFirstConsumer() *Builder {
 	volumeBinding := storagev1.VolumeBindingWaitForFirstConsumer
 	d.sc.VolumeBindingMode = &volumeBinding
 	return d
 }
 
-// DeployStorageClass creates a storage class on the k8s cluster
+// WithOotProvisionerName sets the correct external azure disk csi driver provisioner name.
+func (d *Builder) WithOotProvisionerName() *Builder {
+	d.sc.Provisioner = OotAzureDiskProvisioner
+	return d
+}
+
+// WithOotParameters sets the sc parameters for out of tree csi drivers.
+func (d *Builder) WithOotParameters() *Builder {
+	d.sc.Parameters = map[string]string{
+		"skuName": "StandardSSD_LRS",
+	}
+	return d
+}
+
+// DeployStorageClass creates a storage class on the k8s cluster.
 func (d *Builder) DeployStorageClass(clientset *kubernetes.Clientset) {
 	Eventually(func() error {
 		_, err := clientset.StorageV1().StorageClasses().Create(context.TODO(), d.sc, metav1.CreateOptions{})
