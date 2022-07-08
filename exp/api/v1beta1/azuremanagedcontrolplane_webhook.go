@@ -124,6 +124,20 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
+	if !reflect.DeepEqual(m.Spec.VirtualNetwork, old.Spec.VirtualNetwork) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "VirtualNetwork"),
+				m.Spec.VirtualNetwork, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(m.Spec.VirtualNetwork, old.Spec.VirtualNetwork) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "VirtualNetwork"),
+				m.Spec.VirtualNetwork, "field is immutable"),
+		)
+	}
+
 	if old.Spec.DNSServiceIP != nil {
 		// Prevent DNSServiceIP modification if it was already set to some value
 		if m.Spec.DNSServiceIP == nil {

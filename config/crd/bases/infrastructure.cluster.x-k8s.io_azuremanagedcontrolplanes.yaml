@@ -415,6 +415,10 @@ spec:
                     type: array
                   name:
                     type: string
+                  resourceGroupName:
+                    description: ResourceGroupName is the name of the Azure resource
+                      group of the vNet.
+                    type: string
                   subnet:
                     description: ManagedControlPlaneSubnet describes a subnet for
                       an AKS cluster.
@@ -772,6 +776,10 @@ spec:
                       type: string
                     type: array
                   name:
+                    type: string
+                  resourceGroupName:
+                    description: ResourceGroupName is the name of the Azure resource
+                      group of the vNet.
                     type: string
                   subnet:
                     description: ManagedControlPlaneSubnet describes a subnet for

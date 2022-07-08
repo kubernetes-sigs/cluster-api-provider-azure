@@ -1305,6 +1305,7 @@ func autoConvert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1beta1_ManagedCo
 		return err
 	}
 	out.Subnets = *(*[]v1beta1.ManagedControlPlaneSubnet)(unsafe.Pointer(&in.Subnets))
+	out.ResourceGroupName = (*string)(unsafe.Pointer(in.ResourceGroupName))
 	return nil
 }
 
@@ -1321,6 +1322,7 @@ func autoConvert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedCo
 		return err
 	}
 	out.Subnets = *(*[]ManagedControlPlaneSubnet)(unsafe.Pointer(&in.Subnets))
+	out.ResourceGroupName = (*string)(unsafe.Pointer(in.ResourceGroupName))
 	return nil
 }
 

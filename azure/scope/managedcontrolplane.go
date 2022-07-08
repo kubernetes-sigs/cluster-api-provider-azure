@@ -207,10 +207,18 @@ func (s *ManagedControlPlaneScope) Close(ctx context.Context) error {
 	return s.PatchObject(ctx)
 }
 
+// GetVNetResourceGroup returns the vNet resource group name.
+func GetVNetResourceGroup(spec *infrav1exp.AzureManagedControlPlaneSpec) string {
+	if spec.VirtualNetwork.ResourceGroupName != nil {
+		return *spec.VirtualNetwork.ResourceGroupName
+	}
+	return spec.ResourceGroupName
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 	return &infrav1.VnetSpec{
-		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
+		ResourceGroup: GetVNetResourceGroup(&s.ControlPlane.Spec),
 		Name:          s.ControlPlane.Spec.VirtualNetwork.Name,
 		VnetClassSpec: infrav1.VnetClassSpec{
 			CIDRBlocks: s.ControlPlane.Spec.VirtualNetwork.CIDRBlocks,
@@ -231,7 +239,7 @@ func (s *ManagedControlPlaneScope) GroupSpec() azure.ResourceSpecGetter {
 // VNetSpec returns the virtual network spec.
 func (s *ManagedControlPlaneScope) VNetSpec() azure.ResourceSpecGetter {
 	return &virtualnetworks.VNetSpec{
-		ResourceGroup:  s.Vnet().ResourceGroup,
+		ResourceGroup:  GetVNetResourceGroup(&s.ControlPlane.Spec),
 		Name:           s.Vnet().Name,
 		CIDRs:          s.Vnet().CIDRBlocks,
 		Location:       s.Location(),
@@ -414,7 +422,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		DNSServiceIP:          s.ControlPlane.Spec.DNSServiceIP,
 		VnetSubnetID: azure.SubnetID(
 			s.ControlPlane.Spec.SubscriptionID,
-			s.ControlPlane.Spec.ResourceGroupName,
+			GetVNetResourceGroup(&s.ControlPlane.Spec),
 			s.ControlPlane.Spec.VirtualNetwork.Name,
 			s.ControlPlane.Spec.VirtualNetwork.Subnets[0].Name,
 		),
@@ -605,7 +613,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		Version:       normalizedVersion,
 		VnetSubnetID: azure.SubnetID(
 			managedControlPlane.Spec.SubscriptionID,
-			managedControlPlane.Spec.ResourceGroupName,
+			GetVNetResourceGroup(&managedControlPlane.Spec),
 			managedControlPlane.Spec.VirtualNetwork.Name,
 			managedControlPlane.Spec.VirtualNetwork.Subnets[0].Name,
 		),

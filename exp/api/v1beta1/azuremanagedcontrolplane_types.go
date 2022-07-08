@@ -215,6 +215,9 @@ type ManagedControlPlaneVirtualNetwork struct {
 	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
 	// +optional
 	Subnets []ManagedControlPlaneSubnet `json:"subnets,omitempty"`
+	// ResourceGroupName is the name of the Azure resource group of the vNet.
+	// +optional
+	ResourceGroupName *string `json:"resourceGroupName,omitempty"`
 }
 
 // ManagedControlPlaneSubnet describes a subnet for an AKS cluster.

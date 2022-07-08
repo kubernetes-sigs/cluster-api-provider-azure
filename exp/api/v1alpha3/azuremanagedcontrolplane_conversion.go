@@ -45,6 +45,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
 	dst.Status.Conditions = restored.Status.Conditions
 	dst.Spec.DisableLocalAccounts = restored.Spec.DisableLocalAccounts
+	dst.Spec.VirtualNetwork.ResourceGroupName = restored.Spec.VirtualNetwork.ResourceGroupName
 
 	return nil
 }
