@@ -73,3 +73,7 @@
   path: /spec/template/spec/preKubeadmCommands/-
   value:
     bash -c /tmp/kubeadm-bootstrap.sh
+- op: add
+  path: /spec/template/spec/verbosity
+  value:
+    5

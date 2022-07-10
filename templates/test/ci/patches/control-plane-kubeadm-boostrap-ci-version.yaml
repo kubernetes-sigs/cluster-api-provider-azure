@@ -80,3 +80,6 @@
 - op: add
   path: /spec/kubeadmConfigSpec/useExperimentalRetryJoin
   value: true
+- op: add
+  path: /spec/kubeadmConfigSpec/verbosity
+  value: 5

@@ -200,6 +200,7 @@ spec:
     preKubeadmCommands:
     - bash -c /tmp/kubeadm-bootstrap.sh
     useExperimentalRetryJoin: true
+    verbosity: 5
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
