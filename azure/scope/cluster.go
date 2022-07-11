@@ -251,7 +251,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			FrontendIPConfigs:    s.NodeOutboundLB().FrontendIPs,
 			Type:                 s.NodeOutboundLB().Type,
 			SKU:                  s.NodeOutboundLB().SKU,
-			BackendPoolName:      s.OutboundPoolName(s.NodeOutboundLBName()),
+			BackendPoolName:      s.OutboundPoolName(s.NodeOutboundLB()),
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.NodeOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
@@ -271,7 +271,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			FrontendIPConfigs:    s.ControlPlaneOutboundLB().FrontendIPs,
 			Type:                 s.ControlPlaneOutboundLB().Type,
 			SKU:                  s.ControlPlaneOutboundLB().SKU,
-			BackendPoolName:      s.OutboundPoolName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
+			BackendPoolName:      s.OutboundPoolName(s.ControlPlaneOutboundLB()),
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.ControlPlaneOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
@@ -665,27 +665,38 @@ func (s *ClusterScope) NodeOutboundLBName() string {
 
 // OutboundLBName returns the name of the outbound LB.
 func (s *ClusterScope) OutboundLBName(role string) string {
+	outboundLB := s.OutboundLB(role)
+	if outboundLB == nil {
+		return ""
+	}
+
+	return outboundLB.Name
+}
+
+// OutboundLBName returns the name of the outbound LB.
+func (s *ClusterScope) OutboundLB(role string) *infrav1.LoadBalancerSpec {
 	if role == infrav1.Node {
 		if s.NodeOutboundLB() == nil {
-			return ""
+			return nil
 		}
-		return s.NodeOutboundLB().Name
+		return s.NodeOutboundLB()
 	}
 	if s.IsAPIServerPrivate() {
 		if s.ControlPlaneOutboundLB() == nil {
-			return ""
+			return nil
 		}
-		return s.ControlPlaneOutboundLB().Name
+		return s.ControlPlaneOutboundLB()
 	}
-	return s.APIServerLBName()
+	return s.APIServerLB()
 }
 
 // OutboundPoolName returns the outbound LB backend pool name.
-func (s *ClusterScope) OutboundPoolName(loadBalancerName string) string {
-	if loadBalancerName == "" {
+func (s *ClusterScope) OutboundPoolName(lbSpec *infrav1.LoadBalancerSpec) string {
+	if lbSpec == nil || lbSpec.BackendPool.Name == nil {
 		return ""
 	}
-	return azure.GenerateOutboundBackendAddressPoolName(loadBalancerName)
+
+	return *lbSpec.BackendPool.Name
 }
 
 // ResourceGroup returns the cluster resource group.

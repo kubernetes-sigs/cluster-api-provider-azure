@@ -66,7 +66,8 @@ type NetworkDescriber interface {
 	IsAPIServerPrivate() bool
 	GetPrivateDNSZoneName() string
 	OutboundLBName(string) string
-	OutboundPoolName(string) string
+	OutboundLB(string) *infrav1.LoadBalancerSpec
+	OutboundPoolName(*infrav1.LoadBalancerSpec) string
 }
 
 // ClusterDescriber is an interface which can get common Azure Cluster information.

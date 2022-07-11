@@ -123,11 +123,6 @@ func GenerateContributorRoleDefinitionID(subscriptionID string) string {
 	return fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", subscriptionID, azureBuiltInContributorID)
 }
 
-// GenerateOutboundBackendAddressPoolName generates a load balancer outbound backend address pool name.
-func GenerateOutboundBackendAddressPoolName(lbName string) string {
-	return fmt.Sprintf("%s-%s", lbName, "outboundBackendPool")
-}
-
 // GenerateFrontendIPConfigName generates a load balancer frontend IP config name.
 func GenerateFrontendIPConfigName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "frontEnd")

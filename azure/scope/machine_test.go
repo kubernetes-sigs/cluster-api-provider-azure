@@ -1585,6 +1585,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: pointer.String("outbound-lb"),
+									},
 								},
 							},
 						},
@@ -1619,7 +1622,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					VNetName:                  "vnet1",
 					VNetResourceGroup:         "rg1",
 					PublicLBName:              "outbound-lb",
-					PublicLBAddressPoolName:   "outbound-lb-outboundBackendPool",
+					PublicLBAddressPoolName:   "outbound-lb",
 					PublicLBNATRuleName:       "",
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
@@ -1680,6 +1683,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: pointer.String("outbound-lb"),
+									},
 								},
 							},
 						},
@@ -1719,7 +1725,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					VNetName:                  "vnet1",
 					VNetResourceGroup:         "rg1",
 					PublicLBName:              "outbound-lb",
-					PublicLBAddressPoolName:   "outbound-lb-outboundBackendPool",
+					PublicLBAddressPoolName:   "outbound-lb",
 					PublicLBNATRuleName:       "",
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",

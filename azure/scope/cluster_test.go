@@ -2003,20 +2003,26 @@ func TestOutboundPoolName(t *testing.T) {
 	tests := []struct {
 		name                   string
 		clusterName            string
-		loadBalancerName       string
+		loadBalancerSpec       *infrav1.LoadBalancerSpec
 		expectOutboundPoolName string
 	}{
 		{
-			name:                   "Empty loadBalancerName",
+			name:                   "Nil load balancer spec",
 			clusterName:            "my-cluster",
-			loadBalancerName:       "",
+			loadBalancerSpec:       nil,
 			expectOutboundPoolName: "",
 		},
 		{
-			name:                   "Non empty loadBalancerName",
+			name:                   "Empty load balancer and empty backend pool name",
 			clusterName:            "my-cluster",
-			loadBalancerName:       "my-loadbalancer",
-			expectOutboundPoolName: "my-loadbalancer-outboundBackendPool",
+			loadBalancerSpec:       &infrav1.LoadBalancerSpec{},
+			expectOutboundPoolName: "",
+		},
+		{
+			name:                   "Non empty load balancer backend pool name",
+			clusterName:            "my-cluster",
+			loadBalancerSpec:       &infrav1.LoadBalancerSpec{BackendPool: infrav1.BackendPool{Name: to.StringPtr("my-backendpool")}},
+			expectOutboundPoolName: "my-backendpool",
 		},
 	}
 	for _, tc := range tests {
@@ -2061,7 +2067,7 @@ func TestOutboundPoolName(t *testing.T) {
 				Client:       fakeClient,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
-			got := clusterScope.OutboundPoolName(tc.loadBalancerName)
+			got := clusterScope.OutboundPoolName(tc.loadBalancerSpec)
 			g.Expect(tc.expectOutboundPoolName).Should(Equal(got))
 		})
 	}

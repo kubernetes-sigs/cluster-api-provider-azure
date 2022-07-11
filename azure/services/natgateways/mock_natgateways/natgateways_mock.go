@@ -401,6 +401,20 @@ func (mr *MockNatGatewayScopeMockRecorder) NodeSubnets() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnets", reflect.TypeOf((*MockNatGatewayScope)(nil).NodeSubnets))
 }
 
+// OutboundLB mocks base method.
+func (m *MockNatGatewayScope) OutboundLB(arg0 string) *v1beta1.LoadBalancerSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundLB", arg0)
+	ret0, _ := ret[0].(*v1beta1.LoadBalancerSpec)
+	return ret0
+}
+
+// OutboundLB indicates an expected call of OutboundLB.
+func (mr *MockNatGatewayScopeMockRecorder) OutboundLB(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLB", reflect.TypeOf((*MockNatGatewayScope)(nil).OutboundLB), arg0)
+}
+
 // OutboundLBName mocks base method.
 func (m *MockNatGatewayScope) OutboundLBName(arg0 string) string {
 	m.ctrl.T.Helper()
@@ -416,7 +430,7 @@ func (mr *MockNatGatewayScopeMockRecorder) OutboundLBName(arg0 interface{}) *gom
 }
 
 // OutboundPoolName mocks base method.
-func (m *MockNatGatewayScope) OutboundPoolName(arg0 string) string {
+func (m *MockNatGatewayScope) OutboundPoolName(arg0 *v1beta1.LoadBalancerSpec) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
 	ret0, _ := ret[0].(string)

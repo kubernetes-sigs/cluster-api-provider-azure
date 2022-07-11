@@ -245,7 +245,7 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 
 	if m.Role() == infrav1.ControlPlane {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
-		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLB(m.Role()))
 		if m.IsAPIServerPrivate() {
 			spec.InternalLBName = m.APIServerLBName()
 			spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
@@ -258,7 +258,7 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 	// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
 	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
-		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLB(m.Role()))
 	}
 
 	if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
