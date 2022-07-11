@@ -1677,6 +1677,15 @@ spec:
                     description: APIServerLB is the configuration for the control-plane
                       load balancer.
                     properties:
+                      backendPool:
+                        description: BackendPool specifies the name of backend pool
+                          for the load balancer. If not set, it will be defaulted
+                          to the name of the load balancer name with "-outboundBackendPool"
+                          suffix.
+                        properties:
+                          name:
+                            type: string
+                        type: object
                       frontendIPs:
                         items:
                           description: FrontendIP defines a load balancer frontend
@@ -1750,6 +1759,15 @@ spec:
                       APIServerLB, and is used only in private clusters (optionally)
                       for enabling outbound traffic.
                     properties:
+                      backendPool:
+                        description: BackendPool specifies the name of backend pool
+                          for the load balancer. If not set, it will be defaulted
+                          to the name of the load balancer name with "-outboundBackendPool"
+                          suffix.
+                        properties:
+                          name:
+                            type: string
+                        type: object
                       frontendIPs:
                         items:
                           description: FrontendIP defines a load balancer frontend
@@ -1821,6 +1839,15 @@ spec:
                     description: NodeOutboundLB is the configuration for the node
                       outbound load balancer.
                     properties:
+                      backendPool:
+                        description: BackendPool specifies the name of backend pool
+                          for the load balancer. If not set, it will be defaulted
+                          to the name of the load balancer name with "-outboundBackendPool"
+                          suffix.
+                        properties:
+                          name:
+                            type: string
+                        type: object
                       frontendIPs:
                         items:
                           description: FrontendIP defines a load balancer frontend

@@ -90,6 +90,19 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 		}
 	}
 
+	// Restore load balancers' backend pool name
+	if restored.Spec.NetworkSpec.APIServerLB.BackendPool.Name != nil {
+		dst.Spec.NetworkSpec.APIServerLB.BackendPool.Name = restored.Spec.NetworkSpec.APIServerLB.BackendPool.Name
+	}
+
+	if restored.Spec.NetworkSpec.NodeOutboundLB != nil && restored.Spec.NetworkSpec.NodeOutboundLB.BackendPool.Name != nil {
+		dst.Spec.NetworkSpec.NodeOutboundLB.BackendPool.Name = restored.Spec.NetworkSpec.NodeOutboundLB.BackendPool.Name
+	}
+
+	if restored.Spec.NetworkSpec.ControlPlaneOutboundLB != nil && restored.Spec.NetworkSpec.ControlPlaneOutboundLB.BackendPool.Name != nil {
+		dst.Spec.NetworkSpec.ControlPlaneOutboundLB.BackendPool.Name = restored.Spec.NetworkSpec.ControlPlaneOutboundLB.BackendPool.Name
+	}
+
 	return nil
 }
 

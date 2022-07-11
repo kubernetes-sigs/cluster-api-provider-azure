@@ -192,6 +192,11 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 			}
 		}
 	}
+
+	if lb.BackendPool.Name == nil {
+		backendPoolName := fmt.Sprintf("%s-%s", lb.Name, "outboundBackendPool")
+		lb.BackendPool.Name = &backendPoolName
+	}
 }
 
 func (c *AzureCluster) SetNodeOutboundLBDefaults() {
@@ -227,6 +232,11 @@ func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
 	}
 
+	if lb.BackendPool.Name == nil {
+		backendPoolName := fmt.Sprintf("%s-%s", lb.Name, "outboundBackendPool")
+		lb.BackendPool.Name = &backendPoolName
+	}
+
 	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
 }
 
@@ -244,6 +254,11 @@ func (c *AzureCluster) SetControlPlaneOutboundLBDefaults() {
 	if lb.FrontendIPsCount == nil {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
 	}
+	if lb.BackendPool.Name == nil {
+		backendPoolName := fmt.Sprintf("%s-%s", lb.Name, "outboundBackendPool")
+		lb.BackendPool.Name = &backendPoolName
+	}
+
 	c.setOutboundLBFrontendIPs(lb, generateControlPlaneOutboundIPName)
 }
 
