@@ -1369,6 +1369,7 @@ func autoConvert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *v1bet
 		out.FrontendIPs = nil
 	}
 	// WARNING: in.FrontendIPsCount requires manual conversion: does not exist in peer-type
+	// WARNING: in.BackendPool requires manual conversion: does not exist in peer-type
 	// WARNING: in.LoadBalancerClassSpec requires manual conversion: does not exist in peer-type
 	return nil
 }

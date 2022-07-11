@@ -254,6 +254,9 @@ type LoadBalancerSpec struct {
 	// FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
 	// +optional
 	FrontendIPsCount *int32 `json:"frontendIPsCount,omitempty"`
+	// BackendPool describes the backend pool of the load balancer.
+	// +optional
+	BackendPool BackendPool `json:"backendPool,omitempty"`
 
 	LoadBalancerClassSpec `json:",inline"`
 }
@@ -778,6 +781,14 @@ type AzureBastion struct {
 	Subnet SubnetSpec `json:"subnet,omitempty"`
 	// +optional
 	PublicIP PublicIPSpec `json:"publicIP,omitempty"`
+}
+
+// BackendPool describes the backend pool of the load balancer.
+type BackendPool struct {
+	// Name specifies the name of backend pool for the load balancer. If not specified, the default name will
+	// be set, depending on the load balancer role.
+	// +optional
+	Name string `json:"name,omitempty"`
 }
 
 // IsTerminalProvisioningState returns true if the ProvisioningState is a terminal state for an Azure resource.

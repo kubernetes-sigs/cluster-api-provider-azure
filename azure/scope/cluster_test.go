@@ -33,6 +33,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
@@ -2126,6 +2127,149 @@ func TestOutboundLBName(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.OutboundLBName(tc.role)
 			g.Expect(tc.expected).Should(Equal(got))
+		})
+	}
+}
+
+func TestBackendPoolName(t *testing.T) {
+	tests := []struct {
+		name        string
+		clusterName string
+
+		customAPIServerBackendPoolName    string
+		customNodeBackendPoolName         string
+		customControlPlaneBackendPoolName string
+
+		expectedAPIServerBackendPoolName    string
+		expectedNodeBackendPoolName         string
+		expectedControlPlaneBackendPoolName string
+	}{
+		{
+			name:                                "With default backend pool names",
+			clusterName:                         "my-cluster",
+			expectedAPIServerBackendPoolName:    "APIServerLBName-backendPool",
+			expectedNodeBackendPoolName:         "NodeOutboundLBName-outboundBackendPool",
+			expectedControlPlaneBackendPoolName: "my-cluster-outbound-lb-outboundBackendPool",
+		},
+		{
+			name:        "With custom node backend pool name",
+			clusterName: "my-cluster",
+
+			// setting custom name for node pool name only, others should stay the same
+			customNodeBackendPoolName: "custom-node-poolname",
+
+			expectedAPIServerBackendPoolName:    "APIServerLBName-backendPool",
+			expectedNodeBackendPoolName:         "custom-node-poolname",
+			expectedControlPlaneBackendPoolName: "my-cluster-outbound-lb-outboundBackendPool",
+		},
+		{
+			name:        "With custom backends pool name",
+			clusterName: "my-cluster",
+
+			// setting custom names for all backends pools
+			customAPIServerBackendPoolName:    "custom-api-server-poolname",
+			customNodeBackendPoolName:         "custom-node-poolname",
+			customControlPlaneBackendPoolName: "custom-control-plane-poolname",
+
+			expectedAPIServerBackendPoolName:    "custom-api-server-poolname",
+			expectedNodeBackendPoolName:         "custom-node-poolname",
+			expectedControlPlaneBackendPoolName: "custom-control-plane-poolname",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := runtime.NewScheme()
+			_ = infrav1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
+
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tc.clusterName,
+					Namespace: "default",
+				},
+			}
+
+			azureCluster := &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: tc.clusterName,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "cluster.x-k8s.io/v1beta1",
+							Kind:       "Cluster",
+							Name:       tc.clusterName,
+						},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+					},
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
+									Name: "node",
+								},
+							},
+						},
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Name: "APIServerLBName",
+						},
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							Name: "ControlPlaneOutboundLBName",
+						},
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
+							Name: "NodeOutboundLBName",
+						},
+					},
+				},
+			}
+
+			azureCluster.Default()
+
+			if tc.customAPIServerBackendPoolName != "" {
+				azureCluster.Spec.NetworkSpec.APIServerLB.BackendPool.Name = tc.customAPIServerBackendPoolName
+			}
+
+			if tc.customNodeBackendPoolName != "" {
+				azureCluster.Spec.NetworkSpec.NodeOutboundLB.BackendPool.Name = tc.customNodeBackendPoolName
+			}
+
+			if tc.customControlPlaneBackendPoolName != "" {
+				azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB.BackendPool.Name = tc.customControlPlaneBackendPoolName
+			}
+
+			initObjects := []runtime.Object{cluster, azureCluster}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster:      cluster,
+				AzureCluster: azureCluster,
+				Client:       fakeClient,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+			got := clusterScope.LBSpecs()
+			g.Expect(len(got)).To(Equal(3))
+
+			// API server backend pool name
+			apiServerLBSpec := got[0].(*loadbalancers.LBSpec)
+			g.Expect(apiServerLBSpec.BackendPoolName).To(Equal(tc.expectedAPIServerBackendPoolName))
+			g.Expect(apiServerLBSpec.Role).To(Equal(infrav1.APIServerRole))
+
+			// Node backend pool name
+			NodeLBSpec := got[1].(*loadbalancers.LBSpec)
+			g.Expect(NodeLBSpec.BackendPoolName).To(Equal(tc.expectedNodeBackendPoolName))
+			g.Expect(NodeLBSpec.Role).To(Equal(infrav1.NodeOutboundRole))
+
+			// Control Plane backend pool name
+			controlPlaneLBSpec := got[2].(*loadbalancers.LBSpec)
+			g.Expect(controlPlaneLBSpec.BackendPoolName).To(Equal(tc.expectedControlPlaneBackendPoolName))
+			g.Expect(controlPlaneLBSpec.Role).To(Equal(infrav1.ControlPlaneOutboundRole))
 		})
 	}
 }
