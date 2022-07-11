@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/env"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -38,13 +37,10 @@ var (
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Controller Suite")
 }
 
-var _ = BeforeSuite(func(done Done) {
+var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = env.NewTestEnvironment()
 	Expect(NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.DefaultLoopTimeout, "").
@@ -68,9 +64,7 @@ var _ = BeforeSuite(func(done Done) {
 		}
 		return true
 	}).Should(BeTrue())
-
-	close(done)
-}, 60)
+})
 
 var _ = AfterSuite(func() {
 	if testEnv != nil {
