@@ -4,3 +4,4 @@ ginkgo.progress: true
 ginkgo.slowSpecThreshold: 120.0
 ginkgo.trace: true
 ginkgo.v: true
+ginkgo.timeout: 3h
