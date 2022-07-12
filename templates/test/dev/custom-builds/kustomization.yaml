@@ -29,7 +29,7 @@ patches:
     kind: KubeadmConfigTemplate
     name: .*-md-win
     namespace: default
-  path: ../../ci/prow-ci-version/patches/kubeadm-bootstrap-windows-k8s-ci-binaries.yaml
+  path: patches/kubeadm-bootstrap-windows-k8s-pr-binaries.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     behavior: merge
