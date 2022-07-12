@@ -629,12 +629,12 @@ func (m *MachinePoolScope) getDeploymentStrategy() machinepool.TypedDeleteSelect
 // Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without the `subnetName` field being
 // set, and should be removed in the future when this field is no longer optional.
 func (m *MachinePoolScope) SetSubnetName() error {
-	if m.AzureMachinePool.Spec.Template.SubnetName == "" {
+	if m.AzureMachinePool.Spec.Template.SubnetName == "" && len(m.AzureMachinePool.Spec.Template.NetworkInterfaces) == 0 {
 		subnetName := ""
 		for _, subnet := range m.NodeSubnets() {
 			subnetName = subnet.Name
 		}
-		if (len(m.NodeSubnets()) == 0 || len(m.NodeSubnets()) > 1 || subnetName == "") && len(m.AzureMachinePool.Spec.Template.NetworkInterfaces) == 0 {
+		if len(m.NodeSubnets()) == 0 || len(m.NodeSubnets()) > 1 || subnetName == "" {
 			return errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of role 'node' exist")
 		}
 
