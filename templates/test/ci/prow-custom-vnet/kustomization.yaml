@@ -11,8 +11,6 @@ patchesStrategicMerge:
   - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
   - patches/custom-vnet.yaml
-  - ../patches/uami-md-0.yaml
-  - ../patches/uami-control-plane.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:

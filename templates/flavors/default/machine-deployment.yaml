@@ -34,6 +34,9 @@ spec:
         osType: "Linux"
         diskSizeGB: 128
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      identity: UserAssigned
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate

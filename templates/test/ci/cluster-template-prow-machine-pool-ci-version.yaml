@@ -220,6 +220,7 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
+      identity: UserAssigned
       image:
         marketplace:
           offer: capi
@@ -230,6 +231,8 @@ spec:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -260,6 +263,7 @@ metadata:
   name: ${CLUSTER_NAME}-mp-0
   namespace: default
 spec:
+  identity: UserAssigned
   location: ${AZURE_LOCATION}
   strategy:
     rollingUpdate:
@@ -281,6 +285,8 @@ spec:
       osType: Linux
     sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
     vmSize: ${AZURE_NODE_MACHINE_TYPE}
+  userAssignedIdentities:
+  - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfig
@@ -421,6 +427,7 @@ metadata:
   name: ${CLUSTER_NAME}-mp-win
   namespace: default
 spec:
+  identity: UserAssigned
   location: ${AZURE_LOCATION}
   template:
     image:
@@ -436,6 +443,8 @@ spec:
       osType: Windows
     sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
     vmSize: ${AZURE_NODE_MACHINE_TYPE}
+  userAssignedIdentities:
+  - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfig
