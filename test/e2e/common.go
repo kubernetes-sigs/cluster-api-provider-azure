@@ -146,7 +146,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		input.ClusterProxy.CollectWorkloadClusterLogs(ctx, input.Cluster.Namespace, input.Cluster.Name, filepath.Join(input.ArtifactFolder, "clusters", input.Cluster.Name))
 	}
 
-	Byf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
+	Logf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
 	// Dump all Cluster API related resources to artifacts before deleting them.
 	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
 		Lister:    input.ClusterProxy.GetClient(),
@@ -158,7 +158,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		return
 	}
 
-	Byf("Deleting all clusters in the %s namespace", input.Namespace.Name)
+	Logf("Deleting all clusters in the %s namespace", input.Namespace.Name)
 	// While https://github.com/kubernetes-sigs/cluster-api/issues/2955 is addressed in future iterations, there is a chance
 	// that cluster variable is not set even if the cluster exists, so we are calling DeleteAllClustersAndWait
 	// instead of DeleteClusterAndWait
@@ -171,18 +171,18 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		Namespace: input.Namespace.Name,
 	}, input.IntervalsGetter(input.SpecName, deleteTimeoutConfig)...)
 
-	Byf("Deleting namespace used for hosting the %q test spec", input.SpecName)
+	Logf("Deleting namespace used for hosting the %q test spec", input.SpecName)
 	framework.DeleteNamespace(ctx, framework.DeleteNamespaceInput{
 		Deleter: input.ClusterProxy.GetClient(),
 		Name:    input.Namespace.Name,
 	})
 
 	if input.AdditionalCleanup != nil {
-		Byf("Running additional cleanup for the %q test spec", input.SpecName)
+		Logf("Running additional cleanup for the %q test spec", input.SpecName)
 		input.AdditionalCleanup()
 	}
 
-	Byf("Checking if any resources are left over in Azure for spec %q", input.SpecName)
+	Logf("Checking if any resources are left over in Azure for spec %q", input.SpecName)
 	ExpectResourceGroupToBe404(ctx)
 }
 
