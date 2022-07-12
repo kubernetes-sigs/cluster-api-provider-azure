@@ -539,20 +539,6 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "invalidTest: azuremachine.spec.subnetName is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SubnetName: "subnet1",
-				},
-			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SubnetName: "subnet2",
-				},
-			},
-			wantErr: true,
-		},
-		{
 			name: "validTest: azuremachine.spec.networkInterfaces is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
