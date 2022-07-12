@@ -706,7 +706,7 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 // Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without the `subnetName` field being
 // set, and should be removed in the future when this field is no longer optional.
 func (m *MachineScope) SetSubnetName() error {
-	if m.AzureMachine.Spec.SubnetName == "" {
+	if m.AzureMachine.Spec.SubnetName == "" && len(m.AzureMachine.Spec.NetworkInterfaces) == 0 {
 		subnetName := ""
 		subnets := m.Subnets()
 		var subnetCount int
@@ -716,7 +716,7 @@ func (m *MachineScope) SetSubnetName() error {
 				subnetName = subnet.Name
 			}
 		}
-		if (subnetCount == 0 || subnetCount > 1 || subnetName == "") && len(m.AzureMachine.Spec.NetworkInterfaces) == 0 {
+		if subnetCount == 0 || subnetCount > 1 || subnetName == "" {
 			return errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of the same role exist")
 		}
 
