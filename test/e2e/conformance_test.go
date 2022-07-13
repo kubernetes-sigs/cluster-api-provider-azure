@@ -127,6 +127,15 @@ var _ = Describe("Conformance Tests", func() {
 			}
 		}
 
+		// Starting with Kubernetes v1.25, the kubetest config file needs to be compatible with Ginkgo V2.
+		v125 := semver.MustParse("1.25.0-alpha.0.0")
+		v, err := semver.ParseTolerant(kubernetesVersion)
+		Expect(err).NotTo(HaveOccurred())
+		if v.GTE(v125) {
+			// Use the Ginkgo V2 config file.
+			kubetestConfigFilePath = getGinkgoV2ConfigFilePath(kubetestConfigFilePath)
+		}
+
 		// Set the worker counts for conformance tests that use Windows
 		// This is a work around until we can update cluster-api test framework to be aware of windows node counts.
 		conformanceNodeCount := e2eConfig.GetVariable("CONFORMANCE_WORKER_MACHINE_COUNT")
@@ -267,4 +276,8 @@ func getWindowsFlavor() string {
 
 func isWindows(kubetestConfigFilePath string) bool {
 	return strings.Contains(kubetestConfigFilePath, "windows")
+}
+
+func getGinkgoV2ConfigFilePath(kubetestConfigFilePath string) string {
+	return strings.Replace(kubetestConfigFilePath, ".yaml", "-ginkgo-v2.yaml", 1)
 }

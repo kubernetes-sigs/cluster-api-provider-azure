@@ -2,10 +2,11 @@ ginkgo.focus: \[Conformance\]|\[NodeConformance\]|\[sig-windows\]|\[sig-apps\].C
 ginkgo.skip: \[LinuxOnly\]|\[Serial\]|\[Slow\]|\[Excluded:WindowsDocker\]|Networking.Granular.Checks(.*)node-pod.communication|Guestbook.application.should.create.and.stop.a.working.application|device.plugin.for.Windows|Container.Lifecycle.Hook.when.create.a.pod.with.lifecycle.hook.should.execute(.*)http.hook.properly|\[sig-api-machinery\].Garbage.collector
 disable-log-dump: true
 ginkgo.progress: true
-ginkgo.slowSpecThreshold: 120.0
+ginkgo.slow-spec-threshold: 120s
 ginkgo.flakeAttempts: 0
 ginkgo.trace: true
 ginkgo.v: true
+ginkgo.timeout: 3h
 node-os-distro: windows
 dump-logs-on-failure: true
 prepull-images: true
