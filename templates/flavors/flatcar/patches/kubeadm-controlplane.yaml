@@ -54,9 +54,5 @@ spec:
       image:
         computeGallery:
           gallery: capiMatTestWE2-3282f15c-906a-4c4b-b206-eb3c51adb5be
-          name: flatcar-stable-capi-${KUBERNETES_VERSION}-gen2
-          version: 3033.2.4
-          plan:
-            publisher: kinvolk
-            offer: flatcar-container-linux-free
-            sku: stable-gen2
+          name: flatcar-stable-capi-${KUBERNETES_VERSION}
+          version: 3139.2.3
