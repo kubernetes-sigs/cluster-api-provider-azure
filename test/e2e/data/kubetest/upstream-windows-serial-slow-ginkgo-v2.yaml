@@ -2,10 +2,11 @@ ginkgo.focus: (\[sig-windows\]|\[sig-scheduling\].SchedulerPreemption|\[sig-auto
 ginkgo.skip: \[LinuxOnly\]|\[Excluded:WindowsDocker\]|device.plugin.for.Windows
 disable-log-dump: true
 ginkgo.progress: true
-ginkgo.slowSpecThreshold: 120.0
+ginkgo.slow-spec-threshold: 120s
 ginkgo.flakeAttempts: 0
 ginkgo.trace: true
 ginkgo.v: true
+ginkgo.timeout: 3h
 node-os-distro: windows
 dump-logs-on-failure: true
 prepull-images: true
