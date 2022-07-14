@@ -52,7 +52,7 @@ fi
 
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
 export TAG="${defaultTag:-dev}"
-export GINKGO_NODES=3
+export GINKGO_NODES=10
 
 export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
 export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region_gpu)}"
