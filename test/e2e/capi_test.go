@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo"
@@ -45,6 +46,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	var (
 		ctx               = context.TODO()
 		identityNamespace *corev1.Namespace
+		specTimes         = map[string]time.Time{}
 	)
 	BeforeEach(func() {
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
@@ -87,6 +89,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentitySecretName, IdentitySecretName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, identityNamespace.Name)).To(Succeed())
+
+		logCheckpoint(specTimes)
 	})
 
 	AfterEach(func() {
@@ -97,6 +101,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		Expect(os.Unsetenv(ClusterIdentityName)).To(Succeed())
 		Expect(os.Unsetenv(ClusterIdentitySecretName)).To(Succeed())
 		Expect(os.Unsetenv(ClusterIdentitySecretNamespace)).To(Succeed())
+
+		logCheckpoint(specTimes)
 	})
 
 	Context("Running the quick-start spec", func() {
