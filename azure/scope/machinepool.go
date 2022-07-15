@@ -487,15 +487,25 @@ func (m *MachinePoolScope) SetAnnotation(key, value string) {
 	m.AzureMachinePool.Annotations[key] = value
 }
 
-// PatchObject persists the machine spec and status.
+// PatchObject persists the AzureMachinePool spec and status.
 func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.PatchObject")
 	defer done()
 
-	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
+	conditions.SetSummary(m.AzureMachinePool)
+	return m.patchHelper.Patch(
+		ctx,
+		m.AzureMachinePool,
+		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+			clusterv1.ReadyCondition,
+			infrav1.BootstrapSucceededCondition,
+			infrav1.ScaleSetDesiredReplicasCondition,
+			infrav1.ScaleSetModelUpdatedCondition,
+			infrav1.ScaleSetRunningCondition,
+		}})
 }
 
-// Close the MachineScope by updating the machine spec, machine status.
+// Close the MachinePoolScope by updating the AzureMachinePool spec and AzureMachinePool status.
 func (m *MachinePoolScope) Close(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.Close")
 	defer done()
@@ -512,17 +522,17 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 		}
 	}
 
-	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
+	return m.PatchObject(ctx)
 }
 
-// GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
+// GetBootstrapData returns the bootstrap data from the secret in the MachinePool's bootstrap.dataSecretName.
 func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.GetBootstrapData")
 	defer done()
 
 	dataSecretName := m.MachinePool.Spec.Template.Spec.Bootstrap.DataSecretName
 	if dataSecretName == nil {
-		return "", errors.New("error retrieving bootstrap data: linked Machine Spec's bootstrap.dataSecretName is nil")
+		return "", errors.New("error retrieving bootstrap data: linked MachinePool Spec's bootstrap.dataSecretName is nil")
 	}
 	secret := &corev1.Secret{}
 	key := types.NamespacedName{Namespace: m.AzureMachinePool.Namespace, Name: *dataSecretName}
@@ -537,7 +547,7 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 	return base64.StdEncoding.EncodeToString(value), nil
 }
 
-// GetVMImage picks an image from the machine configuration, or uses a default one.
+// GetVMImage picks an image from the AzureMachinePool configuration, or uses a default one.
 func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.GetVMImage")
 	defer done()
@@ -601,7 +611,7 @@ func (m *MachinePoolScope) HasSystemAssignedIdentity() bool {
 	return m.AzureMachinePool.Spec.Identity == infrav1.VMIdentitySystemAssigned
 }
 
-// VMSSExtensionSpecs returns the vmss extension specs.
+// VMSSExtensionSpecs returns the VMSS extension specs.
 func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
 	var extensionSpecs = []azure.ResourceSpecGetter{}
 	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name())

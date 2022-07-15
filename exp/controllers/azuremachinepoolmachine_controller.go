@@ -355,8 +355,12 @@ func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error
 		return errors.Wrap(err, "failed to reconcile scalesetVMs")
 	}
 
-	if err := r.Scope.UpdateStatus(ctx); err != nil {
-		return errors.Wrap(err, "failed to update vmss vm status")
+	if err := r.Scope.UpdateNodeStatus(ctx); err != nil {
+		return errors.Wrap(err, "failed to update VMSS VM node status")
+	}
+
+	if err := r.Scope.UpdateInstanceStatus(ctx); err != nil {
+		return errors.Wrap(err, "failed to update VMSS VM instance status")
 	}
 
 	return nil
@@ -368,8 +372,12 @@ func (r *azureMachinePoolMachineReconciler) Delete(ctx context.Context) error {
 	defer done()
 
 	defer func() {
-		if err := r.Scope.UpdateStatus(ctx); err != nil {
-			log.V(4).Info("failed tup update vmss vm status during delete")
+		if err := r.Scope.UpdateNodeStatus(ctx); err != nil {
+			log.V(4).Info("failed to update VMSS VM node status during delete")
+		}
+
+		if err := r.Scope.UpdateInstanceStatus(ctx); err != nil {
+			log.V(4).Info("failed to update VMSS VM instanace status during delete")
 		}
 	}()
 
