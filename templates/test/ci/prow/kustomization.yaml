@@ -13,15 +13,13 @@ resources:
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
-  - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
   - ../patches/machine-deployment-worker-counts.yaml
   - ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
   - ../../../flavors/base-windows-containerd/kubeadm-control-plane.yaml
   - ../patches/azuremachinetemplate-vmextension.yaml
   - ../patches/windows-containerd-patch.yaml
-  - ../patches/windows-enable-containerd-logger.yaml
-  - ../patches/windows-csi-proxy-enabled.yaml
+  - ../patches/windows-containerd-labels.yaml
   - ../patches/windows-server-version.yaml
 patches:
 - target:
@@ -46,9 +44,8 @@ patches:
     namespace: default
   path: ../patches/windows-collect-hns-crashes.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
+  - name: cni-${CLUSTER_NAME}-calico-windows
     files:
-      - resources=../../../addons/calico.yaml
       - windows-cni=../../../addons/windows/calico/calico.yaml
       - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
   - name: csi-proxy-addon

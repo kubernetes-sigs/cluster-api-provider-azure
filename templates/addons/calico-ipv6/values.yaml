@@ -1,0 +1,14 @@
+installation:
+  cni:
+    type: Calico
+    ipam:
+      type: HostLocal
+  calicoNetwork:
+    bgp: Disabled
+    mtu: 1350
+    ipPools:
+    - blockSize: 122
+      cidr: 2001:1234:5678:9a40::/58
+      encapsulation: None
+      natOutgoing: Enabled
+      nodeSelector: all()

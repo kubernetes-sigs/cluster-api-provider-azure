@@ -290,10 +290,9 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-kubeadm-bootstrap-system deployment -l cluster.x-k8s.io/provider=bootstrap-kubeadm
 	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-kubeadm-control-plane-system deployment -l cluster.x-k8s.io/provider=control-plane-kubeadm
 
-	# apply CNI ClusterResourceSets
-	source ./scripts/ci-configmap.sh
-
-	$(KUBECTL) apply -f templates/addons/calico-resource-set.yaml
+	# install Windows Calico cluster resource set
+	$(KUBECTL) create configmap calico-windows-addon --from-file="$(ADDONS_DIR)/windows/calico" --dry-run=client -o yaml | kubectl apply -f -
+	$(KUBECTL) apply -f templates/addons/windows/calico-resource-set.yaml	
 
 	# Wait for CAPZ deployments
 	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure

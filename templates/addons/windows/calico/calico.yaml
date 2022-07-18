@@ -11,7 +11,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: calico-static-rules
-  namespace: kube-system
+  namespace: calico-system
   labels:
     tier: node
     app: calico
@@ -42,7 +42,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: calico-config-windows
-  namespace: kube-system
+  namespace: calico-system
   labels:
     tier: node
     app: calico
@@ -121,7 +121,7 @@ metadata:
   labels:
     tier: node
     app: calico
-  namespace: kube-system
+  namespace: calico-system
 spec:
   selector:
     matchLabels:

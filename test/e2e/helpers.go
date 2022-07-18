@@ -258,6 +258,58 @@ func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, ob
 	return err
 }
 
+// WaitForDaemonsetInput is the input for WaitForDaemonset.
+type WaitForDaemonsetInput struct {
+	Getter    framework.Getter
+	DaemonSet *appsv1.DaemonSet
+	Clientset *kubernetes.Clientset
+}
+
+// WaitForDaemonset retries during E2E until a daemonset's pods are all Running.
+func WaitForDaemonset(ctx context.Context, input WaitForDaemonsetInput, intervals ...interface{}) {
+	start := time.Now()
+	namespace, name := input.DaemonSet.GetNamespace(), input.DaemonSet.GetName()
+	Byf("waiting for daemonset %s/%s to be complete", namespace, name)
+	Logf("waiting for daemonset %s/%s to be complete", namespace, name)
+	Eventually(func() bool {
+		key := client.ObjectKey{Namespace: namespace, Name: name}
+		if err := input.Getter.Get(ctx, key, input.DaemonSet); err == nil {
+			if input.DaemonSet.Status.DesiredNumberScheduled == input.DaemonSet.Status.NumberReady {
+				return true
+			}
+		}
+		return false
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedDaemonset(ctx, input) })
+	Logf("daemonset %s/%s pods are running, took %v", namespace, name, time.Since(start))
+}
+
+// GetWaitForDaemonsetAvailableInput is a convenience func to compose a WaitForDaemonsetInput
+func GetWaitForDaemonsetAvailableInput(ctx context.Context, clusterProxy framework.ClusterProxy, name, namespace string, specName string) WaitForDaemonsetInput {
+	Expect(clusterProxy).NotTo(BeNil())
+	cl := clusterProxy.GetClient()
+	var ds = &appsv1.DaemonSet{}
+	Eventually(func() error {
+		return cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, ds)
+	}, e2eConfig.GetIntervals(specName, "wait-daemonset")...).Should(Succeed())
+	clientset := clusterProxy.GetClientSet()
+	return WaitForDaemonsetInput{
+		DaemonSet: ds,
+		Clientset: clientset,
+		Getter:    cl,
+	}
+}
+
+// DescribeFailedDaemonset returns detailed output to help debug a daemonset failure in e2e.
+func DescribeFailedDaemonset(ctx context.Context, input WaitForDaemonsetInput) string {
+	namespace, name := input.DaemonSet.GetNamespace(), input.DaemonSet.GetName()
+	b := strings.Builder{}
+	b.WriteString(fmt.Sprintf("Service %s/%s failed",
+		namespace, name))
+	b.WriteString(fmt.Sprintf("\nService:\n%s\n", prettyPrint(input.DaemonSet)))
+	b.WriteString(describeEvents(ctx, input.Clientset, namespace, name))
+	return b.String()
+}
+
 // WaitForServiceAvailableInput is the input for WaitForServiceAvailable.
 type WaitForServiceAvailableInput struct {
 	Getter    framework.Getter
@@ -764,29 +816,31 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 }
 
 // InstallHelmChart takes a helm repo URL, a chart name, and release name, and installs a helm release onto the E2E workload cluster.
-func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, repoURL, chartName, releaseName string, values []string) {
+func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, namespace, repoURL, chartName, releaseName string, options *helmVals.Options) {
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
 	kubeConfigPath := clusterProxy.GetKubeconfigPath()
 	settings := helmCli.New()
 	settings.KubeConfig = kubeConfigPath
 	actionConfig := new(helmAction.Configuration)
-	ns := "default"
-	err := actionConfig.Init(settings.RESTClientGetter(), ns, "secret", Logf)
+	err := actionConfig.Init(settings.RESTClientGetter(), namespace, "secret", Logf)
 	Expect(err).To(BeNil())
 	i := helmAction.NewInstall(actionConfig)
 	if repoURL != "" {
 		i.RepoURL = repoURL
 	}
 	i.ReleaseName = releaseName
-	i.Namespace = ns
+	i.Namespace = namespace
+	i.CreateNamespace = true
 	Eventually(func() error {
 		cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
 		if err != nil {
 			return err
 		}
 		p := helmGetter.All(settings)
-		valueOpts := &helmVals.Options{}
-		valueOpts.Values = values
+		if options == nil {
+			options = &helmVals.Options{}
+		}
+		valueOpts := options
 		vals, err := valueOpts.MergeValues(p)
 		if err != nil {
 			return err
@@ -802,20 +856,6 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 		Logf(release.Info.Description)
 		return nil
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
-}
-
-// WaitForDaemonset retries during E2E until a daemonset's pods are all Running.
-func WaitForDaemonset(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cl client.Client, name, namespace string) {
-	Eventually(func() bool {
-		ds := &appsv1.DaemonSet{}
-		if err := cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, ds); err != nil {
-			return false
-		}
-		if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {
-			return true
-		}
-		return false
-	}, input.WaitForControlPlaneIntervals...).Should(Equal(true))
 }
 
 func defaultConfigCluster(clusterName, namespace string) clusterctl.ConfigClusterInput {
@@ -846,4 +886,13 @@ func createClusterWithControlPlaneWaiters(ctx context.Context, configCluster clu
 		ControlPlaneWaiters:          cpWaiters,
 	}, result)
 	return result.Cluster, result.ControlPlane
+}
+
+func CopyConfigMap(ctx context.Context, cl client.Client, cmName, fromNamespace, toNamespace string) {
+	cm := &corev1.ConfigMap{}
+	Expect(cl.Get(ctx, client.ObjectKey{Name: cmName, Namespace: fromNamespace}, cm)).To(Succeed())
+	cm.SetNamespace(toNamespace)
+	cm.SetResourceVersion("")
+	framework.EnsureNamespace(ctx, cl, toNamespace)
+	Expect(cl.Create(ctx, cm.DeepCopy())).To(Succeed())
 }

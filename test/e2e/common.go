@@ -48,6 +48,7 @@ import (
 
 // Test suite constants for e2e config variables
 const (
+	AddonsPath                     = "ADDONS_PATH"
 	RedactLogScriptPath            = "REDACT_LOG_SCRIPT"
 	AzureLocation                  = "AZURE_LOCATION"
 	AzureResourceGroup             = "AZURE_RESOURCE_GROUP"
@@ -250,8 +251,12 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 	Eventually(func() error {
 		return getter.Get(ctx, key, kubeadmControlPlane)
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+	_, hasWindows := cluster.Labels["cni-windows"]
 	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] == "external" {
-		InstallCloudProviderAzureHelmChart(ctx, input)
+		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
+		InstallCalicoAndCloudProviderAzureHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
+	} else {
+		InstallCalicoHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	}
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	InstallAzureDiskCSIDriverHelmChart(ctx, input)

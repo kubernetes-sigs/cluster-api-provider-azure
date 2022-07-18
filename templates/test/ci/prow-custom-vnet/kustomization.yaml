@@ -4,22 +4,10 @@ namespace: default
 resources:
   - ../../../flavors/default
   - ../prow/mhc.yaml
-  - ../prow/cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
-  - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
   - patches/custom-vnet.yaml
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
-configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
-    files:
-      - resources=../../../addons/calico.yaml
-generatorOptions:
-  disableNameSuffixHash: true
-  labels:
-    type: generated
-  annotations:
-    note: generated

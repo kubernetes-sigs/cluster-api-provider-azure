@@ -8,6 +8,7 @@ patchesStrategicMerge:
   - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
   - ../patches/windows-containerd-patch.yaml
+  - ../patches/windows-containerd-labels.yaml
   - ../patches/machine-deployment-worker-counts.yaml
   - patches/machine-deployment-ci-version.yaml
   - patches/machine-deployment-ci-version-windows.yaml
@@ -35,7 +36,7 @@ patches:
     name: .*-control-plane
   path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
+  - name: cni-${CLUSTER_NAME}-calico-windows
     behavior: merge
     files:
       - kube-proxy-patch=../patches/windows-kubeproxy-ci.yaml

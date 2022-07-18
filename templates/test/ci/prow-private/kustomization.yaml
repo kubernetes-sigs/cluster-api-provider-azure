@@ -3,11 +3,11 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/private
-  - ../prow/cni-resource-set.yaml
+  - cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
-  - ../patches/cluster-cni.yaml
+  - patches/cluster-cni.yaml
   - patches/bastion.yaml
   - patches/vnet-peerings.yaml
   - ../patches/uami-md-0.yaml

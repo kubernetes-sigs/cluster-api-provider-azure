@@ -4,5 +4,6 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
+    cni-windows: calico
     csi-proxy: enabled
     windows: enabled

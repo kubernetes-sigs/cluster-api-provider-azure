@@ -150,6 +150,8 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-private-cluster"),
 		WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane-ha"),
 		WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
+		// NOTE: We don't add control plane waiters here because Helm install will fail since the apiserver is private and not reachable from the prow cluster.
+		// As a workaround, we use still ClusterResourceSet to install CNI on the private cluster until a Helm integration is available.
 	}, result)
 	cluster = result.Cluster
 
