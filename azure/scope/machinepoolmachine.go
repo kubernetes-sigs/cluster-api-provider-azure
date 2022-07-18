@@ -236,17 +236,30 @@ func (s *MachinePoolMachineScope) IsReady() bool {
 
 // SetFailureMessage sets the AzureMachinePoolMachine status failure message.
 func (s *MachinePoolMachineScope) SetFailureMessage(v error) {
-	s.AzureMachinePool.Status.FailureMessage = pointer.StringPtr(v.Error())
+	s.AzureMachinePoolMachine.Status.FailureMessage = pointer.StringPtr(v.Error())
 }
 
 // SetFailureReason sets the AzureMachinePoolMachine status failure reason.
 func (s *MachinePoolMachineScope) SetFailureReason(v capierrors.MachineStatusError) {
-	s.AzureMachinePool.Status.FailureReason = &v
+	s.AzureMachinePoolMachine.Status.FailureReason = &v
 }
 
 // ProviderID returns the AzureMachinePool ID by parsing Spec.FakeProviderID.
 func (s *MachinePoolMachineScope) ProviderID() string {
 	return s.AzureMachinePoolMachine.Spec.ProviderID
+}
+
+// PatchObject persists the MachinePoolMachine spec and status.
+func (s *MachinePoolMachineScope) PatchObject(ctx context.Context) error {
+	conditions.SetSummary(s.AzureMachinePoolMachine)
+
+	return s.patchHelper.Patch(
+		ctx,
+		s.AzureMachinePoolMachine,
+		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+			clusterv1.ReadyCondition,
+			clusterv1.MachineNodeHealthyCondition,
+		}})
 }
 
 // Close updates the state of MachinePoolMachine.
@@ -257,34 +270,47 @@ func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 	)
 	defer done()
 
-	return s.patchHelper.Patch(ctx, s.AzureMachinePoolMachine)
+	return s.PatchObject(ctx)
 }
 
-// UpdateStatus updates the node reference for the machine and other status fields. This func should be called at the
-// end of a reconcile request and after updating the scope with the most recent Azure data.
-func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
+// UpdateNodeStatus AzureMachinePoolMachine conditions and ready status. It will also update the node ref and the Kubernetes
+// version of the VM instance if the node is found.
+// Note: This func should be called at the end of a reconcile request and after updating the scope with the most recent Azure data.
+func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(
 		ctx,
-		"scope.MachinePoolMachineScope.Get",
+		"scope.MachinePoolMachineScope.UpdateNodeStatus",
 	)
 	defer done()
 
-	var (
-		nodeRef = s.AzureMachinePoolMachine.Status.NodeRef
-		node    *corev1.Node
-		err     error
-	)
-	if nodeRef == nil || nodeRef.Name == "" {
-		node, err = s.workloadNodeGetter.GetNodeByProviderID(ctx, s.ProviderID())
-	} else {
-		node, err = s.workloadNodeGetter.GetNodeByObjectReference(ctx, *nodeRef)
-	}
+	var node *corev1.Node
+	nodeRef := s.AzureMachinePoolMachine.Status.NodeRef
 
-	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrap(err, "failed to get node by providerID or object reference")
-	}
+	// See if we can fetch a node using either the providerID or the nodeRef
+	node, found, err := s.GetNode(ctx)
+	switch {
+	case err != nil && apierrors.IsNotFound(err) && nodeRef != nil && nodeRef.Name != "":
+		// Node was not found due to 404 when finding by ObjectReference.
+		conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1.NodeNotFoundReason, clusterv1.ConditionSeverityError, "")
+	case err != nil:
+		// Failed due to an unexpected error
+		return err
+	case !found && s.ProviderID() == "":
+		// Node was not found due to not having a providerID set
+		conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1.WaitingForNodeRefReason, clusterv1.ConditionSeverityInfo, "")
+	case !found && s.ProviderID() != "":
+		// Node was not found due to not finding a matching node by providerID
+		conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1.NodeProvisioningReason, clusterv1.ConditionSeverityInfo, "")
+	default:
+		// Node was found. Check if it is ready.
+		nodeReady := noderefutil.IsNodeReady(node)
+		s.AzureMachinePoolMachine.Status.Ready = nodeReady
+		if nodeReady {
+			conditions.MarkTrue(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition)
+		} else {
+			conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1.NodeConditionsFailedReason, clusterv1.ConditionSeverityWarning, "")
+		}
 
-	if node != nil {
 		s.AzureMachinePoolMachine.Status.NodeRef = &corev1.ObjectReference{
 			Kind:       node.Kind,
 			Namespace:  node.Namespace,
@@ -293,18 +319,30 @@ func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
 			APIVersion: node.APIVersion,
 		}
 
-		s.AzureMachinePoolMachine.Status.Ready = noderefutil.IsNodeReady(node)
 		s.AzureMachinePoolMachine.Status.Version = node.Status.NodeInfo.KubeletVersion
 	}
 
+	return nil
+}
+
+// UpdateInstanceStatus updates the provisioning state of the AzureMachinePoolMachine and if it has the latest model applied
+// using the VMSS VM instance.
+// Note: This func should be called at the end of a reconcile request and after updating the scope with the most recent Azure data.
+func (s *MachinePoolMachineScope) UpdateInstanceStatus(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.UpdateInstanceStatus",
+	)
+	defer done()
+
 	if s.instance != nil {
+		s.AzureMachinePoolMachine.Status.ProvisioningState = &s.instance.State
 		hasLatestModel, err := s.hasLatestModelApplied(ctx)
 		if err != nil {
 			return errors.Wrap(err, "failed to determine if the VMSS instance has the latest model")
 		}
 
 		s.AzureMachinePoolMachine.Status.LatestModelApplied = hasLatestModel
-		s.AzureMachinePoolMachine.Status.ProvisioningState = &s.instance.State
 	}
 
 	return nil
@@ -318,25 +356,15 @@ func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
 	)
 	defer done()
 
-	var (
-		nodeRef = s.AzureMachinePoolMachine.Status.NodeRef
-		node    *corev1.Node
-		err     error
-	)
-	if nodeRef == nil || nodeRef.Name == "" {
-		node, err = s.workloadNodeGetter.GetNodeByProviderID(ctx, s.ProviderID())
-	} else {
-		node, err = s.workloadNodeGetter.GetNodeByObjectReference(ctx, *nodeRef)
-	}
-
-	switch {
-	case err != nil && !apierrors.IsNotFound(err):
+	// See if we can fetch a node using either the providerID or the nodeRef
+	node, found, err := s.GetNode(ctx)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		// failed due to an unexpected error
-		return errors.Wrap(err, "failed to find node")
-	case err != nil && apierrors.IsNotFound(err):
-		// node was not found due to 404 when finding by ObjectReference
-		return nil
-	case node == nil:
+		return errors.Wrap(err, "failed to get node")
+	} else if !found {
 		// node was not found due to not finding a nodes with the ProviderID
 		return nil
 	}
@@ -504,6 +532,40 @@ func newWorkloadClusterProxy(c client.Client, cluster client.ObjectKey) *workloa
 		Client:  c,
 		Cluster: cluster,
 	}
+}
+
+// GetNode returns the node associated with the AzureMachinePoolMachine. Returns an error if one occurred, and a boolean
+// indicating if the node was found if there was no error.
+func (s *MachinePoolMachineScope) GetNode(ctx context.Context) (*corev1.Node, bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"scope.MachinePoolMachineScope.GetNode",
+	)
+	defer done()
+
+	var (
+		nodeRef = s.AzureMachinePoolMachine.Status.NodeRef
+		node    *corev1.Node
+		err     error
+	)
+
+	if nodeRef == nil || nodeRef.Name == "" {
+		node, err = s.workloadNodeGetter.GetNodeByProviderID(ctx, s.ProviderID())
+		if err != nil {
+			return nil, false, errors.Wrap(err, "failed to get node by providerID")
+		}
+	} else {
+		node, err = s.workloadNodeGetter.GetNodeByObjectReference(ctx, *nodeRef)
+		if err != nil {
+			return nil, false, errors.Wrap(err, "failed to get node by object reference")
+		}
+	}
+
+	if node == nil {
+		return nil, false, nil
+	}
+
+	return node, true, nil
 }
 
 // GetNodeByObjectReference will fetch a *corev1.Node via a node object reference.

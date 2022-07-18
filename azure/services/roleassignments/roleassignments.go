@@ -108,6 +108,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "cannot assign role to %s system assigned identity", resourceType)
 		}
 	}
+
 	return nil
 }
 
