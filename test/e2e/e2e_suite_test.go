@@ -20,7 +20,9 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"os"
@@ -76,11 +78,16 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	By("Initializing the bootstrap cluster")
 	initBootstrapCluster(bootstrapClusterProxy, e2eConfig, clusterctlConfigPath, artifactFolder)
 
+	// encode the e2e config into the byte array.
+	var configBuf bytes.Buffer
+	enc := gob.NewEncoder(&configBuf)
+	Expect(enc.Encode(e2eConfig)).To(Succeed())
+
 	return []byte(
 		strings.Join([]string{
 			artifactFolder,
-			configPath,
 			clusterctlConfigPath,
+			string(configBuf.Bytes()),
 			bootstrapClusterProxy.GetKubeconfigPath(),
 		}, ","),
 	)
@@ -91,11 +98,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(parts).To(HaveLen(4))
 
 	artifactFolder = parts[0]
-	configPath = parts[1]
-	clusterctlConfigPath = parts[2]
-	kubeconfigPath := parts[3]
+	clusterctlConfigPath = parts[1]
 
-	e2eConfig = loadE2EConfig(configPath)
+	// Decode the e2e config
+	buf := bytes.NewBuffer([]byte(parts[2]))
+	dec := gob.NewDecoder(buf)
+	Expect(dec.Decode(&e2eConfig)).To(Succeed())
+
+	kubeconfigPath := parts[3]
 	bootstrapClusterProxy = NewAzureClusterProxy("bootstrap", kubeconfigPath, framework.WithMachineLogCollector(AzureLogCollector{}))
 })
 
