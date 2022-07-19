@@ -128,7 +128,7 @@ func (sc *SubnetClassSpec) setDefaults(cidr string) {
 }
 
 // setDefaults sets default values for SecurityGroupClass.
-func (sgc *SecurityGroupClass) setDefaults(dir SecurityRuleDirection) { //nolint:unparam
+func (sgc *SecurityGroupClass) setDefaults(dir SecurityRuleDirection) {
 	for i := range sgc.SecurityRules {
 		if sgc.SecurityRules[i].Direction == "" {
 			sgc.SecurityRules[i].Direction = dir
