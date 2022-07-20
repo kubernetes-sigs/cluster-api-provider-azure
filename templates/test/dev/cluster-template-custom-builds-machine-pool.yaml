@@ -427,26 +427,65 @@ spec:
 ---
 apiVersion: v1
 data:
-  proxy: "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  labels:\n    k8s-app:
-    kube-proxy\n  name: kube-proxy-windows\n  namespace: kube-system\nspec:\n  selector:\n
-    \   matchLabels:\n      k8s-app: kube-proxy-windows\n  template:\n    metadata:\n
-    \     labels:\n        k8s-app: kube-proxy-windows\n    spec:\n      serviceAccountName:
-    kube-proxy\n      securityContext:\n        windowsOptions:\n          hostProcess:
-    true\n          runAsUserName: \"NT AUTHORITY\\\\system\"\n      hostNetwork:
-    true\n      containers:\n      - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess\n
-    \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1\"]\n
-    \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/\"\n        name:
-    kube-proxy\n        env:\n        - name: NODE_NAME\n          valueFrom:\n            fieldRef:\n
-    \             apiVersion: v1\n              fieldPath: spec.nodeName\n        -
-    name: POD_IP\n          valueFrom:\n            fieldRef:\n              fieldPath:
-    status.podIP\n        - name: KUBEPROXY_PATH\n          valueFrom:\n            configMapKeyRef:\n
-    \             name: windows-kubeproxy-ci\n              key: KUBEPROXY_PATH\n
-    \             optional: true\n        volumeMounts:\n        - mountPath: /var/lib/kube-proxy\n
-    \         name: kube-proxy\n      nodeSelector:\n        kubernetes.io/os: windows\n
-    \     tolerations:\n      - key: CriticalAddonsOnly\n        operator: Exists\n
-    \     - operator: Exists\n      volumes:\n      - configMap:\n          name:
-    kube-proxy\n          item:     \n        name: kube-proxy\n  updateStrategy:\n
-    \   type: RollingUpdate\n"
+  proxy: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: kube-proxy
+      name: kube-proxy-windows
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: kube-proxy-windows
+      template:
+        metadata:
+          labels:
+            k8s-app: kube-proxy-windows
+        spec:
+          serviceAccountName: kube-proxy
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\system"
+          hostNetwork: true
+          containers:
+          - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess
+            args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1"]
+            workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/"
+            name: kube-proxy
+            env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: KUBEPROXY_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: windows-kubeproxy-ci
+                  key: KUBEPROXY_PATH
+                  optional: true
+            volumeMounts:
+            - mountPath: /var/lib/kube-proxy
+              name: kube-proxy
+          nodeSelector:
+            kubernetes.io/os: windows
+          tolerations:
+          - key: CriticalAddonsOnly
+            operator: Exists
+          - operator: Exists
+          volumes:
+          - configMap:
+              name: kube-proxy
+            name: kube-proxy
+      updateStrategy:
+        type: RollingUpdate
   resources: |
     apiVersion: apiextensions.k8s.io/v1
     kind: CustomResourceDefinition
