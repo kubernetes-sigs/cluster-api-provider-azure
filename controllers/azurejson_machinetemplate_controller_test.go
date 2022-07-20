@@ -104,6 +104,40 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 			fail: true,
 			err:  "azureclusters.infrastructure.cluster.x-k8s.io \"my-azure-cluster\" not found",
 		},
+		"infra ref is nil": {
+			objects: []runtime.Object{
+				&clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: nil,
+					},
+				},
+				azureCluster,
+				azureMachineTemplate,
+			},
+			fail: false,
+		},
+		"infra ref is not an azure cluster": {
+			objects: []runtime.Object{
+				&clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: &corev1.ObjectReference{
+							APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+							Kind:       "FooCluster",
+							Name:       "my-foo-cluster",
+						},
+					},
+				},
+				azureCluster,
+				azureMachineTemplate,
+			},
+			fail: false,
+		},
 	}
 
 	os.Setenv(auth.ClientID, "fooClient")
