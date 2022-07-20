@@ -147,6 +147,10 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	_, kind := infrav1.GroupVersion.WithKind("AzureCluster").ToAPIVersionAndKind()
 
 	// only look at azure clusters
+	if cluster.Spec.InfrastructureRef == nil {
+		log.Info("infra ref is nil")
+		return ctrl.Result{}, nil
+	}
 	if cluster.Spec.InfrastructureRef.Kind != kind {
 		log.WithValues("kind", cluster.Spec.InfrastructureRef.Kind).Info("infra ref was not an AzureCluster")
 		return ctrl.Result{}, nil
