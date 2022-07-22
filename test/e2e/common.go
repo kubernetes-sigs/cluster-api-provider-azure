@@ -246,13 +246,14 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] == "external" {
 		InstallCloudProviderAzureHelmChart(ctx, input)
 	}
+	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	InstallAzureDiskCSIDriverHelmChart(ctx, input)
-	discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
+	result.ControlPlane = controlPlane
 
 }
 
-func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
-	result.ControlPlane = framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
+func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {
+	return framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  input.ClusterProxy.GetClient(),
 		Cluster: result.Cluster,
 	}, input.WaitForControlPlaneIntervals...)
