@@ -12,6 +12,26 @@
   - Open a PR in https://github.com/kubernetes/test-infra to change this [line](https://github.com/kubernetes/test-infra/blob/25db54eb9d52e08c16b3601726d8f154f8741025/config/prow/plugins.yaml#L344)
     - Example PR: https://github.com/kubernetes/test-infra/pull/16827
 
+## Update test capz provider metadata.yaml (skip for patch releases)
+
+Using that same next release version used to create a new milestone, update the the capz provider [metadata.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/test/e2e/data/shared/v1beta1_provider/metadata.yaml) that we use to run PR and periodic cluster E2E tests against the main branch templates.
+
+For example, if the latest stable API version of capz that we run E2E tests against is `v1beta`, and we're releasing `v1.4.0`, and our next release version is `v1.5.0`, then we want to ensure that the `metadata.yaml` defines a contract between `1.5` and `v1beta1`:
+
+```yaml
+apiVersion: clusterctl.cluster.x-k8s.io/v1alpha3
+releaseSeries:
+  - major: 1
+    minor: 5
+    contract: v1beta1
+```
+
+Additionally, we need to update the `type: InfrastructureProvider` spec in [azure-dev.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/test/e2e/config/azure-dev.yaml) to express that our intent is to test (using the above example) `1.5`. By convention we use a sentinel patch version "99" to express "any patch version". In this example we want to look for the `type: InfrastructureProvider` with a `name` value of `v1.4.99` and update it to `v1.5.99`:
+
+```
+    - name: v1.5.99 # "vNext"; use manifests from local source files
+```
+
 ## Create a tag
 
 - Prepare the release branch. :warning: Always release from the release branch and not from main!
