@@ -753,11 +753,13 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 }
 
 func resolveKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	v := getLatestSkuForMinor(config.GetVariable(varName), versions)
+	oldVersion := config.GetVariable(varName)
+	v := getLatestSkuForMinor(oldVersion, versions)
 	if _, ok := os.LookupEnv(varName); ok {
 		Expect(os.Setenv(varName, v)).To(Succeed())
 	}
 	config.Variables[varName] = v
+	Logf("Resolved %s (set to %s) to %s", varName, oldVersion, v)
 }
 
 // newImagesClient returns a new VM images client using environmental settings for auth.
@@ -775,7 +777,7 @@ func newImagesClient() compute.VirtualMachineImagesClient {
 
 // getVersionsInOffer returns a map of Kubernetes versions as strings to semver.Versions.
 func getVersionsInOffer(ctx context.Context, location, publisher, offer string) map[string]semver.Version {
-	Byf("Finding image skus and versions for offer %s/%s in %s", publisher, offer, location)
+	Logf("Finding image skus and versions for offer %s/%s in %s", publisher, offer, location)
 	var versions map[string]semver.Version
 	capiSku := regexp.MustCompile(`^[\w-]+-gen[12]$`)
 	capiVersion := regexp.MustCompile(`^(\d)(\d{1,2})\.(\d{1,2})\.\d{8}$`)
