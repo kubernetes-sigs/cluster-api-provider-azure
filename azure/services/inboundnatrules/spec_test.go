@@ -67,7 +67,7 @@ func TestGetAvailablePort(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 
-			res, err := getAvailablePort(tc.portsInput)
+			res, err := getAvailableSSHFrontendPort(tc.portsInput)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

@@ -34,7 +34,7 @@ type InboundNatScope interface {
 	azure.ClusterDescriber
 	azure.AsyncStatusUpdater
 	APIServerLBName() string
-	InboundNatSpecs(map[int32]struct{}) []azure.ResourceSpecGetter
+	InboundNatSpecs() []azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
@@ -70,6 +70,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
+	specs := s.Scope.InboundNatSpecs()
+	if len(specs) == 0 {
+		return nil
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
@@ -85,19 +90,23 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		portsInUse[*rule.InboundNatRulePropertiesFormat.FrontendPort] = struct{}{} // Mark frontend port as in use
 	}
 
-	specs := s.Scope.InboundNatSpecs(portsInUse)
-	if len(specs) == 0 {
-		return nil
-	}
-
 	// We go through the list of InboundNatSpecs to reconcile each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var result error
-	for _, natRule := range specs {
-		// If we are creating multiple inbound NAT rules, we could have a collision in finding an available frontend port since the newly created rule takes an available port, and we do not update portsInUse in the specs.
-		// It doesn't matter in this case since we only create one rule per machine, but for multiple rules, we could end up restarting the Reconcile function each time to get the updated available ports.
-		// TODO: We can update the available ports and recompute the specs each time, or alternatively, we could deterministically calculate the ports we plan on using to avoid collisions, i.e. rule #1 uses the first available port, rule #2 uses the second available port, etc.
+	for _, spec := range specs {
+		// Find an available SSH port for the rule.
+		sshFrontendPort, err := getAvailableSSHFrontendPort(portsInUse)
+		if err != nil {
+			return errors.Wrapf(err, "failed to find available SSH Frontend port for NAT Rule %s in load balancer %s", spec.ResourceName(), spec.OwnerResourceName())
+		}
+		natRule, ok := spec.(*InboundNatSpec)
+		if !ok {
+			result = errors.Errorf("%T is not of type InboundNatSpec", spec)
+		}
+		natRule.SSHFrontendPort = &sshFrontendPort
+		// Add the SSH frontend port to the list of ports in use
+		portsInUse[sshFrontendPort] = struct{}{}
 		if _, err := s.CreateResource(ctx, natRule, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
@@ -118,7 +127,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	specs := s.Scope.InboundNatSpecs(make(map[int32]struct{}))
+	specs := s.Scope.InboundNatSpecs()
 	if len(specs) == 0 {
 		return nil
 	}
