@@ -156,6 +156,9 @@ func collectLogsFromNode(ctx context.Context, managementClusterClient client.Cli
 		errors = append(errors, kinderrors.AggregateConcurrent(windowsInfo(execToPathFn)))
 		errors = append(errors, kinderrors.AggregateConcurrent(windowsK8sLogs(execToPathFn)))
 		errors = append(errors, kinderrors.AggregateConcurrent(windowsNetworkLogs(execToPathFn)))
+		errors = append(errors, kinderrors.AggregateConcurrent(windowsCrashDumpLogs(execToPathFn)))
+		errors = append(errors, sftpCopyFile(controlPlaneEndpoint, hostname, sshPort, "/c:/crashdumps.tar", filepath.Join(outputPath, "crashdumps.tar")))
+
 		return kinderrors.NewAggregate(errors)
 	}
 
@@ -363,6 +366,23 @@ func windowsNetworkLogs(execToPathFn func(outputFileName string, command string,
 		execToPathFn(
 			"hnsdiag.txt",
 			"hnsdiag list all -d",
+		),
+	}
+}
+
+func windowsCrashDumpLogs(execToPathFn func(outputFileName string, command string, args ...string) func() error) []func() error {
+	return []func() error{
+		execToPathFn(
+			"dir-localdumps.log",
+			// note: the powershell 'ls' alias will not have any output if the target directory is empty.
+			// we're logging the contents of the c:\localdumps directory because the command that invokes tar.exe below is
+			// not providing output when run in powershell over ssh for some reason.
+			"ls 'c:\\localdumps' -Recurse",
+		),
+		execToPathFn(
+			// capture any crashdump files created by windows into a .tar to be collected via sftp
+			"tar-crashdumps.log",
+			"$p = 'c:\\localdumps' ; if (Test-Path $p) { tar.exe -cvzf c:\\crashdumps.tar $p *>&1 | %{ Write-Output \"$_\"} } else { Write-Host \"No crash dumps found at $p\" }",
 		),
 	}
 }

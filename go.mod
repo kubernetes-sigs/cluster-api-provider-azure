@@ -22,6 +22,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
 	github.com/pkg/errors v0.9.1
+	github.com/pkg/sftp v1.13.5
 	github.com/prometheus/client_golang v1.12.1
 	github.com/spf13/pflag v1.0.5
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.27.0
@@ -124,6 +125,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
+	github.com/kr/fs v0.1.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/lib/pq v1.10.4 // indirect
