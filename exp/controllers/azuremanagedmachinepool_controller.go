@@ -112,7 +112,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"))),
+		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"), mgr.GetClient(), &infrav1exp.AzureManagedMachinePool{})),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, ammpr.WatchFilterValue),
 	); err != nil {

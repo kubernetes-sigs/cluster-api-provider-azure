@@ -100,7 +100,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
+		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), mgr.GetClient(), &infrav1exp.AzureManagedControlPlane{})),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, amcpr.WatchFilterValue),
 	); err != nil {

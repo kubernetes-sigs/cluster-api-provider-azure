@@ -559,6 +559,10 @@ spec:
           operator: Equal
           value: ""
         - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Equal
+          value: ""
+        - effect: NoSchedule
           key: nvidia.com/gpu
           operator: Equal
           value: present
@@ -571,7 +575,7 @@ metadata:
   namespace: gpu-operator-resources
   labels:
     app.kubernetes.io/component: "gpu-operator"
-    
+
 spec:
   operator:
     defaultRuntime: docker
@@ -582,7 +586,7 @@ spec:
       version: "11.4.2-base-ubi8"
       imagePullPolicy: IfNotPresent
   daemonsets:
-    tolerations: 
+    tolerations:
       - effect: NoSchedule
         key: nvidia.com/gpu
         operator: Exists
@@ -592,12 +596,12 @@ spec:
     image: gpu-operator-validator
     version: "v1.10.1"
     imagePullPolicy: IfNotPresent
-    securityContext: 
+    securityContext:
       privileged: true
       seLinuxOptions:
         level: s0
     plugin:
-      env: 
+      env:
         - name: WITH_WORKLOAD
           value: "true"
   mig:
@@ -618,7 +622,7 @@ spec:
       image: k8s-driver-manager
       version: "v0.3.0"
       imagePullPolicy: IfNotPresent
-      env: 
+      env:
         - name: ENABLE_AUTO_DRAIN
           value: "true"
         - name: DRAIN_USE_FORCE
@@ -629,18 +633,18 @@ spec:
           value: 0s
         - name: DRAIN_DELETE_EMPTYDIR_DATA
           value: "false"
-    repoConfig: 
+    repoConfig:
       configMapName: ""
-    certConfig: 
+    certConfig:
       name: ""
-    licensingConfig: 
+    licensingConfig:
       configMapName: ""
       nlsEnabled: false
-    virtualTopology: 
+    virtualTopology:
       config: ""
-    kernelModuleConfig: 
+    kernelModuleConfig:
       name: ""
-    securityContext: 
+    securityContext:
       privileged: true
       seLinuxOptions:
         level: s0
@@ -650,7 +654,7 @@ spec:
     image: container-toolkit
     version: "v1.9.0-ubuntu18.04"
     imagePullPolicy: IfNotPresent
-    securityContext: 
+    securityContext:
       privileged: true
       seLinuxOptions:
         level: s0
@@ -659,9 +663,9 @@ spec:
     image: k8s-device-plugin
     version: "v0.11.0-ubi8"
     imagePullPolicy: IfNotPresent
-    securityContext: 
+    securityContext:
       privileged: true
-    env: 
+    env:
       - name: PASS_DEVICE_SPECS
         value: "true"
       - name: FAIL_ON_INIT_ERROR
@@ -686,7 +690,7 @@ spec:
     image: dcgm-exporter
     version: "2.3.4-2.6.4-ubuntu20.04"
     imagePullPolicy: IfNotPresent
-    env: 
+    env:
       - name: DCGM_EXPORTER_LISTEN
         value: :9400
       - name: DCGM_EXPORTER_KUBERNETES
@@ -698,7 +702,7 @@ spec:
     image: gpu-feature-discovery
     version: "v0.5.0"
     imagePullPolicy: IfNotPresent
-    env: 
+    env:
       - name: GFD_SLEEP_INTERVAL
         value: 60s
       - name: GFD_FAIL_ON_INIT_ERROR
@@ -709,14 +713,14 @@ spec:
     image: k8s-mig-manager
     version: "v0.3.0-ubuntu20.04"
     imagePullPolicy: IfNotPresent
-    securityContext: 
+    securityContext:
       privileged: true
-    env: 
+    env:
       - name: WITH_REBOOT
         value: "false"
-    config: 
+    config:
       name: ""
-    gpuClientsConfig: 
+    gpuClientsConfig:
       name: ""
   nodeStatusExporter:
     enabled: false
@@ -733,18 +737,18 @@ metadata:
   namespace: gpu-operator-resources
   labels:
     app.kubernetes.io/component: "gpu-operator"
-    
+
 spec:
   replicas: 1
   selector:
     matchLabels:
-      
+
       app.kubernetes.io/component: "gpu-operator"
       app: "gpu-operator"
   template:
     metadata:
       labels:
-        
+
         app.kubernetes.io/component: "gpu-operator"
         app: "gpu-operator"
       annotations:
@@ -805,10 +809,19 @@ spec:
                 operator: In
                 values:
                 - ""
+              matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: In
+                values:
+                - ""
             weight: 1
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/master
+          operator: Equal
+          value: ""
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
           operator: Equal
           value: ""
 ---
@@ -821,7 +834,7 @@ metadata:
   namespace: gpu-operator-resources
   labels:
     app.kubernetes.io/component: "gpu-operator"
-    
+
 rules:
 - apiGroups:
   - config.openshift.io
@@ -968,7 +981,7 @@ metadata:
   name: gpu-operator
   labels:
     app.kubernetes.io/component: "gpu-operator"
-    
+
 subjects:
 - kind: ServiceAccount
   name: gpu-operator

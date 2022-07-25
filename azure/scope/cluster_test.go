@@ -154,7 +154,6 @@ func TestAPIServerHost(t *testing.T) {
 				Namespace: "default",
 			},
 		}
-		cluster.Default()
 
 		tc.azureCluster.ObjectMeta = metav1.ObjectMeta{
 			Name: cluster.Name,
@@ -197,7 +196,6 @@ func TestGettingSecurityRules(t *testing.T) {
 			Namespace: "default",
 		},
 	}
-	cluster.Default()
 
 	azureCluster := &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -758,7 +756,6 @@ func TestPublicIPSpecs(t *testing.T) {
 					Namespace: "default",
 				},
 			}
-			cluster.Default()
 
 			initObjects := []runtime.Object{cluster, tc.azureCluster}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -1937,7 +1934,6 @@ func TestOutboundLBName(t *testing.T) {
 					Namespace: "default",
 				},
 			}
-			cluster.Default()
 
 			azureCluster := &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{

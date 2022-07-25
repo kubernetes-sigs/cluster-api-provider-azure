@@ -86,7 +86,6 @@ func TestGetCloudProviderConfig(t *testing.T) {
 	_ = infrav1.AddToScheme(scheme)
 
 	cluster := newCluster("foo")
-	cluster.Default()
 	azureCluster := newAzureCluster("bar")
 	azureCluster.Default()
 	azureClusterCustomVnet := newAzureClusterWithCustomVnet("bar")
@@ -257,7 +256,6 @@ func TestReconcileAzureSecret(t *testing.T) {
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
 
-	cluster.Default()
 	azureCluster.Default()
 	cluster.Name = "testCluster"
 

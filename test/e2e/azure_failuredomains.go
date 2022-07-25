@@ -29,7 +29,6 @@ import (
 	apimachinerytypes "k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // AzureFailureDomainsSpecInput is the input for AzureFailureDomainSpec.
@@ -83,15 +82,9 @@ func AzureFailureDomainsSpec(ctx context.Context, inputGetter func() AzureFailur
 		// TODO: Find alternative when the number of zones is > 1 but doesn't equal to number of control plane machines.
 		if len(input.Cluster.Status.FailureDomains) == 3 {
 			By("Ensuring control planes are spread across availability zones.")
-			key := client.ObjectKeyFromObject(input.Cluster)
 			failureDomainsInput := framework.AssertControlPlaneFailureDomainsInput{
-				GetLister:  input.BootstrapClusterProxy.GetClient(),
-				ClusterKey: key,
-				ExpectedFailureDomains: map[string]int{
-					"1": 1,
-					"2": 1,
-					"3": 1,
-				},
+				Lister:  input.BootstrapClusterProxy.GetClient(),
+				Cluster: input.Cluster,
 			}
 			framework.AssertControlPlaneFailureDomains(ctx, failureDomainsInput)
 		}
