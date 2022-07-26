@@ -104,6 +104,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	dec := gob.NewDecoder(buf)
 	Expect(dec.Decode(&e2eConfig)).To(Succeed())
 
+	// we unset Kubernetes version variables to make sure we use the ones resolved from the first Ginkgo ParallelNode in the e2e config.
+	os.Unsetenv(capi_e2e.KubernetesVersion)
+	os.Unsetenv(capi_e2e.KubernetesVersionUpgradeFrom)
+	os.Unsetenv(capi_e2e.KubernetesVersionUpgradeTo)
+
 	kubeconfigPath := parts[3]
 	bootstrapClusterProxy = NewAzureClusterProxy("bootstrap", kubeconfigPath, framework.WithMachineLogCollector(AzureLogCollector{}))
 })
