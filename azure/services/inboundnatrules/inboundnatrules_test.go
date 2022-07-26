@@ -38,7 +38,6 @@ var (
 	fakeLBName    = "my-lb-1"
 	fakeGroupName = "my-rg"
 
-	noPortsInUse      = getFakeExistingPortsInUse([]int{})
 	noExistingRules   = []network.InboundNatRule{}
 	fakeExistingRules = []network.InboundNatRule{
 		{
@@ -56,32 +55,32 @@ var (
 			},
 		},
 	}
-	somePortsInUse = getFakeExistingPortsInUse([]int{22, 2201})
 
-	fakeNatSpecWithNoExisting = InboundNatSpec{
+	fakeNatSpec = InboundNatSpec{
 		Name:                      "my-machine-1",
 		LoadBalancerName:          "my-lb-1",
 		ResourceGroup:             fakeGroupName,
-		FrontendIPConfigurationID: to.StringPtr("frontend-ip-config-id-2"),
-		PortsInUse:                noPortsInUse,
+		FrontendIPConfigurationID: to.StringPtr("frontend-ip-config-id-1"),
 	}
-	fakeNatSpec = InboundNatSpec{
+	fakeNatSpec2 = InboundNatSpec{
 		Name:                      "my-machine-2",
-		LoadBalancerName:          "my-lb-2",
+		LoadBalancerName:          "my-lb-1",
 		ResourceGroup:             fakeGroupName,
 		FrontendIPConfigurationID: to.StringPtr("frontend-ip-config-id-2"),
-		PortsInUse:                somePortsInUse,
 	}
+
 	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
 )
 
-func getFakeExistingPortsInUse(usedPorts []int) map[int32]struct{} {
-	portsInUse := make(map[int32]struct{})
-	for _, port := range usedPorts {
-		portsInUse[int32(port)] = struct{}{}
-	}
+func getFakeNatSpecWithoutPort(spec InboundNatSpec) *InboundNatSpec {
+	newSpec := spec
+	return &newSpec
+}
 
-	return portsInUse
+func getFakeNatSpecWithPort(spec InboundNatSpec, port int32) *InboundNatSpec {
+	newSpec := spec
+	newSpec.SSHFrontendPort = to.Int32Ptr(port)
+	return &newSpec
 }
 
 func TestReconcileInboundNATRule(t *testing.T) {
@@ -100,8 +99,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				r *mock_async.MockReconcilerMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
-				m.List(gomockinternal.AContext(), fakeGroupName, fakeLBName).Return(noExistingRules, nil)
-				s.InboundNatSpecs(noPortsInUse).Return([]azure.ResourceSpecGetter{})
+				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{
@@ -113,9 +111,10 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
 				m.List(gomockinternal.AContext(), fakeGroupName, fakeLBName).Return(noExistingRules, nil)
-				s.InboundNatSpecs(noPortsInUse).Return([]azure.ResourceSpecGetter{&fakeNatSpecWithNoExisting})
+				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{getFakeNatSpecWithoutPort(fakeNatSpec), getFakeNatSpecWithoutPort(fakeNatSpec2)})
 				gomock.InOrder(
-					r.CreateResource(gomockinternal.AContext(), &fakeNatSpecWithNoExisting, serviceName).Return(nil, nil),
+					r.CreateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 22), serviceName).Return(nil, nil),
+					r.CreateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec2, 2201), serviceName).Return(nil, nil),
 					s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil),
 				)
 			},
@@ -129,9 +128,9 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
 				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(fakeExistingRules, nil)
-				s.InboundNatSpecs(somePortsInUse).Return([]azure.ResourceSpecGetter{&fakeNatSpec})
+				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{getFakeNatSpecWithoutPort(fakeNatSpec)})
 				gomock.InOrder(
-					r.CreateResource(gomockinternal.AContext(), &fakeNatSpec, serviceName).Return(nil, nil),
+					r.CreateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 2202), serviceName).Return(nil, nil),
 					s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil),
 				)
 			},
@@ -153,6 +152,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				r *mock_async.MockReconcilerMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
+				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to get existing NAT rules: #: Internal Server Error: StatusCode=500"))
 			},
@@ -166,9 +166,9 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
 				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(fakeExistingRules, nil)
-				s.InboundNatSpecs(somePortsInUse).Return([]azure.ResourceSpecGetter{&fakeNatSpec})
+				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				gomock.InOrder(
-					r.CreateResource(gomockinternal.AContext(), &fakeNatSpec, serviceName).Return(nil, internalError),
+					r.CreateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 2202), serviceName).Return(nil, internalError),
 					s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, internalError),
 				)
 			},
@@ -217,7 +217,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.InboundNatSpecs(noPortsInUse).Return([]azure.ResourceSpecGetter{})
+				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{
@@ -225,11 +225,11 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.InboundNatSpecs(noPortsInUse).Return([]azure.ResourceSpecGetter{&fakeNatSpecWithNoExisting})
+				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
 				gomock.InOrder(
-					r.DeleteResource(gomockinternal.AContext(), &fakeNatSpecWithNoExisting, serviceName).Return(nil),
+					r.DeleteResource(gomockinternal.AContext(), &fakeNatSpec, serviceName).Return(nil),
 					s.UpdateDeleteStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil),
 				)
 			},
@@ -239,11 +239,11 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.InboundNatSpecs(noPortsInUse).Return([]azure.ResourceSpecGetter{&fakeNatSpecWithNoExisting})
+				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
 				gomock.InOrder(
-					r.DeleteResource(gomockinternal.AContext(), &fakeNatSpecWithNoExisting, serviceName).Return(internalError),
+					r.DeleteResource(gomockinternal.AContext(), &fakeNatSpec, serviceName).Return(internalError),
 					s.UpdateDeleteStatus(infrav1.InboundNATRulesReadyCondition, serviceName, internalError),
 				)
 			},
