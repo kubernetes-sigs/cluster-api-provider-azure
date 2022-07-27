@@ -404,7 +404,6 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 					LoadBalancerName:          "foo-loadbalancer",
 					ResourceGroup:             "my-rg",
 					FrontendIPConfigurationID: to.StringPtr(azure.FrontendIPConfigID("123", "my-rg", "foo-loadbalancer", "foo-frontend-ip")),
-					PortsInUse:                make(map[int32]struct{}),
 				},
 			},
 		},
@@ -413,7 +412,7 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := tt.machineScope.InboundNatSpecs(make(map[int32]struct{})); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.machineScope.InboundNatSpecs(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("InboundNatSpecs() = %s, want %s", specArrayToString(got), specArrayToString(tt.want))
 			}
 		})

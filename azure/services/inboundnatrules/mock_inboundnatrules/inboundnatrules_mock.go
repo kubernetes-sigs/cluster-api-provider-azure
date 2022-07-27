@@ -248,17 +248,17 @@ func (mr *MockInboundNatScopeMockRecorder) HashKey() *gomock.Call {
 }
 
 // InboundNatSpecs mocks base method.
-func (m *MockInboundNatScope) InboundNatSpecs(arg0 map[int32]struct{}) []azure.ResourceSpecGetter {
+func (m *MockInboundNatScope) InboundNatSpecs() []azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InboundNatSpecs", arg0)
+	ret := m.ctrl.Call(m, "InboundNatSpecs")
 	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
 	return ret0
 }
 
 // InboundNatSpecs indicates an expected call of InboundNatSpecs.
-func (mr *MockInboundNatScopeMockRecorder) InboundNatSpecs(arg0 interface{}) *gomock.Call {
+func (mr *MockInboundNatScopeMockRecorder) InboundNatSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InboundNatSpecs", reflect.TypeOf((*MockInboundNatScope)(nil).InboundNatSpecs), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InboundNatSpecs", reflect.TypeOf((*MockInboundNatScope)(nil).InboundNatSpecs))
 }
 
 // Location mocks base method.

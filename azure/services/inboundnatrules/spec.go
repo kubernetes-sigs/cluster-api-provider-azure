@@ -28,7 +28,7 @@ type InboundNatSpec struct {
 	LoadBalancerName          string
 	ResourceGroup             string
 	FrontendIPConfigurationID *string
-	PortsInUse                map[int32]struct{}
+	SSHFrontendPort           *int32
 }
 
 // ResourceName returns the name of the inbound NAT rule.
@@ -60,11 +60,6 @@ func (s *InboundNatSpec) Parameters(existing interface{}) (parameters interface{
 		return nil, errors.Errorf("FrontendIPConfigurationID is not set")
 	}
 
-	sshFrontendPort, err := getAvailablePort(s.PortsInUse)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find available SSH Frontend port for NAT Rule %s in load balancer %s", s.ResourceName(), s.OwnerResourceName())
-	}
-
 	rule := network.InboundNatRule{
 		Name: to.StringPtr(s.ResourceName()),
 		InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
@@ -75,14 +70,14 @@ func (s *InboundNatSpec) Parameters(existing interface{}) (parameters interface{
 				ID: s.FrontendIPConfigurationID,
 			},
 			Protocol:     network.TransportProtocolTCP,
-			FrontendPort: &sshFrontendPort,
+			FrontendPort: s.SSHFrontendPort,
 		},
 	}
 
 	return rule, nil
 }
 
-func getAvailablePort(portsInUse map[int32]struct{}) (int32, error) {
+func getAvailableSSHFrontendPort(portsInUse map[int32]struct{}) (int32, error) {
 	// NAT rules need to use a unique port. Since we need one NAT rule per control plane and we expect to have 1, 3, 5, maybe 9 control planes, there should never be more than 9 ports in use.
 	// This is an artificial limit of 20 ports that we can pick from, which should be plenty enough (in reality we should never reach that limit).
 	// These NAT rules are used for SSH purposes which is why we start at 22 and then use 2201, 2202, etc.
