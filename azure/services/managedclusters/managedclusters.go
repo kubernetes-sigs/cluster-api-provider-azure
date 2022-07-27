@@ -94,7 +94,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		// Update kubeconfig data
 		// Always fetch credentials in case of rotation
-		kubeConfigData, err := s.GetCredentials(ctx, managedClusterSpec.ResourceGroupName(), managedClusterSpec.ResourceName())
+		typedSpec := managedClusterSpec.(*ManagedClusterSpec)
+		kubeConfigData, err := s.GetCredentials(ctx, typedSpec)
 		if err != nil {
 			return errors.Wrap(err, "failed to get credentials for managed cluster")
 		}

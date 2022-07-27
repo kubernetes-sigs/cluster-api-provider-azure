@@ -95,6 +95,9 @@ type ManagedClusterSpec struct {
 
 	// Headers is the list of headers to add to the HTTP requests to update this resource.
 	Headers map[string]string
+
+	// DisableLocalAccounts disables local accounts for RBAC-enabled clusters
+	DisableLocalAccounts bool
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
@@ -214,6 +217,7 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 				LoadBalancerSku: containerservice.LoadBalancerSku(s.LoadBalancerSKU),
 				NetworkPolicy:   containerservice.NetworkPolicy(s.NetworkPolicy),
 			},
+			DisableLocalAccounts: to.BoolPtr(false),
 		},
 	}
 
@@ -301,6 +305,10 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 			PrivateDNSZone:                 s.APIServerAccessProfile.PrivateDNSZone,
 			EnablePrivateClusterPublicFQDN: s.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
 		}
+	}
+
+	if s.DisableLocalAccounts {
+		managedCluster.ManagedClusterProperties.DisableLocalAccounts = to.BoolPtr(true)
 	}
 
 	if existing != nil {

@@ -32,7 +32,7 @@ import (
 
 // CredentialGetter is a helper interface for getting managed cluster credentials.
 type CredentialGetter interface {
-	GetCredentials(context.Context, string, string) ([]byte, error)
+	GetCredentials(context.Context, *ManagedClusterSpec) ([]byte, error)
 }
 
 // azureClient contains the Azure go-sdk Client.
@@ -63,11 +63,19 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 }
 
 // GetCredentials fetches the admin kubeconfig for a managed cluster.
-func (ac *azureClient) GetCredentials(ctx context.Context, resourceGroupName, name string) ([]byte, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.GetCredentials")
+func (ac *azureClient) GetCredentials(ctx context.Context, spec *ManagedClusterSpec) ([]byte, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.GetCredentials")
 	defer done()
 
-	credentialList, err := ac.managedclusters.ListClusterAdminCredentials(ctx, resourceGroupName, name, "")
+	var err error
+	var credentialList containerservice.CredentialResults
+	if spec.DisableLocalAccounts {
+		log.Info("AKS cluster configured for DisableLocalAccounts, getting user kubeconfig", "cluster", spec)
+		credentialList, err = ac.managedclusters.ListClusterUserCredentials(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+	} else {
+		log.Info("Getting admin kubeconfig", "cluster", spec)
+		credentialList, err = ac.managedclusters.ListClusterAdminCredentials(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -25,6 +25,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	managedclusters "sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 )
 
 // MockCredentialGetter is a mock of CredentialGetter interface.
@@ -51,16 +52,16 @@ func (m *MockCredentialGetter) EXPECT() *MockCredentialGetterMockRecorder {
 }
 
 // GetCredentials mocks base method.
-func (m *MockCredentialGetter) GetCredentials(arg0 context.Context, arg1, arg2 string) ([]byte, error) {
+func (m *MockCredentialGetter) GetCredentials(arg0 context.Context, arg1 *managedclusters.ManagedClusterSpec) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCredentials", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetCredentials", arg0, arg1)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCredentials indicates an expected call of GetCredentials.
-func (mr *MockCredentialGetterMockRecorder) GetCredentials(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockCredentialGetterMockRecorder) GetCredentials(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentials", reflect.TypeOf((*MockCredentialGetter)(nil).GetCredentials), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentials", reflect.TypeOf((*MockCredentialGetter)(nil).GetCredentials), arg0, arg1)
 }

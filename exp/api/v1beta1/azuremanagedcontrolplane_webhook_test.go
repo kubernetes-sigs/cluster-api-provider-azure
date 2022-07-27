@@ -604,6 +604,58 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "AzureManagedControlPlane DisableLocalAccounts is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:         to.StringPtr("192.168.0.0"),
+					DisableLocalAccounts: to.BoolPtr(false),
+					Version:              "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:         to.StringPtr("192.168.0.0"),
+					DisableLocalAccounts: to.BoolPtr(true),
+					Version:              "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane DisableLocalAccounts is immutable, unsetting from true is not allowed",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:         to.StringPtr("192.168.0.0"),
+					DisableLocalAccounts: to.BoolPtr(true),
+					Version:              "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane DisableLocalAccounts is immutable, unsetting from false is not allowed",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:         to.StringPtr("192.168.0.0"),
+					DisableLocalAccounts: to.BoolPtr(false),
+					Version:              "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "AzureManagedControlPlane ManagedAad can be set after cluster creation",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{

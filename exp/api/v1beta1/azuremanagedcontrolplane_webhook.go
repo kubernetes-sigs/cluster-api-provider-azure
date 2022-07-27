@@ -240,6 +240,25 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client 
 		}
 	}
 
+	if old.Spec.DisableLocalAccounts != nil {
+		// Prevent DisableLocalAccounts modification if it was already set to some value
+		if m.Spec.DisableLocalAccounts == nil {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "DisableLocalAccounts"),
+					m.Spec.DisableLocalAccounts,
+					"field is immutable, unsetting is not allowed"))
+		} else if *m.Spec.DisableLocalAccounts != *old.Spec.DisableLocalAccounts {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "DisableLocalAccounts"),
+					*m.Spec.DisableLocalAccounts,
+					"field is immutable"))
+		}
+	}
+
 	if errs := m.validateAPIServerAccessProfileUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}

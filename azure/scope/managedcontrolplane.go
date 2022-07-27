@@ -466,6 +466,10 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 		}
 	}
 
+	if s.ControlPlane.Spec.DisableLocalAccounts != nil {
+		managedClusterSpec.DisableLocalAccounts = *s.ControlPlane.Spec.DisableLocalAccounts
+	}
+
 	return &managedClusterSpec
 }
 

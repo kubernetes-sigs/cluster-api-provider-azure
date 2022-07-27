@@ -112,6 +112,11 @@ type AzureManagedControlPlaneSpec struct {
 	// APIServerAccessProfile is the access profile for AKS API server.
 	// +optional
 	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
+
+	// DisableLocalAccounts disables local accounts for RBAC-enabled clusters
+	// Ref: https://docs.microsoft.com/en-us/azure/aks/managed-aad#disable-local-accounts
+	// +optional
+	DisableLocalAccounts *bool `json:"disableLocalAccounts,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.

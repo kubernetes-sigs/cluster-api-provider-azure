@@ -591,6 +591,10 @@ spec:
                 - host
                 - port
                 type: object
+              disableLocalAccounts:
+                description: 'DisableLocalAccounts disables local accounts for RBAC-enabled
+                  clusters Ref: https://docs.microsoft.com/en-us/azure/aks/managed-aad#disable-local-accounts'
+                type: boolean
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
                   DNS service. It must be within the Kubernetes service address range
