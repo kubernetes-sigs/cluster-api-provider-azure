@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: capi-visualizer
+  namespace: {{ .Release.Namespace }}
   labels:
     {{ .Values.label.key }}: {{ .Values.label.value }}
 spec:
@@ -16,18 +17,8 @@ spec:
     spec:
       containers:
       - name: capi-visualizer
-        image: "{{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.repository }}/{{ .Values.image.name }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - containerPort: 8081
-        env:
-        - name: KUBECONFIG
-          value: "/mnt/kubeconfig"
-        volumeMounts:
-          - mountPath: "/mnt"
-            name: management-kubeconfig
-            readOnly: true
-      volumes:
-      - name: management-kubeconfig
-        secret:
-          secretName: management-kubeconfig
+      serviceAccountName: capi-visualizer

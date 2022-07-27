@@ -1,0 +1,12 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: capi-visualizer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: capi-visualizer
+subjects:
+- kind: ServiceAccount
+  name: capi-visualizer
+  namespace: {{ .Release.Namespace }}
