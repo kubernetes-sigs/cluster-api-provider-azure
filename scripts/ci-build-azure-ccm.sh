@@ -80,7 +80,8 @@ can_reuse_artifacts() {
     done
 
     if [[ -n "${TEST_WINDOWS:-}" ]]; then
-        if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG}" | grep -q "\"os.version\": \"${WINDOWS_IMAGE_VERSION}\""; then
+        FULL_VERSION=$(docker manifest inspect mcr.microsoft.com/windows/nanoserver:${WINDOWS_IMAGE_VERSION} | jq -r '.manifests[0].platform["os.version"]')
+        if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG}" | grep -q "\"os.version\": \"${FULL_VERSION}\""; then
             echo "false" && return
         fi
     fi

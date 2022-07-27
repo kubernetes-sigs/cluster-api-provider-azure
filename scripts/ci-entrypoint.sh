@@ -176,6 +176,9 @@ create_cluster
 # export the target cluster KUBECONFIG if not already set
 export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 
+export -f wait_for_nodes
+timeout --foreground 1800 bash -c wait_for_nodes
+
 # install cloud-provider-azure components, if using out-of-tree
 if [[ -n "${TEST_CCM:-}" ]]; then
     echo "Installing cloud-provider-azure components via helm"
@@ -189,9 +192,6 @@ if [[ -n "${TEST_CCM:-}" ]]; then
 --set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
 --set cloudControllerManager.replicas="${CCM_COUNT}"
 fi
-
-export -f wait_for_nodes
-timeout --foreground 1800 bash -c wait_for_nodes
 
 if [[ "${#}" -gt 0 ]]; then
     # disable error exit so we can run post-command cleanup
