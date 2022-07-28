@@ -99,7 +99,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if cpSubnet.SecurityGroup.Name == "" {
 		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
 	}
-	cpSubnet.SecurityGroup.SecurityGroupClass.setDefaults(SecurityRuleDirectionInbound)
+	cpSubnet.SecurityGroup.SecurityGroupClass.setDefaults()
 
 	c.Spec.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
 
@@ -117,7 +117,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 			if subnet.SecurityGroup.Name == "" {
 				subnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
 			}
-			cpSubnet.SecurityGroup.SecurityGroupClass.setDefaults(SecurityRuleDirectionInbound)
+			cpSubnet.SecurityGroup.SecurityGroupClass.setDefaults()
 
 			if subnet.RouteTable.Name == "" {
 				subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)

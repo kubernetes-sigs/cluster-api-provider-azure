@@ -59,7 +59,7 @@ func (c *AzureClusterTemplate) setSubnetsTemplateDefaults() {
 		c.Spec.Template.Spec.NetworkSpec.Subnets = append(c.Spec.Template.Spec.NetworkSpec.Subnets, cpSubnet)
 	}
 	cpSubnet.SubnetClassSpec.setDefaults(DefaultControlPlaneSubnetCIDR)
-	cpSubnet.SecurityGroup.setDefaults(SecurityRuleDirectionInbound)
+	cpSubnet.SecurityGroup.setDefaults()
 	c.Spec.Template.Spec.NetworkSpec.UpdateControlPlaneSubnetTemplate(cpSubnet)
 
 	var nodeSubnetFound bool
@@ -69,7 +69,7 @@ func (c *AzureClusterTemplate) setSubnetsTemplateDefaults() {
 			nodeSubnetCounter++
 			nodeSubnetFound = true
 			subnet.SubnetClassSpec.setDefaults(fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter))
-			cpSubnet.SecurityGroup.setDefaults(SecurityRuleDirectionInbound)
+			cpSubnet.SecurityGroup.setDefaults()
 			c.Spec.Template.Spec.NetworkSpec.Subnets[i] = subnet
 		}
 	}
