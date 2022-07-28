@@ -5155,7 +5155,7 @@ data:
     for rescheduling.\n      - key: CriticalAddonsOnly\n        operator: Exists\n
     \     - effect: NoExecute\n        operator: Exists\n      initContainers:\n        #
     This container installs the CNI binaries\n        # and CNI network config file
-    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.23.0-hostprocess\n
+    on each node.\n        - name: install-cni\n          image: marosse3/calico-install:v3.23.3-hostprocess\n
     \         args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1\"]\n
     \         imagePullPolicy: Always\n          env:\n            # Name of the CNI
     config file to create.\n            - name: CNI_CONF_NAME\n              value:
@@ -5171,10 +5171,9 @@ data:
     \"false\"\n            - name: K8S_SERVICE_CIDR\n              value: \"10.96.0.0/12\"\n
     \         volumeMounts:\n            - mountPath: /host/opt/cni/bin\n              name:
     cni-bin-dir\n            - mountPath: /host/etc/cni/net.d\n              name:
-    cni-net-dir\n            - name: kubeadm-config\n              mountPath: /etc/kubeadm-config/\n
-    \         securityContext:\n            windowsOptions:\n              hostProcess:
+    cni-net-dir\n          securityContext:\n            windowsOptions:\n              hostProcess:
     true\n              runAsUserName: \"NT AUTHORITY\\\\system\"\n      containers:\n
-    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.23.0-hostprocess\n
+    \     - name: calico-node-startup\n        image: marosse3/calico-node:v3.23.3-hostprocess\n
     \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1\"]\n
     \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        imagePullPolicy:
     Always\n        volumeMounts:\n        - name: calico-config-windows\n          mountPath:
@@ -5185,22 +5184,20 @@ data:
     name: CNI_IPAM_TYPE\n          value: \"calico-ipam\"\n        - name: CALICO_NETWORKING_BACKEND\n
     \         value: \"vxlan\"\n        - name: KUBECONFIG\n          value: \"C:/etc/cni/net.d/calico-kubeconfig\"\n
     \       - name: VXLAN_VNI\n          value: \"4096\"\n      - name: calico-node-felix\n
-    \       image: sigwindowstools/calico-node:v3.23.0-hostprocess\n        args:
-    [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1\"]\n        imagePullPolicy:
-    Always\n        workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        volumeMounts:\n
-    \       - name: calico-config-windows\n          mountPath: /etc/kube-calico-windows/\n
-    \       - name: calico-static-rules\n          mountPath: /calico/static-rules.json\n
-    \         subPath: static-rules.json\n        env:\n        - name: POD_NAME\n
-    \         valueFrom:\n            fieldRef:\n              apiVersion: v1\n              fieldPath:
-    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
-    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
-    name: VXLAN_VNI\n          value: \"4096\"\n        - name: KUBECONFIG\n          value:
-    \"C:/etc/cni/net.d/calico-kubeconfig\"\n      volumes:\n      - name: calico-config-windows\n
-    \       configMap:\n          name: calico-config-windows\n      - name: calico-static-rules\n
-    \       configMap:\n          name: calico-static-rules\n      # Used to install
-    CNI.\n      - name: cni-bin-dir\n        hostPath:\n          path: /opt/cni/bin\n
-    \     - name: cni-net-dir\n        hostPath:\n          path: /etc/cni/net.d\n
-    \     - name: kubeadm-config\n        configMap:\n          name: kubeadm-config\n"
+    \       image: marosse3/calico-node:v3.23.3-hostprocess\n        args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1\"]\n
+    \       imagePullPolicy: Always\n        workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n
+    \       volumeMounts:\n        - name: calico-config-windows\n          mountPath:
+    /etc/kube-calico-windows/\n        - name: calico-static-rules\n          mountPath:
+    /calico/static-rules.json\n          subPath: static-rules.json\n        env:\n
+    \       - name: POD_NAME\n          valueFrom:\n            fieldRef:\n              apiVersion:
+    v1\n              fieldPath: metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n
+    \           fieldRef:\n              apiVersion: v1\n              fieldPath:
+    metadata.namespace\n        - name: VXLAN_VNI\n          value: \"4096\"\n        -
+    name: KUBECONFIG\n          value: \"C:/etc/cni/net.d/calico-kubeconfig\"\n      volumes:\n
+    \     - name: calico-config-windows\n        configMap:\n          name: calico-config-windows\n
+    \     - name: calico-static-rules\n        configMap:\n          name: calico-static-rules\n
+    \     # Used to install CNI.\n      - name: cni-bin-dir\n        hostPath:\n          path:
+    /opt/cni/bin\n      - name: cni-net-dir\n        hostPath:\n          path: /etc/cni/net.d\n\n"
 kind: ConfigMap
 metadata:
   annotations:

@@ -163,7 +163,7 @@ spec:
         # This container installs the CNI binaries
         # and CNI network config file on each node.
         - name: install-cni
-          image: sigwindowstools/calico-install:v3.23.0-hostprocess
+          image: marosse3/calico-install:v3.23.3-hostprocess
           args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1"]
           imagePullPolicy: Always
           env:
@@ -197,15 +197,13 @@ spec:
               name: cni-bin-dir
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
-            - name: kubeadm-config
-              mountPath: /etc/kubeadm-config/
           securityContext:
             windowsOptions:
               hostProcess: true
               runAsUserName: "NT AUTHORITY\\system"
       containers:
       - name: calico-node-startup
-        image: sigwindowstools/calico-node:v3.23.0-hostprocess
+        image: marosse3/calico-node:v3.23.3-hostprocess
         args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1"]
         workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/"
         imagePullPolicy: Always
@@ -232,7 +230,7 @@ spec:
         - name: VXLAN_VNI
           value: "4096"
       - name: calico-node-felix
-        image: sigwindowstools/calico-node:v3.23.0-hostprocess
+        image: marosse3/calico-node:v3.23.3-hostprocess
         args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1"]
         imagePullPolicy: Always
         workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/"
@@ -271,6 +269,4 @@ spec:
       - name: cni-net-dir
         hostPath:
           path: /etc/cni/net.d
-      - name: kubeadm-config
-        configMap:
-          name: kubeadm-config
+
