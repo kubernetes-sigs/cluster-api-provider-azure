@@ -50,6 +50,10 @@ func ValidateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateDiagnostics(spec.Diagnostics, field.NewPath("diagnostics")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	return allErrs
 }
 
@@ -291,5 +295,39 @@ func validateCachingType(cachingType string, fieldPath *field.Path, managedDisk 
 	}
 
 	allErrs = append(allErrs, field.Invalid(cachingTypeChildPath, cachingType, fmt.Sprintf("allowed values are %v", compute.PossibleCachingTypesValues())))
+	return allErrs
+}
+
+// ValidateDiagnostics validates the Diagnostic spec.
+func ValidateDiagnostics(diagnostics *Diagnostics, fieldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if diagnostics != nil && diagnostics.Boot != nil {
+		switch diagnostics.Boot.StorageAccountType {
+		case UserManagedDiagnosticsStorage:
+			if diagnostics.Boot.UserManaged == nil {
+				allErrs = append(allErrs, field.Required(fieldPath.Child("UserManaged"),
+					fmt.Sprintf("userManaged must be specified when storageAccountType is '%s'", UserManagedDiagnosticsStorage)))
+			} else if diagnostics.Boot.UserManaged.StorageAccountURI == "" {
+				allErrs = append(allErrs, field.Required(fieldPath.Child("StorageAccountURI"),
+					fmt.Sprintf("StorageAccountURI cannot be empty when storageAccountType is '%s'", UserManagedDiagnosticsStorage)))
+			}
+		case ManagedDiagnosticsStorage:
+			if diagnostics.Boot.UserManaged != nil &&
+				diagnostics.Boot.UserManaged.StorageAccountURI != "" {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Child("StorageAccountURI"), diagnostics.Boot.UserManaged.StorageAccountURI,
+					fmt.Sprintf("StorageAccountURI cannot be set when storageAccountType is '%s'",
+						ManagedDiagnosticsStorage)))
+			}
+		case DisabledDiagnosticsStorage:
+			if diagnostics.Boot.UserManaged != nil &&
+				diagnostics.Boot.UserManaged.StorageAccountURI != "" {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Child("StorageAccountURI"), diagnostics.Boot.UserManaged.StorageAccountURI,
+					fmt.Sprintf("StorageAccountURI cannot be set when storageAccountType is '%s'",
+						ManagedDiagnosticsStorage)))
+			}
+		}
+	}
+
 	return allErrs
 }

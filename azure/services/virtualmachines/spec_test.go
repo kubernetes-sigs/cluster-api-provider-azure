@@ -863,6 +863,116 @@ func TestParameters(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		{
+			name: "creates a vm with Diagnostics disabled",
+			spec: &VMSpec{
+				Name:       "my-ultra-ssd-vm",
+				Role:       infrav1.Node,
+				NICIDs:     []string{"my-nic"},
+				SSHKeyData: "fakesshpublickey",
+				Size:       "Standard_D2v3",
+				Location:   "test-location",
+				Zone:       "1",
+				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				DiagnosticsProfile: &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.DisabledDiagnosticsStorage,
+					},
+				},
+				SKU: validSKUWithUltraSSD,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(to.BoolPtr(false)))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
+			},
+			expectedError: "",
+		},
+		{
+			name: "creates a vm with Managed Diagnostics enabled",
+			spec: &VMSpec{
+				Name:       "my-ultra-ssd-vm",
+				Role:       infrav1.Node,
+				NICIDs:     []string{"my-nic"},
+				SSHKeyData: "fakesshpublickey",
+				Size:       "Standard_D2v3",
+				Location:   "test-location",
+				Zone:       "1",
+				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				DiagnosticsProfile: &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+					},
+				},
+				SKU: validSKUWithUltraSSD,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(to.BoolPtr(true)))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
+			},
+			expectedError: "",
+		},
+		{
+			name: "creates a vm with User Managed Diagnostics enabled",
+			spec: &VMSpec{
+				Name:       "my-ultra-ssd-vm",
+				Role:       infrav1.Node,
+				NICIDs:     []string{"my-nic"},
+				SSHKeyData: "fakesshpublickey",
+				Size:       "Standard_D2v3",
+				Location:   "test-location",
+				Zone:       "1",
+				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				DiagnosticsProfile: &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+						UserManaged: &infrav1.UserManagedBootDiagnostics{
+							StorageAccountURI: "aaa",
+						},
+					},
+				},
+				SKU: validSKUWithUltraSSD,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(to.BoolPtr(true)))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(to.StringPtr("aaa")))
+			},
+			expectedError: "",
+		},
+		{
+			name: "creates a vm with User Managed Diagnostics enabled, but missing StorageAccountURI",
+			spec: &VMSpec{
+				Name:       "my-ultra-ssd-vm",
+				Role:       infrav1.Node,
+				NICIDs:     []string{"my-nic"},
+				SSHKeyData: "fakesshpublickey",
+				Size:       "Standard_D2v3",
+				Location:   "test-location",
+				Zone:       "1",
+				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				DiagnosticsProfile: &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+						UserManaged: &infrav1.UserManagedBootDiagnostics{
+							StorageAccountURI: "aaa",
+						},
+					},
+				},
+				SKU: validSKUWithUltraSSD,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(to.BoolPtr(true)))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(to.StringPtr("aaa")))
+			},
+			expectedError: "",
+		},
 	}
 	for _, tc := range testcases {
 		tc := tc

@@ -107,6 +107,11 @@ type AzureMachineSpec struct {
 	// +optional
 	AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
 
+	// Diagnostics specifies the diagnostics settings for a virtual machine.
+	// If not specified then Boot diagnostics (Managed) will be enabled.
+	// +optional
+	Diagnostics *Diagnostics `json:"diagnostics,omitempty"`
+
 	// SpotVMOptions allows the ability to specify the Machine should use a Spot VM
 	// +optional
 	SpotVMOptions *SpotVMOptions `json:"spotVMOptions,omitempty"`

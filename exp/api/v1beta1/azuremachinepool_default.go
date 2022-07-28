@@ -57,3 +57,20 @@ func (amp *AzureMachinePool) SetSpotEvictionPolicyDefaults() {
 		amp.Spec.Template.SpotVMOptions.EvictionPolicy = &defaultPolicy
 	}
 }
+
+// SetDiagnosticsDefaults sets the defaults for Diagnostic settings for an AzureMachinePool.
+func (amp *AzureMachinePool) SetDiagnosticsDefaults() {
+	bootDefault := &infrav1.BootDiagnostics{
+		StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+	}
+
+	if amp.Spec.Template.Diagnostics == nil {
+		amp.Spec.Template.Diagnostics = &infrav1.Diagnostics{
+			Boot: bootDefault,
+		}
+	}
+
+	if amp.Spec.Template.Diagnostics.Boot == nil {
+		amp.Spec.Template.Diagnostics.Boot = bootDefault
+	}
+}

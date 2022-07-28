@@ -784,3 +784,63 @@ type AzureBastion struct {
 func IsTerminalProvisioningState(state ProvisioningState) bool {
 	return state == Failed || state == Succeeded
 }
+
+// Diagnostics is used to configure the diagnostic settings of the virtual machine.
+type Diagnostics struct {
+	// Boot configures the boot diagnostics settings for the virtual machine.
+	// This allows to configure capturing serial output from the virtual machine on boot.
+	// This is useful for debugging software based launch issues.
+	// If not specified then Boot diagnostics (Managed) will be enabled.
+	// +optional
+	Boot *BootDiagnostics `json:"boot,omitempty"`
+}
+
+// BootDiagnostics configures the boot diagnostics settings for the virtual machine.
+// This allows you to configure capturing serial output from the virtual machine on boot.
+// This is useful for debugging software based launch issues.
+// +union
+type BootDiagnostics struct {
+	// StorageAccountType determines if the storage account for storing the diagnostics data
+	// should be disabled (Disabled), provisioned by Azure (Managed) or by the user (UserManaged).
+	// +kubebuilder:validation:Required
+	// +unionDiscriminator
+	StorageAccountType BootDiagnosticsStorageAccountType `json:"storageAccountType"`
+
+	// UserManaged provides a reference to the user-managed storage account.
+	// +optional
+	UserManaged *UserManagedBootDiagnostics `json:"userManaged,omitempty"`
+}
+
+// BootDiagnosticsStorageAccountType defines the list of valid storage account types
+// for the boot diagnostics.
+// +kubebuilder:validation:Enum:="Managed";"UserManaged";"Disabled"
+type BootDiagnosticsStorageAccountType string
+
+const (
+	// DisabledDiagnosticsStorage is used to determine that the diagnostics storage account
+	// should be disabled.
+	DisabledDiagnosticsStorage BootDiagnosticsStorageAccountType = "Disabled"
+
+	// ManagedDiagnosticsStorage is used to determine that the diagnostics storage account
+	// should be provisioned by Azure.
+	ManagedDiagnosticsStorage BootDiagnosticsStorageAccountType = "Managed"
+
+	// UserManagedDiagnosticsStorage is used to determine that the diagnostics storage account
+	// should be provisioned by the User.
+	UserManagedDiagnosticsStorage BootDiagnosticsStorageAccountType = "UserManaged"
+)
+
+// UserManagedBootDiagnostics provides a reference to a user-managed
+// storage account.
+type UserManagedBootDiagnostics struct {
+	// StorageAccountURI is the URI of the user-managed storage account.
+	// The URI typically will be `https://<mystorageaccountname>.blob.core.windows.net/`
+	// but may differ if you are using Azure DNS zone endpoints.
+	// You can find the correct endpoint by looking for the Blob Primary Endpoint in the
+	// endpoints tab in the Azure console or with the CLI by issuing
+	// `az storage account list --query='[].{name: name, "resource group": resourceGroup, "blob endpoint": primaryEndpoints.blob}'`.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^https://`
+	// +kubebuilder:validation:MaxLength=1024
+	StorageAccountURI string `json:"storageAccountURI"`
+}

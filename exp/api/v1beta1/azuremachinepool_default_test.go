@@ -76,6 +76,73 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 	g.Expect(notSystemAssignedTest.machinePool.Spec.RoleAssignmentName).To(BeEmpty())
 }
 
+func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		machinePool *AzureMachinePool
+	}
+
+	managedStorageDiagnostics := test{machinePool: &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				Diagnostics: &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+					},
+				},
+			},
+		},
+	}}
+
+	disabledStorageDiagnostics := test{machinePool: &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				Diagnostics: &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.DisabledDiagnosticsStorage,
+					},
+				},
+			},
+		},
+	}}
+
+	userManagedDiagnostics := test{machinePool: &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				Diagnostics: &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+						UserManaged: &infrav1.UserManagedBootDiagnostics{
+							StorageAccountURI: "https://fakeurl",
+						},
+					},
+				},
+			},
+		},
+	}}
+
+	nilDiagnostics := test{machinePool: &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				Diagnostics: nil,
+			},
+		},
+	}}
+
+	managedStorageDiagnostics.machinePool.SetDiagnosticsDefaults()
+	g.Expect(managedStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
+
+	disabledStorageDiagnostics.machinePool.SetDiagnosticsDefaults()
+	g.Expect(disabledStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.DisabledDiagnosticsStorage))
+
+	userManagedDiagnostics.machinePool.SetDiagnosticsDefaults()
+	g.Expect(userManagedDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.UserManagedDiagnosticsStorage))
+
+	nilDiagnostics.machinePool.SetDiagnosticsDefaults()
+	g.Expect(nilDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
+}
+
 func createMachinePoolWithSSHPublicKey(sshPublicKey string) *AzureMachinePool {
 	return hardcodedAzureMachinePoolWithSSHKey(sshPublicKey)
 }

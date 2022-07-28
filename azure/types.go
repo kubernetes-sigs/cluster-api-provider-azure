@@ -63,6 +63,7 @@ type ScaleSetSpec struct {
 	SecurityProfile              *infrav1.SecurityProfile
 	SpotVMOptions                *infrav1.SpotVMOptions
 	AdditionalCapabilities       *infrav1.AdditionalCapabilities
+	DiagnosticsProfile           *infrav1.Diagnostics
 	FailureDomains               []string
 	VMExtensions                 []infrav1.VMExtension
 }

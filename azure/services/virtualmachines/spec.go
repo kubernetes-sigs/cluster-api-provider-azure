@@ -50,6 +50,7 @@ type VMSpec struct {
 	SecurityProfile        *infrav1.SecurityProfile
 	AdditionalTags         infrav1.Tags
 	AdditionalCapabilities *infrav1.AdditionalCapabilities
+	DiagnosticsProfile     *infrav1.Diagnostics
 	SKU                    resourceskus.SKU
 	Image                  *infrav1.Image
 	BootstrapData          string
@@ -133,14 +134,10 @@ func (s *VMSpec) Parameters(existing interface{}) (params interface{}, err error
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: s.generateNICRefs(),
 			},
-			Priority:       priority,
-			EvictionPolicy: evictionPolicy,
-			BillingProfile: billingProfile,
-			DiagnosticsProfile: &compute.DiagnosticsProfile{
-				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled: to.BoolPtr(true),
-				},
-			},
+			Priority:           priority,
+			EvictionPolicy:     evictionPolicy,
+			BillingProfile:     billingProfile,
+			DiagnosticsProfile: converters.GetDiagnosticsProfile(s.DiagnosticsProfile),
 		},
 		Identity: identity,
 		Zones:    s.getZones(),

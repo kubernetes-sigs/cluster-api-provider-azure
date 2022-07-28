@@ -110,7 +110,7 @@ Cloud-init logs can provide more information on any issues that happened when ru
 
 #### Option 1: Using the Azure Portal 
 
-Located in the virtual machine blade, the boot diagnostics option is under the Support and Troubleshooting section in the Azure portal.
+Located in the virtual machine blade (if [enabled](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/boot-diagnostics) for the VM), the boot diagnostics option is under the Support and Troubleshooting section in the Azure portal.
 
 For more information, see [here](https://docs.microsoft.com/en-us/azure/virtual-machines/boot-diagnostics#boot-diagnostics-view)
 

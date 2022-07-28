@@ -103,6 +103,31 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			machine: createMachineWithOsDiskCacheType("invalid_cache_type"),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachinepool with managed diagnostics profile",
+			machine: createMachineWithDiagnostics(ManagedDiagnosticsStorage, nil),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with disabled diagnostics profile",
+			machine: createMachineWithDiagnostics(ManagedDiagnosticsStorage, nil),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with user managed diagnostics profile and defined user managed storage account",
+			machine: createMachineWithDiagnostics(UserManagedDiagnosticsStorage, &UserManagedBootDiagnostics{StorageAccountURI: "https://fakeurl"}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with empty diagnostics profile",
+			machine: createMachineWithDiagnostics("", nil),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with user managed diagnostics profile, but empty user managed storage account",
+			machine: createMachineWithDiagnostics(UserManagedDiagnosticsStorage, nil),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -509,6 +534,34 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "invalidTest: azuremachine.spec.Diagnostics is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: DisabledDiagnosticsStorage}},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage}},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.Diagnostics is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: DisabledDiagnosticsStorage}},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: DisabledDiagnosticsStorage}},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -637,4 +690,28 @@ func createMachineWithoutRoleAssignmentName() *AzureMachine {
 		},
 	}
 	return machine
+}
+
+func createMachineWithDiagnostics(diagnosticsType BootDiagnosticsStorageAccountType, userManaged *UserManagedBootDiagnostics) *AzureMachine {
+	var diagnostics *Diagnostics
+
+	if diagnosticsType != "" {
+		diagnostics = &Diagnostics{
+			Boot: &BootDiagnostics{
+				StorageAccountType: diagnosticsType,
+			},
+		}
+	}
+
+	if userManaged != nil {
+		diagnostics.Boot.UserManaged = userManaged
+	}
+
+	return &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
+			Diagnostics:  diagnostics,
+		},
+	}
 }
