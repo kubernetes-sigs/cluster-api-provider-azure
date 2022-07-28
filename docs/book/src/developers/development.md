@@ -370,7 +370,7 @@ export CONTROL_PLANE_MACHINE_COUNT=3
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.22.1"
+export KUBERNETES_VERSION="v1.23.9"
 
 # Identity secret.
 export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
