@@ -185,6 +185,10 @@ export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 
 # install cloud-provider-azure components, if using out-of-tree
 if [[ -n "${TEST_CCM:-}" ]]; then
+    if [[ -n "${TEST_WINDOWS:-}" ]]; then
+        # "app=calico" is the label only for calico-node-windows pods
+        "${KUBECTL}" wait --for=condition=Ready pod -l app=calico -n kube-system --timeout=10m
+    fi
     echo "Installing cloud-provider-azure components via helm"
     "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name \
 --set infra.clusterName="${CLUSTER_NAME}" \
@@ -195,6 +199,8 @@ if [[ -n "${TEST_CCM:-}" ]]; then
 --set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
 --set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
 --set cloudControllerManager.replicas="${CCM_COUNT}"
+    echo "Waiting for all kube-system pods to be ready"
+    "${KUBECTL}" wait --for=condition=Ready pod -n kube-system --all --timeout=10m
 fi
 
 export -f wait_for_nodes
