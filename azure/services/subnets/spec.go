@@ -33,6 +33,7 @@ type SubnetSpec struct {
 	VNetName          string
 	VNetResourceGroup string
 	IsVNetManaged     bool
+	IsSubnetManaged   bool
 	RouteTableName    string
 	SecurityGroupName string
 	Role              infrav1.SubnetRole
@@ -52,6 +53,11 @@ func (s *SubnetSpec) ResourceGroupName() string {
 // OwnerResourceName returns the name of the VNet that owns this subnet.
 func (s *SubnetSpec) OwnerResourceName() string {
 	return s.VNetName
+}
+
+// IsManaged returns whether or not the IsManaged flag is true for the Vnet.
+func (s *SubnetSpec) IsManaged() bool {
+	return s.IsSubnetManaged
 }
 
 // Parameters returns the parameters for the subnet.

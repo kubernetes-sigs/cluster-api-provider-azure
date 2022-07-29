@@ -254,6 +254,7 @@ func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.ResourceSpecGetter {
 			VNetName:          s.Vnet().Name,
 			VNetResourceGroup: s.Vnet().ResourceGroup,
 			IsVNetManaged:     s.IsVnetManaged(),
+			IsSubnetManaged:   s.Vnet().Tags.HasOwned(s.ClusterName()),
 			Role:              infrav1.SubnetNode,
 		},
 	}

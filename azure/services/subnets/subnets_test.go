@@ -41,6 +41,7 @@ var (
 		SubscriptionID:    "123",
 		CIDRs:             []string{"10.0.0.0/16"},
 		IsVNetManaged:     true,
+		IsSubnetManaged:   true,
 		VNetName:          "my-vnet",
 		VNetResourceGroup: "my-rg",
 		RouteTableName:    "my-subnet_route_table",
@@ -70,6 +71,7 @@ var (
 		SubscriptionID:    "123",
 		CIDRs:             []string{"10.2.0.0/16"},
 		IsVNetManaged:     true,
+		IsSubnetManaged:   true,
 		VNetName:          "my-vnet",
 		VNetResourceGroup: "my-rg",
 		RouteTableName:    "my-subnet_route_table",
@@ -99,6 +101,7 @@ var (
 		SubscriptionID:    "123",
 		CIDRs:             []string{"10.0.0.0/16"},
 		IsVNetManaged:     false,
+		IsSubnetManaged:   false,
 		VNetName:          "my-vnet",
 		VNetResourceGroup: "my-vnet-rg",
 		RouteTableName:    "my-subnet_route_table",
@@ -127,6 +130,7 @@ var (
 		SubscriptionID:    "123",
 		CIDRs:             []string{"10.1.0.0/16"},
 		IsVNetManaged:     true,
+		IsSubnetManaged:   true,
 		VNetName:          "my-vnet",
 		VNetResourceGroup: "my-rg",
 		RouteTableName:    "my-subnet_route_table",
@@ -140,6 +144,7 @@ var (
 		SubscriptionID:    "123",
 		CIDRs:             []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
 		IsVNetManaged:     true,
+		IsSubnetManaged:   true,
 		VNetName:          "my-vnet",
 		VNetResourceGroup: "my-rg",
 		RouteTableName:    "my-subnet_route_table",
@@ -166,6 +171,7 @@ var (
 		SubscriptionID:    "123",
 		CIDRs:             []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
 		IsVNetManaged:     true,
+		IsSubnetManaged:   true,
 		VNetName:          "my-vnet",
 		VNetResourceGroup: "my-rg",
 		RouteTableName:    "my-subnet_route_table",
@@ -356,7 +362,6 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "noop if no subnet specs are found",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().AnyTimes().Return(true)
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
@@ -364,8 +369,7 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "subnets deleted successfully",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().AnyTimes().Return(true)
-				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeSubnetSpec2})
+				s.SubnetSpecs().AnyTimes().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeSubnetSpec2})
 				r.DeleteResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakeSubnetSpec2, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, nil)
@@ -375,8 +379,7 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "node subnet and controlplane subnet deleted successfully",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().AnyTimes().Return(true)
-				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeCtrlPlaneSubnetSpec})
+				s.SubnetSpecs().AnyTimes().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeCtrlPlaneSubnetSpec})
 				r.DeleteResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakeCtrlPlaneSubnetSpec, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, nil)
@@ -386,15 +389,14 @@ func TestDeleteSubnets(t *testing.T) {
 			name:          "skip delete if vnet is not managed",
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().AnyTimes().Return(false)
+				s.SubnetSpecs().AnyTimes().Return([]azure.ResourceSpecGetter{&fakeSubnetSpecNotManaged})
 			},
 		},
 		{
 			name:          "fail delete subnet",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().AnyTimes().Return(true)
-				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
+				s.SubnetSpecs().AnyTimes().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
 				r.DeleteResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(internalError)
 				s.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, internalError)
 			},

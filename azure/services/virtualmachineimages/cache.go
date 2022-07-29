@@ -119,7 +119,7 @@ func (c *Cache) Get(ctx context.Context, location, publisher, offer, sku string)
 			return compute.ListVirtualMachineImageResource{}, err
 		}
 	} else {
-		log.Info("VM images cache hit", "location", key.location, "publisher", key.publisher, "offer", key.offer, "sku", key.sku)
+		log.V(4).Info("VM images cache hit", "location", key.location, "publisher", key.publisher, "offer", key.offer, "sku", key.sku)
 	}
 
 	return c.data[key], nil
