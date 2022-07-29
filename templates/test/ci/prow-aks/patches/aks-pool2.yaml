@@ -1,4 +1,4 @@
-# Deploy a third agent pool with one machine in order to test a AzureManagedMachinePool with only required configuration
+# Deploy a third node pool with one machine in order to test a AzureManagedMachinePool with only required configuration
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:

@@ -200,14 +200,13 @@ spec:
               AzureManagedMachinePool.
             properties:
               availabilityZones:
-                description: AvailabilityZones - Availability zones for nodes. Must
-                  use VirtualMachineScaleSets AgentPoolType.
+                description: AvailabilityZones - Availability zones for nodes.
                 items:
                   type: string
                 type: array
               enableUltraSSD:
                 description: EnableUltraSSD enables the storage type UltraSSD_LRS
-                  for the agent pool.
+                  for the node pool.
                 type: boolean
               maxPods:
                 description: MaxPods specifies the kubelet --max-pods configuration
@@ -215,15 +214,15 @@ spec:
                 format: int32
                 type: integer
               mode:
-                description: 'Mode - represents mode of an agent pool. Possible values
+                description: 'Mode - represents mode of a node pool. Possible values
                   include: System, User.'
                 enum:
                 - System
                 - User
                 type: string
               name:
-                description: Name - name of the agent pool. If not specified, CAPZ
-                  uses the name of the CR as the agent pool name.
+                description: Name - name of the node pool. If not specified, CAPZ
+                  uses the name of the CR as the node pool name.
                 type: string
               nodeLabels:
                 additionalProperties:
@@ -233,7 +232,7 @@ spec:
                 type: object
               osDiskSizeGB:
                 description: OSDiskSizeGB is the disk size for every machine in this
-                  agent pool. If you specify 0, it will apply the default osDisk size
+                  node pool. If you specify 0, it will apply the default osDisk size
                   according to the vmSize specified.
                 format: int32
                 type: integer
@@ -274,7 +273,7 @@ spec:
                 type: string
               taints:
                 description: Taints specifies the taints for nodes present in this
-                  agent pool.
+                  node pool.
                 items:
                   properties:
                     effect:

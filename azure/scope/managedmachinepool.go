@@ -115,19 +115,19 @@ func (s *ManagedMachinePoolScope) Close(ctx context.Context) error {
 	return s.PatchObject(ctx)
 }
 
-// AgentPoolAnnotations returns a map of annotations for the infra machine pool.
-func (s *ManagedMachinePoolScope) AgentPoolAnnotations() map[string]string {
+// NodePoolAnnotations returns a map of annotations for the infra machine pool.
+func (s *ManagedMachinePoolScope) NodePoolAnnotations() map[string]string {
 	return s.InfraMachinePool.Annotations
 }
 
-// AgentPoolSpec returns an azure.AgentPoolSpec for currently reconciled AzureManagedMachinePool.
-func (s *ManagedMachinePoolScope) AgentPoolSpec() azure.AgentPoolSpec {
-	return buildAgentPoolSpec(s.ControlPlane, s.MachinePool, s.InfraMachinePool)
+// NodePoolSpec returns an azure.AKSNodePoolSpec for currently reconciled AzureManagedMachinePool.
+func (s *ManagedMachinePoolScope) NodePoolSpec() azure.AKSNodePoolSpec {
+	return buildNodePoolSpec(s.ControlPlane, s.MachinePool, s.InfraMachinePool)
 }
 
-func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane,
+func buildNodePoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane,
 	machinePool *clusterv1exp.MachinePool,
-	managedMachinePool *infrav1exp.AzureManagedMachinePool) azure.AgentPoolSpec {
+	managedMachinePool *infrav1exp.AzureManagedMachinePool) azure.AKSNodePoolSpec {
 	var normalizedVersion *string
 	if machinePool.Spec.Template.Spec.Version != nil {
 		v := strings.TrimPrefix(*machinePool.Spec.Template.Spec.Version, "v")
@@ -139,7 +139,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		replicas = *machinePool.Spec.Replicas
 	}
 
-	agentPoolSpec := azure.AgentPoolSpec{
+	nodePoolSpec := azure.AKSNodePoolSpec{
 		Name:          to.String(managedMachinePool.Spec.Name),
 		ResourceGroup: managedControlPlane.Spec.ResourceGroupName,
 		Cluster:       managedControlPlane.Name,
@@ -161,7 +161,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 	}
 
 	if managedMachinePool.Spec.OSDiskSizeGB != nil {
-		agentPoolSpec.OSDiskSizeGB = *managedMachinePool.Spec.OSDiskSizeGB
+		nodePoolSpec.OSDiskSizeGB = *managedMachinePool.Spec.OSDiskSizeGB
 	}
 
 	if len(managedMachinePool.Spec.Taints) > 0 {
@@ -169,37 +169,37 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		for _, t := range managedMachinePool.Spec.Taints {
 			nodeTaints = append(nodeTaints, fmt.Sprintf("%s=%s:%s", t.Key, t.Value, t.Effect))
 		}
-		agentPoolSpec.NodeTaints = nodeTaints
+		nodePoolSpec.NodeTaints = nodeTaints
 	}
 
 	if managedMachinePool.Spec.Scaling != nil {
-		agentPoolSpec.EnableAutoScaling = to.BoolPtr(true)
-		agentPoolSpec.MaxCount = managedMachinePool.Spec.Scaling.MaxSize
-		agentPoolSpec.MinCount = managedMachinePool.Spec.Scaling.MinSize
+		nodePoolSpec.EnableAutoScaling = to.BoolPtr(true)
+		nodePoolSpec.MaxCount = managedMachinePool.Spec.Scaling.MaxSize
+		nodePoolSpec.MinCount = managedMachinePool.Spec.Scaling.MinSize
 	}
 
 	if len(managedMachinePool.Spec.NodeLabels) > 0 {
-		agentPoolSpec.NodeLabels = make(map[string]*string, len(managedMachinePool.Spec.NodeLabels))
+		nodePoolSpec.NodeLabels = make(map[string]*string, len(managedMachinePool.Spec.NodeLabels))
 		for k, v := range managedMachinePool.Spec.NodeLabels {
-			agentPoolSpec.NodeLabels[k] = to.StringPtr(v)
+			nodePoolSpec.NodeLabels[k] = to.StringPtr(v)
 		}
 	}
 
-	return agentPoolSpec
+	return nodePoolSpec
 }
 
-// SetAgentPoolProviderIDList sets a list of agent pool's Azure VM IDs.
-func (s *ManagedMachinePoolScope) SetAgentPoolProviderIDList(providerIDs []string) {
+// SetNodePoolProviderIDList sets a list of the MachinePool's Azure VM IDs.
+func (s *ManagedMachinePoolScope) SetNodePoolProviderIDList(providerIDs []string) {
 	s.InfraMachinePool.Spec.ProviderIDList = providerIDs
 }
 
-// SetAgentPoolReplicas sets the number of agent pool replicas.
-func (s *ManagedMachinePoolScope) SetAgentPoolReplicas(replicas int32) {
+// SetNodePoolReplicas sets the number of MachinePool replicas.
+func (s *ManagedMachinePoolScope) SetNodePoolReplicas(replicas int32) {
 	s.InfraMachinePool.Status.Replicas = replicas
 }
 
-// SetAgentPoolReady sets the flag that indicates if the agent pool is ready or not.
-func (s *ManagedMachinePoolScope) SetAgentPoolReady(ready bool) {
+// SetNodePoolReady sets the flag that indicates if the MachinePool is ready or not.
+func (s *ManagedMachinePoolScope) SetNodePoolReady(ready bool) {
 	s.InfraMachinePool.Status.Ready = ready
 }
 

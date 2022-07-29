@@ -40,7 +40,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.AKSNodePoolSpec
 	}{
 		{
 			Name: "Without Autoscaling",
@@ -65,7 +65,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
@@ -98,7 +98,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 					InfraMachinePool: getAzureMachinePoolWithScaling("pool1", 2, 10),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 				Name:              "pool1",
 				SKU:               "Standard_D2s_v3",
 				Mode:              "User",
@@ -120,8 +120,8 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			nodePool := s.NodePoolSpec()
+			g.Expect(nodePool).To(Equal(c.Expected))
 		})
 	}
 }
@@ -134,7 +134,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.AKSNodePoolSpec
 	}{
 		{
 			Name: "Without node labels",
@@ -159,7 +159,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
@@ -194,7 +194,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 					}),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 				Name:     "pool1",
 				SKU:      "Standard_D2s_v3",
 				Mode:     "System",
@@ -216,8 +216,8 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			nodePool := s.NodePoolSpec()
+			g.Expect(nodePool).To(Equal(c.Expected))
 		})
 	}
 }
@@ -230,7 +230,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.AKSNodePoolSpec
 	}{
 		{
 			Name: "Without MaxPods",
@@ -255,7 +255,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
@@ -287,7 +287,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 					InfraMachinePool: getAzureMachinePoolWithMaxPods("pool1", 12),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 				Name:         "pool1",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "System",
@@ -307,8 +307,8 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			nodePool := s.NodePoolSpec()
+			g.Expect(nodePool).To(Equal(c.Expected))
 		})
 	}
 }
@@ -321,7 +321,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.AKSNodePoolSpec
 	}{
 		{
 			Name: "Without taints",
@@ -346,7 +346,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
@@ -385,7 +385,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 					}),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 				Name:         "pool1",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "User",
@@ -405,8 +405,8 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			nodePool := s.NodePoolSpec()
+			g.Expect(nodePool).To(Equal(c.Expected))
 		})
 	}
 }
@@ -419,7 +419,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.AKSNodePoolSpec
 	}{
 		{
 			Name: "Without OsDiskType",
@@ -444,7 +444,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
@@ -476,7 +476,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 					InfraMachinePool: getAzureMachinePoolWithOsDiskType("pool1", string(containerservice.OSDiskTypeEphemeral)),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: azure.AKSNodePoolSpec{
 				Name:         "pool1",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "User",
@@ -496,8 +496,8 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			nodePool := s.NodePoolSpec()
+			g.Expect(nodePool).To(Equal(c.Expected))
 		})
 	}
 }

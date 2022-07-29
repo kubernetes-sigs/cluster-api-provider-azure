@@ -22,8 +22,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
-// AgentPoolToManagedClusterAgentPoolProfile converts a AgentPoolSpec to an Azure SDK ManagedClusterAgentPoolProfile used in managedcluster reconcile.
-func AgentPoolToManagedClusterAgentPoolProfile(pool azure.AgentPoolSpec) containerservice.ManagedClusterAgentPoolProfile {
+// NodePoolToManagedClusterAgentPoolProfile converts a AKSNodePoolSpec to an AKS ManagedClusterAgentPoolProfile of type VMSS
+// used in ManagedCluster reconcile.
+func NodePoolToManagedClusterAgentPoolProfile(pool azure.AKSNodePoolSpec) containerservice.ManagedClusterAgentPoolProfile {
 	return containerservice.ManagedClusterAgentPoolProfile{
 		Name:                &pool.Name,
 		VMSize:              &pool.SKU,
@@ -46,8 +47,9 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool azure.AgentPoolSpec) contain
 	}
 }
 
-// AgentPoolToContainerServiceAgentPool converts a AgentPoolSpec to an Azure SDK AgentPool used in agentpool reconcile.
-func AgentPoolToContainerServiceAgentPool(pool azure.AgentPoolSpec) containerservice.AgentPool {
+// NodePoolToContainerServiceAgentPool converts a AKSNodePoolSpec to an AKS AgentPoolProfile of type VMSS
+// used in ManagedMachinePool reconcile.
+func NodePoolToContainerServiceAgentPool(pool azure.AKSNodePoolSpec) containerservice.AgentPool {
 	return containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			VMSize:              &pool.SKU,

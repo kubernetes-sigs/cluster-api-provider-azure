@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package agentpools
+package managedmachinepools
 
 import (
 	"context"
@@ -38,11 +38,11 @@ type ManagedMachinePoolScope interface {
 	azure.ClusterDescriber
 
 	NodeResourceGroup() string
-	AgentPoolAnnotations() map[string]string
-	AgentPoolSpec() azure.AgentPoolSpec
-	SetAgentPoolProviderIDList([]string)
-	SetAgentPoolReplicas(int32)
-	SetAgentPoolReady(bool)
+	NodePoolAnnotations() map[string]string
+	NodePoolSpec() azure.AKSNodePoolSpec
+	SetNodePoolProviderIDList([]string)
+	SetNodePoolReplicas(int32)
+	SetNodePoolReady(bool)
 }
 
 // Service provides operations on Azure resources.
@@ -64,20 +64,20 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile idempotently creates or updates a agent pool, if possible.
+// Reconcile idempotently creates or updates a node pool, if possible.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
-		"agentpools.Service.Reconcile",
+		"managedmachinepools.Service.Reconcile",
 	)
 	defer done()
 
-	agentPoolSpec := s.scope.AgentPoolSpec()
-	profile := converters.AgentPoolToContainerServiceAgentPool(agentPoolSpec)
+	nodePoolSpec := s.scope.NodePoolSpec()
+	profile := converters.NodePoolToContainerServiceAgentPool(nodePoolSpec)
 
-	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
+	existingPool, err := s.Client.Get(ctx, nodePoolSpec.ResourceGroup, nodePoolSpec.Cluster, nodePoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
-		return errors.Wrap(err, "failed to get existing agent pool")
+		return errors.Wrap(err, "failed to get existing node pool")
 	}
 
 	// For updates, we want to pass whatever we find in the existing
@@ -85,24 +85,24 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// AKS will populate defaults and read-only values, which we want
 	// to strip/clean to match what we expect.
 
-	customHeaders := maps.FilterByKeyPrefix(s.scope.AgentPoolAnnotations(), azure.CustomHeaderPrefix)
+	customHeaders := maps.FilterByKeyPrefix(s.scope.NodePoolAnnotations(), azure.CustomHeaderPrefix)
 	if isCreate := azure.ResourceNotFound(err); isCreate {
-		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name,
+		err = s.Client.CreateOrUpdate(ctx, nodePoolSpec.ResourceGroup, nodePoolSpec.Cluster, nodePoolSpec.Name,
 			profile, customHeaders)
 		if err != nil && azure.ResourceNotFound(err) {
-			return azure.WithTransientError(errors.Wrap(err, "agent pool dependent resource does not exist yet"), 20*time.Second)
+			return azure.WithTransientError(errors.Wrap(err, "node pool dependent resource does not exist yet"), 20*time.Second)
 		} else if err != nil {
-			return errors.Wrap(err, "failed to create or update agent pool")
+			return errors.Wrap(err, "failed to create or update node pool")
 		}
 	} else {
 		ps := *existingPool.ManagedClusterAgentPoolProfileProperties.ProvisioningState
 		if ps != string(infrav1alpha4.Canceled) && ps != string(infrav1alpha4.Failed) && ps != string(infrav1alpha4.Succeeded) {
-			msg := fmt.Sprintf("Unable to update existing agent pool in non terminal state. Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
+			msg := fmt.Sprintf("Unable to update existing node pool in non terminal state. Node pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
 			log.V(2).Info(msg)
 			return azure.WithTransientError(errors.New(msg), 20*time.Second)
 		}
 
-		// Normalize individual agent pools to diff in case we need to update
+		// Compare the existing to the updated AKS AgentPoolProfile to determine if we need to update
 		existingProfile := containerservice.AgentPool{
 			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 				Count:               existingPool.Count,
@@ -129,13 +129,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		diff := cmp.Diff(normalizedProfile, existingProfile)
 		if diff != "" {
 			log.V(2).Info(fmt.Sprintf("Update required (+new -old):\n%s", diff))
-			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name,
+			err = s.Client.CreateOrUpdate(ctx, nodePoolSpec.ResourceGroup, nodePoolSpec.Cluster, nodePoolSpec.Name,
 				profile, customHeaders)
 			if err != nil {
-				return errors.Wrap(err, "failed to create or update agent pool")
+				return errors.Wrap(err, "failed to create or update node pool")
 			}
 		} else {
-			log.V(2).Info("Normalized and desired agent pool matched, no update needed")
+			log.V(2).Info("Normalized and desired node pool matched, no update needed")
 		}
 	}
 
@@ -146,22 +146,22 @@ func (s *Service) Reconcile(ctx context.Context) error {
 func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
-		"agentpools.Service.Delete",
+		"managedmachinepools.Service.Delete",
 	)
 	defer done()
 
-	agentPoolSpec := s.scope.AgentPoolSpec()
+	nodePoolSpec := s.scope.NodePoolSpec()
 
-	log.V(2).Info(fmt.Sprintf("deleting agent pool  %s ", agentPoolSpec.Name))
-	err := s.Client.Delete(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
+	log.V(2).Info(fmt.Sprintf("deleting node pool  %s ", nodePoolSpec.Name))
+	err := s.Client.Delete(ctx, nodePoolSpec.ResourceGroup, nodePoolSpec.Cluster, nodePoolSpec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
 			return nil
 		}
-		return errors.Wrapf(err, "failed to delete agent pool %s in resource group %s", agentPoolSpec.Name, agentPoolSpec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete node pool %s in resource group %s", nodePoolSpec.Name, nodePoolSpec.ResourceGroup)
 	}
 
-	log.V(2).Info(fmt.Sprintf("Successfully deleted agent pool %s ", agentPoolSpec.Name))
+	log.V(2).Info(fmt.Sprintf("Successfully deleted node pool %s ", nodePoolSpec.Name))
 	return nil
 }

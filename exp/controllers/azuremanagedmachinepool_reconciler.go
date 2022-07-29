@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedmachinepools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -34,13 +34,13 @@ import (
 type (
 	// azureManagedMachinePoolService contains the services required by the cluster controller.
 	azureManagedMachinePoolService struct {
-		scope         agentpools.ManagedMachinePoolScope
-		agentPoolsSvc azure.Reconciler
-		scaleSetsSvc  NodeLister
+		scope            managedmachinepools.ManagedMachinePoolScope
+		aksAgentPoolsSvc azure.Reconciler
+		scaleSetsSvc     NodeLister
 	}
 
-	// AgentPoolVMSSNotFoundError represents a reconcile error when the VMSS for an agent pool can't be found.
-	AgentPoolVMSSNotFoundError struct {
+	// AzureManagedMachinePoolVMSSNotFoundError represents a reconcile error when the VMSS for a node pool can't be found.
+	AzureManagedMachinePoolVMSSNotFoundError struct {
 		NodeResourceGroup string
 		PoolName          string
 	}
@@ -52,22 +52,22 @@ type (
 	}
 )
 
-// NewAgentPoolVMSSNotFoundError creates a new AgentPoolVMSSNotFoundError.
-func NewAgentPoolVMSSNotFoundError(nodeResourceGroup, poolName string) *AgentPoolVMSSNotFoundError {
-	return &AgentPoolVMSSNotFoundError{
+// NewAzureManagedMachinePoolVMSSNotFoundError creates a new AzureManagedMachinePoolVMSSNotFoundError.
+func NewAzureManagedMachinePoolVMSSNotFoundError(nodeResourceGroup, poolName string) *AzureManagedMachinePoolVMSSNotFoundError {
+	return &AzureManagedMachinePoolVMSSNotFoundError{
 		NodeResourceGroup: nodeResourceGroup,
 		PoolName:          poolName,
 	}
 }
 
-func (a *AgentPoolVMSSNotFoundError) Error() string {
+func (a *AzureManagedMachinePoolVMSSNotFoundError) Error() string {
 	msgFmt := "failed to find vm scale set in resource group %s matching pool named %s"
 	return fmt.Sprintf(msgFmt, a.NodeResourceGroup, a.PoolName)
 }
 
-// Is returns true if the target error is an `AgentPoolVMSSNotFoundError`.
-func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
-	var err *AgentPoolVMSSNotFoundError
+// Is returns true if the target error is an `AzureManagedMachinePoolVMSSNotFoundError`.
+func (a *AzureManagedMachinePoolVMSSNotFoundError) Is(target error) bool {
+	var err *AzureManagedMachinePoolVMSSNotFoundError
 	ok := errors.As(target, &err)
 	return ok
 }
@@ -84,9 +84,9 @@ func newAzureManagedMachinePoolService(scope *scope.ManagedMachinePoolScope) (*a
 	}
 
 	return &azureManagedMachinePoolService{
-		scope:         scope,
-		agentPoolsSvc: agentpools.New(scope),
-		scaleSetsSvc:  scalesets.NewClient(authorizer),
+		scope:            scope,
+		aksAgentPoolsSvc: managedmachinepools.New(scope),
+		scaleSetsSvc:     scalesets.NewClient(authorizer),
 	}, nil
 }
 
@@ -96,10 +96,10 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	defer done()
 
 	log.Info("reconciling managed machine pool")
-	agentPoolName := s.scope.AgentPoolSpec().Name
+	nodePoolName := s.scope.NodePoolSpec().Name
 
-	if err := s.agentPoolsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)
+	if err := s.aksAgentPoolsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile machine pool %s", nodePoolName)
 	}
 
 	nodeResourceGroup := s.scope.NodeResourceGroup()
@@ -111,24 +111,24 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	var match *compute.VirtualMachineScaleSet
 	for _, ss := range vmss {
 		ss := ss
-		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == agentPoolName {
+		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == nodePoolName {
 			match = &ss
 			break
 		}
 
-		if ss.Tags["aks-managed-poolName"] != nil && *ss.Tags["aks-managed-poolName"] == agentPoolName {
+		if ss.Tags["aks-managed-poolName"] != nil && *ss.Tags["aks-managed-poolName"] == nodePoolName {
 			match = &ss
 			break
 		}
 	}
 
 	if match == nil {
-		return azure.WithTransientError(NewAgentPoolVMSSNotFoundError(nodeResourceGroup, agentPoolName), 20*time.Second)
+		return azure.WithTransientError(NewAzureManagedMachinePoolVMSSNotFoundError(nodeResourceGroup, nodePoolName), 20*time.Second)
 	}
 
 	instances, err := s.scaleSetsSvc.ListInstances(ctx, nodeResourceGroup, *match.Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)
+		return errors.Wrapf(err, "failed to reconcile machine pool %s", nodePoolName)
 	}
 
 	var providerIDs = make([]string, len(instances))
@@ -136,9 +136,9 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 		providerIDs[i] = strings.ToLower(azure.ProviderIDPrefix + *instances[i].ID)
 	}
 
-	s.scope.SetAgentPoolProviderIDList(providerIDs)
-	s.scope.SetAgentPoolReplicas(int32(len(providerIDs)))
-	s.scope.SetAgentPoolReady(true)
+	s.scope.SetNodePoolProviderIDList(providerIDs)
+	s.scope.SetNodePoolReplicas(int32(len(providerIDs)))
+	s.scope.SetNodePoolReady(true)
 
 	log.Info("reconciled managed machine pool successfully")
 	return nil
@@ -149,8 +149,8 @@ func (s *azureManagedMachinePoolService) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedMachinePoolService.Delete")
 	defer done()
 
-	if err := s.agentPoolsSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete machine pool %s", s.scope.AgentPoolSpec().Name)
+	if err := s.aksAgentPoolsSvc.Delete(ctx); err != nil {
+		return errors.Wrapf(err, "failed to delete machine pool %s", s.scope.NodePoolSpec().Name)
 	}
 
 	return nil

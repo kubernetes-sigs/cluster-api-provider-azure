@@ -13,8 +13,8 @@ The combination of AzureManagedControlPlane/AzureManagedCluster
 corresponds to provisioning an AKS cluster. AzureManagedMachinePool
 corresponds one-to-one with AKS node pools. This also means that
 creating an AzureManagedControlPlane requires at least one AzureManagedMachinePool
-with `spec.mode` `System`, since AKS expects at least one system pool at creation 
-time. For more documentation on system node pool refer [AKS Docs](https://docs.microsoft.com/en-us/azure/aks/use-system-pools) 
+with `spec.mode` `System`, since AKS expects at least one system pool at creation
+time. For more documentation on system node pool refer [AKS Docs](https://docs.microsoft.com/en-us/azure/aks/use-system-pools)
 
 ## Deploy with clusterctl
 
@@ -113,7 +113,7 @@ metadata:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: agentpool0
+  name: nodepool0
 spec:
   clusterName: my-cluster
   replicas: 2
@@ -123,14 +123,14 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: agentpool0
+        name: nodepool0
         namespace: default
       version: v1.21.2
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool0
+  name: nodepool0
 spec:
   mode: System
   osDiskSizeGB: 30
@@ -139,7 +139,7 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: agentpool1
+  name: nodepool1
 spec:
   clusterName: my-cluster
   replicas: 2
@@ -149,14 +149,14 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: agentpool1
+        name: nodepool1
         namespace: default
       version: v1.21.2
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool1
+  name: nodepool1
 spec:
   mode: User
   osDiskSizeGB: 40
@@ -223,7 +223,7 @@ spec:
 ### AKS Managed Azure Active Directory Integration
 
 Azure Kubernetes Service can be configured to use Azure Active Directory for user authentication.
-AAD for managed clusters can be configured by enabling the `managed` spec in `AzureManagedControlPlane` to `true` 
+AAD for managed clusters can be configured by enabling the `managed` spec in `AzureManagedControlPlane` to `true`
 and by providing Azure AD GroupObjectId in `AdminGroupObjectIDs` array. The group is needed as admin group for
 the cluster to grant cluster admin permissions. You can use an existing Azure AD group, or create a new one. For more documentation about AAD refer [AKS AAD Docs](https://docs.microsoft.com/en-us/azure/aks/managed-aad)
 
@@ -252,7 +252,7 @@ Azure Kubernetes Service can be configured to use cluster autoscaler by specifyi
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool0
+  name: nodepool0
 spec:
   mode: System
   osDiskSizeGB: 30
@@ -262,36 +262,36 @@ spec:
     maxSize: 10
 ```
 
-### AKS Node Labels to an Agent Pool
+### AKS Node Labels to a Node Pool
 
 You can configure the `NodeLabels` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec.
 
-Below an example `nodeLabels` configuration is assigned to `agentpool0`, specifying that each node in the pool will add a label `dedicated : kafka`
+Below an example `nodeLabels` configuration is assigned to `nodepool0`, specifying that each node in the pool will add a label `dedicated : kafka`
 
 ```
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool0
+  name: nodepool0
 spec:
   mode: System
   osDiskSizeGB: 512
   sku: Standard_D2s_v3
   nodeLabels:
-    dedicated: kafka 
+    dedicated: kafka
 ```
 
 ### AKS Node Pool MaxPods configuration
 
 You can configure the `MaxPods` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec (see [here](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#configure-maximum---new-clusters) for the official AKS documentation). This corresponds to the kubelet `--max-pods` configuration (official kubelet configuration documentation can be found [here](https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/)).
 
-Below an example `maxPods` configuration is assigned to `agentpool0`, specifying that each node in the pool will enforce a maximum of 24 scheduled pods:
+Below an example `maxPods` configuration is assigned to `nodepool0`, specifying that each node in the pool will enforce a maximum of 24 scheduled pods:
 
 ```
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool0
+  name: nodepool0
 spec:
   mode: System
   osDiskSizeGB: 30
@@ -303,13 +303,13 @@ spec:
 
 You can configure the `OsDiskType` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec (see [here](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#ephemeral-os) for the official AKS documentation). There are two options to choose from: `"Managed"` (the default) or `"Ephemeral"`.
 
-Below an example `osDiskType` configuration is assigned to `agentpool0`, specifying that each node in the pool will use a local, ephemeral OS disk for faster disk I/O at the expense of possible data loss:
+Below an example `osDiskType` configuration is assigned to `nodepool0`, specifying that each node in the pool will use a local, ephemeral OS disk for faster disk I/O at the expense of possible data loss:
 
 ```
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool0
+  name: nodepool0
 spec:
   mode: System
   osDiskSizeGB: 30
@@ -321,13 +321,13 @@ spec:
 
 You can configure the `Taints` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec.
 
-Below is an example of `taints` configuration for the `agentpool0`:
+Below is an example of `taints` configuration for the `nodepool0`:
 
 ```
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool0
+  name: nodepool0
 spec:
   mode: System
   osDiskSizeGB: 512
@@ -347,7 +347,7 @@ can be either `Linux` or `Windows`.
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool0
+  name: nodepool0
 spec:
   mode: User
   osDiskSizeGB: 30
@@ -358,12 +358,12 @@ spec:
 
 
 ### Enable AKS features with custom headers (--aks-custom-headers)
-To enable some AKS cluster / node pool features you need to pass special headers to the cluster / node pool create request. 
+To enable some AKS cluster / node pool features you need to pass special headers to the cluster / node pool create request.
 For example, to [add a node pool for GPU nodes](https://docs.microsoft.com/en-us/azure/aks/gpu-cluster#add-a-node-pool-for-gpu-nodes),
-you need to pass a custom header `UseGPUDedicatedVHD=true` (with `--aks-custom-headers UseGPUDedicatedVHD=true` argument). 
-To do this with CAPZ, you need to add special annotations to AzureManagedCluster (for cluster 
-features) or AzureManagedMachinePool (for node pool features). These annotations should have a prefix `infrastructure.cluster.x-k8s.io/custom-header-` followed 
-by the name of the AKS feature. For example, to create a node pool with GPU support, you would add the following 
+you need to pass a custom header `UseGPUDedicatedVHD=true` (with `--aks-custom-headers UseGPUDedicatedVHD=true` argument).
+To do this with CAPZ, you need to add special annotations to AzureManagedCluster (for cluster
+features) or AzureManagedMachinePool (for node pool features). These annotations should have a prefix `infrastructure.cluster.x-k8s.io/custom-header-` followed
+by the name of the AKS feature. For example, to create a node pool with GPU support, you would add the following
 annotation to AzureManagedMachinePool:
 ```
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -433,8 +433,8 @@ spec:
 
 ## Immutable fields for Managed Clusters (AKS)
 
-Some fields from the family of Managed Clusters CRD are immutable. Which means 
-those can only be set during the creation time. 
+Some fields from the family of Managed Clusters CRD are immutable. Which means
+those can only be set during the creation time.
 
 Following is the list of immutable fields for managed clusters:
 
@@ -486,7 +486,7 @@ If a user tries to delete the MachinePool which refers to the last system node p
 Here is an Example:
 
 ```yaml
-# MachinePool deleted 
+# MachinePool deleted
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
@@ -494,7 +494,7 @@ metadata:
   - machinepool.cluster.x-k8s.io
   labels:
     cluster.x-k8s.io/cluster-name: capz-managed-aks
-  name: agentpool0
+  name: nodepool0
   namespace: default
   ownerReferences:
   - apiVersion: cluster.x-k8s.io/v1beta1
@@ -506,7 +506,7 @@ spec:
   clusterName: capz-managed-aks
   minReadySeconds: 0
   providerIDList:
-  - azure:///subscriptions/9107f2fb-e486-a434-a948-52e2929b6f18/resourceGroups/MC_rg_capz-managed-aks_eastus/providers/Microsoft.Compute/virtualMachineScaleSets/aks-agentpool0-10226072-vmss/virtualMachines/0
+  - azure:///subscriptions/9107f2fb-e486-a434-a948-52e2929b6f18/resourceGroups/MC_rg_capz-managed-aks_eastus/providers/Microsoft.Compute/virtualMachineScaleSets/aks-nodepool0-10226072-vmss/virtualMachines/0
   replicas: 1
   template:
     metadata: {}
@@ -517,7 +517,7 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: agentpool0
+        name: nodepool0
         namespace: default
       version: v1.21.2
 
@@ -531,19 +531,19 @@ metadata:
   generation: 2
   labels:
     cluster.x-k8s.io/cluster-name: capz-managed-aks
-  name: agentpool2    # change the name of the machinepool
-  namespace: default 
+  name: nodepool2    # change the name of the machinepool
+  namespace: default
   ownerReferences:
   - apiVersion: cluster.x-k8s.io/v1beta1
     kind: Cluster
     name: capz-managed-aks
-    uid: 152ecf45-0a02-4635-987c-1ebb89055fa2   
+    uid: 152ecf45-0a02-4635-987c-1ebb89055fa2
   # uid: ae4a235a-f0fa-4252-928a-0e3b4c61dbea     # remove the uid set for machinepool
 spec:
   clusterName: capz-managed-aks
   minReadySeconds: 0
   providerIDList:
-  - azure:///subscriptions/9107f2fb-e486-a434-a948-52e2929b6f18/resourceGroups/MC_rg_capz-managed-aks_eastus/providers/Microsoft.Compute/virtualMachineScaleSets/aks-agentpool0-10226072-vmss/virtualMachines/0  
+  - azure:///subscriptions/9107f2fb-e486-a434-a948-52e2929b6f18/resourceGroups/MC_rg_capz-managed-aks_eastus/providers/Microsoft.Compute/virtualMachineScaleSets/aks-nodepool0-10226072-vmss/virtualMachines/0
   replicas: 1
   template:
     metadata: {}
@@ -554,7 +554,7 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: agentpool0
+        name: nodepool0
         namespace: default
       version: v1.21.2
 ```

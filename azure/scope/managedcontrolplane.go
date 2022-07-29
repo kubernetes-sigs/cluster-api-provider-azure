@@ -183,7 +183,7 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 			infrav1.VNetReadyCondition,
 			infrav1.SubnetsReadyCondition,
 			infrav1.ManagedClusterRunningCondition,
-			infrav1.AgentPoolsReadyCondition,
+			infrav1.NodePoolsReadyCondition,
 		}})
 }
 
@@ -401,7 +401,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 			s.ControlPlane.Spec.VirtualNetwork.Name,
 			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
-		GetAllAgentPools: s.GetAllAgentPoolSpecs,
+		GetAllNodePools: s.GetAllNodePoolSpecs,
 	}
 
 	if s.ControlPlane.Spec.NetworkPlugin != nil {
@@ -469,10 +469,10 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 	return &managedClusterSpec
 }
 
-// GetAllAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.
-func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.AgentPoolSpec, error) {
+// GetAllNodePoolSpecs gets a slice of azure.AKSNodePoolSpec for the list of node pools.
+func (s *ManagedControlPlaneScope) GetAllNodePoolSpecs() ([]azure.AKSNodePoolSpec, error) {
 	var (
-		ammps           = make([]azure.AgentPoolSpec, 0, len(s.ManagedMachinePools))
+		ammps           = make([]azure.AKSNodePoolSpec, 0, len(s.ManagedMachinePools))
 		foundSystemPool = false
 	)
 	for _, pool := range s.ManagedMachinePools {
@@ -488,7 +488,7 @@ func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.AgentPoolSpec
 			foundSystemPool = true
 		}
 
-		ammp := buildAgentPoolSpec(s.ControlPlane, pool.MachinePool, pool.InfraMachinePool)
+		ammp := buildNodePoolSpec(s.ControlPlane, pool.MachinePool, pool.InfraMachinePool)
 		ammps = append(ammps, ammp)
 	}
 

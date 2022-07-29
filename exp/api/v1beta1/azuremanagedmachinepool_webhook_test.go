@@ -44,7 +44,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	var client client.Client
 	ammp.Default(client)
 	g.Expect(ammp.Labels).NotTo(BeNil())
-	val, ok := ammp.Labels[LabelAgentPoolMode]
+	val, ok := ammp.Labels[LabelNodePoolMode]
 	g.Expect(ok).To(BeTrue())
 	g.Expect(val).To(Equal("System"))
 	g.Expect(*ammp.Spec.Name).To(Equal("fooName"))
@@ -81,7 +81,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Cannot change SKU of the agentpool",
+			name: "Cannot change SKU of the AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
@@ -99,7 +99,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Cannot change OSType of the agentpool",
+			name: "Cannot change OSType of the AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					OSType:       to.StringPtr("Linux"),
@@ -119,7 +119,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Cannot change OSDiskSizeGB of the agentpool",
+			name: "Cannot change OSDiskSizeGB of the AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
@@ -137,7 +137,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Cannot add AvailabilityZones after creating agentpool",
+			name: "Cannot add AvailabilityZones after creating AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
@@ -156,7 +156,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Cannot remove AvailabilityZones after creating agentpool",
+			name: "Cannot remove AvailabilityZones after creating AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
@@ -175,7 +175,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Cannot change AvailabilityZones of the agentpool",
+			name: "Cannot change AvailabilityZones of the AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
@@ -215,7 +215,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Cannot change MaxPods of the agentpool",
+			name: "Cannot change MaxPods of the AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
@@ -235,7 +235,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Unchanged MaxPods in an agentpool should not result in an error",
+			name: "Unchanged MaxPods in an AzureManagedMachinePool should not result in an error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
@@ -255,7 +255,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Cannot change OSDiskType of the agentpool",
+			name: "Cannot change OSDiskType of the AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
@@ -358,7 +358,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Unchanged OSDiskType in an agentpool should not result in an error",
+			name: "Unchanged OSDiskType in an AzureManagedMachinePool should not result in an error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
@@ -408,7 +408,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
+			name: "EnableUltraSSD feature is immutable and currently enabled on this AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					EnableUltraSSD: to.BoolPtr(false),
@@ -422,7 +422,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "EnableUltraSSD feature is immutable and currently disabled on this agentpool",
+			name: "EnableUltraSSD feature is immutable and currently disabled on this AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					EnableUltraSSD: to.BoolPtr(true),
@@ -436,7 +436,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "EnableUltraSSD feature is immutable and currently disabled on this agentpool",
+			name: "EnableUltraSSD feature is immutable and currently disabled on this AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					EnableUltraSSD: nil,
@@ -450,7 +450,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
+			name: "EnableUltraSSD feature is immutable and currently enabled on this AzureManagedMachinePool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					EnableUltraSSD: nil,

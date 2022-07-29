@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
+func TestIsAzureManagedMachinePoolVMSSNotFoundError(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Err      error
@@ -31,12 +31,12 @@ func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
 	}{
 		{
 			Name:     "WithANotFoundError",
-			Err:      NewAgentPoolVMSSNotFoundError("foo", "baz"),
+			Err:      NewAzureManagedMachinePoolVMSSNotFoundError("foo", "baz"),
 			Expected: true,
 		},
 		{
 			Name:     "WithAWrappedNotFoundError",
-			Err:      errors.Wrap(NewAgentPoolVMSSNotFoundError("foo", "baz"), "boom"),
+			Err:      errors.Wrap(NewAzureManagedMachinePoolVMSSNotFoundError("foo", "baz"), "boom"),
 			Expected: true,
 		},
 		{
@@ -56,7 +56,7 @@ func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)
-			g.Expect(errors.Is(c.Err, NewAgentPoolVMSSNotFoundError("foo", "baz"))).To(gomega.Equal(c.Expected))
+			g.Expect(errors.Is(c.Err, NewAzureManagedMachinePoolVMSSNotFoundError("foo", "baz"))).To(gomega.Equal(c.Expected))
 		})
 	}
 }

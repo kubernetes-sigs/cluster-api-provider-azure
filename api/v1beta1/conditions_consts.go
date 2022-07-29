@@ -80,8 +80,8 @@ const (
 const (
 	// ManagedClusterRunningCondition means the AKS cluster exists and is in a running state.
 	ManagedClusterRunningCondition clusterv1.ConditionType = "ManagedClusterRunning"
-	// AgentPoolsReadyCondition means the AKS agent pools exist and are ready to be used.
-	AgentPoolsReadyCondition clusterv1.ConditionType = "AgentPoolsReady"
+	// NodePoolsReadyCondition means the AKS node pools exist and are ready to be used.
+	NodePoolsReadyCondition clusterv1.ConditionType = "NodePoolsReady"
 )
 
 // Azure Services Conditions and Reasons.

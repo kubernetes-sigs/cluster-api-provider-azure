@@ -25,15 +25,15 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
-func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
+func Test_NodePoolToManagedClusterAgentPoolProfile(t *testing.T) {
 	cases := []struct {
 		name   string
-		pool   azure.AgentPoolSpec
+		pool   azure.AKSNodePoolSpec
 		expect func(*GomegaWithT, containerservice.ManagedClusterAgentPoolProfile)
 	}{
 		{
 			name: "Should set all values correctly",
-			pool: azure.AgentPoolSpec{
+			pool: azure.AKSNodePoolSpec{
 				SKU:               "Standard_D2s_v3",
 				OSDiskSizeGB:      100,
 				Replicas:          2,
@@ -51,12 +51,12 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 				NodeLabels: map[string]*string{
 					"custom": to.StringPtr("default"),
 				},
-				Name: "agentpool1",
+				Name: "nodepool1",
 			},
 
 			expect: func(g *GomegaWithT, result containerservice.ManagedClusterAgentPoolProfile) {
 				g.Expect(result).To(Equal(containerservice.ManagedClusterAgentPoolProfile{
-					Name:                to.StringPtr("agentpool1"),
+					Name:                to.StringPtr("nodepool1"),
 					VMSize:              to.StringPtr("Standard_D2s_v3"),
 					OsType:              azure.LinuxOS,
 					OsDiskSizeGB:        to.Int32Ptr(100),
@@ -85,22 +85,22 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
-			result := AgentPoolToManagedClusterAgentPoolProfile(c.pool)
+			result := NodePoolToManagedClusterAgentPoolProfile(c.pool)
 			c.expect(g, result)
 		})
 	}
 }
 
-func Test_AgentPoolToAgentPoolToContainerServiceAgentPool(t *testing.T) {
+func Test_NodePoolToAgentPoolToContainerServiceAgentPool(t *testing.T) {
 	cases := []struct {
 		name   string
-		pool   azure.AgentPoolSpec
+		pool   azure.AKSNodePoolSpec
 		expect func(*GomegaWithT, containerservice.AgentPool)
 	}{
 		{
 			name: "Should set all values correctly",
-			pool: azure.AgentPoolSpec{
-				Name:              "agentpool1",
+			pool: azure.AKSNodePoolSpec{
+				Name:              "nodepool1",
 				SKU:               "Standard_D2s_v3",
 				OSDiskSizeGB:      100,
 				OSType:            to.StringPtr(azure.LinuxOS),
@@ -152,7 +152,7 @@ func Test_AgentPoolToAgentPoolToContainerServiceAgentPool(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
-			result := AgentPoolToContainerServiceAgentPool(c.pool)
+			result := NodePoolToContainerServiceAgentPool(c.pool)
 			c.expect(g, result)
 		})
 	}

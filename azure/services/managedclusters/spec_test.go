@@ -65,16 +65,16 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "Standard",
-				GetAllAgentPools: func() ([]azure.AgentPoolSpec, error) {
-					return []azure.AgentPoolSpec{
+				GetAllNodePools: func() ([]azure.AKSNodePoolSpec, error) {
+					return []azure.AKSNodePoolSpec{
 						{
-							Name:          "test-agentpool-0",
+							Name:          "test-nodepool-0",
 							Mode:          string(infrav1exp.NodePoolModeSystem),
 							ResourceGroup: "test-rg",
 							Replicas:      int32(2),
 						},
 						{
-							Name:              "test-agentpool-1",
+							Name:              "test-nodepool-1",
 							Mode:              string(infrav1exp.NodePoolModeUser),
 							ResourceGroup:     "test-rg",
 							Replicas:          int32(4),
@@ -160,14 +160,14 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 			KubernetesVersion: to.StringPtr("v1.22.0"),
 			DNSPrefix:         to.StringPtr("test-managedcluster"),
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{
-				converters.AgentPoolToManagedClusterAgentPoolProfile(azure.AgentPoolSpec{
-					Name:          "test-agentpool-0",
+				converters.NodePoolToManagedClusterAgentPoolProfile(azure.AKSNodePoolSpec{
+					Name:          "test-nodepool-0",
 					Mode:          string(infrav1exp.NodePoolModeSystem),
 					ResourceGroup: "test-rg",
 					Replicas:      int32(2),
 				}),
-				converters.AgentPoolToManagedClusterAgentPoolProfile(azure.AgentPoolSpec{
-					Name:              "test-agentpool-1",
+				converters.NodePoolToManagedClusterAgentPoolProfile(azure.AKSNodePoolSpec{
+					Name:              "test-nodepool-1",
 					Mode:              string(infrav1exp.NodePoolModeUser),
 					ResourceGroup:     "test-rg",
 					Replicas:          int32(4),

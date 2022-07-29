@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	// LabelAgentPoolMode represents mode of an agent pool. Possible values include: System, User.
-	LabelAgentPoolMode = "azuremanagedmachinepool.infrastructure.cluster.x-k8s.io/agentpoolmode"
+	// LabelNodePoolMode represents mode of a node pool. Possible values include: System, User.
+	LabelNodePoolMode = "azuremanagedmachinepool.infrastructure.cluster.x-k8s.io/nodepoolmode"
 
 	// NodePoolModeSystem represents mode system for azuremachinepool.
 	NodePoolModeSystem NodePoolMode = "System"
@@ -38,29 +38,29 @@ const (
 	DefaultOSType string = azure.LinuxOS
 )
 
-// NodePoolMode enumerates the values for agent pool mode.
+// NodePoolMode enumerates the values for node pool mode.
 type NodePoolMode string
 
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
 
-	// Name - name of the agent pool. If not specified, CAPZ uses the name of the CR as the agent pool name.
+	// Name - name of the node pool. If not specified, CAPZ uses the name of the CR as the node pool name.
 	// +optional
 	Name *string `json:"name,omitempty"`
 
-	// Mode - represents mode of an agent pool. Possible values include: System, User.
+	// Mode - represents mode of a node pool. Possible values include: System, User.
 	// +kubebuilder:validation:Enum=System;User
 	Mode string `json:"mode"`
 
 	// SKU is the size of the VMs in the node pool.
 	SKU string `json:"sku"`
 
-	// OSDiskSizeGB is the disk size for every machine in this agent pool.
+	// OSDiskSizeGB is the disk size for every machine in this node pool.
 	// If you specify 0, it will apply the default osDisk size according to the vmSize specified.
 	// +optional
 	OSDiskSizeGB *int32 `json:"osDiskSizeGB,omitempty"`
 
-	// AvailabilityZones - Availability zones for nodes. Must use VirtualMachineScaleSets AgentPoolType.
+	// AvailabilityZones - Availability zones for nodes.
 	// +optional
 	AvailabilityZones []string `json:"availabilityZones,omitempty"`
 
@@ -68,7 +68,7 @@ type AzureManagedMachinePoolSpec struct {
 	// +optional
 	NodeLabels map[string]string `json:"nodeLabels,omitempty"`
 
-	// Taints specifies the taints for nodes present in this agent pool.
+	// Taints specifies the taints for nodes present in this node pool.
 	// +optional
 	Taints Taints `json:"taints,omitempty"`
 
@@ -90,7 +90,7 @@ type AzureManagedMachinePoolSpec struct {
 	// +optional
 	OsDiskType *string `json:"osDiskType,omitempty"`
 
-	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
+	// EnableUltraSSD enables the storage type UltraSSD_LRS for the node pool.
 	// +optional
 	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
 

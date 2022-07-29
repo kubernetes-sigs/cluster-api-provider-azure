@@ -40,7 +40,7 @@ func (m *AzureManagedMachinePool) Default(client client.Client) {
 	if m.Labels == nil {
 		m.Labels = make(map[string]string)
 	}
-	m.Labels[LabelAgentPoolMode] = m.Spec.Mode
+	m.Labels[LabelNodePoolMode] = m.Spec.Mode
 
 	if m.Spec.Name == nil || *m.Spec.Name == "" {
 		m.Spec.Name = &m.Name
@@ -267,7 +267,7 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 	opt1 := client.InNamespace(m.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
 		clusterv1.ClusterLabelName: clusterName,
-		LabelAgentPoolMode:         string(NodePoolModeSystem),
+		LabelNodePoolMode:          string(NodePoolModeSystem),
 	})
 
 	ammpList := &AzureManagedMachinePoolList{}
@@ -312,7 +312,7 @@ func (m *AzureManagedMachinePool) validateName() error {
 			return field.Invalid(
 				field.NewPath("Name"),
 				m.Name,
-				"Windows agent pool name can not be longer than 6 characters.")
+				"Windows node pool name can not be longer than 6 characters.")
 		}
 	}
 

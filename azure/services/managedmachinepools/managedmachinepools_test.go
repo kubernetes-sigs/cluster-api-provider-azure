@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package agentpools
+package managedmachinepools
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedmachinepools/mock_managedmachinepools"
 	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -39,39 +39,39 @@ import (
 func TestReconcile(t *testing.T) {
 	provisioningstatetestcases := []struct {
 		name                     string
-		agentpoolSpec            azure.AgentPoolSpec
+		nodePoolSpec             azure.AKSNodePoolSpec
 		provisioningStatesToTest []string
 		expectedError            string
-		expect                   func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string)
+		expect                   func(m *mock_managedmachinepools.MockClientMockRecorder, provisioningstate string)
 	}{
 		{
-			name: "agentpool in terminal provisioning state",
-			agentpoolSpec: azure.AgentPoolSpec{
+			name: "nodepool in terminal provisioning state",
+			nodePoolSpec: azure.AKSNodePoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
-				Name:          "my-agentpool",
+				Name:          "my-nodepool",
 			},
 			provisioningStatesToTest: []string{"Canceled", "Succeeded", "Failed"},
 			expectedError:            "",
-			expect: func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string) {
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder, provisioningstate string) {
 				pv := provisioningstate
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool", gomock.Any(), gomock.Any()).Return(nil)
-				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-nodepool", gomock.Any(), gomock.Any()).Return(nil)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-nodepool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 					ProvisioningState: &pv,
 				}}, nil)
 			},
 		},
 		{
-			name: "agentpool in nonterminal provisioning state",
-			agentpoolSpec: azure.AgentPoolSpec{
+			name: "nodepool in nonterminal provisioning state",
+			nodePoolSpec: azure.AKSNodePoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
-				Name:          "my-agentpool",
+				Name:          "my-nodepool",
 			},
 			provisioningStatesToTest: []string{"Deleting", "InProgress", "randomStringHere"},
-			expectedError:            "Unable to update existing agent pool in non terminal state. Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state:",
-			expect: func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string) {
-				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+			expectedError:            "Unable to update existing node pool in non terminal state. Node pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state:",
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder, provisioningstate string) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-nodepool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 					ProvisioningState: &provisioningstate,
 				}}, nil)
 			},
@@ -82,7 +82,7 @@ func TestReconcile(t *testing.T) {
 		for _, provisioningstate := range tc.provisioningStatesToTest {
 			tc := tc
 			provisioningstate := provisioningstate
-			t.Logf("Testing agentpool provision state: " + provisioningstate)
+			t.Logf("Testing nodepool provision state: " + provisioningstate)
 			t.Run(tc.name, func(t *testing.T) {
 				g := NewWithT(t)
 				t.Parallel()
@@ -90,23 +90,23 @@ func TestReconcile(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				defer mockCtrl.Finish()
 
-				agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+				agentpoolsMock := mock_managedmachinepools.NewMockClient(mockCtrl)
 				machinePoolScope := &scope.ManagedMachinePoolScope{
 					ControlPlane: &infraexpv1.AzureManagedControlPlane{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: tc.agentpoolSpec.Cluster,
+							Name: tc.nodePoolSpec.Cluster,
 						},
 						Spec: infraexpv1.AzureManagedControlPlaneSpec{
-							ResourceGroupName: tc.agentpoolSpec.ResourceGroup,
+							ResourceGroupName: tc.nodePoolSpec.ResourceGroup,
 						},
 					},
 					MachinePool: &capiexp.MachinePool{},
 					InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: tc.agentpoolSpec.Name,
+							Name: tc.nodePoolSpec.Name,
 						},
 						Spec: infraexpv1.AzureManagedMachinePoolSpec{
-							Name: &tc.agentpoolSpec.Name,
+							Name: &tc.nodePoolSpec.Name,
 						},
 					},
 				}
@@ -130,28 +130,28 @@ func TestReconcile(t *testing.T) {
 	}
 
 	testcases := []struct {
-		name           string
-		agentPoolsSpec azure.AgentPoolSpec
-		expectedError  string
-		expect         func(m *mock_agentpools.MockClientMockRecorder)
+		name          string
+		nodePoolsSpec azure.AKSNodePoolSpec
+		expectedError string
+		expect        func(m *mock_managedmachinepools.MockClientMockRecorder)
 	}{
 		{
-			name: "no agentpool exists",
-			agentPoolsSpec: azure.AgentPoolSpec{
+			name: "no nodepool exists",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
-				Name:          "my-agentpool",
+				Name:          "my-nodepool",
 			},
 			expectedError: "",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool", gomock.Any(), gomock.Any()).Return(nil)
-				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-nodepool", gomock.Any(), gomock.Any()).Return(nil)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-nodepool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
 		{
-			name: "fail to get existing agent pool",
-			agentPoolsSpec: azure.AgentPoolSpec{
-				Name:          "my-agent-pool",
+			name: "fail to get existing node pool",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
+				Name:          "my-node-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				SKU:           "SKU123",
@@ -161,15 +161,15 @@ func TestReconcile(t *testing.T) {
 				MaxPods:       to.Int32Ptr(12),
 				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 			},
-			expectedError: "failed to get existing agent pool: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			expectedError: "failed to get existing node pool: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
-			name: "can create an Agent Pool",
-			agentPoolsSpec: azure.AgentPoolSpec{
-				Name:          "my-agent-pool",
+			name: "can create a Node Pool",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
+				Name:          "my-node-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				SKU:           "SKU123",
@@ -180,15 +180,15 @@ func TestReconcile(t *testing.T) {
 				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 			},
 			expectedError: "",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(nil)
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(nil)
 			},
 		},
 		{
-			name: "fail to create an Agent Pool",
-			agentPoolsSpec: azure.AgentPoolSpec{
-				Name:          "my-agent-pool",
+			name: "fail to create a Node Pool",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
+				Name:          "my-node-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				SKU:           "SKU123",
@@ -198,16 +198,16 @@ func TestReconcile(t *testing.T) {
 				MaxPods:       to.Int32Ptr(12),
 				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 			},
-			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			expectedError: "failed to create or update node pool: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
-			name: "fail to update an Agent Pool",
-			agentPoolsSpec: azure.AgentPoolSpec{
-				Name:          "my-agent-pool",
+			name: "fail to update a Node Pool",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
+				Name:          "my-node-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				SKU:           "SKU123",
@@ -217,9 +217,9 @@ func TestReconcile(t *testing.T) {
 				MaxPods:       to.Int32Ptr(12),
 				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeManaged)),
 			},
-			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+			expectedError: "failed to create or update node pool: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool").Return(containerservice.AgentPool{
 					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 						Count:               to.Int32Ptr(3),
 						OsDiskSizeGB:        to.Int32Ptr(20),
@@ -228,13 +228,13 @@ func TestReconcile(t *testing.T) {
 						ProvisioningState:   to.StringPtr("Failed"),
 					},
 				}, nil)
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
-			name: "no update needed on Agent Pool",
-			agentPoolsSpec: azure.AgentPoolSpec{
-				Name:          "my-agent-pool",
+			name: "no update needed on Node Pool",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
+				Name:          "my-node-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				SKU:           "Standard_D2s_v3",
@@ -245,8 +245,8 @@ func TestReconcile(t *testing.T) {
 				OsDiskType:    to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
 			},
 			expectedError: "",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool").Return(containerservice.AgentPool{
 					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 						Count:               to.Int32Ptr(2),
 						OsDiskSizeGB:        to.Int32Ptr(100),
@@ -272,17 +272,17 @@ func TestReconcile(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			replicas := tc.agentPoolsSpec.Replicas
-			osDiskSizeGB := tc.agentPoolsSpec.OSDiskSizeGB
+			replicas := tc.nodePoolsSpec.Replicas
+			osDiskSizeGB := tc.nodePoolsSpec.OSDiskSizeGB
 
-			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+			agentpoolsMock := mock_managedmachinepools.NewMockClient(mockCtrl)
 			machinePoolScope := &scope.ManagedMachinePoolScope{
 				ControlPlane: &infraexpv1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: tc.agentPoolsSpec.Cluster,
+						Name: tc.nodePoolsSpec.Cluster,
 					},
 					Spec: infraexpv1.AzureManagedControlPlaneSpec{
-						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
+						ResourceGroupName: tc.nodePoolsSpec.ResourceGroup,
 					},
 				},
 				MachinePool: &capiexp.MachinePool{
@@ -290,18 +290,18 @@ func TestReconcile(t *testing.T) {
 						Replicas: &replicas,
 						Template: capi.MachineTemplateSpec{
 							Spec: capi.MachineSpec{
-								Version: tc.agentPoolsSpec.Version,
+								Version: tc.nodePoolsSpec.Version,
 							},
 						},
 					},
 				},
 				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: tc.agentPoolsSpec.Name,
+						Name: tc.nodePoolsSpec.Name,
 					},
 					Spec: infraexpv1.AzureManagedMachinePoolSpec{
-						Name:         &tc.agentPoolsSpec.Name,
-						SKU:          tc.agentPoolsSpec.SKU,
+						Name:         &tc.nodePoolsSpec.Name,
+						SKU:          tc.nodePoolsSpec.SKU,
 						OSDiskSizeGB: &osDiskSizeGB,
 						MaxPods:      to.Int32Ptr(12),
 						OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
@@ -329,46 +329,46 @@ func TestReconcile(t *testing.T) {
 
 func TestDeleteAgentPools(t *testing.T) {
 	testcases := []struct {
-		name           string
-		agentPoolsSpec azure.AgentPoolSpec
-		expectedError  string
-		expect         func(m *mock_agentpools.MockClientMockRecorder)
+		name          string
+		nodePoolsSpec azure.AKSNodePoolSpec
+		expectedError string
+		expect        func(m *mock_managedmachinepools.MockClientMockRecorder)
 	}{
 		{
-			name: "successfully delete an existing agent pool",
-			agentPoolsSpec: azure.AgentPoolSpec{
-				Name:          "my-agent-pool",
+			name: "successfully delete an existing node pool",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
+				Name:          "my-node-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 			},
 			expectedError: "",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool")
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool")
 			},
 		},
 		{
-			name: "agent pool already deleted",
-			agentPoolsSpec: azure.AgentPoolSpec{
-				Name:          "my-agent-pool",
+			name: "node pool already deleted",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
+				Name:          "my-node-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 			},
 			expectedError: "",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
-			name: "agent pool deletion fails",
-			agentPoolsSpec: azure.AgentPoolSpec{
-				Name:          "my-agent-pool",
+			name: "node pool deletion fails",
+			nodePoolsSpec: azure.AKSNodePoolSpec{
+				Name:          "my-node-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 			},
-			expectedError: "failed to delete agent pool my-agent-pool in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").
+			expectedError: "failed to delete node pool my-node-pool in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_managedmachinepools.MockClientMockRecorder) {
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-node-pool").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -382,23 +382,23 @@ func TestDeleteAgentPools(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			agentPoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+			agentPoolsMock := mock_managedmachinepools.NewMockClient(mockCtrl)
 			machinePoolScope := &scope.ManagedMachinePoolScope{
 				ControlPlane: &infraexpv1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: tc.agentPoolsSpec.Cluster,
+						Name: tc.nodePoolsSpec.Cluster,
 					},
 					Spec: infraexpv1.AzureManagedControlPlaneSpec{
-						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
+						ResourceGroupName: tc.nodePoolsSpec.ResourceGroup,
 					},
 				},
 				MachinePool: &capiexp.MachinePool{},
 				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: tc.agentPoolsSpec.Name,
+						Name: tc.nodePoolsSpec.Name,
 					},
 					Spec: infraexpv1.AzureManagedMachinePoolSpec{
-						Name: &tc.agentPoolsSpec.Name,
+						Name: &tc.nodePoolsSpec.Name,
 					},
 				},
 			}

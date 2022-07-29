@@ -41,7 +41,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedControlPlaneScopeParams
-		Expected []azure.AgentPoolSpec
+		Expected []azure.AKSNodePoolSpec
 		Err      string
 	}{
 		{
@@ -72,7 +72,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.AgentPoolSpec{
+			Expected: []azure.AKSNodePoolSpec{
 				{
 					Name:         "pool0",
 					SKU:          "Standard_D2s_v3",
@@ -112,7 +112,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.AgentPoolSpec{
+			Expected: []azure.AKSNodePoolSpec{
 				{
 					Name:         "pool0",
 					SKU:          "Standard_D2s_v3",
@@ -165,11 +165,11 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			agentPools, err := s.GetAllAgentPoolSpecs()
+			nodePools, err := s.GetAllNodePoolSpecs()
 			if err != nil {
 				g.Expect(err.Error()).To(Equal(c.Err))
 			} else {
-				g.Expect(agentPools).To(Equal(c.Expected))
+				g.Expect(nodePools).To(Equal(c.Expected))
 			}
 		})
 	}
@@ -276,7 +276,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedControlPlaneScopeParams
-		Expected []azure.AgentPoolSpec
+		Expected []azure.AKSNodePoolSpec
 		Err      string
 	}{
 		{
@@ -316,7 +316,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.AgentPoolSpec{
+			Expected: []azure.AKSNodePoolSpec{
 				{
 					Name:         "pool0",
 					SKU:          "Standard_D2s_v3",
@@ -390,11 +390,11 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			agentPools, err := s.GetAllAgentPoolSpecs()
+			nodePools, err := s.GetAllNodePoolSpecs()
 			if err != nil {
 				g.Expect(err.Error()).To(Equal(c.Err))
 			} else {
-				g.Expect(agentPools).To(Equal(c.Expected))
+				g.Expect(nodePools).To(Equal(c.Expected))
 			}
 		})
 	}

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package agentpools
+package managedmachinepools
 
 import (
 	"context"
@@ -35,39 +35,39 @@ type Client interface {
 
 // AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
-	agentpools containerservice.AgentPoolsClient
+	aksAgentPools containerservice.AgentPoolsClient
 }
 
 var _ Client = &AzureClient{}
 
-// NewClient creates a new agent pools client from subscription ID.
+// NewClient creates a new AKS "AgentPools" (node pools) client from subscription ID.
 func NewClient(auth azure.Authorizer) *AzureClient {
-	c := newAgentPoolsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
+	c := newAKSAgentPoolsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
-// newAgentPoolsClient creates a new agent pool client from subscription ID.
-func newAgentPoolsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) containerservice.AgentPoolsClient {
-	agentPoolsClient := containerservice.NewAgentPoolsClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&agentPoolsClient.Client, authorizer)
-	return agentPoolsClient
+// newAKSAgentPoolsClient creates a new AKS "AgentPool" (node pool) client from subscription ID.
+func newAKSAgentPoolsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) containerservice.AgentPoolsClient {
+	aksAgentPoolsClient := containerservice.NewAgentPoolsClientWithBaseURI(baseURI, subscriptionID)
+	azure.SetAutoRestClientDefaults(&aksAgentPoolsClient.Client, authorizer)
+	return aksAgentPoolsClient
 }
 
-// Get gets an agent pool.
+// Get gets an AKS "AgentPool" (node pool).
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, cluster, name string) (containerservice.AgentPool, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.Get")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedmachinepools.AzureClient.Get")
 	defer done()
 
-	return ac.agentpools.Get(ctx, resourceGroupName, cluster, name)
+	return ac.aksAgentPools.Get(ctx, resourceGroupName, cluster, name)
 }
 
-// CreateOrUpdate creates or updates an agent pool.
+// CreateOrUpdate creates or updates an AKS "AgentPool" (node pool).
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cluster, name string,
 	properties containerservice.AgentPool, customHeaders map[string]string) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.CreateOrUpdate")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedmachinpools.AzureClient.CreateOrUpdate")
 	defer done()
 
-	preparer, err := ac.agentpools.CreateOrUpdatePreparer(ctx, resourceGroupName, cluster, name, properties)
+	preparer, err := ac.aksAgentPools.CreateOrUpdatePreparer(ctx, resourceGroupName, cluster, name, properties)
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare operation")
 	}
@@ -75,29 +75,29 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cl
 		preparer.Header.Add(key, element)
 	}
 
-	future, err := ac.agentpools.CreateOrUpdateSender(preparer)
+	future, err := ac.aksAgentPools.CreateOrUpdateSender(preparer)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin operation")
 	}
-	if err := future.WaitForCompletionRef(ctx, ac.agentpools.Client); err != nil {
+	if err := future.WaitForCompletionRef(ctx, ac.aksAgentPools.Client); err != nil {
 		return errors.Wrap(err, "failed to end operation")
 	}
-	_, err = future.Result(ac.agentpools)
+	_, err = future.Result(ac.aksAgentPools)
 	return err
 }
 
-// Delete deletes an agent pool.
+// Delete deletes an AKS "AgentPool" (node pool).
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, cluster, name string) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.Delete")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedmachinepools.AzureClient.Delete")
 	defer done()
 
-	future, err := ac.agentpools.Delete(ctx, resourceGroupName, cluster, name)
+	future, err := ac.aksAgentPools.Delete(ctx, resourceGroupName, cluster, name)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin operation")
 	}
-	if err := future.WaitForCompletionRef(ctx, ac.agentpools.Client); err != nil {
+	if err := future.WaitForCompletionRef(ctx, ac.aksAgentPools.Client); err != nil {
 		return errors.Wrap(err, "failed to end operation")
 	}
-	_, err = future.Result(ac.agentpools)
+	_, err = future.Result(ac.aksAgentPools)
 	return err
 }

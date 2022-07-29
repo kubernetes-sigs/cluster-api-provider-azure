@@ -43,9 +43,9 @@ const (
 	VirtualMachineScaleSet = "VirtualMachineScaleSet"
 )
 
-// AgentPoolSpec contains agent pool specification details.
-type AgentPoolSpec struct {
-	// Name is the name of agent pool.
+// AKSNodePoolSpec contains AKS node pool specification details.
+type AKSNodePoolSpec struct {
+	// Name is the name of the node pool.
 	Name string
 
 	// ResourceGroup is the name of the Azure resource group for the AKS Cluster.
@@ -57,19 +57,19 @@ type AgentPoolSpec struct {
 	// Version defines the desired Kubernetes version.
 	Version *string
 
-	// SKU defines the Azure VM size for the agent pool VMs.
+	// SKU defines the Azure VM size for the node pool VMs.
 	SKU string
 
 	// Replicas is the number of desired machines.
 	Replicas int32
 
-	// OSDiskSizeGB is the OS disk size in GB for every machine in this agent pool.
+	// OSDiskSizeGB is the OS disk size in GB for every machine in this node pool.
 	OSDiskSizeGB int32
 
 	// VnetSubnetID is the Azure Resource ID for the subnet which should contain nodes.
 	VnetSubnetID string
 
-	// Mode represents mode of an agent pool. Possible values include: 'System', 'User'.
+	// Mode represents mode of a node pool. Possible values include: 'System', 'User'.
 	Mode string
 
 	//  Maximum number of nodes for auto-scaling
@@ -81,22 +81,22 @@ type AgentPoolSpec struct {
 	// Node labels - labels for all of the nodes present in node pool
 	NodeLabels map[string]*string `json:"nodeLabels,omitempty"`
 
-	// NodeTaints specifies the taints for nodes present in this agent pool.
+	// NodeTaints specifies the taints for nodes present in this node pool.
 	NodeTaints []string `json:"nodeTaints,omitempty"`
 
 	// EnableAutoScaling - Whether to enable auto-scaler
 	EnableAutoScaling *bool `json:"enableAutoScaling,omitempty"`
 
-	// AvailabilityZones represents the Availability zones for nodes in the AgentPool.
+	// AvailabilityZones declares Availability Zones to distribute VMs in the node pool across.
 	AvailabilityZones []string
 
-	// MaxPods specifies the kubelet --max-pods configuration for the agent pool.
+	// MaxPods specifies the kubelet --max-pods configuration for the node pool.
 	MaxPods *int32 `json:"maxPods,omitempty"`
 
 	// OsDiskType specifies the OS disk type for each node in the pool. Allowed values are 'Ephemeral' and 'Managed'.
 	OsDiskType *string `json:"osDiskType,omitempty"`
 
-	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
+	// EnableUltraSSD enables the storage type UltraSSD_LRS for the node pool.
 	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
 
 	// OSType specifies the operating system for the node pool. Allowed values are 'Linux' and 'Windows'

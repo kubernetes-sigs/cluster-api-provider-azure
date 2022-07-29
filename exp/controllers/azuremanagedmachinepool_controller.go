@@ -277,7 +277,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	scope.InfraMachinePool.Status.Ready = true
-	ammpr.Recorder.Eventf(scope.InfraMachinePool, corev1.EventTypeNormal, "AzureManagedMachinePool available", "agent pool successfully reconciled")
+	ammpr.Recorder.Eventf(scope.InfraMachinePool, corev1.EventTypeNormal, "AzureManagedMachinePool available", "node pool successfully reconciled")
 	return reconcile.Result{}, nil
 }
 

@@ -182,8 +182,8 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 
 		opt1 := client.InNamespace(input.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
-			infrav1exp.LabelAgentPoolMode: string(infrav1exp.NodePoolModeSystem),
-			clusterv1.ClusterLabelName:    input.ClusterName,
+			infrav1exp.LabelNodePoolMode: string(infrav1exp.NodePoolModeSystem),
+			clusterv1.ClusterLabelName:   input.ClusterName,
 		})
 
 		ammpList := &infrav1exp.AzureManagedMachinePoolList{}

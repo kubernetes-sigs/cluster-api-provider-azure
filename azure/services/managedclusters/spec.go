@@ -66,8 +66,8 @@ type ManagedClusterSpec struct {
 	// SSHPublicKey is a string literal containing an ssh public key. Will autogenerate and discard if not provided.
 	SSHPublicKey string
 
-	// GetAllAgentPools is a function that returns the list of agent pool specifications in this cluster.
-	GetAllAgentPools func() ([]azure.AgentPoolSpec, error)
+	// GetAllNodePools is a function that returns the list of node pool specifications in this cluster.
+	GetAllNodePools func() ([]azure.AKSNodePoolSpec, error)
 
 	// PodCIDR is the CIDR block for IP addresses distributed to pods
 	PodCIDR string
@@ -323,8 +323,8 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 			existingMC.NetworkProfile.LoadBalancerProfile.EffectiveOutboundIPs = nil
 		}
 
-		// Avoid changing agent pool profiles through AMCP and just use the existing agent pool profiles
-		// AgentPool changes are managed through AMMP.
+		// Avoid changing AKS node pool profiles through AMCP and just use the existing AgentPoolProfiles from the AKS API
+		// Node pool changes are managed through AMMP.
 		managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
 
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
@@ -332,14 +332,14 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 			return nil, nil
 		}
 	} else {
-		// Add all agent pools to cluster spec that will be submitted to the API
-		agentPoolSpecs, err := s.GetAllAgentPools()
+		// Add all node pools to cluster spec that will be submitted to the API
+		nodePoolSpecs, err := s.GetAllNodePools()
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get agent pool specs for managed cluster %s", s.Name)
+			return nil, errors.Wrapf(err, "failed to get node pool specs for managed cluster %s", s.Name)
 		}
 
-		for i := range agentPoolSpecs {
-			profile := converters.AgentPoolToManagedClusterAgentPoolProfile(agentPoolSpecs[i])
+		for i := range nodePoolSpecs {
+			profile := converters.NodePoolToManagedClusterAgentPoolProfile(nodePoolSpecs[i])
 			*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 		}
 	}
