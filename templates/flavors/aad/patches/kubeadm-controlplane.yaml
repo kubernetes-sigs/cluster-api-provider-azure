@@ -4,7 +4,6 @@ metadata:
   name: "${CLUSTER_NAME}-control-plane"
 spec:
   kubeadmConfigSpec:
-    useExperimentalRetryJoin: true
     initConfiguration:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'

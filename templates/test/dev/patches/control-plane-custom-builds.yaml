@@ -6,7 +6,6 @@ metadata:
     controlplane.cluster.x-k8s.io/skip-kube-proxy: "true"
 spec:
   kubeadmConfigSpec:
-    useExperimentalRetryJoin: true
     verbosity: 5
     clusterConfiguration:
       kubernetesVersion: "ci/${CI_VERSION}"

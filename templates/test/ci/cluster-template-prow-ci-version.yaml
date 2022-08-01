@@ -201,7 +201,6 @@ spec:
     postKubeadmCommands: []
     preKubeadmCommands:
     - bash -c /tmp/kubeadm-bootstrap.sh
-    useExperimentalRetryJoin: true
     verbosity: 5
   machineTemplate:
     infrastructureRef:
