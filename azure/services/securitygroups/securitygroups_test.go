@@ -164,57 +164,10 @@ func TestDeleteSecurityGroups(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
-			name:          "delete multiple security groups succeeds, should return no error",
+			name:          "delete always returns nil error",
 			expectedError: "",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil)
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, nil)
-			},
-		},
-		{
-			name:          "first security groups delete fails, should return an error",
-			expectedError: errFake.Error(),
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(errFake)
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, errFake)
-			},
-		},
-		{
-			name:          "first security groups delete fails and second security groups create not done, should return an error",
-			expectedError: errFake.Error(),
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(errFake)
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(notDoneError)
-				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, errFake)
-			},
-		},
-		{
-			name:          "security groups delete not done, should return not done error",
-			expectedError: notDoneError.Error(),
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG})
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(notDoneError)
-				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, notDoneError)
-			},
-		},
-		{
-			name:          "vnet is not managed, should skip delete",
-			expectedError: "",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.IsVnetManaged().Return(false)
-			},
 		},
 	}
 	for _, tc := range testcases {
@@ -228,20 +181,13 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			scopeMock := mock_securitygroups.NewMockNSGScope(mockCtrl)
 			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), reconcilerMock.EXPECT())
-
 			s := &Service{
 				Scope:      scopeMock,
 				Reconciler: reconcilerMock,
 			}
 
 			err := s.Delete(context.TODO())
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
+			g.Expect(err).To(BeNil())
 		})
 	}
 }

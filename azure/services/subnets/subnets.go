@@ -102,46 +102,21 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return resultErr
 }
 
-// Delete deletes the subnet with the provided name.
+// Delete takes no action.
+// We don't need to explicitly delete a subnet;
+// We can rely upon the Virtual Network to delete its subnet(s).
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Delete")
+	_, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Delete")
 	defer done()
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
-	defer cancel()
-
-	if managed, err := s.IsManaged(ctx); err == nil && !managed {
-		log.V(4).Info("Skipping subnets deletion in custom vnet mode")
-		return nil
-	} else if err != nil {
-		return errors.Wrap(err, "failed to check if subnets are managed")
-	}
-
-	specs := s.Scope.SubnetSpecs()
-	if len(specs) == 0 {
-		return nil
-	}
-
-	// We go through the list of SubnetSpecs to delete each one, independently of the result of the previous one.
-	// If multiple errors occur, we return the most pressing one.
-	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
-	var result error
-	for _, subnetSpec := range specs {
-		if err := s.DeleteResource(ctx, subnetSpec, serviceName); err != nil {
-			if !azure.IsOperationNotDoneError(err) || result == nil {
-				result = err
-			}
-		}
-	}
-
-	s.Scope.UpdateDeleteStatus(infrav1.SubnetsReadyCondition, serviceName, result)
-	return result
+	log.V(4).Info("Subnet will be deleted when its parent Virtual Network is deleted")
+	return nil
 }
 
-// IsManaged returns true if the route tables' lifecycles are managed.
+// IsManaged always returns false for subnets.
+// This is semantically imprecise, as we aren't actually able to determine
+// whether or not a subnet was created by capz or if it existed previously,
+// but we must implement `IsManaged` given the ServiceReconciler type constraints.
 func (s *Service) IsManaged(ctx context.Context) (bool, error) {
-	_, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.IsManaged")
-	defer done()
-
-	return s.Scope.IsVnetManaged(), nil
+	return false, nil
 }

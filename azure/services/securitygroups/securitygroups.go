@@ -97,40 +97,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes network security groups.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.Delete")
+	_, log, done := tele.StartSpanWithLogger(ctx, "securitygroups.Service.Delete")
 	defer done()
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
-	defer cancel()
-
-	// Only delete the security groups if their lifecycle is managed by this controller.
-	if managed, err := s.IsManaged(ctx); err == nil && !managed {
-		log.V(4).Info("Skipping network security groups delete in custom VNet mode")
-		return nil
-	} else if err != nil {
-		return errors.Wrap(err, "failed to check if security groups are managed")
-	}
-
-	specs := s.Scope.NSGSpecs()
-	if len(specs) == 0 {
-		return nil
-	}
-
-	var result error
-
-	// We go through the list of security groups to delete each one, independently of the result of the previous one.
-	// If multiple errors occur, we return the most pressing one.
-	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
-	for _, nsgSpec := range specs {
-		if err := s.DeleteResource(ctx, nsgSpec, serviceName); err != nil {
-			if !azure.IsOperationNotDoneError(err) || result == nil {
-				result = err
-			}
-		}
-	}
-
-	s.Scope.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, result)
-	return result
+	log.V(4).Info("Network security group will be deleted when its parent Virtual Network is deleted")
+	return nil
 }
 
 // IsManaged returns true if the security groups' lifecycles are managed.

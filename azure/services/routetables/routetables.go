@@ -96,39 +96,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes route tables.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Delete")
+	_, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Delete")
 	defer done()
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
-	defer cancel()
-
-	// Only delete the route tables if their lifecycle is managed by this controller.
-	// route tables are managed if and only if the vnet is managed.
-	if managed, err := s.IsManaged(ctx); err == nil && !managed {
-		log.V(4).Info("Skipping route table deletion in custom vnet mode")
-		return nil
-	} else if err != nil {
-		return errors.Wrap(err, "failed to check if route tables are managed")
-	}
-
-	specs := s.Scope.RouteTableSpecs()
-	if len(specs) == 0 {
-		return nil
-	}
-
-	// We go through the list of RouteTableSpecs to delete each one, independently of the result of the previous one.
-	// If multiple errors occur, we return the most pressing one
-	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
-	var result error
-	for _, rtSpec := range specs {
-		if err := s.DeleteResource(ctx, rtSpec, serviceName); err != nil {
-			if !azure.IsOperationNotDoneError(err) || result == nil {
-				result = err
-			}
-		}
-	}
-	s.Scope.UpdateDeleteStatus(infrav1.RouteTablesReadyCondition, serviceName, result)
-	return result
+	log.V(4).Info("Route table will be deleted when its parent Virtual Network is deleted")
+	return nil
 }
 
 // IsManaged returns true if the route tables' lifecycles are managed.
