@@ -53,7 +53,7 @@ type (
 	}
 )
 
-// DiffEq will verify cmp.Diff(expected, actual) == "" using github.com/google/go-cmp/cmp
+// DiffEq will verify cmp.Diff(expected, actual) == "" using github.com/google/go-cmp/cmp.
 func DiffEq(x interface{}) gomock.Matcher {
 	return &cmpMatcher{
 		x: x,
@@ -73,7 +73,7 @@ func (c *cmpMatcher) String() string {
 	return want
 }
 
-// ErrStrEq will verify the string matches error.Error()
+// ErrStrEq will verify the string matches error.Error().
 func ErrStrEq(expected string) gomock.Matcher {
 	return &errStrEq{
 		expected: expected,
@@ -107,7 +107,7 @@ func (e *contextMatcher) String() string {
 	return fmt.Sprintf("expected a context.Context, but got %T", e.actual)
 }
 
-// CustomMatcher creates a matcher from two funcs rather than having to make a new struct and implement Matcher
+// CustomMatcher creates a matcher from two funcs rather than having to make a new struct and implement Matcher.
 func CustomMatcher(matcher func(x interface{}, state map[string]interface{}) bool, stringer func(state map[string]interface{}) string) gomock.Matcher {
 	return &customMatcher{
 		state:    make(map[string]interface{}),

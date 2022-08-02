@@ -16,4 +16,4 @@ limitations under the License.
 
 //go:generate ../../../../hack/tools/bin/mockgen -destination ttllru_mock.go -package mock_ttllru -source ../ttllru.go Cacher PeekingCacher
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt ttllru_mock.go > _ttllru_mock.go && mv _ttllru_mock.go ttllru_mock.go"
-package mock_ttllru //nolint
+package mock_ttllru

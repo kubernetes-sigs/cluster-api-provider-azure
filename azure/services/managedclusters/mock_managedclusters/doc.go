@@ -19,4 +19,4 @@ limitations under the License.
 //go:generate ../../../../hack/tools/bin/mockgen -destination managedclusters_mock.go -package mock_managedclusters -source ../managedclusters.go ManagedClusterScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt managedclusters_mock.go > _managedclusters_mock.go && mv _managedclusters_mock.go managedclusters_mock.go"
-package mock_managedclusters //nolint
+package mock_managedclusters

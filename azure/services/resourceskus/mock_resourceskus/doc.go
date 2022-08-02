@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination resourceskus_mock.go -package mock_resourceskus -source ../client.go Client
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt resourceskus_mock.go > _resourceskus_mock.go && mv _resourceskus_mock.go resourceskus_mock.go"
-package mock_resourceskus //nolint
+package mock_resourceskus

@@ -19,4 +19,4 @@ limitations under the License.
 //go:generate ../../../../hack/tools/bin/mockgen -destination publicips_mock.go -package mock_publicips -source ../publicips.go PublicIPScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt publicips_mock.go > _publicips_mock.go && mv _publicips_mock.go publicips_mock.go"
-package mock_publicips //nolint
+package mock_publicips

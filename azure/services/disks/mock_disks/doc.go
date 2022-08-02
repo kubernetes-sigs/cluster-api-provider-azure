@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination disks_mock.go -package mock_disks -source ../disks.go DiskScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt disks_mock.go > _disks_mock.go && mv _disks_mock.go disks_mock.go"
-package mock_disks //nolint
+package mock_disks

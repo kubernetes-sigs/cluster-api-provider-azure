@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination vmextensions_mock.go -package mock_vmextensions -source ../vmextensions.go VMExtensionScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt vmextensions_mock.go > _vmextensions_mock.go && mv _vmextensions_mock.go vmextensions_mock.go"
-package mock_vmextensions //nolint
+package mock_vmextensions

@@ -21,45 +21,43 @@ import (
 
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
-
-	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 func TestFuzzyConversion(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()
 	g.Expect(AddToScheme(scheme)).To(Succeed())
-	g.Expect(v1beta1.AddToScheme(scheme)).To(Succeed())
+	g.Expect(infrav1exp.AddToScheme(scheme)).To(Succeed())
 
 	t.Run("for AzureMachinePool", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureMachinePool{},
+		Hub:    &infrav1exp.AzureMachinePool{},
 		Spoke:  &AzureMachinePool{},
 	}))
 
 	t.Run("for AzureManagedCluster", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureManagedCluster{},
+		Hub:    &infrav1exp.AzureManagedCluster{},
 		Spoke:  &AzureManagedCluster{},
 	}))
 
 	t.Run("for AzureManagedControlPlane", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureManagedControlPlane{},
+		Hub:    &infrav1exp.AzureManagedControlPlane{},
 		Spoke:  &AzureManagedControlPlane{},
 	}))
 
 	t.Run("for AzureManagedMachinePool", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureManagedMachinePool{},
+		Hub:    &infrav1exp.AzureManagedMachinePool{},
 		Spoke:  &AzureManagedMachinePool{},
 	}))
 
 	t.Run("for AzureMachinePoolMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureMachinePoolMachine{},
+		Hub:    &infrav1exp.AzureMachinePoolMachine{},
 		Spoke:  &AzureMachinePoolMachine{},
 	}))
-
 }

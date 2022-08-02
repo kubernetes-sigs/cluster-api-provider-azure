@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination natgateways_mock.go -package mock_natgateways -source ../natgateways.go NatGatewayScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt natgateways_mock.go > _natgateways_mock.go && mv _natgateways_mock.go natgateways_mock.go"
-package mock_natgateways //nolint
+package mock_natgateways

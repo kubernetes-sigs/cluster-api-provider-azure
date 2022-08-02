@@ -17,30 +17,30 @@ limitations under the License.
 package v1alpha4
 
 import (
-	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this AzureManagedCluster to the Hub version (v1beta1).
 func (src *AzureManagedCluster) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*expv1beta1.AzureManagedCluster)
+	dst := dstRaw.(*infrav1exp.AzureManagedCluster)
 	return Convert_v1alpha4_AzureManagedCluster_To_v1beta1_AzureManagedCluster(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureManagedCluster) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*expv1beta1.AzureManagedCluster)
+	src := srcRaw.(*infrav1exp.AzureManagedCluster)
 	return Convert_v1beta1_AzureManagedCluster_To_v1alpha4_AzureManagedCluster(src, dst, nil)
 }
 
 // ConvertTo converts this AzureManagedClusterList to the Hub version (v1beta1).
 func (src *AzureManagedClusterList) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*expv1beta1.AzureManagedClusterList)
+	dst := dstRaw.(*infrav1exp.AzureManagedClusterList)
 	return Convert_v1alpha4_AzureManagedClusterList_To_v1beta1_AzureManagedClusterList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureManagedClusterList) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*expv1beta1.AzureManagedClusterList)
+	src := srcRaw.(*infrav1exp.AzureManagedClusterList)
 	return Convert_v1beta1_AzureManagedClusterList_To_v1alpha4_AzureManagedClusterList(src, dst, nil)
 }

@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../hack/tools/bin/mockgen -destination log_mock.go -package mock_log github.com/go-logr/logr LogSink
 //go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt log_mock.go > _log_mock.go && mv _log_mock.go log_mock.go"
-package mock_log //nolint
+package mock_log

@@ -19,4 +19,4 @@ limitations under the License.
 //go:generate ../../../../hack/tools/bin/mockgen -destination inboundnatrules_mock.go -package mock_inboundnatrules -source ../inboundnatrules.go InboundNatScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt inboundnatrules_mock.go > _inboundnatrules_mock.go && mv _inboundnatrules_mock.go inboundnatrules_mock.go"
-package mock_inboundnatrules //nolint
+package mock_inboundnatrules

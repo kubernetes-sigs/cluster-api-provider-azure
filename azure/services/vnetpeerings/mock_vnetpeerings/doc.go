@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination vnetpeerings_mock.go -package mock_vnetpeerings -source ../vnetpeerings.go VnetPeeringScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt vnetpeerings_mock.go > _vnetpeerings_mock.go && mv _vnetpeerings_mock.go vnetpeerings_mock.go"
-package mock_vnetpeerings //nolint
+package mock_vnetpeerings

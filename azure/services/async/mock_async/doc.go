@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination async_mock.go -package mock_async -source ../interfaces.go FutureHandler
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt async_mock.go > _async_mock.go && mv _async_mock.go async_mock.go"
-package mock_async //nolint
+package mock_async
