@@ -36,7 +36,7 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -89,7 +89,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 					s := runtime.NewScheme()
 					for _, addTo := range []func(s *runtime.Scheme) error{
 						clusterv1.AddToScheme,
-						clusterv1exp.AddToScheme,
+						expv1.AddToScheme,
 						infrav1.AddToScheme,
 						infrav1exp.AddToScheme,
 					} {
@@ -118,7 +118,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 	}
 }
 
-func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureCluster, *clusterv1exp.MachinePool, *infrav1exp.AzureMachinePool, *infrav1exp.AzureMachinePoolMachine) {
+func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureCluster, *expv1.MachinePool, *infrav1exp.AzureMachinePool, *infrav1exp.AzureMachinePoolMachine) {
 	azCluster := &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "azCluster1",
@@ -146,7 +146,7 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 		},
 	}
 
-	mp := &clusterv1exp.MachinePool{
+	mp := &expv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mp1",
 			Namespace: "default",
@@ -164,7 +164,7 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 				{
 					Name:       mp.Name,
 					Kind:       "MachinePool",
-					APIVersion: clusterv1exp.GroupVersion.String(),
+					APIVersion: expv1.GroupVersion.String(),
 				},
 			},
 		},

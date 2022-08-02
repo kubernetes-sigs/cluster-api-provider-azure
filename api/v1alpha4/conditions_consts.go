@@ -16,12 +16,12 @@ limitations under the License.
 
 package v1alpha4
 
-import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+import clusterv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
 
 // AzureCluster Conditions and Reasons.
 const (
 	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure.
-	NetworkInfrastructureReadyCondition clusterv1.ConditionType = "NetworkInfrastructureReady"
+	NetworkInfrastructureReadyCondition clusterv1alpha4.ConditionType = "NetworkInfrastructureReady"
 	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity.
 	NamespaceNotAllowedByIdentity = "NamespaceNotAllowedByIdentity"
 )
@@ -29,7 +29,7 @@ const (
 // AzureMachine Conditions and Reasons.
 const (
 	// VMRunningCondition reports on current status of the Azure VM.
-	VMRunningCondition clusterv1.ConditionType = "VMRunning"
+	VMRunningCondition clusterv1alpha4.ConditionType = "VMRunning"
 	// VMCreatingReason used when the vm creation is in progress.
 	VMCreatingReason = "VMCreating"
 	// VMUpdatingReason used when the vm updating is in progress.
@@ -53,7 +53,7 @@ const (
 // AzureMachinePool Conditions and Reasons.
 const (
 	// ScaleSetRunningCondition reports on current status of the Azure Scale Set.
-	ScaleSetRunningCondition clusterv1.ConditionType = "ScaleSetRunning"
+	ScaleSetRunningCondition clusterv1alpha4.ConditionType = "ScaleSetRunning"
 	// ScaleSetCreatingReason used when the scale set creation is in progress.
 	ScaleSetCreatingReason = "ScaleSetCreating"
 	// ScaleSetUpdatingReason used when the scale set updating is in progress.
@@ -64,14 +64,14 @@ const (
 	ScaleSetProvisionFailedReason = "ScaleSetProvisionFailed"
 
 	// ScaleSetDesiredReplicasCondition reports on the scaling state of the machine pool.
-	ScaleSetDesiredReplicasCondition clusterv1.ConditionType = "ScaleSetDesiredReplicas"
+	ScaleSetDesiredReplicasCondition clusterv1alpha4.ConditionType = "ScaleSetDesiredReplicas"
 	// ScaleSetScaleUpReason describes the machine pool scaling up.
 	ScaleSetScaleUpReason = "ScaleSetScalingUp"
 	// ScaleSetScaleDownReason describes the machine pool scaling down.
 	ScaleSetScaleDownReason = "ScaleSetScalingDown"
 
 	// ScaleSetModelUpdatedCondition reports on the model state of the pool.
-	ScaleSetModelUpdatedCondition clusterv1.ConditionType = "ScaleSetModelUpdated"
+	ScaleSetModelUpdatedCondition clusterv1alpha4.ConditionType = "ScaleSetModelUpdated"
 	// ScaleSetModelOutOfDateReason describes the machine pool model being out of date.
 	ScaleSetModelOutOfDateReason = "ScaleSetModelOutOfDate"
 )
@@ -79,31 +79,31 @@ const (
 // Azure Services Conditions and Reasons.
 const (
 	// ResourceGroupReadyCondition means the resource group exists and is ready to be used.
-	ResourceGroupReadyCondition clusterv1.ConditionType = "ResourceGroupReady"
+	ResourceGroupReadyCondition clusterv1alpha4.ConditionType = "ResourceGroupReady"
 	// VNetReadyCondition means the virtual network exists and is ready to be used.
-	VNetReadyCondition clusterv1.ConditionType = "VNetReady"
+	VNetReadyCondition clusterv1alpha4.ConditionType = "VNetReady"
 	// SecurityGroupsReadyCondition means the security groups exist and are ready to be used.
-	SecurityGroupsReadyCondition clusterv1.ConditionType = "SecurityGroupsReady"
+	SecurityGroupsReadyCondition clusterv1alpha4.ConditionType = "SecurityGroupsReady"
 	// RouteTablesReadyCondition means the route tables exist and are ready to be used.
-	RouteTablesReadyCondition clusterv1.ConditionType = "RouteTablesReady"
+	RouteTablesReadyCondition clusterv1alpha4.ConditionType = "RouteTablesReady"
 	// PublicIPsReadyCondition means the public IPs exist and are ready to be used.
-	PublicIPsReadyCondition clusterv1.ConditionType = "PublicIPsReady"
+	PublicIPsReadyCondition clusterv1alpha4.ConditionType = "PublicIPsReady"
 	// NATGatewaysReadyCondition means the NAT gateways exist and are ready to be used.
-	NATGatewaysReadyCondition clusterv1.ConditionType = "NATGatewaysReady"
+	NATGatewaysReadyCondition clusterv1alpha4.ConditionType = "NATGatewaysReady"
 	// SubnetsReadyCondition means the subnets exist and are ready to be used.
-	SubnetsReadyCondition clusterv1.ConditionType = "SubnetsReady"
+	SubnetsReadyCondition clusterv1alpha4.ConditionType = "SubnetsReady"
 	// LoadBalancersReadyCondition means the load balancers exist and are ready to be used.
-	LoadBalancersReadyCondition clusterv1.ConditionType = "LoadBalancersReady"
+	LoadBalancersReadyCondition clusterv1alpha4.ConditionType = "LoadBalancersReady"
 	// PrivateDNSReadyCondition means the private DNS exists and is ready to be used.
-	PrivateDNSReadyCondition clusterv1.ConditionType = "PrivateDNSReady"
+	PrivateDNSReadyCondition clusterv1alpha4.ConditionType = "PrivateDNSReady"
 	// BastionHostReadyCondition means the bastion host exists and is ready to be used.
-	BastionHostReadyCondition clusterv1.ConditionType = "BastionHostReady"
+	BastionHostReadyCondition clusterv1alpha4.ConditionType = "BastionHostReady"
 	// InboundNATRulesReadyCondition means the inbound NAT rules exist and are ready to be used.
-	InboundNATRulesReadyCondition clusterv1.ConditionType = "InboundNATRulesReady"
+	InboundNATRulesReadyCondition clusterv1alpha4.ConditionType = "InboundNATRulesReady"
 	// AvailabilitySetReadyCondition means the availability set exists and is ready to be used.
-	AvailabilitySetReadyCondition clusterv1.ConditionType = "AvailabilitySetReady"
+	AvailabilitySetReadyCondition clusterv1alpha4.ConditionType = "AvailabilitySetReady"
 	// RoleAssignmentReadyCondition means the role assignment exists and is ready to be used.
-	RoleAssignmentReadyCondition clusterv1.ConditionType = "RoleAssignmentReady"
+	RoleAssignmentReadyCondition clusterv1alpha4.ConditionType = "RoleAssignmentReady"
 
 	// CreatingReason means the resource is being created.
 	CreatingReason = "Creating"

@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -497,7 +497,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 }
 
 // GetOwnerMachinePool returns the MachinePool object owning the current resource.
-func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*capiv1exp.MachinePool, error) {
+func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*expv1.MachinePool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetOwnerMachinePool")
 	defer done()
 
@@ -510,7 +510,7 @@ func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 			return nil, errors.WithStack(err)
 		}
 
-		if gv.Group == capiv1exp.GroupVersion.Group {
+		if gv.Group == expv1.GroupVersion.Group {
 			return GetMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
 		}
 	}
@@ -540,11 +540,11 @@ func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.O
 }
 
 // GetMachinePoolByName finds and return a MachinePool object using the specified params.
-func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
+func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*expv1.MachinePool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetMachinePoolByName")
 	defer done()
 
-	m := &capiv1exp.MachinePool{}
+	m := &expv1.MachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
 	if err := c.Get(ctx, key, m); err != nil {
 		return nil, err

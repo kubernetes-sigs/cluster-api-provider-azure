@@ -29,9 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -83,7 +83,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 	}
 
-	machinePool := &clusterexpv1.MachinePool{
+	machinePool := &expv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-machine-pool",
 			Labels: map[string]string{
@@ -99,7 +99,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 	}
 
-	azureMachinePool := &infraexpv1.AzureMachinePool{
+	azureMachinePool := &infrav1exp.AzureMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-azure-machine-pool",
 			OwnerReferences: []metav1.OwnerReference{

@@ -42,7 +42,7 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -59,7 +59,7 @@ func init() {
 	// Calculate the scheme.
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
-	utilruntime.Must(clusterv1exp.AddToScheme(scheme))
+	utilruntime.Must(expv1.AddToScheme(scheme))
 	utilruntime.Must(infrav1.AddToScheme(scheme))
 	utilruntime.Must(infrav1exp.AddToScheme(scheme))
 	utilruntime.Must(infrav1alpha3.AddToScheme(scheme))

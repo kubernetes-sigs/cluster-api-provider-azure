@@ -32,7 +32,7 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,7 +76,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 			return nil
 		}
 
-		machineList := &clusterv1exp.MachinePoolList{}
+		machineList := &expv1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
 		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
@@ -173,7 +173,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c 
 			return nil
 		}
 
-		machineList := &clusterv1exp.MachinePoolList{}
+		machineList := &expv1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
 		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
@@ -226,7 +226,7 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Contex
 			return nil
 		}
 
-		machineList := &clusterv1exp.MachinePoolList{}
+		machineList := &expv1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
 		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
@@ -350,7 +350,7 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(ctx context.Context, c client.
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
-		machinePool, ok := o.(*clusterv1exp.MachinePool)
+		machinePool, ok := o.(*expv1.MachinePool)
 		if !ok {
 			log.Info("expected a MachinePool, got wrong type", "type", fmt.Sprintf("%T", o))
 			return nil
@@ -448,7 +448,7 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(ctx context.Context, c client.
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
 func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
-		m, ok := o.(*clusterv1exp.MachinePool)
+		m, ok := o.(*expv1.MachinePool)
 		if !ok {
 			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o))
 			return nil

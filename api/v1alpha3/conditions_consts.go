@@ -16,7 +16,7 @@ limitations under the License.
 
 package v1alpha3
 
-import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+import clusterv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 // AzureCluster Conditions and Reasons.
 const (
@@ -33,7 +33,7 @@ const (
 // AzureMachine Conditions and Reasons.
 const (
 	// VMRunningCondition reports on current status of the Azure VM.
-	VMRunningCondition clusterv1.ConditionType = "VMRunning"
+	VMRunningCondition clusterv1alpha3.ConditionType = "VMRunning"
 	// VMNCreatingReason used when the vm creation is in progress.
 	VMNCreatingReason = "VMCreating"
 	// VMNUpdatingReason used when the vm updating is in progress.

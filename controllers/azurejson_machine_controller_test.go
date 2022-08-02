@@ -30,9 +30,9 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -243,8 +243,8 @@ func newScheme() (*runtime.Scheme, error) {
 		clientgoscheme.AddToScheme,
 		infrav1.AddToScheme,
 		clusterv1.AddToScheme,
-		infraexpv1.AddToScheme,
-		clusterexpv1.AddToScheme,
+		infrav1exp.AddToScheme,
+		expv1.AddToScheme,
 	}
 	for _, fn := range schemeFn {
 		fn := fn

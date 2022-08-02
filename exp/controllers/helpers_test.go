@@ -33,7 +33,7 @@ import (
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -722,7 +722,7 @@ func newAzureManagedControlPlane(cpName string) *infrav1exp.AzureManagedControlP
 	}
 }
 
-func newManagedMachinePoolInfraReference(clusterName, poolName string) *clusterv1exp.MachinePool {
+func newManagedMachinePoolInfraReference(clusterName, poolName string) *expv1.MachinePool {
 	m := newMachinePool(clusterName, poolName)
 	m.Spec.ClusterName = clusterName
 	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{

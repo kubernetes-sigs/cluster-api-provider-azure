@@ -19,7 +19,7 @@ package v1alpha4
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 // AllowedNamespaces defines the namespaces the clusters are allowed to use the identity from
@@ -70,7 +70,7 @@ type AzureClusterIdentitySpec struct {
 type AzureClusterIdentityStatus struct {
 	// Conditions defines current service state of the AzureClusterIdentity.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv1alpha4.Conditions `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -96,12 +96,12 @@ type AzureClusterIdentityList struct {
 }
 
 // GetConditions returns the list of conditions for an AzureClusterIdentity API object.
-func (c *AzureClusterIdentity) GetConditions() clusterv1.Conditions {
+func (c *AzureClusterIdentity) GetConditions() clusterv1alpha4.Conditions {
 	return c.Status.Conditions
 }
 
 // SetConditions will set the given conditions on an AzureClusterIdentity object.
-func (c *AzureClusterIdentity) SetConditions(conditions clusterv1.Conditions) {
+func (c *AzureClusterIdentity) SetConditions(conditions clusterv1alpha4.Conditions) {
 	c.Status.Conditions = conditions
 }
 

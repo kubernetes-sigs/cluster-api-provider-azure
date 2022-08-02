@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capiexputil "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -89,7 +89,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 		).
 		// watch MachinePool resources
 		Watches(
-			&source.Kind{Type: &clusterv1exp.MachinePool{}},
+			&source.Kind{Type: &expv1.MachinePool{}},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 		).
 		Build(r)

@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,7 +47,7 @@ type ManagedMachinePoolScopeParams struct {
 
 type ManagedMachinePool struct {
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
-	MachinePool      *clusterv1exp.MachinePool
+	MachinePool      *expv1.MachinePool
 }
 
 // NewManagedMachinePoolScope creates a new Scope from the supplied parameters.
@@ -87,7 +87,7 @@ type ManagedMachinePoolScope struct {
 
 	azure.ManagedClusterScoper
 	Cluster          *clusterv1.Cluster
-	MachinePool      *clusterv1exp.MachinePool
+	MachinePool      *expv1.MachinePool
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 }
@@ -126,7 +126,7 @@ func (s *ManagedMachinePoolScope) AgentPoolSpec() azure.AgentPoolSpec {
 }
 
 func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane,
-	machinePool *clusterv1exp.MachinePool,
+	machinePool *expv1.MachinePool,
 	managedMachinePool *infrav1exp.AzureManagedMachinePool) azure.AgentPoolSpec {
 	var normalizedVersion *string
 	if machinePool.Spec.Template.Spec.Version != nil {

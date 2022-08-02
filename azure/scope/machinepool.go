@@ -40,7 +40,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,7 +56,7 @@ type (
 	// MachinePoolScopeParams defines the input parameters used to create a new MachinePoolScope.
 	MachinePoolScopeParams struct {
 		Client           client.Client
-		MachinePool      *capiv1exp.MachinePool
+		MachinePool      *expv1.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		ClusterScope     azure.ClusterScoper
 	}
@@ -65,7 +65,7 @@ type (
 	MachinePoolScope struct {
 		azure.ClusterScoper
 		AzureMachinePool *infrav1exp.AzureMachinePool
-		MachinePool      *capiv1exp.MachinePool
+		MachinePool      *expv1.MachinePool
 		client           client.Client
 		patchHelper      *patch.Helper
 		vmssState        *azure.VMSS

@@ -32,7 +32,7 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 )
 
 func TestAzureMachinePoolServiceReconcile(t *testing.T) {
@@ -80,7 +80,7 @@ func TestAzureMachinePoolServiceReconcile(t *testing.T) {
 						AzureCluster: &infrav1.AzureCluster{},
 						Cluster:      &clusterv1.Cluster{},
 					},
-					MachinePool: &capiv1exp.MachinePool{},
+					MachinePool: &expv1.MachinePool{},
 					AzureMachinePool: &infrav1exp.AzureMachinePool{
 						Spec: infrav1exp.AzureMachinePoolSpec{
 							Template: infrav1exp.AzureMachinePoolMachineTemplate{
@@ -153,7 +153,7 @@ func TestAzureMachinePoolServiceDelete(t *testing.T) {
 						AzureCluster: &infrav1.AzureCluster{},
 						Cluster:      &clusterv1.Cluster{},
 					},
-					MachinePool:      &capiv1exp.MachinePool{},
+					MachinePool:      &expv1.MachinePool{},
 					AzureMachinePool: &infrav1exp.AzureMachinePool{},
 				},
 				services: []azure.ServiceReconciler{
