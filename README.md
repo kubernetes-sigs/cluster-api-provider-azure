@@ -23,9 +23,14 @@ Check out the [Cluster API Quick Start][quickstart] to create your first Kuberne
 
 See the [flavors documentation][flavors_doc] to know which cluster templates are provided by CAPZ.
 
+
+## Getting Help
+
+If you need help with CAPZ, please visit the [#cluster-api-azure][slack] channel on Slack, open a [GitHub issue](#github-issues), or join us at [Office Hours](#office-hours).
+
 ------
 
-## Support Policy
+## Compatibility
 
 ### Cluster API Versions
 
@@ -89,7 +94,7 @@ developers.
 
 Office hours are hosted on a zoom video chat every other Thursday
 at 08:00 (PT) / 11:00 (ET) / 16:00 (UTC),
-and are published on the [Kubernetes community meetings calendar][gcal].
+and are published on the [Kubernetes community meetings calendar][gcal]. Please add your questions or ideas to [the agenda][capz_agenda].
 
 ### Other ways to communicate with the contributors
 
@@ -134,3 +139,4 @@ We also use the issue tracker to track features. If you have an idea for a featu
 [cluster_api]: https://github.com/kubernetes-sigs/cluster-api
 [quickstart]: https://cluster-api.sigs.k8s.io/user/quick-start.html
 [flavors_doc]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/flavors/README.md
+[capz_agenda]: http://bit.ly/k8s-capz-agenda
