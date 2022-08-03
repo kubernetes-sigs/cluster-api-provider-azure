@@ -17,7 +17,7 @@ spec:
         control-plane: capz-controller-manager
         aadpodidbinding: capz-controller-aadpodidentity-selector
       annotations:
-        kubectl.kubernetes.io/default-logs-container: manager
+        kubectl.kubernetes.io/default-container: manager
     spec:
       containers:
         - args:
