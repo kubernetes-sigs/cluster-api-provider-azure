@@ -30,10 +30,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-	capi "sigs.k8s.io/cluster-api/api/v1beta1"
-	capiexp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 )
 
 func TestReconcile(t *testing.T) {
@@ -92,20 +92,20 @@ func TestReconcile(t *testing.T) {
 
 				agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
 				machinePoolScope := &scope.ManagedMachinePoolScope{
-					ControlPlane: &infraexpv1.AzureManagedControlPlane{
+					ControlPlane: &infrav1exp.AzureManagedControlPlane{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: tc.agentpoolSpec.Cluster,
 						},
-						Spec: infraexpv1.AzureManagedControlPlaneSpec{
+						Spec: infrav1exp.AzureManagedControlPlaneSpec{
 							ResourceGroupName: tc.agentpoolSpec.ResourceGroup,
 						},
 					},
-					MachinePool: &capiexp.MachinePool{},
-					InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
+					MachinePool: &expv1.MachinePool{},
+					InfraMachinePool: &infrav1exp.AzureManagedMachinePool{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: tc.agentpoolSpec.Name,
 						},
-						Spec: infraexpv1.AzureManagedMachinePoolSpec{
+						Spec: infrav1exp.AzureManagedMachinePoolSpec{
 							Name: &tc.agentpoolSpec.Name,
 						},
 					},
@@ -277,29 +277,29 @@ func TestReconcile(t *testing.T) {
 
 			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
 			machinePoolScope := &scope.ManagedMachinePoolScope{
-				ControlPlane: &infraexpv1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tc.agentPoolsSpec.Cluster,
 					},
-					Spec: infraexpv1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
 					},
 				},
-				MachinePool: &capiexp.MachinePool{
-					Spec: capiexp.MachinePoolSpec{
+				MachinePool: &expv1.MachinePool{
+					Spec: expv1.MachinePoolSpec{
 						Replicas: &replicas,
-						Template: capi.MachineTemplateSpec{
-							Spec: capi.MachineSpec{
+						Template: clusterv1.MachineTemplateSpec{
+							Spec: clusterv1.MachineSpec{
 								Version: tc.agentPoolsSpec.Version,
 							},
 						},
 					},
 				},
-				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
+				InfraMachinePool: &infrav1exp.AzureManagedMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tc.agentPoolsSpec.Name,
 					},
-					Spec: infraexpv1.AzureManagedMachinePoolSpec{
+					Spec: infrav1exp.AzureManagedMachinePoolSpec{
 						Name:         &tc.agentPoolsSpec.Name,
 						SKU:          tc.agentPoolsSpec.SKU,
 						OSDiskSizeGB: &osDiskSizeGB,
@@ -384,20 +384,20 @@ func TestDeleteAgentPools(t *testing.T) {
 
 			agentPoolsMock := mock_agentpools.NewMockClient(mockCtrl)
 			machinePoolScope := &scope.ManagedMachinePoolScope{
-				ControlPlane: &infraexpv1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tc.agentPoolsSpec.Cluster,
 					},
-					Spec: infraexpv1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
 					},
 				},
-				MachinePool: &capiexp.MachinePool{},
-				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
+				MachinePool: &expv1.MachinePool{},
+				InfraMachinePool: &infrav1exp.AzureManagedMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tc.agentPoolsSpec.Name,
 					},
-					Spec: infraexpv1.AzureManagedMachinePoolSpec{
+					Spec: infrav1exp.AzureManagedMachinePoolSpec{
 						Name: &tc.agentPoolsSpec.Name,
 					},
 				},

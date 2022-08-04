@@ -38,7 +38,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capierrors "sigs.k8s.io/cluster-api/errors"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -66,7 +66,7 @@ type (
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		Client                  client.Client
 		ClusterScope            azure.ClusterScoper
-		MachinePool             *capiv1exp.MachinePool
+		MachinePool             *expv1.MachinePool
 
 		// workloadNodeGetter is only used for testing purposes and provides a way for mocking requests to the workload cluster
 		workloadNodeGetter nodeGetter
@@ -77,7 +77,7 @@ type (
 		azure.ClusterScoper
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		AzureMachinePool        *infrav1exp.AzureMachinePool
-		MachinePool             *capiv1exp.MachinePool
+		MachinePool             *expv1.MachinePool
 		MachinePoolScope        *MachinePoolScope
 		client                  client.Client
 		patchHelper             *patch.Helper

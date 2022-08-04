@@ -30,7 +30,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
-	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api/util"
@@ -58,7 +58,7 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, m
 
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&expv1.AzureMachinePool{}).
+		For(&infrav1exp.AzureMachinePool{}).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue)).
 		Owns(&corev1.Secret{}).
 		Complete(r)
@@ -81,7 +81,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 	log = log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
 	// Fetch the AzureMachine instance
-	azureMachinePool := &expv1.AzureMachinePool{}
+	azureMachinePool := &infrav1exp.AzureMachinePool{}
 	err := r.Get(ctx, req.NamespacedName, azureMachinePool)
 	if err != nil {
 		if apierrors.IsNotFound(err) {

@@ -23,7 +23,7 @@ import (
 	"github.com/onsi/gomega"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 )
@@ -31,13 +31,13 @@ import (
 func TestAzureMachinePool_Validate(t *testing.T) {
 	cases := []struct {
 		Name    string
-		Factory func(g *gomega.GomegaWithT) *exp.AzureMachinePool
+		Factory func(g *gomega.GomegaWithT) *infrav1exp.AzureMachinePool
 		Expect  func(g *gomega.GomegaWithT, actual error)
 	}{
 		{
 			Name: "HasNoImage",
-			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
-				return new(exp.AzureMachinePool)
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return new(infrav1exp.AzureMachinePool)
 			},
 			Expect: func(g *gomega.GomegaWithT, actual error) {
 				g.Expect(actual).NotTo(gomega.HaveOccurred())
@@ -45,10 +45,10 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasValidImage",
-			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
-				return &exp.AzureMachinePool{
-					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
 							Image: &infrav1.Image{
 								SharedGallery: &infrav1.AzureSharedGalleryImage{
 									SubscriptionID: "foo",
@@ -68,10 +68,10 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasInvalidImage",
-			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
-				return &exp.AzureMachinePool{
-					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
 							Image: new(infrav1.Image),
 						},
 					},
@@ -84,10 +84,10 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasValidTerminateNotificationTimeout",
-			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
-				return &exp.AzureMachinePool{
-					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: to.IntPtr(7),
 						},
 					},
@@ -99,10 +99,10 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasInvalidMaximumTerminateNotificationTimeout",
-			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
-				return &exp.AzureMachinePool{
-					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: to.IntPtr(20),
 						},
 					},
@@ -115,10 +115,10 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasInvalidMinimumTerminateNotificationTimeout",
-			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
-				return &exp.AzureMachinePool{
-					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: to.IntPtr(3),
 						},
 					},

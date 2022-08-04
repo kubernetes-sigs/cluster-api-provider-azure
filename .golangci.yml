@@ -72,6 +72,34 @@ linters-settings:
       # Controller Runtime
       - pkg: sigs.k8s.io/controller-runtime
         alias: ctrl
+      # CAPI
+      - pkg: sigs.k8s.io/cluster-api/api/v1alpha3
+        alias: clusterv1alpha3
+      - pkg: sigs.k8s.io/cluster-api/api/v1alpha4
+        alias: clusterv1alpha4
+      - pkg: sigs.k8s.io/cluster-api/api/v1beta1
+        alias: clusterv1
+      # CAPI exp
+      - pkg: sigs.k8s.io/cluster-api/exp/api/v1alpha3
+        alias: expv1alpha3
+      - pkg: sigs.k8s.io/cluster-api/exp/api/v1alpha4
+        alias: expv1alpha4
+      - pkg: sigs.k8s.io/cluster-api/exp/api/v1beta1
+        alias: expv1
+      # CAPZ
+      - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3
+        alias: infrav1alpha3
+      - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4
+        alias: infrav1alpha4
+      - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1beta1
+        alias: infrav1
+      # CAPZ exp
+      - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3
+        alias: infrav1alpha3exp
+      - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4
+        alias: infrav1alpha4exp
+      - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1
+        alias: infrav1exp
   godot:
     #   declarations - for top level declaration comments (default);
     #   toplevel     - for top level comments;

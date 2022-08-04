@@ -32,11 +32,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways/mock_natgateways"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 func init() {
-	_ = clusterv1.AddToScheme(scheme.Scheme)
+	_ = clusterv1alpha3.AddToScheme(scheme.Scheme)
 }
 
 var (

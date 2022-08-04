@@ -18,8 +18,8 @@ package v1alpha3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	clusterv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
@@ -47,12 +47,12 @@ type AzureManagedControlPlaneSpec struct {
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	ControlPlaneEndpoint clusterv1alpha3.APIEndpoint `json:"controlPlaneEndpoint"`
 
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
 	// +optional
-	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
+	AdditionalTags infrav1alpha3.Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
 	// +kubebuilder:validation:Enum=azure;kubenet

@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 )
 
 func Test_newAzureMachinePoolService(t *testing.T) {
@@ -75,7 +75,7 @@ func newScheme(g *GomegaWithT) *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
 		clusterv1.AddToScheme,
-		clusterv1exp.AddToScheme,
+		expv1.AddToScheme,
 		infrav1.AddToScheme,
 		infrav1exp.AddToScheme,
 	} {
@@ -84,8 +84,8 @@ func newScheme(g *GomegaWithT) *runtime.Scheme {
 	return scheme
 }
 
-func newMachinePool(clusterName, poolName string) *clusterv1exp.MachinePool {
-	return &clusterv1exp.MachinePool{
+func newMachinePool(clusterName, poolName string) *expv1.MachinePool {
+	return &expv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				clusterv1.ClusterLabelName: clusterName,
@@ -93,7 +93,7 @@ func newMachinePool(clusterName, poolName string) *clusterv1exp.MachinePool {
 			Name:      poolName,
 			Namespace: "default",
 		},
-		Spec: clusterv1exp.MachinePoolSpec{
+		Spec: expv1.MachinePoolSpec{
 			Replicas: to.Int32Ptr(2),
 		},
 	}
@@ -111,7 +111,7 @@ func newAzureMachinePool(clusterName, poolName string) *infrav1exp.AzureMachineP
 	}
 }
 
-func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv1exp.MachinePool {
+func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *expv1.MachinePool {
 	m := newMachinePool(clusterName, poolName)
 	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{
 		Kind:       "AzureMachinePool",
@@ -122,7 +122,7 @@ func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv
 	return m
 }
 
-func newManagedMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv1exp.MachinePool {
+func newManagedMachinePoolWithInfrastructureRef(clusterName, poolName string) *expv1.MachinePool {
 	m := newMachinePool(clusterName, poolName)
 	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{
 		Kind:       "AzureManagedMachinePool",

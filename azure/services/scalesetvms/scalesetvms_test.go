@@ -38,7 +38,7 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -80,7 +80,7 @@ func TestNewService(t *testing.T) {
 
 	mpms, err := scope.NewMachinePoolMachineScope(scope.MachinePoolMachineScopeParams{
 		Client:                  client,
-		MachinePool:             new(clusterv1exp.MachinePool),
+		MachinePool:             new(expv1.MachinePool),
 		AzureMachinePool:        new(infrav1exp.AzureMachinePool),
 		AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
 		ClusterScope:            s,

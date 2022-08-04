@@ -27,16 +27,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = capiv1exp.AddToScheme(scheme)
-	_ = infrav1.AddToScheme(scheme)
+	_ = expv1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -56,19 +56,19 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
 					{
 						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 					},
 				},
 			},
@@ -95,12 +95,12 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						Version:        "v1.22.0",
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
@@ -108,7 +108,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 				ManagedMachinePools: []ManagedMachinePool{
 					{
 						MachinePool:      getMachinePoolWithVersion("pool0", "v1.21.1"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 					},
 				},
 			},
@@ -136,12 +136,12 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						Version:        "v1.20.1",
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
@@ -149,7 +149,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 				ManagedMachinePools: []ManagedMachinePool{
 					{
 						MachinePool:      getMachinePoolWithVersion("pool0", "v1.21.1"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 					},
 				},
 			},
@@ -177,8 +177,8 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 
 func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = capiv1exp.AddToScheme(scheme)
-	_ = infrav1.AddToScheme(scheme)
+	_ = expv1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -197,19 +197,19 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
 					{
 						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 					},
 				},
 			},
@@ -227,14 +227,14 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						AddonProfiles: []infrav1.AddonProfile{
+						AddonProfiles: []infrav1exp.AddonProfile{
 							{Name: "addon1", Config: nil, Enabled: false},
 							{Name: "addon2", Config: map[string]string{"k1": "v1", "k2": "v2"}, Enabled: true},
 						},
@@ -243,7 +243,7 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 				ManagedMachinePools: []ManagedMachinePool{
 					{
 						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 					},
 				},
 			},
@@ -270,8 +270,8 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 
 func TestManagedControlPlaneScope_OSType(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = capiv1exp.AddToScheme(scheme)
-	_ = infrav1.AddToScheme(scheme)
+	_ = expv1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -291,12 +291,12 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						Version:        "v1.20.1",
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
@@ -304,7 +304,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 				ManagedMachinePools: []ManagedMachinePool{
 					{
 						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 					},
 					{
 						MachinePool:      getMachinePool("pool1"),
@@ -357,12 +357,12 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1.AzureManagedControlPlane{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
 						Version:        "v1.20.1",
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},

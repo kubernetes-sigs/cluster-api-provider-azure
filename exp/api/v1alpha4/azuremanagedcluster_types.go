@@ -18,14 +18,14 @@ package v1alpha4
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 // AzureManagedClusterSpec defines the desired state of AzureManagedCluster.
 type AzureManagedClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	ControlPlaneEndpoint clusterv1alpha4.APIEndpoint `json:"controlPlaneEndpoint"`
 }
 
 // AzureManagedClusterStatus defines the observed state of AzureManagedCluster.

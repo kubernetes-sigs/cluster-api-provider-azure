@@ -19,7 +19,7 @@ package v1alpha3
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 const (
@@ -46,7 +46,7 @@ type AzureClusterSpec struct {
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	ControlPlaneEndpoint clusterv1alpha3.APIEndpoint `json:"controlPlaneEndpoint"`
 
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
@@ -66,7 +66,7 @@ type AzureClusterStatus struct {
 	// the cluster is more resilient to failure.
 	// See: https://docs.microsoft.com/en-us/azure/availability-zones/az-overview
 	// This list will be used by Cluster API to try and spread the machines across the failure domains.
-	FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
+	FailureDomains clusterv1alpha3.FailureDomains `json:"failureDomains,omitempty"`
 
 	// Ready is true when the provider resource is ready.
 	// +optional
@@ -74,7 +74,7 @@ type AzureClusterStatus struct {
 
 	// Conditions defines current service state of the AzureCluster.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv1alpha3.Conditions `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -106,12 +106,12 @@ type AzureClusterList struct {
 }
 
 // GetConditions returns the list of conditions for an AzureCluster API object.
-func (c *AzureCluster) GetConditions() clusterv1.Conditions {
+func (c *AzureCluster) GetConditions() clusterv1alpha3.Conditions {
 	return c.Status.Conditions
 }
 
 // SetConditions will set the given conditions on an AzureCluster object.
-func (c *AzureCluster) SetConditions(conditions clusterv1.Conditions) {
+func (c *AzureCluster) SetConditions(conditions clusterv1alpha3.Conditions) {
 	c.Status.Conditions = conditions
 }
 
