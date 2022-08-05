@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -104,7 +105,12 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		}
 
 		if fetchedVMSS != nil {
-			s.Scope.SetProviderID(azure.ProviderIDPrefix + fetchedVMSS.ID)
+			// Transform the VMSS resource representation to conform to the cloud-provider-azure representation
+			providerID, err := azureutil.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + fetchedVMSS.ID)
+			if err != nil {
+				log.Error(err, "failed to parse VMSS ID", "ID", fetchedVMSS.ID)
+			}
+			s.Scope.SetProviderID(providerID)
 			s.Scope.SetVMSSState(fetchedVMSS)
 		}
 	}()
