@@ -376,7 +376,7 @@ func (m *AzureManagedMachinePool) validateMaxPods() *field.Error {
 
 func (m *AzureManagedMachinePool) validateKubeletConfig() *field.Error {
 	// AllowedUnsafeSysctls should be one of "kernel.shm*", "kernel.msg*", "kernel.sem", "fs.mqueue.*", "net.*".
-	if m.Spec.KubeletConfig != nil && len(*m.Spec.KubeletConfig.AllowedUnsafeSysctls) > 0 {
+	if m.Spec.KubeletConfig != nil && m.Spec.KubeletConfig.AllowedUnsafeSysctls != nil && len(*m.Spec.KubeletConfig.AllowedUnsafeSysctls) > 0 {
 		for _, v := range *m.Spec.KubeletConfig.AllowedUnsafeSysctls {
 			switch v {
 			case "kernel.shm*", "kernel.msg*", "kernel.sem", "fs.mqueue.*", "net.*":
