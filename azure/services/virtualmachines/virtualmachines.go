@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -98,7 +99,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		s.Scope.SetProviderID(azure.ProviderIDPrefix + infraVM.ID)
+		// Transform the VM resource representation to conform to the cloud-provider-azure representation
+		providerID, err := azureutil.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + infraVM.ID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse VM ID %s", infraVM.ID)
+		}
+		s.Scope.SetProviderID(providerID)
 		s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
 
 		// Discover addresses for NICs associated with the VM

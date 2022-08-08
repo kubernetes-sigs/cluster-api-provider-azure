@@ -948,7 +948,7 @@ func newWindowsVMSSSpec() azure.ScaleSetSpec {
 
 func newDefaultExistingVMSS(vmSize string) compute.VirtualMachineScaleSet {
 	vmss := newDefaultVMSS(vmSize)
-	vmss.ID = to.StringPtr("vmss-id")
+	vmss.ID = to.StringPtr("subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 	return vmss
 }
 
@@ -1192,7 +1192,7 @@ func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 }
 
 func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, createdVMSS compute.VirtualMachineScaleSet, instances []compute.VirtualMachineScaleSetVM) {
-	createdVMSS.ID = to.StringPtr("vmss-id")
+	createdVMSS.ID = to.StringPtr("subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 	createdVMSS.ProvisioningState = to.StringPtr(string(infrav1.Succeeded))
 	setupDefaultVMSSExpectations(s)
 	future := &infrav1.Future{
@@ -1282,7 +1282,7 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	setupUpdateVMSSExpectations(s)
-	s.SetProviderID(azure.ProviderIDPrefix + "vmss-id")
+	s.SetProviderID(azure.ProviderIDPrefix + "subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 	s.GetLongRunningOperationState(defaultVMSSName, serviceName).Return(nil)
 	s.MaxSurge().Return(1, nil)
 	s.SetVMSSState(gomock.Any())
