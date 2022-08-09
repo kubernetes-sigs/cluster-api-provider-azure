@@ -670,7 +670,11 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 	}
 
 	if managedMachinePool.Spec.AdditionalTags != nil {
-		agentPoolSpec.AdditionalTags = managedMachinePool.Spec.AdditionalTags
+		agentPoolSpec.AdditionalTags = map[string]*string{}
+		for k, v := range managedMachinePool.Spec.AdditionalTags {
+			val := v
+			agentPoolSpec.AdditionalTags[k] = &val
+		}
 	}
 
 	return agentPoolSpec
