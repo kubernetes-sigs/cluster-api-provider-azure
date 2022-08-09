@@ -341,6 +341,9 @@ type AgentPoolSpec struct {
 	// +optional
 	KubeletConfig *infrav1.KubeletConfig `json:"kubeletConfig,omitempty"`
 
+	// +optional
+	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
+
 	// Mode represents mode of an agent pool. Possible values include: 'System', 'User'.
 	Mode string
 

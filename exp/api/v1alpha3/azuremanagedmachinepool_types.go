@@ -19,6 +19,8 @@ package v1alpha3
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
@@ -37,6 +39,12 @@ type AzureManagedMachinePoolSpec struct {
 	// ProviderIDList is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderIDList []string `json:"providerIDList,omitempty"`
+
+	// AdditionalTags is an optional set of tags to add to an instance, in addition to the ones added by default by the
+	// Azure provider. If both the AzureCluster and the AzureMachine specify the same tag name with different values, the
+	// AzureMachine's value takes precedence.
+	// +optional
+	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 }
 
 // AzureManagedMachinePoolStatus defines the observed state of AzureManagedMachinePool.

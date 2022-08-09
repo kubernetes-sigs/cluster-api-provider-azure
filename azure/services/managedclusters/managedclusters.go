@@ -264,6 +264,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			profile.KubeletConfig = (*containerservice.KubeletConfig)(pool.KubeletConfig)
 		}
 
+		profile.Tags = pool.AdditionalTags
+
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
 

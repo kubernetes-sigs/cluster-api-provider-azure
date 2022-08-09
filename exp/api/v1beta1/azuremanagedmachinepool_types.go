@@ -112,6 +112,12 @@ type AzureManagedMachinePoolSpec struct {
 	// KubeletConfig - KubeletConfig specifies the configuration of kubelet on agent nodes.
 	// +optional
 	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
+
+	// AdditionalTags is an optional set of tags to add to an instance, in addition to the ones added by default by the
+	// Azure provider. If both the AzureCluster and the AzureMachine specify the same tag name with different values, the
+	// AzureMachine's value takes precedence.
+	// +optional
+	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.

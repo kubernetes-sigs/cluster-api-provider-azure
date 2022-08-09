@@ -79,6 +79,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		profile.KubeletConfig = (*containerservice.KubeletConfig)(agentPoolSpec.KubeletConfig)
 	}
 
+	profile.Tags = agentPoolSpec.AdditionalTags
+
 	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrap(err, "failed to get existing agent pool")
@@ -106,6 +108,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return azure.WithTransientError(errors.New(msg), 20*time.Second)
 		}
 
+		// When tags are removed, the change will be ignored if only set to nil.
+		if existingPool.Tags != nil && len(existingPool.Tags) > 0 && profile.Tags == nil {
+			profile.Tags = map[string]*string{}
+			log.V(2).Info("Remove additional tags from agent pool, existing tags: %s", existingPool.Tags)
+		}
+
 		// Normalize individual agent pools to diff in case we need to update
 		existingProfile := containerservice.AgentPool{
 			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
@@ -116,6 +124,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				MinCount:            existingPool.MinCount,
 				MaxCount:            existingPool.MaxCount,
 				NodeLabels:          existingPool.NodeLabels,
+				Tags:                existingPool.Tags,
 			},
 		}
 
@@ -128,6 +137,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				MinCount:            profile.MinCount,
 				MaxCount:            profile.MaxCount,
 				NodeLabels:          profile.NodeLabels,
+				Tags:                profile.Tags,
 			},
 		}
 

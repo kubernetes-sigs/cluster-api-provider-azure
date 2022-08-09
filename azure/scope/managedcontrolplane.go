@@ -669,6 +669,10 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		agentPoolSpec.KubeletConfig = (*infrav1.KubeletConfig)(managedMachinePool.Spec.KubeletConfig)
 	}
 
+	if managedMachinePool.Spec.AdditionalTags != nil {
+		agentPoolSpec.AdditionalTags = managedMachinePool.Spec.AdditionalTags
+	}
+
 	return agentPoolSpec
 }
 
