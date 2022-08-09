@@ -41,6 +41,15 @@ spec:
             description: AzureManagedMachinePoolSpec defines the desired state of
               AzureManagedMachinePool.
             properties:
+              additionalTags:
+                additionalProperties:
+                  type: string
+                description: AdditionalTags is an optional set of tags to add to an
+                  instance, in addition to the ones added by default by the Azure
+                  provider. If both the AzureCluster and the AzureMachine specify
+                  the same tag name with different values, the AzureMachine's value
+                  takes precedence.
+                type: object
               mode:
                 description: 'Mode - represents mode of an agent pool. Possible values
                   include: System, User.'
@@ -116,6 +125,15 @@ spec:
             description: AzureManagedMachinePoolSpec defines the desired state of
               AzureManagedMachinePool.
             properties:
+              additionalTags:
+                additionalProperties:
+                  type: string
+                description: AdditionalTags is an optional set of tags to add to an
+                  instance, in addition to the ones added by default by the Azure
+                  provider. If both the AzureCluster and the AzureMachine specify
+                  the same tag name with different values, the AzureMachine's value
+                  takes precedence.
+                type: object
               availabilityZones:
                 description: AvailabilityZones - Availability zones for nodes. Must
                   use VirtualMachineScaleSets AgentPoolType.
@@ -225,7 +243,8 @@ spec:
                 additionalProperties:
                   type: string
                 description: NodeLabels - Agent pool node labels to be persisted across
-                  all nodes in agent pool.
+                  all nodes in agent pool. Disable conversion gen as the upstream
+                  version uses map[string]string
                 type: object
               nodeTaints:
                 description: NodeTaints - Taints added to new nodes during node pool
@@ -324,6 +343,15 @@ spec:
             description: AzureManagedMachinePoolSpec defines the desired state of
               AzureManagedMachinePool.
             properties:
+              additionalTags:
+                additionalProperties:
+                  type: string
+                description: AdditionalTags is an optional set of tags to add to an
+                  instance, in addition to the ones added by default by the Azure
+                  provider. If both the AzureCluster and the AzureMachine specify
+                  the same tag name with different values, the AzureMachine's value
+                  takes precedence.
+                type: object
               availabilityZones:
                 description: AvailabilityZones - Availability zones for nodes. Must
                   use VirtualMachineScaleSets AgentPoolType.
@@ -427,7 +455,7 @@ spec:
                 additionalProperties:
                   type: string
                 description: Node labels - labels for all of the nodes present in
-                  node pool
+                  node pool Disable conversion gen as the upstream version uses map[string]string
                 type: object
               osDiskSizeGB:
                 description: OSDiskSizeGB is the disk size for every machine in this

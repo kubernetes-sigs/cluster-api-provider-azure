@@ -24,6 +24,7 @@ package v1alpha3
 import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	apiv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	cluster_apiapiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 )
@@ -550,6 +551,13 @@ func (in *AzureManagedMachinePoolSpec) DeepCopyInto(out *AzureManagedMachinePool
 		in, out := &in.ProviderIDList, &out.ProviderIDList
 		*out = make([]string, len(*in))
 		copy(*out, *in)
+	}
+	if in.AdditionalTags != nil {
+		in, out := &in.AdditionalTags, &out.AdditionalTags
+		*out = make(v1beta1.Tags, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 }
 
