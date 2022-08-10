@@ -169,38 +169,39 @@ func (c *Cache) GetZones(ctx context.Context, location string) ([]string, error)
 		if sku.ResourceType != nil && strings.EqualFold(*sku.ResourceType, string(VirtualMachines)) {
 			// find matching location
 			for _, locationInfo := range *sku.LocationInfo {
-				if strings.EqualFold(*locationInfo.Location, location) {
-					// Use map for easy deletion and iteration
-					availableZones := make(map[string]bool)
+				if !strings.EqualFold(*locationInfo.Location, location) {
+					continue
+				}
+				// Use map for easy deletion and iteration
+				availableZones := make(map[string]bool)
 
-					// add all zones
-					for _, zone := range *locationInfo.Zones {
-						availableZones[zone] = true
-					}
+				// add all zones
+				for _, zone := range *locationInfo.Zones {
+					availableZones[zone] = true
+				}
 
-					if sku.Restrictions != nil {
-						for _, restriction := range *sku.Restrictions {
-							// Can't deploy anything in this subscription in this location. Bail out.
-							if restriction.Type == compute.ResourceSkuRestrictionsTypeLocation {
-								availableZones = nil
-								break
-							}
+				if sku.Restrictions != nil {
+					for _, restriction := range *sku.Restrictions {
+						// Can't deploy anything in this subscription in this location. Bail out.
+						if restriction.Type == compute.ResourceSkuRestrictionsTypeLocation {
+							availableZones = nil
+							break
+						}
 
-							// remove restricted zones
-							for _, restrictedZone := range *restriction.RestrictionInfo.Zones {
-								delete(availableZones, restrictedZone)
-							}
+						// remove restricted zones
+						for _, restrictedZone := range *restriction.RestrictionInfo.Zones {
+							delete(availableZones, restrictedZone)
 						}
 					}
-
-					// add to global list, if any exist. it's okay for the final list to be empty.
-					// that means the region may not support AZ yet.
-					for zone := range availableZones {
-						allZones[zone] = true
-					}
-
-					break
 				}
+
+				// add to global list, if any exist. it's okay for the final list to be empty.
+				// that means the region may not support AZ yet.
+				for zone := range availableZones {
+					allZones[zone] = true
+				}
+
+				break
 			}
 		}
 	}
@@ -230,38 +231,39 @@ func (c *Cache) GetZonesWithVMSize(ctx context.Context, size, location string) (
 		if sku.Name != nil && strings.EqualFold(*sku.Name, size) && sku.ResourceType != nil && strings.EqualFold(*sku.ResourceType, string(VirtualMachines)) {
 			// find matching location
 			for _, locationInfo := range *sku.LocationInfo {
-				if strings.EqualFold(*locationInfo.Location, location) {
-					// Use map for easy deletion and iteration
-					availableZones := make(map[string]bool)
+				if !strings.EqualFold(*locationInfo.Location, location) {
+					continue
+				}
+				// Use map for easy deletion and iteration
+				availableZones := make(map[string]bool)
 
-					// add all zones
-					for _, zone := range *locationInfo.Zones {
-						availableZones[zone] = true
-					}
+				// add all zones
+				for _, zone := range *locationInfo.Zones {
+					availableZones[zone] = true
+				}
 
-					if sku.Restrictions != nil {
-						for _, restriction := range *sku.Restrictions {
-							// Can't deploy anything in this subscription in this location. Bail out.
-							if restriction.Type == compute.ResourceSkuRestrictionsTypeLocation {
-								availableZones = nil
-								break
-							}
+				if sku.Restrictions != nil {
+					for _, restriction := range *sku.Restrictions {
+						// Can't deploy anything in this subscription in this location. Bail out.
+						if restriction.Type == compute.ResourceSkuRestrictionsTypeLocation {
+							availableZones = nil
+							break
+						}
 
-							// remove restricted zones
-							for _, restrictedZone := range *restriction.RestrictionInfo.Zones {
-								delete(availableZones, restrictedZone)
-							}
+						// remove restricted zones
+						for _, restrictedZone := range *restriction.RestrictionInfo.Zones {
+							delete(availableZones, restrictedZone)
 						}
 					}
-
-					// add to global list, if any exist. it's okay for the final list to be empty.
-					// that means the region may not support AZ yet.
-					for zone := range availableZones {
-						allZones[zone] = true
-					}
-
-					break
 				}
+
+				// add to global list, if any exist. it's okay for the final list to be empty.
+				// that means the region may not support AZ yet.
+				for zone := range availableZones {
+					allZones[zone] = true
+				}
+
+				break
 			}
 		}
 	}

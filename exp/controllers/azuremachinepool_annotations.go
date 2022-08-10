@@ -27,7 +27,7 @@ func (ampr *AzureMachinePoolReconciler) AnnotationJSON(rw annotationReaderWriter
 	out := map[string]interface{}{}
 
 	jsonAnnotation := ampr.Annotation(rw, annotation)
-	if len(jsonAnnotation) == 0 {
+	if jsonAnnotation == "" {
 		return out, nil
 	}
 

@@ -106,30 +106,31 @@ func (c *AzureCluster) setSubnetDefaults() {
 	var nodeSubnetFound bool
 	var nodeSubnetCounter int
 	for i, subnet := range c.Spec.NetworkSpec.Subnets {
-		if subnet.Role == SubnetNode {
-			nodeSubnetCounter++
-			nodeSubnetFound = true
-			if subnet.Name == "" {
-				subnet.Name = withIndex(generateNodeSubnetName(c.ObjectMeta.Name), nodeSubnetCounter)
-			}
-			subnet.SubnetClassSpec.setDefaults(fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter))
-
-			if subnet.SecurityGroup.Name == "" {
-				subnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
-			}
-			cpSubnet.SecurityGroup.SecurityGroupClass.setDefaults()
-
-			if subnet.RouteTable.Name == "" {
-				subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
-			}
-			if subnet.IsNatGatewayEnabled() {
-				if subnet.NatGateway.NatGatewayIP.Name == "" {
-					subnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, subnet.Name)
-				}
-			}
-
-			c.Spec.NetworkSpec.Subnets[i] = subnet
+		if subnet.Role != SubnetNode {
+			continue
 		}
+		nodeSubnetCounter++
+		nodeSubnetFound = true
+		if subnet.Name == "" {
+			subnet.Name = withIndex(generateNodeSubnetName(c.ObjectMeta.Name), nodeSubnetCounter)
+		}
+		subnet.SubnetClassSpec.setDefaults(fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter))
+
+		if subnet.SecurityGroup.Name == "" {
+			subnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
+		}
+		cpSubnet.SecurityGroup.SecurityGroupClass.setDefaults()
+
+		if subnet.RouteTable.Name == "" {
+			subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
+		}
+		if subnet.IsNatGatewayEnabled() {
+			if subnet.NatGateway.NatGatewayIP.Name == "" {
+				subnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, subnet.Name)
+			}
+		}
+
+		c.Spec.NetworkSpec.Subnets[i] = subnet
 	}
 
 	if !nodeSubnetFound {

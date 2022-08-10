@@ -91,19 +91,20 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 	// is converted to v1alpha3. We loop through all security group rules. For all previously existing outbound rules we restore the full rule.
 	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
 		for i, dstSubnet := range dst.Spec.NetworkSpec.Subnets {
-			if dstSubnet.Name == restoredSubnet.Name {
-				var restoredOutboundRules []infrav1.SecurityRule
-				for _, restoredSecurityRule := range restoredSubnet.SecurityGroup.SecurityRules {
-					if restoredSecurityRule.Direction != infrav1.SecurityRuleDirectionInbound {
-						// For non-inbound rules which are only supported starting in v1alpha4/v1beta1, we restore the entire rule.
-						restoredOutboundRules = append(restoredOutboundRules, restoredSecurityRule)
-					}
-				}
-				dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules = append(dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules, restoredOutboundRules...)
-				dst.Spec.NetworkSpec.Subnets[i].NatGateway = restoredSubnet.NatGateway
-
-				break
+			if dstSubnet.Name != restoredSubnet.Name {
+				continue
 			}
+			var restoredOutboundRules []infrav1.SecurityRule
+			for _, restoredSecurityRule := range restoredSubnet.SecurityGroup.SecurityRules {
+				if restoredSecurityRule.Direction != infrav1.SecurityRuleDirectionInbound {
+					// For non-inbound rules which are only supported starting in v1alpha4/v1beta1, we restore the entire rule.
+					restoredOutboundRules = append(restoredOutboundRules, restoredSecurityRule)
+				}
+			}
+			dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules = append(dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules, restoredOutboundRules...)
+			dst.Spec.NetworkSpec.Subnets[i].NatGateway = restoredSubnet.NatGateway
+
+			break
 		}
 	}
 

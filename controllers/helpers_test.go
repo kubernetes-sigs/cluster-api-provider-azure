@@ -464,7 +464,7 @@ const (
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
 }`
-	//nolint:gosec
+	//nolint:gosec // Ignore "G101: Potential hardcoded credentials" check.
 	spWorkerNodeCloudConfig = `{
     "cloud": "AzurePublicCloud",
     "tenantId": "fooTenant",

@@ -65,13 +65,14 @@ func (c *AzureClusterTemplate) setSubnetsTemplateDefaults() {
 	var nodeSubnetFound bool
 	var nodeSubnetCounter int
 	for i, subnet := range c.Spec.Template.Spec.NetworkSpec.Subnets {
-		if subnet.Role == SubnetNode {
-			nodeSubnetCounter++
-			nodeSubnetFound = true
-			subnet.SubnetClassSpec.setDefaults(fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter))
-			cpSubnet.SecurityGroup.setDefaults()
-			c.Spec.Template.Spec.NetworkSpec.Subnets[i] = subnet
+		if subnet.Role != SubnetNode {
+			continue
 		}
+		nodeSubnetCounter++
+		nodeSubnetFound = true
+		subnet.SubnetClassSpec.setDefaults(fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter))
+		cpSubnet.SecurityGroup.setDefaults()
+		c.Spec.Template.Spec.NetworkSpec.Subnets[i] = subnet
 	}
 
 	if !nodeSubnetFound {

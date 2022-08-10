@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"go/build"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -66,7 +65,7 @@ func init() {
 	utilruntime.Must(infrav1alpha4.AddToScheme(scheme))
 
 	// Get the root of the current file to use in CRD paths.
-	_, filename, _, _ := goruntime.Caller(0) //nolint:dogsled
+	_, filename, _, _ := goruntime.Caller(0) //nolint:dogsled // Ignore "declaration has 3 blank identifiers" check.
 	root := path.Join(path.Dir(filename), "..", "..", "..")
 
 	crdPaths := []string{
@@ -134,7 +133,7 @@ func (t *TestEnvironment) Stop() error {
 }
 
 func getFilePathToCAPICRDs(root string) string {
-	modBits, err := ioutil.ReadFile(filepath.Join(root, "go.mod"))
+	modBits, err := os.ReadFile(filepath.Join(root, "go.mod"))
 	if err != nil {
 		return ""
 	}

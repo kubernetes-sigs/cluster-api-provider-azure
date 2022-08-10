@@ -610,7 +610,7 @@ func (s *ManagedControlPlaneScope) UpdatePatchStatus(condition clusterv1.Conditi
 func (s *ManagedControlPlaneScope) AnnotationJSON(annotation string) (map[string]interface{}, error) {
 	out := map[string]interface{}{}
 	jsonAnnotation := s.ControlPlane.GetAnnotations()[annotation]
-	if len(jsonAnnotation) == 0 {
+	if jsonAnnotation == "" {
 		return out, nil
 	}
 	err := json.Unmarshal([]byte(jsonAnnotation), &out)
