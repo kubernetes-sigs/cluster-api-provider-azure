@@ -1,6 +1,6 @@
 module sigs.k8s.io/cluster-api-provider-azure/hack/tools
 
-go 1.17
+go 1.18
 
 require sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220202124422-fe7656c044e1
 
@@ -50,8 +50,6 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
-	github.com/hashicorp/errwrap v1.0.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect

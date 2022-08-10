@@ -85,7 +85,7 @@ linters-settings:
     - G307 # Deferring unsafe method "Close" on type "\*os.File"
     - G108 # Profiling endpoint is automatically exposed on /debug/pprof
   staticcheck:
-    go: "1.17"
+    go: "1.18"
 
 issues:
   exclude-rules:
