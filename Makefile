@@ -230,7 +230,7 @@ verify-boilerplate: ## Verify boilerplate header.
 
 .PHONY: verify-modules
 verify-modules: modules ## Verify go.sum go.mod are the latest.
-	@if !(git diff --quiet HEAD -- go.sum go.mod); then \
+	@if !(git diff --quiet HEAD -- go.sum go.mod $(TOOLS_DIR)/go.sum $(TOOLS_DIR)/go.mod); then \
 		echo "go module files are out of date"; exit 1; \
 	fi
 
@@ -509,6 +509,7 @@ $(CALICO_MANIFESTS_DIR):
 .PHONY: modules
 modules: ## Runs go mod tidy to ensure proper vendoring.
 	go mod tidy
+	pushd $(TOOLS_DIR) && go mod tidy; popd
 
 ## --------------------------------------
 ## Help
