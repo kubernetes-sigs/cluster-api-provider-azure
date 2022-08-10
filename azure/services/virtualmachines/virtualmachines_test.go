@@ -53,7 +53,7 @@ var (
 		BootstrapData:     "fake data",
 	}
 	fakeExistingVM = compute.VirtualMachine{
-		ID:   to.StringPtr("test-vm-id"),
+		ID:   to.StringPtr("subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm"),
 		Name: to.StringPtr("test-vm-name"),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			ProvisioningState: to.StringPtr("Succeeded"),
@@ -127,7 +127,7 @@ func TestReconcileVM(t *testing.T) {
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
-				s.SetProviderID("azure://test-vm-id")
+				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
 				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
 				mpip.Get(gomockinternal.AContext(), "test-group", "pip-1").Return(fakePublicIPs, nil)
@@ -153,7 +153,7 @@ func TestReconcileVM(t *testing.T) {
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
-				s.SetProviderID("azure://test-vm-id")
+				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
 				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(network.Interface{}, internalError)
 			},
@@ -166,7 +166,7 @@ func TestReconcileVM(t *testing.T) {
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
-				s.SetProviderID("azure://test-vm-id")
+				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
 				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
 				mpip.Get(gomockinternal.AContext(), "test-group", "pip-1").Return(network.PublicIPAddress{}, internalError)

@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
@@ -28,6 +27,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -133,7 +133,12 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 
 	var providerIDs = make([]string, len(instances))
 	for i := 0; i < len(instances); i++ {
-		providerIDs[i] = strings.ToLower(azure.ProviderIDPrefix + *instances[i].ID)
+		// Transform the VMSS instance resource representation to conform to the cloud-provider-azure representation
+		providerID, err := azureutil.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + *instances[i].ID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse instance ID %s", *instances[i].ID)
+		}
+		providerIDs[i] = providerID
 	}
 
 	s.scope.SetAgentPoolProviderIDList(providerIDs)
