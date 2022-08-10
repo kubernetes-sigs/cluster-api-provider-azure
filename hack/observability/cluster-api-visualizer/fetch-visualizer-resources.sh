@@ -18,12 +18,12 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CHART_RELEASE=${CHART_RELEASE:-0.1.0}
+CHART_RELEASE=${CHART_RELEASE:-1.0.0}
 VISUALIZER_ROOT=$(dirname "${BASH_SOURCE[0]}")
 CHART_ROOT=$VISUALIZER_ROOT/chart
 
 # "tar" has no POSIX standard, so use only basic options and test with both BSD and GNU.
 rm -rf "$CHART_ROOT"
-wget -qO- https://raw.githubusercontent.com/Jont828/cluster-api-visualizer/main/helm/repo/cluster-api-visualizer-"$CHART_RELEASE".tgz \
+wget -qO- https://jont828.github.io/cluster-api-visualizer/charts/cluster-api-visualizer-"$CHART_RELEASE".tgz \
   | tar xvz -C "$VISUALIZER_ROOT"
 mv "$VISUALIZER_ROOT/cluster-api-visualizer" "$CHART_ROOT"

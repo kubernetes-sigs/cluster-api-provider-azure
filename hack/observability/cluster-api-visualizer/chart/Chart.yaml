@@ -1,6 +1,11 @@
 apiVersion: v2
-appVersion: 1.16.0
-description: A Helm chart for Kubernetes
+appVersion: v1.0.0
+description: A Helm Chart for installing the Cluster API Visualizer
+maintainers:
+- email: jt572@cornell.edu
+  name: Jonathan Tong
 name: cluster-api-visualizer
+sources:
+- https://github.com/Jont828/cluster-api-visualizer
 type: application
-version: 0.1.0
+version: 1.0.0

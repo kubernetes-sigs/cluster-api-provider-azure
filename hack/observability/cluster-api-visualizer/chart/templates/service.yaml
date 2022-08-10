@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: capi-visualizer
+  namespace: {{ .Release.Namespace }}
   labels:
     {{ .Values.label.key }}: {{ .Values.label.value }}
 spec:
