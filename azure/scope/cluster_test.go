@@ -796,6 +796,7 @@ func TestRouteTableSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: nil,
 		},
@@ -831,6 +832,7 @@ func TestRouteTableSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&routetables.RouteTableSpec{
@@ -878,6 +880,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: nil,
 		},
@@ -925,6 +928,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&natgateways.NatGatewaySpec{
@@ -1002,6 +1006,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&natgateways.NatGatewaySpec{
@@ -1078,6 +1083,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&natgateways.NatGatewaySpec{
@@ -1157,6 +1163,7 @@ func TestNSGSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&securitygroups.NSGSpec{
@@ -1202,6 +1209,7 @@ func TestSubnetSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: []azure.ResourceSpecGetter{},
 		},
@@ -1263,6 +1271,7 @@ func TestSubnetSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&subnets.SubnetSpec{
@@ -1365,6 +1374,7 @@ func TestSubnetSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&subnets.SubnetSpec{
@@ -1402,6 +1412,122 @@ func TestSubnetSpecs(t *testing.T) {
 			t.Parallel()
 			if got := tt.clusterScope.SubnetSpecs(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("SubnetSpecs() = \n%s, want \n%s", specArrayToString(got), specArrayToString(tt.want))
+			}
+		})
+	}
+}
+
+func TestIsVnetManaged(t *testing.T) {
+	tests := []struct {
+		name         string
+		clusterScope ClusterScope
+		want         bool
+	}{
+		{
+			name: "VNET ID is empty",
+			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ID: "",
+							},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			want: true,
+		},
+		{
+			name: "Wrong tags",
+			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ID: "my-id",
+								VnetClassSpec: infrav1.VnetClassSpec{Tags: map[string]string{
+									"key": "value",
+								}},
+							},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			want: false,
+		},
+		{
+			name: "Has owning tags",
+			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ID: "my-id",
+								VnetClassSpec: infrav1.VnetClassSpec{Tags: map[string]string{
+									"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+								}},
+							},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			want: true,
+		},
+		{
+			name: "Has cached value of false",
+			clusterScope: ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{},
+				},
+				cache: &ClusterCache{
+					isVnetManaged: to.BoolPtr(false),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Has cached value of true",
+			clusterScope: ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{},
+				},
+				cache: &ClusterCache{
+					isVnetManaged: to.BoolPtr(true),
+				},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := tt.clusterScope.IsVnetManaged()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IsVnetManaged() = \n%t, want \n%t", got, tt.want)
+			}
+			if to.Bool(tt.clusterScope.cache.isVnetManaged) != got {
+				t.Errorf("IsVnetManaged() = \n%t, cache = \n%t", got, to.Bool(tt.clusterScope.cache.isVnetManaged))
 			}
 		})
 	}
@@ -1513,6 +1639,7 @@ func TestAzureBastionSpec(t *testing.T) {
 						},
 					},
 				},
+				cache: &ClusterCache{},
 			},
 			want: &bastionhosts.AzureBastionSpec{
 				Name:          "fake-azure-bastion-1",
