@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -376,16 +377,23 @@ func (m *AzureManagedMachinePool) validateMaxPods() *field.Error {
 
 func (m *AzureManagedMachinePool) validateKubeletConfig() *field.Error {
 	// AllowedUnsafeSysctls should be one of "kernel.shm*", "kernel.msg*", "kernel.sem", "fs.mqueue.*", "net.*".
+	allowedUnsafeSysctlPatterns := []string{"kernel.shm*", "kernel.msg*", "kernel.sem", "fs.mqueue.*", "net.*"}
 	if m.Spec.KubeletConfig != nil && m.Spec.KubeletConfig.AllowedUnsafeSysctls != nil && len(*m.Spec.KubeletConfig.AllowedUnsafeSysctls) > 0 {
 		for _, v := range *m.Spec.KubeletConfig.AllowedUnsafeSysctls {
-			switch v {
-			case "kernel.shm*", "kernel.msg*", "kernel.sem", "fs.mqueue.*", "net.*":
-				continue
+			foundMatch := false
+			for _, pattern := range allowedUnsafeSysctlPatterns {
+				match, _ := regexp.MatchString(pattern, v)
+				if match {
+					foundMatch = true
+					break
+				}
 			}
-			return field.Invalid(
-				field.NewPath("Spec", "KubeletConfig"),
-				m.Spec.KubeletConfig,
-				"AllowedUnsafeSysctls are \"kernel.shm*\", \"kernel.msg*\", \"kernel.sem\", \"fs.mqueue.*\", \"net.*\"")
+			if !foundMatch {
+				return field.Invalid(
+					field.NewPath("Spec", "KubeletConfig"),
+					m.Spec.KubeletConfig,
+					"AllowedUnsafeSysctls are \"kernel.shm*\", \"kernel.msg*\", \"kernel.sem\", \"fs.mqueue.*\", \"net.*\"")
+			}
 		}
 	}
 
