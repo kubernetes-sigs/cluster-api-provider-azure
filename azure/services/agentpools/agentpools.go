@@ -111,7 +111,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// When tags are removed, the change will be ignored if only set to nil.
 		if existingPool.Tags != nil && len(existingPool.Tags) > 0 && profile.Tags == nil {
 			profile.Tags = map[string]*string{}
-			log.V(2).Info("Remove additional tags from agent pool, existing tags: %s", existingPool.Tags)
+			log.V(2).Info("Remove additional tags from agent pool")
 		}
 
 		// Normalize individual agent pools to diff in case we need to update
