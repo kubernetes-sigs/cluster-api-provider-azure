@@ -116,6 +116,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				EnableAutoScaling:   existingPool.EnableAutoScaling,
 				MinCount:            existingPool.MinCount,
 				MaxCount:            existingPool.MaxCount,
+				NodeLabels:          existingPool.NodeLabels,
 			},
 		}
 
@@ -127,6 +128,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				EnableAutoScaling:   profile.EnableAutoScaling,
 				MinCount:            profile.MinCount,
 				MaxCount:            profile.MaxCount,
+				NodeLabels:          profile.NodeLabels,
 			},
 		}
 
