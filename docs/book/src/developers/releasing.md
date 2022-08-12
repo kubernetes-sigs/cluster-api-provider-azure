@@ -87,6 +87,5 @@ Here is a reference PR that applied the required test job changes following the 
 
 [release-announcement]: #communication
 [semver]: https://semver.org/#semantic-versioning-200
-[support-policy]: /README.md#support-policy
 [template]: /docs/release-notes-template.md
 [versioning]: #versioning

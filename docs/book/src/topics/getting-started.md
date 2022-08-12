@@ -12,7 +12,7 @@
     - `Microsoft.ManagedIdentity`
     - `Microsoft.Authorization`
 - Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
-- A [supported version](https://github.com/kubernetes-sigs/cluster-api-provider-azure#support-policy) of `clusterctl`
+- A [supported version](https://github.com/kubernetes-sigs/cluster-api-provider-azure#compatibility) of `clusterctl`
 
 ### Setting up your Azure environment
 
@@ -82,7 +82,7 @@ Check out the [Cluster API Quick Start](https://cluster-api.sigs.k8s.io/user/qui
 
 <h1> Warning </h1> 
 
-Not all versions of clusterctl are supported.  Please see which versions are [currently supported](https://github.com/kubernetes-sigs/cluster-api-provider-azure#support-policy)
+Not all versions of clusterctl are supported.  Please see which versions are [currently supported](https://github.com/kubernetes-sigs/cluster-api-provider-azure#compatibility)
 
 ### Documentation
 
