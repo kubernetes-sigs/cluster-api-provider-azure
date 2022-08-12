@@ -231,6 +231,79 @@ func TestReconcile(t *testing.T) {
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Testing " + tc.name)
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			replicas := tc.agentPoolsSpec.Replicas
+			osDiskSizeGB := tc.agentPoolsSpec.OSDiskSizeGB
+
+			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+			machinePoolScope := &scope.ManagedMachinePoolScope{
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tc.agentPoolsSpec.Cluster,
+					},
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
+					},
+				},
+				MachinePool: &expv1.MachinePool{
+					Spec: expv1.MachinePoolSpec{
+						Replicas: &replicas,
+						Template: clusterv1.MachineTemplateSpec{
+							Spec: clusterv1.MachineSpec{
+								Version: tc.agentPoolsSpec.Version,
+							},
+						},
+					},
+				},
+				InfraMachinePool: &infrav1exp.AzureManagedMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tc.agentPoolsSpec.Name,
+					},
+					Spec: infrav1exp.AzureManagedMachinePoolSpec{
+						Name:         &tc.agentPoolsSpec.Name,
+						SKU:          tc.agentPoolsSpec.SKU,
+						OSDiskSizeGB: &osDiskSizeGB,
+						MaxPods:      to.Int32Ptr(12),
+						OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+					},
+				},
+			}
+
+			tc.expect(agentpoolsMock.EXPECT())
+
+			s := &Service{
+				Client: agentpoolsMock,
+				scope:  machinePoolScope,
+			}
+
+			err := s.Reconcile(context.TODO())
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestNormalizedDiff(t *testing.T) {
+	testcases := []struct {
+		name           string
+		agentPoolsSpec azure.AgentPoolSpec
+		expectedError  string
+		expect         func(m *mock_agentpools.MockClientMockRecorder)
+	}{
 		{
 			name: "no update needed on Agent Pool",
 			agentPoolsSpec: azure.AgentPoolSpec{
@@ -259,6 +332,78 @@ func TestReconcile(t *testing.T) {
 						OsDiskType:          containerservice.OSDiskTypeEphemeral,
 					},
 				}, nil)
+			},
+		},
+		{
+			name: "update needed on autoscaler configuration change",
+			agentPoolsSpec: azure.AgentPoolSpec{
+				Name:              "my-agent-pool",
+				ResourceGroup:     "my-rg",
+				Cluster:           "my-cluster",
+				SKU:               "Standard_D2s_v3",
+				Version:           to.StringPtr("9.99.9999"),
+				EnableAutoScaling: to.BoolPtr(true),
+				MinCount:          to.Int32Ptr(1),
+				MaxCount:          to.Int32Ptr(3),
+				OSDiskSizeGB:      100,
+				MaxPods:           to.Int32Ptr(12),
+				OsDiskType:        to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+						EnableAutoScaling:   to.BoolPtr(true),
+						MinCount:            to.Int32Ptr(1),
+						MaxCount:            to.Int32Ptr(5),
+						OsDiskSizeGB:        to.Int32Ptr(100),
+						VMSize:              to.StringPtr(string(containerservice.VMSizeTypesStandardD2sV3)),
+						OsType:              containerservice.OSTypeLinux,
+						OrchestratorVersion: to.StringPtr("9.99.9999"),
+						ProvisioningState:   to.StringPtr("Succeeded"),
+						VnetSubnetID:        to.StringPtr(""),
+						MaxPods:             to.Int32Ptr(12),
+						OsDiskType:          containerservice.OSDiskTypeEphemeral,
+					},
+				}, nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			name: "update needed on nodepool labels change",
+			agentPoolsSpec: azure.AgentPoolSpec{
+				Name:              "my-agent-pool",
+				ResourceGroup:     "my-rg",
+				Cluster:           "my-cluster",
+				SKU:               "Standard_D2s_v3",
+				Version:           to.StringPtr("9.99.9999"),
+				EnableAutoScaling: to.BoolPtr(true),
+				MinCount:          to.Int32Ptr(1),
+				MaxCount:          to.Int32Ptr(3),
+				OSDiskSizeGB:      100,
+				MaxPods:           to.Int32Ptr(12),
+				OsDiskType:        to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+				NodeLabels:        map[string]*string{"workload": to.StringPtr("stateless")},
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+						EnableAutoScaling:   to.BoolPtr(true),
+						MinCount:            to.Int32Ptr(1),
+						MaxCount:            to.Int32Ptr(3),
+						OsDiskSizeGB:        to.Int32Ptr(100),
+						VMSize:              to.StringPtr(string(containerservice.VMSizeTypesStandardD2sV3)),
+						OsType:              containerservice.OSTypeLinux,
+						OrchestratorVersion: to.StringPtr("9.99.9999"),
+						ProvisioningState:   to.StringPtr("Succeeded"),
+						VnetSubnetID:        to.StringPtr(""),
+						MaxPods:             to.Int32Ptr(12),
+						OsDiskType:          containerservice.OSDiskTypeEphemeral,
+						NodeLabels:          map[string]*string{"workload": to.StringPtr("all")},
+					},
+				}, nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(nil)
 			},
 		},
 	}
