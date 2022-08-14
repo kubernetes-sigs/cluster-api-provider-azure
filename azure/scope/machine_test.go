@@ -1627,6 +1627,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
+					ClusterName:               "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
 				},
 			},
 		},
@@ -1729,6 +1733,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					SKU: &resourceskus.SKU{
 						Name: to.StringPtr("Standard_D2v2"),
 					},
+					ClusterName: "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
 				},
 			},
 		},
@@ -1829,6 +1837,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
+					ClusterName:               "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
 				},
 			},
 		},
@@ -1925,6 +1937,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
+					ClusterName:               "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
 				},
 			},
 		},
@@ -2026,6 +2042,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
+					ClusterName:               "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
 				},
 			},
 		},
@@ -2124,6 +2144,10 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
+					ClusterName:               "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
 				},
 			},
 		},

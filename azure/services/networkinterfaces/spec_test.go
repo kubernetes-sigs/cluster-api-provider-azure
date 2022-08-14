@@ -38,6 +38,7 @@ var (
 		VNetResourceGroup:     "my-rg",
 		PublicLBName:          "my-public-lb",
 		AcceleratedNetworking: nil,
+		ClusterName:           "my-cluster",
 	}
 	fakeSku = resourceskus.SKU{
 		Name: to.StringPtr("Standard_D2v2"),
@@ -72,6 +73,7 @@ var (
 		StaticIPAddress:         "fake.static.ip",
 		AcceleratedNetworking:   nil,
 		SKU:                     &fakeSku,
+		ClusterName:             "my-cluster",
 	}
 
 	fakeDynamicPrivateIPNICSpec = NICSpec{
@@ -87,6 +89,7 @@ var (
 		PublicLBAddressPoolName: "cluster-name-outboundBackendPool",
 		AcceleratedNetworking:   nil,
 		SKU:                     &fakeSku,
+		ClusterName:             "my-cluster",
 	}
 
 	fakeControlPlaneNICSpec = NICSpec{
@@ -105,6 +108,7 @@ var (
 		InternalLBAddressPoolName: "my-internal-lb-backendPool",
 		AcceleratedNetworking:     nil,
 		SKU:                       &fakeSku,
+		ClusterName:               "my-cluster",
 	}
 
 	fakeAcceleratedNetworkingNICSpec = NICSpec{
@@ -119,6 +123,7 @@ var (
 		PublicLBName:          "my-public-lb",
 		AcceleratedNetworking: nil,
 		SKU:                   &fakeSku,
+		ClusterName:           "my-cluster",
 	}
 
 	fakeNonAcceleratedNetworkingNICSpec = NICSpec{
@@ -132,6 +137,7 @@ var (
 		VNetResourceGroup:     "my-rg",
 		PublicLBName:          "my-public-lb",
 		AcceleratedNetworking: to.BoolPtr(false),
+		ClusterName:           "my-cluster",
 	}
 
 	fakeIpv6NICSpec = NICSpec{
@@ -148,6 +154,7 @@ var (
 		AcceleratedNetworking: nil,
 		SKU:                   &fakeSku,
 		EnableIPForwarding:    true,
+		ClusterName:           "my-cluster",
 	}
 )
 
@@ -175,6 +182,10 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.Interface{}))
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+					},
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
@@ -202,6 +213,10 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.Interface{}))
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+					},
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
@@ -228,6 +243,10 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.Interface{}))
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+					},
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
@@ -257,6 +276,10 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.Interface{}))
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+					},
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
@@ -283,6 +306,10 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.Interface{}))
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+					},
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(false),
@@ -309,6 +336,10 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.Interface{}))
 				g.Expect(result.(network.Interface)).To(Equal(network.Interface{
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+					},
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
