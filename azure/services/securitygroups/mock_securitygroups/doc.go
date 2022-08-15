@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination securitygroups_mock.go -package mock_securitygroups -source ../securitygroups.go NSGScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt securitygroups_mock.go > _securitygroups_mock.go && mv _securitygroups_mock.go securitygroups_mock.go"
-package mock_securitygroups //nolint
+package mock_securitygroups

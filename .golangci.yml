@@ -1,10 +1,7 @@
 run:
   deadline: 5m
-  skip-dirs:
-    - mock*
   skip-files:
-  - "zz_generated.*\\.go$"
-  - ".*conversion.*\\.go$"
+  - 'zz_generated\.(\w*)\.go$'
 linters:
   disable-all: true
   enable:
@@ -117,22 +114,12 @@ linters-settings:
 
 issues:
   exclude-rules:
-    - path: internal/test/
-      linters:
-        - golint
-    - path: cloudtest\.go
-      linters:
-        - golint
-    - path: api/v1alpha3/types\.go
-      linters:
-        - golint
-    - path: _test\.go
-      linters:
-        - unused
-    - linters:
-        - stylecheck
-      text: "ST1016: methods on the same type should have the same receiver name"
-      path: .*(api|types)\/.*\/*_types\.go$
+    - path: '(\w*)conversion.go'
+      text: "use underscores in Go names|receiver name (.+) should be consistent|methods on the same type should have the same receiver name"
+    - path: 'mock(\w+)/doc.go$'
+      text: "use underscores in package names|don't use an underscore in package name"
+    - path: api/v1alpha3/azureclusteridentity_types.go
+      text: "methods on the same type should have the same receiver name"
   include:
   - EXC0002 # include "missing comments" issues from golint
   max-issues-per-linter: 0

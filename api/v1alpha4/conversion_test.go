@@ -21,39 +21,37 @@ import (
 
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
-
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestFuzzyConversion(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()
 	g.Expect(AddToScheme(scheme)).To(Succeed())
-	g.Expect(v1beta1.AddToScheme(scheme)).To(Succeed())
+	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 
 	t.Run("for AzureCluster", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureCluster{},
+		Hub:    &infrav1.AzureCluster{},
 		Spoke:  &AzureCluster{},
 	}))
 
 	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureMachine{},
+		Hub:    &infrav1.AzureMachine{},
 		Spoke:  &AzureMachine{},
 	}))
 
 	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureMachineTemplate{},
+		Hub:    &infrav1.AzureMachineTemplate{},
 		Spoke:  &AzureMachineTemplate{},
 	}))
 
 	t.Run("for AzureClusterIdentity", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
-		Hub:    &v1beta1.AzureClusterIdentity{},
+		Hub:    &infrav1.AzureClusterIdentity{},
 		Spoke:  &AzureClusterIdentity{},
 	}))
-
 }

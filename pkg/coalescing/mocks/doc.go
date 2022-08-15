@@ -19,4 +19,4 @@ limitations under the License.
 //go:generate ../../../hack/tools/bin/mockgen -destination reconciler_mock.go -package mock_coalescing sigs.k8s.io/controller-runtime/pkg/reconcile Reconciler
 //go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt coalescing_mock.go > _coalescing_mock.go && mv _coalescing_mock.go coalescing_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt reconciler_mock.go > _reconciler_mock.go && mv _reconciler_mock.go reconciler_mock.go"
-package mock_coalescing //nolint
+package mock_coalescing

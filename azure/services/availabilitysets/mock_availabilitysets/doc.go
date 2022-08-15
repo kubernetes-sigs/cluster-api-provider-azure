@@ -19,4 +19,4 @@ limitations under the License.
 //go:generate ../../../../hack/tools/bin/mockgen -destination availabilitysets_mock.go -package mock_availabilitysets -source ../availabilitysets.go AvailabilitySetScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt availabilitysets_mock.go > _availabilitysets_mock.go && mv _availabilitysets_mock.go availabilitysets_mock.go"
-package mock_availabilitysets //nolint
+package mock_availabilitysets

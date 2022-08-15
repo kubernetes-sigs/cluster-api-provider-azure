@@ -17,30 +17,30 @@ limitations under the License.
 package v1alpha4
 
 import (
-	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this AzureMachinePoolMachine to the Hub version (v1beta1).
 func (src *AzureMachinePoolMachine) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*expv1beta1.AzureMachinePoolMachine)
+	dst := dstRaw.(*infrav1exp.AzureMachinePoolMachine)
 	return Convert_v1alpha4_AzureMachinePoolMachine_To_v1beta1_AzureMachinePoolMachine(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureMachinePoolMachine) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*expv1beta1.AzureMachinePoolMachine)
+	src := srcRaw.(*infrav1exp.AzureMachinePoolMachine)
 	return Convert_v1beta1_AzureMachinePoolMachine_To_v1alpha4_AzureMachinePoolMachine(src, dst, nil)
 }
 
 // ConvertTo converts this AzureMachinePoolMachineList to the Hub version (v1beta1).
 func (src *AzureMachinePoolMachineList) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*expv1beta1.AzureMachinePoolMachineList)
+	dst := dstRaw.(*infrav1exp.AzureMachinePoolMachineList)
 	return Convert_v1alpha4_AzureMachinePoolMachineList_To_v1beta1_AzureMachinePoolMachineList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureMachinePoolMachineList) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*expv1beta1.AzureMachinePoolMachineList)
+	src := srcRaw.(*infrav1exp.AzureMachinePoolMachineList)
 	return Convert_v1beta1_AzureMachinePoolMachineList_To_v1alpha4_AzureMachinePoolMachineList(src, dst, nil)
 }

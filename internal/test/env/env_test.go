@@ -25,7 +25,7 @@ import (
 )
 
 func TestGetFilePathToCAPICRDs(t *testing.T) {
-	_, filename, _, _ := goruntime.Caller(0) //nolint
+	_, filename, _, _ := goruntime.Caller(0) //nolint:dogsled
 	root := path.Join(path.Dir(filename), "..", "..", "..")
 	g := gomega.NewWithT(t)
 	g.Expect(getFilePathToCAPICRDs(root)).To(gomega.MatchRegexp("(.+)/pkg/mod/sigs.k8s.io/cluster-api@v(.+)/config/crd/bases"))

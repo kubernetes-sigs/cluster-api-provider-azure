@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../hack/tools/bin/mockgen -destination reconciler_mock.go -package mock_controllers sigs.k8s.io/cluster-api-provider-azure/azure Reconciler
 //go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt reconciler_mock.go > _reconciler_mock.go && mv _reconciler_mock.go reconciler_mock.go"
-package mock_controllers //nolint
+package mock_controllers

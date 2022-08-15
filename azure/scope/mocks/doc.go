@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../hack/tools/bin/mockgen -destination node_getter_mock.go -package mock_scope -source ../machinepoolmachine.go nodeGetter
 //go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt node_getter_mock.go > _node_getter_mock.go && mv _node_getter_mock.go node_getter_mock.go"
-package mock_scope //nolint
+package mock_scope

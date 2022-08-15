@@ -17,4 +17,4 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination loadbalancers_mock.go -package mock_loadbalancers -source ../loadbalancers.go LBScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt loadbalancers_mock.go > _loadbalancers_mock.go && mv _loadbalancers_mock.go loadbalancers_mock.go"
-package mock_loadbalancers //nolint
+package mock_loadbalancers

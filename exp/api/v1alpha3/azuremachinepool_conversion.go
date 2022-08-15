@@ -19,28 +19,28 @@ package v1alpha3
 import (
 	convert "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).
 func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*expv1beta1.AzureMachinePool)
+	dst := dstRaw.(*infrav1exp.AzureMachinePool)
 	if err := Convert_v1alpha3_AzureMachinePool_To_v1beta1_AzureMachinePool(src, dst, nil); err != nil {
 		return err
 	}
 
 	// Manually restore data.
-	restored := &expv1beta1.AzureMachinePool{}
+	restored := &infrav1exp.AzureMachinePool{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
 
 	// Handle special case for conversion of ManagedDisk to pointer.
 	if restored.Spec.Template.OSDisk.ManagedDisk == nil && dst.Spec.Template.OSDisk.ManagedDisk != nil {
-		if *dst.Spec.Template.OSDisk.ManagedDisk == (infrav1beta1.ManagedDiskParameters{}) {
+		if *dst.Spec.Template.OSDisk.ManagedDisk == (infrav1.ManagedDiskParameters{}) {
 			// restore nil value if nothing has changed since conversion
 			dst.Spec.Template.OSDisk.ManagedDisk = nil
 		}
@@ -50,9 +50,8 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.Spec.Strategy.Type = restored.Spec.Strategy.Type
 	if restored.Spec.Strategy.RollingUpdate != nil {
-
 		if dst.Spec.Strategy.RollingUpdate == nil {
-			dst.Spec.Strategy.RollingUpdate = &expv1beta1.MachineRollingUpdateDeployment{}
+			dst.Spec.Strategy.RollingUpdate = &infrav1exp.MachineRollingUpdateDeployment{}
 		}
 
 		dst.Spec.Strategy.RollingUpdate.DeletePolicy = restored.Spec.Strategy.RollingUpdate.DeletePolicy
@@ -91,7 +90,7 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*expv1beta1.AzureMachinePool)
+	src := srcRaw.(*infrav1exp.AzureMachinePool)
 	if err := Convert_v1beta1_AzureMachinePool_To_v1alpha3_AzureMachinePool(src, dst, nil); err != nil {
 		return err
 	}
@@ -100,15 +99,15 @@ func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	return utilconversion.MarshalData(src, dst)
 }
 
-func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in *expv1beta1.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error { //nolint
+func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in *infrav1exp.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error {
 	return autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in, out, s)
 }
 
-func Convert_v1beta1_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in *expv1beta1.AzureMachinePoolSpec, out *AzureMachinePoolSpec, s convert.Scope) error {
+func Convert_v1beta1_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in *infrav1exp.AzureMachinePoolSpec, out *AzureMachinePoolSpec, s convert.Scope) error {
 	return autoConvert_v1beta1_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in, out, s)
 }
 
-func Convert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in *expv1beta1.AzureMachinePoolStatus, out *AzureMachinePoolStatus, s convert.Scope) error {
+func Convert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in *infrav1exp.AzureMachinePoolStatus, out *AzureMachinePoolStatus, s convert.Scope) error {
 	if len(in.LongRunningOperationStates) > 0 {
 		if out.LongRunningOperationState == nil {
 			out.LongRunningOperationState = &infrav1alpha3.Future{}
@@ -120,25 +119,25 @@ func Convert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(i
 	return autoConvert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in, out, s)
 }
 
-func Convert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(in *AzureMachinePoolStatus, out *expv1beta1.AzureMachinePoolStatus, s convert.Scope) error {
+func Convert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(in *AzureMachinePoolStatus, out *infrav1exp.AzureMachinePoolStatus, s convert.Scope) error {
 	if in.LongRunningOperationState != nil {
-		f := infrav1beta1.Future{}
+		f := infrav1.Future{}
 		if err := infrav1alpha3.Convert_v1alpha3_Future_To_v1beta1_Future(in.LongRunningOperationState, &f, s); err != nil {
 			return err
 		}
-		out.LongRunningOperationStates = []infrav1beta1.Future{f}
+		out.LongRunningOperationStates = []infrav1.Future{f}
 	}
 	return autoConvert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(in, out, s)
 }
 
 // ConvertTo converts this AzureMachinePoolList to the Hub version (v1beta1).
 func (src *AzureMachinePoolList) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*expv1beta1.AzureMachinePoolList)
+	dst := dstRaw.(*infrav1exp.AzureMachinePoolList)
 	return Convert_v1alpha3_AzureMachinePoolList_To_v1beta1_AzureMachinePoolList(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*expv1beta1.AzureMachinePoolList)
+	src := srcRaw.(*infrav1exp.AzureMachinePoolList)
 	return Convert_v1beta1_AzureMachinePoolList_To_v1alpha3_AzureMachinePoolList(src, dst, nil)
 }

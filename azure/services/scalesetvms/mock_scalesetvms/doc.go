@@ -19,4 +19,4 @@ limitations under the License.
 //go:generate ../../../../hack/tools/bin/mockgen -destination scalesetvms_mock.go -package mock_scalesetvms -source ../scalesetvms.go ScaleSetVMScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt scalesetvms_mock.go > _scalesetvms_mock.go && mv _scalesetvms_mock.go scalesetvms_mock.go"
-package mock_scalesetvms //nolint
+package mock_scalesetvms

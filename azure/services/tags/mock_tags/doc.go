@@ -19,4 +19,4 @@ limitations under the License.
 //go:generate ../../../../hack/tools/bin/mockgen -destination tags_mock.go -package mock_tags -source ../tags.go TagScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt tags_mock.go > _tags_mock.go && mv _tags_mock.go tags_mock.go"
-package mock_tags //nolint
+package mock_tags
