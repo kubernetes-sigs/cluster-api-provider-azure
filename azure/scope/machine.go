@@ -240,6 +240,8 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 		IPv6Enabled:           m.IsIPv6Enabled(),
 		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
+		AdditionalTags:        m.AdditionalTags(),
+		ClusterName:           m.ClusterName(),
 	}
 
 	if m.Role() == infrav1.ControlPlane {
