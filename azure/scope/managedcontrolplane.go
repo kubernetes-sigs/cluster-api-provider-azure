@@ -286,7 +286,7 @@ func (s *ManagedControlPlaneScope) UpdateSubnetCIDRs(_ string, _ []string) {
 	// no-op
 }
 
-// UpdateSubnetIDs updates the subnet IDs for the subnet with the same name.
+// UpdateSubnetID updates the subnet ID for the subnet with the same name.
 // This is not used when using a managed control plane.
 func (s *ManagedControlPlaneScope) UpdateSubnetID(_ string, _ string) {
 	// no-op
@@ -331,7 +331,7 @@ func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	return true
 }
 
-// APIServerLBName returns the API Server LB spec.
+// APIServerLB returns the API Server LB spec.
 func (s *ManagedControlPlaneScope) APIServerLB() *infrav1.LoadBalancerSpec {
 	return nil // does not apply for AKS
 }
@@ -379,6 +379,7 @@ func (s *ManagedControlPlaneScope) FailureDomains() []string {
 	return []string{}
 }
 
+// ManagedClusterAnnotations returns the annotations for the managed cluster.
 func (s *ManagedControlPlaneScope) ManagedClusterAnnotations() map[string]string {
 	return s.ControlPlane.Annotations
 }

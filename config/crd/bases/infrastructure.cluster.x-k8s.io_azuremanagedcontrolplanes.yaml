@@ -533,17 +533,18 @@ spec:
               addonProfiles:
                 description: AddonProfiles are the profiles of managed cluster add-on.
                 items:
+                  description: AddonProfile represents a managed cluster add-on.
                   properties:
                     config:
                       additionalProperties:
                         type: string
-                      description: Config - Key-value pairs for configuring an add-on.
+                      description: Config - Key-value pairs for configuring the add-on.
                       type: object
                     enabled:
                       description: Enabled - Whether the add-on is enabled or not.
                       type: boolean
                     name:
-                      description: Name- The name of managed cluster add-on.
+                      description: Name - The name of the managed cluster add-on.
                       type: string
                   required:
                   - enabled

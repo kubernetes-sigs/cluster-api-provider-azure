@@ -422,7 +422,7 @@ func (m *MachineScope) ProviderID() string {
 	return parsed.String()
 }
 
-// AvailabilitySet returns the availability set for this machine if available.
+// AvailabilitySetSpec returns the availability set spec for this machine if available.
 func (m *MachineScope) AvailabilitySetSpec() azure.ResourceSpecGetter {
 	availabilitySetName, ok := m.AvailabilitySet()
 	if !ok {

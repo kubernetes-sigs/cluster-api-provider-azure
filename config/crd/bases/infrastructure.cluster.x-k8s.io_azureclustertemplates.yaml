@@ -43,6 +43,8 @@ spec:
                   to create an AzureCluster from a template.
                 properties:
                   spec:
+                    description: AzureClusterTemplateResourceSpec specifies an Azure
+                      cluster template resource.
                     properties:
                       additionalTags:
                         additionalProperties:
@@ -63,8 +65,12 @@ spec:
                           the Bastions in the cluster.
                         properties:
                           azureBastion:
+                            description: AzureBastionTemplateSpec specifies a template
+                              for an Azure Bastion host.
                             properties:
                               subnet:
+                                description: SubnetTemplateSpec specifies a template
+                                  for a subnet.
                                 properties:
                                   cidrBlocks:
                                     description: CIDRBlocks defines the subnet's address
@@ -386,6 +392,8 @@ spec:
                             description: Subnets is the configuration for the control-plane
                               subnet and the node subnet.
                             items:
+                              description: SubnetTemplateSpec specifies a template
+                                for a subnet.
                               properties:
                                 cidrBlocks:
                                   description: CIDRBlocks defines the subnet's address
@@ -520,6 +528,8 @@ spec:
                                   the newly created virtual network with existing
                                   virtual networks.
                                 items:
+                                  description: VnetPeeringClassSpec specifies a virtual
+                                    network peering class.
                                   properties:
                                     remoteVnetName:
                                       description: RemoteVnetName defines name of

@@ -109,6 +109,11 @@ linters-settings:
     excludes:
     - G307 # Deferring unsafe method "Close" on type "\*os.File"
     - G108 # Profiling endpoint is automatically exposed on /debug/pprof
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
   staticcheck:
     go: "1.18"
 
@@ -121,6 +126,7 @@ issues:
     - path: api/v1alpha3/azureclusteridentity_types.go
       text: "methods on the same type should have the same receiver name"
   include:
-  - EXC0002 # include "missing comments" issues from golint
+  - EXC0012  # revive: check for comments
+  - EXC0014  # revive: check for comments
   max-issues-per-linter: 0
   max-same-issues: 0

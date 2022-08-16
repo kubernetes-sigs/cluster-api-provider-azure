@@ -125,11 +125,12 @@ type AADProfile struct {
 	AdminGroupObjectIDs []string `json:"adminGroupObjectIDs"`
 }
 
+// AddonProfile represents a managed cluster add-on.
 type AddonProfile struct {
-	// Name- The name of managed cluster add-on.
+	// Name - The name of the managed cluster add-on.
 	Name string `json:"name"`
 
-	// Config - Key-value pairs for configuring an add-on.
+	// Config - Key-value pairs for configuring the add-on.
 	// +optional
 	Config map[string]string `json:"config,omitempty"`
 

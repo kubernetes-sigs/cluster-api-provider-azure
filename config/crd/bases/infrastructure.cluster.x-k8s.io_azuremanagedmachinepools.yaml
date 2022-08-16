@@ -276,6 +276,7 @@ spec:
                 description: Taints specifies the taints for nodes present in this
                   agent pool.
                 items:
+                  description: Taint represents a Kubernetes taint.
                   properties:
                     effect:
                       description: Effect specifies the effect for the taint

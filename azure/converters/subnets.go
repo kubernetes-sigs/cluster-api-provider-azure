@@ -21,6 +21,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
+// GetSubnetAddresses returns the address prefixes contained in a subnet.
 func GetSubnetAddresses(subnet network.Subnet) []string {
 	var addresses []string
 	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefix != nil {

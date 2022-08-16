@@ -45,6 +45,7 @@ type ManagedMachinePoolScopeParams struct {
 	ManagedControlPlaneScope azure.ManagedClusterScoper
 }
 
+// ManagedMachinePool defines the scope interface for a managed machine pool.
 type ManagedMachinePool struct {
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	MachinePool      *expv1.MachinePool
@@ -285,7 +286,7 @@ func (s *ManagedMachinePoolScope) RemoveCAPIMachinePoolAnnotations(key string) {
 	delete(s.MachinePool.Annotations, key)
 }
 
-// GetCAPIMachinePoolAnnotations gets the associated MachinePool annotation.
+// GetCAPIMachinePoolAnnotation gets the associated MachinePool annotation.
 func (s *ManagedMachinePoolScope) GetCAPIMachinePoolAnnotation(key string) (bool, string) {
 	value, ok := s.MachinePool.Annotations[key]
 	return ok, value

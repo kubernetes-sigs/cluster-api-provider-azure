@@ -194,6 +194,7 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 	}
 }
 
+// SetNodeOutboundLBDefaults sets the default values for the NodeOutboundLB.
 func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 	if c.Spec.NetworkSpec.NodeOutboundLB == nil {
 		if c.Spec.NetworkSpec.APIServerLB.Type == Internal {
@@ -230,6 +231,7 @@ func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
 }
 
+// SetControlPlaneOutboundLBDefaults sets the default values for the control plane's outbound LB.
 func (c *AzureCluster) SetControlPlaneOutboundLBDefaults() {
 	lb := c.Spec.NetworkSpec.ControlPlaneOutboundLB
 

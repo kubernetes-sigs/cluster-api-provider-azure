@@ -74,6 +74,7 @@ func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error {
 	return Convert_v1beta1_AzureMachineList_To_v1alpha4_AzureMachineList(src, dst, nil)
 }
 
+// Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage converts an Azure Marketplace image from v1beta1 to v1alpha4.
 func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in *infrav1.AzureMarketplaceImage, out *AzureMarketplaceImage, s apiconversion.Scope) error {
 	out.Offer = in.ImagePlan.Offer
 	out.Publisher = in.ImagePlan.Publisher
@@ -82,6 +83,7 @@ func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in 
 	return autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha4_AzureMarketplaceImage(in, out, s)
 }
 
+// Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage converts an Azure Marketplace image from v1alpha4 to v1beta1.
 func Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *infrav1.AzureMarketplaceImage, s apiconversion.Scope) error {
 	out.ImagePlan.Offer = in.Offer
 	out.ImagePlan.Publisher = in.Publisher
@@ -90,6 +92,7 @@ func Convert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in 
 	return autoConvert_v1alpha4_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in, out, s)
 }
 
+// Convert_v1beta1_Image_To_v1alpha4_Image converts an image from v1beta1 to v1alpha4.
 func Convert_v1beta1_Image_To_v1alpha4_Image(in *infrav1.Image, out *Image, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_Image_To_v1alpha4_Image(in, out, s)
 }

@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
 
+// RecordSpec defines the specification for a record set.
 type RecordSpec struct {
 	Record        infrav1.AddressRecord
 	ZoneName      string

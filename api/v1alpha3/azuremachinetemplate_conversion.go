@@ -91,10 +91,12 @@ func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error {
 	return Convert_v1beta1_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(src, dst, nil)
 }
 
+// Convert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage converts an Azure shared gallery image from v1beta1 to v1alpha3.
 func Convert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in *infrav1.AzureSharedGalleryImage, out *AzureSharedGalleryImage, s apimachineryconversion.Scope) error {
 	return autoConvert_v1beta1_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in, out, s)
 }
 
+// Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource converts an Azure machine template resource from v1beta1 to v1alpha3.
 func Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in *infrav1.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s apimachineryconversion.Scope) error {
 	return autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha3_AzureMachineTemplateResource(in, out, s)
 }

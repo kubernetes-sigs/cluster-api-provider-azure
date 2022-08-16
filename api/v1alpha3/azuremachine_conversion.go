@@ -92,6 +92,7 @@ func (dst *AzureMachineList) ConvertFrom(srcRaw conversion.Hub) error {
 	return Convert_v1beta1_AzureMachineList_To_v1alpha3_AzureMachineList(src, dst, nil)
 }
 
+// Convert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec converts this AzureMachineSpec to the Hub version (v1beta1).
 func Convert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(in *AzureMachineSpec, out *infrav1.AzureMachineSpec, s apiconversion.Scope) error {
 	return autoConvert_v1alpha3_AzureMachineSpec_To_v1beta1_AzureMachineSpec(in, out, s)
 }
@@ -157,6 +158,7 @@ func Convert_v1beta1_ManagedDiskParameters_To_v1alpha3_ManagedDisk(in *infrav1.M
 	return nil
 }
 
+// Convert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage converts an Azure Marketplace image from v1beta1 to v1alpha3.
 func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in *infrav1.AzureMarketplaceImage, out *AzureMarketplaceImage, s apiconversion.Scope) error {
 	out.Offer = in.ImagePlan.Offer
 	out.Publisher = in.ImagePlan.Publisher
@@ -165,6 +167,7 @@ func Convert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in 
 	return autoConvert_v1beta1_AzureMarketplaceImage_To_v1alpha3_AzureMarketplaceImage(in, out, s)
 }
 
+// Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage converts an Azure Marketplace image from v1alpha3 to v1beta1.
 func Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in *AzureMarketplaceImage, out *infrav1.AzureMarketplaceImage, s apiconversion.Scope) error {
 	out.ImagePlan.Offer = in.Offer
 	out.ImagePlan.Publisher = in.Publisher
@@ -173,6 +176,7 @@ func Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in 
 	return autoConvert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in, out, s)
 }
 
+// Convert_v1beta1_Image_To_v1alpha3_Image converts an image from v1beta1 to v1alpha3.
 func Convert_v1beta1_Image_To_v1alpha3_Image(in *infrav1.Image, out *Image, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_Image_To_v1alpha3_Image(in, out, s)
 }

@@ -115,7 +115,7 @@ func (dst *AzureClusterList) ConvertFrom(srcRaw conversion.Hub) error {
 	return Convert_v1beta1_AzureClusterList_To_v1alpha4_AzureClusterList(src, dst, nil)
 }
 
-// Convert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec.
+// Convert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec converts from the Hub version (v1beta1) of the VnetSpec to this version.
 func Convert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec(in *infrav1.VnetSpec, out *VnetSpec, s apiconversion.Scope) error {
 	if err := autoConvert_v1beta1_VnetSpec_To_v1alpha4_VnetSpec(in, out, s); err != nil {
 		return err
@@ -327,6 +327,7 @@ func Convert_v1beta1_SecurityGroup_To_v1alpha4_SecurityGroup(in *infrav1.Securit
 	return nil
 }
 
+// Convert_v1alpha4_NatGateway_To_v1beta1_NatGateway converts a NAT gateway from v1alpha4 to v1beta1.
 func Convert_v1alpha4_NatGateway_To_v1beta1_NatGateway(in *NatGateway, out *infrav1.NatGateway, s apiconversion.Scope) error {
 	if err := autoConvert_v1alpha4_NatGateway_To_v1beta1_NatGateway(in, out, s); err != nil {
 		return err
@@ -337,6 +338,7 @@ func Convert_v1alpha4_NatGateway_To_v1beta1_NatGateway(in *NatGateway, out *infr
 	return nil
 }
 
+// Convert_v1beta1_NatGateway_To_v1alpha4_NatGateway converts a NatGateway from v1beta1 to v1alpha4.
 func Convert_v1beta1_NatGateway_To_v1alpha4_NatGateway(in *infrav1.NatGateway, out *NatGateway, s apiconversion.Scope) error {
 	if err := autoConvert_v1beta1_NatGateway_To_v1alpha4_NatGateway(in, out, s); err != nil {
 		return err

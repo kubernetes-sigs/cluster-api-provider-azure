@@ -74,7 +74,7 @@ func NewLogger(options ...Option) *Logger {
 var _ logr.LogSink = (*Logger)(nil)
 
 type (
-	// Logger defines a test friendly logr.Logger.
+	// Logger defines a test-friendly logr.Logger.
 	Logger struct {
 		threshold  *int
 		level      int
@@ -88,6 +88,7 @@ type (
 		info       logr.RuntimeInfo
 	}
 
+	// Listener defines a listener for log entries.
 	Listener struct {
 		logger    *Logger
 		entriesMu sync.RWMutex
@@ -95,16 +96,19 @@ type (
 	}
 )
 
+// NewListener returns a new listener with the specified logger.
 func NewListener(logger *Logger) *Listener {
 	return &Listener{
 		logger: logger,
 	}
 }
 
+// Listen adds this listener to its logger.
 func (li *Listener) Listen() func() {
 	return li.logger.addListener(li)
 }
 
+// GetEntries returns a copy of the list of log entries.
 func (li *Listener) GetEntries() []LogEntry {
 	li.entriesMu.RLock()
 	defer li.entriesMu.RUnlock()
@@ -143,6 +147,7 @@ func (l *Logger) removeListener(id string) {
 	delete(l.listeners, id)
 }
 
+// Init initializes the logger from runtime information.
 func (l *Logger) Init(info logr.RuntimeInfo) {
 	l.info = info
 }
