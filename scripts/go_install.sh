@@ -37,7 +37,7 @@ if [ -z "${GOBIN}" ]; then
   exit 1
 fi
 
-rm "${GOBIN}/${2}"* || true
+rm "${GOBIN}/${2}"* 2> /dev/null || true
 
 # install the golang module specified as the first argument
 go install -tags tools "${1}@${3}"
