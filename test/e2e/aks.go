@@ -30,10 +30,9 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/types"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -126,8 +125,8 @@ type GetAzureManagedControlPlaneByClusterInput struct {
 // GetAzureManagedControlPlaneByCluster returns the AzureManagedControlPlane object for a cluster.
 // Important! this method relies on labels that are created by the CAPI controllers during the first reconciliation, so
 // it is necessary to ensure this is already happened before calling it.
-func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureManagedControlPlaneByClusterInput) *infraexpv1.AzureManagedControlPlane {
-	controlPlaneList := &infraexpv1.AzureManagedControlPlaneList{}
+func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureManagedControlPlaneByClusterInput) *infrav1exp.AzureManagedControlPlane {
+	controlPlaneList := &infrav1exp.AzureManagedControlPlaneList{}
 	Expect(input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)).To(Succeed(), "Failed to list AzureManagedControlPlane object for Cluster %s/%s", input.Namespace, input.ClusterName)
 	Expect(len(controlPlaneList.Items)).NotTo(BeNumerically(">", 1), "Cluster %s/%s should not have more than 1 AzureManagedControlPlane object", input.Namespace, input.ClusterName)
 	if len(controlPlaneList.Items) == 1 {
@@ -140,7 +139,7 @@ func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureMan
 type WaitForControlPlaneAndMachinesReadyInput struct {
 	Lister       framework.Lister
 	Getter       framework.Getter
-	ControlPlane *infraexpv1.AzureManagedControlPlane
+	ControlPlane *infrav1exp.AzureManagedControlPlane
 	ClusterName  string
 	Namespace    string
 }
@@ -166,7 +165,7 @@ const (
 )
 
 // value returns the integer equivalent of controlPlaneReplicas
-func (r controlPlaneReplicas) value(mp *clusterv1exp.MachinePool) int {
+func (r controlPlaneReplicas) value(mp *expv1.MachinePool) int {
 	switch r {
 	case atLeastOne:
 		return 1
@@ -179,7 +178,6 @@ func (r controlPlaneReplicas) value(mp *clusterv1exp.MachinePool) int {
 // WaitForAKSSystemNodePoolMachinesToExist waits for a certain number of machines in the "system" node pool to exist.
 func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, minReplicas controlPlaneReplicas, intervals ...interface{}) {
 	Eventually(func() bool {
-
 		opt1 := client.InNamespace(input.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
 			infrav1exp.LabelAgentPoolMode: string(infrav1exp.NodePoolModeSystem),
@@ -200,7 +198,7 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 					continue
 				}
 
-				ownerMachinePool := &clusterv1exp.MachinePool{}
+				ownerMachinePool := &expv1.MachinePool{}
 				if err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: ref.Name},
 					ownerMachinePool); err != nil {
 					LogWarningf("Failed to get machinePool: %+v", err)
@@ -213,7 +211,6 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 		}
 
 		return false
-
 	}, intervals...).Should(Equal(true), "System machine pools not detected")
 }
 

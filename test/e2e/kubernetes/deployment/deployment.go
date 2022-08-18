@@ -25,9 +25,6 @@ import (
 	"log"
 	"time"
 
-	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +32,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"k8s.io/utils/pointer"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 const (
@@ -132,11 +131,11 @@ func (d *Builder) AddContainerPort(name, portName string, portNumber int32, prot
 	}
 }
 
-func (d *Builder)AddPVC(pvcName string) *Builder  {
-	volumes:= []corev1.Volume{
+func (d *Builder) AddPVC(pvcName string) *Builder {
+	volumes := []corev1.Volume{
 		{
 			Name: "managed",
-			VolumeSource:corev1.VolumeSource{
+			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: pvcName,
 				},

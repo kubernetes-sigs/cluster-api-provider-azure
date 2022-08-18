@@ -249,7 +249,6 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	InstallAzureDiskCSIDriverHelmChart(ctx, input)
 	result.ControlPlane = controlPlane
-
 }
 
 func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {

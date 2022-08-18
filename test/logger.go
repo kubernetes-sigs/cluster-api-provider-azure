@@ -28,7 +28,6 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
-
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 )

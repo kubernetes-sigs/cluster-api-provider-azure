@@ -25,7 +25,7 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -37,10 +37,10 @@ const (
 	podExecOperationSleepBetweenRetries = 3 * time.Second
 )
 
-func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string, testSuccess bool) error {
+func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod corev1.Pod, command []string, testSuccess bool) error {
 	req := clientset.CoreV1().RESTClient().Post().Resource("pods").Name(pod.GetName()).
 		Namespace(pod.GetNamespace()).SubResource("exec")
-	option := &v1.PodExecOptions{
+	option := &corev1.PodExecOptions{
 		Command: command,
 		Stdin:   false,
 		Stdout:  true,

@@ -49,23 +49,23 @@ spec:
   resources:
     requests:
       storage: 5Gi
- */
+*/
 
 type Builder struct {
 	pvc *corev1.PersistentVolumeClaim
 }
 
-func Create(pvcName string, storageRequest string) (*Builder,error) {
-	qunatity,err:= resource.ParseQuantity("5Gi")
-	if err!=nil{
-		return nil,err
+func Create(pvcName string, storageRequest string) (*Builder, error) {
+	quantity, err := resource.ParseQuantity("5Gi")
+	if err != nil {
+		return nil, err
 	}
-	pvcBuilder:=&Builder{
+	pvcBuilder := &Builder{
 		pvc: &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "dd-managed-hdd-5g",
 				Annotations: map[string]string{
-					"volume.beta.kubernetes.io/storage-class":"managedhdd",
+					"volume.beta.kubernetes.io/storage-class": "managedhdd",
 				},
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
@@ -74,18 +74,18 @@ func Create(pvcName string, storageRequest string) (*Builder,error) {
 				},
 				Resources: corev1.ResourceRequirements{
 					Requests: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceStorage : qunatity,
+						corev1.ResourceStorage: quantity,
 					},
 				},
 			},
 		},
 	}
-	return pvcBuilder,nil
+	return pvcBuilder, nil
 }
 
-func (b *Builder)DeployPVC(clientset *kubernetes.Clientset) error {
+func (b *Builder) DeployPVC(clientset *kubernetes.Clientset) error {
 	Eventually(func() error {
-		_,err := clientset.CoreV1().PersistentVolumeClaims("default").Create(context.TODO(),b.pvc,metav1.CreateOptions{})
+		_, err := clientset.CoreV1().PersistentVolumeClaims("default").Create(context.TODO(), b.pvc, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("Error trying to deploy storage class %s in namespace %s:%s\n", b.pvc.Name, b.pvc.ObjectMeta.Namespace, err.Error())
 			return err
