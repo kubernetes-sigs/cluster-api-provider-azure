@@ -1624,6 +1624,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
 					AcceleratedNetworking:     nil,
+					DNSServers:                nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -1728,6 +1729,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
 					AcceleratedNetworking:     nil,
+					DNSServers:                nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU: &resourceskus.SKU{
@@ -1834,6 +1836,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
 					AcceleratedNetworking:     nil,
+					DNSServers:                nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -1934,6 +1937,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "pip-machine-name",
 					AcceleratedNetworking:     nil,
+					DNSServers:                nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -2039,6 +2043,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBAddressPoolName: "api-lb-backendPool",
 					PublicIPName:              "",
 					AcceleratedNetworking:     nil,
+					DNSServers:                nil,
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -2141,6 +2146,111 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
 					AcceleratedNetworking:     nil,
+					DNSServers:                nil,
+					IPv6Enabled:               false,
+					EnableIPForwarding:        false,
+					SKU:                       nil,
+					ClusterName:               "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
+				},
+			},
+		},
+		{
+			name: "Control Plane Machine with public LB and Custom DNS Servers",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1beta1",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+										},
+										Name: "subnet1",
+									},
+								},
+								APIServerLB: infrav1.LoadBalancerSpec{
+									Name: "api-lb",
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: to.StringPtr("azure://compute/virtual-machines/machine-name"),
+						SubnetName: "subnet1",
+						DNSServers: []string{"123.123.123.123", "124.124.124.124"},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+						Labels: map[string]string{
+							clusterv1.MachineControlPlaneLabelName: "true",
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
+					Name:                      "machine-name-nic",
+					ResourceGroup:             "my-rg",
+					Location:                  "westus",
+					SubscriptionID:            "123",
+					MachineName:               "machine-name",
+					SubnetName:                "subnet1",
+					VNetName:                  "vnet1",
+					VNetResourceGroup:         "rg1",
+					PublicLBName:              "api-lb",
+					PublicLBAddressPoolName:   "api-lb-backendPool",
+					PublicLBNATRuleName:       "machine-name",
+					InternalLBName:            "",
+					InternalLBAddressPoolName: "",
+					PublicIPName:              "",
+					AcceleratedNetworking:     nil,
+					DNSServers:                []string{"123.123.123.123", "124.124.124.124"},
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,

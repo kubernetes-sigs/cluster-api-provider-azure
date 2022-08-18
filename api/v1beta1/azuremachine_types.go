@@ -118,6 +118,10 @@ type AzureMachineSpec struct {
 	// SubnetName selects the Subnet where the VM will be placed
 	// +optional
 	SubnetName string `json:"subnetName,omitempty"`
+
+	// DNSServers adds a list of DNS Server IP addresses to the VM NICs.
+	// +optional
+	DNSServers []string `json:"dnsServers,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs.
