@@ -183,8 +183,19 @@ func getAzureCluster(ctx context.Context, managementClusterClient client.Client,
 	}
 
 	azCluster := &v1beta1.AzureCluster{}
-	err := managementClusterClient.Get(context.TODO(), key, azCluster)
+	err := managementClusterClient.Get(ctx, key, azCluster)
 	return azCluster, err
+}
+
+func getAzureManagedControlPlane(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*expv1alpha4.AzureManagedControlPlane, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}
+
+	azManagedControlPlane := &expv1alpha4.AzureManagedControlPlane{}
+	err := managementClusterClient.Get(ctx, key, azManagedControlPlane)
+	return azManagedControlPlane, err
 }
 
 func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*v1beta1.AzureMachine, error) {
