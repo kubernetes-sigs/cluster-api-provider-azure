@@ -410,6 +410,30 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
+			name:          "should start creating a vmss with ephemeral osdisk",
+			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				defaultSpec := newDefaultVMSSSpec()
+				defaultSpec.Size = "VM_SIZE_EPH"
+				defaultSpec.OSDisk.DiffDiskSettings = &infrav1.DiffDiskSettings{
+					Option: "Local",
+				}
+				defaultSpec.OSDisk.CachingType = "ReadOnly"
+
+				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
+				setupDefaultVMSSStartCreatingExpectations(s, m)
+				vmss := newDefaultVMSS("VM_SIZE_EPH")
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
+					Option: compute.DiffDiskOptionsLocal,
+				}
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.Caching = compute.CachingTypesReadOnly
+
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
+					Return(putFuture, nil)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE_EPH"), putFuture)
+			},
+		},
+		{
 			name:          "should start updating when scale set already exists and not currently in a long running operation",
 			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PATCH on Azure resource my-rg/my-vmss is not done",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
@@ -884,6 +908,49 @@ func getFakeSkus() []compute.ResourceSku {
 				{
 					Name:  to.StringPtr(resourceskus.MemoryGB),
 					Value: to.StringPtr("6"),
+				},
+			},
+		},
+		{
+			Name:         to.StringPtr("VM_SIZE_EPH"),
+			ResourceType: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Kind:         to.StringPtr(string(resourceskus.VirtualMachines)),
+			Locations: &[]string{
+				"test-location",
+			},
+			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+				{
+					Location: to.StringPtr("test-location"),
+					Zones:    &[]string{"1", "3"},
+					ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+						{
+							Capabilities: &[]compute.ResourceSkuCapabilities{
+								{
+									Name:  pointer.String("UltraSSDAvailable"),
+									Value: pointer.String("True"),
+								},
+							},
+							Name: &[]string{"1", "3"},
+						},
+					},
+				},
+			},
+			Capabilities: &[]compute.ResourceSkuCapabilities{
+				{
+					Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
+					Value: to.StringPtr(string(resourceskus.CapabilityUnsupported)),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.VCPUs),
+					Value: to.StringPtr("4"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.MemoryGB),
+					Value: to.StringPtr("4"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.EphemeralOSDisk),
+					Value: to.StringPtr("True"),
 				},
 			},
 		},
