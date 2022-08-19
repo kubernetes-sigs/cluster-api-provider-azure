@@ -268,6 +268,33 @@ func TestParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name: "can create a spot vm with evictionPolicy Delete",
+			spec: &VMSpec{
+				Name:       "my-vm",
+				Role:       infrav1.Node,
+				NICIDs:     []string{"my-nic"},
+				SSHKeyData: "fakesshpublickey",
+				Size:       "Standard_D2v3",
+				Zone:       "1",
+				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				OSDisk: infrav1.OSDisk{
+					DiffDiskSettings: &infrav1.DiffDiskSettings{
+						Option: string(compute.DiffDiskOptionsLocal),
+					},
+				},
+				SpotVMOptions: &infrav1.SpotVMOptions{},
+				SKU:           validSKUWithEphemeralOS,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
+				g.Expect(result.(compute.VirtualMachine).Priority).To(Equal(compute.VirtualMachinePriorityTypesSpot))
+				g.Expect(result.(compute.VirtualMachine).EvictionPolicy).To(Equal(compute.VirtualMachineEvictionPolicyTypesDelete))
+				g.Expect(result.(compute.VirtualMachine).BillingProfile).To(BeNil())
+			},
+			expectedError: "",
+		},
+		{
 			name: "can create a windows vm",
 			spec: &VMSpec{
 				Name:       "my-vm",

@@ -101,7 +101,7 @@ func (s *VMSpec) Parameters(existing interface{}) (params interface{}, err error
 		return nil, errors.Wrap(err, "failed to generate OS Profile")
 	}
 
-	priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(s.SpotVMOptions)
+	priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(s.SpotVMOptions, s.OSDisk.DiffDiskSettings)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get Spot VM options")
 	}

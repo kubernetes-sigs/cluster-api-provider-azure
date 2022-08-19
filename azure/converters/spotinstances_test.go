@@ -34,13 +34,15 @@ func TestGetSpotVMOptions(t *testing.T) {
 		billingProfile        *compute.BillingProfile
 	}
 	tests := []struct {
-		name string
-		spot *infrav1.SpotVMOptions
-		want resultParams
+		name             string
+		spot             *infrav1.SpotVMOptions
+		diffDiskSettings *infrav1.DiffDiskSettings
+		want             resultParams
 	}{
 		{
-			name: "nil spot",
-			spot: nil,
+			name:             "nil spot",
+			spot:             nil,
+			diffDiskSettings: nil,
 			want: resultParams{
 				vmPriorityTypes:       "",
 				vmEvictionPolicyTypes: "",
@@ -52,6 +54,7 @@ func TestGetSpotVMOptions(t *testing.T) {
 			spot: &infrav1.SpotVMOptions{
 				MaxPrice: nil,
 			},
+			diffDiskSettings: nil,
 			want: resultParams{
 				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
 				vmEvictionPolicyTypes: compute.VirtualMachineEvictionPolicyTypesDeallocate,
@@ -66,12 +69,27 @@ func TestGetSpotVMOptions(t *testing.T) {
 					return &p
 				}("1000"),
 			},
+			diffDiskSettings: nil,
 			want: resultParams{
 				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
 				vmEvictionPolicyTypes: compute.VirtualMachineEvictionPolicyTypesDeallocate,
 				billingProfile: &compute.BillingProfile{
 					MaxPrice: to.Float64Ptr(1000),
 				},
+			},
+		},
+		{
+			name: "spot with ephemeral disk",
+			spot: &infrav1.SpotVMOptions{
+				MaxPrice: nil,
+			},
+			diffDiskSettings: &infrav1.DiffDiskSettings{
+				Option: string(compute.DiffDiskOptionsLocal),
+			},
+			want: resultParams{
+				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
+				vmEvictionPolicyTypes: compute.VirtualMachineEvictionPolicyTypesDelete,
+				billingProfile:        nil,
 			},
 		},
 	}
@@ -82,7 +100,7 @@ func TestGetSpotVMOptions(t *testing.T) {
 			g := NewGomegaWithT(t)
 			result := resultParams{}
 			var err error
-			result.vmPriorityTypes, result.vmEvictionPolicyTypes, result.billingProfile, err = GetSpotVMOptions(tt.spot)
+			result.vmPriorityTypes, result.vmEvictionPolicyTypes, result.billingProfile, err = GetSpotVMOptions(tt.spot, tt.diffDiskSettings)
 			g.Expect(result.vmPriorityTypes).To(Equal(tt.want.vmPriorityTypes), fmt.Sprintf("got: %v, want: %v", result.vmPriorityTypes, tt.want.vmPriorityTypes))
 			g.Expect(result.vmEvictionPolicyTypes).To(Equal(tt.want.vmEvictionPolicyTypes), fmt.Sprintf("got: %v, want: %v", result.vmEvictionPolicyTypes, tt.want.vmEvictionPolicyTypes))
 			g.Expect(result.billingProfile).To(Equal(tt.want.billingProfile), fmt.Sprintf("got: %v, want: %v", result.billingProfile, tt.want.billingProfile))
