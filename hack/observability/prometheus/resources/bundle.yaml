@@ -4486,7 +4486,7 @@ spec:
                               If underlying persistent volume is being resized then
                               the Condition will be set to 'ResizeStarted'.
                             items:
-                              description: PersistentVolumeClaimCondition contails
+                              description: PersistentVolumeClaimCondition contains
                                 details about state of pvc
                               properties:
                                 lastProbeTime:
@@ -11335,7 +11335,7 @@ spec:
                               If underlying persistent volume is being resized then
                               the Condition will be set to 'ResizeStarted'.
                             items:
-                              description: PersistentVolumeClaimCondition contails
+                              description: PersistentVolumeClaimCondition contains
                                 details about state of pvc
                               properties:
                                 lastProbeTime:
@@ -17146,7 +17146,7 @@ spec:
                               If underlying persistent volume is being resized then
                               the Condition will be set to 'ResizeStarted'.
                             items:
-                              description: PersistentVolumeClaimCondition contails
+                              description: PersistentVolumeClaimCondition contains
                                 details about state of pvc
                               properties:
                                 lastProbeTime:
