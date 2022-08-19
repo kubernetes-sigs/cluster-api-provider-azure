@@ -79,7 +79,8 @@ var (
 			},
 		},
 	}
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError        = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	tooManyRequestsError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusTooManyRequests}, "Too Many Requests")
 )
 
 func TestReconcileVnet(t *testing.T) {
@@ -286,6 +287,14 @@ func TestIsVnetManaged(t *testing.T) {
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder) {
 				s.VNetSpec().Return(&fakeVNetSpec)
 				m.Get(gomockinternal.AContext(), &fakeVNetSpec).Return(network.VirtualNetwork{}, internalError)
+			},
+		},
+		{
+			name:          "GET returns HTTP 429",
+			expectedError: tooManyRequestsError.Error(),
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder) {
+				s.VNetSpec().Return(&fakeVNetSpec)
+				m.Get(gomockinternal.AContext(), &fakeVNetSpec).Return(network.VirtualNetwork{}, tooManyRequestsError)
 			},
 		},
 	}

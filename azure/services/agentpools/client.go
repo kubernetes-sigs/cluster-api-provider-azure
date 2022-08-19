@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -33,12 +34,35 @@ import (
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	agentpools containerservice.AgentPoolsClient
+	Reader     services.ServiceLimiter
+	Writer     services.ServiceLimiter
+	Deleter    services.ServiceLimiter
 }
 
 // newClient creates a new agent pools client from subscription ID.
 func newClient(auth azure.Authorizer) *azureClient {
 	c := newAgentPoolsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &azureClient{c}
+	reader, writer, deleter := services.NewRateLimiters(&services.RateLimitConfig{
+		AzureServiceRateLimit:             services.AzureServiceRateLimitEnabled,
+		AzureServiceRateLimitQPS:          services.AzureServiceRateLimitQPS,
+		AzureServiceRateLimitBucket:       services.AzureServiceRateLimitBucket,
+		AzureServiceRateLimitQPSWrite:     services.AzureServiceRateLimitQPS,
+		AzureServiceRateLimitBucketWrite:  services.AzureServiceRateLimitBucket,
+		AzureServiceRateLimitQPSDelete:    services.AzureServiceRateLimitQPS,
+		AzureServiceRateLimitBucketDelete: services.AzureServiceRateLimitBucket,
+	})
+	return &azureClient{
+		agentpools: c,
+		Reader: services.ServiceLimiter{
+			RateLimiter: reader,
+		},
+		Writer: services.ServiceLimiter{
+			RateLimiter: writer,
+		},
+		Deleter: services.ServiceLimiter{
+			RateLimiter: deleter,
+		},
+	}
 }
 
 // newAgentPoolsClient creates a new agent pool client from subscription ID.
@@ -50,18 +74,33 @@ func newAgentPoolsClient(subscriptionID string, baseURI string, authorizer autor
 
 // Get gets an agent pool.
 func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.Get")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.Get")
 	defer done()
 
-	return ac.agentpools.Get(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName())
+	// Verify that we aren't currently rate limited or under active exponential backoff
+	if err := ac.Reader.TryRequest(log); err != nil {
+		return nil, err
+	}
+
+	ret, err := ac.agentpools.Get(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName())
+	if err != nil {
+		ac.Reader.StoreRetryAfter(log, ret.Response.Response, err, services.DefaultBackoffWaitTimeRead)
+		return nil, err
+	}
+	return ret, nil
 }
 
 // CreateOrUpdateAsync creates or updates an agent pool asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
 func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.CreateOrUpdate")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.CreateOrUpdate")
 	defer done()
+
+	// Verify that we aren't currently rate limited or under active exponential backoff
+	if err := ac.Writer.TryRequest(log); err != nil {
+		return nil, nil, err
+	}
 
 	agentPool, ok := parameters.(containerservice.AgentPool)
 	if !ok {
@@ -91,6 +130,9 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 
 	err = createFuture.WaitForCompletionRef(ctx, ac.agentpools.Client)
 	if err != nil {
+		resp := createFuture.Response()
+		ac.Writer.StoreRetryAfter(log, resp, err, services.DefaultBackoffWaitTimeWrite)
+		resp.Body.Close()
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
 		return nil, &createFuture, err
@@ -104,8 +146,13 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
 func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.Delete")
 	defer done()
+
+	// Verify that we aren't currently rate limited or under active exponential backoff
+	if err := ac.Deleter.TryRequest(log); err != nil {
+		return nil, err
+	}
 
 	deleteFuture, err := ac.agentpools.Delete(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName())
 	if err != nil {
@@ -117,6 +164,9 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 
 	err = deleteFuture.WaitForCompletionRef(ctx, ac.agentpools.Client)
 	if err != nil {
+		resp := deleteFuture.Response()
+		ac.Deleter.StoreRetryAfter(log, resp, err, services.DefaultBackoffWaitTimeDelete)
+		resp.Body.Close()
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
 		return &deleteFuture, err

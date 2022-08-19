@@ -94,9 +94,6 @@ linters-settings:
         alias: infrav1alpha4exp
       - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1
         alias: infrav1exp
-      # cloud-provider-azure
-      - pkg: sigs.k8s.io/cloud-provider-azure/pkg/consts
-        alias: cloudproviderconsts
   gocritic:
     enabled-tags:
       - "experimental"

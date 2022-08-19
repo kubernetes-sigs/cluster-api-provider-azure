@@ -17,68 +17,41 @@ limitations under the License.
 package services
 
 import (
-	"net/http"
-	"strconv"
-	"time"
-
+	"github.com/pkg/errors"
 	"k8s.io/client-go/util/flowcontrol"
 )
 
-// RateLimitConfig indicates the rate limit config options.
-type RateLimitConfig struct {
-	// Enable rate limiting
-	AzureServiceRateLimit bool `json:"azureServiceRateLimit,omitempty" yaml:"azureServiceRateLimit,omitempty"`
-	// Rate limit QPS (Read)
-	AzureServiceRateLimitQPS float32 `json:"azureServiceRateLimitQPS,omitempty" yaml:"azureServiceRateLimitQPS,omitempty"`
-	// Rate limit Bucket Size
-	AzureServiceRateLimitBucket int `json:"azureServiceRateLimitBucket,omitempty" yaml:"azureServiceRateLimitBucket,omitempty"`
-	// Rate limit QPS (Write)
-	AzureServiceRateLimitQPSWrite float32 `json:"azureServiceRateLimitQPSWrite,omitempty" yaml:"azureServiceRateLimitQPSWrite,omitempty"`
-	// Rate limit Bucket Size
-	AzureServiceRateLimitBucketWrite int `json:"azureServiceRateLimitBucketWrite,omitempty" yaml:"azureServiceRateLimitBucketWrite,omitempty"`
-}
+// Standard defaults for Azure service rate limits.
+const (
+	// AzureServiceRateLimitEnabled sets the default "Enabled" value for a rate limiter.
+	AzureServiceRateLimitEnabled = true
+	// AzureServiceRateLimitQPS is the default QPS permitted by a rate limiter.
+	AzureServiceRateLimitQPS = 1.0
+	// AzureServiceRateLimitBucket is the default maximum number of requests to hold in a queue when rate limiting is active.
+	AzureServiceRateLimitBucket = 5
+)
 
-type RateLimiter struct {
-	Reader flowcontrol.RateLimiter
-	Writer flowcontrol.RateLimiter
-}
+var rateLimitError error = errors.Errorf("actively rate limited")
 
-type RetryAfter struct {
-	Reader time.Time
-	Writer time.Time
-}
-
-// Standard defaults for Azure service rate limits
-const AzureServiceRateLimitEnabled bool = true
-
-// NewRateLimiter creates new read and write flowcontrol.RateLimiter from RateLimitConfig.
-func NewRateLimiter(config *RateLimitConfig) (flowcontrol.RateLimiter, flowcontrol.RateLimiter) {
-	readLimiter := flowcontrol.NewFakeAlwaysRateLimiter()
-	writeLimiter := flowcontrol.NewFakeAlwaysRateLimiter()
+// NewRateLimiters creates new read, write, and delete flowcontrol.RateLimiters from RateLimitConfig.
+func NewRateLimiters(config *RateLimitConfig) (reader flowcontrol.RateLimiter, writer flowcontrol.RateLimiter, deleter flowcontrol.RateLimiter) {
+	reader = flowcontrol.NewFakeAlwaysRateLimiter()
+	writer = flowcontrol.NewFakeAlwaysRateLimiter()
+	deleter = flowcontrol.NewFakeAlwaysRateLimiter()
 
 	if config != nil && config.AzureServiceRateLimit {
-		readLimiter = flowcontrol.NewTokenBucketRateLimiter(
+		reader = flowcontrol.NewTokenBucketRateLimiter(
 			config.AzureServiceRateLimitQPS,
 			config.AzureServiceRateLimitBucket)
 
-		writeLimiter = flowcontrol.NewTokenBucketRateLimiter(
+		writer = flowcontrol.NewTokenBucketRateLimiter(
 			config.AzureServiceRateLimitQPSWrite,
 			config.AzureServiceRateLimitBucketWrite)
+
+		deleter = flowcontrol.NewTokenBucketRateLimiter(
+			config.AzureServiceRateLimitQPSDelete,
+			config.AzureServiceRateLimitBucketDelete)
 	}
 
-	return readLimiter, writeLimiter
-}
-
-func GetRetryAfterTime(resp *http.Response) time.Time {
-	ra := resp.Header.Get("Retry-After")
-	if ra != "" {
-		var dur time.Duration
-		if retryAfter, _ := strconv.Atoi(ra); retryAfter > 0 {
-			dur = time.Duration(retryAfter) * time.Second
-		} else if t, err := time.Parse(time.RFC1123, ra); err == nil {
-			dur = time.Until(t)
-		}
-		return time.Now().Add(dur)
-	}
-	return time.Now()
+	return reader, writer, deleter
 }

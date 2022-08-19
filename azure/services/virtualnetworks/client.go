@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -33,13 +34,34 @@ import (
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	virtualnetworks network.VirtualNetworksClient
+	Reader          services.ServiceLimiter
+	Writer          services.ServiceLimiter
+	Deleter         services.ServiceLimiter
 }
 
 // newClient creates a new VM client from subscription ID.
 func newClient(auth azure.Authorizer) *azureClient {
 	c := newVirtualNetworksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
+	reader, writer, deleter := services.NewRateLimiters(&services.RateLimitConfig{
+		AzureServiceRateLimit:             services.AzureServiceRateLimitEnabled,
+		AzureServiceRateLimitQPS:          services.AzureServiceRateLimitQPS,
+		AzureServiceRateLimitBucket:       services.AzureServiceRateLimitBucket,
+		AzureServiceRateLimitQPSWrite:     services.AzureServiceRateLimitQPS,
+		AzureServiceRateLimitBucketWrite:  services.AzureServiceRateLimitBucket,
+		AzureServiceRateLimitQPSDelete:    services.AzureServiceRateLimitQPS,
+		AzureServiceRateLimitBucketDelete: services.AzureServiceRateLimitBucket,
+	})
 	return &azureClient{
 		virtualnetworks: c,
+		Reader: services.ServiceLimiter{
+			RateLimiter: reader,
+		},
+		Writer: services.ServiceLimiter{
+			RateLimiter: writer,
+		},
+		Deleter: services.ServiceLimiter{
+			RateLimiter: deleter,
+		},
 	}
 }
 
@@ -52,18 +74,33 @@ func newVirtualNetworksClient(subscriptionID string, baseURI string, authorizer 
 
 // Get gets the specified virtual network.
 func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.Get")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.Get")
 	defer done()
 
-	return ac.virtualnetworks.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+	// Verify that we aren't currently rate limited or under active exponential backoff
+	if err := ac.Reader.TryRequest(log); err != nil {
+		return nil, err
+	}
+
+	ret, err := ac.virtualnetworks.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+	if err != nil {
+		ac.Reader.StoreRetryAfter(log, ret.Response.Response, err, services.DefaultBackoffWaitTimeRead)
+		return nil, err
+	}
+	return ret, err
 }
 
 // CreateOrUpdateAsync creates or updates a virtual network in the specified resource group asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
 func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.CreateOrUpdateAsync")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.CreateOrUpdateAsync")
 	defer done()
+
+	// Verify that we aren't currently rate limited or under active exponential backoff
+	if err := ac.Writer.TryRequest(log); err != nil {
+		return nil, nil, err
+	}
 
 	vn, ok := parameters.(network.VirtualNetwork)
 	if !ok {
@@ -80,6 +117,9 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 
 	err = createFuture.WaitForCompletionRef(ctx, ac.virtualnetworks.Client)
 	if err != nil {
+		resp := createFuture.Response()
+		ac.Writer.StoreRetryAfter(log, resp, err, services.DefaultBackoffWaitTimeWrite)
+		resp.Body.Close()
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
 		return nil, &createFuture, err
@@ -93,8 +133,13 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
 func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.DeleteAsync")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.DeleteAsync")
 	defer done()
+
+	// Verify that we aren't currently rate limited or under active exponential backoff
+	if err := ac.Deleter.TryRequest(log); err != nil {
+		return nil, err
+	}
 
 	deleteFuture, err := ac.virtualnetworks.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
 	if err != nil {
@@ -106,6 +151,9 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 
 	err = deleteFuture.WaitForCompletionRef(ctx, ac.virtualnetworks.Client)
 	if err != nil {
+		resp := deleteFuture.Response()
+		ac.Deleter.StoreRetryAfter(log, resp, err, services.DefaultBackoffWaitTimeDelete)
+		resp.Body.Close()
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
 		return &deleteFuture, err
