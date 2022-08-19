@@ -637,6 +637,10 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmssSpec azure.Sca
 		}
 	}
 
+	if vmssSpec.OSDisk.CachingType != "" {
+		storageProfile.OsDisk.Caching = compute.CachingTypes(vmssSpec.OSDisk.CachingType)
+	}
+
 	dataDisks := make([]compute.VirtualMachineScaleSetDataDisk, len(vmssSpec.DataDisks))
 	for i, disk := range vmssSpec.DataDisks {
 		dataDisks[i] = compute.VirtualMachineScaleSetDataDisk{
