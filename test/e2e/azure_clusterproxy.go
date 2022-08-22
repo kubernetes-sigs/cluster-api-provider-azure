@@ -38,6 +38,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -217,13 +218,25 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 	activityLogsClient := insights.NewActivityLogsClient(subscriptionID)
 	activityLogsClient.Authorizer = authorizer
 
-	workloadCluster, err := getAzureCluster(ctx, acp.GetClient(), namespace, name)
-	if err != nil {
-		// Failing to fetch logs should not cause the test to fail
-		Byf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the workload cluster on the management cluster: %v", name, namespace, err)
-		return
+	var groupName string
+	clusterClient := acp.GetClient()
+	workloadCluster, err := getAzureCluster(timeoutctx, clusterClient, namespace, name)
+	if apierrors.IsNotFound(err) {
+		controlPlane, err := getAzureManagedControlPlane(timeoutctx, clusterClient, namespace, name)
+		if err != nil {
+			// Failing to fetch logs should not cause the test to fail
+			Byf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the AzureManagedControlPlane on the management cluster: %v", name, namespace, err)
+			return
+		}
+		groupName = controlPlane.Spec.ResourceGroupName
+	} else {
+		if err != nil {
+			// Failing to fetch logs should not cause the test to fail
+			Byf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the workload cluster on the management cluster: %v", name, namespace, err)
+			return
+		}
+		groupName = workloadCluster.Spec.ResourceGroup
 	}
-	groupName := workloadCluster.Spec.ResourceGroup
 
 	start := time.Now().Add(-2 * time.Hour).UTC().Format(time.RFC3339)
 	end := time.Now().UTC().Format(time.RFC3339)
