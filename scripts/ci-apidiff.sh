@@ -14,15 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
 set -o nounset
 set -o pipefail
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
-APIDIFF="${REPO_ROOT}/hack/tools/bin/go-apidiff"
+cd "${REPO_ROOT}" || exit
 
-make --directory="${REPO_ROOT}" "${APIDIFF##*/}"
 echo "*** Running go-apidiff ***"
+APIDIFF=$(APIDIFF_OLD_COMMIT="${PULL_BASE_SHA}" make apidiff 2> /dev/null)
 
-${APIDIFF} "${PULL_BASE_SHA}" --print-compatible
+if [[ "${APIDIFF}" == *"sigs.k8s.io/cluster-api-provider-azure/api/"* ]] || [[ "${APIDIFF}" == *"sigs.k8s.io/cluster-api-provider-azure/exp/api/"* ]]; then
+    echo "${APIDIFF}"
+    exit 1
+else
+    echo "No files under api/ or exp/api/ changed."
+fi
