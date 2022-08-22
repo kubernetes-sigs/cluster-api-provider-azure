@@ -25,7 +25,7 @@ import (
 
 // GetSpotVMOptions takes the spot vm options
 // and returns the individual vm priority, eviction policy and billing profile.
-func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
+func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions, diffDiskSettings *infrav1.DiffDiskSettings) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
 	// Spot VM not requested, return zero values to apply defaults
 	if spotVMOptions == nil {
 		return "", "", nil, nil
@@ -40,5 +40,9 @@ func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMach
 			MaxPrice: &maxPrice,
 		}
 	}
-	return compute.VirtualMachinePriorityTypesSpot, compute.VirtualMachineEvictionPolicyTypesDeallocate, billingProfile, nil
+	evictionPolicy := compute.VirtualMachineEvictionPolicyTypesDeallocate
+	if diffDiskSettings != nil && diffDiskSettings.Option == "Local" {
+		evictionPolicy = compute.VirtualMachineEvictionPolicyTypesDelete
+	}
+	return compute.VirtualMachinePriorityTypesSpot, evictionPolicy, billingProfile, nil
 }
