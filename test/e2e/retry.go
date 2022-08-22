@@ -36,12 +36,12 @@ const (
 // retryWithTimeout retries a function that returns an error until a timeout is reached
 func retryWithTimeout(interval, timeout time.Duration, fn func() error) error {
 	var pollError error
-	err := wait.PollImmediate(collectLogInterval, collectLogTimeout, func() (bool, error) {
+	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		pollError = nil
 		err := fn()
 		if err != nil {
 			pollError = err
-			return false, nil
+			return false, nil //nolint:nilerr // We don't want to return err here
 		}
 		return true, nil
 	})

@@ -26,19 +26,18 @@ import (
 	"strings"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/util"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
+	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/util"
 )
 
 var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", func() {
@@ -62,7 +61,7 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 		Expect(e2eConfig).NotTo(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
 		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
 		Expect(bootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
-		Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
+		Expect(os.MkdirAll(artifactFolder, 0o755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersionUpgradeFrom))
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersionUpgradeTo))
 
@@ -183,7 +182,7 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 				By("Upgrade the workload cluster to v1.23")
 				configCluster.KubernetesVersion = postCSIKubernetesVersion
 				configCluster.Flavor = "azurediskcsi-migration-off"
-				upgradedCluster, _, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
+				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
 				// Wait for control plane to be upgraded successfully
 				By("Waiting for control-plane machines to have the upgraded kubernetes version")
 				framework.WaitForControlPlaneMachinesToBeUpgraded(ctx, framework.WaitForControlPlaneMachinesToBeUpgradedInput{
@@ -246,7 +245,7 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 				cpWaiters := clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}
-				upgradedCluster, _, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, cpWaiters, result)
+				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, cpWaiters, result)
 				// Wait for control plane to be upgraded successfully
 				By("Waiting for control-plane machines to have the upgraded kubernetes version")
 				framework.WaitForControlPlaneMachinesToBeUpgraded(ctx, framework.WaitForControlPlaneMachinesToBeUpgradedInput{
@@ -307,7 +306,7 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 				cpWaiters := clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}
-				upgradedCluster, _, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, cpWaiters, result)
+				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, cpWaiters, result)
 
 				// Wait for control plane to be upgraded successfully
 				By("Waiting for control-plane machines to have the upgraded kubernetes version")

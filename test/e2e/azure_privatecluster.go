@@ -108,21 +108,21 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 	// **************
 	// Get the Client ID for the user assigned identity
-	subscriptionID := os.Getenv(AzureSubscriptionId)
+	subscriptionID := os.Getenv(AzureSubscriptionID)
 	identityRG, ok := os.LookupEnv(AzureIdentityResourceGroup)
 	if !ok {
 		identityRG = "capz-ci"
 	}
-	userId, ok := os.LookupEnv(AzureUserIdentity)
+	userID, ok := os.LookupEnv(AzureUserIdentity)
 	if !ok {
-		userId = "cloud-provider-user-identity"
+		userID = "cloud-provider-user-identity"
 	}
-	resourceID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/%s", subscriptionID, identityRG, userId)
+	resourceID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/%s", subscriptionID, identityRG, userID)
 	os.Setenv("UAMI_CLIENT_ID", getClientIDforMSI(resourceID))
 
 	os.Setenv("CLUSTER_IDENTITY_NAME", "cluster-identity-user-assigned")
 	os.Setenv("CLUSTER_IDENTITY_NAMESPACE", input.Namespace.Name)
-	//*************
+	// *************
 
 	By("Creating a private workload cluster")
 	clusterName = fmt.Sprintf("capz-e2e-%s-%s", util.RandomString(6), "private")

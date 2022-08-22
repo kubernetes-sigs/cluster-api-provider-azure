@@ -23,6 +23,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -59,8 +60,7 @@ type (
 )
 
 func NewAzureClusterProxy(name string, kubeconfigPath string, options ...framework.Option) *AzureClusterProxy {
-	proxy, ok := framework.NewClusterProxy(name, kubeconfigPath, initScheme(), options...).(framework.ClusterProxy)
-	Expect(ok).To(BeTrue(), "framework.NewClusterProxy must implement capi_e2e.ClusterProxy")
+	proxy := framework.NewClusterProxy(name, kubeconfigPath, initScheme(), options...)
 	return &AzureClusterProxy{
 		ClusterProxy: proxy,
 	}
@@ -134,13 +134,13 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 
 				Byf("Creating log watcher for controller %s/%s, container %s", kubesystem, pod.Name, container.Name)
 				logFile := path.Join(aboveMachinesPath, kubesystem, pod.Name, container.Name+".log")
-				if os.MkdirAll(filepath.Dir(logFile), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(logFile), 0o755); err != nil {
 					// Failing to mkdir should not cause the test to fail
 					Byf("Error mkdir: %v", err)
 					return
 				}
 
-				f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 				if err != nil {
 					// Failing to fetch logs should not cause the test to fail
 					Byf("Error opening file to write pod logs: %v", err)
@@ -164,7 +164,7 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 				out := bufio.NewWriter(f)
 				defer out.Flush()
 				_, err = out.ReadFrom(podLogs)
-				if err != nil && err != io.ErrUnexpectedEOF {
+				if errors.Is(err, io.ErrUnexpectedEOF) {
 					// Failing to stream logs should not cause the test to fail
 					Byf("Got error while streaming logs for pod %s/%s, container %s: %v", kubesystem, pod.Name, container.Name, err)
 				}
@@ -176,13 +176,13 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 
 			Byf("Collecting events for Pod %s/%s", kubesystem, pod.Name)
 			eventFile := path.Join(aboveMachinesPath, kubesystem, pod.Name, "pod-events.txt")
-			if err := os.MkdirAll(filepath.Dir(eventFile), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(eventFile), 0o755); err != nil {
 				// Failing to mkdir should not cause the test to fail
 				Byf("Error mkdir: %v", err)
 				return
 			}
 
-			f, err := os.OpenFile(eventFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			f, err := os.OpenFile(eventFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 			if err != nil {
 				// Failing to open the file should not cause the test to fail
 				Byf("Error opening file to write Pod events: %v", err)
@@ -199,7 +199,7 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 			out := bufio.NewWriter(f)
 			defer out.Flush()
 			_, err = out.WriteString(msg)
-			if err != nil && err != io.ErrUnexpectedEOF {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
 				// Failing to collect event message should not cause the test to fail
 				Byf("failed to collect event message of pod %s/%s: %v", kubesystem, pod.Name, err)
 			}
@@ -249,9 +249,9 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 	}
 
 	logFile := path.Join(aboveMachinesPath, activitylog, groupName+".log")
-	Expect(os.MkdirAll(filepath.Dir(logFile), 0755)).To(Succeed())
+	Expect(os.MkdirAll(filepath.Dir(logFile), 0o755)).To(Succeed())
 
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		// Failing to fetch logs should not cause the test to fail
 		Byf("Error opening file to write activity logs: %v", err)

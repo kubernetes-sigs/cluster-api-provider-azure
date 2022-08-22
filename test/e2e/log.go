@@ -51,7 +51,7 @@ func Log(message string) {
 	logf("INFO", message)
 }
 
-// Log prints warning logs with a timestamp.
+// LogWarning prints warning logs with a timestamp.
 func LogWarning(message string) {
 	logf("WARNING", message)
 }

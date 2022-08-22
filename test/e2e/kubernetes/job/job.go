@@ -27,7 +27,7 @@ import (
 )
 
 func CreateCurlJobResourceSpec(name, endpoint string) *batchv1.Job {
-	name = name + util.RandomString(5)
+	name += util.RandomString(5)
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

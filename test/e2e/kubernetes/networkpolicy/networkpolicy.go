@@ -22,8 +22,8 @@ package networkpolicy
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -44,7 +44,7 @@ const (
 
 // CreateNetworkPolicyFromFile will create a NetworkPolicy from file with a name
 func CreateNetworkPolicyFromFile(ctx context.Context, clientset *kubernetes.Clientset, filename, namespace string) error {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
@@ -60,10 +60,8 @@ func CreateNetworkPolicyFromFile(ctx context.Context, clientset *kubernetes.Clie
 	case *networkingv1.NetworkPolicy:
 		return createNetworkPolicyV1(ctx, clientset, namespace, obj.(*networkingv1.NetworkPolicy))
 	default:
-		return fmt.Errorf("Error: unsupported k8s manifest type %T", o)
+		return fmt.Errorf("unsupported k8s manifest type %T", o)
 	}
-
-	return nil
 }
 
 func createNetworkPolicyV1(ctx context.Context, clientset *kubernetes.Clientset, namespace string, networkPolicy *networkingv1.NetworkPolicy) error {
@@ -101,14 +99,16 @@ func EnsureConnectivityResultBetweenPods(clientset *kubernetes.Clientset, config
 	for _, fromPod := range fromPods {
 		for _, toPod := range toPods {
 			command := []string{"curl", "-S", "-s", "-o", "/dev/null", toPod.Status.PodIP}
-			e2e_pod.Exec(clientset, config, fromPod, command, shouldHaveConnection)
+			err := e2e_pod.Exec(clientset, config, fromPod, command, shouldHaveConnection)
+			Expect(err).NotTo(HaveOccurred())
 		}
 	}
 }
 
 func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient.Config, pod corev1.Pod) {
 	command := []string{"curl", "-S", "-s", "-o", "/dev/null", "www.bing.com"}
-	e2e_pod.Exec(clientset, config, pod, command, true)
+	err := e2e_pod.Exec(clientset, config, pod, command, true)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func ApplyNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, nwpolicyName string, namespace string, nwpolicyFileName string, policyDir string) {

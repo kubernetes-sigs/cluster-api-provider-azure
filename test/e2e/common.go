@@ -22,7 +22,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -62,11 +61,11 @@ const (
 	MultiTenancyIdentityName       = "MULTI_TENANCY_IDENTITY_NAME"
 	ClusterIdentityName            = "CLUSTER_IDENTITY_NAME"
 	ClusterIdentityNamespace       = "CLUSTER_IDENTITY_NAMESPACE"
-	ClusterIdentitySecretName      = "AZURE_CLUSTER_IDENTITY_SECRET_NAME"
-	ClusterIdentitySecretNamespace = "AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE"
-	AzureClientSecret              = "AZURE_CLIENT_SECRET"
-	AzureClientId                  = "AZURE_CLIENT_ID"
-	AzureSubscriptionId            = "AZURE_SUBSCRIPTION_ID"
+	ClusterIdentitySecretName      = "AZURE_CLUSTER_IDENTITY_SECRET_NAME"      //nolint:gosec // Not a secret itself, just its name
+	ClusterIdentitySecretNamespace = "AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE" //nolint:gosec // Not a secret itself, just its name
+	AzureClientSecret              = "AZURE_CLIENT_SECRET"                     //nolint:gosec // Not a secret itself, just its name
+	AzureClientID                  = "AZURE_CLIENT_ID"
+	AzureSubscriptionID            = "AZURE_SUBSCRIPTION_ID"
 	AzureUserIdentity              = "USER_IDENTITY"
 	AzureIdentityResourceGroup     = "CI_RG"
 	JobName                        = "JOB_NAME"
@@ -207,8 +206,11 @@ func ExpectResourceGroupToBe404(ctx context.Context) {
 func redactLogs() {
 	By("Redacting sensitive information from logs")
 	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
+	//nolint:gosec // Ignore warning about running a command constructed from user input
 	cmd := exec.Command(e2eConfig.GetVariable(RedactLogScriptPath))
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		LogWarningf("Redact logs command failed: %v", err)
+	}
 }
 
 func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string) *rest.Config {
@@ -220,7 +222,7 @@ func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string
 	Expect(err).NotTo(HaveOccurred())
 
 	kubeConfigPath := path.Join(tmpdir, clusterName+".kubeconfig")
-	Expect(ioutil.WriteFile(kubeConfigPath, kubeConfigData, 0640)).To(Succeed())
+	Expect(os.WriteFile(kubeConfigPath, kubeConfigData, 0o600)).To(Succeed())
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 	Expect(err).NotTo(HaveOccurred())

@@ -55,7 +55,7 @@ func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (wi
 		}
 
 		if len(result.Items) == 0 {
-			return fmt.Errorf("No Windows Nodes found.")
+			return fmt.Errorf("no Windows Nodes found")
 		}
 		return nil
 	}, nodeOperationTimeout, nodeOperationSleepBetweenRetries).Should(Succeed())
@@ -63,7 +63,7 @@ func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (wi
 	kernalVersion := result.Items[0].Status.NodeInfo.KernelVersion
 	kernalVersions := strings.Split(kernalVersion, ".")
 	if len(kernalVersions) != 4 {
-		return windows.Unknown, fmt.Errorf("Not a valid Windows kernel version: %s", kernalVersion)
+		return windows.Unknown, fmt.Errorf("not a valid Windows kernel version: %s", kernalVersion)
 	}
 
 	switch kernalVersions[2] {
@@ -85,18 +85,18 @@ func TaintNode(clientset *kubernetes.Clientset, options metav1.ListOptions, tain
 		}
 
 		if len(result.Items) == 0 {
-			return fmt.Errorf("No Nodes found.")
+			return fmt.Errorf("no Nodes found")
 		}
 		return nil
 	}, nodeOperationTimeout, nodeOperationSleepBetweenRetries).Should(Succeed())
 
-	for _, n := range result.Items {
-		newNode, needsUpdate := addOrUpdateTaint(&n, taint)
+	for i := range result.Items {
+		newNode, needsUpdate := addOrUpdateTaint(&result.Items[i], taint)
 		if !needsUpdate {
 			continue
 		}
 
-		err := PatchNodeTaints(clientset, newNode.Name, &n, newNode)
+		err := PatchNodeTaints(clientset, newNode.Name, &result.Items[i], newNode)
 		if err != nil {
 			return err
 		}
@@ -105,11 +105,11 @@ func TaintNode(clientset *kubernetes.Clientset, options metav1.ListOptions, tain
 	return nil
 }
 
-// https://github.com/kubernetes/kubernetes/blob/v1.21.1/staging/src/k8s.io/cloud-provider/node/helpers/taints.go#L91
+// PatchNodeTaints is taken from https://github.com/kubernetes/kubernetes/blob/v1.21.1/staging/src/k8s.io/cloud-provider/node/helpers/taints.go#L91
 func PatchNodeTaints(clientset *kubernetes.Clientset, nodeName string, oldNode *corev1.Node, newNode *corev1.Node) error {
 	oldData, err := json.Marshal(oldNode)
 	if err != nil {
-		return fmt.Errorf("failed to marshal old node %#v for node %q: %v", oldNode, nodeName, err)
+		return fmt.Errorf("failed to marshal old node %#v for node %q: %w", oldNode, nodeName, err)
 	}
 
 	newTaints := newNode.Spec.Taints
@@ -117,12 +117,12 @@ func PatchNodeTaints(clientset *kubernetes.Clientset, nodeName string, oldNode *
 	newNodeClone.Spec.Taints = newTaints
 	newData, err := json.Marshal(newNodeClone)
 	if err != nil {
-		return fmt.Errorf("failed to marshal new node %#v for node %q: %v", newNodeClone, nodeName, err)
+		return fmt.Errorf("failed to marshal new node %#v for node %q: %w", newNodeClone, nodeName, err)
 	}
 
 	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.Node{})
 	if err != nil {
-		return fmt.Errorf("failed to create patch for node %q: %v", nodeName, err)
+		return fmt.Errorf("failed to create patch for node %q: %w", nodeName, err)
 	}
 
 	Eventually(func() error {
