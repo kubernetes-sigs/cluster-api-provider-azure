@@ -1393,6 +1393,7 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 			ResourceGroup: "my-rg",
 		},
 	}).AnyTimes()
+	s.ReconcileReplicas(gomock.Any(), gomock.Any()).AnyTimes()
 }
 
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {

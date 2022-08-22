@@ -50,6 +50,7 @@ func TestNewService(t *testing.T) {
 	g := NewGomegaWithT(t)
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)
+	_ = expv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 

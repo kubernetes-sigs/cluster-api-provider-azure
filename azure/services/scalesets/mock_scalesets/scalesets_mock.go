@@ -293,6 +293,20 @@ func (mr *MockScaleSetScopeMockRecorder) MaxSurge() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxSurge", reflect.TypeOf((*MockScaleSetScope)(nil).MaxSurge))
 }
 
+// ReconcileReplicas mocks base method.
+func (m *MockScaleSetScope) ReconcileReplicas(arg0 context.Context, arg1 *azure.VMSS) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReconcileReplicas", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReconcileReplicas indicates an expected call of ReconcileReplicas.
+func (mr *MockScaleSetScopeMockRecorder) ReconcileReplicas(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReconcileReplicas", reflect.TypeOf((*MockScaleSetScope)(nil).ReconcileReplicas), arg0, arg1)
+}
+
 // ResourceGroup mocks base method.
 func (m *MockScaleSetScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
