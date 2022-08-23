@@ -44,7 +44,7 @@ type VM struct {
 }
 
 // SDKToVM converts an Azure SDK VirtualMachine to the CAPZ VM type.
-func SDKToVM(v compute.VirtualMachine) (*VM, error) {
+func SDKToVM(v compute.VirtualMachine) *VM {
 	vm := &VM{
 		ID:    to.String(v.ID),
 		Name:  to.String(v.Name),
@@ -63,5 +63,5 @@ func SDKToVM(v compute.VirtualMachine) (*VM, error) {
 		vm.Tags = MapToTags(v.Tags)
 	}
 
-	return vm, nil
+	return vm
 }

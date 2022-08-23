@@ -95,10 +95,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if !ok {
 			return errors.Errorf("%T is not a compute.VirtualMachine", result)
 		}
-		infraVM, err := converters.SDKToVM(vm)
-		if err != nil {
-			return err
-		}
+		infraVM := converters.SDKToVM(vm)
 		// Transform the VM resource representation to conform to the cloud-provider-azure representation
 		providerID, err := azureutil.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + infraVM.ID)
 		if err != nil {
