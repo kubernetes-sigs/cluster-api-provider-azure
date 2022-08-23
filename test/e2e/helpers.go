@@ -45,6 +45,7 @@ import (
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -549,33 +550,44 @@ func isAzureMachinePoolWindows(amp *expv1beta1.AzureMachinePool) bool {
 	return amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
 }
 
-// execOnHost runs the specified command directly on a node's host, using an SSH connection
-// proxied through a control plane host.
-func execOnHost(controlPlaneEndpoint, hostname, port string, f io.StringWriter, command string,
-	args ...string) error {
+// getProxiedSSHClient creates a SSH client object that connects to a target node
+// proxied through a control plane node.
+func getProxiedSSHClient(controlPlaneEndpoint, hostname, port string) (*ssh.Client, error) {
 	config, err := newSSHConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Init a client connection to a control plane node via the public load balancer
 	lbClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", controlPlaneEndpoint, port), config)
 	if err != nil {
-		return errors.Wrapf(err, "dialing public load balancer at %s", controlPlaneEndpoint)
+		return nil, errors.Wrapf(err, "dialing public load balancer at %s", controlPlaneEndpoint)
 	}
 
 	// Init a connection from the control plane to the target node
 	c, err := lbClient.Dial("tcp", fmt.Sprintf("%s:%s", hostname, port))
 	if err != nil {
-		return errors.Wrapf(err, "dialing from control plane to target node at %s", hostname)
+		return nil, errors.Wrapf(err, "dialing from control plane to target node at %s", hostname)
 	}
 
 	// Establish an authenticated SSH conn over the client -> control plane -> target transport
 	conn, chans, reqs, err := ssh.NewClientConn(c, hostname, config)
 	if err != nil {
-		return errors.Wrap(err, "getting a new SSH client connection")
+		return nil, errors.Wrap(err, "getting a new SSH client connection")
 	}
 	client := ssh.NewClient(conn, chans, reqs)
+	return client, nil
+}
+
+// execOnHost runs the specified command directly on a node's host, using a SSH connection
+// proxied through a control plane host and copies the output to a file.
+func execOnHost(controlPlaneEndpoint, hostname, port string, f io.StringWriter, command string,
+	args ...string) error {
+	client, err := getProxiedSSHClient(controlPlaneEndpoint, hostname, port)
+	if err != nil {
+		return err
+	}
+
 	session, err := client.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "opening SSH session")
@@ -594,6 +606,40 @@ func execOnHost(controlPlaneEndpoint, hostname, port string, f io.StringWriter, 
 	if _, err = f.WriteString(stdoutBuf.String()); err != nil {
 		return errors.Wrap(err, "writing output to file")
 	}
+
+	return nil
+}
+
+// sftpCopyFile copies a file from a node to the specified destination, using a SSH connection
+// proxied through a control plane node.
+func sftpCopyFile(controlPlaneEndpoint, hostname, port, sourcePath, destPath string) error {
+	Logf("Attempting to copy file %s on node %s to %s", sourcePath, hostname, destPath)
+
+	client, err := getProxiedSSHClient(controlPlaneEndpoint, hostname, port)
+	if err != nil {
+		return err
+	}
+
+	sftp, err := sftp.NewClient(client)
+	if err != nil {
+		return errors.Wrapf(err, "getting a new sftp client connection")
+	}
+	defer sftp.Close()
+
+	// copy file
+	sourceFile, err := sftp.Open(sourcePath)
+	if err != nil {
+		return errors.Wrapf(err, "opening file %s on node %s", sourcePath, hostname)
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return errors.Wrapf(err, "creating file %s on locally", sourcePath)
+	}
+	defer destFile.Close()
+
+	sourceFile.WriteTo(destFile)
 
 	return nil
 }

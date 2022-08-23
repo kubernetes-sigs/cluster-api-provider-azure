@@ -414,6 +414,19 @@ spec:
         path: C:/replace-containerd.ps1
         permissions: "0744"
       - content: |
+          mkdir -Force c:/localdumps
+          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpCount /t REG_DWORD /d 50 /f
+          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpType /t REG_DWORD /d 2 /f
+          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpFolder /t REG_EXPAND_SZ /d "c:/LocalDumps" /f
+          # Enable sftp so we can copy crash dump files during log collection of stfp
+          $sshd_config = "$env:ProgramData\ssh\sshd_config"
+          if (-not (Test-Path $sshd_config)) { mkdir -Force $sshd_config }
+          Add-Content -Path $sshd_config "Subsystem sftp              sftp-server.exe"
+          sc.exe stop sshd
+          sc.exe start sshd
+        path: C:/collect-hns-crashes.ps1
+        permissions: "0744"
+      - content: |
           $ErrorActionPreference = 'Stop'
 
           Stop-Service kubelet -Force
@@ -458,6 +471,7 @@ spec:
       preKubeadmCommands:
       - powershell C:/create-temp-folder.ps1
       - powershell C:/replace-containerd.ps1
+      - powershell C:/collect-hns-crashes.ps1
       - powershell C:/replace-pr-binaries.ps1
       users:
       - groups: Administrators
