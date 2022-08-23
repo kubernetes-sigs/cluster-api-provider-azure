@@ -118,6 +118,8 @@ var _ = Describe("Workload cluster creation", func() {
 			_ = bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{Name: clusterName, Namespace: namespace.Name}, result.Cluster)
 		}
 
+		CheckTestBeforeCleanup()
+
 		cleanInput := cleanupInput{
 			SpecName:          specName,
 			Cluster:           result.Cluster,
@@ -192,6 +194,8 @@ var _ = Describe("Workload cluster creation", func() {
 						}
 					})
 				})
+
+				By("PASSED!")
 			})
 		})
 	} else {
@@ -272,6 +276,8 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("PASSED!")
 		})
 	})
 
@@ -314,6 +320,8 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("PASSED!")
 		})
 	})
 
@@ -393,6 +401,8 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("PASSED!")
 		})
 	})
 
@@ -442,6 +452,8 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("PASSED!")
 		})
 	})
 
@@ -495,6 +507,8 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("PASSED!")
 		})
 	})
 
@@ -584,6 +598,8 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("PASSED!")
 		})
 	})
 
@@ -619,6 +635,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
+			By("PASSED!")
 		})
 	})
 })

@@ -244,6 +244,8 @@ var _ = Describe("Conformance Tests", func() {
 			_ = bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{Name: clusterName, Namespace: namespace.Name}, result.Cluster)
 		}
 
+		CheckTestBeforeCleanup()
+
 		cleanInput := cleanupInput{
 			SpecName:        specName,
 			Cluster:         result.Cluster,

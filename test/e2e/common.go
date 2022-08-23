@@ -252,6 +252,15 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 
 }
 
+// CheckTestBeforeCleanup checks to see if the current running Ginkgo test failed, and prints
+// a status message regarding cleanup.
+func CheckTestBeforeCleanup() {
+	if CurrentGinkgoTestDescription().Failed {
+		Logf("FAILED!")
+	}
+	Logf("Cleaning up after \"%s\" spec", CurrentGinkgoTestDescription().FullTestText)
+}
+
 func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {
 	return framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  input.ClusterProxy.GetClient(),
