@@ -6,7 +6,7 @@ If you have questions about using this project or need help, please:
 
   - Consult the [Cluster API Provider Azure Book][docs]
   - Ask in the [#cluster-api-azure][slack] Slack channel
-  - Join us for bi-weekly [office hours][office-hours]
+  - Join us for weekly [office hours][office-hours]
 
 ## How to create issues
 
