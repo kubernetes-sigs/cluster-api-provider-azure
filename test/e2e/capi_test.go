@@ -155,18 +155,6 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	Context("Should adopt up-to-date control plane Machines without modification", func() {
-		capi_e2e.KCPAdoptionSpec(context.TODO(), func() capi_e2e.KCPAdoptionSpecInput {
-			return capi_e2e.KCPAdoptionSpecInput{
-				E2EConfig:             e2eConfig,
-				ClusterctlConfigPath:  clusterctlConfigPath,
-				BootstrapClusterProxy: bootstrapClusterProxy,
-				ArtifactFolder:        artifactFolder,
-				SkipCleanup:           skipCleanup,
-			}
-		})
-	})
-
 	Context("Should successfully exercise machine pools", func() {
 		capi_e2e.MachinePoolSpec(context.TODO(), func() capi_e2e.MachinePoolInput {
 			return capi_e2e.MachinePoolInput{
