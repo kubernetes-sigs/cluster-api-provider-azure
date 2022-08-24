@@ -42,15 +42,16 @@ import (
 
 var _ = Describe("Workload cluster creation", func() {
 	var (
-		ctx               = context.TODO()
-		specName          = "create-workload-cluster"
-		namespace         *corev1.Namespace
-		cancelWatches     context.CancelFunc
-		result            *clusterctl.ApplyClusterTemplateAndWaitResult
-		clusterName       string
-		clusterNamePrefix string
-		additionalCleanup func()
-		specTimes         = map[string]time.Time{}
+		ctx                    = context.TODO()
+		specName               = "create-workload-cluster"
+		namespace              *corev1.Namespace
+		cancelWatches          context.CancelFunc
+		result                 *clusterctl.ApplyClusterTemplateAndWaitResult
+		clusterName            string
+		clusterNamePrefix      string
+		additionalCleanup      func()
+		specTimes              = map[string]time.Time{}
+		skipResourceGroupCheck = false
 	)
 
 	BeforeEach(func() {
@@ -119,15 +120,16 @@ var _ = Describe("Workload cluster creation", func() {
 		}
 
 		cleanInput := cleanupInput{
-			SpecName:          specName,
-			Cluster:           result.Cluster,
-			ClusterProxy:      bootstrapClusterProxy,
-			Namespace:         namespace,
-			CancelWatches:     cancelWatches,
-			IntervalsGetter:   e2eConfig.GetIntervals,
-			SkipCleanup:       skipCleanup,
-			AdditionalCleanup: additionalCleanup,
-			ArtifactFolder:    artifactFolder,
+			SpecName:               specName,
+			Cluster:                result.Cluster,
+			ClusterProxy:           bootstrapClusterProxy,
+			Namespace:              namespace,
+			CancelWatches:          cancelWatches,
+			IntervalsGetter:        e2eConfig.GetIntervals,
+			SkipCleanup:            skipCleanup,
+			AdditionalCleanup:      additionalCleanup,
+			ArtifactFolder:         artifactFolder,
+			SkipResourceGroupCheck: skipResourceGroupCheck,
 		}
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 		Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
@@ -189,6 +191,7 @@ var _ = Describe("Workload cluster creation", func() {
 							E2EConfig:             e2eConfig,
 							ArtifactFolder:        artifactFolder,
 							SkipCleanup:           skipCleanup,
+							CancelWatches:         cancelWatches,
 						}
 					})
 				})

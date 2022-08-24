@@ -122,15 +122,16 @@ func setupSpecNamespace(ctx context.Context, namespaceName string, clusterProxy 
 }
 
 type cleanupInput struct {
-	SpecName          string
-	ClusterProxy      framework.ClusterProxy
-	ArtifactFolder    string
-	Namespace         *corev1.Namespace
-	CancelWatches     context.CancelFunc
-	Cluster           *clusterv1.Cluster
-	IntervalsGetter   func(spec, key string) []interface{}
-	SkipCleanup       bool
-	AdditionalCleanup func()
+	SpecName               string
+	ClusterProxy           framework.ClusterProxy
+	ArtifactFolder         string
+	Namespace              *corev1.Namespace
+	CancelWatches          context.CancelFunc
+	Cluster                *clusterv1.Cluster
+	IntervalsGetter        func(spec, key string) []interface{}
+	SkipCleanup            bool
+	AdditionalCleanup      func()
+	SkipResourceGroupCheck bool
 }
 
 func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
@@ -183,7 +184,10 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	}
 
 	Logf("Checking if any resources are left over in Azure for spec %q", input.SpecName)
-	ExpectResourceGroupToBe404(ctx)
+
+	if !input.SkipResourceGroupCheck {
+		ExpectResourceGroupToBe404(ctx)
+	}
 }
 
 // ExpectResourceGroupToBe404 performs a GET request to Azure to determine if the cluster resource group still exists.

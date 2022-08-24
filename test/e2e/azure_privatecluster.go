@@ -38,7 +38,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -59,6 +58,7 @@ type AzurePrivateClusterSpecInput struct {
 	E2EConfig             *clusterctl.E2EConfig
 	ArtifactFolder        string
 	SkipCleanup           bool
+	CancelWatches         context.CancelFunc
 }
 
 // AzurePrivateClusterSpec implements a test that creates a workload cluster with a private API endpoint.
@@ -159,27 +159,18 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		// Delete the private cluster, so that all of the Azure resources will be cleaned up when the public
 		// cluster is deleted at the end of the test. If we don't delete this cluster, the Azure resource delete
 		// verification will fail.
-		if !input.SkipCleanup {
-			Logf("deleting private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
-			Expect(publicClusterProxy.GetClient().Delete(ctx, cluster)).To(Succeed())
-			Eventually(func() error {
-				var c clusterv1.Cluster
-				err := publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name}, &c)
-				if apierrors.IsNotFound(err) {
-					// 404 the cluster has been deleted
-					return nil
-				}
-
-				if err != nil {
-					// some unexpected error occurred; return it
-					LogWarning(err.Error())
-					return err
-				}
-
-				return fmt.Errorf("cluster %q has not yet been deleted", cluster.Name)
-			}, input.E2EConfig.GetIntervals(specName, "wait-delete-cluster")...).Should(BeNil())
-			Logf("deleted private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
+		cleanInput := cleanupInput{
+			SpecName:               specName,
+			Cluster:                cluster,
+			ClusterProxy:           publicClusterProxy,
+			Namespace:              input.Namespace,
+			CancelWatches:          input.CancelWatches,
+			IntervalsGetter:        e2eConfig.GetIntervals,
+			SkipCleanup:            input.SkipCleanup,
+			ArtifactFolder:         input.ArtifactFolder,
+			SkipResourceGroupCheck: true, // We don't expect the resource group to be deleted since the private cluster does not own the resource group.
 		}
+		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 	}()
 
 	// Check that azure bastion is provisioned successfully.
