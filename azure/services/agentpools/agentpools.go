@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -43,6 +44,10 @@ type ManagedMachinePoolScope interface {
 	SetAgentPoolProviderIDList([]string)
 	SetAgentPoolReplicas(int32)
 	SetAgentPoolReady(bool)
+	UpdateCAPIMachinePoolReplicas(replicas *int32)
+	UpdateCAPIMachinePoolAnnotations(key, value string)
+	GetCAPIMachinePoolAnnotation(key string) (bool, string)
+	RemoveCAPIMachinePoolAnnotations(key string)
 }
 
 // Service provides operations on Azure resources.
@@ -123,6 +128,25 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				MinCount:            profile.MinCount,
 				MaxCount:            profile.MaxCount,
 			},
+		}
+
+		// When autoscaling is set, the count of the nodes differ based on the autoscaler and should not depend on the
+		// count present in MachinePool or AzureManagedMachinePool, hence we should not make an update API call based
+		// on difference in count.
+		if to.Bool(profile.EnableAutoScaling) && existingProfile.Count != nil {
+			if ok, _ := s.scope.GetCAPIMachinePoolAnnotation(azure.ReplicasManagedByAutoscalerAnnotation); !ok {
+				s.scope.UpdateCAPIMachinePoolAnnotations(azure.ReplicasManagedByAutoscalerAnnotation, "true")
+			}
+
+			if to.Int32(existingProfile.Count) != to.Int32(normalizedProfile.Count) {
+				s.scope.UpdateCAPIMachinePoolReplicas(existingProfile.Count)
+			}
+			normalizedProfile.Count = existingProfile.Count
+		}
+
+		// set ReplicasManagedByAutoscalerAnnotation to false as it is disabled by the user.
+		if ok, _ := s.scope.GetCAPIMachinePoolAnnotation(azure.ReplicasManagedByAutoscalerAnnotation); !to.Bool(profile.EnableAutoScaling) && ok {
+			s.scope.RemoveCAPIMachinePoolAnnotations(azure.ReplicasManagedByAutoscalerAnnotation)
 		}
 
 		// Diff and check if we require an update
