@@ -27,20 +27,17 @@ import (
 	"strings"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-	expv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api/test/framework"
-
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	autorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
@@ -179,57 +176,57 @@ func getHostname(m *clusterv1.Machine, isWindows bool) string {
 	return hostname
 }
 
-func getAzureCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*v1beta1.AzureCluster, error) {
+func getAzureCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1.AzureCluster, error) {
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}
 
-	azCluster := &v1beta1.AzureCluster{}
+	azCluster := &infrav1.AzureCluster{}
 	err := managementClusterClient.Get(ctx, key, azCluster)
 	return azCluster, err
 }
 
-func getAzureManagedControlPlane(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*expv1alpha4.AzureManagedControlPlane, error) {
+func getAzureManagedControlPlane(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1exp.AzureManagedControlPlane, error) {
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}
 
-	azManagedControlPlane := &expv1alpha4.AzureManagedControlPlane{}
+	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
 	err := managementClusterClient.Get(ctx, key, azManagedControlPlane)
 	return azManagedControlPlane, err
 }
 
-func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*v1beta1.AzureMachine, error) {
+func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*infrav1.AzureMachine, error) {
 	key := client.ObjectKey{
 		Namespace: m.Spec.InfrastructureRef.Namespace,
 		Name:      m.Spec.InfrastructureRef.Name,
 	}
 
-	azMachine := &v1beta1.AzureMachine{}
+	azMachine := &infrav1.AzureMachine{}
 	err := managementClusterClient.Get(ctx, key, azMachine)
 	return azMachine, err
 }
 
-func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*expv1alpha4.AzureMachinePool, error) {
+func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1exp.AzureMachinePool, error) {
 	key := client.ObjectKey{
 		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 	}
 
-	azMachinePool := &expv1alpha4.AzureMachinePool{}
+	azMachinePool := &infrav1exp.AzureMachinePool{}
 	err := managementClusterClient.Get(ctx, key, azMachinePool)
 	return azMachinePool, err
 }
 
-func getAzureManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*expv1alpha4.AzureManagedMachinePool, error) {
+func getAzureManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1exp.AzureManagedMachinePool, error) {
 	key := client.ObjectKey{
 		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 	}
 
-	azManagedMachinePool := &expv1alpha4.AzureManagedMachinePool{}
+	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
 	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
 	return azManagedMachinePool, err
 }
@@ -388,7 +385,7 @@ func windowsCrashDumpLogs(execToPathFn func(outputFileName string, command strin
 }
 
 // collectVMBootLog collects boot logs of the vm by using azure boot diagnostics.
-func collectVMBootLog(ctx context.Context, am *v1beta1.AzureMachine, outputPath string) error {
+func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath string) error {
 	Logf("Collecting boot logs for AzureMachine %s\n", am.GetName())
 
 	if am == nil || am.Spec.ProviderID == nil {

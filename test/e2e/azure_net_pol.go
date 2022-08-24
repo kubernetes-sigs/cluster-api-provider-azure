@@ -29,14 +29,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
-	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
-	e2e_networkpolicy "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/networkpolicy"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
+	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
+	e2e_networkpolicy "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/networkpolicy"
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
@@ -264,5 +262,4 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 
 	By("Ensuring we have ingress access from role:frontend pods in development namespace")
 	e2e_networkpolicy.EnsureConnectivityResultBetweenPods(clientset, config, frontendDevPods, backendPods, true)
-
 }

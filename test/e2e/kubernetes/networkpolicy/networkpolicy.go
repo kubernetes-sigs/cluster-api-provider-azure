@@ -28,15 +28,13 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-
-	e2e_pod "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/pod"
-
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/scheme"
+	e2e_pod "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/pod"
 )
 
 const (
@@ -93,13 +91,13 @@ func DeleteNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, n
 	}, networkPolicyOperationTimeout, networkPolicyOperationSleepBetweenRetries).Should(Succeed())
 }
 
-func EnsureOutboundInternetAccess(clientset *kubernetes.Clientset, config *restclient.Config, pods []v1.Pod) {
+func EnsureOutboundInternetAccess(clientset *kubernetes.Clientset, config *restclient.Config, pods []corev1.Pod) {
 	for _, pod := range pods {
 		CheckOutboundConnection(clientset, config, pod)
 	}
 }
 
-func EnsureConnectivityResultBetweenPods(clientset *kubernetes.Clientset, config *restclient.Config, fromPods []v1.Pod, toPods []v1.Pod, shouldHaveConnection bool) {
+func EnsureConnectivityResultBetweenPods(clientset *kubernetes.Clientset, config *restclient.Config, fromPods []corev1.Pod, toPods []corev1.Pod, shouldHaveConnection bool) {
 	for _, fromPod := range fromPods {
 		for _, toPod := range toPods {
 			command := []string{"curl", "-S", "-s", "-o", "/dev/null", toPod.Status.PodIP}
@@ -108,7 +106,7 @@ func EnsureConnectivityResultBetweenPods(clientset *kubernetes.Clientset, config
 	}
 }
 
-func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod) {
+func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient.Config, pod corev1.Pod) {
 	command := []string{"curl", "-S", "-s", "-o", "/dev/null", "www.bing.com"}
 	e2e_pod.Exec(clientset, config, pod, command, true)
 }

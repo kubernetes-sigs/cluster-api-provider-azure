@@ -36,8 +36,6 @@ import (
 	"text/tabwriter"
 	"time"
 
-	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
-
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/blang/semver"
@@ -47,6 +45,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	helmAction "helm.sh/helm/v3/pkg/action"
+	helmLoader "helm.sh/helm/v3/pkg/chart/loader"
+	helmCli "helm.sh/helm/v3/pkg/cli"
+	helmVals "helm.sh/helm/v3/pkg/cli/values"
+	helmGetter "helm.sh/helm/v3/pkg/getter"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -56,23 +59,18 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	helmAction "helm.sh/helm/v3/pkg/action"
-	helmLoader "helm.sh/helm/v3/pkg/chart/loader"
-	helmCli "helm.sh/helm/v3/pkg/cli"
-	helmVals "helm.sh/helm/v3/pkg/cli/values"
-	helmGetter "helm.sh/helm/v3/pkg/getter"
 )
 
 const (
@@ -527,12 +525,12 @@ func getMachinesInCluster(ctx context.Context, c framework.Lister, namespace, na
 }
 
 // getMachinePoolsInCluster returns a list of all machine pools in the given cluster.
-func getMachinePoolsInCluster(ctx context.Context, c framework.Lister, namespace, name string) (*clusterv1exp.MachinePoolList, error) {
+func getMachinePoolsInCluster(ctx context.Context, c framework.Lister, namespace, name string) (*expv1.MachinePoolList, error) {
 	if name == "" {
 		return nil, nil
 	}
 
-	machinePoolList := &clusterv1exp.MachinePoolList{}
+	machinePoolList := &expv1.MachinePoolList{}
 	labels := map[string]string{clusterv1.ClusterLabelName: name}
 
 	if err := c.List(ctx, machinePoolList, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
@@ -542,11 +540,11 @@ func getMachinePoolsInCluster(ctx context.Context, c framework.Lister, namespace
 	return machinePoolList, nil
 }
 
-func isAzureMachineWindows(am *v1beta1.AzureMachine) bool {
+func isAzureMachineWindows(am *infrav1.AzureMachine) bool {
 	return am.Spec.OSDisk.OSType == azure.WindowsOS
 }
 
-func isAzureMachinePoolWindows(amp *expv1beta1.AzureMachinePool) bool {
+func isAzureMachinePoolWindows(amp *infrav1exp.AzureMachinePool) bool {
 	return amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
 }
 

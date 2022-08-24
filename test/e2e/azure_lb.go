@@ -25,23 +25,20 @@ import (
 	"net"
 	"time"
 
-	"sigs.k8s.io/cluster-api/util"
-
+	"github.com/hashicorp/go-retryablehttp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	k8snet "k8s.io/utils/net"
-
-	"github.com/hashicorp/go-retryablehttp"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/test/framework"
-
+	k8snet "k8s.io/utils/net"
 	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/job"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
+	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util"
 )
 
 // AzureLBSpecInput is the input for AzureLBSpec.

@@ -28,17 +28,13 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubetest"
@@ -189,7 +185,7 @@ var _ = Describe("Conformance Tests", func() {
 
 		if isWindows(kubetestConfigFilePath) {
 			// Windows requires a taint on control nodes nodes since not all conformance tests have ability to run
-			options := v1.ListOptions{
+			options := metav1.ListOptions{
 				LabelSelector: "kubernetes.io/os=linux",
 			}
 

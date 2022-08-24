@@ -43,8 +43,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -70,8 +70,8 @@ func initScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(scheme)
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	Expect(infrav1exp.AddToScheme(scheme)).To(Succeed())
 	Expect(expv1.AddToScheme(scheme)).To(Succeed())
-	Expect(clusterv1exp.AddToScheme(scheme)).To(Succeed())
 	// Add aadpodidentity v1 to the scheme.
 	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.GroupName, Version: "v1"}
 	scheme.AddKnownTypes(aadPodIdentityGroupVersion,

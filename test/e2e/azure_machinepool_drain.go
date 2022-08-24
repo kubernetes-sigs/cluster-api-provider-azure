@@ -33,13 +33,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	deployments "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -87,19 +86,18 @@ func AzureMachinePoolDrainSpec(ctx context.Context, inputGetter func() AzureMach
 	Expect(clientset).NotTo(BeNil())
 
 	By(fmt.Sprintf("listing AzureMachinePools in the cluster in namespace %s", input.Namespace.Name))
-	ampList := &v1beta1.AzureMachinePoolList{}
+	ampList := &infrav1exp.AzureMachinePoolList{}
 	Expect(bootstrapClusterProxy.GetClient().List(ctx, ampList, client.InNamespace(input.Namespace.Name), client.MatchingLabels(labels))).To(Succeed())
 	for _, amp := range ampList.Items {
 		testMachinePoolCordonAndDrain(ctx, bootstrapClusterProxy, workloadClusterProxy, amp)
 	}
-
 }
 
-func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, workloadClusterProxy framework.ClusterProxy, amp v1beta1.AzureMachinePool) {
+func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, workloadClusterProxy framework.ClusterProxy, amp infrav1exp.AzureMachinePool) {
 	var (
 		isWindows         = amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
 		clientset         = workloadClusterProxy.GetClientSet()
-		owningMachinePool = func() *clusterv1exp.MachinePool {
+		owningMachinePool = func() *expv1.MachinePool {
 			mp, err := getOwnerMachinePool(ctx, mgmtClusterProxy.GetClient(), amp.ObjectMeta)
 			Expect(err).NotTo(HaveOccurred())
 			return mp
@@ -169,7 +167,6 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 
 	// TODO setup a watcher to validate expected 2nd order drain outcomes
 	// https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2159
-
 }
 
 func labelNodesWithMachinePoolName(ctx context.Context, workloadClient client.Client, mpName string, ampms []infrav1exp.AzureMachinePoolMachine) {
@@ -211,15 +208,15 @@ func getAzureMachinePoolMachines(ctx context.Context, mgmtClusterProxy, workload
 }
 
 // getOwnerMachinePool returns the name of MachinePool object owning the current resource.
-func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*clusterv1exp.MachinePool, error) {
+func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*expv1.MachinePool, error) {
 	for _, ref := range obj.OwnerReferences {
 		gv, err := schema.ParseGroupVersion(ref.APIVersion)
 		if err != nil {
 			return nil, err
 		}
 
-		if ref.Kind == "MachinePool" && gv.Group == clusterv1exp.GroupVersion.Group {
-			mp := &clusterv1exp.MachinePool{}
+		if ref.Kind == "MachinePool" && gv.Group == expv1.GroupVersion.Group {
+			mp := &expv1.MachinePool{}
 			Eventually(func() error {
 				err := c.Get(ctx, client.ObjectKey{
 					Name:      ref.Name,
