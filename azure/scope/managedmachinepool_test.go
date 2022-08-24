@@ -406,7 +406,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
-				NodeTaints:   []string{"key1=value1:NoSchedule"},
+				NodeTaints:   &[]string{"key1=value1:NoSchedule"},
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				Headers:      map[string]string{},
 			},

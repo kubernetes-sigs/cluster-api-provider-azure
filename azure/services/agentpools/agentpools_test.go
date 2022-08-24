@@ -103,6 +103,43 @@ func TestReconcileAgentPools(t *testing.T) {
 				s.UpdatePutStatus(infrav1.AgentPoolsReadyCondition, serviceName, internalError)
 			},
 		},
+		{
+			name: "update needed on nodepool taints change",
+			agentPoolsSpec: azure.AgentPoolSpec{
+				Name:              "my-agent-pool",
+				ResourceGroup:     "my-rg",
+				Cluster:           "my-cluster",
+				SKU:               "Standard_D2s_v3",
+				Version:           to.StringPtr("9.99.9999"),
+				EnableAutoScaling: to.BoolPtr(true),
+				MinCount:          to.Int32Ptr(1),
+				MaxCount:          to.Int32Ptr(3),
+				OSDiskSizeGB:      100,
+				MaxPods:           to.Int32Ptr(12),
+				OsDiskType:        to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+				NodeTaints:        &[]string{"key1=value1:NoSchedule"},
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+						EnableAutoScaling:   to.BoolPtr(true),
+						MinCount:            to.Int32Ptr(1),
+						MaxCount:            to.Int32Ptr(3),
+						OsDiskSizeGB:        to.Int32Ptr(100),
+						VMSize:              to.StringPtr(string(containerservice.VMSizeTypesStandardD2sV3)),
+						OsType:              containerservice.OSTypeLinux,
+						OrchestratorVersion: to.StringPtr("9.99.9999"),
+						ProvisioningState:   to.StringPtr("Succeeded"),
+						VnetSubnetID:        to.StringPtr(""),
+						MaxPods:             to.Int32Ptr(12),
+						OsDiskType:          containerservice.OSDiskTypeEphemeral,
+						NodeTaints:          &[]string{"key2=value1:NoSchedule"},
+					},
+				}, nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{}), gomock.Any()).Return(nil)
+			},
+		},
 	}
 
 	for _, tc := range testcases {
