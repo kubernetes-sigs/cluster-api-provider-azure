@@ -419,10 +419,13 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 
 // collectVMSSBootLog collects boot logs of the scale set by using azure boot diagnostics.
 func collectVMSSBootLog(ctx context.Context, providerID string, outputPath string) error {
+	Logf("providerID: %s\n", providerID)
+	Logf("outputPath: %s\n", outputPath)
 	resourceId := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
 	v := strings.Split(resourceId, "/")
 	instanceId := v[len(v)-1]
 	resourceId = strings.TrimSuffix(resourceId, "/virtualMachines/"+instanceId)
+	Logf("resourceId: %s\n", resourceId)
 	resource, err := autorest.ParseResourceID(resourceId)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
@@ -441,6 +444,9 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 		return errors.Wrap(err, "failed to get authorizer")
 	}
 
+	Logf("Resource group: %s\n", resource.ResourceGroup)
+	Logf("Resource name: %s\n", resource.ResourceName)
+	Logf("Instance id: %s\n", instanceId)
 	bootDiagnostics, err := vmssClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroup, resource.ResourceName, instanceId, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get boot diagnostics data")
