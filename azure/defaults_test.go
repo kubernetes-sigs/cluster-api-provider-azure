@@ -96,6 +96,7 @@ func TestMSCorrelationIDSendDecorator(t *testing.T) {
 		if err != nil {
 			return nil, err
 		}
+		req = req.WithContext(ctx)
 		req.Header = r.Header
 		return testSrv.Client().Do(req)
 	})
