@@ -123,10 +123,12 @@ func NewTestEnvironment() *TestEnvironment {
 	}
 }
 
+// StartManager starts the test environment manager and blocks until the context is canceled.
 func (t *TestEnvironment) StartManager() error {
 	return t.Manager.Start(context.Background())
 }
 
+// Stop stops the test environment.
 func (t *TestEnvironment) Stop() error {
 	return env.Stop()
 }

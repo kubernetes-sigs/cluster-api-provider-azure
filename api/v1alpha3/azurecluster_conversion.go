@@ -151,7 +151,7 @@ func Convert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in *Azure
 	return autoConvert_v1alpha3_AzureClusterStatus_To_v1beta1_AzureClusterStatus(in, out, s)
 }
 
-// Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec.
+// Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec converts AzureCluster.Spec from v1alpha3 to v1beta1.
 func Convert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in *AzureClusterSpec, out *infrav1.AzureClusterSpec, s apiconversion.Scope) error {
 	if err := autoConvert_v1alpha3_AzureClusterSpec_To_v1beta1_AzureClusterSpec(in, out, s); err != nil {
 		return err
@@ -181,12 +181,12 @@ func Convert_v1beta1_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *infrav1.A
 	return nil
 }
 
-// Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus.
+// Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus converts an Azure cluster status from v1beta1 to v1alpha3.
 func Convert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *infrav1.AzureClusterStatus, out *AzureClusterStatus, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in, out, s)
 }
 
-// Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec.
+// Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec converts a network spec from v1alpha3 to v1beta1.
 func Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, out *infrav1.NetworkSpec, s apiconversion.Scope) error {
 	if err := Convert_v1alpha3_VnetSpec_To_v1beta1_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
@@ -203,7 +203,7 @@ func Convert_v1alpha3_NetworkSpec_To_v1beta1_NetworkSpec(in *NetworkSpec, out *i
 	return Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s)
 }
 
-// Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec.
+// Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec converts a network spec from v1beta1 to v1alpha3.
 func Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1.NetworkSpec, out *NetworkSpec, s apiconversion.Scope) error {
 	if err := Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
@@ -220,7 +220,7 @@ func Convert_v1beta1_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1.NetworkSpec
 	return Convert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s)
 }
 
-// Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec.
+// Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec converts a virtual network spec from v1beta1 to v1alpha3.
 func Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in *infrav1.VnetSpec, out *VnetSpec, s apiconversion.Scope) error {
 	if err := autoConvert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in, out, s); err != nil {
 		return err
@@ -233,7 +233,7 @@ func Convert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in *infrav1.VnetSpec, out *Vn
 	return nil
 }
 
-// Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec.
+// Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec converts a subnet spec from v1alpha3 to v1beta1.
 func Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *infrav1.SubnetSpec, s apiconversion.Scope) error {
 	if err := autoConvert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in, out, s); err != nil {
 		return err
@@ -246,7 +246,7 @@ func Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *infr
 	return nil
 }
 
-// Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec.
+// Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec converts a subnet spec from v1beta1 to v1alpha3.
 func Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in *infrav1.SubnetSpec, out *SubnetSpec, s apiconversion.Scope) error {
 	if err := autoConvert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in, out, s); err != nil {
 		return err
@@ -259,6 +259,7 @@ func Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in *infrav1.SubnetSpec, o
 	return nil
 }
 
+// Convert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup converts a security group from v1beta1 to v1alpha3.
 func Convert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup(in *infrav1.SecurityGroup, out *SecurityGroup, s apiconversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
@@ -279,6 +280,7 @@ func Convert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup(in *infrav1.Securit
 	return nil
 }
 
+// Convert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup converts a security group from v1alpha3 to v1beta1.
 func Convert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup(in *SecurityGroup, out *infrav1.SecurityGroup, s apiconversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
@@ -295,7 +297,7 @@ func Convert_v1alpha3_SecurityGroup_To_v1beta1_SecurityGroup(in *SecurityGroup, 
 	return nil
 }
 
-// Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule.
+// Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule converts from a v1alpha3 IngressRule to a v1beta1 SecurityRule.
 func Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule(in *IngressRule, out *infrav1.SecurityRule, _ apiconversion.Scope) error {
 	out.Name = in.Name
 	out.Description = in.Description
@@ -309,7 +311,7 @@ func Convert_v1alpha3_IngressRule_To_v1beta1_SecurityRule(in *IngressRule, out *
 	return nil
 }
 
-// Convert_v1beta1_SecurityRule_To_v1alpha3_IngressRule.
+// Convert_v1beta1_SecurityRule_To_v1alpha3_IngressRule converts from a v1beta1 SecurityRule to a v1alpha3 IngressRule.
 func Convert_v1beta1_SecurityRule_To_v1alpha3_IngressRule(in *infrav1.SecurityRule, out *IngressRule, _ apiconversion.Scope) error {
 	out.Name = in.Name
 	out.Description = in.Description
@@ -359,6 +361,7 @@ func Convert_v1beta1_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *infrav1.L
 	return nil
 }
 
+// Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec converts an LB spec from v1alpha3 to v1beta1.
 func Convert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *LoadBalancerSpec, out *infrav1.LoadBalancerSpec, s apiconversion.Scope) error {
 	if err := autoConvert_v1alpha3_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in, out, s); err != nil {
 		return err

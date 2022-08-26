@@ -26,9 +26,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// AzureClusterTemplateImmutableMsg ...
+// AzureClusterTemplateImmutableMsg is the message used for errors on fields that are immutable.
 const AzureClusterTemplateImmutableMsg = "AzureClusterTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/change-clusterclass.html"
 
+// SetupWebhookWithManager will set up the webhook to be managed by the specified manager.
 func (c *AzureClusterTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).

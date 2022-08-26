@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+// ServiceName is the name of this service.
 const ServiceName = "group"
 
 // Service provides operations on Azure resources.

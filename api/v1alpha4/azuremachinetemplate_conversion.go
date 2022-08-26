@@ -76,6 +76,7 @@ func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error {
 	return Convert_v1beta1_AzureMachineTemplateList_To_v1alpha4_AzureMachineTemplateList(src, dst, nil)
 }
 
+// Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource converts an Azure Machine Template Resource from v1beta1 to v1alpha4.
 func Convert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in *infrav1.AzureMachineTemplateResource, out *AzureMachineTemplateResource, s apimachineryconversion.Scope) error {
 	return autoConvert_v1beta1_AzureMachineTemplateResource_To_v1alpha4_AzureMachineTemplateResource(in, out, s)
 }

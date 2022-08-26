@@ -18,6 +18,7 @@ package v1beta1
 
 import "github.com/pkg/errors"
 
+// AzureClusterTemplateResourceSpec specifies an Azure cluster template resource.
 type AzureClusterTemplateResourceSpec struct {
 	AzureClusterClassSpec `json:",inline"`
 
@@ -30,6 +31,7 @@ type AzureClusterTemplateResourceSpec struct {
 	BastionSpec BastionTemplateSpec `json:"bastionSpec,omitempty"`
 }
 
+// NetworkTemplateSpec specifies a network template.
 type NetworkTemplateSpec struct {
 	NetworkClassSpec `json:",inline"`
 
@@ -65,7 +67,7 @@ func (n *NetworkTemplateSpec) GetControlPlaneSubnetTemplate() (SubnetTemplateSpe
 	return SubnetTemplateSpec{}, errors.Errorf("no subnet template found with role %s", SubnetControlPlane)
 }
 
-// UpdateControlPlaneSubnet updates the cluster control plane subnet.
+// UpdateControlPlaneSubnetTemplate updates the cluster control plane subnet template.
 func (n *NetworkTemplateSpec) UpdateControlPlaneSubnetTemplate(subnet SubnetTemplateSpec) {
 	for i, sn := range n.Subnets {
 		if sn.Role == SubnetControlPlane {
@@ -74,6 +76,7 @@ func (n *NetworkTemplateSpec) UpdateControlPlaneSubnetTemplate(subnet SubnetTemp
 	}
 }
 
+// VnetTemplateSpec defines the desired state of a virtual network.
 type VnetTemplateSpec struct {
 	VnetClassSpec `json:",inline"`
 
@@ -82,8 +85,10 @@ type VnetTemplateSpec struct {
 	Peerings VnetPeeringsTemplateSpec `json:"peerings,omitempty"`
 }
 
+// VnetPeeringsTemplateSpec defines a list of peerings of the newly created virtual network with existing virtual networks.
 type VnetPeeringsTemplateSpec []VnetPeeringClassSpec
 
+// SubnetTemplateSpec specifies a template for a subnet.
 type SubnetTemplateSpec struct {
 	SubnetClassSpec `json:",inline"`
 
@@ -96,17 +101,21 @@ type SubnetTemplateSpec struct {
 	NatGateway NatGatewayClassSpec `json:"natGateway,omitempty"`
 }
 
+// IsNatGatewayEnabled returns true if the NAT gateway is enabled.
 func (s SubnetTemplateSpec) IsNatGatewayEnabled() bool {
 	return s.NatGateway.Name != ""
 }
 
+// SubnetTemplatesSpec specifies a list of subnet templates.
 type SubnetTemplatesSpec []SubnetTemplateSpec
 
+// BastionTemplateSpec specifies a template for a bastion host.
 type BastionTemplateSpec struct {
 	// +optional
 	AzureBastion *AzureBastionTemplateSpec `json:"azureBastion,omitempty"`
 }
 
+// AzureBastionTemplateSpec specifies a template for an Azure Bastion host.
 type AzureBastionTemplateSpec struct {
 	// +optional
 	Subnet SubnetTemplateSpec `json:"subnet,omitempty"`

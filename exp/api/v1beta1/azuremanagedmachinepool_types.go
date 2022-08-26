@@ -109,6 +109,7 @@ type ManagedMachinePoolScaling struct {
 // TaintEffect is the effect for a Kubernetes taint.
 type TaintEffect string
 
+// Taint represents a Kubernetes taint.
 type Taint struct {
 	// Effect specifies the effect for the taint
 	// +kubebuilder:validation:Enum=NoSchedule;NoExecute;PreferNoSchedule

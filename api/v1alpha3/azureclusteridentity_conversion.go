@@ -25,6 +25,7 @@ import (
 )
 
 const (
+	// AzureClusterKind is the Kubernetes Kind for AzureCluster.
 	AzureClusterKind = "AzureCluster"
 )
 
@@ -88,12 +89,12 @@ func (dst *AzureClusterIdentity) ConvertFrom(srcRaw conversion.Hub) error {
 	return nil
 }
 
-// Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec.
+// Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec converts an Azure cluster identity spec from v1alpha3 to v1beta1.
 func Convert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(in *AzureClusterIdentitySpec, out *infrav1.AzureClusterIdentitySpec, s apiconversion.Scope) error {
 	return autoConvert_v1alpha3_AzureClusterIdentitySpec_To_v1beta1_AzureClusterIdentitySpec(in, out, s)
 }
 
-// Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec.
+// Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec converts an Azure cluster identity spec from v1beta1 to v1alpha3.
 func Convert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in *infrav1.AzureClusterIdentitySpec, out *AzureClusterIdentitySpec, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureClusterIdentitySpec_To_v1alpha3_AzureClusterIdentitySpec(in, out, s)
 }

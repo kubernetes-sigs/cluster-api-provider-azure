@@ -56,7 +56,7 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	return ac.publicips.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
 }
 
-// CreateOrUpdate creates or updates a static or dynamic public IP address.
+// CreateOrUpdateAsync creates or updates a static or dynamic public IP address.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
 func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {

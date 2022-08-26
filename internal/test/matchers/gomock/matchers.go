@@ -40,6 +40,7 @@ type (
 		actual interface{}
 	}
 
+	// LogMatcher is a Gomega matcher for logs.
 	LogMatcher interface {
 		types.GomegaMatcher
 		WithLevel(int) LogMatcher
@@ -93,6 +94,7 @@ func (e *errStrEq) String() string {
 	return fmt.Sprintf("error.Error() %q, but got %q", e.expected, e.actual)
 }
 
+// AContext returns a matcher that matches a context.Context.
 func AContext() gomock.Matcher {
 	return &contextMatcher{}
 }

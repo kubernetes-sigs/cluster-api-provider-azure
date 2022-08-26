@@ -120,6 +120,7 @@ type VnetPeeringSpec struct {
 	VnetPeeringClassSpec `json:",inline"`
 }
 
+// VnetPeeringClassSpec specifies a virtual network peering class.
 type VnetPeeringClassSpec struct {
 	// RemoteVnetName defines name of the remote virtual network.
 	RemoteVnetName string `json:"remoteVnetName"`
@@ -169,6 +170,7 @@ type NatGateway struct {
 	NatGatewayClassSpec `json:",inline"`
 }
 
+// NatGatewayClassSpec defines a NAT gateway class specification.
 type NatGatewayClassSpec struct {
 	Name string `json:"name"`
 }
@@ -367,6 +369,7 @@ type AzureComputeGalleryImage struct {
 	Plan *ImagePlan `json:"plan,omitempty"`
 }
 
+// ImagePlan contains plan information for marketplace images.
 type ImagePlan struct {
 	// Publisher is the name of the organization that created the image
 	// +kubebuilder:validation:MinLength=1

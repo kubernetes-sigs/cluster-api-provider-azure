@@ -598,6 +598,7 @@ func (s *ClusterScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
 	}
 }
 
+// SetNatGatewayIDInSubnets sets the NAT Gateway ID in the subnets with the same name.
 func (s *ClusterScope) SetNatGatewayIDInSubnets(name string, id string) {
 	for _, subnet := range s.Subnets() {
 		if subnet.NatGateway.Name == name {
@@ -614,7 +615,7 @@ func (s *ClusterScope) UpdateSubnetCIDRs(name string, cidrBlocks []string) {
 	s.SetSubnet(subnetSpecInfra)
 }
 
-// UpdateSubnetIDs updates the subnet IDs for the subnet with the same name.
+// UpdateSubnetID updates the subnet ID for the subnet with the same name.
 func (s *ClusterScope) UpdateSubnetID(name string, id string) {
 	subnetSpecInfra := s.Subnet(name)
 	subnetSpecInfra.ID = id

@@ -99,14 +99,17 @@ func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	return utilconversion.MarshalData(src, dst)
 }
 
+// Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate converts an Azure Machine Pool Machine Template from v1beta1 to v1alpha3.
 func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in *infrav1exp.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error {
 	return autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in, out, s)
 }
 
+// Convert_v1beta1_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec converts an Azure Machine Pool Spec from v1beta1 to v1alpha3.
 func Convert_v1beta1_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in *infrav1exp.AzureMachinePoolSpec, out *AzureMachinePoolSpec, s convert.Scope) error {
 	return autoConvert_v1beta1_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in, out, s)
 }
 
+// Convert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus converts an Azure Machine Pool Status from v1beta1 to v1alpha3.
 func Convert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in *infrav1exp.AzureMachinePoolStatus, out *AzureMachinePoolStatus, s convert.Scope) error {
 	if len(in.LongRunningOperationStates) > 0 {
 		if out.LongRunningOperationState == nil {
@@ -119,6 +122,7 @@ func Convert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(i
 	return autoConvert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in, out, s)
 }
 
+// Convert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus converts an Azure Machine Pool Status from v1alpha3 to v1beta1.
 func Convert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(in *AzureMachinePoolStatus, out *infrav1exp.AzureMachinePoolStatus, s convert.Scope) error {
 	if in.LongRunningOperationState != nil {
 		f := infrav1.Future{}
