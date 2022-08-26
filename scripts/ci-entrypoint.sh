@@ -146,6 +146,10 @@ install_addons() {
     export -f wait_for_nodes
     timeout --foreground 1800 bash -c wait_for_nodes
 
+    # Add FeatureOverride for ChecksumOffloadBroken in FelixConfiguration.
+    # This is the recommended workaround for https://github.com/projectcalico/calico/issues/3145.
+    "${KUBECTL}" apply -f "${REPO_ROOT}"/templates/addons/calico/felix-override.yaml
+
     # install cloud-provider-azure components, if using out-of-tree
     if [[ -n "${TEST_CCM:-}" ]]; then
         CLOUD_CONFIG="/etc/kubernetes/azure.json"

@@ -22,7 +22,9 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -60,6 +62,15 @@ func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTe
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, calicoOperatorNamespace, specName)
 		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 	}
+
+	// Add FeatureOverride for ChecksumOffloadBroken in FelixConfiguration.
+	// This is the recommended workaround for https://github.com/projectcalico/calico/issues/3145.
+	felixYaml, err := os.ReadFile(filepath.Join(e2eConfig.GetVariable(AddonsPath), "calico", "felix-override.yaml"))
+	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		return clusterProxy.Apply(ctx, felixYaml)
+	}, 10*time.Second).Should(Succeed(), "Failed to apply the felix configurations patch")
+
 	By("Waiting for Ready calico-system deployment pods")
 	for _, d := range []string{"calico-kube-controllers", "calico-typha"} {
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, CalicoSystemNamespace, specName)
@@ -97,19 +108,20 @@ func getCalicoValues(cidrBlocks []string) *helmVals.Options {
 		}
 	}
 	addonsPath := e2eConfig.GetVariable(AddonsPath)
-	if ipv6CidrBlock != "" && ipv4CidrBlock != "" {
+	switch {
+	case ipv6CidrBlock != "" && ipv4CidrBlock != "":
 		By("Configuring calico CNI helm chart for dual-stack configuration")
 		values = &helmVals.Options{
 			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv4CidrBlock), fmt.Sprintf("installation.calicoNetwork.ipPools[1].cidr=%s", ipv6CidrBlock)},
 			ValueFiles:   []string{filepath.Join(addonsPath, "calico-dual-stack", "values.yaml")},
 		}
-	} else if ipv6CidrBlock != "" {
+	case ipv6CidrBlock != "":
 		By("Configuring calico CNI helm chart for IPv6 configuration")
 		values = &helmVals.Options{
 			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv6CidrBlock)},
 			ValueFiles:   []string{filepath.Join(addonsPath, "calico-ipv6", "values.yaml")},
 		}
-	} else {
+	default:
 		By("Configuring calico CNI helm chart for IPv4 configuration")
 		values = &helmVals.Options{
 			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv4CidrBlock)},

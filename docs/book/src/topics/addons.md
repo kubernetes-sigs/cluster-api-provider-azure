@@ -14,6 +14,7 @@ To install [Calico](https://www.tigera.io/project-calico/) on a self-managed clu
 IPV4_CIDR_BLOCK=<cluster ipv4 pod cidr block> \
 helm repo add projectcalico https://projectcalico.docs.tigera.io/charts && \
 helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/values.yaml --set-string installation.calicoNetwork.ipPools[0].cidr="$IPV4_CIDR_BLOCK" --namespace tigera-operator --create-namespace
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/felix-override.yaml
 ```
 
 ### For IPv6 clusters
@@ -22,6 +23,7 @@ helm install calico projectcalico/tigera-operator -f https://raw.githubuserconte
 IPV6_CIDR_BLOCK=<cluster ipv6 pod cidr block> \
 helm repo add projectcalico https://projectcalico.docs.tigera.io/charts && \
 helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-ipv6/values.yaml  --set-string installation.calicoNetwork.ipPools[0].cidr="$IPV6_CIDR_BLOCK" --namespace tigera-operator --create-namespace
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/felix-override.yaml
 ```
 
 ### For dual-stack (IPv4 + IPv6) clusters
@@ -31,6 +33,7 @@ IPV4_CIDR_BLOCK=<cluster ipv4 pod cidr block> \
 IPV6_CIDR_BLOCK=<cluster ipv6 pod cidr block> \
 helm repo add projectcalico https://projectcalico.docs.tigera.io/charts && \
 helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-dual-stack/values.yaml --set-string installation.calicoNetwork.ipPools[0].cidr="$IPV4_CIDR_BLOCK",installation.calicoNetwork.ipPools[1].cidr="$IPV6_CIDR_BLOCK" --namespace tigera-operator --create-namespace
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/felix-override.yaml
 ```
 
 <aside class="note">

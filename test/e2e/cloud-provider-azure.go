@@ -38,7 +38,7 @@ const (
 	defaultNamespace                  = "default"
 )
 
-// InstallCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
+// InstallCalicoAndCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
 // and validates that expected pods exist and are Ready.
 func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	specName := "cloud-provider-azure-install"
