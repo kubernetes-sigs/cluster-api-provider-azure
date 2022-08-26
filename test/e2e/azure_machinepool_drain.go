@@ -162,6 +162,9 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 
 		decreasedReplicas := *owningMachinePool.Spec.Replicas - int32(1)
 		owningMachinePool.Spec.Replicas = &decreasedReplicas
+		if int32(len(owningMachinePool.Spec.ProviderIDList)) != decreasedReplicas {
+			return errors.Errorf("providerIDList length (%d) does not match replicas (%d)", len(owningMachinePool.Spec.ProviderIDList), decreasedReplicas)
+		}
 		Logf("Decreasing the replica count on the machine pool to %d", decreasedReplicas)
 		Logf("ProviderIDList: %v", owningMachinePool.Spec.ProviderIDList)
 		return helper.Patch(ctx, owningMachinePool)
