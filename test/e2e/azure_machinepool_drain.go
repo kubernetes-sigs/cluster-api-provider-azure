@@ -171,8 +171,9 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 		if int32(len(owningMachinePool.Spec.ProviderIDList)) != decreasedReplicas {
 			return errors.Errorf("providerIDList length (%d) does not match replicas (%d)", len(owningMachinePool.Spec.ProviderIDList), decreasedReplicas)
 		}
+		Logf("Success: providerIDList length (%d) matches replicas (%d)", len(owningMachinePool.Spec.ProviderIDList), decreasedReplicas)
 		return nil
-	}, 3*time.Minute, 3*time.Second).Should(Succeed())
+	}, 15*time.Minute, 3*time.Second).Should(Succeed())
 
 	// TODO setup a watcher to validate expected 2nd order drain outcomes
 	// https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2159
