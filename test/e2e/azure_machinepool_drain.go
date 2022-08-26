@@ -153,21 +153,29 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 	defer cleanup()
 
 	By(fmt.Sprintf("decreasing the replica count by 1 on the machine pool: %s/%s", amp.Namespace, amp.Name))
+	hasDecreasedReplicas := false
 	Eventually(func() error {
+		var decreasedReplicas int32
 		helper, err := patch.NewHelper(owningMachinePool, mgmtClusterProxy.GetClient())
 		if err != nil {
 			LogWarning(err.Error())
 			return err
 		}
 
-		decreasedReplicas := *owningMachinePool.Spec.Replicas - int32(1)
-		owningMachinePool.Spec.Replicas = &decreasedReplicas
+		if !hasDecreasedReplicas {
+			decreasedReplicas = *owningMachinePool.Spec.Replicas - int32(1)
+			owningMachinePool.Spec.Replicas = &decreasedReplicas
+			hasDecreasedReplicas = true
+		}
+
+		helper.Patch(ctx, owningMachinePool)
+
+		Logf("Decreasing the replica count on the machine pool to %d", decreasedReplicas)
+		Logf("ProviderIDList: %v", owningMachinePool.Spec.ProviderIDList)
 		if int32(len(owningMachinePool.Spec.ProviderIDList)) != decreasedReplicas {
 			return errors.Errorf("providerIDList length (%d) does not match replicas (%d)", len(owningMachinePool.Spec.ProviderIDList), decreasedReplicas)
 		}
-		Logf("Decreasing the replica count on the machine pool to %d", decreasedReplicas)
-		Logf("ProviderIDList: %v", owningMachinePool.Spec.ProviderIDList)
-		return helper.Patch(ctx, owningMachinePool)
+		return nil
 	}, 3*time.Minute, 3*time.Second).Should(Succeed())
 
 	// TODO setup a watcher to validate expected 2nd order drain outcomes
