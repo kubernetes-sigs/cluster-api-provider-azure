@@ -152,25 +152,45 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 	_, _, _, cleanup := deployHttpService(ctx, clientset, isWindows, customizers...)
 	defer cleanup()
 
-	By(fmt.Sprintf("decreasing the replica count by 1 on the machine pool: %s/%s", amp.Namespace, amp.Name))
-	hasDecreasedReplicas := false
+	// By(fmt.Sprintf("decreasing the replica count by 1 on the machine pool: %s/%s", amp.Namespace, amp.Name))
+	// hasDecreasedReplicas := false
+	// Eventually(func() error {
+	// 	var decreasedReplicas int32
+	// 	helper, err := patch.NewHelper(owningMachinePool, mgmtClusterProxy.GetClient())
+	// 	if err != nil {
+	// 		LogWarning(err.Error())
+	// 		return err
+	// 	}
+
+	// 	if !hasDecreasedReplicas {
+	// 		hasDecreasedReplicas = true
+	// 		decreasedReplicas = *owningMachinePool.Spec.Replicas - int32(1)
+	// 		owningMachinePool.Spec.Replicas = &decreasedReplicas
+	// 		helper.Patch(ctx, owningMachinePool)
+	// 	}
+
+	// 	Logf("Decreasing the replica count on the machine pool to %d", decreasedReplicas)
+	// 	Logf("ProviderIDList: %v", owningMachinePool.Spec.ProviderIDList)
+	// 	if int32(len(owningMachinePool.Spec.ProviderIDList)) != decreasedReplicas {
+	// 		return errors.Errorf("providerIDList length (%d) does not match replicas (%d)", len(owningMachinePool.Spec.ProviderIDList), decreasedReplicas)
+	// 	}
+	// 	return nil
+	// }, 3*time.Minute, 3*time.Second).Should(Succeed())
+	var decreasedReplicas int32
+
 	Eventually(func() error {
-		var decreasedReplicas int32
 		helper, err := patch.NewHelper(owningMachinePool, mgmtClusterProxy.GetClient())
 		if err != nil {
 			LogWarning(err.Error())
 			return err
 		}
 
-		if !hasDecreasedReplicas {
-			hasDecreasedReplicas = true
-			decreasedReplicas = *owningMachinePool.Spec.Replicas - int32(1)
-			owningMachinePool.Spec.Replicas = &decreasedReplicas
-			helper.Patch(ctx, owningMachinePool)
-		}
+		decreasedReplicas = *owningMachinePool.Spec.Replicas - int32(1)
+		owningMachinePool.Spec.Replicas = &decreasedReplicas
+		return helper.Patch(ctx, owningMachinePool)
+	}, 3*time.Minute, 3*time.Second).Should(Succeed())
 
-		Logf("Decreasing the replica count on the machine pool to %d", decreasedReplicas)
-		Logf("ProviderIDList: %v", owningMachinePool.Spec.ProviderIDList)
+	Eventually(func() error {
 		if int32(len(owningMachinePool.Spec.ProviderIDList)) != decreasedReplicas {
 			return errors.Errorf("providerIDList length (%d) does not match replicas (%d)", len(owningMachinePool.Spec.ProviderIDList), decreasedReplicas)
 		}
