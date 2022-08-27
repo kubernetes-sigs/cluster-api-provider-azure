@@ -739,7 +739,7 @@ func (s *ClusterScope) CloudProviderConfigOverrides() *infrav1.CloudProviderConf
 // GenerateFQDN generates a fully qualified domain name, based on a hash, cluster name and cluster location.
 func (s *ClusterScope) GenerateFQDN(ipName string) string {
 	h := fnv.New32a()
-	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), ipName))); err != nil {
+	if _, err := fmt.Fprintf(h, "%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), ipName); err != nil {
 		return ""
 	}
 	hash := fmt.Sprintf("%x", h.Sum32())
@@ -748,9 +748,9 @@ func (s *ClusterScope) GenerateFQDN(ipName string) string {
 
 // GenerateLegacyFQDN generates an IP name and a fully qualified domain name, based on a hash, cluster name and cluster location.
 // Deprecated: use GenerateFQDN instead.
-func (s *ClusterScope) GenerateLegacyFQDN() (string, string) {
+func (s *ClusterScope) GenerateLegacyFQDN() (ip string, domain string) {
 	h := fnv.New32a()
-	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), s.ClusterName()))); err != nil {
+	if _, err := fmt.Fprintf(h, "%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), s.ClusterName()); err != nil {
 		return "", ""
 	}
 	ipName := fmt.Sprintf("%s-%x", s.ClusterName(), h.Sum32())
@@ -968,7 +968,7 @@ func (s *ClusterScope) UpdatePatchStatus(condition clusterv1.ConditionType, serv
 func (s *ClusterScope) AnnotationJSON(annotation string) (map[string]interface{}, error) {
 	out := map[string]interface{}{}
 	jsonAnnotation := s.AzureCluster.GetAnnotations()[annotation]
-	if len(jsonAnnotation) == 0 {
+	if jsonAnnotation == "" {
 		return out, nil
 	}
 	err := json.Unmarshal([]byte(jsonAnnotation), &out)

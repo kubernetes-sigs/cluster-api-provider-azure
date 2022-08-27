@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	// nolint:godot
+	//nolint:godot // Ignore "Comment should end in a period" check.
 	// Every capz-specific feature gate should add a method here following this template:
 	//
 	// // MyFeature is the feature gate for my feature.

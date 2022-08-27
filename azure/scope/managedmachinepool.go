@@ -287,7 +287,7 @@ func (s *ManagedMachinePoolScope) RemoveCAPIMachinePoolAnnotations(key string) {
 }
 
 // GetCAPIMachinePoolAnnotation gets the associated MachinePool annotation.
-func (s *ManagedMachinePoolScope) GetCAPIMachinePoolAnnotation(key string) (bool, string) {
-	value, ok := s.MachinePool.Annotations[key]
-	return ok, value
+func (s *ManagedMachinePoolScope) GetCAPIMachinePoolAnnotation(key string) (success bool, value string) {
+	val, ok := s.MachinePool.Annotations[key]
+	return ok, val
 }

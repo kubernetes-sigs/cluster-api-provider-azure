@@ -19,7 +19,6 @@ package scope
 import (
 	"context"
 	"encoding/base64"
-	"strings"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -339,7 +338,7 @@ func (m *MachinePoolScope) createMachine(ctx context.Context, machine azure.VMSS
 
 	ampm := infrav1exp.AzureMachinePoolMachine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      strings.Join([]string{m.AzureMachinePool.Name, machine.InstanceID}, "-"),
+			Name:      m.AzureMachinePool.Name + "-" + machine.InstanceID,
 			Namespace: m.AzureMachinePool.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{

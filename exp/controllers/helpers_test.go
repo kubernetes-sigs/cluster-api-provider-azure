@@ -212,7 +212,6 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 		Namespace:  cluster.Namespace,
 	}
 
-	// controlPlane.Spec.DefaultPoolRef.Name = "azuremy-mmp-0"
 	managedMachinePool0 := newManagedMachinePoolInfraReference(clusterName, "my-mmp-0")
 	azureManagedMachinePool0 := newAzureManagedMachinePool(clusterName, "azuremy-mmp-0", "System")
 	managedMachinePool0.Spec.ClusterName = clusterName

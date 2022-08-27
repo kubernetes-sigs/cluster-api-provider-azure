@@ -86,7 +86,7 @@ func ValidateSystemAssignedIdentity(identityType VMIdentity, oldIdentity, newIde
 		if oldIdentity != "" && oldIdentity != newIdentity {
 			allErrs = append(allErrs, field.Invalid(fldPath, newIdentity, "Role assignment name should not be modified after AzureMachine creation."))
 		}
-	} else if len(newIdentity) != 0 {
+	} else if newIdentity != "" {
 		allErrs = append(allErrs, field.Forbidden(fldPath, "Role assignment name should only be set when using system assigned identity."))
 	}
 

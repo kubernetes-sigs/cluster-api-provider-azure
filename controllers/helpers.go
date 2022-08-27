@@ -212,7 +212,7 @@ func GetCloudProviderSecret(d azure.ClusterScoper, namespace, name string, owner
 	return secret, nil
 }
 
-func systemAssignedIdentityCloudProviderConfig(d azure.ClusterScoper) (*CloudProviderConfig, *CloudProviderConfig) {
+func systemAssignedIdentityCloudProviderConfig(d azure.ClusterScoper) (cpConfig *CloudProviderConfig, wkConfig *CloudProviderConfig) {
 	controlPlaneConfig, workerConfig := newCloudProviderConfig(d)
 	controlPlaneConfig.AadClientID = ""
 	controlPlaneConfig.AadClientSecret = ""
@@ -223,7 +223,7 @@ func systemAssignedIdentityCloudProviderConfig(d azure.ClusterScoper) (*CloudPro
 	return controlPlaneConfig, workerConfig
 }
 
-func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID string) (*CloudProviderConfig, *CloudProviderConfig) {
+func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID string) (cpConfig *CloudProviderConfig, wkConfig *CloudProviderConfig) {
 	controlPlaneConfig, workerConfig := newCloudProviderConfig(d)
 	controlPlaneConfig.AadClientID = ""
 	controlPlaneConfig.AadClientSecret = ""
@@ -290,6 +290,31 @@ func getOneNodeSubnet(d azure.ClusterScoper) infrav1.SubnetSpec {
 	return infrav1.SubnetSpec{}
 }
 
+// CloudProviderConfig is an abbreviated version of the same struct in k/k.
+type CloudProviderConfig struct {
+	Cloud                        string `json:"cloud"`
+	TenantID                     string `json:"tenantId"`
+	SubscriptionID               string `json:"subscriptionId"`
+	AadClientID                  string `json:"aadClientId,omitempty"`
+	AadClientSecret              string `json:"aadClientSecret,omitempty"`
+	ResourceGroup                string `json:"resourceGroup"`
+	SecurityGroupName            string `json:"securityGroupName"`
+	SecurityGroupResourceGroup   string `json:"securityGroupResourceGroup"`
+	Location                     string `json:"location"`
+	VMType                       string `json:"vmType"`
+	VnetName                     string `json:"vnetName"`
+	VnetResourceGroup            string `json:"vnetResourceGroup"`
+	SubnetName                   string `json:"subnetName"`
+	RouteTableName               string `json:"routeTableName"`
+	LoadBalancerSku              string `json:"loadBalancerSku"`
+	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
+	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
+	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
+	UserAssignedIdentityID       string `json:"userAssignedIdentityID,omitempty"`
+	CloudProviderRateLimitConfig
+	BackOffConfig
+}
+
 // overrideFromSpec overrides cloud provider config with the values provided in cluster spec.
 func (cpc *CloudProviderConfig) overrideFromSpec(d azure.ClusterScoper) *CloudProviderConfig {
 	if d.CloudProviderConfigOverrides() == nil {
@@ -348,31 +373,6 @@ func toCloudProviderRateLimitConfig(source infrav1.RateLimitConfig) *RateLimitCo
 	}
 	rateLimitConfig.CloudProviderRateLimitBucketWrite = source.CloudProviderRateLimitBucketWrite
 	return &rateLimitConfig
-}
-
-// CloudProviderConfig is an abbreviated version of the same struct in k/k.
-type CloudProviderConfig struct {
-	Cloud                        string `json:"cloud"`
-	TenantID                     string `json:"tenantId"`
-	SubscriptionID               string `json:"subscriptionId"`
-	AadClientID                  string `json:"aadClientId,omitempty"`
-	AadClientSecret              string `json:"aadClientSecret,omitempty"`
-	ResourceGroup                string `json:"resourceGroup"`
-	SecurityGroupName            string `json:"securityGroupName"`
-	SecurityGroupResourceGroup   string `json:"securityGroupResourceGroup"`
-	Location                     string `json:"location"`
-	VMType                       string `json:"vmType"`
-	VnetName                     string `json:"vnetName"`
-	VnetResourceGroup            string `json:"vnetResourceGroup"`
-	SubnetName                   string `json:"subnetName"`
-	RouteTableName               string `json:"routeTableName"`
-	LoadBalancerSku              string `json:"loadBalancerSku"`
-	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
-	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
-	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
-	UserAssignedIdentityID       string `json:"userAssignedIdentityID,omitempty"`
-	CloudProviderRateLimitConfig
-	BackOffConfig
 }
 
 // CloudProviderRateLimitConfig represents the rate limiting configurations in azure cloud provider config.

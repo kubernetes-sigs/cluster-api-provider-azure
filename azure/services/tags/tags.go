@@ -107,7 +107,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 
 			// We also need to update the annotation if anything changed.
-			if err = s.Scope.UpdateAnnotationJSON(tagsSpec.Annotation, newAnnotation); err != nil {
+			if err := s.Scope.UpdateAnnotationJSON(tagsSpec.Annotation, newAnnotation); err != nil {
 				return err
 			}
 			log.V(2).Info("successfully updated tags")
@@ -129,7 +129,7 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 // tagsChanged determines which tags to delete and which to add.
-func tagsChanged(lastAppliedTags map[string]interface{}, desiredTags map[string]string, currentTags map[string]*string) (bool, map[string]string, map[string]string, map[string]interface{}) {
+func tagsChanged(lastAppliedTags map[string]interface{}, desiredTags map[string]string, currentTags map[string]*string) (change bool, createOrUpdates map[string]string, deletes map[string]string, annotation map[string]interface{}) {
 	// Bool tracking if we found any changed state.
 	changed := false
 

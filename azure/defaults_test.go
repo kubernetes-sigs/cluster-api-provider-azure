@@ -92,7 +92,7 @@ func TestMSCorrelationIDSendDecorator(t *testing.T) {
 		// preserve the incoming headers to the fake server, so that
 		// we can test that the fake server received the right
 		// correlation ID header.
-		req, err := http.NewRequest("GET", testSrv.URL, nil)
+		req, err := http.NewRequest("GET", testSrv.URL, http.NoBody)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func TestMSCorrelationIDSendDecorator(t *testing.T) {
 	newSender := autorest.DecorateSender(origSender, msCorrelationIDSendDecorator)
 
 	// create a new HTTP request and send it via the new decorated sender
-	req, err := http.NewRequest("GET", "/abc", nil)
+	req, err := http.NewRequest("GET", "/abc", http.NoBody)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	req = req.WithContext(ctx)
