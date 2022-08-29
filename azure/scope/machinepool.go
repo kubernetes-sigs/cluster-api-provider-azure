@@ -205,8 +205,7 @@ func (m MachinePoolScope) MaxSurge() (int, error) {
 // updateReplicasAndProviderIDs ties the Azure VMSS instance data and the Node status data together to build and update
 // the AzureMachinePool replica count and providerIDList.
 func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) error {
-	fmt.Println("Updating machine pool replicas and provider IDs")
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.UpdateInstanceStatuses")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.UpdateInstanceStatuses")
 	defer done()
 
 	machines, err := m.getMachinePoolMachines(ctx)
@@ -223,8 +222,8 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 		providerIDs[i] = machine.Spec.ProviderID
 	}
 
-	fmt.Println("readyReplicas: ", readyReplicas)
-	fmt.Println("providerIDs: ", providerIDs)
+	log.Info("readyReplicas: ", readyReplicas)
+	log.Info("providerIDs: ", providerIDs)
 
 	m.AzureMachinePool.Status.Replicas = readyReplicas
 	m.AzureMachinePool.Spec.ProviderIDList = providerIDs
@@ -233,21 +232,21 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 }
 
 func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav1exp.AzureMachinePoolMachine, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.getMachinePoolMachines")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.getMachinePoolMachines")
 	defer done()
 
 	labels := map[string]string{
 		clusterv1.ClusterLabelName:      m.ClusterName(),
 		infrav1exp.MachinePoolNameLabel: m.AzureMachinePool.Name,
 	}
-	fmt.Println("Machine pool labels: ", labels)
+	log.Info("Machine pool labels: ", labels)
 
 	ampml := &infrav1exp.AzureMachinePoolMachineList{}
 	if err := m.client.List(ctx, ampml, client.InNamespace(m.AzureMachinePool.Namespace), client.MatchingLabels(labels)); err != nil {
 		return nil, errors.Wrap(err, "failed to list AzureMachinePoolMachines")
 	}
 
-	fmt.Println("Got machine pool machines: ", ampml.Items)
+	log.Info("Got machine pool machines: ", ampml.Items)
 
 	return ampml.Items, nil
 }
