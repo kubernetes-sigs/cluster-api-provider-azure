@@ -169,6 +169,7 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 
 	Eventually(func() error {
 		if int32(len(owningMachinePool.Spec.ProviderIDList)) != decreasedReplicas {
+			Logf("Failed providerIDList: %v", owningMachinePool.Spec.ProviderIDList)
 			return errors.Errorf("providerIDList length (%d) does not match replicas (%d)", len(owningMachinePool.Spec.ProviderIDList), decreasedReplicas)
 		}
 		Logf("Success: providerIDList length (%d) matches replicas (%d)", len(owningMachinePool.Spec.ProviderIDList), decreasedReplicas)
