@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -204,6 +205,7 @@ func (m MachinePoolScope) MaxSurge() (int, error) {
 // updateReplicasAndProviderIDs ties the Azure VMSS instance data and the Node status data together to build and update
 // the AzureMachinePool replica count and providerIDList.
 func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) error {
+	fmt.Println("Updating machine pool replicas and provider IDs")
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.UpdateInstanceStatuses")
 	defer done()
 
@@ -221,6 +223,10 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 		providerIDs[i] = machine.Spec.ProviderID
 	}
 
+	fmt.Println("readyReplicas: ", readyReplicas)
+	fmt.Println("desiredReplicas: ", m.DesiredReplicas())
+	fmt.Println("providerIDs: ", providerIDs)
+
 	m.AzureMachinePool.Status.Replicas = readyReplicas
 	m.AzureMachinePool.Spec.ProviderIDList = providerIDs
 	return nil
@@ -234,10 +240,14 @@ func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav
 		clusterv1.ClusterLabelName:      m.ClusterName(),
 		infrav1exp.MachinePoolNameLabel: m.AzureMachinePool.Name,
 	}
+	fmt.Println("Machine pool labels: ", labels)
+
 	ampml := &infrav1exp.AzureMachinePoolMachineList{}
 	if err := m.client.List(ctx, ampml, client.InNamespace(m.AzureMachinePool.Namespace), client.MatchingLabels(labels)); err != nil {
 		return nil, errors.Wrap(err, "failed to list AzureMachinePoolMachines")
 	}
+
+	fmt.Println("Got machine pool machines: ", ampml.Items)
 
 	return ampml.Items, nil
 }
