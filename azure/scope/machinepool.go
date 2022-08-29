@@ -224,7 +224,6 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 	}
 
 	fmt.Println("readyReplicas: ", readyReplicas)
-	fmt.Println("desiredReplicas: ", m.DesiredReplicas())
 	fmt.Println("providerIDs: ", providerIDs)
 
 	m.AzureMachinePool.Status.Replicas = readyReplicas
