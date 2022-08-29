@@ -41,5 +41,4 @@ spec:
   kubeadmConfigSpec:
     clusterConfiguration:
       kubernetesVersion: ci/${CI_VERSION}
-    useExperimentalRetryJoin: true
     verbosity: 5
