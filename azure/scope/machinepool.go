@@ -398,15 +398,19 @@ func (m *MachinePoolScope) DeleteLongRunningOperationState(name, service string)
 
 // setProvisioningStateAndConditions sets the AzureMachinePool provisioning state and conditions.
 func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.ProvisioningState) {
+	fmt.Println("setProvisioningStateAndConditions", m.AzureMachinePool.Status.ProvisioningState)
 	m.AzureMachinePool.Status.ProvisioningState = &v
 	switch {
 	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas == m.AzureMachinePool.Status.Replicas:
+		fmt.Println("vmss ready: ", m.MachinePool.Spec.Replicas)
 		// vmss is provisioned with enough ready replicas
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetRunningCondition)
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetModelUpdatedCondition)
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetDesiredReplicasCondition)
 		m.SetReady()
 	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas != m.AzureMachinePool.Status.Replicas:
+		fmt.Println("vmss not ready, machinepool replicas: ", m.MachinePool.Spec.Replicas)
+		fmt.Println("azure machine pool replicas: ", m.AzureMachinePool.Status.Replicas)
 		// not enough ready or too many ready replicas we must still be scaling up or down
 		updatingState := infrav1.Updating
 		m.AzureMachinePool.Status.ProvisioningState = &updatingState
