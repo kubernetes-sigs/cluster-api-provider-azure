@@ -228,6 +228,7 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 
 	m.AzureMachinePool.Status.Replicas = readyReplicas
 	m.AzureMachinePool.Spec.ProviderIDList = providerIDs
+	m.MachinePool.Spec.ProviderIDList = providerIDs
 	return nil
 }
 
