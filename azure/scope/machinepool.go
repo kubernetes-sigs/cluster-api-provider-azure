@@ -19,7 +19,6 @@ package scope
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -205,7 +204,7 @@ func (m MachinePoolScope) MaxSurge() (int, error) {
 // updateReplicasAndProviderIDs ties the Azure VMSS instance data and the Node status data together to build and update
 // the AzureMachinePool replica count and providerIDList.
 func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.UpdateInstanceStatuses")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.UpdateInstanceStatuses")
 	defer done()
 
 	machines, err := m.getMachinePoolMachines(ctx)
@@ -222,31 +221,23 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 		providerIDs[i] = machine.Spec.ProviderID
 	}
 
-	log.Info("readyReplicas: ", readyReplicas)
-	log.Info("providerIDs: ", providerIDs)
-
 	m.AzureMachinePool.Status.Replicas = readyReplicas
 	m.AzureMachinePool.Spec.ProviderIDList = providerIDs
-	m.MachinePool.Spec.ProviderIDList = providerIDs
 	return nil
 }
 
 func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav1exp.AzureMachinePoolMachine, error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.getMachinePoolMachines")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.getMachinePoolMachines")
 	defer done()
 
 	labels := map[string]string{
 		clusterv1.ClusterLabelName:      m.ClusterName(),
 		infrav1exp.MachinePoolNameLabel: m.AzureMachinePool.Name,
 	}
-	log.Info("Machine pool labels: ", labels)
-
 	ampml := &infrav1exp.AzureMachinePoolMachineList{}
 	if err := m.client.List(ctx, ampml, client.InNamespace(m.AzureMachinePool.Namespace), client.MatchingLabels(labels)); err != nil {
 		return nil, errors.Wrap(err, "failed to list AzureMachinePoolMachines")
 	}
-
-	log.Info("Got machine pool machines: ", ampml.Items)
 
 	return ampml.Items, nil
 }
@@ -397,19 +388,16 @@ func (m *MachinePoolScope) DeleteLongRunningOperationState(name, service string)
 
 // setProvisioningStateAndConditions sets the AzureMachinePool provisioning state and conditions.
 func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.ProvisioningState) {
-	fmt.Println("setProvisioningStateAndConditions", m.AzureMachinePool.Status.ProvisioningState)
 	m.AzureMachinePool.Status.ProvisioningState = &v
 	switch {
 	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas == m.AzureMachinePool.Status.Replicas:
-		fmt.Println("vmss ready: ", m.MachinePool.Spec.Replicas)
 		// vmss is provisioned with enough ready replicas
+		m.MachinePool.Spec.ProviderIDList = m.AzureMachinePool.Spec.ProviderIDList
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetRunningCondition)
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetModelUpdatedCondition)
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetDesiredReplicasCondition)
 		m.SetReady()
 	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas != m.AzureMachinePool.Status.Replicas:
-		fmt.Println("vmss not ready, machinepool replicas: ", m.MachinePool.Spec.Replicas)
-		fmt.Println("azure machine pool replicas: ", m.AzureMachinePool.Status.Replicas)
 		// not enough ready or too many ready replicas we must still be scaling up or down
 		updatingState := infrav1.Updating
 		m.AzureMachinePool.Status.ProvisioningState = &updatingState
