@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -221,6 +222,10 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 		providerIDs[i] = machine.Spec.ProviderID
 	}
 
+	fmt.Printf("readyReplicas: %d", int64(readyReplicas))
+	fmt.Printf("providerIds: %v", providerIDs)
+	fmt.Printf("MachinePool: %+v", m.MachinePool)
+
 	m.AzureMachinePool.Status.Replicas = readyReplicas
 	m.AzureMachinePool.Spec.ProviderIDList = providerIDs
 	return nil
@@ -234,6 +239,7 @@ func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav
 		clusterv1.ClusterLabelName:      m.ClusterName(),
 		infrav1exp.MachinePoolNameLabel: m.AzureMachinePool.Name,
 	}
+	fmt.Printf("labels: %v", labels)
 	ampml := &infrav1exp.AzureMachinePoolMachineList{}
 	if err := m.client.List(ctx, ampml, client.InNamespace(m.AzureMachinePool.Namespace), client.MatchingLabels(labels)); err != nil {
 		return nil, errors.Wrap(err, "failed to list AzureMachinePoolMachines")
@@ -392,6 +398,9 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 	switch {
 	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas == m.AzureMachinePool.Status.Replicas:
 		// vmss is provisioned with enough ready replicas
+		fmt.Printf("Succeeded setProvisioningStateAndConditions")
+		fmt.Printf("MachinePool.Spec.Replicas: %d", *m.MachinePool.Spec.Replicas)
+		fmt.Printf("MachinePool.Spec.ProviderIDList: %v", m.MachinePool.Spec.ProviderIDList)
 		m.MachinePool.Spec.ProviderIDList = m.AzureMachinePool.Spec.ProviderIDList
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetRunningCondition)
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetModelUpdatedCondition)
@@ -399,6 +408,9 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 		m.SetReady()
 	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas != m.AzureMachinePool.Status.Replicas:
 		// not enough ready or too many ready replicas we must still be scaling up or down
+		fmt.Printf("Not ready setProvisioningStateAndConditions")
+		fmt.Printf("MachinePool.Spec.Replicas: %d", *m.MachinePool.Spec.Replicas)
+		fmt.Printf("MachinePool.Spec.ProviderIDList: %v", m.MachinePool.Spec.ProviderIDList)
 		updatingState := infrav1.Updating
 		m.AzureMachinePool.Status.ProvisioningState = &updatingState
 		if *m.MachinePool.Spec.Replicas > m.AzureMachinePool.Status.Replicas {
@@ -408,12 +420,15 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 		}
 		m.SetNotReady()
 	case v == infrav1.Updating:
+		fmt.Printf("Updating setProvisioningStateAndConditions")
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetModelUpdatedCondition, infrav1.ScaleSetModelOutOfDateReason, clusterv1.ConditionSeverityInfo, "")
 		m.SetNotReady()
 	case v == infrav1.Creating:
+		fmt.Printf("Creating setProvisioningStateAndConditions")
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetCreatingReason, clusterv1.ConditionSeverityInfo, "")
 		m.SetNotReady()
 	case v == infrav1.Deleting:
+		fmt.Printf("Deleting setProvisioningStateAndConditions")
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetDeletingReason, clusterv1.ConditionSeverityInfo, "")
 		m.SetNotReady()
 	default:
