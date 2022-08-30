@@ -218,10 +218,10 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 	for i, machine := range machines {
 		if machine.Status.Ready {
 			readyReplicas++
+			providerIDs[i] = machine.Spec.ProviderID
 		} else {
 			fmt.Printf("Machine status %+v\n", machine.Status)
 		}
-		providerIDs[i] = machine.Spec.ProviderID
 	}
 
 	fmt.Printf("readyReplicas: %d\n", int64(readyReplicas))
