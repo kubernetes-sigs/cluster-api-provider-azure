@@ -497,9 +497,9 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 }
 
 // GetAllAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.
-func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.AgentPoolSpec, error) {
+func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.ResourceSpecGetter, error) {
 	var (
-		ammps           = make([]azure.AgentPoolSpec, 0, len(s.ManagedMachinePools))
+		ammps           = make([]azure.ResourceSpecGetter, 0, len(s.ManagedMachinePools))
 		foundSystemPool = false
 	)
 	for _, pool := range s.ManagedMachinePools {
@@ -515,7 +515,7 @@ func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.AgentPoolSpec
 			foundSystemPool = true
 		}
 
-		ammp := buildAgentPoolSpec(s.ControlPlane, pool.MachinePool, pool.InfraMachinePool)
+		ammp := buildAgentPoolSpec(s.ControlPlane, pool.MachinePool, pool.InfraMachinePool, pool.InfraMachinePool.Annotations)
 		ammps = append(ammps, ammp)
 	}
 

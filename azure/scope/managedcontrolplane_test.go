@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -41,7 +42,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedControlPlaneScopeParams
-		Expected []azure.AgentPoolSpec
+		Expected []azure.ResourceSpecGetter
 		Err      string
 	}{
 		{
@@ -72,14 +73,15 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.AgentPoolSpec{
-				{
+			Expected: []azure.ResourceSpecGetter{
+				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					SKU:          "Standard_D2s_v3",
 					Replicas:     1,
 					Mode:         "System",
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+					Headers:      map[string]string{},
 				},
 			},
 		},
@@ -112,8 +114,8 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.AgentPoolSpec{
-				{
+			Expected: []azure.ResourceSpecGetter{
+				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "System",
@@ -121,6 +123,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					Version:      to.StringPtr("1.21.1"),
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+					Headers:      map[string]string{},
 				},
 			},
 		},
@@ -276,7 +279,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedControlPlaneScopeParams
-		Expected []azure.AgentPoolSpec
+		Expected []azure.ResourceSpecGetter
 		Err      string
 	}{
 		{
@@ -316,16 +319,17 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.AgentPoolSpec{
-				{
+			Expected: []azure.ResourceSpecGetter{
+				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "System",
 					Replicas:     1,
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+					Headers:      map[string]string{},
 				},
-				{
+				&agentpools.AgentPoolSpec{
 					Name:         "pool1",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "User",
@@ -333,8 +337,9 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 					OSType:       to.StringPtr(azure.LinuxOS),
+					Headers:      map[string]string{},
 				},
-				{
+				&agentpools.AgentPoolSpec{
 					Name:         "pool2",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "User",
@@ -342,6 +347,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 					OSType:       to.StringPtr(azure.WindowsOS),
+					Headers:      map[string]string{},
 				},
 			},
 		},

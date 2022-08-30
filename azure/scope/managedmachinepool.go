@@ -25,8 +25,10 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
+	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -128,14 +130,20 @@ func (s *ManagedMachinePoolScope) AgentPoolAnnotations() map[string]string {
 	return s.InfraMachinePool.Annotations
 }
 
-// AgentPoolSpec returns an azure.AgentPoolSpec for currently reconciled AzureManagedMachinePool.
-func (s *ManagedMachinePoolScope) AgentPoolSpec() azure.AgentPoolSpec {
-	return buildAgentPoolSpec(s.ControlPlane, s.MachinePool, s.InfraMachinePool)
+// Name returns the name of the infra machine pool.
+func (s *ManagedMachinePoolScope) Name() string {
+	return s.InfraMachinePool.Name
+}
+
+// AgentPoolSpec returns an azure.ResourceSpecGetter for currently reconciled AzureManagedMachinePool.
+func (s *ManagedMachinePoolScope) AgentPoolSpec() azure.ResourceSpecGetter {
+	return buildAgentPoolSpec(s.ControlPlane, s.MachinePool, s.InfraMachinePool, s.AgentPoolAnnotations())
 }
 
 func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane,
 	machinePool *expv1.MachinePool,
-	managedMachinePool *infrav1exp.AzureManagedMachinePool) azure.AgentPoolSpec {
+	managedMachinePool *infrav1exp.AzureManagedMachinePool,
+	agentPoolAnnotations map[string]string) azure.ResourceSpecGetter {
 	var normalizedVersion *string
 	if machinePool.Spec.Template.Spec.Version != nil {
 		v := strings.TrimPrefix(*machinePool.Spec.Template.Spec.Version, "v")
@@ -147,7 +155,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		replicas = *machinePool.Spec.Replicas
 	}
 
-	agentPoolSpec := azure.AgentPoolSpec{
+	agentPoolSpec := &agentpools.AgentPoolSpec{
 		Name:          to.String(managedMachinePool.Spec.Name),
 		ResourceGroup: managedControlPlane.Spec.ResourceGroupName,
 		Cluster:       managedControlPlane.Name,
@@ -166,6 +174,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		AvailabilityZones: managedMachinePool.Spec.AvailabilityZones,
 		OsDiskType:        managedMachinePool.Spec.OsDiskType,
 		EnableUltraSSD:    managedMachinePool.Spec.EnableUltraSSD,
+		Headers:           maps.FilterByKeyPrefix(agentPoolAnnotations, azure.CustomHeaderPrefix),
 	}
 
 	if managedMachinePool.Spec.OSDiskSizeGB != nil {
@@ -271,22 +280,22 @@ func (s *ManagedMachinePoolScope) PatchCAPIMachinePoolObject(ctx context.Context
 	)
 }
 
-// UpdateCAPIMachinePoolReplicas updates the associated MachinePool replica count.
-func (s *ManagedMachinePoolScope) UpdateCAPIMachinePoolReplicas(replicas *int32) {
+// SetCAPIMachinePoolReplicas sets the associated MachinePool replica count.
+func (s *ManagedMachinePoolScope) SetCAPIMachinePoolReplicas(replicas *int32) {
 	s.MachinePool.Spec.Replicas = replicas
 }
 
-// UpdateCAPIMachinePoolAnnotations updates the associated MachinePool annotation.
-func (s *ManagedMachinePoolScope) UpdateCAPIMachinePoolAnnotations(key, value string) {
+// SetCAPIMachinePoolAnnotation sets the specified annotation on the associated MachinePool.
+func (s *ManagedMachinePoolScope) SetCAPIMachinePoolAnnotation(key, value string) {
 	s.MachinePool.Annotations[key] = value
 }
 
-// RemoveCAPIMachinePoolAnnotations removes the associated MachinePool annotation.
-func (s *ManagedMachinePoolScope) RemoveCAPIMachinePoolAnnotations(key string) {
+// RemoveCAPIMachinePoolAnnotation removes the specified annotation on the associated MachinePool.
+func (s *ManagedMachinePoolScope) RemoveCAPIMachinePoolAnnotation(key string) {
 	delete(s.MachinePool.Annotations, key)
 }
 
-// GetCAPIMachinePoolAnnotation gets the associated MachinePool annotation.
+// GetCAPIMachinePoolAnnotation gets the specified annotation on the associated MachinePool.
 func (s *ManagedMachinePoolScope) GetCAPIMachinePoolAnnotation(key string) (success bool, value string) {
 	val, ok := s.MachinePool.Annotations[key]
 	return ok, val

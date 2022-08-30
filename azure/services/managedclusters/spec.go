@@ -67,7 +67,7 @@ type ManagedClusterSpec struct {
 	SSHPublicKey string
 
 	// GetAllAgentPools is a function that returns the list of agent pool specifications in this cluster.
-	GetAllAgentPools func() ([]azure.AgentPoolSpec, error)
+	GetAllAgentPools func() ([]azure.ResourceSpecGetter, error)
 
 	// PodCIDR is the CIDR block for IP addresses distributed to pods
 	PodCIDR string
@@ -338,8 +338,17 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 			return nil, errors.Wrapf(err, "failed to get agent pool specs for managed cluster %s", s.Name)
 		}
 
-		for i := range agentPoolSpecs {
-			profile := converters.AgentPoolToManagedClusterAgentPoolProfile(agentPoolSpecs[i])
+		for _, spec := range agentPoolSpecs {
+			params, err := spec.Parameters(nil)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get agent pool parameters for managed cluster %s", s.Name)
+			}
+			agentPool, ok := params.(containerservice.AgentPool)
+			if !ok {
+				return nil, fmt.Errorf("%T is not a containerservice.AgentPool", agentPool)
+			}
+			agentPool.Name = to.StringPtr(spec.ResourceName())
+			profile := converters.AgentPoolToManagedClusterAgentPoolProfile(agentPool)
 			*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 		}
 	}

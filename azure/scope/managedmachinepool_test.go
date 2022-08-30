@@ -18,14 +18,17 @@ package scope
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -40,7 +43,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.ResourceSpecGetter
 	}{
 		{
 			Name: "Without Autoscaling",
@@ -65,7 +68,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
@@ -73,6 +76,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -98,7 +102,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 					InfraMachinePool: getAzureMachinePoolWithScaling("pool1", 2, 10),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 				Name:              "pool1",
 				SKU:               "Standard_D2s_v3",
 				Mode:              "User",
@@ -108,6 +112,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 				MinCount:          to.Int32Ptr(2),
 				MaxCount:          to.Int32Ptr(10),
 				VnetSubnetID:      "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:           map[string]string{},
 			},
 		},
 	}
@@ -121,7 +126,9 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
 			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			if !reflect.DeepEqual(c.Expected, agentPool) {
+				t.Errorf("Got difference between expected result and result:\n%s", cmp.Diff(c.Expected, agentPool))
+			}
 		})
 	}
 }
@@ -134,7 +141,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.ResourceSpecGetter
 	}{
 		{
 			Name: "Without node labels",
@@ -159,14 +166,14 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
-
+			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -194,7 +201,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 					}),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 				Name:     "pool1",
 				SKU:      "Standard_D2s_v3",
 				Mode:     "System",
@@ -204,6 +211,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 					"custom": to.StringPtr("default"),
 				},
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -217,7 +225,9 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
 			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			if !reflect.DeepEqual(c.Expected, agentPool) {
+				t.Errorf("Got difference between expected result and result:\n%s", cmp.Diff(c.Expected, agentPool))
+			}
 		})
 	}
 }
@@ -230,7 +240,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.ResourceSpecGetter
 	}{
 		{
 			Name: "Without MaxPods",
@@ -255,13 +265,14 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -287,7 +298,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 					InfraMachinePool: getAzureMachinePoolWithMaxPods("pool1", 12),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "System",
@@ -295,6 +306,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 				Replicas:     1,
 				MaxPods:      to.Int32Ptr(12),
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -308,7 +320,9 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
 			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			if !reflect.DeepEqual(c.Expected, agentPool) {
+				t.Errorf("Got difference between expected result and result:\n%s", cmp.Diff(c.Expected, agentPool))
+			}
 		})
 	}
 }
@@ -321,7 +335,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.ResourceSpecGetter
 	}{
 		{
 			Name: "Without taints",
@@ -346,7 +360,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
@@ -354,6 +368,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -385,7 +400,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 					}),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "User",
@@ -393,6 +408,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 				Replicas:     1,
 				NodeTaints:   []string{"key1=value1:NoSchedule"},
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -406,7 +422,9 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
 			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			if !reflect.DeepEqual(c.Expected, agentPool) {
+				t.Errorf("Got difference between expected result and result:\n%s", cmp.Diff(c.Expected, agentPool))
+			}
 		})
 	}
 }
@@ -419,7 +437,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.AgentPoolSpec
+		Expected azure.ResourceSpecGetter
 	}{
 		{
 			Name: "Without OsDiskType",
@@ -444,13 +462,14 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -476,7 +495,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 					InfraMachinePool: getAzureMachinePoolWithOsDiskType("pool1", string(containerservice.OSDiskTypeEphemeral)),
 				},
 			},
-			Expected: azure.AgentPoolSpec{
+			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "User",
@@ -484,6 +503,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 				Replicas:     1,
 				OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -497,7 +517,9 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
 			agentPool := s.AgentPoolSpec()
-			g.Expect(agentPool).To(Equal(c.Expected))
+			if !reflect.DeepEqual(c.Expected, agentPool) {
+				t.Errorf("Got difference between expected result and result:\n%s", cmp.Diff(c.Expected, agentPool))
+			}
 		})
 	}
 }

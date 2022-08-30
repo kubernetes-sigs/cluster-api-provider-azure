@@ -18,55 +18,29 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
-	"github.com/Azure/go-autorest/autorest/to"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // AgentPoolToManagedClusterAgentPoolProfile converts a AgentPoolSpec to an Azure SDK ManagedClusterAgentPoolProfile used in managedcluster reconcile.
-func AgentPoolToManagedClusterAgentPoolProfile(pool azure.AgentPoolSpec) containerservice.ManagedClusterAgentPoolProfile {
+func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) containerservice.ManagedClusterAgentPoolProfile {
+	properties := pool.ManagedClusterAgentPoolProfileProperties
 	return containerservice.ManagedClusterAgentPoolProfile{
-		Name:                &pool.Name,
-		VMSize:              &pool.SKU,
-		OsType:              containerservice.OSType(to.String(pool.OSType)),
-		OsDiskSizeGB:        &pool.OSDiskSizeGB,
-		Count:               &pool.Replicas,
-		Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-		OrchestratorVersion: pool.Version,
-		VnetSubnetID:        &pool.VnetSubnetID,
-		Mode:                containerservice.AgentPoolMode(pool.Mode),
-		EnableAutoScaling:   pool.EnableAutoScaling,
-		MaxCount:            pool.MaxCount,
-		MinCount:            pool.MinCount,
-		NodeTaints:          &pool.NodeTaints,
-		AvailabilityZones:   &pool.AvailabilityZones,
-		MaxPods:             pool.MaxPods,
-		OsDiskType:          containerservice.OSDiskType(to.String(pool.OsDiskType)),
-		NodeLabels:          pool.NodeLabels,
-		EnableUltraSSD:      pool.EnableUltraSSD,
-	}
-}
-
-// AgentPoolToContainerServiceAgentPool converts a AgentPoolSpec to an Azure SDK AgentPool used in agentpool reconcile.
-func AgentPoolToContainerServiceAgentPool(pool azure.AgentPoolSpec) containerservice.AgentPool {
-	return containerservice.AgentPool{
-		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
-			VMSize:              &pool.SKU,
-			OsType:              containerservice.OSType(to.String(pool.OSType)),
-			OsDiskSizeGB:        &pool.OSDiskSizeGB,
-			Count:               &pool.Replicas,
-			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-			OrchestratorVersion: pool.Version,
-			VnetSubnetID:        &pool.VnetSubnetID,
-			Mode:                containerservice.AgentPoolMode(pool.Mode),
-			EnableAutoScaling:   pool.EnableAutoScaling,
-			MaxCount:            pool.MaxCount,
-			MinCount:            pool.MinCount,
-			NodeTaints:          &pool.NodeTaints,
-			AvailabilityZones:   &pool.AvailabilityZones,
-			MaxPods:             pool.MaxPods,
-			OsDiskType:          containerservice.OSDiskType(to.String(pool.OsDiskType)),
-			NodeLabels:          pool.NodeLabels,
-			EnableUltraSSD:      pool.EnableUltraSSD,
-		},
+		Name:                pool.Name, // Note: if converting from agentPoolSpec.Parameters(), this field will not be set
+		VMSize:              properties.VMSize,
+		OsType:              properties.OsType,
+		OsDiskSizeGB:        properties.OsDiskSizeGB,
+		Count:               properties.Count,
+		Type:                properties.Type,
+		OrchestratorVersion: properties.OrchestratorVersion,
+		VnetSubnetID:        properties.VnetSubnetID,
+		Mode:                properties.Mode,
+		EnableAutoScaling:   properties.EnableAutoScaling,
+		MaxCount:            properties.MaxCount,
+		MinCount:            properties.MinCount,
+		NodeTaints:          properties.NodeTaints,
+		AvailabilityZones:   properties.AvailabilityZones,
+		MaxPods:             properties.MaxPods,
+		OsDiskType:          properties.OsDiskType,
+		NodeLabels:          properties.NodeLabels,
+		EnableUltraSSD:      properties.EnableUltraSSD,
 	}
 }

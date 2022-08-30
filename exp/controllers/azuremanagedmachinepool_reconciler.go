@@ -34,7 +34,7 @@ import (
 type (
 	// azureManagedMachinePoolService contains the services required by the cluster controller.
 	azureManagedMachinePoolService struct {
-		scope         agentpools.ManagedMachinePoolScope
+		scope         agentpools.AgentPoolScope
 		agentPoolsSvc azure.Reconciler
 		scaleSetsSvc  NodeLister
 	}
@@ -96,7 +96,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	defer done()
 
 	log.Info("reconciling managed machine pool")
-	agentPoolName := s.scope.AgentPoolSpec().Name
+	agentPoolName := s.scope.Name()
 
 	if err := s.agentPoolsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)
@@ -155,7 +155,7 @@ func (s *azureManagedMachinePoolService) Delete(ctx context.Context) error {
 	defer done()
 
 	if err := s.agentPoolsSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete machine pool %s", s.scope.AgentPoolSpec().Name)
+		return errors.Wrapf(err, "failed to delete machine pool %s", s.scope.Name())
 	}
 
 	return nil

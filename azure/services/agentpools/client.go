@@ -18,32 +18,27 @@ package agentpools
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 	"github.com/Azure/go-autorest/autorest"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk.
-type Client interface {
-	Get(context.Context, string, string, string) (containerservice.AgentPool, error)
-	CreateOrUpdate(context.Context, string, string, string, containerservice.AgentPool, map[string]string) error
-	Delete(context.Context, string, string, string) error
-}
-
-// AzureClient contains the Azure go-sdk Client.
-type AzureClient struct {
+// azureClient contains the Azure go-sdk Client.
+type azureClient struct {
 	agentpools containerservice.AgentPoolsClient
 }
 
-var _ Client = &AzureClient{}
-
-// NewClient creates a new agent pools client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+// newClient creates a new agent pools client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
 	c := newAgentPoolsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{c}
+	return &azureClient{c}
 }
 
 // newAgentPoolsClient creates a new agent pool client from subscription ID.
@@ -54,50 +49,125 @@ func newAgentPoolsClient(subscriptionID string, baseURI string, authorizer autor
 }
 
 // Get gets an agent pool.
-func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, cluster, name string) (containerservice.AgentPool, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.Get")
+func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.Get")
 	defer done()
 
-	return ac.agentpools.Get(ctx, resourceGroupName, cluster, name)
+	return ac.agentpools.Get(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName())
 }
 
-// CreateOrUpdate creates or updates an agent pool.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cluster, name string,
-	properties containerservice.AgentPool, customHeaders map[string]string) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.CreateOrUpdate")
+// CreateOrUpdateAsync creates or updates an agent pool asynchronously.
+// It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// progress of the operation.
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.CreateOrUpdate")
 	defer done()
 
-	preparer, err := ac.agentpools.CreateOrUpdatePreparer(ctx, resourceGroupName, cluster, name, properties)
-	if err != nil {
-		return errors.Wrap(err, "failed to prepare operation")
+	agentPool, ok := parameters.(containerservice.AgentPool)
+	if !ok {
+		return nil, nil, errors.Errorf("%T is not a containerservice.AgentPool", parameters)
 	}
-	for key, element := range customHeaders {
+
+	preparer, err := ac.agentpools.CreateOrUpdatePreparer(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), agentPool)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to prepare operation")
+	}
+
+	headerSpec, ok := spec.(azure.ResourceSpecGetterWithHeaders)
+	if !ok {
+		return nil, nil, errors.Errorf("%T is not a azure.ResourceSpecGetterWithHeaders", spec)
+	}
+	for key, element := range headerSpec.CustomHeaders() {
 		preparer.Header.Add(key, element)
 	}
 
-	future, err := ac.agentpools.CreateOrUpdateSender(preparer)
+	createFuture, err := ac.agentpools.CreateOrUpdateSender(preparer)
 	if err != nil {
-		return errors.Wrap(err, "failed to begin operation")
+		return nil, nil, errors.Wrap(err, "failed to begin operation")
 	}
-	if err := future.WaitForCompletionRef(ctx, ac.agentpools.Client); err != nil {
-		return errors.Wrap(err, "failed to end operation")
+
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
+	defer cancel()
+
+	err = createFuture.WaitForCompletionRef(ctx, ac.agentpools.Client)
+	if err != nil {
+		// if an error occurs, return the future.
+		// this means the long-running operation didn't finish in the specified timeout.
+		return nil, &createFuture, err
 	}
-	_, err = future.Result(ac.agentpools)
-	return err
+	result, err = createFuture.Result(ac.agentpools)
+	// if the operation completed, return a nil future
+	return result, nil, err
 }
 
-// Delete deletes an agent pool.
-func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, cluster, name string) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.Delete")
+// DeleteAsync deletes an agent pool asynchronously. DeleteAsync sends a DELETE
+// request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// progress of the operation.
+func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.Delete")
 	defer done()
 
-	future, err := ac.agentpools.Delete(ctx, resourceGroupName, cluster, name)
+	deleteFuture, err := ac.agentpools.Delete(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName())
 	if err != nil {
-		return errors.Wrap(err, "failed to begin operation")
+		return nil, err
 	}
-	if err := future.WaitForCompletionRef(ctx, ac.agentpools.Client); err != nil {
-		return errors.Wrap(err, "failed to end operation")
+
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
+	defer cancel()
+
+	err = deleteFuture.WaitForCompletionRef(ctx, ac.agentpools.Client)
+	if err != nil {
+		// if an error occurs, return the future.
+		// this means the long-running operation didn't finish in the specified timeout.
+		return &deleteFuture, err
 	}
-	_, err = future.Result(ac.agentpools)
-	return err
+	_, err = deleteFuture.Result(ac.agentpools)
+	// if the operation completed, return a nil future.
+	return nil, err
+}
+
+// IsDone returns true if the long-running operation has completed.
+func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.IsDone")
+	defer done()
+
+	isDone, err = future.DoneWithContext(ctx, ac.agentpools)
+	if err != nil {
+		return false, errors.Wrap(err, "failed checking if the operation was complete")
+	}
+
+	return isDone, nil
+}
+
+// Result fetches the result of a long-running operation future.
+func (ac *azureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.Result")
+	defer done()
+
+	if future == nil {
+		return nil, errors.Errorf("cannot get result from nil future")
+	}
+
+	switch futureType {
+	case infrav1.PutFuture:
+		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
+		// Unfortunately the FutureAPI can't be casted directly to AgentPoolsCreateOrUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
+		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
+		var createFuture *containerservice.AgentPoolsCreateOrUpdateFuture
+		jsonData, err := future.MarshalJSON()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal future")
+		}
+		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal future data")
+		}
+		return createFuture.Result(ac.agentpools)
+
+	case infrav1.DeleteFuture:
+		// Delete does not return a result agentPool.
+		return nil, nil
+
+	default:
+		return nil, errors.Errorf("unknown future type %q", futureType)
+	}
 }
