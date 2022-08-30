@@ -218,13 +218,15 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 	for i, machine := range machines {
 		if machine.Status.Ready {
 			readyReplicas++
+		} else {
+			fmt.Printf("Machine status %+v\n", machine.Status)
 		}
 		providerIDs[i] = machine.Spec.ProviderID
 	}
 
-	fmt.Printf("readyReplicas: %d", int64(readyReplicas))
-	fmt.Printf("providerIds: %v", providerIDs)
-	fmt.Printf("MachinePool: %+v", m.MachinePool)
+	fmt.Printf("readyReplicas: %d\n", int64(readyReplicas))
+	fmt.Printf("providerIds: %v\n", providerIDs)
+	fmt.Printf("MachinePool: %+v\n", m.MachinePool)
 
 	m.AzureMachinePool.Status.Replicas = readyReplicas
 	m.AzureMachinePool.Spec.ProviderIDList = providerIDs
