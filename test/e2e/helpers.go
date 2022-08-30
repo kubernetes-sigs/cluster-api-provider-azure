@@ -59,11 +59,13 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -954,4 +956,68 @@ func WaitForDaemonset(ctx context.Context, input clusterctl.ApplyClusterTemplate
 		}
 		return false
 	}, input.WaitForControlPlaneIntervals...).Should(Equal(true))
+}
+
+// podListHasNumPods fulfills the Cluster API PodListCondition type spec
+// given a list of pods, we validate for an exact number of those pods in a Running state
+func podListHasNumPods(numPods int) func(pl *corev1.PodList) error {
+	return func(pl *corev1.PodList) error {
+		var runningPods int
+		for _, p := range pl.Items {
+			if p.Status.Phase == corev1.PodRunning {
+				runningPods++
+			}
+		}
+		if runningPods != numPods {
+			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
+		}
+		return nil
+	}
+}
+
+// podListHasAtLeastNumPods fulfills the cluster-api PodListCondition type spec
+// given a list of pods, we validate for at least 1 number of those pods in a Running state
+func podListHasAtLeastNumPods(numPods int) func(pl *corev1.PodList) error {
+	return func(pl *corev1.PodList) error {
+		var runningPods int
+		for _, p := range pl.Items {
+			if p.Status.Phase == corev1.PodRunning {
+				runningPods++
+			}
+		}
+		if runningPods >= numPods {
+			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
+		}
+		return nil
+	}
+}
+
+func defaultConfigCluster(clusterName, namespace string) clusterctl.ConfigClusterInput {
+	return clusterctl.ConfigClusterInput{
+		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+		ClusterctlConfigPath:     clusterctlConfigPath,
+		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+		InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+		Flavor:                   clusterctl.DefaultFlavor,
+		Namespace:                namespace,
+		ClusterName:              clusterName,
+		KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+		ControlPlaneMachineCount: pointer.Int64Ptr(3),
+		WorkerMachineCount:       pointer.Int64Ptr(0),
+	}
+}
+
+func createClusterWithControlPlaneWaiters(ctx context.Context, configCluster clusterctl.ConfigClusterInput,
+	cpWaiters clusterctl.ControlPlaneWaiters,
+	result *clusterctl.ApplyClusterTemplateAndWaitResult) (*clusterv1.Cluster,
+	[]*clusterv1.MachineDeployment, *controlplanev1.KubeadmControlPlane) {
+	clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+		ClusterProxy:                 bootstrapClusterProxy,
+		ConfigCluster:                configCluster,
+		WaitForClusterIntervals:      e2eConfig.GetIntervals("", "wait-cluster"),
+		WaitForControlPlaneIntervals: e2eConfig.GetIntervals("", "wait-control-plane"),
+		WaitForMachineDeployments:    e2eConfig.GetIntervals("", "wait-worker-nodes"),
+		ControlPlaneWaiters:          cpWaiters,
+	}, result)
+	return result.Cluster, result.MachineDeployments, result.ControlPlane
 }

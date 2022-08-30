@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - ../../../flavors/default
+  - ../prow/cni-resource-set.yaml
+patchesStrategicMerge:
+  - ../patches/tags.yaml
+  - ../patches/controller-manager.yaml
+  - ../patches/cluster-cni.yaml
+  - ../patches/apiserver.yaml
+  - ../patches/uami-md-0.yaml
+  - ../patches/uami-control-plane.yaml
+configMapGenerator:
+  - name: cni-${CLUSTER_NAME}-calico
+    files:
+      - resources=../../../addons/calico.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated
