@@ -101,6 +101,7 @@ providers:
         targetName: "cluster-template.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template.yaml"
         targetName: "cluster-template-management.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-adoption.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-md-remediation.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-remediation.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-scale-in.yaml"

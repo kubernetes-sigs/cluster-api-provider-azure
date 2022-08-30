@@ -1,0 +1,14 @@
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  kubeadmConfigSpec:
+    files:
+      - contentFrom:
+          secret:
+            key: control-plane-azure.json
+            name: ${CLUSTER_NAME}-control-plane-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"

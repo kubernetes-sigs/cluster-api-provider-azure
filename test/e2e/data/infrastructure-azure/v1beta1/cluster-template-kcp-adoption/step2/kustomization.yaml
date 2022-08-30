@@ -1,0 +1,10 @@
+commonLabels:
+  kcp-adoption.step2: ""
+
+bases:
+  - ../../bases/cluster-with-kcp.yaml
+  - ../../bases/azure-cluster-identity.yaml
+
+patchesStrategicMerge:
+  - ./cluster-with-kcp.yaml
+  - ../../patches/azurecluster-identity-ref.yaml
