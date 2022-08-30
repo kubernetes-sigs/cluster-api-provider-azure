@@ -43,66 +43,6 @@ const (
 	VirtualMachineScaleSet = "VirtualMachineScaleSet"
 )
 
-// AgentPoolSpec contains agent pool specification details.
-type AgentPoolSpec struct {
-	// Name is the name of agent pool.
-	Name string
-
-	// ResourceGroup is the name of the Azure resource group for the AKS Cluster.
-	ResourceGroup string
-
-	// Cluster is the name of the AKS cluster.
-	Cluster string
-
-	// Version defines the desired Kubernetes version.
-	Version *string
-
-	// SKU defines the Azure VM size for the agent pool VMs.
-	SKU string
-
-	// Replicas is the number of desired machines.
-	Replicas int32
-
-	// OSDiskSizeGB is the OS disk size in GB for every machine in this agent pool.
-	OSDiskSizeGB int32
-
-	// VnetSubnetID is the Azure Resource ID for the subnet which should contain nodes.
-	VnetSubnetID string
-
-	// Mode represents mode of an agent pool. Possible values include: 'System', 'User'.
-	Mode string
-
-	//  Maximum number of nodes for auto-scaling
-	MaxCount *int32 `json:"maxCount,omitempty"`
-
-	// Minimum number of nodes for auto-scaling
-	MinCount *int32 `json:"minCount,omitempty"`
-
-	// Node labels - labels for all of the nodes present in node pool
-	NodeLabels map[string]*string `json:"nodeLabels,omitempty"`
-
-	// NodeTaints specifies the taints for nodes present in this agent pool.
-	NodeTaints []string `json:"nodeTaints,omitempty"`
-
-	// EnableAutoScaling - Whether to enable auto-scaler
-	EnableAutoScaling *bool `json:"enableAutoScaling,omitempty"`
-
-	// AvailabilityZones represents the Availability zones for nodes in the AgentPool.
-	AvailabilityZones []string
-
-	// MaxPods specifies the kubelet --max-pods configuration for the agent pool.
-	MaxPods *int32 `json:"maxPods,omitempty"`
-
-	// OsDiskType specifies the OS disk type for each node in the pool. Allowed values are 'Ephemeral' and 'Managed'.
-	OsDiskType *string `json:"osDiskType,omitempty"`
-
-	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
-	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
-
-	// OSType specifies the operating system for the node pool. Allowed values are 'Linux' and 'Windows'
-	OSType *string `json:"osType,omitempty"`
-}
-
 // ScaleSetSpec defines the specification for a Scale Set.
 type ScaleSetSpec struct {
 	Name                         string

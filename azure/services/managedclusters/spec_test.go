@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -65,15 +65,15 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "Standard",
-				GetAllAgentPools: func() ([]azure.AgentPoolSpec, error) {
-					return []azure.AgentPoolSpec{
-						{
+				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
+					return []azure.ResourceSpecGetter{
+						&agentpools.AgentPoolSpec{
 							Name:          "test-agentpool-0",
 							Mode:          string(infrav1exp.NodePoolModeSystem),
 							ResourceGroup: "test-rg",
 							Replicas:      int32(2),
 						},
-						{
+						&agentpools.AgentPoolSpec{
 							Name:              "test-agentpool-1",
 							Mode:              string(infrav1exp.NodePoolModeUser),
 							ResourceGroup:     "test-rg",
@@ -160,24 +160,25 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 			KubernetesVersion: to.StringPtr("v1.22.0"),
 			DNSPrefix:         to.StringPtr("test-managedcluster"),
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{
-				converters.AgentPoolToManagedClusterAgentPoolProfile(azure.AgentPoolSpec{
-					Name:          "test-agentpool-0",
-					Mode:          string(infrav1exp.NodePoolModeSystem),
-					ResourceGroup: "test-rg",
-					Replicas:      int32(2),
-				}),
-				converters.AgentPoolToManagedClusterAgentPoolProfile(azure.AgentPoolSpec{
-					Name:              "test-agentpool-1",
-					Mode:              string(infrav1exp.NodePoolModeUser),
-					ResourceGroup:     "test-rg",
-					Replicas:          int32(4),
-					Cluster:           "test-managedcluster",
-					SKU:               "test_SKU",
-					Version:           to.StringPtr("v1.22.0"),
-					VnetSubnetID:      "fake/subnet/id",
-					MaxPods:           to.Int32Ptr(int32(32)),
-					AvailabilityZones: []string{"1", "2"},
-				}),
+				{
+					Name:         to.StringPtr("test-agentpool-0"),
+					Mode:         containerservice.AgentPoolMode(infrav1exp.NodePoolModeSystem),
+					Count:        to.Int32Ptr(2),
+					Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
+					OsDiskSizeGB: to.Int32Ptr(0),
+				},
+				{
+					Name:                to.StringPtr("test-agentpool-1"),
+					Mode:                containerservice.AgentPoolMode(infrav1exp.NodePoolModeUser),
+					Count:               to.Int32Ptr(4),
+					Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
+					OsDiskSizeGB:        to.Int32Ptr(0),
+					VMSize:              to.StringPtr("test_SKU"),
+					OrchestratorVersion: to.StringPtr("v1.22.0"),
+					VnetSubnetID:        to.StringPtr("fake/subnet/id"),
+					MaxPods:             to.Int32Ptr(int32(32)),
+					AvailabilityZones:   &[]string{"1", "2"},
+				},
 			},
 			LinuxProfile: &containerservice.LinuxProfile{
 				AdminUsername: to.StringPtr(azure.DefaultAKSUserName),
