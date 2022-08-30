@@ -104,7 +104,7 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 		return err
 	}
 
-	for i, instance := range mp.Spec.ProviderIDList {
+	for i, instance := range am.Spec.ProviderIDList {
 		if mp.Status.NodeRefs != nil && len(mp.Status.NodeRefs) >= (i+1) {
 			hostname := mp.Status.NodeRefs[i].Name
 
