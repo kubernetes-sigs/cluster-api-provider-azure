@@ -402,7 +402,8 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 		fmt.Printf("Succeeded setProvisioningStateAndConditions")
 		fmt.Printf("MachinePool.Spec.Replicas: %d", *m.MachinePool.Spec.Replicas)
 		fmt.Printf("MachinePool.Spec.ProviderIDList: %v", m.MachinePool.Spec.ProviderIDList)
-		m.MachinePool.Spec.ProviderIDList = m.AzureMachinePool.Spec.ProviderIDList
+		fmt.Printf("AzureMachinePool.Status.Replicas: %d", m.AzureMachinePool.Status.Replicas)
+		fmt.Printf("AzureMachinePool.Status.ProviderIDList: %v", m.AzureMachinePool.Spec.ProviderIDList)
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetRunningCondition)
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetModelUpdatedCondition)
 		conditions.MarkTrue(m.AzureMachinePool, infrav1.ScaleSetDesiredReplicasCondition)
@@ -412,6 +413,8 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 		fmt.Printf("Not ready setProvisioningStateAndConditions")
 		fmt.Printf("MachinePool.Spec.Replicas: %d", *m.MachinePool.Spec.Replicas)
 		fmt.Printf("MachinePool.Spec.ProviderIDList: %v", m.MachinePool.Spec.ProviderIDList)
+		fmt.Printf("AzureMachinePool.Status.Replicas: %d", m.AzureMachinePool.Status.Replicas)
+		fmt.Printf("AzureMachinePool.Status.ProviderIDList: %v", m.AzureMachinePool.Spec.ProviderIDList)
 		updatingState := infrav1.Updating
 		m.AzureMachinePool.Status.ProvisioningState = &updatingState
 		if *m.MachinePool.Spec.Replicas > m.AzureMachinePool.Status.Replicas {
