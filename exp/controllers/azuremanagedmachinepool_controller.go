@@ -258,6 +258,8 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 	}
 
 	if err := svc.Reconcile(ctx); err != nil {
+		scope.SetAgentPoolReady(false)
+
 		// Handle transient and terminal errors
 		log := log.WithValues("name", scope.InfraMachinePool.Name, "namespace", scope.InfraMachinePool.Namespace)
 		var reconcileError azure.ReconcileError
@@ -279,7 +281,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 	}
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
-	scope.InfraMachinePool.Status.Ready = true
+	scope.SetAgentPoolReady(true)
 	ammpr.Recorder.Eventf(scope.InfraMachinePool, corev1.EventTypeNormal, "AzureManagedMachinePool available", "agent pool successfully reconciled")
 	return reconcile.Result{}, nil
 }
