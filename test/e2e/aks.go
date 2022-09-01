@@ -252,17 +252,17 @@ func byClusterOptions(name, namespace string) []client.ListOption {
 func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, location, version string) (string, error) {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
-		return "", errors.Wrap(err, "GetSettingsFromEnvironment failed.")
+		return "", errors.Wrap(err, "failed to get settings from environment")
 	}
 	authorizer, err := settings.GetAuthorizer()
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to create an Authorizer.")
+		return "", errors.Wrap(err, "failed to create an Authorizer")
 	}
 	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
 	containerServiceClient.Authorizer = authorizer
 	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to list Orchestrators.")
+		return "", errors.Wrap(err, "failed to list Orchestrators")
 	}
 
 	var latestStableVersionDesired bool
@@ -312,17 +312,17 @@ func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, locatio
 func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, location string) (string, error) {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
-		return "", errors.Wrap(err, "GetSettingsFromEnvironment failed.")
+		return "", errors.Wrap(err, "failed to get settings from environment")
 	}
 	authorizer, err := settings.GetAuthorizer()
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to create an Authorizer.")
+		return "", errors.Wrap(err, "failed to create an Authorizer")
 	}
 	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
 	containerServiceClient.Authorizer = authorizer
 	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to list Orchestrators.")
+		return "", errors.Wrap(err, "failed to list Orchestrators")
 	}
 
 	var orchestratorversions []string
@@ -344,7 +344,7 @@ func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, lo
 		foundWorkingVersion = true
 	}
 	if !foundWorkingVersion {
-		return "", errors.New(fmt.Sprintf("Latest stable AKS version not found."))
+		return "", errors.New("latest stable AKS version not found")
 	}
 	return maxVersion, nil
 }

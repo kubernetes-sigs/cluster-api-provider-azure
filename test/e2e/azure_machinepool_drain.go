@@ -46,11 +46,8 @@ import (
 )
 
 const (
-	AzureMachinePoolDrainSpecName               = "azure-mp-drain"
-	waitForDrainOperationTimeout                = 5 * time.Minute
-	waitForDrainSleepBetweenRetries             = 500 * time.Millisecond
-	waitforResourceOperationTimeout             = 30 * time.Second
-	waitforResourceOperationSleepBetweenRetries = 3 * time.Second
+	AzureMachinePoolDrainSpecName   = "azure-mp-drain"
+	waitforResourceOperationTimeout = 30 * time.Second
 )
 
 // AzureMachinePoolDrainSpecInput is the input for AzureMachinePoolDrainSpec.
@@ -149,7 +146,7 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 	labelNodesWithMachinePoolName(ctx, workloadClusterProxy.GetClient(), amp.Name, ampmls)
 
 	By(fmt.Sprintf("deploying a publicly exposed HTTP service with pod anti-affinity on machine pool: %s/%s", amp.Namespace, amp.Name))
-	_, _, _, cleanup := deployHttpService(ctx, clientset, isWindows, customizers...)
+	_, _, _, cleanup := deployHTTPService(ctx, clientset, isWindows, customizers...)
 	defer cleanup()
 
 	By(fmt.Sprintf("decreasing the replica count by 1 on the machine pool: %s/%s", amp.Namespace, amp.Name))
@@ -234,8 +231,8 @@ func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 	return nil, fmt.Errorf("failed to find owner machine pool for obj %+v", obj)
 }
 
-// deployHttpService creates a publicly exposed http service for Linux or Windows
-func deployHttpService(ctx context.Context, clientset *kubernetes.Clientset, isWindows bool, opts ...deployCustomizerOption) (*deployments.Builder, *v1.Deployment, *corev1.Service, func()) {
+// deployHTTPService creates a publicly exposed http service for Linux or Windows
+func deployHTTPService(ctx context.Context, clientset *kubernetes.Clientset, isWindows bool, opts ...deployCustomizerOption) (*deployments.Builder, *v1.Deployment, *corev1.Service, func()) {
 	var (
 		deploymentName = func() string {
 			if isWindows {

@@ -68,7 +68,7 @@ func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod corev1
 		}
 		// If we get here we are validating that the command returned an expected error
 		if err == nil {
-			return fmt.Errorf("Expected error from command %s but got nil", command)
+			return fmt.Errorf("expected error from command %s but got nil", command)
 		}
 		return nil
 	}, podExecOperationTimeout, podExecOperationSleepBetweenRetries).Should(Succeed())

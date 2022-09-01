@@ -63,7 +63,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	// Before all ParallelNodes.
 
 	Expect(configPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
-	Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
+	Expect(os.MkdirAll(artifactFolder, 0o755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
 
 	Byf("Loading the e2e test configuration from %q", configPath)
 	e2eConfig = loadE2EConfig(configPath)
@@ -86,7 +86,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		strings.Join([]string{
 			artifactFolder,
 			clusterctlConfigPath,
-			string(configBuf.Bytes()),
+			configBuf.String(),
 			bootstrapClusterProxy.GetKubeconfigPath(),
 		}, ","),
 	)

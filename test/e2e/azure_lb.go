@@ -148,7 +148,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		}
 		return nil
 	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
-	ilbIP := extractServiceIp(svc)
+	ilbIP := extractServiceIP(svc)
 
 	ilbJob := job.CreateCurlJobResourceSpec("curl-to-ilb-job", ilbIP)
 	Log("starting to create a curl to ilb job")
@@ -223,7 +223,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		return nil
 	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 
-	elbIP := extractServiceIp(svc)
+	elbIP := extractServiceIP(svc)
 	Log("starting to create curl-to-elb job")
 	elbJob := job.CreateCurlJobResourceSpec("curl-to-elb-job"+util.RandomString(6), elbIP)
 	Eventually(func() error {
@@ -294,7 +294,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 }
 
-func extractServiceIp(svc *corev1.Service) string {
+func extractServiceIP(svc *corev1.Service) string {
 	var ilbIP string
 	for _, i := range svc.Status.LoadBalancer.Ingress {
 		if net.ParseIP(i.IP) != nil {

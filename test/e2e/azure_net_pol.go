@@ -22,7 +22,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
@@ -68,7 +67,7 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	Expect(clusterProxy).NotTo(BeNil())
 	clientset = clusterProxy.GetClientSet()
 	Expect(clientset).NotTo(BeNil())
-	testTmpDir, err := ioutil.TempDir("/tmp", "azure-test")
+	testTmpDir, err := os.MkdirTemp("/tmp", "azure-test")
 	defer os.RemoveAll(testTmpDir)
 	Expect(err).NotTo(HaveOccurred())
 	config = createRestConfig(ctx, testTmpDir, input.Namespace.Name, input.ClusterName)
@@ -86,6 +85,8 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating frontendProd, backend and network-policy pod deployments")
+	//nolint:gosec // This is only generating one random number which is used to
+	// name resources, so using crypto/rand isn't necessary here.
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	randInt := r.Intn(99999)
 

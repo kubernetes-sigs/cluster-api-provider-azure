@@ -21,8 +21,9 @@ package e2e
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -69,7 +70,7 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClus
 
 	hostname := getHostname(m, isAzureMachineWindows(am))
 
-	if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isAzureMachineWindows(am), outputPath); err != nil {
+	if err := collectLogsFromNode(cluster, hostname, isAzureMachineWindows(am), outputPath); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -108,7 +109,7 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 		if mp.Status.NodeRefs != nil && len(mp.Status.NodeRefs) >= (i+1) {
 			hostname := mp.Status.NodeRefs[i].Name
 
-			if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
+			if err := collectLogsFromNode(cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
 				errs = append(errs, err)
 			}
 
@@ -125,7 +126,7 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 }
 
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
-func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
+func collectLogsFromNode(cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
 	nodeOSType := azure.LinuxOS
 	if isWindows {
 		nodeOSType = azure.WindowsOS
@@ -386,14 +387,17 @@ func windowsCrashDumpLogs(execToPathFn func(outputFileName string, command strin
 
 // collectVMBootLog collects boot logs of the vm by using azure boot diagnostics.
 func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath string) error {
+	if am == nil {
+		return errors.New("AzureMachine is nil")
+	}
 	Logf("Collecting boot logs for AzureMachine %s\n", am.GetName())
 
-	if am == nil || am.Spec.ProviderID == nil {
+	if am.Spec.ProviderID == nil {
 		return errors.New("AzureMachine provider ID is nil")
 	}
 
-	resourceId := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
-	resource, err := autorest.ParseResourceID(resourceId)
+	resourceID := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
+	resource, err := autorest.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}
@@ -419,16 +423,16 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 
 // collectVMSSBootLog collects boot logs of the scale set by using azure boot diagnostics.
 func collectVMSSBootLog(ctx context.Context, providerID string, outputPath string) error {
-	resourceId := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
-	v := strings.Split(resourceId, "/")
-	instanceId := v[len(v)-1]
-	resourceId = strings.TrimSuffix(resourceId, "/virtualMachines/"+instanceId)
-	resource, err := autorest.ParseResourceID(resourceId)
+	resourceID := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
+	v := strings.Split(resourceID, "/")
+	instanceID := v[len(v)-1]
+	resourceID = strings.TrimSuffix(resourceID, "/virtualMachines/"+instanceID)
+	resource, err := autorest.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}
 
-	Logf("Collecting boot logs for VMSS instance %s of scale set %s\n", instanceId, resource.ResourceName)
+	Logf("Collecting boot logs for VMSS instance %s of scale set %s\n", instanceID, resource.ResourceName)
 
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
@@ -441,7 +445,7 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 		return errors.Wrap(err, "failed to get authorizer")
 	}
 
-	bootDiagnostics, err := vmssClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroup, resource.ResourceName, instanceId, nil)
+	bootDiagnostics, err := vmssClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroup, resource.ResourceName, instanceID, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
@@ -451,17 +455,22 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 
 func writeBootLog(bootDiagnostics compute.RetrieveBootDiagnosticsDataResult, outputPath string) error {
 	var err error
-	resp, err := http.Get(*bootDiagnostics.SerialConsoleLogBlobURI)
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, *bootDiagnostics.SerialConsoleLogBlobURI, http.NoBody)
+	if err != nil {
+		return errors.Wrap(err, "failed to create HTTP request")
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil || resp.StatusCode != 200 {
 		return errors.Wrap(err, "failed to get logs from serial console uri")
 	}
+	defer resp.Body.Close()
 
-	content, err := ioutil.ReadAll(resp.Body)
+	content, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return errors.Wrap(err, "failed to read response body")
 	}
 
-	if err := ioutil.WriteFile(filepath.Join(outputPath, "boot.log"), content, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(outputPath, "boot.log"), content, 0o600); err != nil {
 		return errors.Wrap(err, "failed to write response to file")
 	}
 

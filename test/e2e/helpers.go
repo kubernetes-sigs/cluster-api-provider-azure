@@ -25,7 +25,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -53,7 +52,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -64,14 +62,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
-	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -280,7 +275,7 @@ func WaitForServiceAvailable(ctx context.Context, input WaitForServiceAvailableI
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := input.Getter.Get(ctx, key, input.Service); err == nil {
 			ingress := input.Service.Status.LoadBalancer.Ingress
-			if ingress != nil && len(ingress) > 0 {
+			if len(ingress) > 0 {
 				for _, i := range ingress {
 					if net.ParseIP(i.IP) == nil {
 						return false
@@ -350,13 +345,13 @@ func getAvailabilityZonesForRegion(location string, size string) ([]string, erro
 	if err != nil {
 		return nil, err
 	}
-	file, err := ioutil.ReadFile(filepath.Join(wd, "data/availableZonesPerLocation.json"))
+	file, err := os.ReadFile(filepath.Join(wd, "data", "availableZonesPerLocation.json"))
 	if err != nil {
 		return nil, err
 	}
 	var data map[string][]string
 
-	if err = json.Unmarshal(file, &data); err != nil {
+	if err := json.Unmarshal(file, &data); err != nil {
 		return nil, err
 	}
 	key := fmt.Sprintf("%s_%s", location, size)
@@ -368,8 +363,9 @@ func getAvailabilityZonesForRegion(location string, size string) ([]string, erro
 // including which Ginkgo node it's running on.
 //
 // Example output:
-//   INFO: "With 1 worker node" started at Tue, 22 Sep 2020 13:19:08 PDT on Ginkgo node 2 of 3
-//   INFO: "With 1 worker node" ran for 18m34s on Ginkgo node 2 of 3
+//
+//	INFO: "With 1 worker node" started at Tue, 22 Sep 2020 13:19:08 PDT on Ginkgo node 2 of 3
+//	INFO: "With 1 worker node" ran for 18m34s on Ginkgo node 2 of 3
 func logCheckpoint(specTimes map[string]time.Time) {
 	text := CurrentGinkgoTestDescription().TestText
 	start, started := specTimes[text]
@@ -397,149 +393,6 @@ func getClusterName(prefix, specName string) string {
 	Expect(os.Setenv(AzureResourceGroup, clusterName)).To(Succeed())
 	Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).To(Succeed())
 	return clusterName
-}
-
-// nodeSSHInfo provides information to establish an SSH connection to a VM or VMSS instance.
-type nodeSSHInfo struct {
-	Endpoint  string // Endpoint is the control plane hostname or IP address for initial connection.
-	Hostname  string // Hostname is the name or IP address of the destination VM or VMSS instance.
-	Port      string // Port is the TCP port used for the SSH connection.
-	IsWindows bool   // IsWindows give information so we can use the correct commands on the VM
-}
-
-// getClusterSSHInfo returns the information needed to establish a SSH connection through a
-// control plane endpoint to each node in the cluster.
-func getClusterSSHInfo(ctx context.Context, mgmtClusterProxy framework.ClusterProxy, namespace, clusterName string) ([]nodeSSHInfo, error) {
-	var (
-		sshInfo               []nodeSSHInfo
-		mgmtClusterClient     = mgmtClusterProxy.GetClient()
-		workloadClusterClient = mgmtClusterProxy.GetWorkloadCluster(ctx, namespace, clusterName).GetClient()
-	)
-	// Collect the info for each VM / Machine.
-	machines, err := getMachinesInCluster(ctx, mgmtClusterClient, namespace, clusterName)
-	if err != nil {
-		return sshInfo, errors.Wrap(err, "failed to get machines in the cluster")
-	}
-	for i := range machines.Items {
-		m := &machines.Items[i]
-		cluster, err := util.GetClusterFromMetadata(ctx, mgmtClusterClient, m.ObjectMeta)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get cluster from metadata")
-		}
-
-		am, err := getAzureMachine(ctx, mgmtClusterClient, m)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get azuremachine from machine info")
-		}
-
-		sshInfo = append(sshInfo, nodeSSHInfo{
-			Endpoint:  cluster.Spec.ControlPlaneEndpoint.Host,
-			Hostname:  m.Spec.InfrastructureRef.Name,
-			Port:      sshPort,
-			IsWindows: isAzureMachineWindows(am),
-		})
-	}
-
-	// Collect the info for each instance in a VMSS / MachinePool.
-	machinePools, err := getMachinePoolsInCluster(ctx, mgmtClusterClient, namespace, clusterName)
-	if err != nil {
-		return sshInfo, errors.Wrap(err, "failed to find machine pools in cluster")
-	}
-
-	for i := range machinePools.Items {
-		p := &machinePools.Items[i]
-		cluster, err := util.GetClusterFromMetadata(ctx, mgmtClusterClient, p.ObjectMeta)
-		if err != nil {
-			return sshInfo, errors.Wrap(err, "failed to get cluster from metadata")
-		}
-
-		nodes, err := getReadyNodes(ctx, workloadClusterClient, p.Status.NodeRefs)
-		if err != nil {
-			return sshInfo, errors.Wrap(err, "failed to get ready nodes")
-		}
-
-		if p.Spec.Replicas != nil && len(nodes) < int(*p.Spec.Replicas) {
-			message := fmt.Sprintf("machine pool %s/%s expected replicas %d, but only found %d ready nodes", p.Namespace, p.Name, *p.Spec.Replicas, len(nodes))
-			Log(message)
-			return sshInfo, errors.New(message)
-		}
-
-		for _, node := range nodes {
-			s := node.Labels["kubernetes.io/os"]
-			isWindows := false
-			if s == "windows" {
-				isWindows = true
-			}
-			sshInfo = append(sshInfo, nodeSSHInfo{
-				Endpoint:  cluster.Spec.ControlPlaneEndpoint.Host,
-				Hostname:  node.Name,
-				Port:      sshPort,
-				IsWindows: isWindows,
-			})
-		}
-	}
-
-	return sshInfo, nil
-}
-
-func getReadyNodes(ctx context.Context, c client.Client, refs []corev1.ObjectReference) ([]corev1.Node, error) {
-	var nodes []corev1.Node
-	for _, ref := range refs {
-		var node corev1.Node
-		if err := c.Get(ctx, client.ObjectKey{
-			Namespace: ref.Namespace,
-			Name:      ref.Name,
-		}, &node); err != nil {
-			if apierrors.IsNotFound(err) {
-				// If 404, continue. Likely the node refs have not caught up to infra providers
-				continue
-			}
-
-			return nodes, err
-		}
-
-		if !noderefutil.IsNodeReady(&node) {
-			Logf("node is not ready and won't be counted for ssh info %s/%s", node.Namespace, node.Name)
-			continue
-		}
-
-		nodes = append(nodes, node)
-	}
-
-	return nodes, nil
-}
-
-// getMachinesInCluster returns a list of all machines in the given cluster.
-// This is adapted from CAPI's test/framework/cluster_proxy.go.
-func getMachinesInCluster(ctx context.Context, c framework.Lister, namespace, name string) (*clusterv1.MachineList, error) {
-	if name == "" {
-		return nil, nil
-	}
-
-	machineList := &clusterv1.MachineList{}
-	labels := map[string]string{clusterv1.ClusterLabelName: name}
-
-	if err := c.List(ctx, machineList, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
-		return nil, err
-	}
-
-	return machineList, nil
-}
-
-// getMachinePoolsInCluster returns a list of all machine pools in the given cluster.
-func getMachinePoolsInCluster(ctx context.Context, c framework.Lister, namespace, name string) (*expv1.MachinePoolList, error) {
-	if name == "" {
-		return nil, nil
-	}
-
-	machinePoolList := &expv1.MachinePoolList{}
-	labels := map[string]string{clusterv1.ClusterLabelName: name}
-
-	if err := c.List(ctx, machinePoolList, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
-		return nil, err
-	}
-
-	return machinePoolList, nil
 }
 
 func isAzureMachineWindows(am *infrav1.AzureMachine) bool {
@@ -639,7 +492,10 @@ func sftpCopyFile(controlPlaneEndpoint, hostname, port, sourcePath, destPath str
 	}
 	defer destFile.Close()
 
-	sourceFile.WriteTo(destFile)
+	_, err = sourceFile.WriteTo(destFile)
+	if err != nil {
+		return errors.Wrapf(err, "writing to %s", destPath)
+	}
 
 	return nil
 }
@@ -674,7 +530,7 @@ func newSSHConfig() (*ssh.ClientConfig, error) {
 		return nil, err
 	}
 	sshConfig := ssh.ClientConfig{
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //nolint:gosec // Non-production code
 		User:            azure.DefaultUserName,
 		Auth:            []ssh.AuthMethod{pubkey},
 	}
@@ -683,7 +539,7 @@ func newSSHConfig() (*ssh.ClientConfig, error) {
 
 // publicKeyFile parses and returns the public key from the specified private key file.
 func publicKeyFile(file string) (ssh.AuthMethod, error) {
-	buffer, err := ioutil.ReadFile(file)
+	buffer, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
@@ -696,9 +552,9 @@ func publicKeyFile(file string) (ssh.AuthMethod, error) {
 
 // validateStableReleaseString validates the string format that declares "get be the latest stable release for this <Major>.<Minor>"
 // it should be called wherever we process a stable version string expression like "stable-1.22"
-func validateStableReleaseString(stableVersion string) (bool, []string) {
-	stableReleaseFormat := regexp.MustCompile(`^stable-(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
-	matches := stableReleaseFormat.FindStringSubmatch(stableVersion)
+func validateStableReleaseString(stableVersion string) (isStable bool, matches []string) {
+	stableReleaseFormat := regexp.MustCompile(`^stable-(0|[1-9]\d*)\.(0|[1-9]\d*)$`)
+	matches = stableReleaseFormat.FindStringSubmatch(stableVersion)
 	return len(matches) > 0, matches
 }
 
@@ -721,7 +577,11 @@ func resolveCIVersion(label string) (string, error) {
 // latestCIVersion returns the latest CI version of a given label in the form of latest-1.xx.
 func latestCIVersion(label string) (string, error) {
 	ciVersionURL := fmt.Sprintf("https://dl.k8s.io/ci/%s.txt", label)
-	resp, err := http.Get(ciVersionURL)
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, ciVersionURL, http.NoBody)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -958,40 +818,6 @@ func WaitForDaemonset(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	}, input.WaitForControlPlaneIntervals...).Should(Equal(true))
 }
 
-// podListHasNumPods fulfills the Cluster API PodListCondition type spec
-// given a list of pods, we validate for an exact number of those pods in a Running state
-func podListHasNumPods(numPods int) func(pl *corev1.PodList) error {
-	return func(pl *corev1.PodList) error {
-		var runningPods int
-		for _, p := range pl.Items {
-			if p.Status.Phase == corev1.PodRunning {
-				runningPods++
-			}
-		}
-		if runningPods != numPods {
-			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
-		}
-		return nil
-	}
-}
-
-// podListHasAtLeastNumPods fulfills the cluster-api PodListCondition type spec
-// given a list of pods, we validate for at least 1 number of those pods in a Running state
-func podListHasAtLeastNumPods(numPods int) func(pl *corev1.PodList) error {
-	return func(pl *corev1.PodList) error {
-		var runningPods int
-		for _, p := range pl.Items {
-			if p.Status.Phase == corev1.PodRunning {
-				runningPods++
-			}
-		}
-		if runningPods >= numPods {
-			return errors.Errorf("expected %d Running pods, got %d", numPods, runningPods)
-		}
-		return nil
-	}
-}
-
 func defaultConfigCluster(clusterName, namespace string) clusterctl.ConfigClusterInput {
 	return clusterctl.ConfigClusterInput{
 		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
@@ -1010,7 +836,7 @@ func defaultConfigCluster(clusterName, namespace string) clusterctl.ConfigCluste
 func createClusterWithControlPlaneWaiters(ctx context.Context, configCluster clusterctl.ConfigClusterInput,
 	cpWaiters clusterctl.ControlPlaneWaiters,
 	result *clusterctl.ApplyClusterTemplateAndWaitResult) (*clusterv1.Cluster,
-	[]*clusterv1.MachineDeployment, *controlplanev1.KubeadmControlPlane) {
+	*controlplanev1.KubeadmControlPlane) {
 	clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 		ClusterProxy:                 bootstrapClusterProxy,
 		ConfigCluster:                configCluster,
@@ -1019,5 +845,5 @@ func createClusterWithControlPlaneWaiters(ctx context.Context, configCluster clu
 		WaitForMachineDeployments:    e2eConfig.GetIntervals("", "wait-worker-nodes"),
 		ControlPlaneWaiters:          cpWaiters,
 	}, result)
-	return result.Cluster, result.MachineDeployments, result.ControlPlane
+	return result.Cluster, result.ControlPlane
 }
