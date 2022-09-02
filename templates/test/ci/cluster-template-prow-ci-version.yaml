@@ -273,7 +273,7 @@ spec:
           offer: capi
           publisher: cncf-upstream
           sku: ubuntu-1804-gen1
-          version: 124.4.20220819
+          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
