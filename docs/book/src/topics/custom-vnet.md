@@ -99,7 +99,7 @@ spec:
         cidrBlocks: 
           - 10.0.2.0/24
   resourceGroup: cluster-example
-  ```
+```
 
 If no CIDR block is provided, `10.0.0.0/8` will be used by default, with default internal LB private IP `10.0.0.100`.
 
@@ -171,6 +171,43 @@ spec:
         role: node
         cidrBlocks: 
           - 10.0.2.0/24
+  resourceGroup: cluster-example
+```
+
+### Virtual Network service endpoints
+
+Sometimes it's desirable to use [Virtual Network service endpoints](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview) to establish secure and direct connectivity to Azure services from your subnet(s). Service Endpoints are configured on a per-subnet basis. Vnets managed by either `AzureCluster` or `AzureManagedControlPlane` can have `serviceEndpoints` optionally set on each subnet.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: cluster-example
+  namespace: default
+spec:
+  location: southcentralus
+  networkSpec:
+    vnet:
+      name: my-vnet
+      cidrBlocks:
+        - 10.0.0.0/16
+    subnets:
+      - name: my-subnet-cp
+        role: control-plane
+        cidrBlocks:
+          - 10.0.1.0/24
+        serviceEndpoints:
+          - service: Microsoft.AzureActiveDirectory
+            locations: ["*"]
+      - name: my-subnet-node
+        role: node
+        cidrBlocks:
+          - 10.0.2.0/24
+        serviceEndpoints:
+          - service: Microsoft.AzureActiveDirectory
+            locations: ["*"]
+          - service: Microsoft.Storage
+            locations: ["southcentralus"]
   resourceGroup: cluster-example
 ```
 

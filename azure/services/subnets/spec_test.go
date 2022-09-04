@@ -46,6 +46,7 @@ var (
 			RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
 			NetworkSecurityGroup: &network.SecurityGroup{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
 			NatGateway:           &network.SubResource{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
+			ServiceEndpoints:     &[]network.ServiceEndpointPropertiesFormat{},
 		},
 	}
 
@@ -73,6 +74,7 @@ var (
 			RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
 			NetworkSecurityGroup: &network.SecurityGroup{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
 			NatGateway:           &network.SubResource{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
+			ServiceEndpoints:     &[]network.ServiceEndpointPropertiesFormat{},
 		},
 	}
 

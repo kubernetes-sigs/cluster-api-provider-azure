@@ -139,6 +139,11 @@ func (v *VnetSpec) IsManaged(clusterName string) bool {
 // +listMapKey=name
 type Subnets []SubnetSpec
 
+// ServiceEndpoints is a slice of string.
+// +listType=map
+// +listMapKey=service
+type ServiceEndpoints []ServiceEndpointSpec
+
 // SecurityGroup defines an Azure security group.
 type SecurityGroup struct {
 	// ID is the Azure resource ID of the security group.
@@ -618,6 +623,13 @@ type SubnetSpec struct {
 	NatGateway NatGateway `json:"natGateway,omitempty"`
 
 	SubnetClassSpec `json:",inline"`
+}
+
+// ServiceEndpointSpec configures an Azure Service Endpoint.
+type ServiceEndpointSpec struct {
+	Service string `json:"service"`
+
+	Locations []string `json:"locations"`
 }
 
 // GetControlPlaneSubnet returns the cluster control plane subnet.

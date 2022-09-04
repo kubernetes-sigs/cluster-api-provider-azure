@@ -378,6 +378,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 			SecurityGroupName: subnet.SecurityGroup.Name,
 			Role:              subnet.Role,
 			NatGatewayName:    subnet.NatGateway.Name,
+			ServiceEndpoints:  subnet.ServiceEndpoints,
 		}
 		subnetSpecs = append(subnetSpecs, subnetSpec)
 	}
@@ -395,6 +396,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 			SecurityGroupName: azureBastionSubnet.SecurityGroup.Name,
 			RouteTableName:    azureBastionSubnet.RouteTable.Name,
 			Role:              azureBastionSubnet.Role,
+			ServiceEndpoints:  azureBastionSubnet.ServiceEndpoints,
 		})
 	}
 

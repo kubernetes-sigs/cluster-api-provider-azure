@@ -240,7 +240,7 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client 
 		}
 	}
 
-	if errs := m.validateVirtualNetowrkUpdate(old); len(errs) > 0 {
+	if errs := m.validateVirtualNetworkUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 
@@ -475,8 +475,8 @@ func (m *AzureManagedControlPlane) validateAPIServerAccessProfileUpdate(old *Azu
 	return allErrs
 }
 
-// validateVirtualNetowrkUpdate validates update to APIServerAccessProfile.
-func (m *AzureManagedControlPlane) validateVirtualNetowrkUpdate(old *AzureManagedControlPlane) field.ErrorList {
+// validateVirtualNetworkUpdate validates update to APIServerAccessProfile.
+func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManagedControlPlane) field.ErrorList {
 	var allErrs field.ErrorList
 	if old.Spec.VirtualNetwork.Name != m.Spec.VirtualNetwork.Name {
 		allErrs = append(allErrs,
@@ -502,6 +502,10 @@ func (m *AzureManagedControlPlane) validateVirtualNetowrkUpdate(old *AzureManage
 				"Subnet Name is immutable"))
 	}
 
+	// NOTE: This only works because we force the user to set the CIDRBlock for both the
+	// managed and unmanaged Vnets. If we ever update the subnet cidr based on what's
+	// actually set in the subnet, and it is different from what's in the Spec, for
+	// unmanaged Vnets like we do with the AzureCluster this logic will break.
 	if old.Spec.VirtualNetwork.Subnet.CIDRBlock != m.Spec.VirtualNetwork.Subnet.CIDRBlock {
 		allErrs = append(allErrs,
 			field.Invalid(
