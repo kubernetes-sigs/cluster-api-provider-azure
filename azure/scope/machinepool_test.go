@@ -872,6 +872,83 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 			},
 			want: []azure.ResourceSpecGetter{},
 		},
+		{
+			name: "If a custom VM extension is specified, it returns the custom VM extension",
+			machinePoolScope: MachinePoolScope{
+				MachinePool: &expv1.MachinePool{},
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machinepool-name",
+					},
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							OSDisk: infrav1.OSDisk{
+								OSType: "Linux",
+							},
+							VMExtensions: []infrav1.VMExtension{
+								{
+									Name:      "custom-vm-extension",
+									Publisher: "Microsoft.Azure.Extensions",
+									Version:   "2.0",
+									Settings: map[string]string{
+										"timestamp": "1234567890",
+									},
+									ProtectedSettings: map[string]string{
+										"commandToExecute": "echo hello world",
+									},
+								},
+							},
+						},
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Environment: autorestazure.Environment{
+								Name: autorestazure.PublicCloud.Name,
+							},
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&scalesets.VMSSExtensionSpec{
+					ExtensionSpec: azure.ExtensionSpec{
+						Name:      "custom-vm-extension",
+						VMName:    "machinepool-name",
+						Publisher: "Microsoft.Azure.Extensions",
+						Version:   "2.0",
+						Settings: map[string]string{
+							"timestamp": "1234567890",
+						},
+						ProtectedSettings: map[string]string{
+							"commandToExecute": "echo hello world",
+						},
+					},
+					ResourceGroup: "my-rg",
+				},
+				&scalesets.VMSSExtensionSpec{
+					ExtensionSpec: azure.ExtensionSpec{
+						Name:      "CAPZ.Linux.Bootstrapping",
+						VMName:    "machinepool-name",
+						Publisher: "Microsoft.Azure.ContainerUpstream",
+						Version:   "1.0",
+						ProtectedSettings: map[string]string{
+							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+						},
+					},
+					ResourceGroup: "my-rg",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

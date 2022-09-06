@@ -11,6 +11,7 @@
     - [Control Plane Outbound Load Balancer](./topics/control-plane-outbound-lb.md)
     - [Custom Private DNS Zone Name](./topics/custom-dns.md)
     - [Custom Images](./topics/custom-images.md)
+    - [Custom VM Extensions](./topics/custom-vm-extensions.md)
     - [Data Disks](./topics/data-disks.md)
     - [OS Disk](./topics/os-disk.md)
     - [Dual-Stack](./topics/dual-stack.md)

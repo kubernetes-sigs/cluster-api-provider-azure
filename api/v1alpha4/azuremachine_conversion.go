@@ -48,6 +48,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.DNSServers = restored.Spec.DNSServers
 	}
 
+	if len(restored.Spec.VMExtensions) > 0 {
+		dst.Spec.VMExtensions = restored.Spec.VMExtensions
+	}
+
 	return nil
 }
 

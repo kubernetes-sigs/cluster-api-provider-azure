@@ -1219,6 +1219,42 @@ spec:
                           - providerID
                           type: object
                         type: array
+                      vmExtensions:
+                        description: VMExtensions specifies a list of extensions to
+                          be added to the virtual machine.
+                        items:
+                          description: VMExtension specifies the parameters for a
+                            custom VM extension.
+                          properties:
+                            name:
+                              description: Name is the name of the extension.
+                              type: string
+                            protectedSettings:
+                              additionalProperties:
+                                type: string
+                              description: ProtectedSettings is a JSON formatted protected
+                                settings for the extension.
+                              type: object
+                            publisher:
+                              description: Publisher is the name of the extension
+                                handler publisher.
+                              type: string
+                            settings:
+                              additionalProperties:
+                                type: string
+                              description: Settings is a JSON formatted public settings
+                                for the extension.
+                              type: object
+                            version:
+                              description: Version specifies the version of the script
+                                handler.
+                              type: string
+                          required:
+                          - name
+                          - publisher
+                          - version
+                          type: object
+                        type: array
                       vmSize:
                         type: string
                     required:

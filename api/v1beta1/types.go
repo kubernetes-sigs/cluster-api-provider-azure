@@ -530,6 +530,22 @@ type DataDisk struct {
 	CachingType string `json:"cachingType,omitempty"`
 }
 
+// VMExtension specifies the parameters for a custom VM extension.
+type VMExtension struct {
+	// Name is the name of the extension.
+	Name string `json:"name"`
+	// Publisher is the name of the extension handler publisher.
+	Publisher string `json:"publisher"`
+	// Version specifies the version of the script handler.
+	Version string `json:"version"`
+	// Settings is a JSON formatted public settings for the extension.
+	// +optional
+	Settings Tags `json:"settings,omitempty"`
+	// ProtectedSettings is a JSON formatted protected settings for the extension.
+	// +optional
+	ProtectedSettings Tags `json:"protectedSettings,omitempty"`
+}
+
 // ManagedDiskParameters defines the parameters of a managed disk.
 type ManagedDiskParameters struct {
 	// +optional

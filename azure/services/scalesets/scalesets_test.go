@@ -1153,6 +1153,9 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 								Publisher:          to.StringPtr("somePublisher"),
 								Type:               to.StringPtr("someExtension"),
 								TypeHandlerVersion: to.StringPtr("someVersion"),
+								Settings: map[string]string{
+									"someSetting": "someValue",
+								},
 								ProtectedSettings: map[string]string{
 									"commandToExecute": "echo hello",
 								},
@@ -1364,6 +1367,9 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 				VMName:    "my-vmss",
 				Publisher: "somePublisher",
 				Version:   "someVersion",
+				Settings: map[string]string{
+					"someSetting": "someValue",
+				},
 				ProtectedSettings: map[string]string{
 					"commandToExecute": "echo hello",
 				},

@@ -333,6 +333,21 @@ func (m *MachineScope) HasSystemAssignedIdentity() bool {
 // VMExtensionSpecs returns the VM extension specs.
 func (m *MachineScope) VMExtensionSpecs() []azure.ResourceSpecGetter {
 	var extensionSpecs = []azure.ResourceSpecGetter{}
+	for _, extension := range m.AzureMachine.Spec.VMExtensions {
+		extensionSpecs = append(extensionSpecs, &vmextensions.VMExtensionSpec{
+			ExtensionSpec: azure.ExtensionSpec{
+				Name:              extension.Name,
+				VMName:            m.Name(),
+				Publisher:         extension.Publisher,
+				Version:           extension.Version,
+				Settings:          extension.Settings,
+				ProtectedSettings: extension.ProtectedSettings,
+			},
+			ResourceGroup: m.ResourceGroup(),
+			Location:      m.Location(),
+		})
+	}
+
 	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment(), m.Name())
 
 	if bootstrapExtensionSpec != nil {

@@ -615,6 +615,21 @@ func (m *MachinePoolScope) HasSystemAssignedIdentity() bool {
 // VMSSExtensionSpecs returns the VMSS extension specs.
 func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
 	var extensionSpecs = []azure.ResourceSpecGetter{}
+
+	for _, extension := range m.AzureMachinePool.Spec.Template.VMExtensions {
+		extensionSpecs = append(extensionSpecs, &scalesets.VMSSExtensionSpec{
+			ExtensionSpec: azure.ExtensionSpec{
+				Name:              extension.Name,
+				VMName:            m.Name(),
+				Publisher:         extension.Publisher,
+				Version:           extension.Version,
+				Settings:          extension.Settings,
+				ProtectedSettings: extension.ProtectedSettings,
+			},
+			ResourceGroup: m.ResourceGroup(),
+		})
+	}
+
 	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name())
 
 	if bootstrapExtensionSpec != nil {
