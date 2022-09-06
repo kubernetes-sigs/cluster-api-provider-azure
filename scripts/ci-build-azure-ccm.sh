@@ -34,6 +34,8 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 export CCM_IMAGE_NAME=azure-cloud-controller-manager
 # cloud node manager image
 export CNM_IMAGE_NAME=azure-cloud-node-manager
+# cloud node manager windows image version
+export WINDOWS_IMAGE_VERSION=1809
 declare -a IMAGES=("${CCM_IMAGE_NAME}" "${CNM_IMAGE_NAME}")
 
 setup() {
@@ -43,15 +45,25 @@ setup() {
     export IMAGE_REGISTRY=${REGISTRY}
     pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && IMAGE_TAG=$(git rev-parse --short=7 HEAD) && export IMAGE_TAG && popd
     echo "Image Tag is ${IMAGE_TAG}"
+
+    if [[ -n "${WINDOWS_SERVER_VERSION:-}" ]]; then
+        if [[ "${WINDOWS_SERVER_VERSION}" == "windows-2019" ]]; then
+            export WINDOWS_IMAGE_VERSION="1809"
+        elif [[ "${WINDOWS_SERVER_VERSION}" == "windows-2022" ]]; then
+            export WINDOWS_IMAGE_VERSION="ltsc2022"
+        else
+            echo "Windows version not supported: ${WINDOWS_SERVER_VERSION}"
+        fi
+    fi
 }
 
 main() {
-    if [[ "$(can_reuse_artifacts)" == "false" ]]; then
+    if [[ "$(can_reuse_artifacts)" =~ "false" ]]; then
         echo "Build Linux Azure amd64 cloud controller manager"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
         if [[ -n "${TEST_WINDOWS:-}" ]]; then
-            echo "Building Linux amd64 and Windows ltsc2022 amd64 cloud node managers"
-            make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-ltsc2022-amd64 manifest-node-manager-image-windows-ltsc2022-amd64
+            echo "Building Linux amd64 and Windows ${WINDOWS_IMAGE_VERSION} amd64 cloud node managers"
+            make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64 manifest-node-manager-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64
         else
             echo "Building Linux amd64 cloud node manager"
             make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-push-name-amd64
@@ -67,6 +79,13 @@ can_reuse_artifacts() {
         fi
     done
 
+    if [[ -n "${TEST_WINDOWS:-}" ]]; then
+        FULL_VERSION=$(docker manifest inspect mcr.microsoft.com/windows/nanoserver:${WINDOWS_IMAGE_VERSION} | jq -r '.manifests[0].platform["os.version"]')
+        if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG}" | grep -q "\"os.version\": \"${FULL_VERSION}\""; then
+            echo "false" && return
+        fi
+    fi
+    
     echo "true"
 }
 
