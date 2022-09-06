@@ -164,7 +164,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 			Cluster:                cluster,
 			ClusterProxy:           publicClusterProxy,
 			Namespace:              input.Namespace,
-			CancelWatches:          input.CancelWatches,
+			CancelWatches:          publicCancelWatches,
 			IntervalsGetter:        e2eConfig.GetIntervals,
 			SkipCleanup:            input.SkipCleanup,
 			ArtifactFolder:         input.ArtifactFolder,
