@@ -107,6 +107,8 @@ func (s SubnetTemplateSpec) IsNatGatewayEnabled() bool {
 }
 
 // SubnetTemplatesSpec specifies a list of subnet templates.
+// +listType=map
+// +listMapKey=name
 type SubnetTemplatesSpec []SubnetTemplateSpec
 
 // BastionTemplateSpec specifies a template for a bastion host.

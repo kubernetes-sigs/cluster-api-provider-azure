@@ -106,16 +106,17 @@ func TestVnetDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
+
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
@@ -285,8 +286,9 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+									Name:       "cluster-test-controlplane-subnet",
 								},
-								Name:          "cluster-test-controlplane-subnet",
+
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{},
 							},
@@ -294,8 +296,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+									Name:       "cluster-test-node-subnet",
 								},
-								Name:          "cluster-test-node-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -317,15 +319,15 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetControlPlane,
 									CIDRBlocks: []string{"10.0.0.16/24"},
+									Name:       "my-controlplane-subnet",
 								},
-								Name: "my-controlplane-subnet",
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetNode,
 									CIDRBlocks: []string{"10.1.0.16/24"},
+									Name:       "my-node-subnet",
 								},
-								Name: "my-node-subnet",
 								NatGateway: NatGateway{
 									NatGatewayClassSpec: NatGatewayClassSpec{
 										Name: "foo-natgw",
@@ -347,8 +349,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetControlPlane,
 									CIDRBlocks: []string{"10.0.0.16/24"},
+									Name:       "my-controlplane-subnet",
 								},
-								Name:          "my-controlplane-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{},
 							},
@@ -356,8 +358,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetNode,
 									CIDRBlocks: []string{"10.1.0.16/24"},
+									Name:       "my-node-subnet",
 								},
-								Name:          "my-node-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 								NatGateway: NatGateway{
@@ -386,14 +388,14 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "cluster-test-controlplane-subnet",
 								},
-								Name: "cluster-test-controlplane-subnet",
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "cluster-test-node-subnet",
 								},
-								Name: "cluster-test-node-subnet",
 							},
 						},
 					},
@@ -410,9 +412,9 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+									Name:       "cluster-test-controlplane-subnet",
 								},
 
-								Name:          "cluster-test-controlplane-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{},
 							},
@@ -420,8 +422,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+									Name:       "cluster-test-node-subnet",
 								},
-								Name:          "cluster-test-node-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -442,8 +444,8 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "cluster-test-controlplane-subnet",
 								},
-								Name: "cluster-test-controlplane-subnet",
 								RouteTable: RouteTable{
 									Name: "control-plane-custom-route-table",
 								},
@@ -451,8 +453,8 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "cluster-test-node-subnet",
 								},
-								Name: "cluster-test-node-subnet",
 							},
 						},
 					},
@@ -469,8 +471,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+									Name:       "cluster-test-controlplane-subnet",
 								},
-								Name:          "cluster-test-controlplane-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{Name: "control-plane-custom-route-table"},
 							},
@@ -478,8 +480,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+									Name:       "cluster-test-node-subnet",
 								},
-								Name:          "cluster-test-node-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -500,8 +502,8 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "my-node-subnet",
 								},
-								Name: "my-node-subnet",
 							},
 						},
 					},
@@ -518,8 +520,9 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+									Name:       "my-node-subnet",
 								},
-								Name:          "my-node-subnet",
+
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -527,8 +530,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+									Name:       "cluster-test-controlplane-subnet",
 								},
-								Name:          "cluster-test-controlplane-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{},
 							},
@@ -555,15 +558,15 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       "control-plane",
 									CIDRBlocks: []string{"2001:beef::1/64"},
+									Name:       "cluster-test-controlplane-subnet",
 								},
-								Name: "cluster-test-controlplane-subnet",
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       "node",
 									CIDRBlocks: []string{"2001:beea::1/64"},
+									Name:       "cluster-test-node-subnet",
 								},
-								Name: "cluster-test-node-subnet",
 							},
 						},
 					},
@@ -585,8 +588,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetControlPlane,
 									CIDRBlocks: []string{"2001:beef::1/64"},
+									Name:       "cluster-test-controlplane-subnet",
 								},
-								Name:          "cluster-test-controlplane-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{},
 							},
@@ -594,8 +597,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetNode,
 									CIDRBlocks: []string{"2001:beea::1/64"},
+									Name:       "cluster-test-node-subnet",
 								},
-								Name:          "cluster-test-node-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -616,8 +619,8 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: "control-plane",
+									Name: "cluster-test-controlplane-subnet",
 								},
-								Name: "cluster-test-controlplane-subnet",
 								SecurityGroup: SecurityGroup{
 									SecurityGroupClass: SecurityGroupClass{
 										SecurityRules: []SecurityRule{
@@ -651,8 +654,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       "control-plane",
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+									Name:       "cluster-test-controlplane-subnet",
 								},
-								Name: "cluster-test-controlplane-subnet",
 								SecurityGroup: SecurityGroup{
 									SecurityGroupClass: SecurityGroupClass{
 										SecurityRules: []SecurityRule{
@@ -676,8 +679,8 @@ func TestSubnetDefaults(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									Role:       SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+									Name:       "cluster-test-node-subnet",
 								},
-								Name:          "cluster-test-node-subnet",
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -739,8 +742,10 @@ func TestVnetPeeringDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							Peerings: VnetPeerings{
 								{
-									VnetPeeringClassSpec: VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
-									ResourceGroup:        "cluster-test",
+									VnetPeeringClassSpec: VnetPeeringClassSpec{
+										RemoteVnetName: "my-vnet",
+										ResourceGroup:  "cluster-test",
+									},
 								},
 							},
 						},
@@ -757,8 +762,10 @@ func TestVnetPeeringDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							Peerings: VnetPeerings{
 								{
-									VnetPeeringClassSpec: VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
-									ResourceGroup:        "cluster-test",
+									VnetPeeringClassSpec: VnetPeeringClassSpec{
+										RemoteVnetName: "my-vnet",
+										ResourceGroup:  "cluster-test",
+									},
 								},
 							},
 						},
@@ -795,8 +802,10 @@ func TestVnetPeeringDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							Peerings: VnetPeerings{
 								{
-									VnetPeeringClassSpec: VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
-									ResourceGroup:        "cluster-test",
+									VnetPeeringClassSpec: VnetPeeringClassSpec{
+										RemoteVnetName: "my-vnet",
+										ResourceGroup:  "cluster-test",
+									},
 								},
 							},
 						},
@@ -1023,16 +1032,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
@@ -1050,16 +1059,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
@@ -1101,16 +1110,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1133,16 +1142,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1174,16 +1183,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1195,8 +1204,8 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-2",
 								},
-								Name:          "node-subnet-2",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
@@ -1214,16 +1223,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1236,8 +1245,8 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-2",
 								},
-								Name:          "node-subnet-2",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
@@ -1279,32 +1288,32 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-2",
 								},
-								Name:          "node-subnet-2",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-3",
 								},
-								Name:          "node-subnet-3",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
@@ -1322,32 +1331,32 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-2",
 								},
-								Name:          "node-subnet-2",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-3",
 								},
-								Name:          "node-subnet-3",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
@@ -1389,16 +1398,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1411,8 +1420,8 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-2",
 								},
-								Name:          "node-subnet-2",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1425,8 +1434,8 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-3",
 								},
-								Name:          "node-subnet-3",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1450,16 +1459,16 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
 								},
-								Name:          "control-plane-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 							},
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet",
 								},
-								Name:          "node-subnet",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1472,8 +1481,8 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-2",
 								},
-								Name:          "node-subnet-2",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1486,8 +1495,8 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							{
 								SubnetClassSpec: SubnetClassSpec{
 									Role: SubnetNode,
+									Name: "node-subnet-3",
 								},
-								Name:          "node-subnet-3",
 								SecurityGroup: SecurityGroup{},
 								RouteTable:    RouteTable{},
 								NatGateway: NatGateway{
@@ -1777,10 +1786,11 @@ func TestBastionDefault(t *testing.T) {
 						AzureBastion: &AzureBastion{
 							Name: "foo-azure-bastion",
 							Subnet: SubnetSpec{
-								Name: "AzureBastionSubnet",
+
 								SubnetClassSpec: SubnetClassSpec{
 									CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
 									Role:       DefaultAzureBastionSubnetRole,
+									Name:       "AzureBastionSubnet",
 								},
 							},
 							PublicIP: PublicIPSpec{
@@ -1813,10 +1823,11 @@ func TestBastionDefault(t *testing.T) {
 						AzureBastion: &AzureBastion{
 							Name: "my-fancy-name",
 							Subnet: SubnetSpec{
-								Name: "AzureBastionSubnet",
+
 								SubnetClassSpec: SubnetClassSpec{
 									CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
 									Role:       DefaultAzureBastionSubnetRole,
+									Name:       "AzureBastionSubnet",
 								},
 							},
 							PublicIP: PublicIPSpec{
@@ -1849,10 +1860,10 @@ func TestBastionDefault(t *testing.T) {
 						AzureBastion: &AzureBastion{
 							Name: "foo-azure-bastion",
 							Subnet: SubnetSpec{
-								Name: "AzureBastionSubnet",
 								SubnetClassSpec: SubnetClassSpec{
 									CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
 									Role:       DefaultAzureBastionSubnetRole,
+									Name:       "AzureBastionSubnet",
 								},
 							},
 							PublicIP: PublicIPSpec{
@@ -1872,9 +1883,9 @@ func TestBastionDefault(t *testing.T) {
 					BastionSpec: BastionSpec{
 						AzureBastion: &AzureBastion{
 							Subnet: SubnetSpec{
-								Name: "my-superfancy-name",
 								SubnetClassSpec: SubnetClassSpec{
 									CIDRBlocks: []string{"10.10.0.0/16"},
+									Name:       "my-superfancy-name",
 								},
 							},
 						},
@@ -1890,10 +1901,10 @@ func TestBastionDefault(t *testing.T) {
 						AzureBastion: &AzureBastion{
 							Name: "foo-azure-bastion",
 							Subnet: SubnetSpec{
-								Name: "my-superfancy-name",
 								SubnetClassSpec: SubnetClassSpec{
 									CIDRBlocks: []string{"10.10.0.0/16"},
 									Role:       DefaultAzureBastionSubnetRole,
+									Name:       "my-superfancy-name",
 								},
 							},
 							PublicIP: PublicIPSpec{
@@ -1931,8 +1942,8 @@ func TestBastionDefault(t *testing.T) {
 								SubnetClassSpec: SubnetClassSpec{
 									CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
 									Role:       DefaultAzureBastionSubnetRole,
+									Name:       "AzureBastionSubnet",
 								},
-								Name: "AzureBastionSubnet",
 							},
 							PublicIP: PublicIPSpec{
 								Name: "my-ultrafancy-pip-name",

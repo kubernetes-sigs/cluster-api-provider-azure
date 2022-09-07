@@ -464,8 +464,10 @@ spec:
       location: replace_me
       networkSpec:
         subnets:
-        - role: control-plane
-        - natGateway:
+        - name: control-plane-subnet
+          role: control-plane
+        - name: node-subnet
+          natGateway:
             name: node-natgateway
           role: node
 ---

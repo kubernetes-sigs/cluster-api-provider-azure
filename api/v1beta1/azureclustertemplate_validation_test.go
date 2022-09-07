@@ -122,12 +122,14 @@ func TestValidateSubnetTemplates(t *testing.T) {
 										SubnetClassSpec: SubnetClassSpec{
 											Role:       SubnetControlPlane,
 											CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+											Name:       "foo-controlPlane-subnet",
 										},
 									},
 									{
 										SubnetClassSpec: SubnetClassSpec{
 											Role:       SubnetNode,
 											CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+											Name:       "foo-workerSubnet-subnet",
 										},
 									},
 								},
@@ -137,6 +139,89 @@ func TestValidateSubnetTemplates(t *testing.T) {
 				},
 			},
 			expectValid: true,
+		},
+		{
+			name: "invalid subnets - missing/empty subnet name",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Vnet: VnetTemplateSpec{
+									VnetClassSpec: VnetClassSpec{
+										CIDRBlocks: []string{DefaultVnetCIDR},
+									},
+								},
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetControlPlane,
+											CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+											Name:       "",
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+											Name:       "",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectValid: false,
+		},
+		{
+			name: "invalid subnets - duplicate subnet names",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Vnet: VnetTemplateSpec{
+									VnetClassSpec: VnetClassSpec{
+										CIDRBlocks: []string{DefaultVnetCIDR},
+									},
+								},
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetControlPlane,
+											CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+											Name:       "foo-controlPlane-subnet",
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+											Name:       "foo-workerSubnet-subnet",
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"10.2.0.0/16"},
+											Name:       "foo-workerSubnet-subnet",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectValid: false,
 		},
 		{
 			name: "invalid subnets - wrong security rule priorities - lower than minimum",

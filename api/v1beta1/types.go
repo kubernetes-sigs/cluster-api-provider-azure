@@ -113,15 +113,15 @@ type VnetSpec struct {
 
 // VnetPeeringSpec specifies an existing remote virtual network to peer with the AzureCluster's virtual network.
 type VnetPeeringSpec struct {
-	// ResourceGroup is the resource group name of the remote virtual network.
-	// +optional
-	ResourceGroup string `json:"resourceGroup,omitempty"`
-
 	VnetPeeringClassSpec `json:",inline"`
 }
 
 // VnetPeeringClassSpec specifies a virtual network peering class.
 type VnetPeeringClassSpec struct {
+	// ResourceGroup is the resource group name of the remote virtual network.
+	// +optional
+	ResourceGroup string `json:"resourceGroup,omitempty"`
+
 	// RemoteVnetName defines name of the remote virtual network.
 	RemoteVnetName string `json:"remoteVnetName"`
 }
@@ -135,6 +135,8 @@ func (v *VnetSpec) IsManaged(clusterName string) bool {
 }
 
 // Subnets is a slice of Subnet.
+// +listType=map
+// +listMapKey=name
 type Subnets []SubnetSpec
 
 // SecurityGroup defines an Azure security group.
@@ -230,6 +232,8 @@ type SecurityRule struct {
 }
 
 // SecurityRules is a slice of Azure security rules for security groups.
+// +listType=map
+// +listMapKey=name
 type SecurityRules []SecurityRule
 
 // LoadBalancerSpec defines an Azure load balancer.
@@ -573,9 +577,6 @@ type SubnetSpec struct {
 	// READ-ONLY
 	// +optional
 	ID string `json:"id,omitempty"`
-
-	// Name defines a name for the subnet resource.
-	Name string `json:"name"`
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
 	// +optional

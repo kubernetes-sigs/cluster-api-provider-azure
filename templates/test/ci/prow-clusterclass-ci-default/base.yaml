@@ -152,9 +152,11 @@ spec:
       networkSpec:
         subnets:
           - role: control-plane
+            name: control-plane-subnet
           - natGateway:
               name: node-natgateway
             role: node
+            name: node-subnet
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
