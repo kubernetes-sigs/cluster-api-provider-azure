@@ -72,6 +72,9 @@ type VnetClassSpec struct {
 
 // SubnetClassSpec defines the SubnetSpec properties that may be shared across several Azure clusters.
 type SubnetClassSpec struct {
+	// Name defines a name for the subnet resource.
+	Name string `json:"name"`
+
 	// Role defines the subnet role (eg. Node, ControlPlane)
 	// +kubebuilder:validation:Enum=node;control-plane;bastion
 	Role SubnetRole `json:"role"`

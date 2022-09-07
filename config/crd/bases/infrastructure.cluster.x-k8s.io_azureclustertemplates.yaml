@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: azureclustertemplates.infrastructure.cluster.x-k8s.io
 spec:
@@ -79,6 +79,10 @@ spec:
                                     items:
                                       type: string
                                     type: array
+                                  name:
+                                    description: Name defines a name for the subnet
+                                      resource.
+                                    type: string
                                   natGateway:
                                     description: NatGateway associated with this subnet.
                                     properties:
@@ -181,6 +185,9 @@ spec:
                                           - protocol
                                           type: object
                                         type: array
+                                        x-kubernetes-list-map-keys:
+                                        - name
+                                        x-kubernetes-list-type: map
                                       tags:
                                         additionalProperties:
                                           type: string
@@ -188,6 +195,7 @@ spec:
                                         type: object
                                     type: object
                                 required:
+                                - name
                                 - role
                                 type: object
                             type: object
@@ -325,6 +333,7 @@ spec:
                             description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
                             type: string
                         type: object
+                        x-kubernetes-map-type: atomic
                       location:
                         type: string
                       networkSpec:
@@ -402,6 +411,10 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                name:
+                                  description: Name defines a name for the subnet
+                                    resource.
+                                  type: string
                                 natGateway:
                                   description: NatGateway associated with this subnet.
                                   properties:
@@ -502,6 +515,9 @@ spec:
                                         - protocol
                                         type: object
                                       type: array
+                                      x-kubernetes-list-map-keys:
+                                      - name
+                                      x-kubernetes-list-type: map
                                     tags:
                                       additionalProperties:
                                         type: string
@@ -509,9 +525,13 @@ spec:
                                       type: object
                                   type: object
                               required:
+                              - name
                               - role
                               type: object
                             type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
                           vnet:
                             description: Vnet is the configuration for the Azure virtual
                               network.
@@ -534,6 +554,10 @@ spec:
                                     remoteVnetName:
                                       description: RemoteVnetName defines name of
                                         the remote virtual network.
+                                      type: string
+                                    resourceGroup:
+                                      description: ResourceGroup is the resource group
+                                        name of the remote virtual network.
                                       type: string
                                   required:
                                   - remoteVnetName
@@ -561,9 +585,3 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

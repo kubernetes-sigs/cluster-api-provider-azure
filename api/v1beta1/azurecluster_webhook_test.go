@@ -89,7 +89,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
-					SubnetSpec{Name: "invalid-subnet-name###", SubnetClassSpec: SubnetClassSpec{Role: "random-role"}})
+					SubnetSpec{SubnetClassSpec: SubnetClassSpec{Name: "invalid-subnet-name###", Role: "random-role"}})
 				return cluster
 			}(),
 			wantErr: true,
@@ -205,7 +205,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
-					SubnetSpec{Name: "invalid-name###", SubnetClassSpec: SubnetClassSpec{Role: "random-role"}})
+					SubnetSpec{SubnetClassSpec: SubnetClassSpec{Name: "invalid-name###", Role: "random-role"}})
 				return cluster
 			}(),
 			wantErr: true,

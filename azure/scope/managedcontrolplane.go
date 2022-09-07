@@ -280,9 +280,9 @@ func (s *ManagedControlPlaneScope) Subnets() infrav1.Subnets {
 // NodeSubnet returns the cluster node subnet.
 func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
 	return infrav1.SubnetSpec{
-		Name: s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		SubnetClassSpec: infrav1.SubnetClassSpec{
 			CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
+			Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		},
 	}
 }
@@ -314,9 +314,9 @@ func (s *ManagedControlPlaneScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 func (s *ManagedControlPlaneScope) NodeSubnets() []infrav1.SubnetSpec {
 	return []infrav1.SubnetSpec{
 		{
-			Name: s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 			SubnetClassSpec: infrav1.SubnetClassSpec{
 				CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
+				Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 			},
 		},
 	}

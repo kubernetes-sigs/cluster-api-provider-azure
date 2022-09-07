@@ -1500,7 +1500,7 @@ func Convert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions(in *v1beta1.SpotVMO
 func autoConvert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *v1beta1.SubnetSpec, s conversion.Scope) error {
 	// WARNING: in.Role requires manual conversion: does not exist in peer-type
 	out.ID = in.ID
-	out.Name = in.Name
+	// WARNING: in.Name requires manual conversion: does not exist in peer-type
 	// WARNING: in.CidrBlock requires manual conversion: does not exist in peer-type
 	// WARNING: in.CIDRBlocks requires manual conversion: does not exist in peer-type
 	// WARNING: in.InternalLBIPAddress requires manual conversion: does not exist in peer-type
@@ -1515,7 +1515,6 @@ func autoConvert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *
 
 func autoConvert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in *v1beta1.SubnetSpec, out *SubnetSpec, s conversion.Scope) error {
 	out.ID = in.ID
-	out.Name = in.Name
 	if err := Convert_v1beta1_SecurityGroup_To_v1alpha3_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
 		return err
 	}

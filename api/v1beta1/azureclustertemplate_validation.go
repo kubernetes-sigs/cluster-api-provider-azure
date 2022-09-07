@@ -76,12 +76,20 @@ func (c *AzureClusterTemplate) validateClusterTemplateSpec() field.ErrorList {
 
 func validateSubnetTemplates(subnets SubnetTemplatesSpec, vnet VnetTemplateSpec, fld *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
+	subnetNames := make(map[string]bool, len(subnets))
 	requiredSubnetRoles := map[string]bool{
 		"control-plane": false,
 		"node":          false,
 	}
 
 	for i, subnet := range subnets {
+		if err := validateSubnetName(subnet.Name, fld.Index(i).Child("name")); err != nil {
+			allErrs = append(allErrs, err)
+		}
+		if _, ok := subnetNames[subnet.Name]; ok {
+			allErrs = append(allErrs, field.Duplicate(fld, subnet.Name))
+		}
+		subnetNames[subnet.Name] = true
 		for role := range requiredSubnetRoles {
 			if role == string(subnet.Role) {
 				requiredSubnetRoles[role] = true
