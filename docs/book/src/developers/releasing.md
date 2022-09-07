@@ -21,6 +21,9 @@ For example, if the latest stable API version of capz that we run E2E tests agai
 ```yaml
 apiVersion: clusterctl.cluster.x-k8s.io/v1alpha3
 releaseSeries:
+  - major: 0
+    minor: 5
+    contract: v1alpha4
   - major: 1
     minor: 5
     contract: v1beta1
