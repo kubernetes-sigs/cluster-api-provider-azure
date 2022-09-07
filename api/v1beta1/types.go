@@ -135,6 +135,8 @@ func (v *VnetSpec) IsManaged(clusterName string) bool {
 }
 
 // Subnets is a slice of Subnet.
+// +listType=map
+// +listMapKey=name
 type Subnets []SubnetSpec
 
 // SecurityGroup defines an Azure security group.
@@ -230,6 +232,8 @@ type SecurityRule struct {
 }
 
 // SecurityRules is a slice of Azure security rules for security groups.
+// +listType=map
+// +listMapKey=name
 type SecurityRules []SecurityRule
 
 // LoadBalancerSpec defines an Azure load balancer.

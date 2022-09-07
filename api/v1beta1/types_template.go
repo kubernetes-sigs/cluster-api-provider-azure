@@ -86,10 +86,15 @@ type VnetTemplateSpec struct {
 }
 
 // VnetPeeringsTemplateSpec defines a list of peerings of the newly created virtual network with existing virtual networks.
+// +listType=map
+// +listMapKey=remoteVnetName
 type VnetPeeringsTemplateSpec []VnetPeeringClassSpec
 
 // SubnetTemplateSpec specifies a template for a subnet.
 type SubnetTemplateSpec struct {
+	// Name is the name for this subnet.
+	Name string `json:"name"`
+
 	SubnetClassSpec `json:",inline"`
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
@@ -107,6 +112,8 @@ func (s SubnetTemplateSpec) IsNatGatewayEnabled() bool {
 }
 
 // SubnetTemplatesSpec specifies a list of subnet templates.
+// +listType=map
+// +listMapKey=name
 type SubnetTemplatesSpec []SubnetTemplateSpec
 
 // BastionTemplateSpec specifies a template for a bastion host.
