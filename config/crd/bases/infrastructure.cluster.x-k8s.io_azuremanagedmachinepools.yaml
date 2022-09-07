@@ -205,6 +205,10 @@ spec:
                 items:
                   type: string
                 type: array
+              enableNodePublicIP:
+                description: EnableNodePublicIP controls whether or not nodes in the
+                  pool each have a public IP address.
+                type: boolean
               enableUltraSSD:
                 description: EnableUltraSSD enables the storage type UltraSSD_LRS
                   for the agent pool.

@@ -89,6 +89,9 @@ type AgentPoolSpec struct {
 
 	// Headers is the list of headers to add to the HTTP requests to update this resource.
 	Headers map[string]string
+
+	// EnableNodePublicIP controls whether or not nodes in the agent pool each have a public IP address.
+	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
 }
 
 // ResourceName returns the name of the agent pool.
@@ -206,6 +209,7 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VMSize:              sku,
 			VnetSubnetID:        vnetSubnetID,
+			EnableNodePublicIP:  s.EnableNodePublicIP,
 		},
 	}, nil
 }

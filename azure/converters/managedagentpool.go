@@ -42,5 +42,6 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) 
 		OsDiskType:          properties.OsDiskType,
 		NodeLabels:          properties.NodeLabels,
 		EnableUltraSSD:      properties.EnableUltraSSD,
+		EnableNodePublicIP:  properties.EnableNodePublicIP,
 	}
 }

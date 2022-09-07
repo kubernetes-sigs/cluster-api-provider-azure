@@ -65,6 +65,7 @@ metadata:
   name: pool0
   namespace: default
 spec:
+  enableNodePublicIP: false
   mode: System
   osDiskSizeGB: 30
   sku: ${AZURE_NODE_MACHINE_TYPE}
@@ -95,6 +96,7 @@ metadata:
   name: pool1
   namespace: default
 spec:
+  enableNodePublicIP: false
   mode: User
   osDiskSizeGB: 40
   sku: ${AZURE_NODE_MACHINE_TYPE}
