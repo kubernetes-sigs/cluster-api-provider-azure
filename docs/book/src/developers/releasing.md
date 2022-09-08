@@ -1,18 +1,50 @@
-# Release Process
+# CAPZ Releases
 
-## Update metadata.yaml (skip for patch releases)
+## Release Cadence
+
+CAPZ minor versions (that is, 1.**5**.0 versus 1.**4**.x) are released every two months.
+
+CAPZ patch versions (for example, 1.5.**2** versus 1.5.**1**) are released as often as weekly. Each week at the open office hours meeting, maintainers decide whether or not a patch release is called for based on community input. A patch release may bypass this cadence if circumstances warrant.
+
+## Release Support
+
+The two most recent minor releases of CAPZ will be supported with bug fixes. Since minor releases arrive every two months, each minor release receives fixes for four months.
+
+For example, let's assume CAPZ v1.4.2 is the current release, and v1.3.2 is the latest in the previous minor release line. When v1.5.0 is released, it becomes the current release. v1.4.2 becomes the previous release line and remains supported. And v1.3.2 reaches end-of-life and no longer receives support through bug fixes.
+
+Note that "support" in this context refers strictly to whether or not bug fixes are backported to a release line. Please see [the support documentation](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/SUPPORT.md) for more general information about how to get help with CAPZ.
+
+### Bug Fixes and Test Improvements
+
+Any significant user-facing bug fix that lands in the `main` branch should be backported to the current and previous release lines. Security-related fixes are automatically considered significant and user-facing.
+
+Improvements or significant changes to tests should be backported to the current release line. This is intended to minimize friction in the event of a critical test fix. Test improvements or changes may sometimes need to be backported to the previous release line in the event that tests break on all release branches.
+
+### Experimental API Changes
+
+Experimental Cluster API features (for example, `AzureManagedCluster`) may evolve more rapidly than graduated v1 features. CAPZ allows general changes, enhancements, or additions in this area to be cherry-picked into the current release branch for inclusion in patch releases. This will accelerate the effort to graduate experimental features to the stable API by allowing faster adoption and iteration.
+
+Breaking changes are also allowed in experimental APIs; those changes will not be included in a patch release, but will be introduced in a new minor release, with appropriate release notes.
+
+### Timing of Merges
+
+Sometimes pull requests touch a large number of files and are more likely to create challenges for the automated cherry-pick process. In such cases, maintainers may prefer to delay merging such changes until the end of a minor release cycle.
+
+## Release Process
+
+### Update metadata.yaml (skip for patch releases)
 
 - Make sure the [metadata.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/metadata.yaml) file is up to date and contains the new release with the correct cluster-api contract version.
   - If not, open a [PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1928) to add it.
 
-## Change milestone (skip for patch releases)
+### Change milestone (skip for patch releases)
 
 - Create a new GitHub milestone for the next release
 - Change milestone applier so new changes can be applied to the appropriate release
   - Open a PR in https://github.com/kubernetes/test-infra to change this [line](https://github.com/kubernetes/test-infra/blob/25db54eb9d52e08c16b3601726d8f154f8741025/config/prow/plugins.yaml#L344)
     - Example PR: https://github.com/kubernetes/test-infra/pull/16827
 
-## Update test capz provider metadata.yaml (skip for patch releases)
+### Update test capz provider metadata.yaml (skip for patch releases)
 
 Using that same next release version used to create a new milestone, update the the capz provider [metadata.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/test/e2e/data/shared/v1beta1_provider/metadata.yaml) that we use to run PR and periodic cluster E2E tests against the main branch templates.
 
@@ -35,7 +67,7 @@ Additionally, we need to update the `type: InfrastructureProvider` spec in [azur
     - name: v1.5.99 # "vNext"; use manifests from local source files
 ```
 
-## Create a tag
+### Create a tag
 
 - Prepare the release branch. :warning: Always release from the release branch and not from main!
   - If releasing a patch release, check out the existing release branch and make sure you have the latest changes:
@@ -55,7 +87,7 @@ Additionally, we need to update the `type: InfrastructureProvider` spec in [azur
 
 This will automatically trigger a [Github Action](https://github.com/kubernetes-sigs/cluster-api-provider-azure/actions) to create a draft release.
 
-## Promote image to prod repo
+### Promote image to prod repo
 
 - Images are built by the [post push images job](https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#post-cluster-api-provider-azure-push-images). This will push the image to a [staging repository](https://console.cloud.google.com/gcr/images/k8s-staging-cluster-api-azure/GLOBAL/cluster-api-azure-controller?rImageListsize=30).
 - If you don't have a GitHub token, create one by going to your GitHub settings, in [Personal access tokens](https://github.com/settings/tokens). Make sure you give the token the `repo` scope.
@@ -65,13 +97,13 @@ This will automatically trigger a [Github Action](https://github.com/kubernetes-
 
 This will automatically create a PR in [k8s.io](https://github.com/kubernetes/k8s.io) and assign the CAPZ maintainers. Example PR: https://github.com/kubernetes/k8s.io/pull/3007.
 
-## Release in GitHub
+### Release in GitHub
 
 - Manually format and categorize the release notes
 - Publish release
 - [Announce][release-announcement] the release
 
-## Versioning
+### Versioning
 
 cluster-api-provider-azure follows the [semantic versionining][semver] specification.
 
@@ -82,14 +114,14 @@ Example versions:
 - Patch release: `v0.1.1`
 - Major release: `v1.0.0`
 
-## Expected artifacts
+### Expected artifacts
 
 1. A release yaml file `infrastructure-components.yaml` containing the resources needed to deploy to Kubernetes
 2. A `cluster-templates.yaml` for each supported flavor
 3. A `metadata.yaml` which maps release series to cluster-api contract version
 4. Release notes
 
-## Update Upstream Tests
+### Update Upstream Tests
 
 For major and minor releases we will need to update the set of capz-dependent `test-infra` jobs so that they use our latest release branch. For example, if we cut a new `1.3.0` minor release, from a newly created `release-1.3` git branch, then we need to update all test jobs to use capz at `release-1.3` instead of `release-1.2`.
 
@@ -97,13 +129,13 @@ Here is a reference PR that applied the required test job changes following the 
 
 - https://github.com/kubernetes/test-infra/pull/26200
 
-## Communication
+### Communication
 
-### Patch Releases
+#### Patch Releases
 
 1. Announce the release in Kubernetes Slack on the #cluster-api-azure channel.
 
-### Minor/Major Releases
+#### Minor/Major Releases
 
 1. Follow the communications process for [pre-releases](#pre-releases)
 2. An announcement email is sent to `kubernetes-sig-azure@googlegroups.com` and `kubernetes-sig-cluster-lifecycle@googlegroups.com` with the subject `[ANNOUNCE] cluster-api-provider-azure <version> has been released`
