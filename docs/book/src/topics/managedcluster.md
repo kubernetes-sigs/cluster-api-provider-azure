@@ -175,6 +175,29 @@ should be fairly clear from context.
 | networkPolicy             | azure, calico                 |
 
 
+### Use an existing Virtual Network to provision an AKS cluster.
+
+If you'd like to deploy your AKS cluster in an existing Virtual Network, but create the cluster itself in a different resource group, you can configure the AzureManagedControlPlane resource with a reference to the existing Virtual Network and subnet. For example:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: my-cluster-control-plane
+spec:
+  location: southcentralus
+  resourceGroupName: foo-bar
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
+  version: v1.21.2
+  virtualNetwork:
+    cidrBlock: 10.0.0.0/8
+    name: test-vnet
+    resourceGroup: test-rg
+    subnet:
+      cidrBlock: 10.0.2.0/24
+      name: test-subnet  
+```
 ### Multitenancy
 
 Multitenancy for managed clusters can be configured by using `aks-multi-tenancy` flavor. The steps for creating an azure managed identity and mapping it to an `AzureClusterIdentity` are similar to the ones described [here](https://capz.sigs.k8s.io/topics/multitenancy.html).
@@ -451,6 +474,7 @@ Following is the list of immutable fields for managed clusters:
 | AzureManagedControlPlane  | .spec.networkPolicy          |                           |
 | AzureManagedControlPlane  | .spec.loadBalancerSKU        |                           |
 | AzureManagedControlPlane  | .spec.apiServerAccessProfile | except AuthorizedIPRanges |
+| AzureManagedControlPlane  | .spec.virtualNetwork         |                           |
 | AzureManagedMachinePool   | .spec.sku                    |                           |
 | AzureManagedMachinePool   | .spec.osDiskSizeGB           |                           |
 | AzureManagedMachinePool   | .spec.osDiskType             |                           |

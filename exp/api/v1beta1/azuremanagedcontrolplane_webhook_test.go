@@ -777,6 +777,108 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "AzureManagedControlPlane.VirtualNetwork Name is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+						Name:          "test-network",
+						CIDRBlock:     "10.0.0.0/8",
+						ResourceGroup: "test-rg",
+						Subnet: ManagedControlPlaneSubnet{
+							Name:      "test-subnet",
+							CIDRBlock: "10.0.2.0/24",
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane.VirtualNetwork Name is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+						Name:          "test-network",
+						CIDRBlock:     "10.0.0.0/8",
+						ResourceGroup: "test-rg",
+						Subnet: ManagedControlPlaneSubnet{
+							Name:      "test-subnet",
+							CIDRBlock: "10.0.2.0/24",
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane.VirtualNetwork Name is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+						Name:          "test-network",
+						CIDRBlock:     "10.0.0.0/8",
+						ResourceGroup: "test-rg",
+						Subnet: ManagedControlPlaneSubnet{
+							Name:      "test-subnet",
+							CIDRBlock: "10.0.2.0/24",
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+						Name:          "test-network",
+						CIDRBlock:     "10.0.0.0/8",
+						ResourceGroup: "test-rg",
+						Subnet: ManagedControlPlaneSubnet{
+							Name:      "test-subnet",
+							CIDRBlock: "10.0.2.0/24",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

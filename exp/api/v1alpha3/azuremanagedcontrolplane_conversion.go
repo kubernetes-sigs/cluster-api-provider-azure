@@ -41,6 +41,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.LoadBalancerProfile = restored.Spec.LoadBalancerProfile
 	dst.Spec.APIServerAccessProfile = restored.Spec.APIServerAccessProfile
 	dst.Spec.AddonProfiles = restored.Spec.AddonProfiles
+	dst.Spec.VirtualNetwork.ResourceGroup = restored.Spec.VirtualNetwork.ResourceGroup
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
 	dst.Status.Conditions = restored.Status.Conditions
@@ -80,4 +81,14 @@ func (src *AzureManagedControlPlaneList) ConvertTo(dstRaw conversion.Hub) error 
 func (dst *AzureManagedControlPlaneList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1exp.AzureManagedControlPlaneList)
 	return Convert_v1beta1_AzureManagedControlPlaneList_To_v1alpha3_AzureManagedControlPlaneList(src, dst, nil)
+}
+
+// Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork converts v1beta1 ManagedControlPlaneVirtualNetwork to v1alpha3 ManagedControlPlaneVirtualNetwork.
+func Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork(in *infrav1exp.ManagedControlPlaneVirtualNetwork, out *ManagedControlPlaneVirtualNetwork, s apiconversion.Scope) error {
+	out.Name = in.Name
+	out.Subnet.Name = in.Subnet.Name
+	out.Subnet.CIDRBlock = in.Subnet.CIDRBlock
+	out.CIDRBlock = in.CIDRBlock
+
+	return nil
 }

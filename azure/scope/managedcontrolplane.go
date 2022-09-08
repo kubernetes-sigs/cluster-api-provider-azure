@@ -211,7 +211,7 @@ func (s *ManagedControlPlaneScope) Close(ctx context.Context) error {
 // Vnet returns the cluster Vnet.
 func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 	return &infrav1.VnetSpec{
-		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
+		ResourceGroup: s.ControlPlane.Spec.VirtualNetwork.ResourceGroup,
 		Name:          s.ControlPlane.Spec.VirtualNetwork.Name,
 		VnetClassSpec: infrav1.VnetClassSpec{
 			CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.CIDRBlock},
@@ -424,7 +424,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 		DNSServiceIP:      s.ControlPlane.Spec.DNSServiceIP,
 		VnetSubnetID: azure.SubnetID(
 			s.ControlPlane.Spec.SubscriptionID,
-			s.ControlPlane.Spec.ResourceGroupName,
+			s.VNetSpec().ResourceGroupName(),
 			s.ControlPlane.Spec.VirtualNetwork.Name,
 			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),

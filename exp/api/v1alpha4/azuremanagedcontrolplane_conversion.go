@@ -38,6 +38,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.Spec.AddonProfiles = restored.Spec.AddonProfiles
 	dst.Status.Conditions = restored.Status.Conditions
+	dst.Spec.VirtualNetwork.ResourceGroup = restored.Spec.VirtualNetwork.ResourceGroup
 
 	return nil
 }
@@ -73,4 +74,13 @@ func (src *AzureManagedControlPlaneList) ConvertTo(dstRaw conversion.Hub) error 
 func (dst *AzureManagedControlPlaneList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1exp.AzureManagedControlPlaneList)
 	return Convert_v1beta1_AzureManagedControlPlaneList_To_v1alpha4_AzureManagedControlPlaneList(src, dst, nil)
+}
+
+// Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork converts v1beta1 ManagedControlPlaneVirtualNetwork to v1alpha4 ManagedControlPlaneVirtualNetwork.
+func Convert_v1beta1_ManagedControlPlaneVirtualNetwork_To_v1alpha4_ManagedControlPlaneVirtualNetwork(in *infrav1exp.ManagedControlPlaneVirtualNetwork, out *ManagedControlPlaneVirtualNetwork, s apiconversion.Scope) error {
+	out.Name = in.Name
+	out.Subnet.Name = in.Subnet.Name
+	out.Subnet.CIDRBlock = in.Subnet.CIDRBlock
+	out.CIDRBlock = in.CIDRBlock
+	return nil
 }

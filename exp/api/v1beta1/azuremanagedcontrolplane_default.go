@@ -60,6 +60,9 @@ func (m *AzureManagedControlPlane) setDefaultVirtualNetwork() {
 	if m.Spec.VirtualNetwork.CIDRBlock == "" {
 		m.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDR
 	}
+	if m.Spec.VirtualNetwork.ResourceGroup == "" {
+		m.Spec.VirtualNetwork.ResourceGroup = m.Spec.ResourceGroupName
+	}
 }
 
 // setDefaultSubnet sets the default Subnet for an AzureManagedControlPlane.
