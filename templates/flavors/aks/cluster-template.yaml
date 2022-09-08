@@ -74,6 +74,7 @@ spec:
   mode: System
   osDiskSizeGB: 30
   sku: "${AZURE_NODE_MACHINE_TYPE}"
+  enableNodePublicIP: false
 ---
 # Deploy a second agent pool with the same number of machines, but using potentially different infrastructure.
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -104,3 +105,4 @@ spec:
   mode: User
   osDiskSizeGB: 40
   sku: "${AZURE_NODE_MACHINE_TYPE}"
+  enableNodePublicIP: false

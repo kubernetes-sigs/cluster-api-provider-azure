@@ -98,6 +98,10 @@ type AzureManagedMachinePoolSpec struct {
 	// +kubebuilder:validation:Enum=Linux;Windows
 	// +optional
 	OSType *string `json:"osType,omitempty"`
+
+	// EnableNodePublicIP controls whether or not nodes in the pool each have a public IP address.
+	// +optional
+	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.

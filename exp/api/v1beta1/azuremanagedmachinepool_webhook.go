@@ -197,32 +197,19 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
-	if old.Spec.EnableUltraSSD != nil {
-		// Prevent EnabledUltraSSD modification if it was already set to some value
-		if m.Spec.EnableUltraSSD == nil {
-			// unsetting the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "EnableUltraSSD"),
-					m.Spec.EnableUltraSSD,
-					"field is immutable, unsetting is not allowed"))
-		} else if *m.Spec.EnableUltraSSD != *old.Spec.EnableUltraSSD {
-			// changing the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "EnableUltraSSD"),
-					m.Spec.EnableUltraSSD,
-					"field is immutable"))
-		}
-	} else {
-		if m.Spec.EnableUltraSSD != nil {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "EnableUltraSSD"),
-					m.Spec.EnableUltraSSD,
-					"field is immutable, unsetting is not allowed"))
-		}
+	if err := validateBoolPtrImmutable(
+		field.NewPath("Spec", "EnableUltraSSD"),
+		old.Spec.EnableUltraSSD,
+		m.Spec.EnableUltraSSD); err != nil {
+		allErrs = append(allErrs, err)
 	}
+	if err := validateBoolPtrImmutable(
+		field.NewPath("Spec", "EnableNodePublicIP"),
+		old.Spec.EnableNodePublicIP,
+		m.Spec.EnableNodePublicIP); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	if len(allErrs) != 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), m.Name, allErrs)
 	}
@@ -335,4 +322,22 @@ func ensureStringSlicesAreEqual(a []string, b []string) bool {
 		}
 	}
 	return true
+}
+
+func validateBoolPtrImmutable(path *field.Path, oldVal, newVal *bool) *field.Error {
+	if oldVal != nil {
+		// Prevent modification if it was already set to some value
+		if newVal == nil {
+			// unsetting the field is not allowed
+			return field.Invalid(path, newVal, "field is immutable, unsetting is not allowed")
+		}
+		if *newVal != *oldVal {
+			// changing the field is not allowed
+			return field.Invalid(path, newVal, "field is immutable")
+		}
+	} else if newVal != nil {
+		return field.Invalid(path, newVal, "field is immutable, setting is not allowed")
+	}
+
+	return nil
 }

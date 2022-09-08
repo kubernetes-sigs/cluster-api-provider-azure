@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -394,7 +395,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Unexpected error, value EnableUltraSSD is unchanged",
+			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					EnableUltraSSD: to.BoolPtr(false),
@@ -402,63 +403,35 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(false),
+					EnableUltraSSD: to.BoolPtr(true),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Unexpected error, value EnableNodePublicIP is unchanged",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableNodePublicIP: to.BoolPtr(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableNodePublicIP: to.BoolPtr(true),
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
+			name: "EnableNodePublicIP feature is immutable and currently enabled on this agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(false),
+					EnableNodePublicIP: to.BoolPtr(false),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(true),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "EnableUltraSSD feature is immutable and currently disabled on this agentpool",
-			new: &AzureManagedMachinePool{
-				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(true),
-				},
-			},
-			old: &AzureManagedMachinePool{
-				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(false),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "EnableUltraSSD feature is immutable and currently disabled on this agentpool",
-			new: &AzureManagedMachinePool{
-				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: nil,
-				},
-			},
-			old: &AzureManagedMachinePool{
-				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(false),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
-			new: &AzureManagedMachinePool{
-				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: nil,
-				},
-			},
-			old: &AzureManagedMachinePool{
-				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(true),
+					EnableNodePublicIP: to.BoolPtr(true),
 				},
 			},
 			wantErr: true,
@@ -469,6 +442,76 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.new.ValidateUpdate(tc.old, client)
 			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestValidateBoolPtrImmutable(t *testing.T) {
+	tests := []struct {
+		name    string
+		oldVal  *bool
+		newVal  *bool
+		wantErr bool
+	}{
+		{
+			name:    "true to true ok",
+			oldVal:  to.BoolPtr(true),
+			newVal:  to.BoolPtr(true),
+			wantErr: false,
+		},
+		{
+			name:    "false to false ok",
+			oldVal:  to.BoolPtr(false),
+			newVal:  to.BoolPtr(false),
+			wantErr: false,
+		},
+		{
+			name:    "true to false bad",
+			oldVal:  to.BoolPtr(true),
+			newVal:  to.BoolPtr(false),
+			wantErr: true,
+		},
+		{
+			name:    "false to true bad",
+			oldVal:  to.BoolPtr(false),
+			newVal:  to.BoolPtr(true),
+			wantErr: true,
+		},
+		{
+			name:    "false to nil bad",
+			oldVal:  to.BoolPtr(false),
+			newVal:  nil,
+			wantErr: true,
+		},
+		{
+			name:    "true to nil bad",
+			oldVal:  to.BoolPtr(true),
+			newVal:  nil,
+			wantErr: true,
+		},
+		{
+			name:    "nil to false bad",
+			oldVal:  nil,
+			newVal:  to.BoolPtr(false),
+			wantErr: true,
+		},
+		{
+			name:    "nil to true bad",
+			oldVal:  nil,
+			newVal:  to.BoolPtr(true),
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
+			err := validateBoolPtrImmutable(field.NewPath("test"), test.oldVal, test.newVal)
+			if test.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
