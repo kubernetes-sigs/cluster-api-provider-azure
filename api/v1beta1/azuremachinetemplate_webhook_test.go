@@ -17,12 +17,16 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
@@ -132,8 +136,11 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
-			err := test.machineTemplate.ValidateCreate()
+			t.Parallel()
+			ctx := context.Background()
+			err := test.machineTemplate.ValidateCreate(ctx, test.machineTemplate)
 			if test.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -321,11 +328,27 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		},
 	}
 
+	// dry-run=true
 	for _, amt := range tests {
 		amt := amt
 		t.Run(amt.name, func(t *testing.T) {
 			t.Parallel()
-			err := amt.template.ValidateUpdate(amt.oldTemplate)
+			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: pointer.Bool(true)}})
+			err := amt.template.ValidateUpdate(ctx, amt.oldTemplate, amt.template)
+			if amt.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+	// dry-run=false
+	for _, amt := range tests {
+		amt := amt
+		t.Run(amt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: pointer.Bool(false)}})
+			err := amt.template.ValidateUpdate(ctx, amt.oldTemplate, amt.template)
 			if amt.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
