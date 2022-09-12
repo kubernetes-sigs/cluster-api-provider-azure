@@ -634,15 +634,19 @@ promote-images: $(KPROMO) ## Promote images.
 
 ##@ Testing:
 .PHONY: test
-test: generate lint go-test ## Run "generate", "lint" and "go-tests" rules.
+test: generate lint go-test-race ## Run "generate", "lint" and "go-test-race" rules.
+
+.PHONY: go-test-race
+go-test-race: TEST_ARGS+= -race
+go-test-race: go-test ## Run go tests with the race detector enabled.
 
 .PHONY: go-test
 go-test: $(SETUP_ENVTEST) ## Run go tests.
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
 .PHONY: test-cover
-test-cover: $(SETUP_ENVTEST) ## Run tests with code coverage and code generate reports.
-	$(MAKE) test TEST_ARGS="$(TEST_ARGS) -coverprofile=coverage.out"
+test-cover: TEST_ARGS+= -coverprofile coverage.out
+test-cover: go-test-race ## Run tests with code coverage and generate reports.
 	go tool cover -func=coverage.out -o coverage.txt
 	go tool cover -html=coverage.out -o coverage.html
 
@@ -667,7 +671,7 @@ test-e2e-local: ## Run "docker-build" rule then run e2e tests.
 	$(MAKE) docker-build \
 	test-e2e-run
 
-CONFORMANCE_FLAVOR ?= 
+CONFORMANCE_FLAVOR ?=
 CONFORMANCE_E2E_ARGS ?= -kubetest.config-file=$(KUBETEST_CONF_PATH)
 CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 .PHONY: test-conformance
