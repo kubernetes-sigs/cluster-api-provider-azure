@@ -4,15 +4,15 @@ go 1.18
 
 require (
 	github.com/Azure/aad-pod-identity v1.8.9
-	github.com/Azure/azure-sdk-for-go v63.4.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.23
-	github.com/Azure/go-autorest/autorest/adal v0.9.18
+	github.com/Azure/azure-sdk-for-go v66.0.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.11.28
+	github.com/Azure/go-autorest/autorest/adal v0.9.20
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.10
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Azure/go-autorest/tracing v0.6.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/go-logr/logr v1.2.2
+	github.com/go-logr/logr v1.2.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.8
 	github.com/google/gofuzz v1.2.0
@@ -20,7 +20,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.18.1
+	github.com/onsi/gomega v1.20.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.5
 	github.com/prometheus/client_golang v1.12.1
@@ -33,17 +33,18 @@ require (
 	go.opentelemetry.io/otel/sdk v1.4.0
 	go.opentelemetry.io/otel/sdk/metric v0.27.0
 	go.opentelemetry.io/otel/trace v1.4.0
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
 	golang.org/x/text v0.3.7
 	helm.sh/helm/v3 v3.9.0
-	k8s.io/api v0.24.2
-	k8s.io/apimachinery v0.24.2
-	k8s.io/client-go v0.24.2
-	k8s.io/component-base v0.24.2
+	k8s.io/api v0.24.3
+	k8s.io/apimachinery v0.24.3
+	k8s.io/client-go v0.24.3
+	k8s.io/component-base v0.24.3
 	k8s.io/klog/v2 v2.60.1
 	k8s.io/kubectl v0.24.0
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+	sigs.k8s.io/cloud-provider-azure v1.24.4
 	sigs.k8s.io/cluster-api v1.2.1
 	sigs.k8s.io/cluster-api/test v1.2.1
 	sigs.k8s.io/controller-runtime v0.12.3
@@ -87,7 +88,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46 // indirect
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
-	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
+	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/color v1.13.0 // indirect
@@ -103,7 +104,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/btree v1.0.1 // indirect
@@ -170,7 +171,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.12.0 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
-	github.com/stretchr/testify v1.7.1 // indirect
+	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/subosito/gotenv v1.3.0 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
@@ -197,9 +198,9 @@ require (
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.24.2 // indirect
-	k8s.io/apiserver v0.24.2 // indirect
+	k8s.io/apiserver v0.24.3 // indirect
 	k8s.io/cli-runtime v0.24.0 // indirect
 	k8s.io/cluster-bootstrap v0.24.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect

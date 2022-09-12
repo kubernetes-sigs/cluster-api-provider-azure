@@ -22,9 +22,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	cloudproviderconsts "sigs.k8s.io/cloud-provider-azure/pkg/consts"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -48,15 +50,29 @@ type Service struct {
 	Scope VNetScope
 	async.Reconciler
 	async.Getter
+	RateLimiter services.RateLimiter
+	RetryAfter  services.RetryAfter
 }
 
 // New creates a new service.
 func New(scope VNetScope) *Service {
 	client := newClient(scope)
+	reader, writer := services.NewRateLimiter(&services.RateLimitConfig{
+		AzureServiceRateLimit:            services.AzureServiceRateLimitEnabled,
+		AzureServiceRateLimitQPS:         cloudproviderconsts.RateLimitQPSDefault,
+		AzureServiceRateLimitBucket:      cloudproviderconsts.RateLimitBucketDefault,
+		AzureServiceRateLimitQPSWrite:    cloudproviderconsts.RateLimitQPSDefault,
+		AzureServiceRateLimitBucketWrite: cloudproviderconsts.RateLimitBucketDefault,
+	})
 	return &Service{
 		Scope:      scope,
 		Getter:     client,
 		Reconciler: async.New(scope, client, client),
+		RateLimiter: services.RateLimiter{
+			Reader: reader,
+			Writer: writer,
+		},
+		RetryAfter: services.RetryAfter{},
 	}
 }
 
@@ -150,6 +166,10 @@ func (s *Service) Delete(ctx context.Context) error {
 func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.IsManaged")
 	defer done()
+	// Report errors if the client is rate limited.
+	if !s.RateLimiter.Reader.TryAccept() {
+		return false, errors.Errorf("VirtualNetwork GET is currently rate limited")
+	}
 
 	spec := s.Scope.VNetSpec()
 	if spec == nil {
