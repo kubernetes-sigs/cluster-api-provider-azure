@@ -1,6 +1,5 @@
-#!/usr/bin/env bash
-
-# Copyright 2021 The Kubernetes Authors.
+#!/bin/bash
+# Copyright 2022 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
-
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-# shellcheck source=hack/common-vars.sh
-source "${REPO_ROOT}/hack/common-vars.sh"
-
-make --directory="${REPO_ROOT}" "${YQ##*/}" &>/dev/null
-
-KEYS=()
-while IFS='' read -r line; do KEYS+=("$line"); done < <(${YQ} e '.aliases["cluster-api-azure-maintainers"][]' OWNERS_ALIASES)
-echo "${KEYS[@]/#/@}"
+# shellcheck disable=SC2034
+KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+# shellcheck disable=SC2034
+KUSTOMIZE="${REPO_ROOT}/hack/tools/bin/kustomize"
+# shellcheck disable=SC2034
+ENVSUBST="${REPO_ROOT}/hack/tools/bin/envsubst"
+# shellcheck disable=SC2034
+YQ="${REPO_ROOT}/hack/tools/bin/yq"
