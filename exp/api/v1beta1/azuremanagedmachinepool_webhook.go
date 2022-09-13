@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -33,6 +34,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}/resourcegroups/[^/]+/providers/microsoft\.network/publicipprefixes/[^/]+$`)
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,verbs=create;update,versions=v1beta1,name=default.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
@@ -61,6 +64,8 @@ func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 		m.validateOSType,
 		m.validateName,
 		m.validateNodeLabels,
+		m.validateNodePublicIPPrefixID,
+		m.validateEnableNodePublicIP,
 	}
 
 	var errs []error
@@ -86,23 +91,11 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 				err.Error()))
 	}
 
-	if old.Spec.OSType != nil {
-		// Prevent OSType modification if it was already set to some value
-		if m.Spec.OSType == nil {
-			// unsetting the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "OSType"),
-					m.Spec.OSType,
-					"field is immutable, unsetting is not allowed"))
-		} else if *m.Spec.OSType != *old.Spec.OSType {
-			// changing the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "OSType"),
-					*m.Spec.OSType,
-					"field is immutable"))
-		}
+	if err := validateStringPtrImmutable(
+		field.NewPath("Spec", "OSType"),
+		old.Spec.OSType,
+		m.Spec.OSType); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
 	if m.Spec.SKU != old.Spec.SKU {
@@ -218,6 +211,12 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		m.Spec.EnableNodePublicIP); err != nil {
 		allErrs = append(allErrs, err)
 	}
+	if err := validateStringPtrImmutable(
+		field.NewPath("Spec", "NodePublicIPPrefixID"),
+		old.Spec.NodePublicIPPrefixID,
+		m.Spec.NodePublicIPPrefixID); err != nil {
+		allErrs = append(allErrs, err)
+	}
 
 	if len(allErrs) != 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), m.Name, allErrs)
@@ -328,6 +327,27 @@ func (m *AzureManagedMachinePool) validateNodeLabels() error {
 	return nil
 }
 
+func (m *AzureManagedMachinePool) validateNodePublicIPPrefixID() error {
+	if m.Spec.NodePublicIPPrefixID != nil && !validNodePublicPrefixID.MatchString(*m.Spec.NodePublicIPPrefixID) {
+		return field.Invalid(
+			field.NewPath("Spec", "NodePublicIPPrefixID"),
+			m.Spec.NodePublicIPPrefixID,
+			fmt.Sprintf("resource ID must match %q", validNodePublicPrefixID.String()))
+	}
+	return nil
+}
+
+func (m *AzureManagedMachinePool) validateEnableNodePublicIP() error {
+	if (m.Spec.EnableNodePublicIP == nil || !*m.Spec.EnableNodePublicIP) &&
+		m.Spec.NodePublicIPPrefixID != nil {
+		return field.Invalid(
+			field.NewPath("Spec", "EnableNodePublicIP"),
+			m.Spec.EnableNodePublicIP,
+			"must be set to true when NodePublicIPPrefixID is set")
+	}
+	return nil
+}
+
 func ensureStringSlicesAreEqual(a []string, b []string) bool {
 	if len(a) != len(b) {
 		return false
@@ -347,6 +367,24 @@ func ensureStringSlicesAreEqual(a []string, b []string) bool {
 }
 
 func validateBoolPtrImmutable(path *field.Path, oldVal, newVal *bool) *field.Error {
+	if oldVal != nil {
+		// Prevent modification if it was already set to some value
+		if newVal == nil {
+			// unsetting the field is not allowed
+			return field.Invalid(path, newVal, "field is immutable, unsetting is not allowed")
+		}
+		if *newVal != *oldVal {
+			// changing the field is not allowed
+			return field.Invalid(path, newVal, "field is immutable")
+		}
+	} else if newVal != nil {
+		return field.Invalid(path, newVal, "field is immutable, setting is not allowed")
+	}
+
+	return nil
+}
+
+func validateStringPtrImmutable(path *field.Path, oldVal, newVal *string) *field.Error {
 	if oldVal != nil {
 		// Prevent modification if it was already set to some value
 		if newVal == nil {

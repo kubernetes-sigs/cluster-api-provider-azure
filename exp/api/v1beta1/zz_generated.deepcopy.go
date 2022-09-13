@@ -856,6 +856,11 @@ func (in *AzureManagedMachinePoolSpec) DeepCopyInto(out *AzureManagedMachinePool
 		*out = new(bool)
 		**out = **in
 	}
+	if in.NodePublicIPPrefixID != nil {
+		in, out := &in.NodePublicIPPrefixID, &out.NodePublicIPPrefixID
+		*out = new(string)
+		**out = **in
+	}
 	if in.ScaleSetPriority != nil {
 		in, out := &in.ScaleSetPriority, &out.ScaleSetPriority
 		*out = new(string)

@@ -594,6 +594,16 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				},
 			}, result)
+
+			By("creating a machine pool with public IP addresses from a prefix", func() {
+				AKSPublicIPPrefixSpec(ctx, func() AKSPublicIPPrefixSpecInput {
+					return AKSPublicIPPrefixSpecInput{
+						Cluster:           result.Cluster,
+						KubernetesVersion: kubernetesVersion,
+						WaitIntervals:     e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+					}
+				})
+			})
 		})
 	})
 

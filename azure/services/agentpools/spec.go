@@ -94,6 +94,9 @@ type AgentPoolSpec struct {
 	// EnableNodePublicIP controls whether or not nodes in the agent pool each have a public IP address.
 	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
 
+	// NodePublicIPPrefixID specifies the public IP prefix resource ID which VM nodes should use IPs from.
+	NodePublicIPPrefixID *string `json:"nodePublicIPPrefixID,omitempty"`
+
 	// ScaleSetPriority specifies the ScaleSetPriority for the node pool. Allowed values are 'Spot' and 'Regular'
 	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
 }
@@ -205,25 +208,26 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 
 	return containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
-			AvailabilityZones:   availabilityZones,
-			Count:               replicas,
-			EnableAutoScaling:   s.EnableAutoScaling,
-			EnableUltraSSD:      s.EnableUltraSSD,
-			MaxCount:            s.MaxCount,
-			MaxPods:             s.MaxPods,
-			MinCount:            s.MinCount,
-			Mode:                containerservice.AgentPoolMode(s.Mode),
-			NodeLabels:          nodeLabels,
-			NodeTaints:          nodeTaints,
-			OrchestratorVersion: s.Version,
-			OsDiskSizeGB:        &s.OSDiskSizeGB,
-			OsDiskType:          containerservice.OSDiskType(to.String(s.OsDiskType)),
-			OsType:              containerservice.OSType(to.String(s.OSType)),
-			ScaleSetPriority:    containerservice.ScaleSetPriority(to.String(s.ScaleSetPriority)),
-			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-			VMSize:              sku,
-			VnetSubnetID:        vnetSubnetID,
-			EnableNodePublicIP:  s.EnableNodePublicIP,
+			AvailabilityZones:    availabilityZones,
+			Count:                replicas,
+			EnableAutoScaling:    s.EnableAutoScaling,
+			EnableUltraSSD:       s.EnableUltraSSD,
+			MaxCount:             s.MaxCount,
+			MaxPods:              s.MaxPods,
+			MinCount:             s.MinCount,
+			Mode:                 containerservice.AgentPoolMode(s.Mode),
+			NodeLabels:           nodeLabels,
+			NodeTaints:           nodeTaints,
+			OrchestratorVersion:  s.Version,
+			OsDiskSizeGB:         &s.OSDiskSizeGB,
+			OsDiskType:           containerservice.OSDiskType(to.String(s.OsDiskType)),
+			OsType:               containerservice.OSType(to.String(s.OSType)),
+			ScaleSetPriority:     containerservice.ScaleSetPriority(to.String(s.ScaleSetPriority)),
+			Type:                 containerservice.AgentPoolTypeVirtualMachineScaleSets,
+			VMSize:               sku,
+			VnetSubnetID:         vnetSubnetID,
+			EnableNodePublicIP:   s.EnableNodePublicIP,
+			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
 		},
 	}, nil
 }

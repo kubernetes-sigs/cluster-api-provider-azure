@@ -235,6 +235,10 @@ spec:
                 description: Node labels - labels for all of the nodes present in
                   node pool
                 type: object
+              nodePublicIPPrefixID:
+                description: NodePublicIPPrefixID specifies the public IP prefix resource
+                  ID which VM nodes should use IPs from.
+                type: string
               osDiskSizeGB:
                 description: OSDiskSizeGB is the disk size for every machine in this
                   agent pool. If you specify 0, it will apply the default osDisk size
