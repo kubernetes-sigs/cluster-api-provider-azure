@@ -253,7 +253,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 	// Node outbound LB
 	if s.NodeOutboundLB() != nil {
 		specs = append(specs, &loadbalancers.LBSpec{
-			Name:                 s.NodeOutboundLBName(),
+			Name:                 s.NodeOutboundLB().Name,
 			ResourceGroup:        s.ResourceGroup(),
 			SubscriptionID:       s.SubscriptionID(),
 			ClusterName:          s.ClusterName(),
@@ -263,7 +263,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			FrontendIPConfigs:    s.NodeOutboundLB().FrontendIPs,
 			Type:                 s.NodeOutboundLB().Type,
 			SKU:                  s.NodeOutboundLB().SKU,
-			BackendPoolName:      s.OutboundPoolName(s.NodeOutboundLBName()),
+			BackendPoolName:      s.OutboundPoolName(s.NodeOutboundLB().Name),
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.NodeOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
@@ -674,11 +674,6 @@ func (s *ClusterScope) GetPrivateDNSZoneName() string {
 // APIServerLBPoolName returns the API Server LB backend pool name.
 func (s *ClusterScope) APIServerLBPoolName(loadBalancerName string) string {
 	return azure.GenerateBackendAddressPoolName(loadBalancerName)
-}
-
-// NodeOutboundLBName returns the name of the node outbound LB.
-func (s *ClusterScope) NodeOutboundLBName() string {
-	return s.ClusterName()
 }
 
 // OutboundLBName returns the name of the outbound LB.
