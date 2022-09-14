@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	azure "github.com/Azure/go-autorest/autorest/azure"
 	gomock "github.com/golang/mock/gomock"
 	azure0 "sigs.k8s.io/cluster-api-provider-azure/azure"
