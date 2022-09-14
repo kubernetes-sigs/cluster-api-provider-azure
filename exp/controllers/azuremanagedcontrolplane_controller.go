@@ -260,7 +260,6 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	scope.ControlPlane.Status.Ready = true
 	scope.ControlPlane.Status.Initialized = true
-	amcpr.Recorder.Event(scope.ControlPlane, corev1.EventTypeNormal, "AzureManagedControlPlane available", "successfully reconciled")
 	return reconcile.Result{}, nil
 }
 
