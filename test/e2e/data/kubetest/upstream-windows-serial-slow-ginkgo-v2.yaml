@@ -6,7 +6,7 @@ ginkgo.slow-spec-threshold: 120s
 ginkgo.flakeAttempts: 0
 ginkgo.trace: true
 ginkgo.v: true
-ginkgo.timeout: 3h
+ginkgo.timeout: 4h
 node-os-distro: windows
 dump-logs-on-failure: true
 prepull-images: true
