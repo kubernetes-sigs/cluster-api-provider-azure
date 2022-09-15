@@ -413,7 +413,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterAnnotations() map[string]string
 // ManagedClusterSpec returns the managed cluster spec.
 func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure.ResourceSpecGetter {
 	managedClusterSpec := managedclusters.ManagedClusterSpec{
-		Name:              s.ControlPlane.Name,
+		Name:              s.ClusterName(),
 		ResourceGroup:     s.ControlPlane.Spec.ResourceGroupName,
 		NodeResourceGroup: s.ControlPlane.Spec.NodeResourceGroupName,
 		Location:          s.ControlPlane.Spec.Location,
