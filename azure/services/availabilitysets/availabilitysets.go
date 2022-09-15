@@ -35,7 +35,7 @@ const serviceName = "availabilitysets"
 type AvailabilitySetScope interface {
 	azure.ClusterDescriber
 	azure.AsyncStatusUpdater
-	AvailabilitySetSpec() azure.ResourceSpecGetter
+	AvailabilitySetSpec(context.Context) azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
@@ -71,7 +71,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer cancel()
 
 	var err error
-	if setSpec := s.Scope.AvailabilitySetSpec(); setSpec != nil {
+	if setSpec := s.Scope.AvailabilitySetSpec(ctx); setSpec != nil {
 		_, err = s.CreateResource(ctx, setSpec, serviceName)
 	} else {
 		log.V(2).Info("skip creation when no availability set spec is found")
@@ -91,7 +91,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	var resultingErr error
-	setSpec := s.Scope.AvailabilitySetSpec()
+	setSpec := s.Scope.AvailabilitySetSpec(ctx)
 	if setSpec == nil {
 		log.V(2).Info("skip deletion when no availability set spec is found")
 		return nil

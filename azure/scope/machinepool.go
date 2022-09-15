@@ -58,6 +58,7 @@ type (
 		MachinePool      *expv1.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		ClusterScope     azure.ClusterScoper
+		Cache            *MachinePoolCache
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
@@ -68,12 +69,19 @@ type (
 		client           client.Client
 		patchHelper      *patch.Helper
 		vmssState        *azure.VMSS
+		cache            *MachinePoolCache
 	}
 
 	// NodeStatus represents the status of a Kubernetes node.
 	NodeStatus struct {
 		Ready   bool
 		Version string
+	}
+
+	// MachinePoolCache stores common machine information so we don't have to hit the API multiple times within the same reconcile loop.
+	MachinePoolCache struct {
+		BootstrapData *string
+		VMImage       *infrav1.Image
 	}
 )
 
@@ -92,6 +100,10 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		return nil, errors.New("azure machine pool is required when creating a MachinePoolScope")
 	}
 
+	if params.Cache == nil {
+		params.Cache = &MachinePoolCache{}
+	}
+
 	helper, err := patch.NewHelper(params.AzureMachinePool, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
@@ -103,6 +115,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		AzureMachinePool: params.AzureMachinePool,
 		patchHelper:      helper,
 		ClusterScoper:    params.ClusterScope,
+		cache:            params.Cache,
 	}, nil
 }
 
@@ -529,6 +542,10 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.GetBootstrapData")
 	defer done()
 
+	if m.cache.BootstrapData != nil {
+		return to.String(m.cache.BootstrapData), nil
+	}
+
 	dataSecretName := m.MachinePool.Spec.Template.Spec.Bootstrap.DataSecretName
 	if dataSecretName == nil {
 		return "", errors.New("error retrieving bootstrap data: linked MachinePool Spec's bootstrap.dataSecretName is nil")
@@ -543,7 +560,9 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 	if !ok {
 		return "", errors.New("error retrieving bootstrap data: secret value key is missing")
 	}
-	return base64.StdEncoding.EncodeToString(value), nil
+	bootstrapData := base64.StdEncoding.EncodeToString(value)
+	m.cache.BootstrapData = to.StringPtr(bootstrapData)
+	return bootstrapData, nil
 }
 
 // GetVMImage picks an image from the AzureMachinePool configuration, or uses a default one.
@@ -554,6 +573,10 @@ func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, erro
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if m.AzureMachinePool.Spec.Template.Image != nil {
 		return m.AzureMachinePool.Spec.Template.Image, nil
+	}
+
+	if m.cache.VMImage != nil {
+		return m.cache.VMImage, nil
 	}
 
 	svc := virtualmachineimages.New(m)
@@ -574,6 +597,7 @@ func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, erro
 	if err != nil {
 		return defaultImage, errors.Wrap(err, "failed to get default OS image")
 	}
+	m.cache.VMImage = defaultImage
 
 	return defaultImage, nil
 }

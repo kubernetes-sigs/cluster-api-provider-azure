@@ -21,6 +21,7 @@ limitations under the License.
 package mock_virtualmachines
 
 import (
+	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -289,15 +290,15 @@ func (mr *MockVMScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{})
 }
 
 // VMSpec mocks base method.
-func (m *MockVMScope) VMSpec() azure.ResourceSpecGetter {
+func (m *MockVMScope) VMSpec(arg0 context.Context) azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VMSpec")
+	ret := m.ctrl.Call(m, "VMSpec", arg0)
 	ret0, _ := ret[0].(azure.ResourceSpecGetter)
 	return ret0
 }
 
 // VMSpec indicates an expected call of VMSpec.
-func (mr *MockVMScopeMockRecorder) VMSpec() *gomock.Call {
+func (mr *MockVMScopeMockRecorder) VMSpec(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSpec", reflect.TypeOf((*MockVMScope)(nil).VMSpec))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSpec", reflect.TypeOf((*MockVMScope)(nil).VMSpec), arg0)
 }

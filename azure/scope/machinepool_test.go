@@ -407,6 +407,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 				MachinePool:      mp,
 				AzureMachinePool: amp,
 				ClusterScoper:    clusterMock,
+				cache:            &MachinePoolCache{},
 			}
 			image, err := s.GetVMImage(context.TODO())
 			c.Verify(g, amp, image, err)

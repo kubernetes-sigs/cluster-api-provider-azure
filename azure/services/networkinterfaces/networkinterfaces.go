@@ -33,7 +33,7 @@ const serviceName = "interfaces"
 type NICScope interface {
 	azure.ClusterDescriber
 	azure.AsyncStatusUpdater
-	NICSpecs() []azure.ResourceSpecGetter
+	NICSpecs(context.Context) []azure.ResourceSpecGetter
 }
 
 // Service provides operations on Azure resources.
@@ -66,7 +66,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	specs := s.Scope.NICSpecs()
+	specs := s.Scope.NICSpecs(ctx)
 	if len(specs) == 0 {
 		return nil
 	}
@@ -95,7 +95,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	specs := s.Scope.NICSpecs()
+	specs := s.Scope.NICSpecs(ctx)
 	if len(specs) == 0 {
 		return nil
 	}

@@ -72,6 +72,9 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.AzureMachine == nil {
 		return nil, errors.New("azure machine is required when creating a MachineScope")
 	}
+	if params.Cache == nil {
+		params.Cache = &MachineCache{}
+	}
 
 	helper, err := patch.NewHelper(params.AzureMachine, params.Client)
 	if err != nil {
@@ -101,59 +104,21 @@ type MachineScope struct {
 
 // MachineCache stores common machine information so we don't have to hit the API multiple times within the same reconcile loop.
 type MachineCache struct {
-	BootstrapData      string
+	BootstrapData      *string
 	VMImage            *infrav1.Image
-	VMSKU              resourceskus.SKU
-	availabilitySetSKU resourceskus.SKU
-}
-
-// InitMachineCache sets cached information about the machine to be used in the scope.
-func (m *MachineScope) InitMachineCache(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.MachineScope.InitMachineCache")
-	defer done()
-
-	if m.cache == nil {
-		var err error
-		m.cache = &MachineCache{}
-
-		m.cache.BootstrapData, err = m.GetBootstrapData(ctx)
-		if err != nil {
-			return err
-		}
-
-		m.cache.VMImage, err = m.GetVMImage(ctx)
-		if err != nil {
-			return err
-		}
-
-		skuCache, err := resourceskus.GetCache(m, m.Location())
-		if err != nil {
-			return err
-		}
-
-		m.cache.VMSKU, err = skuCache.Get(ctx, m.AzureMachine.Spec.VMSize, resourceskus.VirtualMachines)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachine.Spec.VMSize)
-		}
-
-		m.cache.availabilitySetSKU, err = skuCache.Get(ctx, string(compute.AvailabilitySetSkuTypesAligned), resourceskus.AvailabilitySets)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(compute.AvailabilitySetSkuTypesAligned))
-		}
-	}
-
-	return nil
+	VMSKU              *resourceskus.SKU
+	availabilitySetSKU *resourceskus.SKU
 }
 
 // VMSpec returns the VM spec.
-func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
+func (m *MachineScope) VMSpec(ctx context.Context) azure.ResourceSpecGetter {
 	spec := &virtualmachines.VMSpec{
 		Name:                   m.Name(),
 		Location:               m.Location(),
 		ResourceGroup:          m.ResourceGroup(),
 		ClusterName:            m.ClusterName(),
 		Role:                   m.Role(),
-		NICIDs:                 m.NICIDs(),
+		NICIDs:                 m.NICIDs(ctx),
 		SSHKeyData:             m.AzureMachine.Spec.SSHPublicKey,
 		Size:                   m.AzureMachine.Spec.VMSize,
 		OSDisk:                 m.AzureMachine.Spec.OSDisk,
@@ -168,10 +133,14 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 		AdditionalCapabilities: m.AzureMachine.Spec.AdditionalCapabilities,
 		ProviderID:             m.ProviderID(),
 	}
-	if m.cache != nil {
-		spec.SKU = m.cache.VMSKU
-		spec.Image = m.cache.VMImage
-		spec.BootstrapData = m.cache.BootstrapData
+	if bootstrapData, err := m.GetBootstrapData(ctx); err == nil {
+		spec.BootstrapData = bootstrapData
+	}
+	if vmSKU, err := m.GetVMSKU(ctx); err == nil {
+		spec.SKU = *vmSKU
+	}
+	if image, err := m.GetVMImage(ctx); err == nil {
+		spec.Image = image
 	}
 	return spec
 }
@@ -227,7 +196,7 @@ func (m *MachineScope) InboundNatSpecs() []azure.ResourceSpecGetter {
 }
 
 // NICSpecs returns the network interface specs.
-func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
+func (m *MachineScope) NICSpecs(ctx context.Context) []azure.ResourceSpecGetter {
 	spec := &networkinterfaces.NICSpec{
 		Name:                  azure.GenerateNICName(m.Name()),
 		ResourceGroup:         m.ResourceGroup(),
@@ -267,16 +236,16 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 		spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
 	}
 
-	if m.cache != nil {
-		spec.SKU = &m.cache.VMSKU
+	if vmSKU, err := m.GetVMSKU(ctx); err == nil {
+		spec.SKU = vmSKU
 	}
 
 	return []azure.ResourceSpecGetter{spec}
 }
 
 // NICIDs returns the NIC resource IDs.
-func (m *MachineScope) NICIDs() []string {
-	nicspecs := m.NICSpecs()
+func (m *MachineScope) NICIDs(ctx context.Context) []string {
+	nicspecs := m.NICSpecs(ctx)
 	nicIDs := make([]string, len(nicspecs))
 	for i, nic := range nicspecs {
 		nicIDs[i] = azure.NetworkInterfaceID(m.SubscriptionID(), nic.ResourceGroupName(), nic.ResourceName())
@@ -359,9 +328,9 @@ func (m *MachineScope) Subnet() infrav1.SubnetSpec {
 
 // AvailabilityZone returns the AzureMachine Availability Zone.
 // Priority for selecting the AZ is
-//   1) Machine.Spec.FailureDomain
-//   2) AzureMachine.Spec.FailureDomain (This is to support deprecated AZ)
-//   3) No AZ
+//  1. Machine.Spec.FailureDomain
+//  2. AzureMachine.Spec.FailureDomain (This is to support deprecated AZ)
+//  3. No AZ
 func (m *MachineScope) AvailabilityZone() string {
 	if m.Machine.Spec.FailureDomain != nil {
 		return *m.Machine.Spec.FailureDomain
@@ -423,7 +392,7 @@ func (m *MachineScope) ProviderID() string {
 }
 
 // AvailabilitySetSpec returns the availability set spec for this machine if available.
-func (m *MachineScope) AvailabilitySetSpec() azure.ResourceSpecGetter {
+func (m *MachineScope) AvailabilitySetSpec(ctx context.Context) azure.ResourceSpecGetter {
 	availabilitySetName, ok := m.AvailabilitySet()
 	if !ok {
 		return nil
@@ -434,14 +403,12 @@ func (m *MachineScope) AvailabilitySetSpec() azure.ResourceSpecGetter {
 		ResourceGroup:  m.ResourceGroup(),
 		ClusterName:    m.ClusterName(),
 		Location:       m.Location(),
-		SKU:            nil,
 		AdditionalTags: m.AdditionalTags(),
 	}
 
-	if m.cache != nil {
-		spec.SKU = &m.cache.availabilitySetSKU
+	if avSKU, err := m.GetAvailabilitySetSKU(ctx); err == nil {
+		spec.SKU = avSKU
 	}
-
 	return spec
 }
 
@@ -617,6 +584,10 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.GetBootstrapData")
 	defer done()
 
+	if m.cache.BootstrapData != nil {
+		return to.String(m.cache.BootstrapData), nil
+	}
+
 	if m.Machine.Spec.Bootstrap.DataSecretName == nil {
 		return "", errors.New("error retrieving bootstrap data: linked Machine's bootstrap.dataSecretName is nil")
 	}
@@ -630,7 +601,9 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 	if !ok {
 		return "", errors.New("error retrieving bootstrap data: secret value key is missing")
 	}
-	return base64.StdEncoding.EncodeToString(value), nil
+	bootstrapData := base64.StdEncoding.EncodeToString(value)
+	m.cache.BootstrapData = to.StringPtr(bootstrapData)
+	return bootstrapData, nil
 }
 
 // GetVMImage returns the image from the machine configuration, or a default one.
@@ -643,17 +616,70 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 		return m.AzureMachine.Spec.Image, nil
 	}
 
+	if m.cache.VMImage != nil {
+		return m.cache.VMImage, nil
+	}
+
 	svc := virtualmachineimages.New(m)
 
+	var (
+		err          error
+		defaultImage *infrav1.Image
+	)
 	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS {
 		runtime := m.AzureMachine.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachine.Annotations["windowsServerVersion"]
 		log.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		return svc.GetDefaultWindowsImage(ctx, m.Location(), to.String(m.Machine.Spec.Version), runtime, windowsServerVersion)
+		defaultImage, err = svc.GetDefaultWindowsImage(ctx, m.Location(), to.String(m.Machine.Spec.Version), runtime, windowsServerVersion)
+	} else {
+		log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
+		defaultImage, err = svc.GetDefaultUbuntuImage(ctx, m.Location(), to.String(m.Machine.Spec.Version))
 	}
 
-	log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
-	return svc.GetDefaultUbuntuImage(ctx, m.Location(), to.String(m.Machine.Spec.Version))
+	if err != nil {
+		return defaultImage, err
+	}
+
+	m.cache.VMImage = defaultImage
+	return defaultImage, nil
+}
+
+// GetVMSKU returns the VM image SKU.
+func (m *MachineScope) GetVMSKU(ctx context.Context) (*resourceskus.SKU, error) {
+	if m.cache.VMSKU != nil {
+		return m.cache.VMSKU, nil
+	}
+
+	skuCache, err := resourceskus.GetCache(m, m.Location())
+	if err != nil {
+		return nil, err
+	}
+
+	sku, err := skuCache.Get(ctx, m.AzureMachine.Spec.VMSize, resourceskus.VirtualMachines)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachine.Spec.VMSize)
+	}
+	m.cache.VMSKU = &sku
+	return &sku, nil
+}
+
+// GetAvailabilitySetSKU returns the VM image SKU.
+func (m *MachineScope) GetAvailabilitySetSKU(ctx context.Context) (*resourceskus.SKU, error) {
+	if m.cache.availabilitySetSKU != nil {
+		return m.cache.availabilitySetSKU, nil
+	}
+
+	skuCache, err := resourceskus.GetCache(m, m.Location())
+	if err != nil {
+		return nil, err
+	}
+
+	sku, err := skuCache.Get(ctx, string(compute.AvailabilitySetSkuTypesAligned), resourceskus.AvailabilitySets)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(compute.AvailabilitySetSkuTypesAligned))
+	}
+	m.cache.availabilitySetSKU = &sku
+	return &sku, nil
 }
 
 // SetSubnetName defaults the AzureMachine subnet name to the name of one the subnets with the machine role when there is only one of them.

@@ -42,7 +42,7 @@ const serviceName = "virtualmachine"
 type VMScope interface {
 	azure.Authorizer
 	azure.AsyncStatusUpdater
-	VMSpec() azure.ResourceSpecGetter
+	VMSpec(context.Context) azure.ResourceSpecGetter
 	SetAnnotation(string, string)
 	SetProviderID(string)
 	SetAddresses([]corev1.NodeAddress)
@@ -81,7 +81,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	vmSpec := s.Scope.VMSpec()
+	vmSpec := s.Scope.VMSpec(ctx)
 	if vmSpec == nil {
 		return nil
 	}
@@ -123,7 +123,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	vmSpec := s.Scope.VMSpec()
+	vmSpec := s.Scope.VMSpec(ctx)
 	if vmSpec == nil {
 		return nil
 	}

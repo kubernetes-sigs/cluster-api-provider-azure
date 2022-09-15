@@ -21,6 +21,7 @@ limitations under the License.
 package mock_networkinterfaces
 
 import (
+	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -248,17 +249,17 @@ func (mr *MockNICScopeMockRecorder) Location() *gomock.Call {
 }
 
 // NICSpecs mocks base method.
-func (m *MockNICScope) NICSpecs() []azure.ResourceSpecGetter {
+func (m *MockNICScope) NICSpecs(arg0 context.Context) []azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NICSpecs")
+	ret := m.ctrl.Call(m, "NICSpecs", arg0)
 	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
 	return ret0
 }
 
 // NICSpecs indicates an expected call of NICSpecs.
-func (mr *MockNICScopeMockRecorder) NICSpecs() *gomock.Call {
+func (mr *MockNICScopeMockRecorder) NICSpecs(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NICSpecs", reflect.TypeOf((*MockNICScope)(nil).NICSpecs))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NICSpecs", reflect.TypeOf((*MockNICScope)(nil).NICSpecs), arg0)
 }
 
 // ResourceGroup mocks base method.

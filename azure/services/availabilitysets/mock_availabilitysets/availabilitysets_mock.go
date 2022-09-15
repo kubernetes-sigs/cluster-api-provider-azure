@@ -21,6 +21,7 @@ limitations under the License.
 package mock_availabilitysets
 
 import (
+	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -96,17 +97,17 @@ func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySetEnabled() *gomock
 }
 
 // AvailabilitySetSpec mocks base method.
-func (m *MockAvailabilitySetScope) AvailabilitySetSpec() azure.ResourceSpecGetter {
+func (m *MockAvailabilitySetScope) AvailabilitySetSpec(arg0 context.Context) azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetSpec")
+	ret := m.ctrl.Call(m, "AvailabilitySetSpec", arg0)
 	ret0, _ := ret[0].(azure.ResourceSpecGetter)
 	return ret0
 }
 
 // AvailabilitySetSpec indicates an expected call of AvailabilitySetSpec.
-func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySetSpec() *gomock.Call {
+func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySetSpec(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetSpec", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySetSpec))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetSpec", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySetSpec), arg0)
 }
 
 // BaseURI mocks base method.

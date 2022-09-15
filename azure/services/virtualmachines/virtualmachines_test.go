@@ -120,14 +120,14 @@ func TestReconcileVM(t *testing.T) {
 			name:          "noop if no vm spec is found",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().Return(nil)
+				s.VMSpec(gomockinternal.AContext()).Return(nil)
 			},
 		},
 		{
 			name:          "create vm succeeds",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().Return(&fakeVMSpec)
+				s.VMSpec(gomockinternal.AContext()).Return(&fakeVMSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -143,7 +143,7 @@ func TestReconcileVM(t *testing.T) {
 			name:          "creating vm fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().Return(&fakeVMSpec)
+				s.VMSpec(gomockinternal.AContext()).Return(&fakeVMSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, internalError)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, internalError)
@@ -153,7 +153,7 @@ func TestReconcileVM(t *testing.T) {
 			name:          "create vm succeeds but failed to get network interfaces",
 			expectedError: "failed to fetch VM addresses: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().Return(&fakeVMSpec)
+				s.VMSpec(gomockinternal.AContext()).Return(&fakeVMSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -166,7 +166,7 @@ func TestReconcileVM(t *testing.T) {
 			name:          "create vm succeeds but failed to get public IPs",
 			expectedError: "failed to fetch VM addresses: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().Return(&fakeVMSpec)
+				s.VMSpec(gomockinternal.AContext()).Return(&fakeVMSpec)
 				r.CreateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -221,14 +221,14 @@ func TestDeleteVM(t *testing.T) {
 			name:          "noop if no vm spec is found",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().Return(nil)
+				s.VMSpec(gomockinternal.AContext()).Return(nil)
 			},
 		},
 		{
 			name:          "vm doesn't exist",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
+				s.VMSpec(gomockinternal.AContext()).AnyTimes().Return(&fakeVMSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil)
 				s.SetVMState(infrav1.Deleted)
 				s.UpdateDeleteStatus(infrav1.VMRunningCondition, serviceName, nil)
@@ -238,7 +238,7 @@ func TestDeleteVM(t *testing.T) {
 			name:          "error occurs when deleting vm",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
+				s.VMSpec(gomockinternal.AContext()).AnyTimes().Return(&fakeVMSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(internalError)
 				s.SetVMState(infrav1.Deleting)
 				s.UpdateDeleteStatus(infrav1.VMRunningCondition, serviceName, internalError)
@@ -248,7 +248,7 @@ func TestDeleteVM(t *testing.T) {
 			name:          "delete the vm successfully",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
+				s.VMSpec(gomockinternal.AContext()).AnyTimes().Return(&fakeVMSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil)
 				s.SetVMState(infrav1.Deleted)
 				s.UpdateDeleteStatus(infrav1.VMRunningCondition, serviceName, nil)

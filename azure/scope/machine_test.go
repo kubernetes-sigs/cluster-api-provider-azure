@@ -1270,6 +1270,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{},
 			},
 			want: &infrav1.Image{
 				ID: pointer.StringPtr("1"),
@@ -1298,6 +1299,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 				},
 				ClusterScoper: clusterMock,
+				cache:         &MachineCache{},
 			},
 			want: func() *infrav1.Image {
 				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.20.1", "dockershim", "")
@@ -1327,6 +1329,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 				},
 				ClusterScoper: clusterMock,
+				cache:         &MachineCache{},
 			},
 			want: func() *infrav1.Image {
 				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.22.1", "containerd", "")
@@ -1359,6 +1362,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 				},
 				ClusterScoper: clusterMock,
+				cache:         &MachineCache{},
 			},
 			want: func() *infrav1.Image {
 				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.22.1", "dockershim", "")
@@ -1391,6 +1395,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 				},
 				ClusterScoper: clusterMock,
+				cache:         &MachineCache{},
 			},
 			want: func() *infrav1.Image {
 				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.21.1", "dockershim", "")
@@ -1423,6 +1428,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 				},
 				ClusterScoper: clusterMock,
+				cache:         &MachineCache{},
 			},
 			want:        nil,
 			expectedErr: "containerd image only supported in 1.22+",
@@ -1452,6 +1458,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 				},
 				ClusterScoper: clusterMock,
+				cache:         &MachineCache{},
 			},
 			want: func() *infrav1.Image {
 				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.23.3", "", "windows-2019")
@@ -1484,6 +1491,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 				},
 				ClusterScoper: clusterMock,
+				cache:         &MachineCache{},
 			},
 			want: func() *infrav1.Image {
 				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.23.3", "", "windows-2022")
@@ -1508,6 +1516,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 				},
 				ClusterScoper: clusterMock,
+				cache:         &MachineCache{},
 			},
 			want: func() *infrav1.Image {
 				image, _ := svc.GetDefaultUbuntuImage(context.TODO(), "", "1.20.1")
@@ -1606,6 +1615,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&networkinterfaces.NICSpec{
@@ -1707,7 +1717,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					},
 				},
 				cache: &MachineCache{
-					VMSKU: resourceskus.SKU{
+					VMSKU: &resourceskus.SKU{
 						Name: to.StringPtr("Standard_D2v2"),
 					},
 				},
@@ -1818,6 +1828,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&networkinterfaces.NICSpec{
@@ -1919,6 +1930,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&networkinterfaces.NICSpec{
@@ -2025,6 +2037,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&networkinterfaces.NICSpec{
@@ -2128,6 +2141,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&networkinterfaces.NICSpec{
@@ -2232,6 +2246,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{},
 			},
 			want: []azure.ResourceSpecGetter{
 				&networkinterfaces.NICSpec{
@@ -2264,7 +2279,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotNicSpecs := tt.machineScope.NICSpecs()
+			gotNicSpecs := tt.machineScope.NICSpecs(context.TODO())
 			if !reflect.DeepEqual(gotNicSpecs, tt.want) {
 				t.Errorf("NICSpecs(), gotNicSpecs = %s, want %s", specArrayToString(gotNicSpecs), specArrayToString(tt.want))
 			}
