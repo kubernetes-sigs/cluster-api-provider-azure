@@ -178,6 +178,90 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	}
 }
 
+func TestManagedControlPlaneScope_ManagedClusterName(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = expv1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
+
+	cases := []struct {
+		Name     string
+		Input    ManagedControlPlaneScopeParams
+		Expected string
+	}{
+		{
+			Name: "AKS cluster name matching control plane name",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				ManagedMachinePools: []ManagedMachinePool{
+					{
+						MachinePool:      getMachinePool("pool0"),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					},
+				},
+			},
+			Expected: "cluster1",
+		}, {
+			Name: "AKS cluster name NOT matching control plane name",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1-custom",
+						Namespace: "default",
+					},
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				ManagedMachinePools: []ManagedMachinePool{
+					{
+						MachinePool:      getMachinePool("pool0"),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					},
+				},
+			},
+			Expected: "cluster1",
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			g := NewWithT(t)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.ControlPlane).Build()
+			c.Input.Client = fakeClient
+			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
+			g.Expect(err).To(Succeed())
+			managedCluster := s.ManagedClusterSpec(context.TODO())
+			g.Expect(managedCluster.(*managedclusters.ManagedClusterSpec).Name).To(Equal(c.Expected))
+		})
+	}
+}
+
 func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
