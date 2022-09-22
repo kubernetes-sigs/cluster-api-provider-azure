@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -58,7 +59,7 @@ func (s *Service) deleteZone(ctx context.Context, zoneSpec azure.ResourceSpecGet
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted or doesn't exist, cleanup status and return.
-			s.Scope.DeleteLongRunningOperationState(zoneSpec.ResourceName(), serviceName)
+			s.Scope.DeleteLongRunningOperationState(zoneSpec.ResourceName(), serviceName, infrav1.DeleteFuture)
 			return managed, nil
 		}
 		return managed, errors.Wrapf(err, "could not get private DNS zone state of %s in resource group %s", zoneSpec.ResourceName(), zoneSpec.ResourceGroupName())

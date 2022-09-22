@@ -170,13 +170,13 @@ func (s *MachinePoolMachineScope) SetLongRunningOperationState(future *infrav1.F
 }
 
 // GetLongRunningOperationState will get the future on the AzureMachinePoolMachine status.
-func (s *MachinePoolMachineScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
-	return futures.Get(s.AzureMachinePoolMachine, name, service)
+func (s *MachinePoolMachineScope) GetLongRunningOperationState(name, service, futureType string) *infrav1.Future {
+	return futures.Get(s.AzureMachinePoolMachine, name, service, futureType)
 }
 
 // DeleteLongRunningOperationState will delete the future from the AzureMachinePoolMachine status.
-func (s *MachinePoolMachineScope) DeleteLongRunningOperationState(name, service string) {
-	futures.Delete(s.AzureMachinePoolMachine, name, service)
+func (s *MachinePoolMachineScope) DeleteLongRunningOperationState(name, service, futureType string) {
+	futures.Delete(s.AzureMachinePoolMachine, name, service, futureType)
 }
 
 // UpdateDeleteStatus updates a condition on the AzureMachinePoolMachine status after a DELETE operation.

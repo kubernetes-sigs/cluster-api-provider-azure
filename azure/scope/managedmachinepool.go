@@ -221,20 +221,20 @@ func (s *ManagedMachinePoolScope) SetAgentPoolReady(ready bool) {
 	s.InfraMachinePool.Status.Ready = ready
 }
 
-// SetLongRunningOperationState will set the future on the AzureManagedControlPlane status to allow the resource to continue
+// SetLongRunningOperationState will set the future on the AzureManagedMachinePool status to allow the resource to continue
 // in the next reconciliation.
 func (s *ManagedMachinePoolScope) SetLongRunningOperationState(future *infrav1.Future) {
-	futures.Set(s.ControlPlane, future)
+	futures.Set(s.InfraMachinePool, future)
 }
 
-// GetLongRunningOperationState will get the future on the AzureManagedControlPlane status.
-func (s *ManagedMachinePoolScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
-	return futures.Get(s.ControlPlane, name, service)
+// GetLongRunningOperationState will get the future on the AzureManagedMachinePool status.
+func (s *ManagedMachinePoolScope) GetLongRunningOperationState(name, service, futureType string) *infrav1.Future {
+	return futures.Get(s.InfraMachinePool, name, service, futureType)
 }
 
-// DeleteLongRunningOperationState will delete the future from the AzureManagedControlPlane status.
-func (s *ManagedMachinePoolScope) DeleteLongRunningOperationState(name, service string) {
-	futures.Delete(s.ControlPlane, name, service)
+// DeleteLongRunningOperationState will delete the future from the AzureManagedMachinePool status.
+func (s *ManagedMachinePoolScope) DeleteLongRunningOperationState(name, service, futureType string) {
+	futures.Delete(s.InfraMachinePool, name, service, futureType)
 }
 
 // UpdateDeleteStatus updates a condition on the AzureManagedControlPlane status after a DELETE operation.

@@ -55,14 +55,14 @@ func Set(to Setter, future *infrav1.Future) {
 }
 
 // Delete deletes the specified future.
-func Delete(to Setter, name, service string) {
-	if to == nil || name == "" || service == "" {
+func Delete(to Setter, name, service, futureType string) {
+	if to == nil || name == "" || service == "" || futureType == "" {
 		return
 	}
 
 	futures := to.GetFutures()
 	for i, f := range futures {
-		if f.Name == name && f.ServiceName == service {
+		if f.Name == name && f.ServiceName == service && f.Type == futureType {
 			futures = append(futures[:i], futures[i+1:]...)
 			break
 		}

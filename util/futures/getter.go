@@ -32,14 +32,14 @@ type Getter interface {
 
 // Get returns the future with the given name, if the future does not exists,
 // it returns nil.
-func Get(from Getter, name, service string) *infrav1.Future {
+func Get(from Getter, name, service, futureType string) *infrav1.Future {
 	futures := from.GetFutures()
 	if futures == nil {
 		return nil
 	}
 
 	for _, f := range futures {
-		if f.Name == name && f.ServiceName == service {
+		if f.Name == name && f.ServiceName == service && f.Type == futureType {
 			return &f
 		}
 	}
@@ -47,6 +47,6 @@ func Get(from Getter, name, service string) *infrav1.Future {
 }
 
 // Has returns true if a future with the given name exists.
-func Has(from Getter, name, service string) bool {
-	return Get(from, name, service) != nil
+func Has(from Getter, name, service, futureType string) bool {
+	return Get(from, name, service, futureType) != nil
 }

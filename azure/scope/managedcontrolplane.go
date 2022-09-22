@@ -561,13 +561,13 @@ func (s *ManagedControlPlaneScope) SetLongRunningOperationState(future *infrav1.
 }
 
 // GetLongRunningOperationState will get the future on the AzureManagedControlPlane status.
-func (s *ManagedControlPlaneScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
-	return futures.Get(s.ControlPlane, name, service)
+func (s *ManagedControlPlaneScope) GetLongRunningOperationState(name, service, futureType string) *infrav1.Future {
+	return futures.Get(s.ControlPlane, name, service, futureType)
 }
 
 // DeleteLongRunningOperationState will delete the future from the AzureManagedControlPlane status.
-func (s *ManagedControlPlaneScope) DeleteLongRunningOperationState(name, service string) {
-	futures.Delete(s.ControlPlane, name, service)
+func (s *ManagedControlPlaneScope) DeleteLongRunningOperationState(name, service, futureType string) {
+	futures.Delete(s.ControlPlane, name, service, futureType)
 }
 
 // UpdateDeleteStatus updates a condition on the AzureManagedControlPlane status after a DELETE operation.

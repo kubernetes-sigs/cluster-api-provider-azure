@@ -220,7 +220,8 @@ func TestReconcileVMSS(t *testing.T) {
 				instances := newDefaultInstances()
 
 				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
-				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName)
+				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName, infrav1.PutFuture)
+				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName, infrav1.PatchFuture)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
@@ -234,7 +235,8 @@ func TestReconcileVMSS(t *testing.T) {
 				instances := newDefaultInstances()
 
 				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
-				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName)
+				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName, infrav1.PutFuture)
+				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName, infrav1.PatchFuture)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
@@ -659,11 +661,11 @@ func TestDeleteVMSS(t *testing.T) {
 				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
 				future := &infrav1.Future{}
-				s.GetLongRunningOperationState("my-existing-vmss", serviceName).Return(future)
+				s.GetLongRunningOperationState("my-existing-vmss", serviceName, infrav1.DeleteFuture).Return(future)
 				m.GetResultIfDone(gomockinternal.AContext(), future).Return(compute.VirtualMachineScaleSet{}, nil)
 				m.Get(gomockinternal.AContext(), "my-existing-rg", "my-existing-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				s.DeleteLongRunningOperationState("my-existing-vmss", serviceName)
+				s.DeleteLongRunningOperationState("my-existing-vmss", serviceName, infrav1.DeleteFuture)
 				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
@@ -677,7 +679,7 @@ func TestDeleteVMSS(t *testing.T) {
 					Capacity: 3,
 				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
-				s.GetLongRunningOperationState(name, serviceName).Return(nil)
+				s.GetLongRunningOperationState(name, serviceName, infrav1.DeleteFuture).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.Get(gomockinternal.AContext(), resourceGroup, name).
@@ -694,7 +696,7 @@ func TestDeleteVMSS(t *testing.T) {
 					Capacity: 3,
 				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
-				s.GetLongRunningOperationState(name, serviceName).Return(nil)
+				s.GetLongRunningOperationState(name, serviceName, infrav1.DeleteFuture).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 				m.Get(gomockinternal.AContext(), resourceGroup, name).
@@ -1291,7 +1293,7 @@ func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockS
 		Name:          defaultVMSSName,
 		Data:          "",
 	}
-	s.GetLongRunningOperationState(defaultVMSSName, serviceName).Return(future)
+	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PutFuture).Return(future)
 	m.GetResultIfDone(gomockinternal.AContext(), future).Return(createdVMSS, nil).AnyTimes()
 	m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil).AnyTimes()
 	s.MaxSurge().Return(1, nil)
@@ -1301,7 +1303,8 @@ func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockS
 
 func setupDefaultVMSSStartCreatingExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 	setupDefaultVMSSExpectations(s)
-	s.GetLongRunningOperationState(defaultVMSSName, serviceName).Return(nil)
+	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PutFuture).Return(nil)
+	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PatchFuture).Return(nil)
 	m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
 		Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 }
@@ -1373,7 +1376,8 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	setupUpdateVMSSExpectations(s)
 	s.SetProviderID(azure.ProviderIDPrefix + "subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
-	s.GetLongRunningOperationState(defaultVMSSName, serviceName).Return(nil)
+	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PutFuture).Return(nil)
+	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PatchFuture).Return(nil)
 	s.MaxSurge().Return(1, nil)
 	s.SetVMSSState(gomock.Any())
 }

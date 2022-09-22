@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -76,7 +77,7 @@ func (s *Service) deleteLinks(ctx context.Context, links []azure.ResourceSpecGet
 		if err != nil {
 			if azure.ResourceNotFound(err) {
 				// already deleted or doesn't exist, cleanup status and return.
-				s.Scope.DeleteLongRunningOperationState(linkSpec.ResourceName(), serviceName)
+				s.Scope.DeleteLongRunningOperationState(linkSpec.ResourceName(), serviceName, infrav1.DeleteFuture)
 				continue
 			}
 			return managed, errors.Wrapf(err, "could not get vnet link state of %s in resource group %s",
