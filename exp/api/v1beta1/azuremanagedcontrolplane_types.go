@@ -24,6 +24,10 @@ import (
 )
 
 const (
+	// ManagedClusterFinalizer allows Reconcile to clean up Azure resources associated with the AzureManagedControlPlane before
+	// removing it from the apiserver.
+	ManagedClusterFinalizer = "azuremanagedcontrolplane.infrastructure.cluster.x-k8s.io"
+
 	// PrivateDNSZoneModeSystem represents mode System for azuremanagedcontrolplane.
 	PrivateDNSZoneModeSystem string = "System"
 
