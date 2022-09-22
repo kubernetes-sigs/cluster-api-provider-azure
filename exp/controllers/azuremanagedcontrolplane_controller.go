@@ -181,12 +181,9 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 
 	// check if the control plane's namespace is allowed for this identity and update owner references for the identity.
 	if azureControlPlane.Spec.IdentityRef != nil {
-		identity, err := infracontroller.GetClusterIdentityFromRef(ctx, amcpr.Client, azureControlPlane.Namespace, azureControlPlane.Spec.IdentityRef)
+		err := infracontroller.EnsureClusterIdentity(ctx, amcpr.Client, azureControlPlane, azureControlPlane.Spec.IdentityRef, infrav1exp.ManagedClusterFinalizer)
 		if err != nil {
 			return reconcile.Result{}, err
-		}
-		if !scope.IsClusterNamespaceAllowed(ctx, amcpr.Client, identity.Spec.AllowedNamespaces, azureControlPlane.Namespace) {
-			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current azure managed control plane namespace")
 		}
 	} else {
 		warningMessage := ("You're using deprecated functionality: ")
@@ -228,8 +225,10 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 
 	log.Info("Reconciling AzureManagedControlPlane")
 
+	// Remove deprecated Cluster finalizer if it exists.
+	controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer)
 	// If the AzureManagedControlPlane doesn't have our finalizer, add it.
-	controllerutil.AddFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer)
+	controllerutil.AddFinalizer(scope.ControlPlane, infrav1exp.ManagedClusterFinalizer)
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
 	if err := scope.PatchObject(ctx); err != nil {
 		amcpr.Recorder.Eventf(scope.ControlPlane, corev1.EventTypeWarning, "AzureManagedControlPlane unavailable", "failed to patch resource: %s", err)
@@ -275,7 +274,14 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 	}
 
 	// Cluster is deleted so remove the finalizer.
-	controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer)
+	controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1exp.ManagedClusterFinalizer)
+
+	if scope.ControlPlane.Spec.IdentityRef != nil {
+		err := infracontroller.RemoveClusterIdentityFinalizer(ctx, amcpr.Client, scope.ControlPlane, scope.ControlPlane.Spec.IdentityRef, infrav1exp.ManagedClusterFinalizer)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 
 	return reconcile.Result{}, nil
 }
