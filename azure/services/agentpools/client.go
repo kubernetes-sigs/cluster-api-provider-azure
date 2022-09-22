@@ -131,12 +131,7 @@ func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.azureClient.IsDone")
 	defer done()
 
-	isDone, err = future.DoneWithContext(ctx, ac.agentpools)
-	if err != nil {
-		return false, errors.Wrap(err, "failed checking if the operation was complete")
-	}
-
-	return isDone, nil
+	return future.DoneWithContext(ctx, ac.agentpools)
 }
 
 // Result fetches the result of a long-running operation future.

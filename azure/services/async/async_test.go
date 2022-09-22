@@ -68,6 +68,7 @@ func TestProcessOngoingOperation(t *testing.T) {
 		name           string
 		resourceName   string
 		serviceName    string
+		futureType     string
 		expectedError  string
 		expectedResult interface{}
 		expect         func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder)
@@ -77,8 +78,9 @@ func TestProcessOngoingOperation(t *testing.T) {
 			expectedError: "",
 			resourceName:  "test-resource",
 			serviceName:   "test-service",
+			futureType:    infrav1.DeleteFuture,
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(nil)
 			},
 		},
 		{
@@ -86,9 +88,10 @@ func TestProcessOngoingOperation(t *testing.T) {
 			expectedError: "could not decode future data, resetting long-running operation state",
 			resourceName:  "test-resource",
 			serviceName:   "test-service",
+			futureType:    infrav1.DeleteFuture,
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(&invalidFuture)
-				s.DeleteLongRunningOperationState("test-resource", "test-service")
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(&invalidFuture)
+				s.DeleteLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture)
 			},
 		},
 		{
@@ -96,8 +99,9 @@ func TestProcessOngoingOperation(t *testing.T) {
 			expectedError: "failed checking if the operation was complete",
 			resourceName:  "test-resource",
 			serviceName:   "test-service",
+			futureType:    infrav1.DeleteFuture,
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, fakeInternalError)
 			},
 		},
@@ -106,8 +110,9 @@ func TestProcessOngoingOperation(t *testing.T) {
 			expectedError: "operation type DELETE on Azure resource test-group/test-resource is not done",
 			resourceName:  "test-resource",
 			serviceName:   "test-service",
+			futureType:    infrav1.DeleteFuture,
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, nil)
 			},
 		},
@@ -117,11 +122,12 @@ func TestProcessOngoingOperation(t *testing.T) {
 			expectedResult: &fakeExistingResource,
 			resourceName:   "test-resource",
 			serviceName:    "test-service",
+			futureType:     infrav1.DeleteFuture,
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
 				c.Result(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{}), infrav1.DeleteFuture).Return(&fakeExistingResource, nil)
-				s.DeleteLongRunningOperationState("test-resource", "test-service")
+				s.DeleteLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture)
 			},
 		},
 		{
@@ -130,11 +136,12 @@ func TestProcessOngoingOperation(t *testing.T) {
 			expectedResult: nil,
 			resourceName:   "test-resource",
 			serviceName:    "test-service",
+			futureType:     infrav1.DeleteFuture,
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
 				c.Result(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{}), infrav1.DeleteFuture).Return(nil, fakeNotFoundError)
-				s.DeleteLongRunningOperationState("test-resource", "test-service")
+				s.DeleteLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture)
 			},
 		},
 		{
@@ -143,10 +150,26 @@ func TestProcessOngoingOperation(t *testing.T) {
 			expectedResult: nil,
 			resourceName:   "test-resource",
 			serviceName:    "test-service",
+			futureType:     infrav1.DeleteFuture,
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(&validDeleteFuture)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
 				c.Result(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{}), infrav1.DeleteFuture).Return(nil, fakeInternalError)
+				s.DeleteLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture)
+			},
+		},
+		{
+			name:           "terminal failure with IsDone error",
+			expectedError:  fakeInternalError.Error(),
+			expectedResult: nil,
+			resourceName:   "test-resource",
+			serviceName:    "test-service",
+			futureType:     infrav1.DeleteFuture,
+			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockFutureHandlerMockRecorder) {
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(&validDeleteFuture)
+				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, errors.New("IsDone error"))
+				c.Result(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{}), infrav1.DeleteFuture).Return(nil, fakeInternalError)
+				s.DeleteLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture)
 			},
 		},
 	}
@@ -164,7 +187,7 @@ func TestProcessOngoingOperation(t *testing.T) {
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
-			result, err := processOngoingOperation(context.TODO(), scopeMock, clientMock, tc.resourceName, tc.serviceName)
+			result, err := processOngoingOperation(context.TODO(), scopeMock, clientMock, tc.resourceName, tc.serviceName, tc.futureType)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
@@ -196,7 +219,7 @@ func TestCreateResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Times(2).Return(&validCreateFuture)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Times(2).Return(&validCreateFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, nil)
 			},
 		},
@@ -208,7 +231,7 @@ func TestCreateResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
 				r.Parameters(&fakeExistingResource).Return(&fakeResourceParameters, nil)
 				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{}), &fakeResourceParameters).Return("test-resource", nil, nil)
@@ -221,7 +244,7 @@ func TestCreateResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(nil, fakeInternalError)
 			},
 		},
@@ -233,7 +256,7 @@ func TestCreateResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(nil, fakeNotFoundError)
 				r.Parameters(nil).Return(&fakeResourceParameters, nil)
 				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{}), &fakeResourceParameters).Return(&fakeExistingResource, nil, nil)
@@ -246,7 +269,7 @@ func TestCreateResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
 				r.Parameters(&fakeExistingResource).Return(nil, fakeInternalError)
 			},
@@ -259,7 +282,7 @@ func TestCreateResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
 				r.Parameters(&fakeExistingResource).Return(nil, nil)
 			},
@@ -271,7 +294,7 @@ func TestCreateResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
 				r.Parameters(&fakeExistingResource).Return(&fakeResourceParameters, nil)
 				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{}), &fakeResourceParameters).Return(nil, nil, fakeInternalError)
@@ -284,7 +307,7 @@ func TestCreateResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
 				r.Parameters(&fakeExistingResource).Return(&fakeResourceParameters, nil)
 				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{}), &fakeResourceParameters).Return(nil, &azureautorest.Future{}, errCtxExceeded)
@@ -335,7 +358,7 @@ func TestDeleteResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Times(2).Return(&validDeleteFuture)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Times(2).Return(&validDeleteFuture)
 				c.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(false, nil)
 			},
 		},
@@ -346,7 +369,7 @@ func TestDeleteResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(nil)
 				c.DeleteAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(nil, nil)
 			},
 		},
@@ -357,7 +380,7 @@ func TestDeleteResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(nil)
 				c.DeleteAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(nil, fakeNotFoundError)
 			},
 		},
@@ -368,7 +391,7 @@ func TestDeleteResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(nil)
 				c.DeleteAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(nil, fakeInternalError)
 			},
 		},
@@ -379,7 +402,7 @@ func TestDeleteResource(t *testing.T) {
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockDeleterMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
 				r.ResourceGroupName().Return("test-group")
-				s.GetLongRunningOperationState("test-resource", "test-service").Return(nil)
+				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.DeleteFuture).Return(nil)
 				c.DeleteAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&azureautorest.Future{}, errCtxExceeded)
 				s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{}))
 			},

@@ -98,7 +98,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted or doesn't exist, cleanup status and return.
-			s.Scope.DeleteLongRunningOperationState(groupSpec.ResourceName(), ServiceName)
+			s.Scope.DeleteLongRunningOperationState(groupSpec.ResourceName(), ServiceName, infrav1.DeleteFuture)
 			s.Scope.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
 			return nil
 		}

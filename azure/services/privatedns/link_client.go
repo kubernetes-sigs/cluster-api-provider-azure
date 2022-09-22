@@ -116,12 +116,7 @@ func (avc *azureVirtualNetworkLinksClient) IsDone(ctx context.Context, future az
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureVirtualNetworkLinksClient.IsDone")
 	defer done()
 
-	isDone, err = future.DoneWithContext(ctx, avc.vnetlinks)
-	if err != nil {
-		return false, errors.Wrap(err, "failed checking if the operation was complete")
-	}
-
-	return isDone, nil
+	return future.DoneWithContext(ctx, avc.vnetlinks)
 }
 
 // Result fetches the result of a long-running operation future.

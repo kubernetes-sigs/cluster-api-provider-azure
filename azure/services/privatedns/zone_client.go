@@ -116,12 +116,7 @@ func (azc *azureZonesClient) IsDone(ctx context.Context, future azureautorest.Fu
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureZonesClient.IsDone")
 	defer done()
 
-	isDone, err = future.DoneWithContext(ctx, azc.privatezones)
-	if err != nil {
-		return false, errors.Wrap(err, "failed checking if the operation was complete")
-	}
-
-	return isDone, nil
+	return future.DoneWithContext(ctx, azc.privatezones)
 }
 
 // Result fetches the result of a long-running operation future.

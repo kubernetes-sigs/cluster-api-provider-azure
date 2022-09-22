@@ -180,15 +180,15 @@ func (mr *MockScaleSetVMScopeMockRecorder) ClusterName() *gomock.Call {
 }
 
 // DeleteLongRunningOperationState mocks base method.
-func (m *MockScaleSetVMScope) DeleteLongRunningOperationState(arg0, arg1 string) {
+func (m *MockScaleSetVMScope) DeleteLongRunningOperationState(arg0, arg1, arg2 string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1, arg2)
 }
 
 // DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
-func (mr *MockScaleSetVMScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockScaleSetVMScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockScaleSetVMScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockScaleSetVMScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
 }
 
 // FailureDomains mocks base method.
@@ -206,17 +206,17 @@ func (mr *MockScaleSetVMScopeMockRecorder) FailureDomains() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockScaleSetVMScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+func (m *MockScaleSetVMScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*v1beta1.Future)
 	return ret0
 }
 
 // GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
-func (mr *MockScaleSetVMScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockScaleSetVMScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetVMScope)(nil).GetLongRunningOperationState), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetVMScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
 }
 
 // HashKey mocks base method.

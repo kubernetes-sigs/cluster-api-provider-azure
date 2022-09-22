@@ -166,7 +166,7 @@ func TestDeleteGroups(t *testing.T) {
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(resources.Group{}, notFoundError)
-				s.DeleteLongRunningOperationState("test-group", ServiceName)
+				s.DeleteLongRunningOperationState("test-group", ServiceName, infrav1.DeleteFuture)
 				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
 			},
 		},
