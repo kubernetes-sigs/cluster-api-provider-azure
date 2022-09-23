@@ -28,8 +28,9 @@ settings = {
 keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]
 
 # global settings
-settings.update(read_json(
-    "tilt-settings.json",
+tilt_file = "./tilt-settings.yaml" if os.path.exists("./tilt-settings.yaml") else "./tilt-settings.json"
+settings.update(read_yaml(
+    tilt_file,
     default = {},
 ))
 

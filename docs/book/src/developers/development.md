@@ -148,18 +148,15 @@ development will span both CAPZ and CAPI, then follow the [CAPI and CAPZ instruc
 
 If you want to develop in CAPZ and get a local development cluster working quickly, this is the path for you.
 
-From the root of the CAPZ repository and after configuring the environment variables, you can run the following to generate your `tilt-settings.json` file:
+From the root of the CAPZ repository and after configuring the environment variables, you can run the following to generate your `tilt-settings.yaml` file:
 
 ```shell
-cat <<EOF > tilt-settings.json
-{
-  "kustomize_substitutions": {
-      "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  }
-}
+cat <<EOF > tilt-settings.yaml
+kustomize_substitutions:
+  AZURE_SUBSCRIPTION_ID_B64: "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_TENANT_ID_B64: "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_CLIENT_SECRET_B64: "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_CLIENT_ID_B64: "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
 EOF
 ```
 
@@ -187,7 +184,7 @@ To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow t
 
 > you may wish to checkout out the correct version of CAPI to match the [version used in CAPZ][go.mod]
 
-Note that `tilt up` will be run from the `cluster-api repository` directory and the `tilt-settings.json` file will point back to the `cluster-api-provider-azure` repository directory.  Any changes you make to the source code in `cluster-api` or `cluster-api-provider-azure` repositories will automatically redeployed to the `kind` cluster.
+Note that `tilt up` will be run from the `cluster-api repository` directory and the `tilt-settings.yaml` file will point back to the `cluster-api-provider-azure` repository directory.  Any changes you make to the source code in `cluster-api` or `cluster-api-provider-azure` repositories will automatically redeployed to the `kind` cluster.
 
 After you have cloned both repositories, your folder structure should look like:
 
@@ -196,21 +193,23 @@ After you have cloned both repositories, your folder structure should look like:
 |-- src/cluster-api (run `tilt up` here)
 ```
 
-After configuring the environment variables, run the following to generate your `tilt-settings.json` file:
+After configuring the environment variables, run the following to generate your `tilt-settings.yaml` file:
 
 ```shell
-cat <<EOF > tilt-settings.json
-{
-  "default_registry": "${REGISTRY}",
-  "provider_repos": ["../cluster-api-provider-azure"],
-  "enable_providers": ["azure", "docker", "kubeadm-bootstrap", "kubeadm-control-plane"],
-  "kustomize_substitutions": {
-      "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  }
-}
+cat <<EOF > tilt-settings.yaml
+default_registry: "${REGISTRY}"
+provider_repos:
+- ../cluster-api-provider-azure
+enable_providers:
+- azure
+- docker
+- kubeadm-bootstrap
+- kubeadm-control-plane
+kustomize_substitutions:
+  AZURE_SUBSCRIPTION_ID_B64: "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_TENANT_ID_B64: "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_CLIENT_SECRET_B64: "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_CLIENT_ID_B64: "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
 EOF
 ```
 
@@ -270,26 +269,26 @@ To view cluster resources using the [Cluster API Visualizer](https://github.com/
 
 #### Debugging
 
-You can debug CAPZ (or another provider / core CAPI) by running the controllers with delve. When developing using Tilt this is easily done by using the **debug** configuration section in your **tilt-settings.json** file. For example:
+You can debug CAPZ (or another provider / core CAPI) by running the controllers with delve. When developing using Tilt this is easily done by using the **debug** configuration section in your **tilt-settings.yaml** file. For example:
 
-```json
-{
-  "default_registry": "${REGISTRY}",
-  "provider_repos": ["../cluster-api-provider-azure"],
-  "enable_providers": ["azure", "kubeadm-bootstrap", "kubeadm-control-plane"],
-  "kustomize_substitutions": {
-      "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  },
-  "debug": {
-    "azure": {
-      "continue": true,
-      "port": 30000
-    }
-  }
-}
+```yaml
+default_registry: "${REGISTRY}"
+provider_repos:
+- ../cluster-api-provider-azure
+enable_providers:
+- azure
+- docker
+- kubeadm-bootstrap
+- kubeadm-control-plane
+kustomize_substitutions:
+  AZURE_SUBSCRIPTION_ID_B64: "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_TENANT_ID_B64: "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_CLIENT_SECRET_B64: "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_CLIENT_ID_B64: "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+debug:
+  azure:
+    continue: true
+    port: 30000
 ```
 
 > Note you can list multiple controllers or **core** CAPI and expose metrics as well in the debug section. Full details of the options can be seen [here](https://cluster-api.sigs.k8s.io/developer/tilt.html).
