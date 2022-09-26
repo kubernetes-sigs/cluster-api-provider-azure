@@ -42,10 +42,13 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 )
 
@@ -596,4 +599,50 @@ func GetClusterIdentityFromRef(ctx context.Context, c client.Client, azureCluste
 		return identity, nil
 	}
 	return nil, nil
+}
+
+func clusterIdentityFinalizer(prefix, clusterNamespace, clusterName string) string {
+	return fmt.Sprintf("%s/%s-%s", prefix, clusterNamespace, clusterName)
+}
+
+// EnsureClusterIdentity ensures that the identity ref is allowed in the namespace and sets a finalizer.
+func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditions.Setter, identityRef *corev1.ObjectReference, finalizerPrefix string) error {
+	name := object.GetName()
+	namespace := object.GetNamespace()
+	identity, err := GetClusterIdentityFromRef(ctx, c, namespace, identityRef)
+	if err != nil {
+		return err
+	}
+	if !scope.IsClusterNamespaceAllowed(ctx, c, identity.Spec.AllowedNamespaces, namespace) {
+		conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
+		return errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
+	}
+	identityHelper, err := patch.NewHelper(identity, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to init patch helper")
+	}
+	// If the AzureClusterIdentity doesn't have our finalizer, add it.
+	controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name))
+	// Register the finalizer immediately to avoid orphaning Azure resources on delete.
+	return identityHelper.Patch(ctx, identity)
+}
+
+// RemoveClusterIdentityFinalizer removes the finalizer on an AzureClusterIdentity.
+func RemoveClusterIdentityFinalizer(ctx context.Context, c client.Client, object client.Object, identityRef *corev1.ObjectReference, finalizerPrefix string) error {
+	name := object.GetName()
+	namespace := object.GetNamespace()
+	identity, err := GetClusterIdentityFromRef(ctx, c, namespace, identityRef)
+	if err != nil {
+		return err
+	}
+	identityHelper, err := patch.NewHelper(identity, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to init patch helper")
+	}
+	controllerutil.RemoveFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name))
+	err = identityHelper.Patch(ctx, identity)
+	if err != nil {
+		return errors.Wrap(err, "failed to patch AzureClusterIdentity")
+	}
+	return nil
 }
