@@ -159,13 +159,9 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if azureCluster.Spec.IdentityRef != nil {
-		identity, err := GetClusterIdentityFromRef(ctx, acr.Client, azureCluster.Namespace, azureCluster.Spec.IdentityRef)
+		err := EnsureClusterIdentity(ctx, acr.Client, azureCluster, azureCluster.Spec.IdentityRef, infrav1.ClusterFinalizer)
 		if err != nil {
 			return reconcile.Result{}, err
-		}
-		if !scope.IsClusterNamespaceAllowed(ctx, acr.Client, identity.Spec.AllowedNamespaces, azureCluster.Namespace) {
-			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
-			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 		}
 	} else {
 		log.Info(fmt.Sprintf("WARNING, %s", deprecatedManagerCredsWarning))
@@ -298,7 +294,15 @@ func (acr *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterS
 	}
 
 	// Cluster is deleted so remove the finalizer.
-	controllerutil.RemoveFinalizer(clusterScope.AzureCluster, infrav1.ClusterFinalizer)
+	controllerutil.RemoveFinalizer(azureCluster, infrav1.ClusterFinalizer)
+
+	if azureCluster.Spec.IdentityRef != nil {
+		// Cluster is deleted so remove the identity finalizer.
+		err := RemoveClusterIdentityFinalizer(ctx, acr.Client, azureCluster, azureCluster.Spec.IdentityRef, infrav1.ClusterFinalizer)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 
 	return reconcile.Result{}, nil
 }
