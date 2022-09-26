@@ -267,10 +267,6 @@ func (acr *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterS
 	log.Info("Reconciling AzureCluster delete")
 
 	azureCluster := clusterScope.AzureCluster
-	conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletedReason, clusterv1.ConditionSeverityInfo, "")
-	if err := clusterScope.PatchObject(ctx); err != nil {
-		return reconcile.Result{}, err
-	}
 
 	acs, err := acr.createAzureClusterService(clusterScope)
 	if err != nil {
