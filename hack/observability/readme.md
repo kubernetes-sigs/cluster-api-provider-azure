@@ -19,7 +19,7 @@ the screen.
 
 To access traces in
 [Application Insights](https://docs.microsoft.com/en-us/azure/azure-monitor/app/app-insights-overview),
-specify an `AZURE_INSTRUMENTATION_KEY` in your `tilt-settings.json`, then navigate to the
+specify an `AZURE_INSTRUMENTATION_KEY` in your `tilt-settings.yaml`, then navigate to the
 App Insights resource in the Azure Portal and choose "Transaction search" to query for traces. See
 the tracing docs for more detail.
 

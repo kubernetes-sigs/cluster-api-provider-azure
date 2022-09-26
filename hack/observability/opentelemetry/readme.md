@@ -32,14 +32,11 @@ for "Instrumentation Key".
 ![Instrumentation Key](assets/portal_instrumentation_key.png)
 
 Paste the Instrumentation Key from the portal as `AZURE_INSTRUMENTATION_KEY`
-in `tilt-settings.json`:
+in `tilt-settings.yaml`:
 
-```json
-{
-  "kustomize_substitutions": {
-      "AZURE_INSTRUMENTATION_KEY": "12345678-1234-1234-1234-1234567890abc"
-  }
-}
+```yaml
+kustomize_substitutions:
+  AZURE_INSTRUMENTATION_KEY: "12345678-1234-1234-1234-1234567890abc"
 ```
 
 Once your management cluster is up, search for recent traces on the "Transaction search" page.
