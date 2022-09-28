@@ -359,9 +359,9 @@ func (m *MachineScope) Subnet() infrav1.SubnetSpec {
 
 // AvailabilityZone returns the AzureMachine Availability Zone.
 // Priority for selecting the AZ is
-//   1) Machine.Spec.FailureDomain
-//   2) AzureMachine.Spec.FailureDomain (This is to support deprecated AZ)
-//   3) No AZ
+//  1. Machine.Spec.FailureDomain
+//  2. AzureMachine.Spec.FailureDomain (This is to support deprecated AZ)
+//  3. No AZ
 func (m *MachineScope) AvailabilityZone() string {
 	if m.Machine.Spec.FailureDomain != nil {
 		return *m.Machine.Spec.FailureDomain
@@ -687,13 +687,13 @@ func (m *MachineScope) SetLongRunningOperationState(future *infrav1.Future) {
 }
 
 // GetLongRunningOperationState will get the future on the AzureMachine status.
-func (m *MachineScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
-	return futures.Get(m.AzureMachine, name, service)
+func (m *MachineScope) GetLongRunningOperationState(name, service, futureType string) *infrav1.Future {
+	return futures.Get(m.AzureMachine, name, service, futureType)
 }
 
 // DeleteLongRunningOperationState will delete the future from the AzureMachine status.
-func (m *MachineScope) DeleteLongRunningOperationState(name, service string) {
-	futures.Delete(m.AzureMachine, name, service)
+func (m *MachineScope) DeleteLongRunningOperationState(name, service, futureType string) {
+	futures.Delete(m.AzureMachine, name, service, futureType)
 }
 
 // UpdateDeleteStatus updates a condition on the AzureMachine status after a DELETE operation.

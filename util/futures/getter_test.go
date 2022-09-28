@@ -23,6 +23,8 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
+const fakeFutureType = "PUT"
+
 func TestGet(t *testing.T) {
 	g := NewWithT(t)
 
@@ -35,14 +37,15 @@ func TestGet(t *testing.T) {
 	vmFuture := fakeFuture(vmName, vm)
 	vnetFuture := fakeFuture(vnetName, vnet)
 
-	g.Expect(Get(azurecluster, vmName, vm)).To(BeNil())
-	g.Expect(Get(azurecluster, vnetName, vnet)).To(BeNil())
+	g.Expect(Get(azurecluster, vmName, vm, fakeFutureType)).To(BeNil())
+	g.Expect(Get(azurecluster, vnetName, vnet, fakeFutureType)).To(BeNil())
 
 	azurecluster.SetFutures(infrav1.Futures{vmFuture, vnetFuture})
 
-	g.Expect(Get(azurecluster, vmName, vm)).To(Equal(&vmFuture))
-	g.Expect(Get(azurecluster, vmName, vnet)).To(BeNil())
-	g.Expect(Get(azurecluster, vnetName, vnet)).To(Equal(&vnetFuture))
+	g.Expect(Get(azurecluster, vmName, vm, fakeFutureType)).To(Equal(&vmFuture))
+	g.Expect(Get(azurecluster, vmName, vnet, fakeFutureType)).To(BeNil())
+	g.Expect(Get(azurecluster, vnetName, vnet, fakeFutureType)).To(Equal(&vnetFuture))
+	g.Expect(Get(azurecluster, vnetName, vnet, "not-"+fakeFutureType)).To(BeNil())
 }
 
 func TestHas(t *testing.T) {
@@ -55,19 +58,19 @@ func TestHas(t *testing.T) {
 	vnet := "virtualnetworks"
 	vmFuture := fakeFuture(vmName, vm)
 
-	g.Expect(Has(azurecluster, vmName, vm)).To(BeFalse())
-	g.Expect(Has(azurecluster, "foo", vm)).To(BeFalse())
+	g.Expect(Has(azurecluster, vmName, vm, fakeFutureType)).To(BeFalse())
+	g.Expect(Has(azurecluster, "foo", vm, fakeFutureType)).To(BeFalse())
 
 	azurecluster.SetFutures(infrav1.Futures{vmFuture})
 
-	g.Expect(Has(azurecluster, vmName, vm)).To(BeTrue())
-	g.Expect(Has(azurecluster, "foo", vm)).To(BeFalse())
-	g.Expect(Has(azurecluster, vmName, vnet)).To(BeFalse())
+	g.Expect(Has(azurecluster, vmName, vm, fakeFutureType)).To(BeTrue())
+	g.Expect(Has(azurecluster, "foo", vm, fakeFutureType)).To(BeFalse())
+	g.Expect(Has(azurecluster, vmName, vnet, fakeFutureType)).To(BeFalse())
 }
 
 func fakeFuture(name string, service string) infrav1.Future {
 	return infrav1.Future{
-		Type:          "PUT",
+		Type:          fakeFutureType,
 		Name:          name,
 		ResourceGroup: "test-rg",
 		Data:          "",

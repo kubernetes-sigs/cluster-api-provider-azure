@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -82,10 +81,5 @@ func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "disks.azureClient.IsDone")
 	defer done()
 
-	isDone, err = future.DoneWithContext(ctx, ac.disks)
-	if err != nil {
-		return false, errors.Wrap(err, "failed checking if the operation was complete")
-	}
-
-	return isDone, nil
+	return future.DoneWithContext(ctx, ac.disks)
 }

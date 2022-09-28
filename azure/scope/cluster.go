@@ -914,13 +914,13 @@ func (s *ClusterScope) SetLongRunningOperationState(future *infrav1.Future) {
 }
 
 // GetLongRunningOperationState will get the future on the AzureCluster status.
-func (s *ClusterScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
-	return futures.Get(s.AzureCluster, name, service)
+func (s *ClusterScope) GetLongRunningOperationState(name, service, futureType string) *infrav1.Future {
+	return futures.Get(s.AzureCluster, name, service, futureType)
 }
 
 // DeleteLongRunningOperationState will delete the future from the AzureCluster status.
-func (s *ClusterScope) DeleteLongRunningOperationState(name, service string) {
-	futures.Delete(s.AzureCluster, name, service)
+func (s *ClusterScope) DeleteLongRunningOperationState(name, service, futureType string) {
+	futures.Delete(s.AzureCluster, name, service, futureType)
 }
 
 // UpdateDeleteStatus updates a condition on the AzureCluster status after a DELETE operation.

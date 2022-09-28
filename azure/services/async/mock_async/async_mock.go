@@ -55,29 +55,29 @@ func (m *MockFutureScope) EXPECT() *MockFutureScopeMockRecorder {
 }
 
 // DeleteLongRunningOperationState mocks base method.
-func (m *MockFutureScope) DeleteLongRunningOperationState(arg0, arg1 string) {
+func (m *MockFutureScope) DeleteLongRunningOperationState(arg0, arg1, arg2 string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1, arg2)
 }
 
 // DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
-func (mr *MockFutureScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockFutureScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockFutureScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockFutureScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockFutureScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+func (m *MockFutureScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*v1beta1.Future)
 	return ret0
 }
 
 // GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
-func (mr *MockFutureScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockFutureScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockFutureScope)(nil).GetLongRunningOperationState), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockFutureScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
 }
 
 // SetLongRunningOperationState mocks base method.

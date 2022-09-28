@@ -84,8 +84,8 @@ type ClusterDescriber interface {
 // AsyncStatusUpdater is an interface used to keep track of long running operations in Status that has Conditions and Futures.
 type AsyncStatusUpdater interface {
 	SetLongRunningOperationState(*infrav1.Future)
-	GetLongRunningOperationState(string, string) *infrav1.Future
-	DeleteLongRunningOperationState(string, string)
+	GetLongRunningOperationState(string, string, string) *infrav1.Future
+	DeleteLongRunningOperationState(string, string, string)
 	UpdatePutStatus(clusterv1.ConditionType, string, error)
 	UpdateDeleteStatus(clusterv1.ConditionType, string, error)
 	UpdatePatchStatus(clusterv1.ConditionType, string, error)
