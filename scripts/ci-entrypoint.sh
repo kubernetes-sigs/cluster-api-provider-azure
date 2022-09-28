@@ -141,6 +141,18 @@ wait_for_nodes() {
     "${KUBECTL}" get nodes -owide
 }
 
+copy_secret() {
+    # point at the management cluster
+    unset KUBECONFIG
+    "${KUBECTL}" get secret "${CLUSTER_NAME}-control-plane-azure-json" -o jsonpath='{.data.control-plane-azure\.json}' | base64 --decode > azure_json
+    
+    # set KUBECONFIG back to the workload cluster
+    export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
+    "${KUBECTL}" create secret generic "${CONFIG_SECRET_NAME}" -n kube-system \
+      --from-file=cloud-config=azure_json
+    rm azure_json
+}
+
 # cleanup all resources we use
 cleanup() {
     timeout 1800 "${KUBECTL}" delete cluster "${CLUSTER_NAME}" || true
@@ -185,6 +197,17 @@ if [[ -n "${TEST_CCM:-}" ]]; then
         # "app=calico" is the label only for calico-node-windows pods
         "${KUBECTL}" wait --for=condition=Ready pod -l app=calico -n kube-system --timeout=10m
     fi
+
+    CLOUD_CONFIG="/etc/kubernetes/azure.json"
+    CONFIG_SECRET_NAME=""
+    ENABLE_DYNAMIC_RELOADING=false
+    if [[ -n "${LOAD_CLOUD_CONFIG_FROM_SECRET:-}" ]]; then
+        CLOUD_CONFIG=""
+        CONFIG_SECRET_NAME="azure-cloud-provider"
+        ENABLE_DYNAMIC_RELOADING=true
+        copy_secret
+    fi
+
     echo "Installing cloud-provider-azure components via helm"
     "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name \
 --set infra.clusterName="${CLUSTER_NAME}" \
@@ -194,7 +217,11 @@ if [[ -n "${TEST_CCM:-}" ]]; then
 --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
 --set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
 --set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
---set cloudControllerManager.replicas="${CCM_COUNT}"
+--set cloudControllerManager.replicas="${CCM_COUNT}" \
+--set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}"  \
+--set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
+--set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}"
+
     echo "Waiting for all kube-system pods to be ready"
     "${KUBECTL}" wait --for=condition=Ready pod -n kube-system --all --timeout=10m
 fi
