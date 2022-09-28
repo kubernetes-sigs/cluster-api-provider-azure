@@ -177,7 +177,7 @@ func TestService_Delete(t *testing.T) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
 				s.ScaleSetName().Return("scaleset")
-				s.GetLongRunningOperationState("0", serviceName).Return(nil)
+				s.GetLongRunningOperationState("0", serviceName, infrav1.DeleteFuture).Return(nil)
 				future := &infrav1.Future{
 					Type: infrav1.DeleteFuture,
 				}
@@ -200,9 +200,9 @@ func TestService_Delete(t *testing.T) {
 				future := &infrav1.Future{
 					Type: infrav1.DeleteFuture,
 				}
-				s.GetLongRunningOperationState("0", serviceName).Return(future)
+				s.GetLongRunningOperationState("0", serviceName, infrav1.DeleteFuture).Return(future)
 				m.GetResultIfDone(gomock2.AContext(), future).Return(compute.VirtualMachineScaleSetVM{}, nil)
-				s.DeleteLongRunningOperationState("0", serviceName)
+				s.DeleteLongRunningOperationState("0", serviceName, infrav1.DeleteFuture)
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, nil)
 			},
 		},
@@ -212,7 +212,7 @@ func TestService_Delete(t *testing.T) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
 				s.ScaleSetName().Return("scaleset")
-				s.GetLongRunningOperationState("0", serviceName).Return(nil)
+				s.GetLongRunningOperationState("0", serviceName, infrav1.DeleteFuture).Return(nil)
 				m.DeleteAsync(gomock2.AContext(), "rg", "scaleset", "0").Return(nil, autorest404)
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, nil)
 			},
@@ -223,7 +223,7 @@ func TestService_Delete(t *testing.T) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
 				s.ScaleSetName().Return("scaleset")
-				s.GetLongRunningOperationState("0", serviceName).Return(nil)
+				s.GetLongRunningOperationState("0", serviceName, infrav1.DeleteFuture).Return(nil)
 				m.DeleteAsync(gomock2.AContext(), "rg", "scaleset", "0").Return(nil, errors.New("boom"))
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, nil)
 			},
@@ -238,7 +238,7 @@ func TestService_Delete(t *testing.T) {
 				future := &infrav1.Future{
 					Type: infrav1.DeleteFuture,
 				}
-				s.GetLongRunningOperationState("0", serviceName).Return(future)
+				s.GetLongRunningOperationState("0", serviceName, infrav1.DeleteFuture).Return(future)
 				m.GetResultIfDone(gomock2.AContext(), future).Return(compute.VirtualMachineScaleSetVM{}, errors.New("boom"))
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, nil)
 			},

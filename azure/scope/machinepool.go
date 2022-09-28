@@ -297,7 +297,9 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 		return nil
 	}
 
-	if futures.Has(m.AzureMachinePool, m.Name(), ScalesetsServiceName) {
+	if futures.Has(m.AzureMachinePool, m.Name(), ScalesetsServiceName, infrav1.PatchFuture) ||
+		futures.Has(m.AzureMachinePool, m.Name(), ScalesetsServiceName, infrav1.PutFuture) ||
+		futures.Has(m.AzureMachinePool, m.Name(), ScalesetsServiceName, infrav1.DeleteFuture) {
 		log.V(4).Info("exiting early due an in-progress long running operation on the ScaleSet")
 		// exit early to be less greedy about delete
 		return nil
@@ -377,13 +379,13 @@ func (m *MachinePoolScope) SetLongRunningOperationState(future *infrav1.Future) 
 }
 
 // GetLongRunningOperationState will get the future on the AzureMachinePool status.
-func (m *MachinePoolScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
-	return futures.Get(m.AzureMachinePool, name, service)
+func (m *MachinePoolScope) GetLongRunningOperationState(name, service, futureType string) *infrav1.Future {
+	return futures.Get(m.AzureMachinePool, name, service, futureType)
 }
 
 // DeleteLongRunningOperationState will delete the future from the AzureMachinePool status.
-func (m *MachinePoolScope) DeleteLongRunningOperationState(name, service string) {
-	futures.Delete(m.AzureMachinePool, name, service)
+func (m *MachinePoolScope) DeleteLongRunningOperationState(name, service, futureType string) {
+	futures.Delete(m.AzureMachinePool, name, service, futureType)
 }
 
 // setProvisioningStateAndConditions sets the AzureMachinePool provisioning state and conditions.

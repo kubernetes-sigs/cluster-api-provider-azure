@@ -108,12 +108,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	}()
 
 	log.V(4).Info("entering delete")
-	future := s.Scope.GetLongRunningOperationState(instanceID, serviceName)
+	future := s.Scope.GetLongRunningOperationState(instanceID, serviceName, infrav1.DeleteFuture)
 	if future != nil {
-		if future.Type != infrav1.DeleteFuture {
-			return azure.WithTransientError(errors.New("attempting to delete, non-delete operation in progress"), 30*time.Second)
-		}
-
 		log.V(4).Info("checking if the instance is done deleting")
 		if _, err := s.Client.GetResultIfDone(ctx, future); err != nil {
 			// fetch instance to update status
@@ -122,7 +118,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 		// there was no error in fetching the result, the future has been completed
 		log.V(4).Info("successfully deleted the instance")
-		s.Scope.DeleteLongRunningOperationState(instanceID, serviceName)
+		s.Scope.DeleteLongRunningOperationState(instanceID, serviceName, infrav1.DeleteFuture)
 		return nil
 	}
 
@@ -144,6 +140,6 @@ func (s *Service) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "failed to get result of long running operation")
 	}
 
-	s.Scope.DeleteLongRunningOperationState(instanceID, serviceName)
+	s.Scope.DeleteLongRunningOperationState(instanceID, serviceName, infrav1.DeleteFuture)
 	return nil
 }

@@ -90,10 +90,11 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	scaleSetSpec := s.Scope.ScaleSetSpec()
 
 	// check if there is an ongoing long running operation
-	var (
-		future      = s.Scope.GetLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName)
-		fetchedVMSS *azure.VMSS
-	)
+	var fetchedVMSS *azure.VMSS
+	future := s.Scope.GetLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName, infrav1.PutFuture)
+	if future == nil {
+		future = s.Scope.GetLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName, infrav1.PatchFuture)
+	}
 
 	defer func() {
 		// save the updated state of the VMSS for the MachinePoolScope to use for updating K8s state
@@ -151,7 +152,9 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	}
 
 	// If we get to here, we have completed any long running VMSS operations (creates / updates)
-	s.Scope.DeleteLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName)
+	s.Scope.DeleteLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName, infrav1.PutFuture)
+	s.Scope.DeleteLongRunningOperationState(s.Scope.ScaleSetSpec().Name, serviceName, infrav1.PatchFuture)
+
 	// This also means that the VMSS extensions were successfully installed
 	// Note: we want to handle UpdatePutStatus when VMSSExtensions have an error when scalesets become an async service
 	s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
@@ -182,7 +185,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}()
 
 	// check if there is an ongoing long running operation
-	future := s.Scope.GetLongRunningOperationState(vmssSpec.Name, serviceName)
+	future := s.Scope.GetLongRunningOperationState(vmssSpec.Name, serviceName, infrav1.DeleteFuture)
 	if future != nil {
 		// if the operation is not complete this will return an error
 		_, err := s.GetResultIfDone(ctx, future)
@@ -191,7 +194,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		}
 
 		// ScaleSet has been deleted
-		s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, serviceName)
+		s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, serviceName, infrav1.DeleteFuture)
 		// Note: we want to handle UpdateDeleteStatus when VMSSExtensions have an error when scalesets become an async service
 		s.Scope.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 
@@ -218,7 +221,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	// future is either nil, or the result of the future is complete
-	s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, serviceName)
+	s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, serviceName, infrav1.DeleteFuture)
 	// Note: we want to handle UpdateDeleteStatus when VMSSExtensions have an error when scalesets become an async service
 	s.Scope.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 

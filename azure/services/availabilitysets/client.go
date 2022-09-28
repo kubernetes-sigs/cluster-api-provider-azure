@@ -97,10 +97,5 @@ func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitysets.AzureClient.IsDone")
 	defer done()
 
-	isDone, err = future.DoneWithContext(ctx, ac.availabilitySets)
-	if err != nil {
-		return false, errors.Wrap(err, "failed checking if the operation was complete")
-	}
-
-	return isDone, nil
+	return future.DoneWithContext(ctx, ac.availabilitySets)
 }
