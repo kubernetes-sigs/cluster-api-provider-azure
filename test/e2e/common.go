@@ -129,6 +129,7 @@ type cleanupInput struct {
 	Cluster                *clusterv1.Cluster
 	IntervalsGetter        func(spec, key string) []interface{}
 	SkipCleanup            bool
+	SkipLogCollection      bool
 	AdditionalCleanup      func()
 	SkipResourceGroupCheck bool
 }
@@ -141,7 +142,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 
 	if input.Cluster == nil {
 		By("Unable to dump workload cluster logs as the cluster is nil")
-	} else {
+	} else if !input.SkipLogCollection {
 		Byf("Dumping logs from the %q workload cluster", input.Cluster.Name)
 		input.ClusterProxy.CollectWorkloadClusterLogs(ctx, input.Cluster.Namespace, input.Cluster.Name, filepath.Join(input.ArtifactFolder, "clusters", input.Cluster.Name))
 	}

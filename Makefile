@@ -165,6 +165,7 @@ ARTIFACTS ?= $(ROOT_DIR)/_artifacts
 E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 SKIP_CLEANUP ?= false
+SKIP_LOG_COLLECTION ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
 WIN_REPO_URL ?=
 
@@ -655,6 +656,7 @@ test-e2e-run: generate-e2e-templates install-tools ## Run e2e tests.
     $(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) $(GINKGO_ARGS) ./test/e2e -- \
     	-e2e.artifacts-folder="$(ARTIFACTS)" \
     	-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
+    	-e2e.skip-log-collection="$(SKIP_LOG_COLLECTION)" \
     	-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS)
 
 .PHONY: test-e2e

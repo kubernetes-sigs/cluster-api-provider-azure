@@ -43,6 +43,9 @@ var (
 
 	// skipCleanup prevents cleanup of test resources e.g. for debug purposes.
 	skipCleanup bool
+
+	// skipLogCollection prevents the log collection process from running.
+	skipLogCollection bool
 )
 
 // Test suite global vars
