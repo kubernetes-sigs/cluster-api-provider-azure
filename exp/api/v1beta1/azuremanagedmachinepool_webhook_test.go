@@ -436,6 +436,32 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "NodeTaints are mutable",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Taints: []Taint{
+						{
+							Effect: TaintEffect("NoSchedule"),
+							Key:    "foo",
+							Value:  "baz",
+						},
+					},
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Taints: []Taint{
+						{
+							Effect: TaintEffect("NoSchedule"),
+							Key:    "foo",
+							Value:  "bar",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
