@@ -40,11 +40,19 @@ var _ webhook.Validator = &AzureMachine{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureMachine) ValidateCreate() error {
-	if allErrs := ValidateAzureMachineSpec(m.Spec); len(allErrs) > 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
+	spec := m.Spec
+
+	allErrs := ValidateAzureMachineSpec(spec)
+
+	if errs := ValidateSystemAssignedIdentity(spec.Identity, "", spec.RoleAssignmentName, field.NewPath("roleAssignmentName")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
 	}
 
-	return nil
+	if len(allErrs) == 0 {
+		return nil
+	}
+
+	return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
