@@ -42,10 +42,6 @@ func ValidateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
 		allErrs = append(allErrs, errs...)
 	}
 
-	if errs := ValidateSystemAssignedIdentity(spec.Identity, "", spec.RoleAssignmentName, field.NewPath("roleAssignmentName")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
-	}
-
 	if errs := ValidateUserAssignedIdentity(spec.Identity, spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
