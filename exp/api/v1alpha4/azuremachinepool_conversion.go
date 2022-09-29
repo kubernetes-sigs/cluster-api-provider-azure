@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha4
 
 import (
+	convert "k8s.io/apimachinery/pkg/conversion"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -43,6 +44,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Status.Image.ComputeGallery = restored.Status.Image.ComputeGallery
 	}
 
+	if len(restored.Spec.Template.VMExtensions) > 0 {
+		dst.Spec.Template.VMExtensions = restored.Spec.Template.VMExtensions
+	}
+
 	return nil
 }
 
@@ -67,4 +72,9 @@ func (src *AzureMachinePoolList) ConvertTo(dstRaw conversion.Hub) error {
 func (dst *AzureMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1exp.AzureMachinePoolList)
 	return Convert_v1beta1_AzureMachinePoolList_To_v1alpha4_AzureMachinePoolList(src, dst, nil)
+}
+
+// Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate converts an Azure Machine Pool Machine Template from v1beta1 to v1alpha4.
+func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate(in *infrav1exp.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error {
+	return autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate(in, out, s)
 }

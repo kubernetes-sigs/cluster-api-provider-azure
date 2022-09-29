@@ -234,6 +234,16 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
 			By("Validating failure domains", func() {
 				AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
 					return AzureFailureDomainsSpecInput{
@@ -308,6 +318,16 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
 			By("Creating an accessible ipv6 load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
@@ -356,6 +376,16 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
 			}, result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
 
 			By("Running a security scanner", func() {
 				KubescapeSpec(ctx, func() KubescapeSpecInput {
@@ -445,6 +475,16 @@ var _ = Describe("Workload cluster creation", func() {
 				Args: []string{"--server-side"},
 			}, result)
 
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
 			By("Running a GPU-based calculation", func() {
 				AzureGPUSpec(ctx, func() AzureGPUSpecInput {
 					return AzureGPUSpecInput{
@@ -488,6 +528,16 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
 			}, result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
 
 			By("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
@@ -575,6 +625,16 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
 			// dual-stack external IP for dual-stack clusters is not yet supported
 			// first ip family in ipFamilies is used for the primary clusterIP and cloud-provider
 			// determines the elb/ilb ip family based on the primary clusterIP
@@ -637,6 +697,16 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
 			}, result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
 
 			By("PASSED!")
 		})

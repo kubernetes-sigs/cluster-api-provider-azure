@@ -64,6 +64,7 @@ type ScaleSetSpec struct {
 	SpotVMOptions                *infrav1.SpotVMOptions
 	AdditionalCapabilities       *infrav1.AdditionalCapabilities
 	FailureDomains               []string
+	VMExtensions                 []infrav1.VMExtension
 }
 
 // TagsSpec defines the specification for a set of tags.
@@ -82,6 +83,7 @@ type ExtensionSpec struct {
 	VMName            string
 	Publisher         string
 	Version           string
+	Settings          map[string]string
 	ProtectedSettings map[string]string
 }
 

@@ -1,0 +1,18 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      vmExtensions:
+      - name: CustomScript
+        publisher: Microsoft.Azure.Extensions
+        version: '2.1'
+        protectedSettings:
+          commandToExecute: |
+            #!/bin/sh
+            echo "This script is a no-op used for extension testing purposes ..."
+            touch test_file

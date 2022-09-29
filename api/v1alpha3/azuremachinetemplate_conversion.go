@@ -65,6 +65,10 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Spec.DNSServers = restored.Spec.Template.Spec.DNSServers
 	}
 
+	if len(restored.Spec.Template.Spec.VMExtensions) > 0 {
+		dst.Spec.Template.Spec.VMExtensions = restored.Spec.Template.Spec.VMExtensions
+	}
+
 	return nil
 }
 

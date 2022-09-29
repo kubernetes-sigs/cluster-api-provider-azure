@@ -87,6 +87,10 @@ type (
 		// SubnetName selects the Subnet where the VMSS will be placed
 		// +optional
 		SubnetName string `json:"subnetName,omitempty"`
+
+		// VMExtensions specifies a list of extensions to be added to the scale set.
+		// +optional
+		VMExtensions []infrav1.VMExtension `json:"vmExtensions,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.

@@ -459,6 +459,7 @@ func autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachin
 	out.SecurityProfile = (*clusterapiproviderazureapiv1alpha3.SecurityProfile)(unsafe.Pointer(in.SecurityProfile))
 	out.SpotVMOptions = (*clusterapiproviderazureapiv1alpha3.SpotVMOptions)(unsafe.Pointer(in.SpotVMOptions))
 	// WARNING: in.SubnetName requires manual conversion: does not exist in peer-type
+	// WARNING: in.VMExtensions requires manual conversion: does not exist in peer-type
 	return nil
 }
 

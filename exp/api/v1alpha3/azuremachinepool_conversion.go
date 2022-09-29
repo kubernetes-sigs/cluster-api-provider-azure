@@ -85,6 +85,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		}
 	}
 
+	if len(restored.Spec.Template.VMExtensions) > 0 {
+		dst.Spec.Template.VMExtensions = restored.Spec.Template.VMExtensions
+	}
+
 	return nil
 }
 

@@ -62,7 +62,7 @@ func (s *VMExtensionSpec) Parameters(existing interface{}) (interface{}, error) 
 			Publisher:          to.StringPtr(s.Publisher),
 			Type:               to.StringPtr(s.Name),
 			TypeHandlerVersion: to.StringPtr(s.Version),
-			Settings:           nil,
+			Settings:           s.Settings,
 			ProtectedSettings:  s.ProtectedSettings,
 		},
 		Location: to.StringPtr(s.Location),

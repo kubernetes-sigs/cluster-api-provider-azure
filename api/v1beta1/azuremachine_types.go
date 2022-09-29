@@ -122,6 +122,10 @@ type AzureMachineSpec struct {
 	// DNSServers adds a list of DNS Server IP addresses to the VM NICs.
 	// +optional
 	DNSServers []string `json:"dnsServers,omitempty"`
+
+	// VMExtensions specifies a list of extensions to be added to the virtual machine.
+	// +optional
+	VMExtensions []VMExtension `json:"vmExtensions,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs.
