@@ -45,7 +45,7 @@ type CorrID string
 // use the newly created context over the old one. Common usage is
 // below:
 //
-// 	ctx := context.Background()
+//	ctx := context.Background()
 //	ctx, newCorrID := ctxWithCorrID(ctx)
 //	fmt.Println("new corr ID: ", newCorrID)
 //	doSomething(ctx)
