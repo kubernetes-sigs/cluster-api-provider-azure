@@ -129,6 +129,11 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithRoleAssignmentName()),
 			wantErr:         true,
 		},
+		{
+			name:            "azuremachinetemplate without RoleAssignmentName",
+			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithoutRoleAssignmentName()),
+			wantErr:         false,
+		},
 	}
 
 	for _, test := range tests {
