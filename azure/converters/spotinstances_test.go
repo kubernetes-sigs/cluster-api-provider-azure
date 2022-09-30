@@ -28,6 +28,7 @@ import (
 )
 
 func TestGetSpotVMOptions(t *testing.T) {
+	deletePolicy := infrav1.SpotEvictionPolicyDelete
 	type resultParams struct {
 		vmPriorityTypes       compute.VirtualMachinePriorityTypes
 		vmEvictionPolicyTypes compute.VirtualMachineEvictionPolicyTypes
@@ -57,7 +58,7 @@ func TestGetSpotVMOptions(t *testing.T) {
 			diffDiskSettings: nil,
 			want: resultParams{
 				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: compute.VirtualMachineEvictionPolicyTypesDeallocate,
+				vmEvictionPolicyTypes: "",
 				billingProfile:        nil,
 			},
 		},
@@ -72,7 +73,7 @@ func TestGetSpotVMOptions(t *testing.T) {
 			diffDiskSettings: nil,
 			want: resultParams{
 				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: compute.VirtualMachineEvictionPolicyTypesDeallocate,
+				vmEvictionPolicyTypes: "",
 				billingProfile: &compute.BillingProfile{
 					MaxPrice: to.Float64Ptr(1000),
 				},
@@ -86,6 +87,19 @@ func TestGetSpotVMOptions(t *testing.T) {
 			diffDiskSettings: &infrav1.DiffDiskSettings{
 				Option: string(compute.DiffDiskOptionsLocal),
 			},
+			want: resultParams{
+				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
+				vmEvictionPolicyTypes: "",
+				billingProfile:        nil,
+			},
+		},
+		{
+			name: "spot with eviction policy",
+			spot: &infrav1.SpotVMOptions{
+				MaxPrice:       nil,
+				EvictionPolicy: &deletePolicy,
+			},
+			diffDiskSettings: nil,
 			want: resultParams{
 				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
 				vmEvictionPolicyTypes: compute.VirtualMachineEvictionPolicyTypesDelete,

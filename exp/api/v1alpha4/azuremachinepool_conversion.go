@@ -17,7 +17,12 @@ limitations under the License.
 package v1alpha4
 
 import (
+	unsafe "unsafe"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 	convert "k8s.io/apimachinery/pkg/conversion"
+	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -46,6 +51,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 
 	if len(restored.Spec.Template.VMExtensions) > 0 {
 		dst.Spec.Template.VMExtensions = restored.Spec.Template.VMExtensions
+	}
+
+	if restored.Spec.Template.SpotVMOptions != nil && restored.Spec.Template.SpotVMOptions.EvictionPolicy != nil {
+		dst.Spec.Template.SpotVMOptions.EvictionPolicy = restored.Spec.Template.SpotVMOptions.EvictionPolicy
 	}
 
 	return nil
@@ -77,4 +86,16 @@ func (dst *AzureMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error {
 // Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate converts an Azure Machine Pool Machine Template from v1beta1 to v1alpha4.
 func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate(in *infrav1exp.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error {
 	return autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate(in, out, s)
+}
+
+// Convert_v1beta1_SpotVMOptions_To_v1alpha4_SpotVMOptions converts a SpotVMOptions from v1beta1 to v1alpha4.
+func Convert_v1beta1_SpotVMOptions_To_v1alpha4_SpotVMOptions(in *infrav1.SpotVMOptions, out *infrav1alpha4.SpotVMOptions, s convert.Scope) error {
+	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
+	return nil
+}
+
+// Convert_v1alpha4_SpotVMOptions_To_v1beta1_SpotVMOptions converts a SpotVMOptions from v1alpha4 to v1beta1.
+func Convert_v1alpha4_SpotVMOptions_To_v1beta1_SpotVMOptions(in *infrav1alpha4.SpotVMOptions, out *infrav1.SpotVMOptions, s convert.Scope) error {
+	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
+	return nil
 }

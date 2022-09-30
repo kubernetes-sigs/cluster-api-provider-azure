@@ -334,6 +334,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*clusterapiproviderazureapiv1alpha4.SpotVMOptions)(nil), (*clusterapiproviderazureapiv1beta1.SpotVMOptions)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_SpotVMOptions_To_v1beta1_SpotVMOptions(a.(*clusterapiproviderazureapiv1alpha4.SpotVMOptions), b.(*clusterapiproviderazureapiv1beta1.SpotVMOptions), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*apiv1beta1.APIEndpoint)(nil), (*apiv1alpha4.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(a.(*apiv1beta1.APIEndpoint), b.(*apiv1alpha4.APIEndpoint), scope)
 	}); err != nil {
@@ -371,6 +376,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*clusterapiproviderazureapiv1beta1.OSDisk)(nil), (*clusterapiproviderazureapiv1alpha4.OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_OSDisk_To_v1alpha4_OSDisk(a.(*clusterapiproviderazureapiv1beta1.OSDisk), b.(*clusterapiproviderazureapiv1alpha4.OSDisk), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*clusterapiproviderazureapiv1beta1.SpotVMOptions)(nil), (*clusterapiproviderazureapiv1alpha4.SpotVMOptions)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_SpotVMOptions_To_v1alpha4_SpotVMOptions(a.(*clusterapiproviderazureapiv1beta1.SpotVMOptions), b.(*clusterapiproviderazureapiv1alpha4.SpotVMOptions), scope)
 	}); err != nil {
 		return err
 	}
@@ -684,7 +694,15 @@ func autoConvert_v1alpha4_AzureMachinePoolMachineTemplate_To_v1beta1_AzureMachin
 	out.AcceleratedNetworking = (*bool)(unsafe.Pointer(in.AcceleratedNetworking))
 	out.TerminateNotificationTimeout = (*int)(unsafe.Pointer(in.TerminateNotificationTimeout))
 	out.SecurityProfile = (*clusterapiproviderazureapiv1beta1.SecurityProfile)(unsafe.Pointer(in.SecurityProfile))
-	out.SpotVMOptions = (*clusterapiproviderazureapiv1beta1.SpotVMOptions)(unsafe.Pointer(in.SpotVMOptions))
+	if in.SpotVMOptions != nil {
+		in, out := &in.SpotVMOptions, &out.SpotVMOptions
+		*out = new(clusterapiproviderazureapiv1beta1.SpotVMOptions)
+		if err := Convert_v1alpha4_SpotVMOptions_To_v1beta1_SpotVMOptions(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.SpotVMOptions = nil
+	}
 	out.SubnetName = in.SubnetName
 	return nil
 }
@@ -713,7 +731,15 @@ func autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachin
 	out.AcceleratedNetworking = (*bool)(unsafe.Pointer(in.AcceleratedNetworking))
 	out.TerminateNotificationTimeout = (*int)(unsafe.Pointer(in.TerminateNotificationTimeout))
 	out.SecurityProfile = (*clusterapiproviderazureapiv1alpha4.SecurityProfile)(unsafe.Pointer(in.SecurityProfile))
-	out.SpotVMOptions = (*clusterapiproviderazureapiv1alpha4.SpotVMOptions)(unsafe.Pointer(in.SpotVMOptions))
+	if in.SpotVMOptions != nil {
+		in, out := &in.SpotVMOptions, &out.SpotVMOptions
+		*out = new(clusterapiproviderazureapiv1alpha4.SpotVMOptions)
+		if err := Convert_v1beta1_SpotVMOptions_To_v1alpha4_SpotVMOptions(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.SpotVMOptions = nil
+	}
 	out.SubnetName = in.SubnetName
 	// WARNING: in.VMExtensions requires manual conversion: does not exist in peer-type
 	return nil

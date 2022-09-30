@@ -455,6 +455,17 @@ const (
 	VMIdentityUserAssigned VMIdentity = "UserAssigned"
 )
 
+// SpotEvictionPolicy defines the eviction policy for spot VMs, if configured.
+// +kubebuilder:validation:Enum=Deallocate;Delete
+type SpotEvictionPolicy string
+
+const (
+	// SpotEvictionPolicyDeallocate is the default eviction policy and will deallocate the VM when the node is marked for eviction.
+	SpotEvictionPolicyDeallocate SpotEvictionPolicy = "Deallocate"
+	// SpotEvictionPolicyDelete will delete the VM when the node is marked for eviction.
+	SpotEvictionPolicyDelete SpotEvictionPolicy = "Delete"
+)
+
 // UserAssignedIdentity defines the user-assigned identities provided
 // by the user to be assigned to Azure resources.
 type UserAssignedIdentity struct {

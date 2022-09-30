@@ -17,6 +17,9 @@ limitations under the License.
 package v1alpha3
 
 import (
+	unsafe "unsafe"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 	convert "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -89,6 +92,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.VMExtensions = restored.Spec.Template.VMExtensions
 	}
 
+	if restored.Spec.Template.SpotVMOptions != nil && restored.Spec.Template.SpotVMOptions.EvictionPolicy != nil {
+		dst.Spec.Template.SpotVMOptions.EvictionPolicy = restored.Spec.Template.SpotVMOptions.EvictionPolicy
+	}
+
 	return nil
 }
 
@@ -136,6 +143,18 @@ func Convert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(i
 		out.LongRunningOperationStates = []infrav1.Future{f}
 	}
 	return autoConvert_v1alpha3_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(in, out, s)
+}
+
+// Convert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions converts a SpotVMOptions from v1beta1 to v1alpha3.
+func Convert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions(in *infrav1.SpotVMOptions, out *infrav1alpha3.SpotVMOptions, s convert.Scope) error {
+	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
+	return nil
+}
+
+// Convert_v1alpha3_SpotVMOptions_To_v1beta1_SpotVMOptions converts a SpotVMOptions from v1alpha3 to v1beta1.
+func Convert_v1alpha3_SpotVMOptions_To_v1beta1_SpotVMOptions(in *infrav1alpha3.SpotVMOptions, out *infrav1.SpotVMOptions, s convert.Scope) error {
+	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
+	return nil
 }
 
 // ConvertTo converts this AzureMachinePoolList to the Hub version (v1beta1).

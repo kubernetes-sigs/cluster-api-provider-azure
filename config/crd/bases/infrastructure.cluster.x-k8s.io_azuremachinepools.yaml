@@ -1770,6 +1770,13 @@ spec:
                     description: SpotVMOptions allows the ability to specify the Machine
                       should use a Spot VM
                     properties:
+                      evictionPolicy:
+                        description: EvictionPolicy defines the behavior of the virtual
+                          machine when it is evicted. It can be either Delete or Deallocate.
+                        enum:
+                        - Deallocate
+                        - Delete
+                        type: string
                       maxPrice:
                         anyOf:
                         - type: integer
