@@ -627,3 +627,14 @@ func createMachineWithRoleAssignmentName() *AzureMachine {
 	}
 	return machine
 }
+
+func createMachineWithoutRoleAssignmentName() *AzureMachine {
+	machine := &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
+			Identity:     VMIdentitySystemAssigned,
+		},
+	}
+	return machine
+}
