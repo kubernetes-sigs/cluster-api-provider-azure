@@ -102,6 +102,10 @@ type AzureManagedMachinePoolSpec struct {
 	// EnableNodePublicIP controls whether or not nodes in the pool each have a public IP address.
 	// +optional
 	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
+
+	// SubnetName selects the Subnet where the MachinePool will be placed
+	// +optional
+	SubnetName string `json:"subnetName,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.
