@@ -21,13 +21,16 @@ package e2e
 
 import (
 	"context"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	autorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -93,12 +96,17 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 		vmExtensionsClient := compute.NewVirtualMachineExtensionsClient(subscriptionID)
 		vmExtensionsClient.Authorizer = auth
 
-		vmListResults, err := vmClient.List(ctx, input.ClusterName, "")
+		// get the resource group name
+		resourceID := strings.TrimPrefix(*machineList.Items[0].Spec.ProviderID, azure.ProviderIDPrefix)
+		resource, err := autorest.ParseResourceID(resourceID)
+		Expect(err).NotTo(HaveOccurred())
+
+		vmListResults, err := vmClient.List(ctx, resource.ResourceGroup, "")
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying specified VM extensions are created on Azure")
 		for _, machine := range vmListResults.Values() {
-			vmExtensionListResult, err := vmExtensionsClient.List(ctx, input.ClusterName, *machine.Name, "")
+			vmExtensionListResult, err := vmExtensionsClient.List(ctx, resource.ResourceGroup, *machine.Name, "")
 			Expect(err).NotTo(HaveOccurred())
 			vmExtensionList := *vmExtensionListResult.Value
 			var vmExtensionNames []string
@@ -136,12 +144,17 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 		vmssExtensionsClient := compute.NewVirtualMachineScaleSetExtensionsClient(subscriptionID)
 		vmssExtensionsClient.Authorizer = auth
 
-		vmssListResults, err := vmssClient.List(ctx, input.ClusterName)
+		// get the resource group name
+		resourceID := strings.TrimPrefix(machinePoolList.Items[0].Spec.ProviderID, azure.ProviderIDPrefix)
+		resource, err := autorest.ParseResourceID(resourceID)
+		Expect(err).NotTo(HaveOccurred())
+
+		vmssListResults, err := vmssClient.List(ctx, resource.ResourceGroup)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying VMSS extensions are created on Azure")
 		for _, machinePool := range vmssListResults.Values() {
-			vmssExtensionListResult, err := vmssExtensionsClient.List(ctx, input.ClusterName, *machinePool.Name)
+			vmssExtensionListResult, err := vmssExtensionsClient.List(ctx, resource.ResourceGroup, *machinePool.Name)
 			Expect(err).NotTo(HaveOccurred())
 			vmssExtensionList := vmssExtensionListResult.Values()
 			var vmssExtensionNames []string
