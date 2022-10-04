@@ -128,6 +128,7 @@ var _ = Describe("Workload cluster creation", func() {
 			CancelWatches:          cancelWatches,
 			IntervalsGetter:        e2eConfig.GetIntervals,
 			SkipCleanup:            skipCleanup,
+			SkipLogCollection:      skipLogCollection,
 			AdditionalCleanup:      additionalCleanup,
 			ArtifactFolder:         artifactFolder,
 			SkipResourceGroupCheck: skipResourceGroupCheck,
