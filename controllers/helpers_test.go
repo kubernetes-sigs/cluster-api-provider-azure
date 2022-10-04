@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -677,3 +678,86 @@ const (
     "cloudProviderBackoffJitter": 1.2000000000000002
 }`
 )
+
+func Test_clusterIdentityFinalizer(t *testing.T) {
+	type args struct {
+		prefix           string
+		clusterNamespace string
+		clusterName      string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "cluster identity finalizer should be deterministic",
+			args: args{
+				prefix:           infrav1.ClusterFinalizer,
+				clusterNamespace: "foo",
+				clusterName:      "bar",
+			},
+			want: "azurecluster.infrastructure.cluster.x-k8s.io/48998dbcd8fb929369c78981cbfb6f26145ea0412e6e05a1423941a6",
+		},
+		{
+			name: "long cluster name and namespace",
+			args: args{
+				prefix:           infrav1.ClusterFinalizer,
+				clusterNamespace: "this-is-a-very-very-very-very-very-very-very-very-very-long-namespace-name",
+				clusterName:      "this-is-a-very-very-very-very-very-very-very-very-very-long-cluster-name",
+			},
+			want: "azurecluster.infrastructure.cluster.x-k8s.io/557d064144d2b495db694dedc53c9a1e9bd8575bdf06b5b151972614",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := clusterIdentityFinalizer(tt.args.prefix, tt.args.clusterNamespace, tt.args.clusterName)
+			if got != tt.want {
+				t.Errorf("clusterIdentityFinalizer() = %v, want %v", got, tt.want)
+			}
+			key := strings.Split(got, "/")[1]
+			if len(key) > 63 {
+				t.Errorf("clusterIdentityFinalizer() name %v length = %v should be less than 63 characters", key, len(key))
+			}
+		})
+	}
+}
+
+func Test_deprecatedClusterIdentityFinalizer(t *testing.T) {
+	type args struct {
+		prefix           string
+		clusterNamespace string
+		clusterName      string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "cluster identity finalizer should be deterministic",
+			args: args{
+				prefix:           infrav1.ClusterFinalizer,
+				clusterNamespace: "foo",
+				clusterName:      "bar",
+			},
+			want: "azurecluster.infrastructure.cluster.x-k8s.io/foo-bar",
+		},
+		{
+			name: "long cluster name and namespace",
+			args: args{
+				prefix:           infrav1.ClusterFinalizer,
+				clusterNamespace: "this-is-a-very-very-very-very-very-very-very-very-very-long-namespace-name",
+				clusterName:      "this-is-a-very-very-very-very-very-very-very-very-very-long-cluster-name",
+			},
+			want: "azurecluster.infrastructure.cluster.x-k8s.io/this-is-a-very-very-very-very-very-very-very-very-very-long-namespace-name-this-is-a-very-very-very-very-very-very-very-very-very-long-cluster-name",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := deprecatedClusterIdentityFinalizer(tt.args.prefix, tt.args.clusterNamespace, tt.args.clusterName); got != tt.want {
+				t.Errorf("deprecatedClusterIdentityFinalizer() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
