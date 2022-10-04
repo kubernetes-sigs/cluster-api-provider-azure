@@ -18,6 +18,8 @@ package controllers
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -601,8 +603,19 @@ func GetClusterIdentityFromRef(ctx context.Context, c client.Client, azureCluste
 	return nil, nil
 }
 
-func clusterIdentityFinalizer(prefix, clusterNamespace, clusterName string) string {
+// deprecatedClusterIdentityFinalizer is was briefly used to compute a finalizer without a hash in releases v1.5.1 and v1.4.4.
+// It is kept here to ensure that we can remove it from existing clusters for backwards compatibility.
+// This function should be removed in a future release.
+func deprecatedClusterIdentityFinalizer(prefix, clusterNamespace, clusterName string) string {
 	return fmt.Sprintf("%s/%s-%s", prefix, clusterNamespace, clusterName)
+}
+
+// clusterIdentityFinalizer generates a finalizer key.
+// The finalizer key is a combination of the prefix and a hash of the cluster name and namespace.
+// We use a hash to ensure that the finalizer key name is not longer than 63 characters.
+func clusterIdentityFinalizer(prefix, clusterNamespace, clusterName string) string {
+	hash := sha256.Sum224([]byte(fmt.Sprintf("%s-%s", clusterNamespace, clusterName)))
+	return fmt.Sprintf("%s/%s", prefix, hex.EncodeToString(hash[:]))
 }
 
 // EnsureClusterIdentity ensures that the identity ref is allowed in the namespace and sets a finalizer.
@@ -621,6 +634,8 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditio
 	if err != nil {
 		return errors.Wrap(err, "failed to init patch helper")
 	}
+	// Remove deprecated finalizer if it exists.
+	controllerutil.RemoveFinalizer(identity, deprecatedClusterIdentityFinalizer(finalizerPrefix, namespace, name))
 	// If the AzureClusterIdentity doesn't have our finalizer, add it.
 	controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name))
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete.
