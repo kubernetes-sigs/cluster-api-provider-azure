@@ -35,6 +35,7 @@ import (
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -258,6 +259,11 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 
 	if err := svc.Reconcile(ctx); err != nil {
 		scope.SetAgentPoolReady(false)
+		// Ensure the ready condition is false, but do not overwrite an existing
+		// error condition which might provide more details.
+		if conditions.IsTrue(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition) {
+			conditions.MarkFalse(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition, infrav1.FailedReason, clusterv1.ConditionSeverityError, err.Error())
+		}
 
 		// Handle transient and terminal errors
 		log := log.WithValues("name", scope.InfraMachinePool.Name, "namespace", scope.InfraMachinePool.Namespace)
