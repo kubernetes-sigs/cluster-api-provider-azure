@@ -31,6 +31,8 @@ const (
 	DefaultAzureCallTimeout = 2 * time.Second
 	// DefaultReconcilerRequeue is the default value for the reconcile retry.
 	DefaultReconcilerRequeue = 15 * time.Second
+	// DefaultHTTP429RetryAfter is a default backoff wait time when we get a HTTP 429 response with no Retry-After data.
+	DefaultHTTP429RetryAfter = 1 * time.Minute
 )
 
 // DefaultedLoopTimeout will default the timeout if it is zero-valued.
