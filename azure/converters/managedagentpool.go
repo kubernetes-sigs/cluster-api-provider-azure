@@ -43,5 +43,6 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) 
 		NodeLabels:          properties.NodeLabels,
 		EnableUltraSSD:      properties.EnableUltraSSD,
 		EnableNodePublicIP:  properties.EnableNodePublicIP,
+		ScaleSetPriority:    properties.ScaleSetPriority,
 	}
 }

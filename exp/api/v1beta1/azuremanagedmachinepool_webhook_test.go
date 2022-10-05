@@ -462,10 +462,31 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Can't add a node label that begins with kubernetes.azure.com",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					NodeLabels: map[string]string{
+						"foo":                                   "bar",
+						"kubernetes.azure.com/scalesetpriority": "spot",
+					},
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					NodeLabels: map[string]string{
+						"foo": "bar",
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := tc.new.ValidateUpdate(tc.old, client)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -645,6 +666,33 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
 					OSType: to.StringPtr(azure.WindowsOS),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "valid label",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:   "User",
+					OSType: to.StringPtr(azure.LinuxOS),
+					NodeLabels: map[string]string{
+						"foo": "bar",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "kubernetes.azure.com label",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:   "User",
+					OSType: to.StringPtr(azure.LinuxOS),
+					NodeLabels: map[string]string{
+						"kubernetes.azure.com/scalesetpriority": "spot",
+					},
 				},
 			},
 			wantErr:  true,

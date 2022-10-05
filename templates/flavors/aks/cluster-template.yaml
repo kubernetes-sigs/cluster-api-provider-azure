@@ -106,3 +106,4 @@ spec:
   osDiskSizeGB: 40
   sku: "${AZURE_NODE_MACHINE_TYPE}"
   enableNodePublicIP: false
+  scaleSetPriority: Regular

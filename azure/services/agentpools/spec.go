@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // AgentPoolSpec contains agent pool specification details.
@@ -92,6 +93,9 @@ type AgentPoolSpec struct {
 
 	// EnableNodePublicIP controls whether or not nodes in the agent pool each have a public IP address.
 	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
+
+	// ScaleSetPriority specifies the ScaleSetPriority for the node pool. Allowed values are 'Spot' and 'Regular'
+	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
 }
 
 // ResourceName returns the name of the agent pool.
@@ -116,6 +120,7 @@ func (s *AgentPoolSpec) CustomHeaders() map[string]string {
 
 // Parameters returns the parameters for the agent pool.
 func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, err error) {
+	nodeLabels := s.NodeLabels
 	if existing != nil {
 		existingPool, ok := existing.(containerservice.AgentPool)
 		if !ok {
@@ -169,6 +174,12 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 			// agent pool is up to date, nothing to do
 			return nil, nil
 		}
+		// We do a just-in-time merge of existent kubernetes.azure.com-prefixed labels
+		// So that we don't unintentionally delete them
+		// See https://github.com/Azure/AKS/issues/3152
+		if normalizedProfile.NodeLabels != nil {
+			nodeLabels = mergeSystemNodeLabels(normalizedProfile.NodeLabels, existingPool.NodeLabels)
+		}
 	}
 
 	var availabilityZones *[]string
@@ -202,16 +213,30 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 			MaxPods:             s.MaxPods,
 			MinCount:            s.MinCount,
 			Mode:                containerservice.AgentPoolMode(s.Mode),
-			NodeLabels:          s.NodeLabels,
+			NodeLabels:          nodeLabels,
 			NodeTaints:          nodeTaints,
 			OrchestratorVersion: s.Version,
 			OsDiskSizeGB:        &s.OSDiskSizeGB,
 			OsDiskType:          containerservice.OSDiskType(to.String(s.OsDiskType)),
 			OsType:              containerservice.OSType(to.String(s.OSType)),
+			ScaleSetPriority:    containerservice.ScaleSetPriority(to.String(s.ScaleSetPriority)),
 			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VMSize:              sku,
 			VnetSubnetID:        vnetSubnetID,
 			EnableNodePublicIP:  s.EnableNodePublicIP,
 		},
 	}, nil
+}
+
+// mergeSystemNodeLabels appends any kubernetes.azure.com-prefixed labels from the AKS label set
+// into the local capz label set.
+func mergeSystemNodeLabels(capz, aks map[string]*string) map[string]*string {
+	ret := capz
+	// Look for labels returned from the AKS node pool API that begin with kubernetes.azure.com
+	for aksNodeLabelKey := range aks {
+		if azureutil.IsAzureSystemNodeLabelKey(aksNodeLabelKey) {
+			ret[aksNodeLabelKey] = aks[aksNodeLabelKey]
+		}
+	}
+	return ret
 }
