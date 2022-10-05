@@ -122,14 +122,6 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
-	if !reflect.DeepEqual(m.Spec.Taints, old.Spec.Taints) {
-		allErrs = append(allErrs,
-			field.Invalid(
-				field.NewPath("Spec", "Taints"),
-				m.Spec.Taints,
-				"field is immutable"))
-	}
-
 	// custom headers are immutable
 	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
 	newCustomHeaders := maps.FilterByKeyPrefix(m.ObjectMeta.Annotations, azure.CustomHeaderPrefix)

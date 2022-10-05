@@ -454,7 +454,6 @@ Following is the list of immutable fields for managed clusters:
 | AzureManagedMachinePool   | .spec.sku                    |                           |
 | AzureManagedMachinePool   | .spec.osDiskSizeGB           |                           |
 | AzureManagedMachinePool   | .spec.osDiskType             |                           |
-| AzureManagedMachinePool   | .spec.taints                 |                           |
 | AzureManagedMachinePool   | .spec.availabilityZones      |                           |
 | AzureManagedMachinePool   | .spec.maxPods                |                           |
 | AzureManagedMachinePool   | .spec.osType                 |                           |
