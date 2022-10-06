@@ -217,6 +217,7 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 // GetAKSKubernetesVersion gets the kubernetes version for AKS clusters.
 func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfig) (string, error) {
 	e2eAKSVersion := e2eConfig.GetVariable(AKSKubernetesVersion)
+	e2eAKSMaxVersion := e2eConfig.GetVariable(AKSKubernetesMaxVersion)
 
 	location := e2eConfig.GetVariable(AzureLocation)
 
@@ -225,7 +226,7 @@ func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfi
 	subscriptionID := settings.GetSubscriptionID()
 	var maxVersion string
 	if e2eAKSVersion == "latest" {
-		maxVersion, err = GetLatestStableAKSKubernetesVersion(ctx, subscriptionID, location)
+		maxVersion, err = GetLatestStableAKSKubernetesVersion(ctx, subscriptionID, location, e2eAKSMaxVersion)
 		Expect(err).NotTo(HaveOccurred())
 	} else {
 		maxVersion, err = GetWorkingAKSKubernetesVersion(ctx, subscriptionID, location, e2eAKSVersion)
@@ -309,7 +310,7 @@ func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, locatio
 }
 
 // GetLatestStableAKSKubernetesVersion returns the latest stable available Kubernetes version of AKS.
-func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, location string) (string, error) {
+func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, location, maxVersion string) (string, error) {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get settings from environment")
@@ -325,26 +326,60 @@ func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, lo
 		return "", errors.Wrap(err, "failed to list Orchestrators")
 	}
 
-	var orchestratorversions []string
-	var foundWorkingVersion bool
-	var orchVersion string
-	var maxVersion string
-
-	for _, o := range *result.Orchestrators {
-		orchVersion = *o.OrchestratorVersion
-		// semver comparisons require a "v" prefix
-		if orchVersion[:1] != "v" && o.IsPreview == nil {
-			orchVersion = fmt.Sprintf("v%s", *o.OrchestratorVersion)
-		}
-		orchestratorversions = append(orchestratorversions, orchVersion)
-	}
-	semver.Sort(orchestratorversions)
-	maxVersion = orchestratorversions[len(orchestratorversions)-1]
-	if semver.IsValid(maxVersion) {
-		foundWorkingVersion = true
-	}
-	if !foundWorkingVersion {
+	maxVersionFound, found := getMaxVersion(*result.Orchestrators, maxVersion)
+	if !found {
 		return "", errors.New("latest stable AKS version not found")
 	}
-	return maxVersion, nil
+	return maxVersionFound, nil
+}
+
+func getMaxVersion(orchestrators []containerservice.OrchestratorVersionProfile, max string) (string, bool) {
+	var foundWorkingVersion bool
+	var maxVersionFound string
+	var rationalizedOrchestrators []string
+	var maxVersion string
+	var err error
+	if max != "" {
+		maxVersion, err = semverPrependV(max)
+		if err != nil {
+			return "", false
+		}
+	}
+	for _, o := range orchestrators {
+		ver, err := semverPrependV(*o.OrchestratorVersion)
+		if err != nil {
+			return "", false
+		}
+		rationalizedOrchestrators = append(rationalizedOrchestrators, ver)
+	}
+	for _, o := range rationalizedOrchestrators {
+		if maxVersion == "" ||
+			semver.MajorMinor(semver.Canonical(maxVersion)) == semver.MajorMinor(o) ||
+			semver.Compare(o, maxVersion) <= 0 {
+			if semver.Compare(o, maxVersionFound) == 1 {
+				maxVersionFound = o
+			}
+		}
+	}
+	maxVersionFound, err = semverPrependV(maxVersionFound)
+	if err != nil {
+		return "", false
+	}
+	if semver.IsValid(maxVersionFound) {
+		foundWorkingVersion = true
+	}
+	return maxVersionFound, foundWorkingVersion
+}
+
+func semverPrependV(version string) (string, error) {
+	ret := version
+	if version != "" {
+		if version[:1] != "v" {
+			ret = "v" + version
+		}
+	}
+	if !semver.IsValid(semver.Canonical(ret)) {
+		return "", errors.New("not a valid semver")
+	}
+	return ret, nil
 }

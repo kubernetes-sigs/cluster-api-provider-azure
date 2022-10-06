@@ -71,6 +71,7 @@ const (
 	JobName                        = "JOB_NAME"
 	Timestamp                      = "TIMESTAMP"
 	AKSKubernetesVersion           = "AKS_KUBERNETES_VERSION"
+	AKSKubernetesMaxVersion        = "AKS_KUBERNETES_MAX_VERSION"
 	SecurityScanFailThreshold      = "SECURITY_SCAN_FAIL_THRESHOLD"
 	SecurityScanContainer          = "SECURITY_SCAN_CONTAINER"
 	ManagedClustersResourceType    = "managedClusters"
