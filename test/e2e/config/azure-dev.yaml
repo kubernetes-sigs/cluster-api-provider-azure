@@ -148,7 +148,7 @@ providers:
         new: "--v=2"
 
 variables:
-  AKS_KUBERNETES_VERSION: "latest"
+  AKS_KUBERNETES_VERSION: "stable-1.23"
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-stable-1.23}"
   ETCD_VERSION_UPGRADE_TO: "3.5.3-0"
   COREDNS_VERSION_UPGRADE_TO: "v1.8.6"
