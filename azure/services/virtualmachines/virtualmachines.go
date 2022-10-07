@@ -73,7 +73,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates a virtual machine.
+// Reconcile idempotently creates or updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.Reconcile")
 	defer done()
@@ -86,7 +86,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
-	result, err := s.CreateResource(ctx, vmSpec, serviceName)
+	result, err := s.CreateOrUpdateResource(ctx, vmSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
 	// Set the DiskReady condition here since the disk gets created with the VM.
 	s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)

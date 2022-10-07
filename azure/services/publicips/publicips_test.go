@@ -129,10 +129,10 @@ func TestReconcilePublicIP(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
-				r.CreateResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePublicIPSpec3, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePublicIPSpecIpv6, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec3, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpecIpv6, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, nil)
 			},
 		},
@@ -141,10 +141,10 @@ func TestReconcilePublicIP(t *testing.T) {
 			expectedError: internalError.Error(),
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
-				r.CreateResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePublicIPSpec3, serviceName).Return(nil, internalError)
-				r.CreateResource(gomockinternal.AContext(), &fakePublicIPSpecIpv6, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec3, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpecIpv6, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, internalError)
 			},
 		},

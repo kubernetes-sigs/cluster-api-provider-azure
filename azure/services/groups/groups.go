@@ -62,7 +62,7 @@ func (s *Service) Name() string {
 	return ServiceName
 }
 
-// Reconcile gets/creates/updates a resource group.
+// Reconcile idempotently creates or updates a resource group.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Reconcile")
 	defer done()
@@ -75,7 +75,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
-	_, err := s.CreateResource(ctx, groupSpec, ServiceName)
+	_, err := s.CreateOrUpdateResource(ctx, groupSpec, ServiceName)
 	s.Scope.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, err)
 	return err
 }

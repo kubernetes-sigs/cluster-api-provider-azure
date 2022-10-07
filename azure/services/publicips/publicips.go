@@ -60,7 +60,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates a public ip.
+// Reconcile idempotently creates or updates a public IP.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Reconcile")
 	defer done()
@@ -75,7 +75,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var result error
 	for _, publicIPSpec := range specs {
-		if _, err := s.CreateResource(ctx, publicIPSpec, serviceName); err != nil {
+		if _, err := s.CreateOrUpdateResource(ctx, publicIPSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}

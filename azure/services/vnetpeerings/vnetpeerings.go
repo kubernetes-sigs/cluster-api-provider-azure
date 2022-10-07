@@ -55,7 +55,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates a peering.
+// Reconcile idempotently creates or updates a peering.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.Service.Reconcile")
 	defer done()
@@ -73,7 +73,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var result error
 	for _, peeringSpec := range specs {
-		if _, err := s.CreateResource(ctx, peeringSpec, serviceName); err != nil {
+		if _, err := s.CreateOrUpdateResource(ctx, peeringSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}

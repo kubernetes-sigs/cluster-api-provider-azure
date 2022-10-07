@@ -95,7 +95,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
-				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(natGateway1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(natGateway1, nil)
 				s.SetNatGatewayIDInSubnets(natGatewaySpec1.Name, *natGateway1.ID)
 				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, nil)
 			},
@@ -107,7 +107,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
-				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, internalError)
 			},
 		},
@@ -118,7 +118,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.NatGatewaySpecs().Return([]azure.ResourceSpecGetter{&natGatewaySpec1})
-				r.CreateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return("not a nat gateway", nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &natGatewaySpec1, serviceName).Return("not a nat gateway", nil)
 				s.UpdatePutStatus(infrav1.NATGatewaysReadyCondition, serviceName, gomockinternal.ErrStrEq("created resource string is not a network.NatGateway"))
 			},
 		},

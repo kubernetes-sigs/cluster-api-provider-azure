@@ -65,7 +65,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile creates and updates a virtual network.
+// Reconcile idempotently creates or updates a virtual network.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.Service.Reconcile")
 	defer done()
@@ -78,7 +78,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
-	result, err := s.CreateResource(ctx, vnetSpec, serviceName)
+	result, err := s.CreateOrUpdateResource(ctx, vnetSpec, serviceName)
 	if err == nil && result != nil {
 		existingVnet, ok := result.(network.VirtualNetwork)
 		if !ok {

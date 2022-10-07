@@ -60,7 +60,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(&fakeAzureBastionSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeAzureBastionSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAzureBastionSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.BastionHostReadyCondition, serviceName, nil)
 			},
 		},
@@ -76,7 +76,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			expectedError: internalError.Error(),
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(&fakeAzureBastionSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeAzureBastionSpec, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAzureBastionSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.BastionHostReadyCondition, serviceName, internalError)
 			},
 		},

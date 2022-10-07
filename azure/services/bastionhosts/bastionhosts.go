@@ -55,7 +55,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates a bastion host.
+// Reconcile idempotently creates or updates a bastion host.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "bastionhosts.Service.Reconcile")
 	defer done()
@@ -65,7 +65,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	var resultingErr error
 	if bastionSpec := s.Scope.AzureBastionSpec(); bastionSpec != nil {
-		_, resultingErr = s.CreateResource(ctx, bastionSpec, serviceName)
+		_, resultingErr = s.CreateOrUpdateResource(ctx, bastionSpec, serviceName)
 	} else {
 		return nil
 	}

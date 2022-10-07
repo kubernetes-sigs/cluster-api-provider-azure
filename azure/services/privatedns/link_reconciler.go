@@ -52,7 +52,7 @@ func (s *Service) reconcileLinks(ctx context.Context, links []azure.ResourceSpec
 
 		// we consider VnetLinks as managed if at least of the links is managed.
 		managed = true
-		if _, err := s.vnetLinkReconciler.CreateResource(ctx, linkSpec, serviceName); err != nil {
+		if _, err := s.vnetLinkReconciler.CreateOrUpdateResource(ctx, linkSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resErr == nil {
 				resErr = err
 			}

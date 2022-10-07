@@ -52,7 +52,7 @@ func TestReconcile(t *testing.T) {
 			expectedError: "some unexpected error occurred",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
-				r.CreateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil, errors.New("some unexpected error occurred"))
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil, errors.New("some unexpected error occurred"))
 				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("some unexpected error occurred"))
 			},
 		},
@@ -61,7 +61,7 @@ func TestReconcile(t *testing.T) {
 			expectedError: "",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
-				r.CreateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 						Fqdn:              pointer.String("my-managedcluster-fqdn"),
 						ProvisioningState: pointer.String("Succeeded"),
@@ -81,7 +81,7 @@ func TestReconcile(t *testing.T) {
 			expectedError: "failed to get credentials for managed cluster: internal server error",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
-				r.CreateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 						Fqdn:              pointer.String("my-managedcluster-fqdn"),
 						ProvisioningState: pointer.String("Succeeded"),

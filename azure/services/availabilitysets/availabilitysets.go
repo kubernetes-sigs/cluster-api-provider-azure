@@ -62,7 +62,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile creates or updates availability sets.
+// Reconcile idempotently creates or updates an availability set.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "availabilitysets.Service.Reconcile")
 	defer done()
@@ -72,7 +72,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	var err error
 	if setSpec := s.Scope.AvailabilitySetSpec(); setSpec != nil {
-		_, err = s.CreateResource(ctx, setSpec, serviceName)
+		_, err = s.CreateOrUpdateResource(ctx, setSpec, serviceName)
 	} else {
 		log.V(2).Info("skip creation when no availability set spec is found")
 		return nil

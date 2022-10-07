@@ -66,7 +66,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile idempotently creates or updates a managed cluster, if possible.
+// Reconcile idempotently creates or updates a managed cluster.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Reconcile")
 	defer done()
@@ -79,7 +79,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
-	result, resultErr := s.CreateResource(ctx, managedClusterSpec, serviceName)
+	result, resultErr := s.CreateOrUpdateResource(ctx, managedClusterSpec, serviceName)
 	if resultErr == nil {
 		managedCluster, ok := result.(containerservice.ManagedCluster)
 		if !ok {

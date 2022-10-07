@@ -113,8 +113,8 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				m.List(gomockinternal.AContext(), fakeGroupName, fakeLBName).Return(noExistingRules, nil)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{getFakeNatSpecWithoutPort(fakeNatSpec), getFakeNatSpecWithoutPort(fakeNatSpec2)})
 				gomock.InOrder(
-					r.CreateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 22), serviceName).Return(nil, nil),
-					r.CreateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec2, 2201), serviceName).Return(nil, nil),
+					r.CreateOrUpdateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 22), serviceName).Return(nil, nil),
+					r.CreateOrUpdateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec2, 2201), serviceName).Return(nil, nil),
 					s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil),
 				)
 			},
@@ -130,7 +130,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(fakeExistingRules, nil)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{getFakeNatSpecWithoutPort(fakeNatSpec)})
 				gomock.InOrder(
-					r.CreateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 2202), serviceName).Return(nil, nil),
+					r.CreateOrUpdateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 2202), serviceName).Return(nil, nil),
 					s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, nil),
 				)
 			},
@@ -168,7 +168,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(fakeExistingRules, nil)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				gomock.InOrder(
-					r.CreateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 2202), serviceName).Return(nil, internalError),
+					r.CreateOrUpdateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 2202), serviceName).Return(nil, internalError),
 					s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, internalError),
 				)
 			},

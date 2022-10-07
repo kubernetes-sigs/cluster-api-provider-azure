@@ -56,6 +56,6 @@ type Deleter interface {
 
 // Reconciler is a generic interface used to perform asynchronous reconciliation of Azure resources.
 type Reconciler interface {
-	CreateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (result interface{}, err error)
+	CreateOrUpdateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (result interface{}, err error)
 	DeleteResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (err error)
 }

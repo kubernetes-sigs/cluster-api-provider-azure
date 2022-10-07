@@ -56,7 +56,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile creates or updates the VM extension.
+// Reconcile idempotently creates or updates a VM extension.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "vmextensions.Service.Reconcile")
 	defer done()
@@ -74,7 +74,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var resultErr error
 	for _, extensionSpec := range specs {
-		_, err := s.CreateResource(ctx, extensionSpec, serviceName)
+		_, err := s.CreateOrUpdateResource(ctx, extensionSpec, serviceName)
 		if err != nil {
 			if !azure.IsOperationNotDoneError(err) || resultErr == nil {
 				resultErr = err

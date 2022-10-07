@@ -59,7 +59,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates an inbound NAT rule.
+// Reconcile idempotently creates or updates an inbound NAT rule.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.Service.Reconcile")
 	defer done()
@@ -107,7 +107,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		natRule.SSHFrontendPort = &sshFrontendPort
 		// Add the SSH frontend port to the list of ports in use
 		portsInUse[sshFrontendPort] = struct{}{}
-		if _, err := s.CreateResource(ctx, natRule, serviceName); err != nil {
+		if _, err := s.CreateOrUpdateResource(ctx, natRule, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
