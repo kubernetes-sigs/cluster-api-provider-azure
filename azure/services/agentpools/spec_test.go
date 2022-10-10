@@ -373,3 +373,82 @@ func TestParameters(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeSystemNodeLabels(t *testing.T) {
+	testcases := []struct {
+		name       string
+		capzLabels map[string]*string
+		aksLabels  map[string]*string
+		expected   map[string]*string
+	}{
+		{
+			name: "update an existing label",
+			capzLabels: map[string]*string{
+				"foo": to.StringPtr("bar"),
+			},
+			aksLabels: map[string]*string{
+				"foo": to.StringPtr("baz"),
+			},
+			expected: map[string]*string{
+				"foo": to.StringPtr("bar"),
+			},
+		},
+		{
+			name:       "delete labels",
+			capzLabels: map[string]*string{},
+			aksLabels: map[string]*string{
+				"foo":   to.StringPtr("bar"),
+				"hello": to.StringPtr("world"),
+			},
+			expected: map[string]*string{},
+		},
+		{
+			name: "delete one label",
+			capzLabels: map[string]*string{
+				"foo": to.StringPtr("bar"),
+			},
+			aksLabels: map[string]*string{
+				"foo":   to.StringPtr("bar"),
+				"hello": to.StringPtr("world"),
+			},
+			expected: map[string]*string{
+				"foo": to.StringPtr("bar"),
+			},
+		},
+		{
+			name: "retain system label during update",
+			capzLabels: map[string]*string{
+				"foo": to.StringPtr("bar"),
+			},
+			aksLabels: map[string]*string{
+				"kubernetes.azure.com/scalesetpriority": to.StringPtr("spot"),
+			},
+			expected: map[string]*string{
+				"foo":                                   to.StringPtr("bar"),
+				"kubernetes.azure.com/scalesetpriority": to.StringPtr("spot"),
+			},
+		},
+		{
+			name:       "retain system label during delete",
+			capzLabels: map[string]*string{},
+			aksLabels: map[string]*string{
+				"kubernetes.azure.com/scalesetpriority": to.StringPtr("spot"),
+			},
+			expected: map[string]*string{
+				"kubernetes.azure.com/scalesetpriority": to.StringPtr("spot"),
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Testing " + tc.name)
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
+
+			ret := mergeSystemNodeLabels(tc.capzLabels, tc.aksLabels)
+			g.Expect(ret).To(Equal(tc.expected))
+		})
+	}
+}

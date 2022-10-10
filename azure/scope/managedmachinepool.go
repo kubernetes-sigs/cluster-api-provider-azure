@@ -176,6 +176,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		EnableUltraSSD:     managedMachinePool.Spec.EnableUltraSSD,
 		Headers:            maps.FilterByKeyPrefix(agentPoolAnnotations, azure.CustomHeaderPrefix),
 		EnableNodePublicIP: managedMachinePool.Spec.EnableNodePublicIP,
+		ScaleSetPriority:   managedMachinePool.Spec.ScaleSetPriority,
 	}
 
 	if managedMachinePool.Spec.OSDiskSizeGB != nil {

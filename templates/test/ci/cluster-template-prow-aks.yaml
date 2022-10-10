@@ -116,6 +116,7 @@ spec:
     type: shared
   osDiskSizeGB: 40
   osDiskType: Ephemeral
+  scaleSetPriority: Regular
   sku: ${AZURE_NODE_MACHINE_TYPE}
   taints:
   - effect: NoSchedule

@@ -262,6 +262,13 @@ spec:
                 items:
                   type: string
                 type: array
+              scaleSetPriority:
+                description: 'ScaleSetPriority specifies the ScaleSetPriority value.
+                  Default to Regular. Possible values include: ''Regular'', ''Spot'''
+                enum:
+                - Regular
+                - Spot
+                type: string
               scaling:
                 description: Scaling specifies the autoscaling parameters for the
                   node pool.

@@ -99,6 +99,7 @@ spec:
   enableNodePublicIP: false
   mode: User
   osDiskSizeGB: 40
+  scaleSetPriority: Regular
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

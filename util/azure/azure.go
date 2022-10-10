@@ -24,6 +24,9 @@ import (
 
 var azureResourceGroupNameRE = regexp.MustCompile(`.*/subscriptions/(?:.*)/resourceGroups/(.+)/providers/(?:.*)`)
 
+// AzureSystemNodeLabelPrefix is a standard node label prefix for Azure features, e.g., kubernetes.azure.com/scalesetpriority.
+const AzureSystemNodeLabelPrefix = "kubernetes.azure.com"
+
 // ConvertResourceGroupNameToLower converts the resource group name in the resource ID to be lowered.
 // Inspired by https://github.com/kubernetes-sigs/cloud-provider-azure/blob/88c9b89611e7c1fcbd39266928cce8406eb0e728/pkg/provider/azure_wrap.go#L409
 func ConvertResourceGroupNameToLower(resourceID string) (string, error) {
@@ -34,4 +37,9 @@ func ConvertResourceGroupNameToLower(resourceID string) (string, error) {
 
 	resourceGroup := matches[1]
 	return strings.Replace(resourceID, resourceGroup, strings.ToLower(resourceGroup), 1), nil
+}
+
+// IsAzureSystemNodeLabelKey is a helper function that determines whether a node label key is an Azure "system" label.
+func IsAzureSystemNodeLabelKey(labelKey string) bool {
+	return strings.HasPrefix(labelKey, AzureSystemNodeLabelPrefix)
 }

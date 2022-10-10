@@ -28,6 +28,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,6 +60,7 @@ func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 		m.validateMaxPods,
 		m.validateOSType,
 		m.validateName,
+		m.validateNodeLabels,
 	}
 
 	var errs []error
@@ -75,6 +77,14 @@ func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client client.Client) error {
 	old := oldRaw.(*AzureManagedMachinePool)
 	var allErrs field.ErrorList
+
+	if err := m.validateNodeLabels(); err != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "NodeLabels"),
+				m.Spec.NodeLabels,
+				err.Error()))
+	}
 
 	if old.Spec.OSType != nil {
 		// Prevent OSType modification if it was already set to some value
@@ -189,6 +199,13 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
+	if !reflect.DeepEqual(m.Spec.ScaleSetPriority, old.Spec.ScaleSetPriority) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "ScaleSetPriority"),
+				m.Spec.ScaleSetPriority, "field is immutable"),
+		)
+	}
+
 	if err := validateBoolPtrImmutable(
 		field.NewPath("Spec", "EnableUltraSSD"),
 		old.Spec.EnableUltraSSD,
@@ -292,6 +309,19 @@ func (m *AzureManagedMachinePool) validateName() error {
 				field.NewPath("Name"),
 				m.Name,
 				"Windows agent pool name can not be longer than 6 characters.")
+		}
+	}
+
+	return nil
+}
+
+func (m *AzureManagedMachinePool) validateNodeLabels() error {
+	for key := range m.Spec.NodeLabels {
+		if azureutil.IsAzureSystemNodeLabelKey(key) {
+			return field.Invalid(
+				field.NewPath("Spec", "NodeLabels"),
+				key,
+				fmt.Sprintf("Node pool label key must not start with %s", azureutil.AzureSystemNodeLabelPrefix))
 		}
 	}
 
