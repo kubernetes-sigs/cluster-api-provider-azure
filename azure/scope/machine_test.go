@@ -805,6 +805,90 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "If VM extensions are explicitly disabled, it returns empty",
+			machineScope: MachineScope{
+				Machine: &clusterv1.Machine{},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: "Linux",
+						},
+						DisableBootstrappingVMExtensions: to.BoolPtr(true),
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Environment: autorestazure.Environment{
+								Name: autorestazure.PublicCloud.Name,
+							},
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{},
+		},
+		{
+			name: "If DisableBootstrappingVMExtensions is set to False, it returns ExtensionSpec",
+			machineScope: MachineScope{
+				Machine: &clusterv1.Machine{},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: "Linux",
+						},
+						DisableBootstrappingVMExtensions: to.BoolPtr(false),
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Environment: autorestazure.Environment{
+								Name: autorestazure.PublicCloud.Name,
+							},
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&vmextensions.VMExtensionSpec{
+					ExtensionSpec: azure.ExtensionSpec{
+						Name:      "CAPZ.Linux.Bootstrapping",
+						VMName:    "machine-name",
+						Publisher: "Microsoft.Azure.ContainerUpstream",
+						Version:   "1.0",
+						ProtectedSettings: map[string]string{
+							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+						},
+					},
+					ResourceGroup: "my-rg",
+					Location:      "westus",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -348,14 +348,17 @@ func (m *MachineScope) VMExtensionSpecs() []azure.ResourceSpecGetter {
 		})
 	}
 
-	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment(), m.Name())
+	disableBootstrappingVMExtensions := m.AzureMachine.Spec.DisableBootstrappingVMExtensions != nil && *m.AzureMachine.Spec.DisableBootstrappingVMExtensions
+	if !disableBootstrappingVMExtensions {
+		bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment(), m.Name())
 
-	if bootstrapExtensionSpec != nil {
-		extensionSpecs = append(extensionSpecs, &vmextensions.VMExtensionSpec{
-			ExtensionSpec: *bootstrapExtensionSpec,
-			ResourceGroup: m.ResourceGroup(),
-			Location:      m.Location(),
-		})
+		if bootstrapExtensionSpec != nil {
+			extensionSpecs = append(extensionSpecs, &vmextensions.VMExtensionSpec{
+				ExtensionSpec: *bootstrapExtensionSpec,
+				ResourceGroup: m.ResourceGroup(),
+				Location:      m.Location(),
+			})
+		}
 	}
 
 	return extensionSpecs
