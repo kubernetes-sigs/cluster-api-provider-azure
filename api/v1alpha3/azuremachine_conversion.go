@@ -66,6 +66,8 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.VMExtensions = restored.Spec.VMExtensions
 	}
 
+	dst.Spec.DisableBootstrappingVMExtensions = restored.Spec.DisableBootstrappingVMExtensions
+
 	dst.Spec.SubnetName = restored.Spec.SubnetName
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates

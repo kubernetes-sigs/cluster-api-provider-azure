@@ -123,6 +123,11 @@ type AzureMachineSpec struct {
 	// +optional
 	DNSServers []string `json:"dnsServers,omitempty"`
 
+	// DisableBootstrappingVMExtensions explicitly disables bootstrapping VM extensions
+	// for all platforms.
+	// +optional
+	DisableBootstrappingVMExtensions *bool `json:"disableBootstrappingVMExtensions,omitempty"`
+
 	// VMExtensions specifies a list of extensions to be added to the virtual machine.
 	// +optional
 	VMExtensions []VMExtension `json:"vmExtensions,omitempty"`

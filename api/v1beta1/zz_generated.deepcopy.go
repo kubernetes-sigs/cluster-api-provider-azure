@@ -628,6 +628,11 @@ func (in *AzureMachineSpec) DeepCopyInto(out *AzureMachineSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.DisableBootstrappingVMExtensions != nil {
+		in, out := &in.DisableBootstrappingVMExtensions, &out.DisableBootstrappingVMExtensions
+		*out = new(bool)
+		**out = **in
+	}
 	if in.VMExtensions != nil {
 		in, out := &in.VMExtensions, &out.VMExtensions
 		*out = make([]VMExtension, len(*in))

@@ -54,6 +54,8 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Spec.VMExtensions = restored.Spec.Template.Spec.VMExtensions
 	}
 
+	dst.Spec.Template.Spec.DisableBootstrappingVMExtensions = restored.Spec.Template.Spec.DisableBootstrappingVMExtensions
+
 	return nil
 }
 

@@ -52,6 +52,8 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.VMExtensions = restored.Spec.VMExtensions
 	}
 
+	dst.Spec.DisableBootstrappingVMExtensions = restored.Spec.DisableBootstrappingVMExtensions
+
 	return nil
 }
 
