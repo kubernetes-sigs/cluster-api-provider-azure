@@ -19,6 +19,7 @@ package async
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -39,6 +40,11 @@ type FutureHandler interface {
 // Getter is an interface that can get a resource.
 type Getter interface {
 	Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error)
+}
+
+// TagsGetter is an interface that can get the tags for a scope.
+type TagsGetter interface {
+	GetAtScope(ctx context.Context, spec azure.TagsSpecGetter) (result resources.TagsResource, err error)
 }
 
 // Creator is a client that can create or update a resource asynchronously.

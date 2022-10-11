@@ -40,14 +40,14 @@ type TagScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope TagScope
-	client
+	Client
 }
 
 // New creates a new service.
 func New(scope TagScope) *Service {
 	return &Service{
 		Scope:  scope,
-		client: newClient(scope),
+		Client: NewClient(scope),
 	}
 }
 
@@ -70,7 +70,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if params == nil {
 			return nil
 		}
-		if _, err := s.client.UpdateAtScope(ctx, spec, *params); err != nil {
+		if _, err := s.Client.UpdateAtScope(ctx, spec, *params); err != nil {
 			return errors.Wrapf(err, "cannot apply operation `%s` on tags", params.Operation)
 		}
 
@@ -78,7 +78,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	for _, tagsSpec := range specs {
-		existingTags, err := s.client.GetAtScope(ctx, tagsSpec)
+		existingTags, err := s.Client.GetAtScope(ctx, tagsSpec)
 		if err != nil {
 			return errors.Wrap(err, "failed to get existing tags")
 		}

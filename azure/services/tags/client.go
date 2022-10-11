@@ -25,23 +25,23 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// client wraps go-sdk.
-type client interface {
+// Client wraps go-sdk.
+type Client interface {
 	GetAtScope(context.Context, azure.TagsSpecGetter) (resources.TagsResource, error)
 	UpdateAtScope(context.Context, azure.TagsSpecGetter, resources.TagsPatchResource) (resources.TagsResource, error)
 }
 
-// azureClient contains the Azure go-sdk Client.
-type azureClient struct {
+// AzureClient contains the Azure go-sdk Client.
+type AzureClient struct {
 	tags resources.TagsClient
 }
 
-var _ client = (*azureClient)(nil)
+var _ Client = (*AzureClient)(nil)
 
-// newClient creates a new tags client from subscription ID.
-func newClient(auth azure.Authorizer) *azureClient {
+// NewClient creates a new tags client from subscription ID.
+func NewClient(auth azure.Authorizer) *AzureClient {
 	c := newTagsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &azureClient{c}
+	return &AzureClient{c}
 }
 
 // newTagsClient creates a new tags client from subscription ID.
@@ -52,7 +52,7 @@ func newTagsClient(subscriptionID string, baseURI string, authorizer autorest.Au
 }
 
 // GetAtScope sends the get at scope request.
-func (ac *azureClient) GetAtScope(ctx context.Context, spec azure.TagsSpecGetter) (resources.TagsResource, error) {
+func (ac *AzureClient) GetAtScope(ctx context.Context, spec azure.TagsSpecGetter) (resources.TagsResource, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.GetAtScope")
 	defer done()
 
@@ -61,7 +61,7 @@ func (ac *azureClient) GetAtScope(ctx context.Context, spec azure.TagsSpecGetter
 
 // UpdateAtScope this operation allows replacing, merging or selectively deleting tags on the specified resource or
 // subscription.
-func (ac *azureClient) UpdateAtScope(ctx context.Context, spec azure.TagsSpecGetter, parameters resources.TagsPatchResource) (resources.TagsResource, error) {
+func (ac *AzureClient) UpdateAtScope(ctx context.Context, spec azure.TagsSpecGetter, parameters resources.TagsPatchResource) (resources.TagsResource, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.UpdateAtScope")
 	defer done()
 
