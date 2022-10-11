@@ -40,9 +40,12 @@ func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions, diffDiskSettings *in
 			MaxPrice: &maxPrice,
 		}
 	}
-	evictionPolicy := compute.VirtualMachineEvictionPolicyTypesDeallocate
-	if diffDiskSettings != nil && diffDiskSettings.Option == "Local" {
-		evictionPolicy = compute.VirtualMachineEvictionPolicyTypesDelete
+
+	// Set the spot vm eviction policy if provided.
+	var evictionPolicy compute.VirtualMachineEvictionPolicyTypes
+	if spotVMOptions.EvictionPolicy != nil {
+		evictionPolicy = compute.VirtualMachineEvictionPolicyTypes(*spotVMOptions.EvictionPolicy)
 	}
+
 	return compute.VirtualMachinePriorityTypesSpot, evictionPolicy, billingProfile, nil
 }

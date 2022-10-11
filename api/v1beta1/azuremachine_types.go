@@ -133,6 +133,10 @@ type SpotVMOptions struct {
 	// MaxPrice defines the maximum price the user is willing to pay for Spot VM instances
 	// +optional
 	MaxPrice *resource.Quantity `json:"maxPrice,omitempty"`
+
+	// EvictionPolicy defines the behavior of the virtual machine when it is evicted. It can be either Delete or Deallocate.
+	// +optional
+	EvictionPolicy *SpotEvictionPolicy `json:"evictionPolicy,omitempty"`
 }
 
 // AzureMachineStatus defines the observed state of AzureMachine.

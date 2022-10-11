@@ -66,6 +66,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.VMExtensions = restored.Spec.VMExtensions
 	}
 
+	if restored.Spec.SpotVMOptions != nil && restored.Spec.SpotVMOptions.EvictionPolicy != nil {
+		dst.Spec.SpotVMOptions.EvictionPolicy = restored.Spec.SpotVMOptions.EvictionPolicy
+	}
+
 	dst.Spec.SubnetName = restored.Spec.SubnetName
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
@@ -183,4 +187,9 @@ func Convert_v1alpha3_AzureMarketplaceImage_To_v1beta1_AzureMarketplaceImage(in 
 // Convert_v1beta1_Image_To_v1alpha3_Image converts an image from v1beta1 to v1alpha3.
 func Convert_v1beta1_Image_To_v1alpha3_Image(in *infrav1.Image, out *Image, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_Image_To_v1alpha3_Image(in, out, s)
+}
+
+// Convert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions converts SpotVMOptions from v1beta1 to v1alpha3.
+func Convert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions(in *infrav1.SpotVMOptions, out *SpotVMOptions, s apiconversion.Scope) error {
+	return autoConvert_v1beta1_SpotVMOptions_To_v1alpha3_SpotVMOptions(in, out, s)
 }

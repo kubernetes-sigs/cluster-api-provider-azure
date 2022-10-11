@@ -41,6 +41,7 @@ const (
 	defaultSubscriptionID = "123"
 	defaultResourceGroup  = "my-rg"
 	defaultVMSSName       = "my-vmss"
+	vmSizeEPH             = "VM_SIZE_EPH"
 )
 
 func init() {
@@ -276,33 +277,49 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss := newDefaultVMSS("VM_SIZE")
 				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
-				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.VirtualMachineEvictionPolicyTypesDeallocate
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
 			},
 		},
 		{
-			name:          "should start creating a vmss with spot vm and delete evictionPolicy",
+			name:          "should start creating a vmss with spot vm and ephemeral disk",
 			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
-				spec.Size = "VM_SIZE_EPH"
+				spec.Size = vmSizeEPH
 				spec.SpotVMOptions = &infrav1.SpotVMOptions{}
 				spec.OSDisk.DiffDiskSettings = &infrav1.DiffDiskSettings{
 					Option: string(compute.DiffDiskOptionsLocal),
 				}
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := newDefaultVMSS("VM_SIZE_EPH")
+				vmss := newDefaultVMSS(vmSizeEPH)
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
 					Option: compute.DiffDiskOptionsLocal,
 				}
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
+					Return(putFuture, nil)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(vmSizeEPH), putFuture)
+			},
+		},
+		{
+			name:          "should start creating a vmss with spot vm and a defined delete evictionPolicy",
+			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				spec := newDefaultVMSSSpec()
+				spec.Size = vmSizeEPH
+				deletePolicy := infrav1.SpotEvictionPolicyDelete
+				spec.SpotVMOptions = &infrav1.SpotVMOptions{EvictionPolicy: &deletePolicy}
+				s.ScaleSetSpec().Return(spec).AnyTimes()
+				setupDefaultVMSSStartCreatingExpectations(s, m)
+				vmss := newDefaultVMSS(vmSizeEPH)
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.VirtualMachineEvictionPolicyTypesDelete
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE_EPH"), putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(vmSizeEPH), putFuture)
 			},
 		},
 		{
@@ -330,7 +347,6 @@ func TestReconcileVMSS(t *testing.T) {
 					MaxPrice: to.Float64Ptr(0.001),
 				}
 				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
-				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.VirtualMachineEvictionPolicyTypesDeallocate
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
