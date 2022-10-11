@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -995,12 +996,17 @@ func (s *ClusterScope) SetAnnotation(key, value string) {
 }
 
 // TagsSpecs returns the tag specs for the AzureCluster.
-func (s *ClusterScope) TagsSpecs() []azure.TagsSpec {
-	return []azure.TagsSpec{
-		{
-			Scope:      azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
-			Tags:       s.AdditionalTags(),
-			Annotation: azure.RGTagsLastAppliedAnnotation,
-		},
+func (s *ClusterScope) TagsSpecs() ([]azure.TagsSpecGetter, error) {
+	annotationMap, err := s.AnnotationJSON(azure.RGTagsLastAppliedAnnotation)
+	if err != nil {
+		return nil, err
 	}
+
+	return []azure.TagsSpecGetter{
+		&tags.TagsSpec{
+			Scope:           azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
+			Tags:            s.AdditionalTags(),
+			LastAppliedTags: annotationMap,
+		},
+	}, nil
 }

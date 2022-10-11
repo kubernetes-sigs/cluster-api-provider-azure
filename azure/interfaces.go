@@ -19,6 +19,7 @@ package azure
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -123,4 +124,15 @@ type ResourceSpecGetterWithHeaders interface {
 	ResourceSpecGetter
 	// CustomHeaders returns the headers that should be added to Azure API calls.
 	CustomHeaders() map[string]string
+}
+
+type TagsSpecGetter interface {
+	// TagsScope returns the scope of a set of tags.
+	TagsScope() string
+	// MergeParameters returns the merge parameters for a set of tags.
+	MergeParameters(existing *resources.TagsResource) (*resources.TagsPatchResource, error)
+	// NewAnnotation returns the new annotation for a set of tags.
+	NewAnnotation(existing *resources.TagsResource) (map[string]interface{}, error)
+	// DeleteParameters returns the delete parameters for a set of tags.
+	DeleteParameters(existing *resources.TagsResource) (*resources.TagsPatchResource, error)
 }

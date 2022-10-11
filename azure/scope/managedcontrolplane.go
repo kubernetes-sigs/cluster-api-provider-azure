@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -642,12 +643,17 @@ func (s *ManagedControlPlaneScope) SetAnnotation(key, value string) {
 }
 
 // TagsSpecs returns the tag specs for the ManagedControlPlane.
-func (s *ManagedControlPlaneScope) TagsSpecs() []azure.TagsSpec {
-	return []azure.TagsSpec{
-		{
-			Scope:      azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
-			Tags:       s.AdditionalTags(),
-			Annotation: azure.RGTagsLastAppliedAnnotation,
-		},
+func (s *ManagedControlPlaneScope) TagsSpecs() ([]azure.TagsSpecGetter, error) {
+	annotationMap, err := s.AnnotationJSON(azure.RGTagsLastAppliedAnnotation)
+	if err != nil {
+		return nil, err
 	}
+
+	return []azure.TagsSpecGetter{
+		&tags.TagsSpec{
+			Scope:           azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
+			Tags:            s.AdditionalTags(),
+			LastAppliedTags: annotationMap,
+		},
+	}, nil
 }

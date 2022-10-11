@@ -179,11 +179,12 @@ func (mr *MockTagScopeMockRecorder) SubscriptionID() *gomock.Call {
 }
 
 // TagsSpecs mocks base method.
-func (m *MockTagScope) TagsSpecs() []azure.TagsSpec {
+func (m *MockTagScope) TagsSpecs() ([]azure.TagsSpecGetter, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TagsSpecs")
-	ret0, _ := ret[0].([]azure.TagsSpec)
-	return ret0
+	ret0, _ := ret[0].([]azure.TagsSpecGetter)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // TagsSpecs indicates an expected call of TagsSpecs.

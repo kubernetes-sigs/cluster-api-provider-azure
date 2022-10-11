@@ -26,6 +26,7 @@ import (
 
 	resources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	gomock "github.com/golang/mock/gomock"
+	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // Mockclient is a mock of client interface.
@@ -52,7 +53,7 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 }
 
 // GetAtScope mocks base method.
-func (m *Mockclient) GetAtScope(arg0 context.Context, arg1 string) (resources.TagsResource, error) {
+func (m *Mockclient) GetAtScope(arg0 context.Context, arg1 azure.TagsSpecGetter) (resources.TagsResource, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAtScope", arg0, arg1)
 	ret0, _ := ret[0].(resources.TagsResource)
@@ -67,7 +68,7 @@ func (mr *MockclientMockRecorder) GetAtScope(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // UpdateAtScope mocks base method.
-func (m *Mockclient) UpdateAtScope(arg0 context.Context, arg1 string, arg2 resources.TagsPatchResource) (resources.TagsResource, error) {
+func (m *Mockclient) UpdateAtScope(arg0 context.Context, arg1 azure.TagsSpecGetter, arg2 resources.TagsPatchResource) (resources.TagsResource, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAtScope", arg0, arg1, arg2)
 	ret0, _ := ret[0].(resources.TagsResource)

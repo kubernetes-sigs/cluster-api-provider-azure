@@ -67,16 +67,6 @@ type ScaleSetSpec struct {
 	VMExtensions                 []infrav1.VMExtension
 }
 
-// TagsSpec defines the specification for a set of tags.
-type TagsSpec struct {
-	Scope string
-	Tags  infrav1.Tags
-	// Annotation is the key which stores the last applied tags as value in JSON format.
-	// The last applied tags are used to find out which tags are being managed by CAPZ
-	// and if any has to be deleted by comparing it with the new desired tags
-	Annotation string
-}
-
 // ExtensionSpec defines the specification for a VM or VMSS extension.
 type ExtensionSpec struct {
 	Name              string
