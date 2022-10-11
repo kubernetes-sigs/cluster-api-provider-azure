@@ -69,6 +69,12 @@ Additionally, we need to update the `type: InfrastructureProvider` spec in [azur
 
 ### Create a tag
 
+Before you create a GPG-signed tag you may need to prepare your local environment's TTY to properly hoist your signed key into the flow of the `git tag` command:
+
+```sh
+$ export GPG_TTY=$(tty)
+```
+
 - Prepare the release branch. :warning: Always release from the release branch and not from main!
   - If releasing a patch release, check out the existing release branch and make sure you have the latest changes:
     - `git checkout release-1.x`
@@ -106,6 +112,10 @@ Using [the above example PR](https://github.com/kubernetes/k8s.io/pull/4284), to
 ### Release in GitHub
 
 - Manually format and categorize the release notes
+- Ensure that the promoted release image is live. For example:
+```sh
+$ docker pull registry.k8s.io/cluster-api-azure/cluster-api-azure-controller:${RELEASE_TAG}
+```
 - Publish release
 - [Announce][release-announcement] the release
 
