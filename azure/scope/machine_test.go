@@ -861,10 +861,14 @@ func TestMachineScope_Subnet(t *testing.T) {
 							NetworkSpec: infrav1.NetworkSpec{
 								Subnets: []infrav1.SubnetSpec{
 									{
-										Name: "machine-name-subnet",
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Name: "machine-name-subnet",
+										},
 									},
 									{
-										Name: "another-machine-name-subnet",
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Name: "another-machine-name-subnet",
+										},
 									},
 								},
 							},
@@ -873,7 +877,9 @@ func TestMachineScope_Subnet(t *testing.T) {
 				},
 			},
 			want: infrav1.SubnetSpec{
-				Name: "machine-name-subnet",
+				SubnetClassSpec: infrav1.SubnetClassSpec{
+					Name: "machine-name-subnet",
+				},
 			},
 		},
 		{
@@ -1655,8 +1661,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									{
 										SubnetClassSpec: infrav1.SubnetClassSpec{
 											Role: infrav1.SubnetNode,
+											Name: "subnet1",
 										},
-										Name: "subnet1",
 									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
@@ -1755,8 +1761,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									{
 										SubnetClassSpec: infrav1.SubnetClassSpec{
 											Role: infrav1.SubnetNode,
+											Name: "subnet1",
 										},
-										Name: "subnet1",
 									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
@@ -1862,8 +1868,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									{
 										SubnetClassSpec: infrav1.SubnetClassSpec{
 											Role: infrav1.SubnetNode,
+											Name: "subnet1",
 										},
-										Name: "subnet1",
 										NatGateway: infrav1.NatGateway{
 											NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 												Name: "natgw",
@@ -1967,8 +1973,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									{
 										SubnetClassSpec: infrav1.SubnetClassSpec{
 											Role: infrav1.SubnetNode,
+											Name: "subnet1",
 										},
-										Name: "subnet1",
 									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
@@ -2068,8 +2074,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									{
 										SubnetClassSpec: infrav1.SubnetClassSpec{
 											Role: infrav1.SubnetNode,
+											Name: "subnet1",
 										},
-										Name: "subnet1",
 									},
 								},
 								APIServerLB: infrav1.LoadBalancerSpec{
@@ -2174,8 +2180,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									{
 										SubnetClassSpec: infrav1.SubnetClassSpec{
 											Role: infrav1.SubnetNode,
+											Name: "subnet1",
 										},
-										Name: "subnet1",
 									},
 								},
 								APIServerLB: infrav1.LoadBalancerSpec{
@@ -2277,8 +2283,8 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									{
 										SubnetClassSpec: infrav1.SubnetClassSpec{
 											Role: infrav1.SubnetNode,
+											Name: "subnet1",
 										},
-										Name: "subnet1",
 									},
 								},
 								APIServerLB: infrav1.LoadBalancerSpec{

@@ -215,9 +215,9 @@ func TestGettingSecurityRules(t *testing.T) {
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
 					{
-						Name: "node",
 						SubnetClassSpec: infrav1.SubnetClassSpec{
 							Role: infrav1.SubnetNode,
+							Name: "node",
 						},
 					},
 				},
@@ -1239,10 +1239,10 @@ func TestSubnetSpecs(t *testing.T) {
 							},
 							Subnets: infrav1.Subnets{
 								{
-									Name: "fake-subnet-1",
 									SubnetClassSpec: infrav1.SubnetClassSpec{
 										Role:       infrav1.SubnetNode,
 										CIDRBlocks: []string{"192.168.1.1/16"},
+										Name:       "fake-subnet-1",
 									},
 									NatGateway: infrav1.NatGateway{
 										NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
@@ -1308,10 +1308,10 @@ func TestSubnetSpecs(t *testing.T) {
 							AzureBastion: &infrav1.AzureBastion{
 								Name: "fake-azure-bastion",
 								Subnet: infrav1.SubnetSpec{
-									Name: "fake-bastion-subnet-1",
 									SubnetClassSpec: infrav1.SubnetClassSpec{
 										Role:       infrav1.SubnetBastion,
 										CIDRBlocks: []string{"172.122.1.1./16"},
+										Name:       "fake-bastion-subnet-1",
 									},
 									RouteTable: infrav1.RouteTable{
 										ID:   "fake-bastion-route-table-id-1",
@@ -1342,10 +1342,10 @@ func TestSubnetSpecs(t *testing.T) {
 							},
 							Subnets: infrav1.Subnets{
 								{
-									Name: "fake-subnet-1",
 									SubnetClassSpec: infrav1.SubnetClassSpec{
 										Role:       infrav1.SubnetNode,
 										CIDRBlocks: []string{"192.168.1.1/16"},
+										Name:       "fake-subnet-1",
 									},
 									NatGateway: infrav1.NatGateway{
 										NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
@@ -1570,10 +1570,10 @@ func TestAzureBastionSpec(t *testing.T) {
 							AzureBastion: &infrav1.AzureBastion{
 								Name: "fake-azure-bastion-1",
 								Subnet: infrav1.SubnetSpec{
-									Name: "fake-bastion-subnet-1",
 									SubnetClassSpec: infrav1.SubnetClassSpec{
 										Role:       infrav1.SubnetBastion,
 										CIDRBlocks: []string{"172.122.1.1./16"},
+										Name:       "fake-bastion-subnet-1",
 									},
 									RouteTable: infrav1.RouteTable{
 										ID:   "fake-bastion-route-table-id-1",
@@ -1607,10 +1607,10 @@ func TestAzureBastionSpec(t *testing.T) {
 							},
 							Subnets: infrav1.Subnets{
 								{
-									Name: "fake-subnet-1",
 									SubnetClassSpec: infrav1.SubnetClassSpec{
 										Role:       infrav1.SubnetNode,
 										CIDRBlocks: []string{"192.168.1.1/16"},
+										Name:       "fake-subnet-1",
 									},
 									NatGateway: infrav1.NatGateway{
 										NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
@@ -1681,22 +1681,30 @@ func TestSubnet(t *testing.T) {
 			azureClusterNetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
 					infrav1.SubnetSpec{
-						ID:   "subnet-1-id",
-						Name: "subnet-1",
+						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Name: "subnet-1",
+						},
+						ID: "subnet-1-id",
 					},
 					infrav1.SubnetSpec{
-						ID:   "subnet-1-id",
-						Name: "subnet-2",
+						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Name: "subnet-2",
+						},
+						ID: "subnet-1-id",
 					},
 					infrav1.SubnetSpec{
-						ID:   "subnet-2-id",
-						Name: "subnet-3",
+						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Name: "subnet-3",
+						},
+						ID: "subnet-2-id",
 					},
 				},
 			},
 			expectSubnet: infrav1.SubnetSpec{
-				ID:   "subnet-1-id",
-				Name: "subnet-1",
+				SubnetClassSpec: infrav1.SubnetClassSpec{
+					Name: "subnet-1",
+				},
+				ID: "subnet-1-id",
 			},
 		},
 	}
@@ -2080,8 +2088,8 @@ func TestOutboundLBName(t *testing.T) {
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
 							{
-								Name: "node",
 								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "node",
 									Role: infrav1.SubnetNode,
 								},
 							},

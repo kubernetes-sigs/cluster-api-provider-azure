@@ -135,9 +135,9 @@ func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
 
 	// invalid because it doesn't specify a controlplane subnet
 	testCase.cluster.Spec.NetworkSpec.Subnets[0] = SubnetSpec{
-		Name: "random-subnet",
 		SubnetClassSpec: SubnetClassSpec{
 			Role: "random",
+			Name: "random-subnet",
 		},
 	}
 
@@ -204,9 +204,9 @@ func TestClusterSpecWithPreexistingVnetInvalid(t *testing.T) {
 
 	// invalid because it doesn't specify a controlplane subnet
 	testCase.cluster.Spec.NetworkSpec.Subnets[0] = SubnetSpec{
-		Name: "random-subnet",
 		SubnetClassSpec: SubnetClassSpec{
 			Role: "random",
+			Name: "random-subnet",
 		},
 	}
 
@@ -1312,15 +1312,15 @@ func createValidNetworkSpec() NetworkSpec {
 func createValidSubnets() Subnets {
 	return Subnets{
 		{
-			Name: "control-plane-subnet",
 			SubnetClassSpec: SubnetClassSpec{
 				Role: "control-plane",
+				Name: "control-plane-subnet",
 			},
 		},
 		{
-			Name: "node-subnet",
 			SubnetClassSpec: SubnetClassSpec{
 				Role: "node",
+				Name: "node-subnet",
 			},
 		},
 	}

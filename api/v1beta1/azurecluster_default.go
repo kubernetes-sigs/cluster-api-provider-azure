@@ -138,8 +138,8 @@ func (c *AzureCluster) setSubnetDefaults() {
 			SubnetClassSpec: SubnetClassSpec{
 				Role:       SubnetNode,
 				CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+				Name:       generateNodeSubnetName(c.ObjectMeta.Name),
 			},
-			Name: generateNodeSubnetName(c.ObjectMeta.Name),
 			SecurityGroup: SecurityGroup{
 				Name: generateNodeSecurityGroupName(c.ObjectMeta.Name),
 			},
