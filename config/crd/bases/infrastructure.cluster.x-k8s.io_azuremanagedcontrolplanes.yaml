@@ -733,6 +733,10 @@ spec:
                     type: string
                   name:
                     type: string
+                  resourceGroup:
+                    description: ResourceGroup is the name of the Azure resource group
+                      for the VNet and Subnet.
+                    type: string
                   subnet:
                     description: ManagedControlPlaneSubnet describes a subnet for
                       an AKS cluster.

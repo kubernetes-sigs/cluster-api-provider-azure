@@ -240,6 +240,10 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client 
 		}
 	}
 
+	if errs := m.validateVirtualNetowrkUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if errs := m.validateAPIServerAccessProfileUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
@@ -468,6 +472,51 @@ func (m *AzureManagedControlPlane) validateAPIServerAccessProfileUpdate(old *Azu
 		)
 	}
 
+	return allErrs
+}
+
+// validateVirtualNetowrkUpdate validates update to APIServerAccessProfile.
+func (m *AzureManagedControlPlane) validateVirtualNetowrkUpdate(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.Spec.VirtualNetwork.Name != m.Spec.VirtualNetwork.Name {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "VirtualNetwork.Name"),
+				m.Spec.VirtualNetwork.Name,
+				"Virtual Network Name is immutable"))
+	}
+
+	if old.Spec.VirtualNetwork.CIDRBlock != m.Spec.VirtualNetwork.CIDRBlock {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "VirtualNetwork.CIDRBlock"),
+				m.Spec.VirtualNetwork.CIDRBlock,
+				"Virtual Network CIDRBlock is immutable"))
+	}
+
+	if old.Spec.VirtualNetwork.Subnet.Name != m.Spec.VirtualNetwork.Subnet.Name {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "VirtualNetwork.Subnet.Name"),
+				m.Spec.VirtualNetwork.Subnet.Name,
+				"Subnet Name is immutable"))
+	}
+
+	if old.Spec.VirtualNetwork.Subnet.CIDRBlock != m.Spec.VirtualNetwork.Subnet.CIDRBlock {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "VirtualNetwork.Subnet.CIDRBlock"),
+				m.Spec.VirtualNetwork.Subnet.CIDRBlock,
+				"Subnet CIDRBlock is immutable"))
+	}
+
+	if old.Spec.VirtualNetwork.ResourceGroup != m.Spec.VirtualNetwork.ResourceGroup {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "VirtualNetwork.ResourceGroup"),
+				m.Spec.VirtualNetwork.ResourceGroup,
+				"Virtual Network Resource Group is immutable"))
+	}
 	return allErrs
 }
 
