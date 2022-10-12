@@ -154,10 +154,9 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 	if m.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Mode == string(NodePoolModeSystem) {
 		// validate for last system node pool
 		if err := m.validateLastSystemNodePool(client); err != nil {
-			allErrs = append(allErrs, field.Invalid(
+			allErrs = append(allErrs, field.Forbidden(
 				field.NewPath("Spec", "Mode"),
-				m.Spec.Mode,
-				"Last system node pool cannot be mutated to user node pool"))
+				"Cannot change node pool mode to User, you must have at least one System node pool in your cluster"))
 		}
 	}
 
