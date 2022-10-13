@@ -123,8 +123,8 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
 					{
-						Name: "node",
 						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Name: "node",
 							Role: infrav1.SubnetNode,
 						},
 					},

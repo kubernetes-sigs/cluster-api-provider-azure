@@ -241,6 +241,7 @@ func Convert_v1alpha3_SubnetSpec_To_v1beta1_SubnetSpec(in *SubnetSpec, out *infr
 	}
 
 	// Convert SubnetClassSpec fields
+	out.Name = in.Name
 	out.Role = infrav1.SubnetRole(in.Role)
 	out.CIDRBlocks = in.CIDRBlocks
 
@@ -254,6 +255,7 @@ func Convert_v1beta1_SubnetSpec_To_v1alpha3_SubnetSpec(in *infrav1.SubnetSpec, o
 	}
 
 	// Convert SubnetClassSpec fields
+	out.Name = in.Name
 	out.Role = SubnetRole(in.Role)
 	out.CIDRBlocks = in.CIDRBlocks
 
