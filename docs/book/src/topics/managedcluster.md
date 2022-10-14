@@ -481,6 +481,8 @@ Following is the list of immutable fields for managed clusters:
 | AzureManagedMachinePool   | .spec.availabilityZones      |                           |
 | AzureManagedMachinePool   | .spec.maxPods                |                           |
 | AzureManagedMachinePool   | .spec.osType                 |                           |
+| AzureManagedMachinePool   | .spec.enableNodePublicIP     |                           |
+| AzureManagedMachinePool   | .spec.nodePublicIPPrefixID   |                           |
 
 ## Features
 

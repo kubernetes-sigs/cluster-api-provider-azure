@@ -103,6 +103,10 @@ type AzureManagedMachinePoolSpec struct {
 	// +optional
 	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
 
+	// NodePublicIPPrefixID specifies the public IP prefix resource ID which VM nodes should use IPs from.
+	// +optional
+	NodePublicIPPrefixID *string `json:"nodePublicIPPrefixID,omitempty"`
+
 	// ScaleSetPriority specifies the ScaleSetPriority value. Default to Regular. Possible values include: 'Regular', 'Spot'
 	// +kubebuilder:validation:Enum=Regular;Spot
 	// +optional
