@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: codespell-project/actions-codespell@master
+    - uses: codespell-project/actions-codespell@v2.2.1
       with:
         skip: .git,_artifacts,*.sum
         ignore_words_file: .codespellignore
