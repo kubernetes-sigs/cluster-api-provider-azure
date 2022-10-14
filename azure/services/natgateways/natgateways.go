@@ -58,7 +58,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates a NAT gateway.
+// Reconcile idempotently creates or updates a NAT gateway.
 // Only when the NAT gateway 'Name' property is defined we create the NAT gateway: it's opt-in.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.Service.Reconcile")
@@ -84,7 +84,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (ie. error creating) -> operationNotDoneError (ie. creating in progress) -> no error (ie. created)
 	var resultingErr error
 	for _, natGatewaySpec := range specs {
-		result, err := s.CreateResource(ctx, natGatewaySpec, serviceName)
+		result, err := s.CreateOrUpdateResource(ctx, natGatewaySpec, serviceName)
 		if err != nil {
 			if !azure.IsOperationNotDoneError(err) || resultingErr == nil {
 				resultingErr = err

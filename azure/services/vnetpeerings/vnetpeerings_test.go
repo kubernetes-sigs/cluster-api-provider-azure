@@ -90,7 +90,7 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:1])
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
 			},
 		},
@@ -106,8 +106,8 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs[:2])
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
 			},
 		},
@@ -116,9 +116,9 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringExtraSpecs)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeeringExtra, serviceName).Return(&fakePeeringExtra, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeeringExtra, serviceName).Return(&fakePeeringExtra, nil)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
 			},
 		},
@@ -127,10 +127,10 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(&fakePeering1To3, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(&fakePeering1To3, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, nil)
 			},
 		},
@@ -139,10 +139,10 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, internalError)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, internalError)
 			},
 		},
@@ -151,10 +151,10 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, internalError)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, internalError)
 			},
 		},
@@ -163,10 +163,10 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(nil, internalError)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, notDoneError)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, notDoneError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, internalError)
 			},
 		},
@@ -175,10 +175,10 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, notDoneError)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, notDoneError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(nil, internalError)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, internalError)
 			},
 		},
@@ -187,10 +187,10 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			expectedError: "operation type  on Azure resource / is not done",
 			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, notDoneError)
-				r.CreateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, serviceName).Return(&fakePeering1To2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, serviceName).Return(&fakePeering2To1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, serviceName).Return(nil, notDoneError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, serviceName).Return(&fakePeering3To1, nil)
 				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, notDoneError)
 			},
 		},

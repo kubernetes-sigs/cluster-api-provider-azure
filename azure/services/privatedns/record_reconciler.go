@@ -33,7 +33,7 @@ func (s *Service) reconcileRecords(ctx context.Context, records []azure.Resource
 	// If multiple errors occur, we return the most pressing one.
 	// Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	for _, recordSpec := range records {
-		if _, err := s.recordReconciler.CreateResource(ctx, recordSpec, serviceName); err != nil {
+		if _, err := s.recordReconciler.CreateOrUpdateResource(ctx, recordSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resErr == nil {
 				resErr = err
 			}

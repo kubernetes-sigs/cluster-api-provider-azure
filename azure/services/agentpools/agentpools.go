@@ -74,7 +74,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	var resultingErr error
 	if agentPoolSpec := s.scope.AgentPoolSpec(); agentPoolSpec != nil {
-		result, err := s.CreateResource(ctx, agentPoolSpec, serviceName)
+		result, err := s.CreateOrUpdateResource(ctx, agentPoolSpec, serviceName)
 		if err != nil {
 			resultingErr = err
 		} else {

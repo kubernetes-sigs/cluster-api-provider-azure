@@ -58,7 +58,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates a network interface.
+// Reconcile idempotently creates or updates a network interface.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.Reconcile")
 	defer done()
@@ -76,7 +76,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var result error
 	for _, nicSpec := range specs {
-		if _, err := s.CreateResource(ctx, nicSpec, serviceName); err != nil {
+		if _, err := s.CreateOrUpdateResource(ctx, nicSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}

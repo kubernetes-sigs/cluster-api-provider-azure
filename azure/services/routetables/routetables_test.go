@@ -71,8 +71,8 @@ func TestReconcileRouteTables(t *testing.T) {
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
-				r.CreateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeRT2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT2, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.RouteTablesReadyCondition, serviceName, nil)
 			},
 		},
@@ -82,8 +82,8 @@ func TestReconcileRouteTables(t *testing.T) {
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
-				r.CreateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, errFake)
-				r.CreateResource(gomockinternal.AContext(), &fakeRT2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, errFake)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT2, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.RouteTablesReadyCondition, serviceName, errFake)
 			},
 		},
@@ -93,8 +93,8 @@ func TestReconcileRouteTables(t *testing.T) {
 			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
-				r.CreateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, errFake)
-				r.CreateResource(gomockinternal.AContext(), &fakeRT2, serviceName).Return(nil, notDoneError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, errFake)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT2, serviceName).Return(nil, notDoneError)
 				s.UpdatePutStatus(infrav1.RouteTablesReadyCondition, serviceName, errFake)
 			},
 		},

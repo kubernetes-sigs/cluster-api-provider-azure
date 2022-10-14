@@ -70,7 +70,7 @@ func TestReconcileAgentPools(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(fakeAgentPoolWithAutoscalingAndCount(true, 1), nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(fakeAgentPoolWithAutoscalingAndCount(true, 1), nil)
 				s.SetCAPIMachinePoolAnnotation(azure.ReplicasManagedByAutoscalerAnnotation, "true")
 				s.SetCAPIMachinePoolReplicas(fakeAgentPoolWithAutoscalingAndCount(true, 1).Count)
 				s.UpdatePutStatus(infrav1.AgentPoolsReadyCondition, serviceName, nil)
@@ -81,7 +81,7 @@ func TestReconcileAgentPools(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(fakeAgentPoolWithAutoscalingAndCount(false, 1), nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(fakeAgentPoolWithAutoscalingAndCount(false, 1), nil)
 				s.RemoveCAPIMachinePoolAnnotation(azure.ReplicasManagedByAutoscalerAnnotation)
 
 				s.UpdatePutStatus(infrav1.AgentPoolsReadyCondition, serviceName, nil)
@@ -99,7 +99,7 @@ func TestReconcileAgentPools(t *testing.T) {
 			expectedError: internalError.Error(),
 			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.AgentPoolsReadyCondition, serviceName, internalError)
 			},
 		},

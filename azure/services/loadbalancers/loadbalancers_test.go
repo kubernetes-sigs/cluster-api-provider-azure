@@ -122,7 +122,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
-				r.CreateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, internalError)
 			},
 		},
@@ -131,7 +131,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
-				r.CreateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
@@ -140,7 +140,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakeInternalAPILBSpec})
-				r.CreateResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
@@ -149,7 +149,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakeNodeOutboundLBSpec})
-				r.CreateResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},
@@ -158,9 +158,9 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec, &fakeInternalAPILBSpec, &fakeNodeOutboundLBSpec})
-				r.CreateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
 		},

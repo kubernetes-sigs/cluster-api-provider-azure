@@ -100,7 +100,7 @@ func TestReconcileVnet(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VNetSpec().Return(&fakeVNetSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, nil)
 				s.IsVnetManaged().Return(false)
 			},
 		},
@@ -109,7 +109,7 @@ func TestReconcileVnet(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VNetSpec().Return(&fakeVNetSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, nil)
 				s.IsVnetManaged().Return(true)
 				s.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, nil)
 			},
@@ -119,7 +119,7 @@ func TestReconcileVnet(t *testing.T) {
 			expectedError: internalError.Error(),
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VNetSpec().Return(&fakeVNetSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(nil, internalError)
 				s.IsVnetManaged().Return(true)
 				s.UpdatePutStatus(infrav1.VNetReadyCondition, serviceName, internalError)
 			},
@@ -129,7 +129,7 @@ func TestReconcileVnet(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VNetSpec().Return(&fakeVNetSpec)
-				r.CreateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(customVnet, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVNetSpec, serviceName).Return(customVnet, nil)
 				s.Vnet().Return(&infrav1.VnetSpec{})
 				s.UpdateSubnetCIDRs("test-subnet", []string{"subnet-cidr"})
 				s.UpdateSubnetCIDRs("test-subnet-2", []string{"subnet-cidr-1", "subnet-cidr-2"})

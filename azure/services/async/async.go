@@ -18,6 +18,7 @@ package async
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -96,9 +97,9 @@ func processOngoingOperation(ctx context.Context, scope FutureScope, client Futu
 	return client.Result(ctx, sdkFuture, future.Type)
 }
 
-// CreateResource implements the logic for creating a resource Asynchronously.
-func (s *Service) CreateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (result interface{}, err error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.CreateResource")
+// CreateOrUpdateResource implements the logic for creating a new, or updating an existing, resource Asynchronously.
+func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (result interface{}, err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.CreateOrUpdateResource")
 	defer done()
 
 	resourceName := spec.ResourceName()
@@ -132,20 +133,25 @@ func (s *Service) CreateResource(ctx context.Context, spec azure.ResourceSpecGet
 	}
 
 	// Create or update the resource with the desired parameters.
-	log.V(2).Info("creating resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+	logMessageVerbPrefix := "creat"
+	if existingResource != nil {
+		logMessageVerbPrefix = "updat"
+	}
+	log.V(2).Info(fmt.Sprintf("%sing resource", logMessageVerbPrefix), "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	result, sdkFuture, err := s.Creator.CreateOrUpdateAsync(ctx, spec, parameters)
+	errWrapped := errors.Wrapf(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, rgName, resourceName, serviceName))
 	if sdkFuture != nil {
 		future, err := converters.SDKToFuture(sdkFuture, infrav1.PutFuture, serviceName, resourceName, rgName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create resource %s/%s (service: %s)", rgName, resourceName, serviceName)
+			return nil, errWrapped
 		}
 		s.Scope.SetLongRunningOperationState(future)
 		return nil, azure.WithTransientError(azure.NewOperationNotDoneError(future), getRequeueAfterFromFuture(sdkFuture))
 	} else if err != nil {
-		return nil, errors.Wrapf(err, "failed to create resource %s/%s (service: %s)", rgName, resourceName, serviceName)
+		return nil, errWrapped
 	}
 
-	log.V(2).Info("successfully created resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+	log.V(2).Info(fmt.Sprintf("successfully %sed resource", logMessageVerbPrefix), "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return result, nil
 }
 

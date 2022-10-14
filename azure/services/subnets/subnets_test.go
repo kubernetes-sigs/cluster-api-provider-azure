@@ -210,7 +210,7 @@ func TestReconcileSubnets(t *testing.T) {
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
 
-				r.CreateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(fakeSubnet1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(fakeSubnet1, nil)
 				s.UpdateSubnetID(fakeSubnetSpec1.Name, to.String(fakeSubnet1.ID))
 				s.UpdateSubnetCIDRs(fakeSubnetSpec1.Name, []string{to.String(fakeSubnet1.AddressPrefix)})
 
@@ -224,11 +224,11 @@ func TestReconcileSubnets(t *testing.T) {
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeSubnetSpec2})
 
-				r.CreateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(fakeSubnet1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(fakeSubnet1, nil)
 				s.UpdateSubnetID(fakeSubnetSpec1.Name, to.String(fakeSubnet1.ID))
 				s.UpdateSubnetCIDRs(fakeSubnetSpec1.Name, []string{to.String(fakeSubnet1.AddressPrefix)})
 
-				r.CreateResource(gomockinternal.AContext(), &fakeSubnetSpec2, serviceName).Return(fakeSubnet2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec2, serviceName).Return(fakeSubnet2, nil)
 				s.UpdateSubnetID(fakeSubnetSpec2.Name, to.String(fakeSubnet2.ID))
 				s.UpdateSubnetCIDRs(fakeSubnetSpec2.Name, []string{to.String(fakeSubnet2.AddressPrefix)})
 
@@ -242,7 +242,7 @@ func TestReconcileSubnets(t *testing.T) {
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpecNotManaged})
 
-				r.CreateResource(gomockinternal.AContext(), &fakeSubnetSpecNotManaged, serviceName).Return(fakeSubnetNotManaged, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpecNotManaged, serviceName).Return(fakeSubnetNotManaged, nil)
 				s.UpdateSubnetID(fakeSubnetSpecNotManaged.Name, to.String(fakeSubnetNotManaged.ID))
 				s.UpdateSubnetCIDRs(fakeSubnetSpecNotManaged.Name, []string{to.String(fakeSubnetNotManaged.AddressPrefix)})
 
@@ -255,7 +255,7 @@ func TestReconcileSubnets(t *testing.T) {
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeIpv6SubnetSpec})
 
-				r.CreateResource(gomockinternal.AContext(), &fakeIpv6SubnetSpec, serviceName).Return(fakeIpv6Subnet, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeIpv6SubnetSpec, serviceName).Return(fakeIpv6Subnet, nil)
 				s.UpdateSubnetID(fakeIpv6SubnetSpec.Name, to.String(fakeIpv6Subnet.ID))
 				s.UpdateSubnetCIDRs(fakeIpv6SubnetSpec.Name, to.StringSlice(fakeIpv6Subnet.AddressPrefixes))
 
@@ -269,11 +269,11 @@ func TestReconcileSubnets(t *testing.T) {
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeIpv6SubnetSpec, &fakeIpv6SubnetSpecCP})
 
-				r.CreateResource(gomockinternal.AContext(), &fakeIpv6SubnetSpec, serviceName).Return(fakeIpv6Subnet, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeIpv6SubnetSpec, serviceName).Return(fakeIpv6Subnet, nil)
 				s.UpdateSubnetID(fakeIpv6SubnetSpec.Name, to.String(fakeIpv6Subnet.ID))
 				s.UpdateSubnetCIDRs(fakeIpv6SubnetSpec.Name, to.StringSlice(fakeIpv6Subnet.AddressPrefixes))
 
-				r.CreateResource(gomockinternal.AContext(), &fakeIpv6SubnetSpecCP, serviceName).Return(fakeIpv6SubnetCP, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeIpv6SubnetSpecCP, serviceName).Return(fakeIpv6SubnetCP, nil)
 				s.UpdateSubnetID(fakeIpv6SubnetSpecCP.Name, to.String(fakeIpv6SubnetCP.ID))
 				s.UpdateSubnetCIDRs(fakeIpv6SubnetSpecCP.Name, to.StringSlice(fakeIpv6SubnetCP.AddressPrefixes))
 
@@ -286,7 +286,7 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
-				r.CreateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil, internalError)
 
 				s.IsVnetManaged().AnyTimes().Return(true)
 				s.UpdatePutStatus(infrav1.SubnetsReadyCondition, serviceName, internalError)
@@ -297,7 +297,7 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: notASubnetErr.Error(),
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
-				r.CreateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(notASubnet, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(notASubnet, nil)
 			},
 		},
 		{
@@ -305,9 +305,9 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeSubnetSpec2})
-				r.CreateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil, internalError)
 
-				r.CreateResource(gomockinternal.AContext(), &fakeSubnetSpec2, serviceName).Return(fakeSubnet2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec2, serviceName).Return(fakeSubnet2, nil)
 				s.UpdateSubnetID(fakeSubnetSpec2.Name, to.String(fakeSubnet2.ID))
 				s.UpdateSubnetCIDRs(fakeSubnetSpec2.Name, []string{to.String(fakeSubnet2.AddressPrefix)})
 

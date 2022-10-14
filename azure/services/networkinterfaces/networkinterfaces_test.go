@@ -79,7 +79,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1})
-				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},
@@ -88,8 +88,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2})
-				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},
@@ -98,8 +98,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expectedError: internalError.Error(),
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2})
-				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, internalError)
-				r.CreateResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, internalError)
 			},
 		},

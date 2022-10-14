@@ -62,7 +62,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates a subnet.
+// Reconcile idempotently creates or updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "subnets.Service.Reconcile")
 	defer done()
@@ -80,7 +80,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var resultErr error
 	for _, subnetSpec := range specs {
-		result, err := s.CreateResource(ctx, subnetSpec, serviceName)
+		result, err := s.CreateOrUpdateResource(ctx, subnetSpec, serviceName)
 		if err != nil {
 			if !azure.IsOperationNotDoneError(err) || resultErr == nil {
 				resultErr = err

@@ -66,7 +66,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile creates a role assignment.
+// Reconcile idempotently creates or updates a role assignment.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "roleassignments.Service.Reconcile")
 	defer done()
@@ -103,7 +103,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	for _, roleAssignmentSpec := range s.Scope.RoleAssignmentSpecs(principalID) {
 		log.V(2).Info("Creating role assignment")
-		_, err := s.CreateResource(ctx, roleAssignmentSpec, serviceName)
+		_, err := s.CreateOrUpdateResource(ctx, roleAssignmentSpec, serviceName)
 		if err != nil {
 			return errors.Wrapf(err, "cannot assign role to %s system assigned identity", resourceType)
 		}

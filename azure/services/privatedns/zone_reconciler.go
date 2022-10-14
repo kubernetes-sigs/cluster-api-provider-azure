@@ -46,7 +46,7 @@ func (s *Service) reconcileZone(ctx context.Context, zoneSpec azure.ResourceSpec
 		return managed, nil
 	}
 
-	_, err = s.zoneReconciler.CreateResource(ctx, zoneSpec, serviceName)
+	_, err = s.zoneReconciler.CreateOrUpdateResource(ctx, zoneSpec, serviceName)
 	return managed, err
 }
 

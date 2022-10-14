@@ -86,8 +86,8 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
-				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, nil)
 			},
 		},
@@ -97,8 +97,8 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
-				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, errFake)
-				r.CreateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, errFake)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, errFake)
 			},
 		},
@@ -108,8 +108,8 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
-				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, errFake)
-				r.CreateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, notDoneError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, errFake)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, notDoneError)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, errFake)
 			},
 		},
@@ -119,7 +119,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG})
-				r.CreateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, notDoneError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, notDoneError)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, notDoneError)
 			},
 		},

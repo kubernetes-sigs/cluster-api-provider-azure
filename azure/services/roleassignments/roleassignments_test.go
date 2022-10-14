@@ -81,7 +81,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeRoleAssignment1, serviceName).Return(&fakeRoleAssignment1, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRoleAssignment1, serviceName).Return(&fakeRoleAssignment1, nil)
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeRoleAssignment1, serviceName).Return(&RoleAssignmentSpec{},
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRoleAssignment1, serviceName).Return(&RoleAssignmentSpec{},
 					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -174,7 +174,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeRoleAssignment2, serviceName).Return(&fakeRoleAssignment2, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRoleAssignment2, serviceName).Return(&fakeRoleAssignment2, nil)
 			},
 		},
 		{
@@ -207,7 +207,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
-				r.CreateResource(gomockinternal.AContext(), &fakeRoleAssignment2, serviceName).Return(&RoleAssignmentSpec{},
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRoleAssignment2, serviceName).Return(&RoleAssignmentSpec{},
 					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},

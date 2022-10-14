@@ -205,8 +205,8 @@ func TestProcessOngoingOperation(t *testing.T) {
 	}
 }
 
-// TestCreateResource tests the CreateResource function.
-func TestCreateResource(t *testing.T) {
+// TestCreateOrUpdateResource tests the CreateOrUpdateResource function.
+func TestCreateOrUpdateResource(t *testing.T) {
 	testcases := []struct {
 		name           string
 		serviceName    string
@@ -291,7 +291,7 @@ func TestCreateResource(t *testing.T) {
 		},
 		{
 			name:          "error occurs while running async create",
-			expectedError: "failed to create resource test-group/test-resource (service: test-service)",
+			expectedError: "failed to update resource test-group/test-resource (service: test-service)",
 			serviceName:   "test-service",
 			expect: func(s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder, r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				r.ResourceName().Return("test-resource")
@@ -333,7 +333,7 @@ func TestCreateResource(t *testing.T) {
 			tc.expect(scopeMock.EXPECT(), creatorMock.EXPECT(), specMock.EXPECT())
 
 			s := New(scopeMock, creatorMock, nil)
-			result, err := s.CreateResource(context.TODO(), specMock, tc.serviceName)
+			result, err := s.CreateOrUpdateResource(context.TODO(), specMock, tc.serviceName)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))

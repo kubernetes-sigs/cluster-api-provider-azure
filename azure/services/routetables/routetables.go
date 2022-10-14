@@ -57,7 +57,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates route tables.
+// Reconcile idempotently creates or updates a set of route tables.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "routetables.Service.Reconcile")
 	defer done()
@@ -83,7 +83,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	for _, rtSpec := range specs {
-		if _, err := s.CreateResource(ctx, rtSpec, serviceName); err != nil {
+		if _, err := s.CreateOrUpdateResource(ctx, rtSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resErr == nil {
 				resErr = err
 			}
