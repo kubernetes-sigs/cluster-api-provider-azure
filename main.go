@@ -245,6 +245,7 @@ func InitFlags(fs *pflag.FlagSet) {
 }
 
 func main() {
+	// Hello from func main!
 	InitFlags(pflag.CommandLine)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
