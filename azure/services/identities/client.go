@@ -26,6 +26,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+// Client wraps go-sdk.
+type Client interface {
+	Get(ctx context.Context, resourceGroupName, name string) (msi.Identity, error)
+	GetClientID(ctx context.Context, providerID string) (string, error)
+}
+
 // AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
 	userAssignedIdentities msi.UserAssignedIdentitiesClient

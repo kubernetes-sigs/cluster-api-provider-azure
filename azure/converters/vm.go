@@ -41,6 +41,8 @@ type VM struct {
 
 	// Addresses contains the addresses associated with the Azure VM.
 	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
+
+	UserAssignedIdentities []infrav1.UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
 }
 
 // SDKToVM converts an Azure SDK VirtualMachine to the CAPZ VM type.
@@ -61,6 +63,16 @@ func SDKToVM(v compute.VirtualMachine) *VM {
 
 	if len(v.Tags) > 0 {
 		vm.Tags = MapToTags(v.Tags)
+	}
+
+	if v.Identity != nil {
+		for _, identity := range v.Identity.UserAssignedIdentities {
+			if identity != nil && identity.ClientID != nil {
+				vm.UserAssignedIdentities = append(vm.UserAssignedIdentities, infrav1.UserAssignedIdentity{
+					ProviderID: *identity.ClientID,
+				})
+			}
+		}
 	}
 
 	return vm

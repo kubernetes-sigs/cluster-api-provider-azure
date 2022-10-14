@@ -30,6 +30,8 @@ const (
 const (
 	// VMRunningCondition reports on current status of the Azure VM.
 	VMRunningCondition clusterv1.ConditionType = "VMRunning"
+	// VMIdentitiesReadyCondition reports on the readiness of the Azure VM identities.
+	VMIdentitiesReadyCondition clusterv1.ConditionType = "VMIdentitiesReady"
 	// VMCreatingReason used when the vm creation is in progress.
 	VMCreatingReason = "VMCreating"
 	// VMUpdatingReason used when the vm updating is in progress.
@@ -38,6 +40,8 @@ const (
 	VMDeletingReason = "VMDeleting"
 	// VMProvisionFailedReason used for failures during vm provisioning.
 	VMProvisionFailedReason = "VMProvisionFailed"
+	// UserAssignedIdentityMissingReason used for failures when a user-assigned identity is missing.
+	UserAssignedIdentityMissingReason = "UserAssignedIdentityMissing"
 	// WaitingForClusterInfrastructureReason used when machine is waiting for cluster infrastructure to be ready before proceeding.
 	WaitingForClusterInfrastructureReason = "WaitingForClusterInfrastructure"
 	// WaitingForBootstrapDataReason used when machine is waiting for bootstrap data to be ready before proceeding.
