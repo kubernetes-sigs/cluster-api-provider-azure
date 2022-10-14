@@ -43,20 +43,19 @@ var _ webhook.Validator = &AzureManagedCluster{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedCluster) ValidateCreate() error {
-	return nil
-}
-
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the web hook
-	// must prevent creating new objects new case the feature flag is disabled.
+	// must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(feature.AKS) {
 		return field.Forbidden(
 			field.NewPath("spec"),
 			"can be set only if the AKS feature flag is enabled",
 		)
 	}
+	return nil
+}
 
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	old := oldRaw.(*AzureManagedCluster)
 	var allErrs field.ErrorList
 

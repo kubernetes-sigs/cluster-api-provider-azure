@@ -22,7 +22,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 func TestDefaultingWebhook(t *testing.T) {
@@ -77,6 +79,10 @@ func TestDefaultingWebhook(t *testing.T) {
 }
 
 func TestValidatingWebhook(t *testing.T) {
+	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
+	g := NewWithT(t)
 	tests := []struct {
 		name      string
 		amcp      AzureManagedControlPlane
@@ -239,8 +245,6 @@ func TestValidatingWebhook(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			g := NewWithT(t)
-			t.Parallel()
 			if tt.expectErr {
 				g.Expect(tt.amcp.ValidateCreate(nil)).NotTo(Succeed())
 			} else {
@@ -251,6 +255,9 @@ func TestValidatingWebhook(t *testing.T) {
 }
 
 func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
+	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
 	g := NewWithT(t)
 
 	tests := []struct {
@@ -260,20 +267,8 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 		errorLen int
 	}{
 		{
-			name: "all valid",
-			amcp: &AzureManagedControlPlane{
-				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					Version:      "v1.18.0",
-					SSHPublicKey: generateSSHPublicKey(true),
-					AADProfile: &AADProfile{
-						Managed: true,
-						AdminGroupObjectIDs: []string{
-							"616077a8-5db7-4c98-b856-b34619afg75h",
-						},
-					},
-				},
-			},
+			name:    "all valid",
+			amcp:    getKnownValidAzureManagedControlPlane(),
 			wantErr: false,
 		},
 		{
@@ -340,6 +335,34 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
+		})
+	}
+}
+
+func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name      string
+		amcp      *AzureManagedControlPlane
+		deferFunc func()
+	}{
+		{
+			name:      "feature gate explicitly disabled",
+			amcp:      getKnownValidAzureManagedControlPlane(),
+			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, false),
+		},
+		{
+			name:      "feature gate implicitly disabled",
+			amcp:      getKnownValidAzureManagedControlPlane(),
+			deferFunc: func() {},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			defer tc.deferFunc()
+			err := tc.amcp.ValidateCreate(nil)
+			g.Expect(err).To(HaveOccurred())
 		})
 	}
 }
@@ -898,6 +921,22 @@ func createAzureManagedControlPlane(serviceIP, version, sshKey string) *AzureMan
 			SSHPublicKey: sshKey,
 			DNSServiceIP: to.StringPtr(serviceIP),
 			Version:      version,
+		},
+	}
+}
+
+func getKnownValidAzureManagedControlPlane() *AzureManagedControlPlane {
+	return &AzureManagedControlPlane{
+		Spec: AzureManagedControlPlaneSpec{
+			DNSServiceIP: to.StringPtr("192.168.0.0"),
+			Version:      "v1.18.0",
+			SSHPublicKey: generateSSHPublicKey(true),
+			AADProfile: &AADProfile{
+				Managed: true,
+				AdminGroupObjectIDs: []string{
+					"616077a8-5db7-4c98-b856-b34619afg75h",
+				},
+			},
 		},
 	}
 }

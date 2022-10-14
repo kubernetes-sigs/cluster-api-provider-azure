@@ -131,3 +131,35 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureManagedCluster_ValidateCreateFailure(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name      string
+		amc       *AzureManagedCluster
+		deferFunc func()
+	}{
+		{
+			name:      "feature gate explicitly disabled",
+			amc:       getKnownValidAzureManagedCluster(),
+			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, false),
+		},
+		{
+			name:      "feature gate implicitly disabled",
+			amc:       getKnownValidAzureManagedCluster(),
+			deferFunc: func() {},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			defer tc.deferFunc()
+			err := tc.amc.ValidateCreate()
+			g.Expect(err).To(HaveOccurred())
+		})
+	}
+}
+
+func getKnownValidAzureManagedCluster() *AzureManagedCluster {
+	return &AzureManagedCluster{}
+}

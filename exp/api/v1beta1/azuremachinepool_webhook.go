@@ -57,6 +57,14 @@ var _ webhook.Validator = &AzureMachinePool{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (amp *AzureMachinePool) ValidateCreate() error {
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	if !feature.Gates.Enabled(capifeature.MachinePool) {
+		return field.Forbidden(
+			field.NewPath("spec"),
+			"can be set only if the MachinePool feature flag is enabled",
+		)
+	}
 	return amp.Validate(nil)
 }
 
@@ -72,15 +80,6 @@ func (amp *AzureMachinePool) ValidateDelete() error {
 
 // Validate the Azure Machine Pool and return an aggregate error.
 func (amp *AzureMachinePool) Validate(old runtime.Object) error {
-	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
-	// must prevent creating new objects new case the feature flag is disabled.
-	if !feature.Gates.Enabled(capifeature.MachinePool) {
-		return field.Forbidden(
-			field.NewPath("spec"),
-			"can be set only if the MachinePool feature flag is enabled",
-		)
-	}
-
 	validators := []func() error{
 		amp.ValidateImage,
 		amp.ValidateTerminateNotificationTimeout,

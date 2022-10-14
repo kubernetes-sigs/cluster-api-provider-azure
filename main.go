@@ -523,21 +523,19 @@ func registerWebhooks(mgr manager.Manager) {
 		os.Exit(1)
 	}
 
-	if feature.Gates.Enabled(feature.AKS) {
-		hookServer := mgr.GetWebhookServer()
-		hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhook.NewMutatingWebhook(
-			&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
-		))
-		hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhook.NewValidatingWebhook(
-			&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
-		))
-		hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhook.NewMutatingWebhook(
-			&infrav1exp.AzureManagedControlPlane{}, mgr.GetClient(),
-		))
-		hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhook.NewValidatingWebhook(
-			&infrav1exp.AzureManagedControlPlane{}, mgr.GetClient(),
-		))
-	}
+	hookServer := mgr.GetWebhookServer()
+	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhook.NewMutatingWebhook(
+		&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
+	))
+	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhook.NewValidatingWebhook(
+		&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
+	))
+	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhook.NewMutatingWebhook(
+		&infrav1exp.AzureManagedControlPlane{}, mgr.GetClient(),
+	))
+	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhook.NewValidatingWebhook(
+		&infrav1exp.AzureManagedControlPlane{}, mgr.GetClient(),
+	))
 
 	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to create ready check")
