@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -557,7 +558,7 @@ func TestValidateBoolPtrImmutable(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
-			err := validateBoolPtrImmutable(field.NewPath("test"), test.oldVal, test.newVal)
+			err := webhookutils.ValidateBoolPtrImmutable(field.NewPath("test"), test.oldVal, test.newVal)
 			if test.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

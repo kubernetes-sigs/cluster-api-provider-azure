@@ -20,13 +20,21 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sort"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+)
+
+const (
+	unsetMessage     = "field is immutable, unable to set an empty value if it was already set"
+	setMessage       = "field is immutable, unable to assign a value if it was already empty"
+	immutableMessage = "field is immutable"
 )
 
 // Validator defines functions for validating an operation.
@@ -135,4 +143,103 @@ func validationResponseFromStatus(allowed bool, status metav1.Status) admission.
 			Result:  &status,
 		},
 	}
+}
+
+// EnsureStringSlicesAreEquivalent returns if two string slices have equal lengths,
+// and that they have the exact same items; it does not enforce strict ordering of items.
+func EnsureStringSlicesAreEquivalent(a []string, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	sort.Strings(a)
+	sort.Strings(b)
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// ValidateBoolPtrImmutable validates equality across two *bools,
+// and returns a meaningful error to indicate a changed value, a newly set value, or a newly unset value.
+func ValidateBoolPtrImmutable(path *field.Path, oldVal, newVal *bool) *field.Error {
+	if oldVal != nil {
+		// Prevent modification if it was already set to some value
+		if newVal == nil {
+			// unsetting the field is not allowed
+			return field.Invalid(path, newVal, unsetMessage)
+		}
+		if *newVal != *oldVal {
+			// changing the field is not allowed
+			return field.Invalid(path, newVal, immutableMessage)
+		}
+	} else if newVal != nil {
+		return field.Invalid(path, newVal, setMessage)
+	}
+
+	return nil
+}
+
+// ValidateStringImmutable validates equality across two strings,
+// and returns a meaningful error to indicate a changed value, a newly set value, or a newly unset value.
+func ValidateStringImmutable(path *field.Path, oldVal, newVal string) *field.Error {
+	if oldVal != "" {
+		// Prevent modification if it was already set to some value
+		if newVal == "" {
+			// unsetting the field is not allowed
+			return field.Invalid(path, newVal, unsetMessage)
+		}
+		if newVal != oldVal {
+			// changing the field is not allowed
+			return field.Invalid(path, newVal, immutableMessage)
+		}
+	} else if newVal != "" {
+		return field.Invalid(path, newVal, setMessage)
+	}
+
+	return nil
+}
+
+// ValidateStringPtrImmutable validates equality across two *strings,
+// and returns a meaningful error to indicate a changed value, a newly set value, or a newly unset value.
+func ValidateStringPtrImmutable(path *field.Path, oldVal, newVal *string) *field.Error {
+	if oldVal != nil {
+		// Prevent modification if it was already set to some value
+		if newVal == nil {
+			// unsetting the field is not allowed
+			return field.Invalid(path, newVal, unsetMessage)
+		}
+		if *newVal != *oldVal {
+			// changing the field is not allowed
+			return field.Invalid(path, newVal, immutableMessage)
+		}
+	} else if newVal != nil {
+		return field.Invalid(path, newVal, setMessage)
+	}
+
+	return nil
+}
+
+// ValidateInt32PtrImmutable validates equality across two *int32s,
+// and returns a meaningful error to indicate a changed value, a newly set value, or a newly unset value.
+func ValidateInt32PtrImmutable(path *field.Path, oldVal, newVal *int32) *field.Error {
+	if oldVal != nil {
+		// Prevent modification if it was already set to some value
+		if newVal == nil {
+			// unsetting the field is not allowed
+			return field.Invalid(path, newVal, unsetMessage)
+		}
+		if *newVal != *oldVal {
+			// changing the field is not allowed
+			return field.Invalid(path, newVal, immutableMessage)
+		}
+	} else if newVal != nil {
+		return field.Invalid(path, newVal, setMessage)
+	}
+
+	return nil
 }

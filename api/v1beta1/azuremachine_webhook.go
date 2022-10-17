@@ -22,6 +22,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
@@ -81,11 +82,11 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
-	if !reflect.DeepEqual(m.Spec.RoleAssignmentName, old.Spec.RoleAssignmentName) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec", "roleAssignmentName"),
-				m.Spec.RoleAssignmentName, "field is immutable"),
-		)
+	if err := webhookutils.ValidateStringImmutable(
+		field.NewPath("Spec", "RoleAssignmentName"),
+		old.Spec.RoleAssignmentName,
+		m.Spec.RoleAssignmentName); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
 	if !reflect.DeepEqual(m.Spec.OSDisk, old.Spec.OSDisk) {
@@ -102,11 +103,11 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
-	if !reflect.DeepEqual(m.Spec.SSHPublicKey, old.Spec.SSHPublicKey) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec", "sshPublicKey"),
-				m.Spec.SSHPublicKey, "field is immutable"),
-		)
+	if err := webhookutils.ValidateStringImmutable(
+		field.NewPath("Spec", "SSHPublicKey"),
+		old.Spec.SSHPublicKey,
+		m.Spec.SSHPublicKey); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
 	if !reflect.DeepEqual(m.Spec.AllocatePublicIP, old.Spec.AllocatePublicIP) {
@@ -123,11 +124,11 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
-	if !reflect.DeepEqual(m.Spec.AcceleratedNetworking, old.Spec.AcceleratedNetworking) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec", "acceleratedNetworking"),
-				m.Spec.AcceleratedNetworking, "field is immutable"),
-		)
+	if err := webhookutils.ValidateBoolPtrImmutable(
+		field.NewPath("Spec", "AcceleratedNetworking"),
+		old.Spec.AcceleratedNetworking,
+		m.Spec.AcceleratedNetworking); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
 	if !reflect.DeepEqual(m.Spec.SpotVMOptions, old.Spec.SpotVMOptions) {

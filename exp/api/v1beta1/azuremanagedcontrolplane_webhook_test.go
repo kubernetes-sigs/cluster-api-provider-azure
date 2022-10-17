@@ -354,18 +354,6 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "AzureManagedControlPlane with valid SSHPublicKey",
-			oldAMCP: createAzureManagedControlPlane("192.168.0.0", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane("192.168.0.0", "v1.18.0", generateSSHPublicKey(true)),
-			wantErr: false,
-		},
-		{
-			name:    "AzureManagedControlPlane with invalid SSHPublicKey",
-			oldAMCP: createAzureManagedControlPlane("192.168.0.0", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane("192.168.0.0", "v1.18.0", generateSSHPublicKey(false)),
-			wantErr: true,
-		},
-		{
 			name:    "AzureManagedControlPlane with invalid serviceIP",
 			oldAMCP: createAzureManagedControlPlane("", "v1.18.0", ""),
 			amcp:    createAzureManagedControlPlane("192.168.0.0.3", "v1.18.0", generateSSHPublicKey(true)),
