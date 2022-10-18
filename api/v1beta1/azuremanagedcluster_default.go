@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2022 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ const (
 )
 
 // setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane.
-func (m *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
+func (m *AzureManagedCluster) setDefaultSSHPublicKey() error {
 	if sshKeyData := m.Spec.SSHPublicKey; sshKeyData == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
 		if err != nil {
@@ -46,14 +46,14 @@ func (m *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
 }
 
 // setDefaultNodeResourceGroupName sets the default NodeResourceGroup for an AzureManagedControlPlane.
-func (m *AzureManagedControlPlane) setDefaultNodeResourceGroupName() {
+func (m *AzureManagedCluster) setDefaultNodeResourceGroupName() {
 	if m.Spec.NodeResourceGroupName == "" {
 		m.Spec.NodeResourceGroupName = fmt.Sprintf("MC_%s_%s_%s", m.Spec.ResourceGroupName, m.Name, m.Spec.Location)
 	}
 }
 
 // setDefaultVirtualNetwork sets the default VirtualNetwork for an AzureManagedControlPlane.
-func (m *AzureManagedControlPlane) setDefaultVirtualNetwork() {
+func (m *AzureManagedCluster) setDefaultVirtualNetwork() {
 	if m.Spec.VirtualNetwork.Name == "" {
 		m.Spec.VirtualNetwork.Name = m.Name
 	}
@@ -66,19 +66,11 @@ func (m *AzureManagedControlPlane) setDefaultVirtualNetwork() {
 }
 
 // setDefaultSubnet sets the default Subnet for an AzureManagedControlPlane.
-func (m *AzureManagedControlPlane) setDefaultSubnet() {
+func (m *AzureManagedCluster) setDefaultSubnet() {
 	if m.Spec.VirtualNetwork.Subnet.Name == "" {
 		m.Spec.VirtualNetwork.Subnet.Name = m.Name
 	}
 	if m.Spec.VirtualNetwork.Subnet.CIDRBlock == "" {
 		m.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDR
-	}
-}
-
-func (m *AzureManagedControlPlane) setDefaultSku() {
-	if m.Spec.SKU == nil {
-		m.Spec.SKU = &SKU{
-			Tier: FreeManagedControlPlaneTier,
-		}
 	}
 }

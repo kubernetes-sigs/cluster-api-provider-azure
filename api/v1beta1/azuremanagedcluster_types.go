@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2022 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package v1beta1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -35,8 +34,12 @@ const (
 	PrivateDNSZoneModeNone string = "None"
 )
 
-// AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
-type AzureManagedControlPlaneSpec struct {
+// AzureManagedClusterSpec defines the desired state of AzureManagedCluster.
+type AzureManagedClusterSpec struct {
+	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// +optional
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
+
 	// Version defines the desired Kubernetes version.
 	// +kubebuilder:validation:MinLength:=2
 	Version string `json:"version"`
@@ -52,7 +55,7 @@ type AzureManagedControlPlaneSpec struct {
 
 	// VirtualNetwork describes the vnet for the AKS cluster. Will be created if it does not exist.
 	// +optional
-	VirtualNetwork ManagedControlPlaneVirtualNetwork `json:"virtualNetwork,omitempty"`
+	VirtualNetwork AKSVirtualNetwork `json:"virtualNetwork,omitempty"`
 
 	// SubscriptionID is the GUID of the Azure subscription to hold this cluster.
 	// +optional
@@ -61,14 +64,10 @@ type AzureManagedControlPlaneSpec struct {
 	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
 	Location string `json:"location"`
 
-	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
-	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
-
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
 	// +optional
-	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
+	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
 	// +kubebuilder:validation:Enum=azure;kubenet
@@ -105,17 +104,16 @@ type AzureManagedControlPlaneSpec struct {
 	// +optional
 	AddonProfiles []AddonProfile `json:"addonProfiles,omitempty"`
 
-	// SKU is the SKU of the AKS to be provisioned.
-	// +optional
-	SKU *SKU `json:"sku,omitempty"`
-
 	// LoadBalancerProfile is the profile of the cluster load balancer.
 	// +optional
 	LoadBalancerProfile *LoadBalancerProfile `json:"loadBalancerProfile,omitempty"`
+}
 
-	// APIServerAccessProfile is the access profile for AKS API server.
+// AzureManagedClusterStatus defines the observed state of AzureManagedCluster.
+type AzureManagedClusterStatus struct {
+	// Ready is true when the provider resource is ready.
 	// +optional
-	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
+	Ready bool `json:"ready,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
@@ -140,23 +138,6 @@ type AddonProfile struct {
 
 	// Enabled - Whether the add-on is enabled or not.
 	Enabled bool `json:"enabled"`
-}
-
-// AzureManagedControlPlaneSkuTier - Tier of a managed cluster SKU.
-// +kubebuilder:validation:Enum=Free;Paid
-type AzureManagedControlPlaneSkuTier string
-
-const (
-	// FreeManagedControlPlaneTier is the free tier of AKS without corresponding SLAs.
-	FreeManagedControlPlaneTier AzureManagedControlPlaneSkuTier = "Free"
-	// PaidManagedControlPlaneTier is the paid tier of AKS with corresponding SLAs.
-	PaidManagedControlPlaneTier AzureManagedControlPlaneSkuTier = "Paid"
-)
-
-// SKU - AKS SKU.
-type SKU struct {
-	// Tier - Tier of a managed cluster SKU.
-	Tier AzureManagedControlPlaneSkuTier `json:"tier"`
 }
 
 // LoadBalancerProfile - Profile of the cluster load balancer.
@@ -187,105 +168,46 @@ type LoadBalancerProfile struct {
 	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
 }
 
-// APIServerAccessProfile - access profile for AKS API server.
-type APIServerAccessProfile struct {
-	// AuthorizedIPRanges - Authorized IP Ranges to kubernetes API server.
-	// +optional
-	AuthorizedIPRanges []string `json:"authorizedIPRanges,omitempty"`
-	// EnablePrivateCluster - Whether to create the cluster as a private cluster or not.
-	// +optional
-	EnablePrivateCluster *bool `json:"enablePrivateCluster,omitempty"`
-	// PrivateDNSZone - Private dns zone mode for private cluster.
-	// +kubebuilder:validation:Enum=System;None
-	// +optional
-	PrivateDNSZone *string `json:"privateDNSZone,omitempty"`
-	// EnablePrivateClusterPublicFQDN - Whether to create additional public FQDN for private cluster or not.
-	// +optional
-	EnablePrivateClusterPublicFQDN *bool `json:"enablePrivateClusterPublicFQDN,omitempty"`
-}
-
-// ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
-type ManagedControlPlaneVirtualNetwork struct {
+// AKSVirtualNetwork describes a virtual network required to provision AKS clusters.
+type AKSVirtualNetwork struct {
 	Name      string `json:"name"`
 	CIDRBlock string `json:"cidrBlock"`
 	// +optional
-	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
+	Subnet AKSSubnet `json:"subnet,omitempty"`
 	// ResourceGroup is the name of the Azure resource group for the VNet and Subnet.
 	// +optional
 	ResourceGroup string `json:"resourceGroup,omitempty"`
 }
 
-// ManagedControlPlaneSubnet describes a subnet for an AKS cluster.
-type ManagedControlPlaneSubnet struct {
+// AKSSubnet describes a subnet for an AKS cluster.
+type AKSSubnet struct {
 	Name      string `json:"name"`
 	CIDRBlock string `json:"cidrBlock"`
 }
 
-// AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.
-type AzureManagedControlPlaneStatus struct {
-	// Ready is true when the provider resource is ready.
-	// +optional
-	Ready bool `json:"ready,omitempty"`
-
-	// Initialized is true when the control plane is available for initial contact.
-	// This may occur before the control plane is fully ready.
-	// In the AzureManagedControlPlane implementation, these are identical.
-	// +optional
-	Initialized bool `json:"initialized,omitempty"`
-
-	// Conditions defines current service state of the AzureManagedControlPlane.
-	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
-
-	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
-	// next reconciliation loop.
-	// +optional
-	LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
-}
-
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=azuremanagedcontrolplanes,scope=Namespaced,categories=cluster-api,shortName=amcp
+// +kubebuilder:resource:path=azuremanagedclusters,scope=Namespaced,categories=cluster-api,shortName=amc
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
-// AzureManagedControlPlane is the Schema for the azuremanagedcontrolplanes API.
-type AzureManagedControlPlane struct {
+// AzureManagedCluster is the Schema for the azuremanagedclusters API.
+type AzureManagedCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AzureManagedControlPlaneSpec   `json:"spec,omitempty"`
-	Status AzureManagedControlPlaneStatus `json:"status,omitempty"`
+	Spec   AzureManagedClusterSpec   `json:"spec,omitempty"`
+	Status AzureManagedClusterStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// AzureManagedControlPlaneList contains a list of AzureManagedControlPlane.
-type AzureManagedControlPlaneList struct {
+// AzureManagedClusterList contains a list of AzureManagedClusters.
+type AzureManagedClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []AzureManagedControlPlane `json:"items"`
-}
-
-// GetConditions returns the list of conditions for an AzureManagedControlPlane API object.
-func (m *AzureManagedControlPlane) GetConditions() clusterv1.Conditions {
-	return m.Status.Conditions
-}
-
-// SetConditions will set the given conditions on an AzureManagedControlPlane object.
-func (m *AzureManagedControlPlane) SetConditions(conditions clusterv1.Conditions) {
-	m.Status.Conditions = conditions
-}
-
-// GetFutures returns the list of long running operation states for an AzureManagedControlPlane API object.
-func (m *AzureManagedControlPlane) GetFutures() infrav1.Futures {
-	return m.Status.LongRunningOperationStates
-}
-
-// SetFutures will set the given long running operation states on an AzureManagedControlPlane object.
-func (m *AzureManagedControlPlane) SetFutures(futures infrav1.Futures) {
-	m.Status.LongRunningOperationStates = futures
+	Items           []AzureManagedCluster `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&AzureManagedControlPlane{}, &AzureManagedControlPlaneList{})
+	SchemeBuilder.Register(&AzureManagedCluster{}, &AzureManagedClusterList{})
 }

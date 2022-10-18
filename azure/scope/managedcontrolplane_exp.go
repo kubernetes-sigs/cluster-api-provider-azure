@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -418,7 +419,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 		NodeResourceGroup: s.ControlPlane.Spec.NodeResourceGroupName,
 		Location:          s.ControlPlane.Spec.Location,
 		Tags:              s.ControlPlane.Spec.AdditionalTags,
-		Headers:           maps.FilterByKeyPrefix(s.ManagedClusterAnnotations(), azure.CustomHeaderPrefix),
+		Headers:           maps.FilterByKeyPrefix(s.ManagedClusterAnnotations(), azureutil.CustomHeaderPrefix),
 		Version:           strings.TrimPrefix(s.ControlPlane.Spec.Version, "v"),
 		SSHPublicKey:      s.ControlPlane.Spec.SSHPublicKey,
 		DNSServiceIP:      s.ControlPlane.Spec.DNSServiceIP,

@@ -126,14 +126,14 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 	}
 
 	// custom headers are immutable
-	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
-	newCustomHeaders := maps.FilterByKeyPrefix(m.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
+	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, azureutil.CustomHeaderPrefix)
+	newCustomHeaders := maps.FilterByKeyPrefix(m.ObjectMeta.Annotations, azureutil.CustomHeaderPrefix)
 	if !reflect.DeepEqual(oldCustomHeaders, newCustomHeaders) {
 		allErrs = append(allErrs,
 			field.Invalid(
 				field.NewPath("metadata", "annotations"),
 				m.ObjectMeta.Annotations,
-				fmt.Sprintf("annotations with '%s' prefix are immutable", azure.CustomHeaderPrefix)))
+				fmt.Sprintf("annotations with '%s' prefix are immutable", azureutil.CustomHeaderPrefix)))
 	}
 
 	if !ensureStringSlicesAreEqual(m.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {

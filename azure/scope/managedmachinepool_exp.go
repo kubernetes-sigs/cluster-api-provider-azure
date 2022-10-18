@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -174,7 +175,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		AvailabilityZones:    managedMachinePool.Spec.AvailabilityZones,
 		OsDiskType:           managedMachinePool.Spec.OsDiskType,
 		EnableUltraSSD:       managedMachinePool.Spec.EnableUltraSSD,
-		Headers:              maps.FilterByKeyPrefix(agentPoolAnnotations, azure.CustomHeaderPrefix),
+		Headers:              maps.FilterByKeyPrefix(agentPoolAnnotations, azureutil.CustomHeaderPrefix),
 		EnableNodePublicIP:   managedMachinePool.Spec.EnableNodePublicIP,
 		NodePublicIPPrefixID: managedMachinePool.Spec.NodePublicIPPrefixID,
 		ScaleSetPriority:     managedMachinePool.Spec.ScaleSetPriority,

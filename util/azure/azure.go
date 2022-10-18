@@ -24,8 +24,15 @@ import (
 
 var azureResourceGroupNameRE = regexp.MustCompile(`.*/subscriptions/(?:.*)/resourceGroups/(.+)/providers/(?:.*)`)
 
-// AzureSystemNodeLabelPrefix is a standard node label prefix for Azure features, e.g., kubernetes.azure.com/scalesetpriority.
-const AzureSystemNodeLabelPrefix = "kubernetes.azure.com"
+const (
+	// AzureSystemNodeLabelPrefix is a standard node label prefix for Azure features, e.g., kubernetes.azure.com/scalesetpriority.
+	AzureSystemNodeLabelPrefix = "kubernetes.azure.com"
+	// CustomHeaderPrefix is the prefix of annotations that enable additional cluster / node pool features.
+	// Whatever follows the prefix will be passed as a header to cluster/node pool creation/update requests.
+	// E.g. add `"infrastructure.cluster.x-k8s.io/custom-header-UseGPUDedicatedVHD": "true"` annotation to
+	// AzureManagedMachinePool CR to enable creating GPU nodes by the node pool.
+	CustomHeaderPrefix = "infrastructure.cluster.x-k8s.io/custom-header-"
+)
 
 // ConvertResourceGroupNameToLower converts the resource group name in the resource ID to be lowered.
 // Inspired by https://github.com/kubernetes-sigs/cloud-provider-azure/blob/88c9b89611e7c1fcbd39266928cce8406eb0e728/pkg/provider/azure_wrap.go#L409

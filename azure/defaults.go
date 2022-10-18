@@ -92,14 +92,6 @@ const (
 	azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
 )
 
-const (
-	// CustomHeaderPrefix is the prefix of annotations that enable additional cluster / node pool features.
-	// Whatever follows the prefix will be passed as a header to cluster/node pool creation/update requests.
-	// E.g. add `"infrastructure.cluster.x-k8s.io/custom-header-UseGPUDedicatedVHD": "true"` annotation to
-	// AzureManagedMachinePool CR to enable creating GPU nodes by the node pool.
-	CustomHeaderPrefix = "infrastructure.cluster.x-k8s.io/custom-header-"
-)
-
 var (
 	// LinuxBootstrapExtensionCommand is the command the VM bootstrap extension will execute to verify Linux nodes bootstrap completes successfully.
 	LinuxBootstrapExtensionCommand = fmt.Sprintf("for i in $(seq 1 %d); do test -f %s && break; if [ $i -eq %d ]; then exit 1; else sleep %d; fi; done", bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionRetries, bootstrapExtensionSleep)
