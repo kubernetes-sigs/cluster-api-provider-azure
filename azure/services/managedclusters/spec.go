@@ -348,7 +348,7 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 				return nil, fmt.Errorf("%T is not a containerservice.AgentPool", agentPool)
 			}
 			agentPool.Name = to.StringPtr(spec.ResourceName())
-			profile := converters.AgentPoolToManagedClusterAgentPoolProfile(agentPool)
+			profile := converters.AgentPoolToManagedClusterExpAgentPoolProfile(agentPool)
 			*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 		}
 	}

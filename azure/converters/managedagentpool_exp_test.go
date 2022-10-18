@@ -88,7 +88,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
-			result := AgentPoolToManagedClusterAgentPoolProfile(c.pool)
+			result := AgentPoolToManagedClusterExpAgentPoolProfile(c.pool)
 			c.expect(g, result)
 		})
 	}

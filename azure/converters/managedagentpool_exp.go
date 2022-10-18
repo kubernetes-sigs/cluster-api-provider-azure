@@ -20,8 +20,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 )
 
-// AgentPoolToManagedClusterAgentPoolProfile converts a AgentPoolSpec to an Azure SDK ManagedClusterAgentPoolProfile used in managedcluster reconcile.
-func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) containerservice.ManagedClusterAgentPoolProfile {
+// AgentPoolToManagedClusterExpAgentPoolProfile converts a AgentPoolSpec to an Azure SDK ManagedClusterAgentPoolProfile used in managedcluster reconcile.
+func AgentPoolToManagedClusterExpAgentPoolProfile(pool containerservice.AgentPool) containerservice.ManagedClusterAgentPoolProfile {
 	properties := pool.ManagedClusterAgentPoolProfileProperties
 	return containerservice.ManagedClusterAgentPoolProfile{
 		Name:                 pool.Name, // Note: if converting from agentPoolSpec.Parameters(), this field will not be set
