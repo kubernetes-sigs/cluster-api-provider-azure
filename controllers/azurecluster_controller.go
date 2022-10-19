@@ -220,7 +220,7 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 		var reconcileError azure.ReconcileError
 		if errors.As(err, &reconcileError) {
 			if reconcileError.IsTerminal() {
-				acr.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "ReconcileErrror", errors.Wrapf(err, "failed to reconcile AzureCluster").Error())
+				acr.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureCluster").Error())
 				log.Error(err, "failed to reconcile AzureCluster", "name", clusterScope.ClusterName())
 				conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "")
 				return reconcile.Result{}, nil
