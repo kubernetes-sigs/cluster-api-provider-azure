@@ -63,6 +63,12 @@ export EXP_MACHINE_POOL=true
 export EXP_AKS=true
 ```
 
+Optionally, the following feature flags may be set:
+
+```bash
+export EXP_AKS_RESOURCE_HEALTH=true
+```
+
 Create a local kind cluster to run the management cluster components:
 
 ```bash

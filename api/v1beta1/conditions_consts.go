@@ -86,6 +86,8 @@ const (
 	ManagedClusterRunningCondition clusterv1.ConditionType = "ManagedClusterRunning"
 	// AgentPoolsReadyCondition means the AKS agent pools exist and are ready to be used.
 	AgentPoolsReadyCondition clusterv1.ConditionType = "AgentPoolsReady"
+	// AzureResourceAvailableCondition means the AKS cluster is healthy according to Azure's Resource Health API.
+	AzureResourceAvailableCondition clusterv1.ConditionType = "AzureResourceAvailable"
 )
 
 // Azure Services Conditions and Reasons.

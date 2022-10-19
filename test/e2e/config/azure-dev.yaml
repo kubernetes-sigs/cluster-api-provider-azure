@@ -156,6 +156,7 @@ variables:
   CNI: "${PWD}/templates/addons/calico.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
   EXP_AKS: "true"
+  EXP_AKS_RESOURCE_HEALTH: "true"
   EXP_MACHINE_POOL: "true"
   EXP_CLUSTER_RESOURCE_SET: "true"
   CLUSTER_TOPOLOGY: "true"
