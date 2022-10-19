@@ -121,7 +121,7 @@ func (s *Service) getSKUAndVersion(ctx context.Context, location, publisher, off
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Service.getSKUAndVersion")
 	defer done()
 
-	log.Info("Getting VM image SKU and version", "location", location, "publisher", publisher, "offer", offer, "k8sVersion", k8sVersion, "osAndVersion", osAndVersion)
+	log.V(4).Info("Getting VM image SKU and version", "location", location, "publisher", publisher, "offer", offer, "k8sVersion", k8sVersion, "osAndVersion", osAndVersion)
 
 	v, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
@@ -173,7 +173,7 @@ func (s *Service) getSKUAndVersion(ctx context.Context, location, publisher, off
 		return "", "", errors.Errorf("no VM image found for publisher \"%s\" offer \"%s\" sku \"%s\" with Kubernetes version \"%s\"", publisher, offer, sku, k8sVersion)
 	}
 
-	log.Info("Found VM image SKU and version", "location", location, "publisher", publisher, "offer", offer, "sku", sku, "version", version)
+	log.V(4).Info("Found VM image SKU and version", "location", location, "publisher", publisher, "offer", offer, "sku", sku, "version", version)
 
 	return sku, version, nil
 }
