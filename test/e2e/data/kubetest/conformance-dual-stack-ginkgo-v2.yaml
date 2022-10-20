@@ -1,0 +1,8 @@
+ginkgo.focus: \[Feature:IPv6DualStack\]|\[Conformance\]
+ginkgo.skip: \[Slow\]|\[Serial\]|\[Flaky\]|\[Feature:SCTPConnectivity\]|Should.recreate.evicted.statefulset|HostPort.validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol|should.have.ipv4.and.ipv6.node.podCIDRs
+disable-log-dump: true
+ginkgo.progress: true
+ginkgo.slow-spec-threshold: 120s
+ginkgo.trace: true
+ginkgo.v: true
+ginkgo.timeout: 3h

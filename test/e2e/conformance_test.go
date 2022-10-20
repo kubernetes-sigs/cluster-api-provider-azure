@@ -100,7 +100,7 @@ var _ = Describe("Conformance Tests", func() {
 		var err error
 
 		kubernetesVersion := e2eConfig.GetVariable(capi_e2e.KubernetesVersion)
-		flavor := clusterctl.DefaultFlavor
+		flavor := e2eConfig.GetVariable("CONFORMANCE_FLAVOR")
 		if isWindows(kubetestConfigFilePath) {
 			flavor = getWindowsFlavor()
 		}
@@ -277,5 +277,8 @@ func isWindows(kubetestConfigFilePath string) bool {
 }
 
 func getGinkgoV2ConfigFilePath(kubetestConfigFilePath string) string {
-	return strings.Replace(kubetestConfigFilePath, ".yaml", "-ginkgo-v2.yaml", 1)
+	if !strings.HasSuffix(kubetestConfigFilePath, "-ginkgo-v2.yaml") {
+		return strings.Replace(kubetestConfigFilePath, ".yaml", "-ginkgo-v2.yaml", 1)
+	}
+	return kubetestConfigFilePath
 }

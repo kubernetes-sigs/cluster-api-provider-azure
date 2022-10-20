@@ -674,11 +674,12 @@ test-e2e-local: ## Run "docker-build" rule then run e2e tests.
 	GINKGO_ARGS='$(LOCAL_GINKGO_ARGS)' \
 	test-e2e-run
 
+CONFORMANCE_FLAVOR ?= 
 CONFORMANCE_E2E_ARGS ?= -kubetest.config-file=$(KUBETEST_CONF_PATH)
 CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 .PHONY: test-conformance
 test-conformance: ## Run conformance test on workload cluster.
-	$(MAKE) test-e2e-local GINKGO_FOCUS="Conformance" E2E_ARGS='$(CONFORMANCE_E2E_ARGS)' GINKGO_ARGS='$(LOCAL_GINKGO_ARGS)'
+	$(MAKE) test-e2e-local GINKGO_FOCUS="Conformance" E2E_ARGS='$(CONFORMANCE_E2E_ARGS)' GINKGO_ARGS='$(LOCAL_GINKGO_ARGS)' CONFORMANCE_FLAVOR='$(CONFORMANCE_FLAVOR)'
 
 test-conformance-fast: ## Run conformance test on workload cluster using a subset of the conformance suite in parallel.
 	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_FAST_CONF_PATH) -kubetest.ginkgo-nodes=5 $(E2E_ARGS)"
