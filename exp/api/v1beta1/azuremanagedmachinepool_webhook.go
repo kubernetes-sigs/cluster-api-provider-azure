@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
+	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -100,7 +101,7 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 				err.Error()))
 	}
 
-	if err := validateStringPtrImmutable(
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "OSType"),
 		old.Spec.OSType,
 		m.Spec.OSType); err != nil {
@@ -200,26 +201,26 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
-	if !reflect.DeepEqual(m.Spec.ScaleSetPriority, old.Spec.ScaleSetPriority) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("Spec", "ScaleSetPriority"),
-				m.Spec.ScaleSetPriority, "field is immutable"),
-		)
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "ScaleSetPriority"),
+		old.Spec.ScaleSetPriority,
+		m.Spec.ScaleSetPriority); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
-	if err := validateBoolPtrImmutable(
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "EnableUltraSSD"),
 		old.Spec.EnableUltraSSD,
 		m.Spec.EnableUltraSSD); err != nil {
 		allErrs = append(allErrs, err)
 	}
-	if err := validateBoolPtrImmutable(
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "EnableNodePublicIP"),
 		old.Spec.EnableNodePublicIP,
 		m.Spec.EnableNodePublicIP); err != nil {
 		allErrs = append(allErrs, err)
 	}
-	if err := validateStringPtrImmutable(
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "NodePublicIPPrefixID"),
 		old.Spec.NodePublicIPPrefixID,
 		m.Spec.NodePublicIPPrefixID); err != nil {
@@ -372,40 +373,4 @@ func ensureStringSlicesAreEqual(a []string, b []string) bool {
 		}
 	}
 	return true
-}
-
-func validateBoolPtrImmutable(path *field.Path, oldVal, newVal *bool) *field.Error {
-	if oldVal != nil {
-		// Prevent modification if it was already set to some value
-		if newVal == nil {
-			// unsetting the field is not allowed
-			return field.Invalid(path, newVal, "field is immutable, unsetting is not allowed")
-		}
-		if *newVal != *oldVal {
-			// changing the field is not allowed
-			return field.Invalid(path, newVal, "field is immutable")
-		}
-	} else if newVal != nil {
-		return field.Invalid(path, newVal, "field is immutable, setting is not allowed")
-	}
-
-	return nil
-}
-
-func validateStringPtrImmutable(path *field.Path, oldVal, newVal *string) *field.Error {
-	if oldVal != nil {
-		// Prevent modification if it was already set to some value
-		if newVal == nil {
-			// unsetting the field is not allowed
-			return field.Invalid(path, newVal, "field is immutable, unsetting is not allowed")
-		}
-		if *newVal != *oldVal {
-			// changing the field is not allowed
-			return field.Invalid(path, newVal, "field is immutable")
-		}
-	} else if newVal != nil {
-		return field.Invalid(path, newVal, "field is immutable, setting is not allowed")
-	}
-
-	return nil
 }
