@@ -219,6 +219,10 @@ type ManagedControlPlaneVirtualNetwork struct {
 type ManagedControlPlaneSubnet struct {
 	Name      string `json:"name"`
 	CIDRBlock string `json:"cidrBlock"`
+
+	// ServiceEndpoints is a slice of Virtual Network service endpoints to enable for the subnets.
+	// +optional
+	ServiceEndpoints infrav1.ServiceEndpoints `json:"serviceEndpoints,omitempty"`
 }
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.

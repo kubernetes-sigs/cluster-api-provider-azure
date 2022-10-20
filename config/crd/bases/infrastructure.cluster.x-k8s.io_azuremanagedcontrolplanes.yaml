@@ -745,6 +745,27 @@ spec:
                         type: string
                       name:
                         type: string
+                      serviceEndpoints:
+                        description: ServiceEndpoints is a slice of Virtual Network
+                          service endpoints to enable for the subnets.
+                        items:
+                          description: ServiceEndpointSpec configures an Azure Service
+                            Endpoint.
+                          properties:
+                            locations:
+                              items:
+                                type: string
+                              type: array
+                            service:
+                              type: string
+                          required:
+                          - locations
+                          - service
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - service
+                        x-kubernetes-list-type: map
                     required:
                     - cidrBlock
                     - name

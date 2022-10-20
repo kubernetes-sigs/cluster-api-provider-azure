@@ -51,6 +51,15 @@ const (
 	// https://docs.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview#security-rules
 	minRulePriority = 100
 	maxRulePriority = 4096
+	// Must start with 'Microsoft.', then an alpha character, then can include alnum.
+	serviceEndpointServiceRegexPattern = `^Microsoft\.[a-zA-Z]{1,42}[a-zA-Z0-9]{0,42}$`
+	// Must start with an alpha character and then can include alnum OR be only *.
+	serviceEndpointLocationRegexPattern = `^([a-z]{1,42}\d{0,5}|[*])$`
+)
+
+var (
+	serviceEndpointServiceRegex  = regexp.MustCompile(serviceEndpointServiceRegexPattern)
+	serviceEndpointLocationRegex = regexp.MustCompile(serviceEndpointLocationRegexPattern)
 )
 
 // validateCluster validates a cluster.
@@ -194,6 +203,10 @@ func validateSubnets(subnets Subnets, vnet VnetSpec, fldPath *field.Path) field.
 			}
 		}
 		allErrs = append(allErrs, validateSubnetCIDR(subnet.CIDRBlocks, vnet.CIDRBlocks, fldPath.Index(i).Child("cidrBlocks"))...)
+
+		if len(subnet.ServiceEndpoints) > 0 {
+			allErrs = append(allErrs, validateServiceEndpoints(subnet.ServiceEndpoints, fldPath.Index(i).Child("serviceEndpoints"))...)
+		}
 	}
 	for k, v := range requiredSubnetRoles {
 		if !v {
@@ -547,4 +560,54 @@ func validateClassSpecForControlPlaneOutboundLB(lb *LoadBalancerClassSpec, apise
 	}
 
 	return allErrs
+}
+
+func validateServiceEndpoints(serviceEndpoints []ServiceEndpointSpec, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	serviceEndpointsServices := make(map[string]bool, len(serviceEndpoints))
+	for i, se := range serviceEndpoints {
+		if se.Service == "" {
+			allErrs = append(allErrs, field.Required(fldPath.Index(i).Child("service"), "service is required for all service endpoints"))
+		} else {
+			if err := validateServiceEndpointServiceName(se.Service, fldPath.Index(i).Child("service")); err != nil {
+				allErrs = append(allErrs, err)
+			}
+			if _, ok := serviceEndpointsServices[se.Service]; ok {
+				allErrs = append(allErrs, field.Duplicate(fldPath.Index(i).Child("service"), se.Service))
+			}
+			serviceEndpointsServices[se.Service] = true
+		}
+
+		if len(se.Locations) == 0 {
+			allErrs = append(allErrs, field.Required(fldPath.Index(i).Child("locations"), "locations are required for all service endpoints"))
+		} else {
+			serviceEndpointsLocations := make(map[string]bool, len(se.Locations))
+			for j, locationName := range se.Locations {
+				if err := validateServiceEndpointLocationName(locationName, fldPath.Index(i).Child("locations").Index(j)); err != nil {
+					allErrs = append(allErrs, err)
+				}
+				if _, ok := serviceEndpointsLocations[locationName]; ok {
+					allErrs = append(allErrs, field.Duplicate(fldPath.Index(i).Child("locations").Index(j), locationName))
+				}
+				serviceEndpointsLocations[locationName] = true
+			}
+		}
+	}
+
+	return allErrs
+}
+
+func validateServiceEndpointServiceName(serviceName string, fldPath *field.Path) *field.Error {
+	if success := serviceEndpointServiceRegex.MatchString(serviceName); !success {
+		return field.Invalid(fldPath, serviceName, fmt.Sprintf("service name of endpoint service doesn't match regex %s", serviceEndpointServiceRegexPattern))
+	}
+	return nil
+}
+
+func validateServiceEndpointLocationName(location string, fldPath *field.Path) *field.Error {
+	if success := serviceEndpointLocationRegex.MatchString(location); !success {
+		return field.Invalid(fldPath, location, fmt.Sprintf("location doesn't match regex %s", serviceEndpointLocationRegexPattern))
+	}
+	return nil
 }

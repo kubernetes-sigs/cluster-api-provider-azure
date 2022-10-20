@@ -1378,3 +1378,130 @@ func createValidAPIServerInternalLB() LoadBalancerSpec {
 		},
 	}
 }
+
+func TestValidateServiceEndpoints(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name             string
+		serviceEndpoints ServiceEndpoints
+		wantErr          bool
+		expectedErr      field.Error
+	}{
+		{
+			name: "valid service endpoint",
+			serviceEndpoints: []ServiceEndpointSpec{{
+				Service:   "Microsoft.Foo",
+				Locations: []string{"*", "eastus2"},
+			}},
+			wantErr: false,
+		},
+		{
+			name: "invalid service endpoint name doesn't start with Microsoft",
+			serviceEndpoints: []ServiceEndpointSpec{{
+				Service:   "Foo",
+				Locations: []string{"*"},
+			}},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "subnets[0].serviceEndpoints[0].service",
+				BadValue: "Foo",
+				Detail:   "service name of endpoint service doesn't match regex ^Microsoft\\.[a-zA-Z]{1,42}[a-zA-Z0-9]{0,42}$",
+			},
+		},
+		{
+			name: "invalid service endpoint name contains invalid characters",
+			serviceEndpoints: []ServiceEndpointSpec{{
+				Service:   "Microsoft.Foo",
+				Locations: []string{"*"},
+			}, {
+				Service:   "Microsoft.Foo-Bar",
+				Locations: []string{"*"},
+			}},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "subnets[0].serviceEndpoints[1].service",
+				BadValue: "Microsoft.Foo-Bar",
+				Detail:   "service name of endpoint service doesn't match regex ^Microsoft\\.[a-zA-Z]{1,42}[a-zA-Z0-9]{0,42}$",
+			},
+		},
+		{
+			name: "invalid service endpoint location contains invalid characters",
+			serviceEndpoints: []ServiceEndpointSpec{{
+				Service:   "Microsoft.Foo",
+				Locations: []string{"*"},
+			}, {
+				Service:   "Microsoft.Bar",
+				Locations: []string{"foo", "foo-bar"},
+			}},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "subnets[0].serviceEndpoints[1].locations[1]",
+				BadValue: "foo-bar",
+				Detail:   "location doesn't match regex ^([a-z]{1,42}\\d{0,5}|[*])$",
+			},
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := validateServiceEndpoints(testCase.serviceEndpoints, field.NewPath("subnets[0].serviceEndpoints"))
+			if testCase.wantErr {
+				// Searches for expected error in list of thrown errors
+				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
+			} else {
+				g.Expect(err).To(BeEmpty())
+			}
+		})
+	}
+}
+
+func TestServiceEndpointsLackRequiredFieldService(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		name             string
+		serviceEndpoints ServiceEndpoints
+	}
+
+	testCase := test{
+		name: "service endpoint missing service name",
+		serviceEndpoints: []ServiceEndpointSpec{{
+			Locations: []string{"*"},
+		}},
+	}
+
+	t.Run(testCase.name, func(t *testing.T) {
+		errs := validateServiceEndpoints(testCase.serviceEndpoints, field.NewPath("subnets[0].serviceEndpoints"))
+		g.Expect(errs).To(HaveLen(1))
+		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
+		g.Expect(errs[0].Field).To(Equal("subnets[0].serviceEndpoints[0].service"))
+		g.Expect(errs[0].Error()).To(ContainSubstring("service is required for all service endpoints"))
+	})
+}
+
+func TestServiceEndpointsLackRequiredFieldLocations(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		name             string
+		serviceEndpoints ServiceEndpoints
+	}
+
+	testCase := test{
+		name: "service endpoint missing locations",
+		serviceEndpoints: []ServiceEndpointSpec{{
+			Service: "Microsoft.Foo",
+		}},
+	}
+
+	t.Run(testCase.name, func(t *testing.T) {
+		errs := validateServiceEndpoints(testCase.serviceEndpoints, field.NewPath("subnets[0].serviceEndpoints"))
+		g.Expect(errs).To(HaveLen(1))
+		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
+		g.Expect(errs[0].Field).To(Equal("subnets[0].serviceEndpoints[0].locations"))
+		g.Expect(errs[0].Error()).To(ContainSubstring("locations are required for all service endpoints"))
+	})
+}

@@ -268,6 +268,7 @@ func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.ResourceSpecGetter {
 			VNetResourceGroup: s.Vnet().ResourceGroup,
 			IsVNetManaged:     s.IsVnetManaged(),
 			Role:              infrav1.SubnetNode,
+			ServiceEndpoints:  s.NodeSubnet().ServiceEndpoints,
 		},
 	}
 }
@@ -281,8 +282,9 @@ func (s *ManagedControlPlaneScope) Subnets() infrav1.Subnets {
 func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
 	return infrav1.SubnetSpec{
 		SubnetClassSpec: infrav1.SubnetClassSpec{
-			CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
-			Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			CIDRBlocks:       []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
+			Name:             s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			ServiceEndpoints: s.ControlPlane.Spec.VirtualNetwork.Subnet.ServiceEndpoints,
 		},
 	}
 }
@@ -315,8 +317,9 @@ func (s *ManagedControlPlaneScope) NodeSubnets() []infrav1.SubnetSpec {
 	return []infrav1.SubnetSpec{
 		{
 			SubnetClassSpec: infrav1.SubnetClassSpec{
-				CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
-				Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+				CIDRBlocks:       []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
+				Name:             s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+				ServiceEndpoints: s.ControlPlane.Spec.VirtualNetwork.Subnet.ServiceEndpoints,
 			},
 		},
 	}
@@ -328,6 +331,7 @@ func (s *ManagedControlPlaneScope) Subnet(name string) infrav1.SubnetSpec {
 	if name == s.ControlPlane.Spec.VirtualNetwork.Subnet.Name {
 		subnet.Name = s.ControlPlane.Spec.VirtualNetwork.Subnet.Name
 		subnet.CIDRBlocks = []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock}
+		subnet.ServiceEndpoints = s.ControlPlane.Spec.VirtualNetwork.Subnet.ServiceEndpoints
 	}
 
 	return subnet

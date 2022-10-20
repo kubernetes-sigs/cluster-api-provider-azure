@@ -19,6 +19,7 @@ package subnets
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -37,6 +38,7 @@ type SubnetSpec struct {
 	SecurityGroupName string
 	Role              infrav1.SubnetRole
 	NatGatewayName    string
+	ServiceEndpoints  infrav1.ServiceEndpoints
 }
 
 // ResourceName returns the name of the subnet.
@@ -57,12 +59,33 @@ func (s *SubnetSpec) OwnerResourceName() string {
 // Parameters returns the parameters for the subnet.
 func (s *SubnetSpec) Parameters(existing interface{}) (parameters interface{}, err error) {
 	if existing != nil {
-		_, ok := existing.(network.Subnet)
+		existingSubnet, ok := existing.(network.Subnet)
 		if !ok {
 			return nil, errors.Errorf("%T is not a network.Subnet", existing)
 		}
 
-		return nil, nil
+		// No modifications for non-managed subnets
+		if !s.IsVNetManaged {
+			return nil, nil
+		}
+
+		var existingServiceEndpoints []network.ServiceEndpointPropertiesFormat
+		if existingSubnet.ServiceEndpoints != nil {
+			for _, se := range *existingSubnet.ServiceEndpoints {
+				existingServiceEndpoints = append(existingServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: se.Service, Locations: se.Locations})
+			}
+		}
+		var newServiceEndpoints []network.ServiceEndpointPropertiesFormat
+		for _, se := range s.ServiceEndpoints {
+			newServiceEndpoints = append(newServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: to.StringPtr(se.Service), Locations: to.StringSlicePtr(se.Locations)})
+		}
+
+		// Right now only serviceEndpoints are allowed to be updated. More to come later
+		diff := cmp.Diff(newServiceEndpoints, existingServiceEndpoints)
+		if diff == "" {
+			// up to date, nothing to do
+			return nil, nil
+		}
 	}
 
 	if !s.IsVNetManaged {
@@ -97,6 +120,12 @@ func (s *SubnetSpec) Parameters(existing interface{}) (parameters interface{}, e
 			ID: to.StringPtr(azure.SecurityGroupID(s.SubscriptionID, s.ResourceGroup, s.SecurityGroupName)),
 		}
 	}
+
+	serviceEndpoints := make([]network.ServiceEndpointPropertiesFormat, 0, len(s.ServiceEndpoints))
+	for _, se := range s.ServiceEndpoints {
+		serviceEndpoints = append(serviceEndpoints, network.ServiceEndpointPropertiesFormat{Service: to.StringPtr(se.Service), Locations: to.StringSlicePtr(se.Locations)})
+	}
+	subnetProperties.ServiceEndpoints = &serviceEndpoints
 
 	return network.Subnet{
 		SubnetPropertiesFormat: &subnetProperties,

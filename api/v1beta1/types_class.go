@@ -82,6 +82,10 @@ type SubnetClassSpec struct {
 	// CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.
 	// +optional
 	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
+
+	// ServiceEndpoints is a slice of Virtual Network service endpoints to enable for the subnets.
+	// +optional
+	ServiceEndpoints ServiceEndpoints `json:"serviceEndpoints,omitempty"`
 }
 
 // LoadBalancerClassSpec defines the LoadBalancerSpec properties that may be shared across several Azure clusters.

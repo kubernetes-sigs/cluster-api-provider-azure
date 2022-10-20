@@ -128,11 +128,61 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
+	allErrs = append(allErrs, c.validateSubnetUpdate(old)...)
+
 	if len(allErrs) == 0 {
 		return c.validateCluster(old)
 	}
 
 	return apierrors.NewInvalid(GroupVersion.WithKind("AzureCluster").GroupKind(), c.Name, allErrs)
+}
+
+// validateSubnetUpdate validates a ClusterSpec.NetworkSpec.Subnets for immutability.
+func (c *AzureCluster) validateSubnetUpdate(old *AzureCluster) field.ErrorList {
+	var allErrs field.ErrorList
+
+	oldSubnetMap := make(map[string]SubnetSpec, len(old.Spec.NetworkSpec.Subnets))
+	oldSubnetIndex := make(map[string]int, len(old.Spec.NetworkSpec.Subnets))
+	for i, subnet := range old.Spec.NetworkSpec.Subnets {
+		oldSubnetMap[subnet.Name] = subnet
+		oldSubnetIndex[subnet.Name] = i
+	}
+	for i, subnet := range c.Spec.NetworkSpec.Subnets {
+		if oldSubnet, ok := oldSubnetMap[subnet.Name]; ok {
+			// Verify the CIDR blocks haven't changed for an owned Vnet.
+			// A non-owned Vnet's CIDR block can change based on what's
+			// defined in the spec vs what's been loaded from Azure directly.
+			// This technically allows the cidr block to be modified in the brief
+			// moments before the Vnet is created (because the tags haven't been
+			// set yet) but once the Vnet has been created it becomes immutable.
+			if old.Spec.NetworkSpec.Vnet.Tags.HasOwned(old.Name) && !reflect.DeepEqual(subnet.CIDRBlocks, oldSubnet.CIDRBlocks) {
+				allErrs = append(allErrs,
+					field.Invalid(field.NewPath("spec", "networkSpec", "subnets").Index(oldSubnetIndex[subnet.Name]).Child("CIDRBlocks"),
+						c.Spec.NetworkSpec.Subnets[i].CIDRBlocks, "field is immutable"),
+				)
+			}
+			if subnet.RouteTable.Name != oldSubnet.RouteTable.Name {
+				allErrs = append(allErrs,
+					field.Invalid(field.NewPath("spec", "networkSpec", "subnets").Index(oldSubnetIndex[subnet.Name]).Child("RouteTable").Child("Name"),
+						c.Spec.NetworkSpec.Subnets[i].RouteTable.Name, "field is immutable"),
+				)
+			}
+			if subnet.NatGateway.Name != oldSubnet.NatGateway.Name {
+				allErrs = append(allErrs,
+					field.Invalid(field.NewPath("spec", "networkSpec", "subnets").Index(oldSubnetIndex[subnet.Name]).Child("NatGateway").Child("Name"),
+						c.Spec.NetworkSpec.Subnets[i].NatGateway.Name, "field is immutable"),
+				)
+			}
+			if subnet.SecurityGroup.Name != oldSubnet.SecurityGroup.Name {
+				allErrs = append(allErrs,
+					field.Invalid(field.NewPath("spec", "networkSpec", "subnets").Index(oldSubnetIndex[subnet.Name]).Child("SecurityGroup").Child("Name"),
+						c.Spec.NetworkSpec.Subnets[i].SecurityGroup.Name, "field is immutable"),
+				)
+			}
+		}
+	}
+
+	return allErrs
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
