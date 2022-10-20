@@ -106,7 +106,6 @@ kind: KubeadmControlPlane
 metadata:
   labels:
     cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
-    kcp-adoption.step2: ""
   name: ${CLUSTER_NAME}-control-plane
 spec:
   kubeadmConfigSpec:

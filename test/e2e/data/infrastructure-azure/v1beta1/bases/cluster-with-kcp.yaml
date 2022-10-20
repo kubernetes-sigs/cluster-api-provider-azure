@@ -59,14 +59,12 @@ spec:
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 # KubeadmControlPlane referenced by the Cluster object with
-# - the label kcp-adoption.step2, because it should be created in the second step of the kcp-adoption test.
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
   labels:
     cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
-    kcp-adoption.step2: ""
 spec:
   machineTemplate:
     infrastructureRef:
