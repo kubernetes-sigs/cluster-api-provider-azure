@@ -24,7 +24,9 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	utilfeature "k8s.io/component-base/featuregate/testing"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -568,6 +570,9 @@ func TestValidateBoolPtrImmutable(t *testing.T) {
 }
 
 func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
+	// NOTE: AzureManagedMachinePool is behind AKS feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
 	tests := []struct {
 		name     string
 		ammp     *AzureManagedMachinePool
@@ -575,13 +580,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 		errorLen int
 	}{
 		{
-			name: "valid",
-			ammp: &AzureManagedMachinePool{
-				Spec: AzureManagedMachinePoolSpec{
-					MaxPods:    to.Int32Ptr(30),
-					OsDiskType: to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
-				},
-			},
+			name:    "valid",
+			ammp:    getKnownValidAzureManagedMachinePool(),
 			wantErr: false,
 		},
 		{
@@ -789,5 +789,42 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
+	}
+}
+
+func TestAzureManagedMachinePool_ValidateCreateFailure(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name      string
+		ammp      *AzureManagedMachinePool
+		deferFunc func()
+	}{
+		{
+			name:      "feature gate explicitly disabled",
+			ammp:      getKnownValidAzureManagedMachinePool(),
+			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, false),
+		},
+		{
+			name:      "feature gate implicitly disabled",
+			ammp:      getKnownValidAzureManagedMachinePool(),
+			deferFunc: func() {},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			defer tc.deferFunc()
+			err := tc.ammp.ValidateCreate(nil)
+			g.Expect(err).To(HaveOccurred())
+		})
+	}
+}
+
+func getKnownValidAzureManagedMachinePool() *AzureManagedMachinePool {
+	return &AzureManagedMachinePool{
+		Spec: AzureManagedMachinePoolSpec{
+			MaxPods:    to.Int32Ptr(30),
+			OsDiskType: to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+		},
 	}
 }

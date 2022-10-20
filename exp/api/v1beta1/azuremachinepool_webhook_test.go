@@ -36,6 +36,8 @@ import (
 
 var (
 	validSSHPublicKey = generateSSHPublicKey(true)
+	zero              = intstr.FromInt(0)
+	one               = intstr.FromInt(1)
 )
 
 func TestAzureMachinePool_ValidateCreate(t *testing.T) {
@@ -45,16 +47,16 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 
 	g := NewWithT(t)
 
-	var (
-		zero = intstr.FromInt(0)
-		one  = intstr.FromInt(1)
-	)
-
 	tests := []struct {
 		name    string
 		amp     *AzureMachinePool
 		wantErr bool
 	}{
+		{
+			name:    "valid",
+			amp:     getKnownValidAzureMachinePool(),
+			wantErr: false,
+		},
 		{
 			name:    "azuremachinepool with marketplace image - full",
 			amp:     createMachinePoolWithMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
@@ -375,6 +377,65 @@ func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) 
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Strategy: strategy,
+		},
+	}
+}
+
+func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name      string
+		amp       *AzureMachinePool
+		deferFunc func()
+	}{
+		{
+			name:      "feature gate explicitly disabled",
+			amp:       getKnownValidAzureMachinePool(),
+			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
+		},
+		{
+			name:      "feature gate implicitly disabled",
+			amp:       getKnownValidAzureMachinePool(),
+			deferFunc: func() {},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			defer tc.deferFunc()
+			err := tc.amp.ValidateCreate()
+			g.Expect(err).To(HaveOccurred())
+		})
+	}
+}
+
+func getKnownValidAzureMachinePool() *AzureMachinePool {
+	image := infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: "PUB1234",
+				Offer:     "OFFER1234",
+				SKU:       "SKU1234",
+			},
+			Version: "1.0.0",
+		},
+	}
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				Image:                        &image,
+				SSHPublicKey:                 validSSHPublicKey,
+				TerminateNotificationTimeout: to.IntPtr(10),
+			},
+			Identity:           infrav1.VMIdentitySystemAssigned,
+			RoleAssignmentName: string(uuid.NewUUID()),
+			Strategy: AzureMachinePoolDeploymentStrategy{
+				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &MachineRollingUpdateDeployment{
+					MaxSurge:       &zero,
+					MaxUnavailable: &one,
+				},
+			},
 		},
 	}
 }
