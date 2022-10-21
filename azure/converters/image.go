@@ -69,8 +69,8 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	if image.ComputeGallery.ResourceGroup != nil && image.ComputeGallery.SubscriptionID != nil {
 		return &compute.ImageReference{
 			ID: to.StringPtr(fmt.Sprintf(idTemplate,
-				image.ComputeGallery.SubscriptionID,
-				image.ComputeGallery.ResourceGroup,
+				to.String(image.ComputeGallery.SubscriptionID),
+				to.String(image.ComputeGallery.ResourceGroup),
 				image.ComputeGallery.Gallery,
 				image.ComputeGallery.Name,
 				image.ComputeGallery.Version,
