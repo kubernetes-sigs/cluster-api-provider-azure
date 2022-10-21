@@ -178,6 +178,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		EnableNodePublicIP:   managedMachinePool.Spec.EnableNodePublicIP,
 		NodePublicIPPrefixID: managedMachinePool.Spec.NodePublicIPPrefixID,
 		ScaleSetPriority:     managedMachinePool.Spec.ScaleSetPriority,
+		AdditionalTags:       managedMachinePool.Spec.AdditionalTags,
 	}
 
 	if managedMachinePool.Spec.OSDiskSizeGB != nil {

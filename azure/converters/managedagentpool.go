@@ -45,5 +45,6 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) 
 		EnableNodePublicIP:   properties.EnableNodePublicIP,
 		NodePublicIPPrefixID: properties.NodePublicIPPrefixID,
 		ScaleSetPriority:     properties.ScaleSetPriority,
+		Tags:                 properties.Tags,
 	}
 }

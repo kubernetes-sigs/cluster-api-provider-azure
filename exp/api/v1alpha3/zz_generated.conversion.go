@@ -904,6 +904,7 @@ func Convert_v1alpha3_AzureManagedMachinePoolSpec_To_v1beta1_AzureManagedMachine
 }
 
 func autoConvert_v1beta1_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMachinePoolSpec(in *v1beta1.AzureManagedMachinePoolSpec, out *AzureManagedMachinePoolSpec, s conversion.Scope) error {
+	// WARNING: in.AdditionalTags requires manual conversion: does not exist in peer-type
 	// WARNING: in.Name requires manual conversion: does not exist in peer-type
 	out.Mode = in.Mode
 	out.SKU = in.SKU

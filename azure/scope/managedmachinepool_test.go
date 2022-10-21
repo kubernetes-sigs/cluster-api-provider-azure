@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -209,6 +210,105 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 				Replicas: 1,
 				NodeLabels: map[string]*string{
 					"custom": to.StringPtr("default"),
+				},
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			g := NewWithT(t)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
+			c.Input.Client = fakeClient
+			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
+			g.Expect(err).To(Succeed())
+			agentPool := s.AgentPoolSpec()
+			if !reflect.DeepEqual(c.Expected, agentPool) {
+				t.Errorf("Got difference between expected result and result:\n%s", cmp.Diff(c.Expected, agentPool))
+			}
+		})
+	}
+}
+
+func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = expv1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
+
+	cases := []struct {
+		Name     string
+		Input    ManagedMachinePoolScopeParams
+		Expected azure.ResourceSpecGetter
+	}{
+		{
+			Name: "Without additional tags",
+			Input: ManagedMachinePoolScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				ManagedMachinePool: ManagedMachinePool{
+					MachinePool:      getMachinePool("pool0"),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+				},
+			},
+			Expected: &agentpools.AgentPoolSpec{
+				Name:         "pool0",
+				SKU:          "Standard_D2s_v3",
+				Replicas:     1,
+				Mode:         "System",
+				Cluster:      "cluster1",
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
+			},
+		},
+		{
+			Name: "With additional tags",
+			Input: ManagedMachinePoolScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				ManagedMachinePool: ManagedMachinePool{
+					MachinePool: getMachinePool("pool1"),
+					InfraMachinePool: getAzureMachinePoolWithAdditionalTags("pool1", map[string]string{
+						"environment": "production",
+					}),
+				},
+			},
+			Expected: &agentpools.AgentPoolSpec{
+				Name:     "pool1",
+				SKU:      "Standard_D2s_v3",
+				Mode:     "System",
+				Cluster:  "cluster1",
+				Replicas: 1,
+				AdditionalTags: map[string]string{
+					"environment": "production",
 				},
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				Headers:      map[string]string{},
@@ -578,6 +678,12 @@ func getAzureMachinePoolWithOsDiskType(name string, osDiskType string) *infrav1e
 func getAzureMachinePoolWithLabels(name string, nodeLabels map[string]string) *infrav1exp.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeSystem)
 	managedPool.Spec.NodeLabels = nodeLabels
+	return managedPool
+}
+
+func getAzureMachinePoolWithAdditionalTags(name string, additionalTags infrav1.Tags) *infrav1exp.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeSystem)
+	managedPool.Spec.AdditionalTags = additionalTags
 	return managedPool
 }
 

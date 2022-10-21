@@ -44,6 +44,11 @@ type NodePoolMode string
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
 
+	// AdditionalTags is an optional set of tags to add to Azure resources managed by the
+	// Azure provider, in addition to the ones added by default.
+	// +optional
+	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
+
 	// Name - name of the agent pool. If not specified, CAPZ uses the name of the CR as the agent pool name.
 	// +optional
 	Name *string `json:"name,omitempty"`

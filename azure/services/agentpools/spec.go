@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -99,6 +100,9 @@ type AgentPoolSpec struct {
 
 	// ScaleSetPriority specifies the ScaleSetPriority for the node pool. Allowed values are 'Spot' and 'Regular'
 	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
+
+	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the ones added by default.
+	AdditionalTags infrav1.Tags
 }
 
 // ResourceName returns the name of the agent pool.
@@ -148,6 +152,7 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 				MaxCount:            existingPool.MaxCount,
 				NodeLabels:          existingPool.NodeLabels,
 				NodeTaints:          existingPool.NodeTaints,
+				Tags:                existingPool.Tags,
 			},
 		}
 
@@ -161,6 +166,7 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 				MaxCount:            s.MaxCount,
 				NodeLabels:          s.NodeLabels,
 				NodeTaints:          existingPool.NodeTaints,
+				Tags:                converters.TagsToMap(s.AdditionalTags),
 			},
 		}
 
@@ -224,6 +230,7 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 			VnetSubnetID:         vnetSubnetID,
 			EnableNodePublicIP:   s.EnableNodePublicIP,
 			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
+			Tags:                 converters.TagsToMap(s.AdditionalTags),
 		},
 	}, nil
 }

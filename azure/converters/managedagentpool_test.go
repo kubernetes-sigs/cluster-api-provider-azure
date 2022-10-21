@@ -54,6 +54,9 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					NodeLabels: map[string]*string{
 						"custom": to.StringPtr("default"),
 					},
+					Tags: map[string]*string{
+						"custom": to.StringPtr("default"),
+					},
 				},
 			},
 
@@ -76,6 +79,9 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					MaxPods:             to.Int32Ptr(60),
 					OsDiskType:          containerservice.OSDiskTypeManaged,
 					NodeLabels: map[string]*string{
+						"custom": to.StringPtr("default"),
+					},
+					Tags: map[string]*string{
 						"custom": to.StringPtr("default"),
 					},
 				}))
