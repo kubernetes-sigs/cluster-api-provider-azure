@@ -60,6 +60,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -725,7 +726,7 @@ func newImagesClient() compute.VirtualMachineImagesClient {
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := settings.GetAuthorizer()
+	authorizer, err := azureutil.GetAuthorizer(settings)
 	Expect(err).NotTo(HaveOccurred())
 	imagesClient := compute.NewVirtualMachineImagesClient(subscriptionID)
 	imagesClient.Authorizer = authorizer

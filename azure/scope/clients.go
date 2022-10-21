@@ -27,6 +27,8 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // AzureClients contains all the Azure clients used by the scopes.
@@ -94,9 +96,12 @@ func (c *AzureClients) setCredentials(subscriptionID, environmentName string) er
 	c.Values[auth.TenantID] = strings.TrimSuffix(c.Values[auth.TenantID], "\n")
 
 	if c.Authorizer == nil {
-		c.Authorizer, err = c.GetAuthorizer()
+		c.Authorizer, err = azureutil.GetAuthorizer(settings)
+		if err != nil {
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID, environmentName string, credentialsProvider CredentialsProvider) error {
@@ -129,7 +134,7 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 	}
 	c.Values[auth.ClientSecret] = strings.TrimSuffix(clientSecret, "\n")
 
-	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint, c.Environment.ActiveDirectoryEndpoint)
+	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint, c.Environment.ActiveDirectoryEndpoint, c.Environment.TokenAudience)
 	return err
 }
 

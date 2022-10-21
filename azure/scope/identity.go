@@ -20,11 +20,15 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	aadpodid "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity"
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/adal"
+	"github.com/jongio/azidext/go/azidext"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -43,7 +47,7 @@ const azureSecretKey = "clientSecret"
 
 // CredentialsProvider defines the behavior for azure identity based credential providers.
 type CredentialsProvider interface {
-	GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string) (autorest.Authorizer, error)
+	GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (autorest.Authorizer, error)
 	GetClientID() string
 	GetClientSecret(ctx context.Context) (string, error)
 	GetTenantID() string
@@ -98,8 +102,8 @@ func NewAzureClusterCredentialsProvider(ctx context.Context, kubeClient client.C
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureCluster metadata.
-func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string) (autorest.Authorizer, error) {
-	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, p.AzureCluster.ObjectMeta)
+func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, p.AzureCluster.ObjectMeta)
 }
 
 // NewManagedControlPlaneCredentialsProvider creates a new ManagedControlPlaneCredentialsProvider from the supplied inputs.
@@ -130,50 +134,61 @@ func NewManagedControlPlaneCredentialsProvider(ctx context.Context, kubeClient c
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureManagedControlPlane metadata.
-func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string) (autorest.Authorizer, error) {
-	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, p.AzureManagedControlPlane.ObjectMeta)
+func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, p.AzureManagedControlPlane.ObjectMeta)
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity and cluster metadata.
-func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
-	var spt *adal.ServicePrincipalToken
+func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
+	var authErr error
+	var cred azcore.TokenCredential
 	switch p.Identity.Spec.Type {
 	case infrav1.ServicePrincipal, infrav1.ServicePrincipalCertificate, infrav1.UserAssignedMSI:
 		if err := createAzureIdentityWithBindings(ctx, p.Identity, resourceManagerEndpoint, activeDirectoryEndpoint, clusterMeta, p.Client); err != nil {
 			return nil, err
 		}
 
-		msiEndpoint, err := adal.GetMSIVMEndpoint()
-		if err != nil {
-			return nil, errors.Errorf("failed to get MSI endpoint: %v", err)
+		options := azidentity.ManagedIdentityCredentialOptions{
+			ID: azidentity.ClientID(p.Identity.Spec.ClientID),
 		}
-
-		spt, err = adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, resourceManagerEndpoint, p.Identity.Spec.ClientID)
-		if err != nil {
-			return nil, errors.Errorf("failed to get token from service principal identity: %v", err)
-		}
+		cred, authErr = azidentity.NewManagedIdentityCredential(&options)
 
 	case infrav1.ManualServicePrincipal:
-		oauthConfig, err := adal.NewOAuthConfig(activeDirectoryEndpoint, p.GetTenantID())
-		if err != nil {
-			return nil, err
-		}
-
 		clientSecret, err := p.GetClientSecret(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get client secret")
 		}
 
-		spt, err = adal.NewServicePrincipalToken(*oauthConfig, p.Identity.Spec.ClientID, clientSecret, resourceManagerEndpoint)
-		if err != nil {
-			return nil, errors.Errorf("failed to get token from service principal identity: %v", err)
+		options := azidentity.ClientSecretCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				Cloud: cloud.Configuration{
+					ActiveDirectoryAuthorityHost: activeDirectoryEndpoint,
+					Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+						cloud.ResourceManager: {
+							Audience: tokenAudience,
+							Endpoint: resourceManagerEndpoint,
+						},
+					},
+				},
+			},
 		}
+		cred, authErr = azidentity.NewClientSecretCredential(p.GetTenantID(), p.Identity.Spec.ClientID, clientSecret, &options)
 
 	default:
 		return nil, errors.Errorf("identity type %s not supported", p.Identity.Spec.Type)
 	}
 
-	return autorest.NewBearerAuthorizer(spt), nil
+	if authErr != nil {
+		return nil, errors.Errorf("failed to get token from service principal identity: %v", authErr)
+	}
+	// We must use TokenAudience for StackCloud, otherwise we get an
+	// AADSTS500011 error from the API
+	scope := tokenAudience
+	if !strings.HasSuffix(scope, "/.default") {
+		scope += "/.default"
+	}
+	authorizer := azidext.NewTokenCredentialAdapter(cred, []string{scope})
+	return authorizer, nil
 }
 
 // GetClientID returns the Client ID associated with the AzureCredentialsProvider's Identity.

@@ -36,6 +36,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -408,7 +409,7 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 	}
 
 	vmClient := compute.NewVirtualMachinesClient(settings.GetSubscriptionID())
-	vmClient.Authorizer, err = settings.GetAuthorizer()
+	vmClient.Authorizer, err = azureutil.GetAuthorizer(settings)
 	if err != nil {
 		return errors.Wrap(err, "failed to get authorizer")
 	}
@@ -440,7 +441,7 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 	}
 
 	vmssClient := compute.NewVirtualMachineScaleSetVMsClient(settings.GetSubscriptionID())
-	vmssClient.Authorizer, err = settings.GetAuthorizer()
+	vmssClient.Authorizer, err = azureutil.GetAuthorizer(settings)
 	if err != nil {
 		return errors.Wrap(err, "failed to get authorizer")
 	}

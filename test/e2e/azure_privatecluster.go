@@ -41,6 +41,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -183,7 +184,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		Expect(err).To(BeNil())
 
 		azureBastionClient := network.NewBastionHostsClient(settings.GetSubscriptionID())
-		azureBastionClient.Authorizer, err = settings.GetAuthorizer()
+		azureBastionClient.Authorizer, err = azureutil.GetAuthorizer(settings)
 		Expect(err).To(BeNil())
 
 		groupName := os.Getenv(AzureResourceGroup)
@@ -223,7 +224,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := settings.GetAuthorizer()
+	authorizer, err := azureutil.GetAuthorizer(settings)
 	Expect(err).NotTo(HaveOccurred())
 	groupClient := resources.NewGroupsClient(subscriptionID)
 	groupClient.Authorizer = authorizer
@@ -456,7 +457,7 @@ func getClientIDforMSI(resourceID string) string {
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := settings.GetAuthorizer()
+	authorizer, err := azureutil.GetAuthorizer(settings)
 	Expect(err).NotTo(HaveOccurred())
 
 	msiClient := msi.NewUserAssignedIdentitiesClient(subscriptionID)
