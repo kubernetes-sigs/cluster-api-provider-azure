@@ -367,8 +367,9 @@ func getAvailabilityZonesForRegion(location string, size string) ([]string, erro
 // including which Ginkgo node it's running on.
 //
 // Example output:
-//   INFO: "With 1 worker node" started at Tue, 22 Sep 2020 13:19:08 PDT on Ginkgo node 2 of 3
-//   INFO: "With 1 worker node" ran for 18m34s on Ginkgo node 2 of 3
+//
+//	INFO: "With 1 worker node" started at Tue, 22 Sep 2020 13:19:08 PDT on Ginkgo node 2 of 3
+//	INFO: "With 1 worker node" ran for 18m34s on Ginkgo node 2 of 3
 func logCheckpoint(specTimes map[string]time.Time) {
 	text := CurrentGinkgoTestDescription().TestText
 	start, started := specTimes[text]

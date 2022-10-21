@@ -50,8 +50,11 @@ func mpImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 }
 
 func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
-	idTemplate := "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s"
+	if image.ComputeGallery == nil && image.SharedGallery == nil {
+		return nil, errors.New("unable to convert compute image to SDK as SharedGallery or ComputeGallery fields are not set")
+	}
 
+	idTemplate := "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s"
 	if image.SharedGallery != nil {
 		return &compute.ImageReference{
 			ID: to.StringPtr(fmt.Sprintf(idTemplate,
@@ -69,8 +72,8 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	if image.ComputeGallery.ResourceGroup != nil && image.ComputeGallery.SubscriptionID != nil {
 		return &compute.ImageReference{
 			ID: to.StringPtr(fmt.Sprintf(idTemplate,
-				image.ComputeGallery.SubscriptionID,
-				image.ComputeGallery.ResourceGroup,
+				to.String(image.ComputeGallery.SubscriptionID),
+				to.String(image.ComputeGallery.ResourceGroup),
 				image.ComputeGallery.Gallery,
 				image.ComputeGallery.Name,
 				image.ComputeGallery.Version,
