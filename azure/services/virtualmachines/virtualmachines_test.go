@@ -107,7 +107,7 @@ var (
 			Address: "10.0.0.6",
 		},
 	}
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 )
 
 func TestReconcileVM(t *testing.T) {

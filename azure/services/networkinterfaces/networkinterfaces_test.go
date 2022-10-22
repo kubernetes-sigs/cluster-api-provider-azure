@@ -58,7 +58,7 @@ var (
 		AcceleratedNetworking: nil,
 		SKU:                   &fakeSku,
 	}
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 )
 
 func TestReconcileNetworkInterface(t *testing.T) {

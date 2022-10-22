@@ -55,7 +55,7 @@ var (
 		Location:      "test-location",
 	}
 
-	internalError        = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError        = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 	extensionFailedError = errors.Wrapf(internalError, "extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more")
 
 	notDoneError          = azure.NewOperationNotDoneError(&infrav1.Future{})

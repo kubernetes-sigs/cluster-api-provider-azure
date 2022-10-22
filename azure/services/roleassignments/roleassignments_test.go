@@ -95,7 +95,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 				s.Name().Return(fakeRoleAssignment1.MachineName)
 				s.HasSystemAssignedIdentity().Return(true)
 				s.RoleAssignmentResourceType().Return("VirtualMachine")
-				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 		{
@@ -116,7 +116,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 					},
 				}, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRoleAssignment1, serviceName).Return(&RoleAssignmentSpec{},
-					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 	}
@@ -188,7 +188,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 				s.Name().Return("test-vmss")
 				s.HasSystemAssignedIdentity().Return(true)
 				mvmss.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{},
-					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 		{
@@ -208,7 +208,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 					},
 				}, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRoleAssignment2, serviceName).Return(&RoleAssignmentSpec{},
-					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 	}
