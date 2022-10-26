@@ -571,6 +571,7 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterName = getClusterName(clusterNamePrefix, aksClusterNameSuffix)
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig)
 			Expect(err).To(BeNil())
+			replicas := pointer.Int64Ptr(1)
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
@@ -584,7 +585,7 @@ var _ = Describe("Workload cluster creation", func() {
 					ClusterName:              clusterName,
 					KubernetesVersion:        kubernetesVersion,
 					ControlPlaneMachineCount: pointer.Int64Ptr(1),
-					WorkerMachineCount:       pointer.Int64Ptr(1),
+					WorkerMachineCount:       replicas,
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -594,6 +595,16 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				},
 			}, result)
+
+			By("Exercising machine pools", func() {
+				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
+					return AKSMachinePoolSpecInput{
+						Cluster:         result.Cluster,
+						MachinePools:    result.MachinePools,
+						InitialReplicas: int32(*replicas),
+						WaitIntervals:   e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes")}
+				})
+			})
 
 			By("creating a machine pool with public IP addresses from a prefix", func() {
 				AKSPublicIPPrefixSpec(ctx, func() AKSPublicIPPrefixSpecInput {

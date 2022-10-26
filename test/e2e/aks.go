@@ -355,6 +355,68 @@ func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, lo
 	return maxVersion, nil
 }
 
+type AKSMachinePoolSpecInput struct {
+	Cluster         *clusterv1.Cluster
+	MachinePools    []*expv1.MachinePool
+	InitialReplicas int32
+	WaitIntervals   []interface{}
+}
+
+func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSpecInput) {
+	input := inputGetter()
+
+	By("Scaling the machine pools out")
+	framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+		ClusterProxy:              bootstrapClusterProxy,
+		Cluster:                   input.Cluster,
+		Replicas:                  input.InitialReplicas + 1,
+		MachinePools:              input.MachinePools,
+		WaitForMachinePoolToScale: input.WaitIntervals,
+	})
+
+	By("Scaling the machine pools in")
+	framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+		ClusterProxy:              bootstrapClusterProxy,
+		Cluster:                   input.Cluster,
+		Replicas:                  input.InitialReplicas,
+		MachinePools:              input.MachinePools,
+		WaitForMachinePoolToScale: input.WaitIntervals,
+	})
+
+	By("Scaling the machine pools to zero")
+	// System node pools cannot be scaled to 0, so only include user node pools.
+	var machinePoolsToScale []*expv1.MachinePool
+	for _, mp := range input.MachinePools {
+		ammp := &infrav1exp.AzureManagedMachinePool{}
+		err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
+			Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+			Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+		}, ammp)
+		Expect(err).NotTo(HaveOccurred())
+
+		if ammp.Spec.Mode != string(infrav1exp.NodePoolModeSystem) {
+			machinePoolsToScale = append(machinePoolsToScale, mp)
+		}
+	}
+
+	framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+		ClusterProxy:              bootstrapClusterProxy,
+		Cluster:                   input.Cluster,
+		Replicas:                  0,
+		MachinePools:              machinePoolsToScale,
+		WaitForMachinePoolToScale: input.WaitIntervals,
+	})
+
+	By("Restoring initial replica count")
+	framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+		ClusterProxy:              bootstrapClusterProxy,
+		Cluster:                   input.Cluster,
+		Replicas:                  input.InitialReplicas,
+		MachinePools:              input.MachinePools,
+		WaitForMachinePoolToScale: input.WaitIntervals,
+	})
+}
+
 type AKSPublicIPPrefixSpecInput struct {
 	Cluster           *clusterv1.Cluster
 	KubernetesVersion string
