@@ -189,10 +189,6 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 	if len(s.AvailabilityZones) > 0 {
 		availabilityZones = &s.AvailabilityZones
 	}
-	var replicas *int32
-	if s.Replicas > 0 {
-		replicas = &s.Replicas
-	}
 	var nodeTaints *[]string
 	if len(s.NodeTaints) > 0 {
 		nodeTaints = &s.NodeTaints
@@ -209,7 +205,7 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 	return containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			AvailabilityZones:    availabilityZones,
-			Count:                replicas,
+			Count:                &s.Replicas,
 			EnableAutoScaling:    s.EnableAutoScaling,
 			EnableUltraSSD:       s.EnableUltraSSD,
 			MaxCount:             s.MaxCount,
