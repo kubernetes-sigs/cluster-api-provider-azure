@@ -205,6 +205,16 @@ func Test_ComputeImageToSDK(t *testing.T) {
 				}))
 			},
 		},
+		{
+			name: "Should return error if SharedGallery and ComputeGallery are nil",
+			image: &infrav1.Image{
+				ComputeGallery: nil,
+				SharedGallery:  nil,
+			},
+			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+				g.Expect(err).ShouldNot(BeNil())
+			},
+		},
 	}
 
 	for _, c := range cases {
