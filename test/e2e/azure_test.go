@@ -591,6 +591,16 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("modifying nodepool autoscaling configuration", func() {
+				AKSAutoscaleSpec(ctx, func() AKSAutoscaleSpecInput {
+					return AKSAutoscaleSpecInput{
+						Cluster:       result.Cluster,
+						MachinePool:   result.MachinePools[0],
+						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+					}
+				})
+			})
 		})
 	})
 
