@@ -174,7 +174,7 @@ spec:
     osDisk:
       diskSizeGB: 30
       osType: Linux
-    vmSize: Standard_D2s_v3
+    vmSize: Standard_B2s
 ```
 
 ## Availability sets when there are no failure domains

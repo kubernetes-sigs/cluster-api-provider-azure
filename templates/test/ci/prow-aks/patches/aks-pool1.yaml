@@ -12,3 +12,4 @@ spec:
   nodeLabels:
     "type": "shared"
   name: pool1
+  sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"

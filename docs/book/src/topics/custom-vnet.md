@@ -51,7 +51,7 @@ spec:
   networkSpec:
     vnet:
       name: my-vnet
-      cidrBlocks: 
+      cidrBlocks:
         - 10.255.0.0/16
       peerings:
       - resourceGroup: vnet-peering-rg
@@ -61,11 +61,11 @@ spec:
     subnets:
       - name: my-subnet-cp
         role: control-plane
-        cidrBlocks: 
+        cidrBlocks:
           - 10.255.0.0/24
       - name: my-subnet-node
         role: node
-        cidrBlocks: 
+        cidrBlocks:
           - 10.255.1.0/24
   resourceGroup: cluster-vnet-peering
   ```
@@ -87,16 +87,16 @@ spec:
   networkSpec:
     vnet:
       name: my-vnet
-      cidrBlocks: 
+      cidrBlocks:
         - 10.0.0.0/16
     subnets:
       - name: my-subnet-cp
         role: control-plane
-        cidrBlocks: 
+        cidrBlocks:
           - 10.0.1.0/24
       - name: my-subnet-node
         role: node
-        cidrBlocks: 
+        cidrBlocks:
           - 10.0.2.0/24
   resourceGroup: cluster-example
 ```
@@ -130,12 +130,12 @@ spec:
   networkSpec:
     vnet:
       name: my-vnet
-      cidrBlocks: 
+      cidrBlocks:
         - 10.0.0.0/16
     subnets:
       - name: my-subnet-cp
         role: control-plane
-        cidrBlocks: 
+        cidrBlocks:
           - 10.0.1.0/24
         securityGroup:
           name: my-subnet-cp-nsg
@@ -169,7 +169,7 @@ spec:
               sourcePorts: "*"
       - name: my-subnet-node
         role: node
-        cidrBlocks: 
+        cidrBlocks:
           - 10.0.2.0/24
   resourceGroup: cluster-example
 ```
@@ -264,7 +264,7 @@ spec:
       osType: Linux
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
     subnetName: subnet-mp-1
-    vmSize: Standard_D2s_v3
+    vmSize: Standard_B2s
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
@@ -287,7 +287,7 @@ spec:
       osType: Linux
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
     subnetName: subnet-mp-2
-    vmSize: Standard_D2s_v3
+    vmSize: Standard_B2s
 ```
 
 If you don't specify any `node` subnets, one subnet with role `node` will be created and added to the `networkSpec` definition.

@@ -330,9 +330,9 @@ def deploy_worker_templates(template, substitutions):
         "AZURE_RESOURCE_GROUP": "${CLUSTER_NAME}-rg",
         "CONTROL_PLANE_MACHINE_COUNT": "1",
         "KUBERNETES_VERSION": settings.get("kubernetes_version"),
-        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
+        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_B2s",
         "WORKER_MACHINE_COUNT": "2",
-        "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3",
+        "AZURE_NODE_MACHINE_TYPE": "Standard_B2s",
     }
 
     if flavor == "aks":
