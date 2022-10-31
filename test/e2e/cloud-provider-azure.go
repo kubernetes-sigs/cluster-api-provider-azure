@@ -41,7 +41,12 @@ const (
 func InstallCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput) {
 	specName := "cloud-provider-azure-install"
 	By("Installing the correct version of cloud-provider-azure components via helm")
-	values := []string{fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName)}
+	values := []string{
+		fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName),
+		// Temporary: v1.23.22 image is not yet published but referenced in the chart
+		"cloudControllerManager.imageTag=v1.23.21",
+		"cloudNodeManager.imageTag=v1.23.21",
+	}
 	InstallHelmChart(ctx, input, cloudProviderAzureHelmRepoURL, cloudProviderAzureChartName, cloudProviderAzureHelmReleaseName, values)
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
 	workloadClusterClient := clusterProxy.GetClient()
