@@ -74,6 +74,28 @@ var (
 		VnetSubnetID:      "fake-vnet-subnet-id",
 		Headers:           map[string]string{"fake-header": "fake-value"},
 	}
+	fakeAgentPoolSpecWithZeroReplicas = AgentPoolSpec{
+		Name:              "fake-agent-pool-name",
+		ResourceGroup:     "fake-rg",
+		Cluster:           "fake-cluster",
+		AvailabilityZones: []string{"fake-zone"},
+		EnableAutoScaling: to.BoolPtr(false),
+		EnableUltraSSD:    to.BoolPtr(true),
+		MaxCount:          to.Int32Ptr(5),
+		MaxPods:           to.Int32Ptr(10),
+		MinCount:          to.Int32Ptr(1),
+		Mode:              "fake-mode",
+		NodeLabels:        map[string]*string{"fake-label": to.StringPtr("fake-value")},
+		NodeTaints:        []string{"fake-taint"},
+		OSDiskSizeGB:      2,
+		OsDiskType:        to.StringPtr("fake-os-disk-type"),
+		OSType:            to.StringPtr("fake-os-type"),
+		Replicas:          0,
+		SKU:               "fake-sku",
+		Version:           to.StringPtr("fake-version"),
+		VnetSubnetID:      "fake-vnet-subnet-id",
+		Headers:           map[string]string{"fake-header": "fake-value"},
+	}
 
 	fakeAgentPoolAutoScalingOutOfDate = containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
@@ -194,6 +216,10 @@ var (
 )
 
 func fakeAgentPoolWithProvisioningState(provisioningState string) containerservice.AgentPool {
+	return fakeAgentPoolWithProvisioningStateAndCountAndAutoscaling(provisioningState, 1, true)
+}
+
+func fakeAgentPoolWithProvisioningStateAndCountAndAutoscaling(provisioningState string, count int32, autoscaling bool) containerservice.AgentPool {
 	var state *string
 	if provisioningState != "" {
 		state = to.StringPtr(provisioningState)
@@ -201,8 +227,8 @@ func fakeAgentPoolWithProvisioningState(provisioningState string) containerservi
 	return containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			AvailabilityZones:   &[]string{"fake-zone"},
-			Count:               to.Int32Ptr(1),
-			EnableAutoScaling:   to.BoolPtr(true),
+			Count:               to.Int32Ptr(count),
+			EnableAutoScaling:   to.BoolPtr(autoscaling),
 			EnableUltraSSD:      to.BoolPtr(true),
 			MaxCount:            to.Int32Ptr(5),
 			MaxPods:             to.Int32Ptr(10),
@@ -351,6 +377,13 @@ func TestParameters(t *testing.T) {
 			spec:          fakeAgentPoolSpecWithAutoscaling,
 			existing:      fakeAgentPoolNodeLabelsOutOfDate,
 			expected:      fakeAgentPoolWithProvisioningState(""),
+			expectedError: nil,
+		},
+		{
+			name:          "scale to zero",
+			spec:          fakeAgentPoolSpecWithZeroReplicas,
+			existing:      fakeAgentPoolWithAutoscalingAndCount(false, 1),
+			expected:      fakeAgentPoolWithProvisioningStateAndCountAndAutoscaling("", 0, false),
 			expectedError: nil,
 		},
 	}
