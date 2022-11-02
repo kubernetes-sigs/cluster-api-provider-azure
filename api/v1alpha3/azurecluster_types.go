@@ -64,7 +64,7 @@ type AzureClusterStatus struct {
 	// A FailureDomain maps to Availability Zone with an Azure Region (if the region support them). An
 	// Availability Zone is a separate data center within a region and they can be used to ensure
 	// the cluster is more resilient to failure.
-	// See: https://docs.microsoft.com/en-us/azure/availability-zones/az-overview
+	// See: https://learn.microsoft.com/azure/reliability/availability-zones-overview
 	// This list will be used by Cluster API to try and spread the machines across the failure domains.
 	FailureDomains clusterv1alpha3.FailureDomains `json:"failureDomains,omitempty"`
 

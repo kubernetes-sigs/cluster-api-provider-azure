@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	helmVals "helm.sh/helm/v3/pkg/cli/values"
 	k8snet "k8s.io/utils/net"

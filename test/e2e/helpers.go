@@ -38,8 +38,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/blang/semver"
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
@@ -83,7 +82,7 @@ type deploymentsClientAdapter struct {
 }
 
 // Get fetches the deployment named by the key and updates the provided object.
-func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	deployment, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if deployObj, ok := obj.(*appsv1.Deployment); ok {
 		deployment.DeepCopyInto(deployObj)
@@ -153,7 +152,7 @@ type jobsClientAdapter struct {
 }
 
 // Get fetches the job named by the key and updates the provided object.
-func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	job, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if jobObj, ok := obj.(*batchv1.Job); ok {
 		job.DeepCopyInto(jobObj)
@@ -250,7 +249,7 @@ type servicesClientAdapter struct {
 }
 
 // Get fetches the service named by the key and updates the provided object.
-func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	service, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if serviceObj, ok := obj.(*corev1.Service); ok {
 		service.DeepCopyInto(serviceObj)
@@ -421,15 +420,16 @@ func getAvailabilityZonesForRegion(location string, size string) ([]string, erro
 func logCheckpoint(specTimes map[string]time.Time) {
 	text := CurrentGinkgoTestDescription().TestText
 	start, started := specTimes[text]
+	suiteConfig, reporterConfig := GinkgoConfiguration()
 	if !started {
 		start = time.Now()
 		specTimes[text] = start
-		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" started at %s on Ginkgo node %d of %d\n", text,
-			start.Format(time.RFC1123), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
+		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" started at %s on Ginkgo node %d of %d and junit test report to file %s\n", text,
+			start.Format(time.RFC1123), GinkgoParallelProcess(), suiteConfig.ParallelTotal, reporterConfig.JUnitReport)
 	} else {
 		elapsed := time.Since(start)
-		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" ran for %s on Ginkgo node %d of %d\n", text,
-			elapsed.Round(time.Second), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
+		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" ran for %s on Ginkgo node %d of %d and reported junit test to file %s\n", text,
+			elapsed.Round(time.Second), GinkgoParallelProcess(), suiteConfig.ParallelTotal, reporterConfig.JUnitReport)
 	}
 }
 
