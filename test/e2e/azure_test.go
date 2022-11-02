@@ -388,19 +388,6 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			By("Running a security scanner", func() {
-				KubescapeSpec(ctx, func() KubescapeSpecInput {
-					return KubescapeSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						FailThreshold:         e2eConfig.GetVariable(SecurityScanFailThreshold),
-						Container:             e2eConfig.GetVariable(SecurityScanContainer),
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
 			By("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
