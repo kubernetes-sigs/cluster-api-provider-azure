@@ -355,6 +355,96 @@ func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, lo
 	return maxVersion, nil
 }
 
+type AKSAutoscaleSpecInput struct {
+	Cluster       *clusterv1.Cluster
+	MachinePool   *expv1.MachinePool
+	WaitIntervals []interface{}
+}
+
+func AKSAutoscaleSpec(ctx context.Context, inputGetter func() AKSAutoscaleSpecInput) {
+	input := inputGetter()
+
+	settings, err := auth.GetSettingsFromEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	subscriptionID := settings.GetSubscriptionID()
+	auth, err := settings.GetAuthorizer()
+	Expect(err).NotTo(HaveOccurred())
+	agentpoolClient := containerservice.NewAgentPoolsClient(subscriptionID)
+	agentpoolClient.Authorizer = auth
+	mgmtClient := bootstrapClusterProxy.GetClient()
+	Expect(mgmtClient).NotTo(BeNil())
+
+	amcp := &infrav1exp.AzureManagedControlPlane{}
+	err = mgmtClient.Get(ctx, types.NamespacedName{
+		Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+		Name:      input.Cluster.Spec.ControlPlaneRef.Name,
+	}, amcp)
+	Expect(err).NotTo(HaveOccurred())
+
+	ammp := &infrav1exp.AzureManagedMachinePool{}
+	err = mgmtClient.Get(ctx, client.ObjectKeyFromObject(input.MachinePool), ammp)
+	Expect(err).NotTo(HaveOccurred())
+
+	resourceGroupName := amcp.Spec.ResourceGroupName
+	managedClusterName := amcp.Name
+	agentPoolName := *ammp.Spec.Name
+	getAgentPool := func() (containerservice.AgentPool, error) {
+		return agentpoolClient.Get(ctx, resourceGroupName, managedClusterName, agentPoolName)
+	}
+
+	toggleAutoscaling := func() {
+		err = mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)
+		Expect(err).NotTo(HaveOccurred())
+
+		enabled := ammp.Spec.Scaling != nil
+		var enabling string
+		if enabled {
+			enabling = "Disabling"
+			ammp.Spec.Scaling = nil
+		} else {
+			enabling = "Enabling"
+			ammp.Spec.Scaling = &infrav1exp.ManagedMachinePoolScaling{
+				MinSize: to.Int32Ptr(1),
+				MaxSize: to.Int32Ptr(2),
+			}
+		}
+		By(enabling + " autoscaling")
+		err = mgmtClient.Update(ctx, ammp)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	validateUntoggled := validateAKSAutoscaleDisabled
+	validateToggled := validateAKSAutoscaleEnabled
+	autoscalingInitiallyEnabled := ammp.Spec.Scaling != nil
+	if autoscalingInitiallyEnabled {
+		validateToggled, validateUntoggled = validateUntoggled, validateToggled
+	}
+
+	validateUntoggled(getAgentPool, inputGetter)
+	toggleAutoscaling()
+	validateToggled(getAgentPool, inputGetter)
+	toggleAutoscaling()
+	validateUntoggled(getAgentPool, inputGetter)
+}
+
+func validateAKSAutoscaleDisabled(agentPoolGetter func() (containerservice.AgentPool, error), inputGetter func() AKSAutoscaleSpecInput) {
+	By("Validating autoscaler disabled")
+	Eventually(func(g Gomega) {
+		agentpool, err := agentPoolGetter()
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(to.Bool(agentpool.EnableAutoScaling)).To(BeFalse())
+	}, inputGetter().WaitIntervals...).Should(Succeed())
+}
+
+func validateAKSAutoscaleEnabled(agentPoolGetter func() (containerservice.AgentPool, error), inputGetter func() AKSAutoscaleSpecInput) {
+	By("Validating autoscaler enabled")
+	Eventually(func(g Gomega) {
+		agentpool, err := agentPoolGetter()
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(to.Bool(agentpool.EnableAutoScaling)).To(BeTrue())
+	}, inputGetter().WaitIntervals...).Should(Succeed())
+}
+
 type AKSPublicIPPrefixSpecInput struct {
 	Cluster           *clusterv1.Cluster
 	KubernetesVersion string
