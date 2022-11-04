@@ -48,7 +48,7 @@ type Service struct {
 func New(scope TagScope) *Service {
 	return &Service{
 		Scope:  scope,
-		client: newClient(scope),
+		client: NewClient(scope),
 	}
 }
 

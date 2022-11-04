@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -48,14 +49,17 @@ type Service struct {
 	Scope VNetScope
 	async.Reconciler
 	async.Getter
+	async.TagsGetter
 }
 
 // New creates a new service.
 func New(scope VNetScope) *Service {
 	client := newClient(scope)
+	tagsClient := tags.NewClient(scope)
 	return &Service{
 		Scope:      scope,
 		Getter:     client,
+		TagsGetter: tagsClient,
 		Reconciler: async.New(scope, client, client),
 	}
 }
@@ -156,14 +160,17 @@ func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 		return false, errors.New("cannot get vnet to check if it is managed: spec is nil")
 	}
 
-	vnetIface, err := s.Get(ctx, spec)
+	scope := azure.VNetID(s.Scope.SubscriptionID(), spec.ResourceGroupName(), spec.ResourceName())
+	result, err := s.TagsGetter.GetAtScope(ctx, scope)
 	if err != nil {
 		return false, err
 	}
-	vnet, ok := vnetIface.(network.VirtualNetwork)
-	if !ok {
-		return false, errors.Errorf("%T is not a network.VirtualNetwork", vnetIface)
+
+	tagsMap := make(map[string]*string)
+	if result.Properties != nil && result.Properties.Tags != nil {
+		tagsMap = result.Properties.Tags
 	}
-	tags := converters.MapToTags(vnet.Tags)
+
+	tags := converters.MapToTags(tagsMap)
 	return tags.HasOwned(s.Scope.ClusterName()), nil
 }
