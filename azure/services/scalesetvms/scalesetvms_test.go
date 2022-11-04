@@ -43,7 +43,7 @@ import (
 )
 
 var (
-	autorest404 = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")
+	autorest404 = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not Found")
 )
 
 func TestNewService(t *testing.T) {

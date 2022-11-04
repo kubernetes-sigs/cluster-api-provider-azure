@@ -150,7 +150,7 @@ var _ = Describe("Workload cluster creation", func() {
 	if os.Getenv("LOCAL_ONLY") != "true" {
 		// This spec expects a user-assigned identity with Contributor role assignment named "cloud-provider-user-identity" in a "capz-ci"
 		// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
-		Context("Creating a private cluster [REQUIRED]", func() {
+		Context("Creating a private cluster [OPTIONAL]", func() {
 			It("Creates a public management cluster in a custom vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
 				By("Creating a custom virtual network", func() {
@@ -388,19 +388,6 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			By("Running a security scanner", func() {
-				KubescapeSpec(ctx, func() KubescapeSpecInput {
-					return KubescapeSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						FailThreshold:         e2eConfig.GetVariable(SecurityScanFailThreshold),
-						Container:             e2eConfig.GetVariable(SecurityScanContainer),
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
 			By("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
@@ -612,6 +599,16 @@ var _ = Describe("Workload cluster creation", func() {
 						Cluster:           result.Cluster,
 						KubernetesVersion: kubernetesVersion,
 						WaitIntervals:     e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+					}
+				})
+			})
+
+			By("modifying nodepool autoscaling configuration", func() {
+				AKSAutoscaleSpec(ctx, func() AKSAutoscaleSpecInput {
+					return AKSAutoscaleSpecInput{
+						Cluster:       result.Cluster,
+						MachinePool:   result.MachinePools[0],
+						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
 					}
 				})
 			})

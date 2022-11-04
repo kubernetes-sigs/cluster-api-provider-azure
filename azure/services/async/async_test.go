@@ -59,8 +59,8 @@ var (
 	}
 	fakeExistingResource   = resources.GenericResource{}
 	fakeResourceParameters = resources.GenericResource{}
-	fakeInternalError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
-	fakeNotFoundError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")
+	fakeInternalError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
+	fakeNotFoundError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not Found")
 	errCtxExceeded         = errors.New("ctx exceeded")
 )
 

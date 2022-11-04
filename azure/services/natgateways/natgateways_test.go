@@ -61,7 +61,7 @@ var (
 		"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
 		"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 	}
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 )
 
 func TestReconcileNatGateways(t *testing.T) {

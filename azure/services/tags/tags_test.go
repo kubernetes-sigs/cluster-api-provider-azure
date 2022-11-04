@@ -164,7 +164,7 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 		{
@@ -194,7 +194,7 @@ func TestReconcileTags(t *testing.T) {
 							"key": to.StringPtr("value"),
 						},
 					},
-				}).Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				}).Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 		{

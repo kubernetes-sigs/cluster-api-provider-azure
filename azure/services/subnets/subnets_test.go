@@ -188,7 +188,7 @@ var (
 
 	notASubnet    = "not a subnet"
 	notASubnetErr = errors.Errorf("%T is not a network.Subnet", notASubnet)
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 )
 
 func TestReconcileSubnets(t *testing.T) {

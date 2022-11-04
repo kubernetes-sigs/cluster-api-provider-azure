@@ -361,11 +361,11 @@ def deploy_worker_templates(template, substitutions):
     )
 
 def base64_encode(to_encode):
-    encode_blob = local("echo '{}' | tr -d '\n' | base64 - | tr -d '\n'".format(to_encode), quiet = True, echo_off = True)
+    encode_blob = local("echo '{}' | tr -d '\n' | base64 | tr -d '\n'".format(to_encode), quiet = True, echo_off = True)
     return str(encode_blob)
 
 def base64_encode_file(path_to_encode):
-    encode_blob = local("cat {} | tr -d '\n' | base64 - | tr -d '\n'".format(path_to_encode), quiet = True)
+    encode_blob = local("cat {} | tr -d '\n' | base64 | tr -d '\n'".format(path_to_encode), quiet = True)
     return str(encode_blob)
 
 def read_file_from_path(path_to_read):
@@ -373,7 +373,7 @@ def read_file_from_path(path_to_read):
     return str(str_blob)
 
 def base64_decode(to_decode):
-    decode_blob = local("echo '{}' | base64 --decode -".format(to_decode), quiet = True, echo_off = True)
+    decode_blob = local("echo '{}' | base64 --decode".format(to_decode), quiet = True, echo_off = True)
     return str(decode_blob)
 
 def kustomizesub(folder):
