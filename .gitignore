@@ -81,3 +81,7 @@ _releasenotes
 
 # calico manifests archive
 release-*/manifests/calico-*.yaml
+
+# mentioned in the capz book
+/sp.json
+/cluster.yaml

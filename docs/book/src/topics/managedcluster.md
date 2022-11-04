@@ -13,8 +13,8 @@ The combination of AzureManagedControlPlane/AzureManagedCluster
 corresponds to provisioning an AKS cluster. AzureManagedMachinePool
 corresponds one-to-one with AKS node pools. This also means that
 creating an AzureManagedControlPlane requires at least one AzureManagedMachinePool
-with `spec.mode` `System`, since AKS expects at least one system pool at creation 
-time. For more documentation on system node pool refer [AKS Docs](https://docs.microsoft.com/en-us/azure/aks/use-system-pools) 
+with `spec.mode` `System`, since AKS expects at least one system pool at creation
+time. For more documentation on system node pool refer [AKS Docs](https://docs.microsoft.com/en-us/azure/aks/use-system-pools)
 
 ## Deploy with clusterctl
 
@@ -26,7 +26,7 @@ executing clusterctl.
 # Kubernetes values
 export CLUSTER_NAME="my-cluster"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.19.6"
+export KUBERNETES_VERSION="v1.24.6"
 
 # Azure values
 export AZURE_LOCATION="southcentralus"
@@ -34,17 +34,21 @@ export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
 # set AZURE_SUBSCRIPTION_ID to the GUID of your subscription
 # this example uses an sdk authentication file and parses the subscriptionId with jq
 # this file may be created using
-#
-# `az ad sp create-for-rbac --role Contributor --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}" --sdk-auth > sp.json`
-#
-# when logged in with a service principal, it's also available using
-#
-# `az account show --sdk-auth`
-#
-# Otherwise, you can set this value manually.
-#
-export AZURE_SUBSCRIPTION_ID="$(cat ~/sp.json | jq -r .subscriptionId | tr -d '\n')"
+```
+
+Create a new service principal and save to a local file:
+
+```bash
+az ad sp create-for-rbac --role Contributor --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}" --sdk-auth > sp.json
+```
+
+export AZURE_SUBSCRIPTION_ID="$(cat sp.json | jq -r .subscriptionId | tr -d '\n')"
+export AZURE_CLIENT_SECRET="$(cat sp.json | jq -r .clientSecret | tr -d '\n')"
+export AZURE_CLIENT_ID="$(cat sp.json | jq -r .clientId | tr -d '\n')"
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
+export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
+export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
+export CLUSTER_IDENTITY_NAME="cluster-identity"
 ```
 
 Managed clusters also require the following feature flags set as environment variables:
@@ -54,7 +58,19 @@ export EXP_MACHINE_POOL=true
 export EXP_AKS=true
 ```
 
-Execute clusterctl to template the resources, then apply to a management cluster:
+Create a local kind cluster to run the management cluster components:
+
+```bash
+kind create cluster
+```
+
+Create an identity secret on the management cluster:
+
+```bash
+kubectl create secret generic "${AZURE_CLUSTER_IDENTITY_SECRET_NAME}" --from-literal=clientSecret="${AZURE_CLIENT_SECRET}"
+```
+
+Execute clusterctl to template the resources, then apply to your kind management cluster:
 
 ```bash
 clusterctl init --infrastructure azure
@@ -196,7 +212,7 @@ spec:
     resourceGroup: test-rg
     subnet:
       cidrBlock: 10.0.2.0/24
-      name: test-subnet  
+      name: test-subnet
 ```
 ### Multitenancy
 
@@ -246,7 +262,7 @@ spec:
 ### AKS Managed Azure Active Directory Integration
 
 Azure Kubernetes Service can be configured to use Azure Active Directory for user authentication.
-AAD for managed clusters can be configured by enabling the `managed` spec in `AzureManagedControlPlane` to `true` 
+AAD for managed clusters can be configured by enabling the `managed` spec in `AzureManagedControlPlane` to `true`
 and by providing Azure AD GroupObjectId in `AdminGroupObjectIDs` array. The group is needed as admin group for
 the cluster to grant cluster admin permissions. You can use an existing Azure AD group, or create a new one. For more documentation about AAD refer [AKS AAD Docs](https://docs.microsoft.com/en-us/azure/aks/managed-aad)
 
@@ -301,7 +317,7 @@ spec:
   osDiskSizeGB: 512
   sku: Standard_D2s_v3
   nodeLabels:
-    dedicated: kafka 
+    dedicated: kafka
 ```
 
 ### AKS Node Pool MaxPods configuration
@@ -381,12 +397,12 @@ spec:
 
 
 ### Enable AKS features with custom headers (--aks-custom-headers)
-To enable some AKS cluster / node pool features you need to pass special headers to the cluster / node pool create request. 
+To enable some AKS cluster / node pool features you need to pass special headers to the cluster / node pool create request.
 For example, to [add a node pool for GPU nodes](https://docs.microsoft.com/en-us/azure/aks/gpu-cluster#add-a-node-pool-for-gpu-nodes),
-you need to pass a custom header `UseGPUDedicatedVHD=true` (with `--aks-custom-headers UseGPUDedicatedVHD=true` argument). 
-To do this with CAPZ, you need to add special annotations to AzureManagedCluster (for cluster 
-features) or AzureManagedMachinePool (for node pool features). These annotations should have a prefix `infrastructure.cluster.x-k8s.io/custom-header-` followed 
-by the name of the AKS feature. For example, to create a node pool with GPU support, you would add the following 
+you need to pass a custom header `UseGPUDedicatedVHD=true` (with `--aks-custom-headers UseGPUDedicatedVHD=true` argument).
+To do this with CAPZ, you need to add special annotations to AzureManagedCluster (for cluster
+features) or AzureManagedMachinePool (for node pool features). These annotations should have a prefix `infrastructure.cluster.x-k8s.io/custom-header-` followed
+by the name of the AKS feature. For example, to create a node pool with GPU support, you would add the following
 annotation to AzureManagedMachinePool:
 ```
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -456,8 +472,8 @@ spec:
 
 ## Immutable fields for Managed Clusters (AKS)
 
-Some fields from the family of Managed Clusters CRD are immutable. Which means 
-those can only be set during the creation time. 
+Some fields from the family of Managed Clusters CRD are immutable. Which means
+those can only be set during the creation time.
 
 Following is the list of immutable fields for managed clusters:
 
@@ -512,7 +528,7 @@ If a user tries to delete the MachinePool which refers to the last system node p
 Here is an Example:
 
 ```yaml
-# MachinePool deleted 
+# MachinePool deleted
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
@@ -558,18 +574,18 @@ metadata:
   labels:
     cluster.x-k8s.io/cluster-name: capz-managed-aks
   name: agentpool2    # change the name of the machinepool
-  namespace: default 
+  namespace: default
   ownerReferences:
   - apiVersion: cluster.x-k8s.io/v1beta1
     kind: Cluster
     name: capz-managed-aks
-    uid: 152ecf45-0a02-4635-987c-1ebb89055fa2   
+    uid: 152ecf45-0a02-4635-987c-1ebb89055fa2
   # uid: ae4a235a-f0fa-4252-928a-0e3b4c61dbea     # remove the uid set for machinepool
 spec:
   clusterName: capz-managed-aks
   minReadySeconds: 0
   providerIDList:
-  - azure:///subscriptions/9107f2fb-e486-a434-a948-52e2929b6f18/resourceGroups/MC_rg_capz-managed-aks_eastus/providers/Microsoft.Compute/virtualMachineScaleSets/aks-agentpool0-10226072-vmss/virtualMachines/0  
+  - azure:///subscriptions/9107f2fb-e486-a434-a948-52e2929b6f18/resourceGroups/MC_rg_capz-managed-aks_eastus/providers/Microsoft.Compute/virtualMachineScaleSets/aks-agentpool0-10226072-vmss/virtualMachines/0
   replicas: 1
   template:
     metadata: {}
