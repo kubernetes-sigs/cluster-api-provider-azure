@@ -75,7 +75,7 @@ var (
 	}
 	fakePeeringSpecs      = []azure.ResourceSpecGetter{&fakePeering1To2, &fakePeering2To1, &fakePeering1To3, &fakePeering3To1}
 	fakePeeringExtraSpecs = []azure.ResourceSpecGetter{&fakePeering1To2, &fakePeering2To1, &fakePeeringExtra}
-	internalError         = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError         = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 	notDoneError          = azure.NewOperationNotDoneError(&infrav1.Future{})
 )
 

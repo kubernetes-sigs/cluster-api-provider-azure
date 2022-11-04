@@ -28,7 +28,7 @@ import (
 var (
 	sdkFuture, _ = azureautorest.NewFutureFromResponse(&http.Response{
 		Status:     "200 OK",
-		StatusCode: 200,
+		StatusCode: http.StatusOK,
 		Request: &http.Request{
 			Method: http.MethodDelete,
 		},

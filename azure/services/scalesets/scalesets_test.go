@@ -63,7 +63,7 @@ func TestGetExistingVMSS(t *testing.T) {
 			expectedError: "failed to get existing vmss: #: Not found: StatusCode=404",
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not found"))
 			},
 		},
 		{
@@ -133,7 +133,7 @@ func TestGetExistingVMSS(t *testing.T) {
 						ProvisioningState:    to.StringPtr("Succeeded"),
 					},
 				}, nil)
-				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not found"))
 			},
 		},
 	}
@@ -559,9 +559,9 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).
-					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal error"))
+					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal error"))
 				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
-					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not found"))
 			},
 		},
 		{
@@ -680,7 +680,7 @@ func TestDeleteVMSS(t *testing.T) {
 				s.GetLongRunningOperationState("my-existing-vmss", serviceName, infrav1.DeleteFuture).Return(future)
 				m.GetResultIfDone(gomockinternal.AContext(), future).Return(compute.VirtualMachineScaleSet{}, nil)
 				m.Get(gomockinternal.AContext(), "my-existing-rg", "my-existing-vmss").
-					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not found"))
 				s.DeleteLongRunningOperationState("my-existing-vmss", serviceName, infrav1.DeleteFuture)
 				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
@@ -697,9 +697,9 @@ func TestDeleteVMSS(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
 				s.GetLongRunningOperationState(name, serviceName, infrav1.DeleteFuture).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
-					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not found"))
 				m.Get(gomockinternal.AContext(), resourceGroup, name).
-					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not found"))
 			},
 		},
 		{
@@ -714,7 +714,7 @@ func TestDeleteVMSS(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
 				s.GetLongRunningOperationState(name, serviceName, infrav1.DeleteFuture).Return(nil)
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
-					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 				m.Get(gomockinternal.AContext(), resourceGroup, name).
 					Return(newDefaultVMSS("VM_SIZE"), nil)
 				m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(newDefaultInstances(), nil).AnyTimes()
@@ -1325,7 +1325,7 @@ func setupDefaultVMSSStartCreatingExpectations(s *mock_scalesets.MockScaleSetSco
 	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PutFuture).Return(nil)
 	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PatchFuture).Return(nil)
 	m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
-		Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+		Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not found"))
 }
 
 func setupCreatingSucceededExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, vmss compute.VirtualMachineScaleSet, future *infrav1.Future) {

@@ -56,7 +56,7 @@ var (
 		Headers:           map[string]string{"fake-header": "fake-value"},
 	}
 
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 )
 
 func TestReconcileAgentPools(t *testing.T) {

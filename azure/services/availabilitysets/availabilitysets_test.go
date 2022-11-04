@@ -61,9 +61,9 @@ var (
 		SKU:            nil,
 		AdditionalTags: map[string]string{},
 	}
-	internalError  = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
+	internalError  = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 	parameterError = errors.Errorf("some error with parameters")
-	notFoundError  = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")
+	notFoundError  = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not Found")
 	fakeSetWithVMs = compute.AvailabilitySet{
 		AvailabilitySetProperties: &compute.AvailabilitySetProperties{
 			VirtualMachines: &[]compute.SubResource{

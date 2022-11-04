@@ -39,8 +39,8 @@ var (
 		ClusterName:    "test-cluster",
 		AdditionalTags: map[string]string{"foo": "bar"},
 	}
-	internalError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")
-	notFoundError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")
+	internalError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
+	notFoundError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not Found")
 	sampleManagedGroup = resources.Group{
 		Name:       to.StringPtr("test-group"),
 		Location:   to.StringPtr("test-location"),
