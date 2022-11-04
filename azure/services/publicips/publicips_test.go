@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -94,17 +94,21 @@ var (
 		},
 	}
 
-	fakeUnmanagedPublicIP = network.PublicIPAddress{
-		Name: to.StringPtr("my-publicip-1"),
-		Tags: map[string]*string{
-			"foo": to.StringPtr("bar"),
+	managedTags = resources.TagsResource{
+		Properties: &resources.Tags{
+			Tags: map[string]*string{
+				"foo": to.StringPtr("bar"),
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+			},
 		},
 	}
-	fakeManagedPublicIP = network.PublicIPAddress{
-		Name: to.StringPtr("my-publicip-2"),
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"foo": to.StringPtr("bar"),
+
+	unmanagedTags = resources.TagsResource{
+		Properties: &resources.Tags{
+			Tags: map[string]*string{
+				"foo":       to.StringPtr("bar"),
+				"something": to.StringPtr("else"),
+			},
 		},
 	}
 
@@ -115,19 +119,19 @@ func TestReconcilePublicIP(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no public IPs",
 			expectedError: "",
-			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{
 			name:          "successfully create public IPs",
 			expectedError: "",
-			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil, nil)
@@ -139,7 +143,7 @@ func TestReconcilePublicIP(t *testing.T) {
 		{
 			name:          "fail to create a public IP",
 			expectedError: internalError.Error(),
-			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil, nil)
@@ -160,14 +164,14 @@ func TestReconcilePublicIP(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			scopeMock := mock_publicips.NewMockPublicIPScope(mockCtrl)
-			getterMock := mock_async.NewMockGetter(mockCtrl)
+			tagsGetterMock := mock_async.NewMockTagsGetter(mockCtrl)
 			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), getterMock.EXPECT(), reconcilerMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), tagsGetterMock.EXPECT(), reconcilerMock.EXPECT())
 
 			s := &Service{
 				Scope:      scopeMock,
-				Getter:     getterMock,
+				TagsGetter: tagsGetterMock,
 				Reconciler: reconcilerMock,
 			}
 
@@ -186,33 +190,37 @@ func TestDeletePublicIP(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no public IPs",
 			expectedError: "",
-			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{
 			name:          "successfully delete managed public IPs and ignore unmanaged public IPs",
 			expectedError: "",
-			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec1).Return(fakeManagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec1.ResourceGroupName(), fakePublicIPSpec1.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return("my-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil)
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec2).Return(fakeManagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec2.ResourceGroupName(), fakePublicIPSpec2.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return("my-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil)
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec3).Return(fakeUnmanagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec3.ResourceGroupName(), fakePublicIPSpec3.ResourceName())).Return(unmanagedTags, nil)
 				s.ClusterName().Return("my-cluster")
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpecIpv6).Return(fakeManagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpecIpv6.ResourceGroupName(), fakePublicIPSpecIpv6.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return("my-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicIPSpecIpv6, serviceName).Return(nil)
 
@@ -222,41 +230,49 @@ func TestDeletePublicIP(t *testing.T) {
 		{
 			name:          "noop if no managed public IPs",
 			expectedError: "",
-			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec1).Return(fakeUnmanagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec1.ResourceGroupName(), fakePublicIPSpec1.ResourceName())).Return(unmanagedTags, nil)
 				s.ClusterName().Return("my-cluster")
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec2).Return(fakeUnmanagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec2.ResourceGroupName(), fakePublicIPSpec2.ResourceName())).Return(unmanagedTags, nil)
 				s.ClusterName().Return("my-cluster")
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec3).Return(fakeUnmanagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec3.ResourceGroupName(), fakePublicIPSpec3.ResourceName())).Return(unmanagedTags, nil)
 				s.ClusterName().Return("my-cluster")
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpecIpv6).Return(fakeUnmanagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpecIpv6.ResourceGroupName(), fakePublicIPSpecIpv6.ResourceName())).Return(unmanagedTags, nil)
 				s.ClusterName().Return("my-cluster")
 			},
 		},
 		{
 			name:          "fail to delete managed public IP",
 			expectedError: internalError.Error(),
-			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec1).Return(fakeManagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec1.ResourceGroupName(), fakePublicIPSpec1.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return("my-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil)
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec2).Return(fakeManagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec2.ResourceGroupName(), fakePublicIPSpec2.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return("my-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil)
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpec3).Return(fakeManagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpec3.ResourceGroupName(), fakePublicIPSpec3.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return("my-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicIPSpec3, serviceName).Return(internalError)
 
-				m.Get(gomockinternal.AContext(), &fakePublicIPSpecIpv6).Return(fakeManagedPublicIP, nil)
+				s.SubscriptionID().Return("123")
+				m.GetAtScope(gomockinternal.AContext(), azure.PublicIPID("123", fakePublicIPSpecIpv6.ResourceGroupName(), fakePublicIPSpecIpv6.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return("my-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicIPSpecIpv6, serviceName).Return(nil)
 
@@ -275,14 +291,14 @@ func TestDeletePublicIP(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			scopeMock := mock_publicips.NewMockPublicIPScope(mockCtrl)
-			getterMock := mock_async.NewMockGetter(mockCtrl)
+			tagsGetterMock := mock_async.NewMockTagsGetter(mockCtrl)
 			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), getterMock.EXPECT(), reconcilerMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), tagsGetterMock.EXPECT(), reconcilerMock.EXPECT())
 
 			s := &Service{
 				Scope:      scopeMock,
-				Getter:     getterMock,
+				TagsGetter: tagsGetterMock,
 				Reconciler: reconcilerMock,
 			}
 

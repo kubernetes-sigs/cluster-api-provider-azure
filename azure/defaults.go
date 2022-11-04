@@ -281,6 +281,16 @@ func AvailabilitySetID(subscriptionID, resourceGroup, availabilitySetName string
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/availabilitySets/%s", subscriptionID, resourceGroup, availabilitySetName)
 }
 
+// PrivateDNSZoneID returns the azure resource ID for a given private DNS zone.
+func PrivateDNSZoneID(subscriptionID, resourceGroup, privateDNSZoneName string) string {
+	return fmt.Sprintf("subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/privateDnsZones/%s", subscriptionID, resourceGroup, privateDNSZoneName)
+}
+
+// VirtualNetworkLinkID returns the azure resource ID for a given virtual network link.
+func VirtualNetworkLinkID(subscriptionID, resourceGroup, privateDNSZoneName, virtualNetworkLinkName string) string {
+	return fmt.Sprintf("subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/privateDnsZones/%s/virtualNetworkLinks/%s", subscriptionID, resourceGroup, privateDNSZoneName, virtualNetworkLinkName)
+}
+
 // GetBootstrappingVMExtension returns the CAPZ Bootstrapping VM extension.
 // The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux for Linux or
 // https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-windows for Windows.

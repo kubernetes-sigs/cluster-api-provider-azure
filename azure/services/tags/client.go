@@ -31,17 +31,17 @@ type client interface {
 	UpdateAtScope(context.Context, string, resources.TagsPatchResource) (resources.TagsResource, error)
 }
 
-// azureClient contains the Azure go-sdk Client.
-type azureClient struct {
+// AzureClient contains the Azure go-sdk client.
+type AzureClient struct {
 	tags resources.TagsClient
 }
 
-var _ client = (*azureClient)(nil)
+var _ client = (*AzureClient)(nil)
 
-// newClient creates a new tags client from subscription ID.
-func newClient(auth azure.Authorizer) *azureClient {
+// NewClient creates a new tags client from subscription ID.
+func NewClient(auth azure.Authorizer) *AzureClient {
 	c := newTagsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &azureClient{c}
+	return &AzureClient{c}
 }
 
 // newTagsClient creates a new tags client from subscription ID.
@@ -52,7 +52,7 @@ func newTagsClient(subscriptionID string, baseURI string, authorizer autorest.Au
 }
 
 // GetAtScope sends the get at scope request.
-func (ac *azureClient) GetAtScope(ctx context.Context, scope string) (resources.TagsResource, error) {
+func (ac *AzureClient) GetAtScope(ctx context.Context, scope string) (resources.TagsResource, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.GetAtScope")
 	defer done()
 
@@ -61,7 +61,7 @@ func (ac *azureClient) GetAtScope(ctx context.Context, scope string) (resources.
 
 // UpdateAtScope this operation allows replacing, merging or selectively deleting tags on the specified resource or
 // subscription.
-func (ac *azureClient) UpdateAtScope(ctx context.Context, scope string, parameters resources.TagsPatchResource) (resources.TagsResource, error) {
+func (ac *AzureClient) UpdateAtScope(ctx context.Context, scope string, parameters resources.TagsPatchResource) (resources.TagsResource, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.UpdateAtScope")
 	defer done()
 
