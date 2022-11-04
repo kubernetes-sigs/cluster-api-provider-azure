@@ -77,7 +77,10 @@ setup() {
     fi
     echo "Using cluster template: ${CLUSTER_TEMPLATE}"
 
-    export CLUSTER_NAME="${CLUSTER_NAME:-capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')}"
+    export CLUSTER_NAME="${CLUSTER_NAME:-capz-$(
+        head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6
+        echo ''
+    )}"
     export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
     export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
     echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
@@ -144,12 +147,12 @@ wait_for_nodes() {
 copy_secret() {
     # point at the management cluster
     unset KUBECONFIG
-    "${KUBECTL}" get secret "${CLUSTER_NAME}-control-plane-azure-json" -o jsonpath='{.data.control-plane-azure\.json}' | base64 --decode > azure_json
-    
+    "${KUBECTL}" get secret "${CLUSTER_NAME}-control-plane-azure-json" -o jsonpath='{.data.control-plane-azure\.json}' | base64 --decode >azure_json
+
     # set KUBECONFIG back to the workload cluster
     export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
     "${KUBECTL}" create secret generic "${CONFIG_SECRET_NAME}" -n kube-system \
-      --from-file=cloud-config=azure_json
+        --from-file=cloud-config=azure_json
     rm azure_json
 }
 
@@ -208,19 +211,21 @@ if [[ -n "${TEST_CCM:-}" ]]; then
         copy_secret
     fi
 
+    export CCM_LOG_VERBOSITY="${CCM_LOG_VERBOSITY:-4}"
     echo "Installing cloud-provider-azure components via helm"
     "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name \
---set infra.clusterName="${CLUSTER_NAME}" \
---set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
---set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
---set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
---set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
---set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
---set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
---set cloudControllerManager.replicas="${CCM_COUNT}" \
---set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}"  \
---set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
---set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}"
+        --set infra.clusterName="${CLUSTER_NAME}" \
+        --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
+        --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
+        --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
+        --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
+        --set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
+        --set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
+        --set cloudControllerManager.replicas="${CCM_COUNT}" \
+        --set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}" \
+        --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
+        --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
+        --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}"
 
     echo "Waiting for all kube-system pods to be ready"
     "${KUBECTL}" wait --for=condition=Ready pod -n kube-system --all --timeout=10m
