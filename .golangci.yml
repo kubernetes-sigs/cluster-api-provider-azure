@@ -101,6 +101,8 @@ linters-settings:
         alias: infrav1alpha4exp
       - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1
         alias: infrav1exp
+      - pkg: sigs.k8s.io/cluster-api-provider-azure/util/webhook
+        alias: webhookutils
   gocritic:
     enabled-tags:
       - "experimental"

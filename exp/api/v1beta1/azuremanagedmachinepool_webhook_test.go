@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -491,76 +490,6 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			t.Parallel()
 			err := tc.new.ValidateUpdate(tc.old, client)
 			if tc.wantErr {
-				g.Expect(err).To(HaveOccurred())
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-		})
-	}
-}
-
-func TestValidateBoolPtrImmutable(t *testing.T) {
-	tests := []struct {
-		name    string
-		oldVal  *bool
-		newVal  *bool
-		wantErr bool
-	}{
-		{
-			name:    "true to true ok",
-			oldVal:  to.BoolPtr(true),
-			newVal:  to.BoolPtr(true),
-			wantErr: false,
-		},
-		{
-			name:    "false to false ok",
-			oldVal:  to.BoolPtr(false),
-			newVal:  to.BoolPtr(false),
-			wantErr: false,
-		},
-		{
-			name:    "true to false bad",
-			oldVal:  to.BoolPtr(true),
-			newVal:  to.BoolPtr(false),
-			wantErr: true,
-		},
-		{
-			name:    "false to true bad",
-			oldVal:  to.BoolPtr(false),
-			newVal:  to.BoolPtr(true),
-			wantErr: true,
-		},
-		{
-			name:    "false to nil bad",
-			oldVal:  to.BoolPtr(false),
-			newVal:  nil,
-			wantErr: true,
-		},
-		{
-			name:    "true to nil bad",
-			oldVal:  to.BoolPtr(true),
-			newVal:  nil,
-			wantErr: true,
-		},
-		{
-			name:    "nil to false bad",
-			oldVal:  nil,
-			newVal:  to.BoolPtr(false),
-			wantErr: true,
-		},
-		{
-			name:    "nil to true bad",
-			oldVal:  nil,
-			newVal:  to.BoolPtr(true),
-			wantErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			g := NewWithT(t)
-			err := validateBoolPtrImmutable(field.NewPath("test"), test.oldVal, test.newVal)
-			if test.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())

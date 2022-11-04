@@ -48,7 +48,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	"sigs.k8s.io/cluster-api-provider-azure/util/webhook"
+	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 	clusterv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -524,16 +524,16 @@ func registerWebhooks(mgr manager.Manager) {
 	}
 
 	hookServer := mgr.GetWebhookServer()
-	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhook.NewMutatingWebhook(
+	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhookutils.NewMutatingWebhook(
 		&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
 	))
-	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhook.NewValidatingWebhook(
+	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhookutils.NewValidatingWebhook(
 		&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
 	))
-	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhook.NewMutatingWebhook(
+	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhookutils.NewMutatingWebhook(
 		&infrav1exp.AzureManagedControlPlane{}, mgr.GetClient(),
 	))
-	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhook.NewValidatingWebhook(
+	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhookutils.NewValidatingWebhook(
 		&infrav1exp.AzureManagedControlPlane{}, mgr.GetClient(),
 	))
 
