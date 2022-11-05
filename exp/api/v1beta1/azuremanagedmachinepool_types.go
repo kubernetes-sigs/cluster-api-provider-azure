@@ -41,6 +41,75 @@ const (
 // NodePoolMode enumerates the values for agent pool mode.
 type NodePoolMode string
 
+// CPUManagerPolicy enumerates the values for KubeletConfig.CPUManagerPolicy.
+type CPUManagerPolicy string
+
+const (
+	// CPUManagerPolicyNone ...
+	CPUManagerPolicyNone CPUManagerPolicy = "none"
+	// CPUManagerPolicyStatic ...
+	CPUManagerPolicyStatic CPUManagerPolicy = "static"
+)
+
+// TopologyManagerPolicy enumerates the values for KubeletConfig.TopologyManagerPolicy.
+type TopologyManagerPolicy string
+
+const (
+	// TopologyManagerPolicyNone ...
+	TopologyManagerPolicyNone TopologyManagerPolicy = "none"
+	// TopologyManagerPolicyBestEffort ...
+	TopologyManagerPolicyBestEffort TopologyManagerPolicy = "best-effort"
+	// TopologyManagerPolicyRestricted ...
+	TopologyManagerPolicyRestricted TopologyManagerPolicy = "restricted"
+	// TopologyManagerPolicySingleNumaNode ...
+	TopologyManagerPolicySingleNumaNode TopologyManagerPolicy = "single-numa-node"
+)
+
+// KubeletConfig defines the set of kubelet configurations for nodes in pools.
+type KubeletConfig struct {
+	// CPUManagerPolicy - CPU Manager policy to use.
+	// +kubebuilder:validation:Enum=none;static
+	// +optional
+	CPUManagerPolicy *CPUManagerPolicy `json:"cpuManagerPolicy,omitempty"`
+	// CPUCfsQuota - Enable CPU CFS quota enforcement for containers that specify CPU limits.
+	// +optional
+	CPUCfsQuota *bool `json:"cpuCfsQuota,omitempty"`
+	// CPUCfsQuotaPeriod - Sets CPU CFS quota period value.
+	// +optional
+	CPUCfsQuotaPeriod *string `json:"cpuCfsQuotaPeriod,omitempty"`
+	// ImageGcHighThreshold - The percent of disk usage after which image garbage collection is always run.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +optional
+	ImageGcHighThreshold *int32 `json:"imageGcHighThreshold,omitempty"`
+	// ImageGcLowThreshold - The percent of disk usage before which image garbage collection is never run.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +optional
+	ImageGcLowThreshold *int32 `json:"imageGcLowThreshold,omitempty"`
+	// TopologyManagerPolicy - Topology Manager policy to use.
+	// +kubebuilder:validation:Enum=none;best-effort;restricted;single-numa-node
+	// +optional
+	TopologyManagerPolicy *TopologyManagerPolicy `json:"topologyManagerPolicy,omitempty"`
+	// AllowedUnsafeSysctls - Allowlist of unsafe sysctls or unsafe sysctl patterns (ending in `*`).
+	// +optional
+	AllowedUnsafeSysctls []string `json:"allowedUnsafeSysctls,omitempty"`
+	// FailSwapOn - If set to true it will make the Kubelet fail to start if swap is enabled on the node.
+	// +optional
+	FailSwapOn *bool `json:"failSwapOn,omitempty"`
+	// ContainerLogMaxSizeMB - The maximum size (e.g. 10Mi) of container log file before it is rotated.
+	// +optional
+	ContainerLogMaxSizeMB *int32 `json:"containerLogMaxSizeMB,omitempty"`
+	// ContainerLogMaxFiles - The maximum number of container log files that can be present for a container. The number must be ≥ 2.
+	// +kubebuilder:validation:Minimum=2
+	// +optional
+	ContainerLogMaxFiles *int32 `json:"containerLogMaxFiles,omitempty"`
+	// PodMaxPids - The maximum number of processes per pod.
+	// +kubebuilder:validation:Minimum=-1
+	// +optional
+	PodMaxPids *int32 `json:"podMaxPids,omitempty"`
+}
+
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
 
@@ -116,6 +185,10 @@ type AzureManagedMachinePoolSpec struct {
 	// +kubebuilder:validation:Enum=Regular;Spot
 	// +optional
 	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
+
+	// KubeletConfig specifies the kubelet configurations for nodes.
+	// +optional
+	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.

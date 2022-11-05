@@ -49,6 +49,9 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.NodePublicIPPrefixID = restored.Spec.NodePublicIPPrefixID
 	dst.Spec.ScaleSetPriority = restored.Spec.ScaleSetPriority
 	dst.Spec.AdditionalTags = restored.Spec.AdditionalTags
+	if restored.Spec.KubeletConfig != nil {
+		dst.Spec.KubeletConfig = restored.Spec.KubeletConfig
+	}
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
 	dst.Status.Conditions = restored.Status.Conditions
