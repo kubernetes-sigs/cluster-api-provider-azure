@@ -193,7 +193,6 @@ spec:
   virtualNetwork:
     cidrBlock: 10.0.0.0/8
     name: test-vnet
-    resourceGroup: test-rg
     subnet:
       cidrBlock: 10.0.2.0/24
       name: test-subnet  
