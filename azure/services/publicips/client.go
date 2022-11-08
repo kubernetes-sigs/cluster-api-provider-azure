@@ -19,6 +19,7 @@ package publicips
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest"
@@ -60,13 +61,14 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
 func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.CreateOrUpdate")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.CreateOrUpdate")
 	defer done()
 
 	publicip, ok := parameters.(network.PublicIPAddress)
 	if !ok {
 		return nil, nil, errors.Errorf("%T is not a network.PublicIPAddress", parameters)
 	}
+	log.Info(fmt.Sprintf("qliang2: publicIP extendedlocation %v", publicip.ExtendedLocation))
 
 	createFuture, err := ac.publicips.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), publicip)
 	if err != nil {

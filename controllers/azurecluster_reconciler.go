@@ -149,8 +149,6 @@ func (s *azureClusterService) setFailureDomainsForLocation(ctx context.Context) 
 
 	log.Info(fmt.Sprintf("qliang1: extendedlocation info: %v", s.scope.ExtendedLocation()))
 
-	log.Info(fmt.Sprintf("qliang1: extendedlocation info: %s", s.scope.ExtendedLocation().Name))
-
 	if s.scope.ExtendedLocation() != (infrav1.ExtendedLocationSpec{}) {
 		if s.scope.ExtendedLocation().Name == "" || s.scope.ExtendedLocation().Type == "" {
 			return errors.Errorf("Not all fields of ExtendedLocationSpec are assigned")

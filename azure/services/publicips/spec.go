@@ -28,15 +28,16 @@ import (
 
 // PublicIPSpec defines the specification for a Public IP.
 type PublicIPSpec struct {
-	Name           string
-	ResourceGroup  string
-	ClusterName    string
-	DNSName        string
-	IsIPv6         bool
-	Location       string
-	FailureDomains []string
-	AdditionalTags infrav1.Tags
-	IPTags         []infrav1.IPTag
+	Name             string
+	ResourceGroup    string
+	ClusterName      string
+	DNSName          string
+	IsIPv6           bool
+	Location         string
+	ExtendedLocation infrav1.ExtendedLocationSpec
+	FailureDomains   []string
+	AdditionalTags   infrav1.Tags
+	IPTags           []infrav1.IPTag
 }
 
 // ResourceName returns the name of the public IP.
@@ -88,6 +89,10 @@ func (s *PublicIPSpec) Parameters(existing interface{}) (params interface{}, err
 		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 		Name:     to.StringPtr(s.Name),
 		Location: to.StringPtr(s.Location),
+		ExtendedLocation: &network.ExtendedLocation{
+			Name: to.StringPtr(s.ExtendedLocation.Name),
+			Type: network.ExtendedLocationTypes(s.ExtendedLocation.Type),
+		},
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   addressVersion,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
