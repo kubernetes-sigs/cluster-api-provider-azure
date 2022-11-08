@@ -21,7 +21,7 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v1.2.4",
     "cert_manager_version": "v1.1.0",
-    "kubernetes_version": "v1.23.9",
+    "kubernetes_version": "v1.25.0",
     "aks_kubernetes_version": "v1.23.8",
 }
 
@@ -329,7 +329,7 @@ def deploy_worker_templates(template, substitutions):
     # programmatically define any remaining vars
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     substitutions = {
-        "AZURE_LOCATION": "eastus",
+        "AZURE_LOCATION": "eastus2euap",
         "AZURE_VNET_NAME": "${CLUSTER_NAME}-vnet",
         "AZURE_RESOURCE_GROUP": "${CLUSTER_NAME}-rg",
         "CONTROL_PLANE_MACHINE_COUNT": "1",
