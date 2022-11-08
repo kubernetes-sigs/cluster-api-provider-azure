@@ -25,8 +25,6 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  bastionSpec:
-    azureBastion: {}
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
@@ -36,19 +34,29 @@ spec:
     apiServerLB:
       name: ${CLUSTER_NAME}-internal-lb
       type: Internal
+      frontendIPs:
+        - name: lb-private-ip-frontend
+          privateIP: 10.250.0.100
     controlPlaneOutboundLB:
       frontendIPsCount: 1
     nodeOutboundLB:
       frontendIPsCount: 1
+    vnet:
+      name: ${AZURE_VNET_NAME:=capz-vnet}
+      cidrBlocks: 
+        - 10.250.0.0/16
+      peerings:
+      - resourceGroup: xinyi-capz-dev_group_10131455
+        remoteVnetName: xinyi-capz-dev_group_10131455-vnet
     subnets:
     - name: control-plane-subnet
       role: control-plane
+      cidrBlocks: 
+          - 10.250.0.0/24
     - name: node-subnet
-      natGateway:
-        name: node-natgateway
       role: node
-    vnet:
-      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+      cidrBlocks: 
+          - 10.250.1.0/24
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
@@ -63,7 +71,7 @@ spec:
       apiServer:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -74,8 +82,10 @@ spec:
         extraArgs:
           allocate-node-cidrs: "false"
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
+          external-cloud-volume-plugin: azure
+          feature-gates: CSIMigrationAzureDisk=true
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -116,14 +126,16 @@ spec:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
+          feature-gates: CSIMigrationAzureDisk=true
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
+          feature-gates: CSIMigrationAzureDisk=true
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -220,7 +232,8 @@ spec:
           kubeletExtraArgs:
             azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: azure
+            cloud-provider: external
+            feature-gates: CSIMigrationAzureDisk=true
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands: []
 ---
