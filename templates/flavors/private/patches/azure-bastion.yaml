@@ -6,3 +6,6 @@ metadata:
 spec:
   bastionSpec:
     azureBastion: {}
+  extendedLocation:
+    name: ${AZURE_EXTENDEDLOCATION_NAME}
+    type: ${AZURE_EXTENDEDLOCATION_TYPE}

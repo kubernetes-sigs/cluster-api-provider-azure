@@ -733,6 +733,11 @@ func (s *ClusterScope) CloudProviderConfigOverrides() *infrav1.CloudProviderConf
 	return s.AzureCluster.Spec.CloudProviderConfigOverrides
 }
 
+// ExtendedLocation returns the cluster extendedLocation.
+func (s *ClusterScope) ExtendedLocation() infrav1.ExtendedLocationSpec {
+	return s.AzureCluster.Spec.ExtendedLocation
+}
+
 // GenerateFQDN generates a fully qualified domain name, based on a hash, cluster name and cluster location.
 func (s *ClusterScope) GenerateFQDN(ipName string) string {
 	h := fnv.New32a()

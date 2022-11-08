@@ -330,6 +330,8 @@ def deploy_worker_templates(template, substitutions):
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     substitutions = {
         "AZURE_LOCATION": "eastus2euap",
+        "AZURE_EXTENDEDLOCATION_TYPE": "EdgeZone",
+        "AZURE_EXTENDEDLOCATION_NAME": "microsoftrrdclab3",
         "AZURE_VNET_NAME": "${CLUSTER_NAME}-vnet",
         "AZURE_RESOURCE_GROUP": "${CLUSTER_NAME}-rg",
         "CONTROL_PLANE_MACHINE_COUNT": "1",

@@ -18,8 +18,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -143,6 +145,19 @@ func (s *azureClusterService) getService(name string) (azure.ServiceReconciler, 
 // setFailureDomainsForLocation sets the AzureCluster Status failure domains based on which Azure Availability Zones are available in the cluster location.
 // Note that this is not done in a webhook as it requires API calls to fetch the availability zones.
 func (s *azureClusterService) setFailureDomainsForLocation(ctx context.Context) error {
+	ctx, log, _ := tele.StartSpanWithLogger(ctx, "controllers.azureClusterService.Delete")
+
+	log.Info(fmt.Sprintf("qliang1: extendedlocation info: %v", s.scope.ExtendedLocation()))
+
+	log.Info(fmt.Sprintf("qliang1: extendedlocation info: %s", s.scope.ExtendedLocation().Name))
+
+	if s.scope.ExtendedLocation() != (infrav1.ExtendedLocationSpec{}) {
+		if s.scope.ExtendedLocation().Name == "" || s.scope.ExtendedLocation().Type == "" {
+			return errors.Errorf("Not all fields of ExtendedLocationSpec are assigned")
+		}
+		return nil
+	}
+
 	zones, err := s.skuCache.GetZones(ctx, s.scope.Location())
 	if err != nil {
 		return errors.Wrapf(err, "failed to get zones for location %s", s.scope.Location())

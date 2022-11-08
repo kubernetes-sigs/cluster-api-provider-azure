@@ -1656,6 +1656,16 @@ spec:
                 - host
                 - port
                 type: object
+              extendedLocation:
+                properties:
+                  name:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - name
+                - type
+                type: object
               identityRef:
                 description: IdentityRef is a reference to an AzureIdentity to be
                   used when reconciling this cluster

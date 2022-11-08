@@ -25,6 +25,9 @@ type AzureClusterClassSpec struct {
 
 	Location string `json:"location"`
 
+	// +optional
+	ExtendedLocation ExtendedLocationSpec `json:"extendedLocation,omitempty"`
+
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
 	// +optional
@@ -50,6 +53,12 @@ type AzureClusterClassSpec struct {
 	// Note: All cloud provider config values can be customized by creating the secret beforehand. CloudProviderConfigOverrides is only used when the secret is managed by the Azure Provider.
 	// +optional
 	CloudProviderConfigOverrides *CloudProviderConfigOverrides `json:"cloudProviderConfigOverrides,omitempty"`
+}
+
+type ExtendedLocationSpec struct {
+	Name string `json:"name"`
+
+	Type string `json:"type"`
 }
 
 // NetworkClassSpec defines the NetworkSpec properties that may be shared across several Azure clusters.
