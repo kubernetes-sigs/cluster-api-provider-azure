@@ -1,0 +1,9 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  extendedLocation:
+    name: ${AZURE_EXTENDEDLOCATION_NAME}
+    type: ${AZURE_EXTENDEDLOCATION_TYPE}
