@@ -356,9 +356,9 @@ func (m *MachineScope) Subnet() infrav1.SubnetSpec {
 
 // AvailabilityZone returns the AzureMachine Availability Zone.
 // Priority for selecting the AZ is
-//   1) Machine.Spec.FailureDomain
-//   2) AzureMachine.Spec.FailureDomain (This is to support deprecated AZ)
-//   3) No AZ
+//  1. Machine.Spec.FailureDomain
+//  2. AzureMachine.Spec.FailureDomain (This is to support deprecated AZ)
+//  3. No AZ
 func (m *MachineScope) AvailabilityZone() string {
 	if m.Machine.Spec.FailureDomain != nil {
 		return *m.Machine.Spec.FailureDomain

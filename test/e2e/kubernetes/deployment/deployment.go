@@ -132,11 +132,11 @@ func (d *Builder) AddContainerPort(name, portName string, portNumber int32, prot
 	}
 }
 
-func (d *Builder)AddPVC(pvcName string) *Builder  {
-	volumes:= []corev1.Volume{
+func (d *Builder) AddPVC(pvcName string) *Builder {
+	volumes := []corev1.Volume{
 		{
 			Name: "managed",
-			VolumeSource:corev1.VolumeSource{
+			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: pvcName,
 				},

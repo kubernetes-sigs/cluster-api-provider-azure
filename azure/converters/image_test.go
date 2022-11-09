@@ -146,3 +146,84 @@ func Test_ImageToPlan(t *testing.T) {
 		})
 	}
 }
+
+func Test_ComputeImageToSDK(t *testing.T) {
+	cases := []struct {
+		name   string
+		image  *infrav1.Image
+		expect func(*GomegaWithT, *compute.ImageReference, error)
+	}{
+		{
+			name: "Should return parsed compute gallery image id",
+			image: &infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					ResourceGroup:  to.StringPtr("my-resourcegroup"),
+					SubscriptionID: to.StringPtr("my-subscription-id"),
+					Gallery:        "my-gallery",
+					Name:           "my-image",
+					Version:        "my-version",
+				},
+			},
+			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(result).To(Equal(&compute.ImageReference{
+					ID: to.StringPtr("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
+				}))
+			},
+		},
+		{
+			name: "Should return parsed shared gallery image id",
+			image: &infrav1.Image{
+				SharedGallery: &infrav1.AzureSharedGalleryImage{
+					ResourceGroup:  "my-resourcegroup",
+					SubscriptionID: "my-subscription-id",
+					Gallery:        "my-gallery",
+					Name:           "my-image",
+					Version:        "my-version",
+				},
+			},
+			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(result).To(Equal(&compute.ImageReference{
+					ID: to.StringPtr("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
+				}))
+			},
+		},
+		{
+			name: "Should return parsed community gallery image id",
+			image: &infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery: "my-gallery",
+					Name:    "my-image",
+					Version: "my-version",
+				},
+			},
+			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(result).To(Equal(&compute.ImageReference{
+					CommunityGalleryImageID: to.StringPtr("/CommunityGalleries/my-gallery/Images/my-image/Versions/my-version"),
+				}))
+			},
+		},
+		{
+			name: "Should return error if SharedGallery and ComputeGallery are nil",
+			image: &infrav1.Image{
+				ComputeGallery: nil,
+				SharedGallery:  nil,
+			},
+			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+				g.Expect(err).ShouldNot(BeNil())
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			result, err := computeImageToSDK(c.image)
+			c.expect(g, result, err)
+		})
+	}
+}

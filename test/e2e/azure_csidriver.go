@@ -41,8 +41,8 @@ type AzureDiskCSISpecInput struct {
 
 // AzureDiskCSISpec implements a test that verifies out of tree azure disk csi driver
 // can be used to create a PVC that is usable by a pod.
-func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecInput){
-	specName    := "azurediskcsi-driver"
+func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecInput) {
+	specName := "azurediskcsi-driver"
 	input := inputGetter()
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 
@@ -56,7 +56,7 @@ func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecIn
 	e2e_sc.Create("managedhdd").WithWaitForFirstConsumer().DeployStorageClass(clientset)
 
 	By("Deploying persistent volume claim")
-	b,err := e2e_pvc.Create("dd-managed-hdd-5g", "5Gi")
+	b, err := e2e_pvc.Create("dd-managed-hdd-5g", "5Gi")
 	Expect(err).To(BeNil())
 	b.DeployPVC(clientset)
 

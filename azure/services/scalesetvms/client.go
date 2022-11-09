@@ -128,9 +128,10 @@ func (ac *azureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 // progress of the operation.
 //
 // Parameters:
-//   resourceGroupName - the name of the resource group.
-//   vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
-//   instanceID - the ID of the VM scale set VM.
+//
+//	resourceGroupName - the name of the resource group.
+//	vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
+//	instanceID - the ID of the VM scale set VM.
 func (ac *azureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssName, instanceID string) (*infrav1.Future, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.azureClient.DeleteAsync")
 	defer done()
