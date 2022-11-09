@@ -32,6 +32,7 @@ type LBSpec struct {
 	SubscriptionID       string
 	ClusterName          string
 	Location             string
+	ExtendedLocation     infrav1.ExtendedLocationSpec
 	Role                 string
 	Type                 infrav1.LBType
 	SKU                  infrav1.SKU
@@ -140,6 +141,10 @@ func (s *LBSpec) Parameters(existing interface{}) (parameters interface{}, err e
 		Etag:     etag,
 		Sku:      &network.LoadBalancerSku{Name: converters.SKUtoSDK(s.SKU)},
 		Location: to.StringPtr(s.Location),
+		ExtendedLocation: &network.ExtendedLocation{
+			Name: to.StringPtr(s.ExtendedLocation.Name),
+			Type: network.ExtendedLocationTypes(s.ExtendedLocation.Type),
+		},
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
