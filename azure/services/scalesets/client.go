@@ -176,8 +176,9 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, resourceGroupNam
 // progress of the operation.
 //
 // Parameters:
-//   resourceGroupName - the name of the resource group.
-//   vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
+//
+//	resourceGroupName - the name of the resource group.
+//	vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
 func (ac *AzureClient) UpdateAsync(ctx context.Context, resourceGroupName, vmssName string, parameters compute.VirtualMachineScaleSetUpdate) (*infrav1.Future, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.UpdateAsync")
 	defer done()
@@ -287,8 +288,9 @@ func (ac *AzureClient) UpdateInstances(ctx context.Context, resourceGroupName, v
 // progress of the operation.
 //
 // Parameters:
-//   resourceGroupName - the name of the resource group.
-//   vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
+//
+//	resourceGroupName - the name of the resource group.
+//	vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
 func (ac *AzureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssName string) (*infrav1.Future, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.DeleteAsync")
 	defer done()
