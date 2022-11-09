@@ -108,31 +108,18 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		allErrs = append(allErrs, err)
 	}
 
-	if m.Spec.SKU != old.Spec.SKU {
-		allErrs = append(allErrs,
-			field.Invalid(
-				field.NewPath("Spec", "SKU"),
-				m.Spec.SKU,
-				"field is immutable"))
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "SKU"),
+		old.Spec.SKU,
+		m.Spec.SKU); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
-	if old.Spec.OSDiskSizeGB != nil {
-		// Prevent OSDiskSizeGB modification if it was already set to some value
-		if m.Spec.OSDiskSizeGB == nil {
-			// unsetting the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "OSDiskSizeGB"),
-					m.Spec.OSDiskSizeGB,
-					"field is immutable, unsetting is not allowed"))
-		} else if *m.Spec.OSDiskSizeGB != *old.Spec.OSDiskSizeGB {
-			// changing the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "OSDiskSizeGB"),
-					*m.Spec.OSDiskSizeGB,
-					"field is immutable"))
-		}
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "OSDiskSizeGB"),
+		old.Spec.OSDiskSizeGB,
+		m.Spec.OSDiskSizeGB); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
 	// custom headers are immutable
@@ -146,7 +133,7 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 				fmt.Sprintf("annotations with '%s' prefix are immutable", azure.CustomHeaderPrefix)))
 	}
 
-	if !ensureStringSlicesAreEqual(m.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {
+	if !webhookutils.EnsureStringSlicesAreEquivalent(m.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {
 		allErrs = append(allErrs,
 			field.Invalid(
 				field.NewPath("Spec", "AvailabilityZones"),
@@ -163,42 +150,18 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
-	if old.Spec.MaxPods != nil {
-		// Prevent MaxPods modification if it was already set to some value
-		if m.Spec.MaxPods == nil {
-			// unsetting the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "MaxPods"),
-					m.Spec.MaxPods,
-					"field is immutable, unsetting is not allowed"))
-		} else if *m.Spec.MaxPods != *old.Spec.MaxPods {
-			// changing the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "MaxPods"),
-					*m.Spec.MaxPods,
-					"field is immutable"))
-		}
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "MaxPods"),
+		old.Spec.MaxPods,
+		m.Spec.MaxPods); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
-	if old.Spec.OsDiskType != nil {
-		// Prevent OSDiskType modification if it was already set to some value
-		if m.Spec.OsDiskType == nil || to.String(m.Spec.OsDiskType) == "" {
-			// unsetting the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "OsDiskType"),
-					m.Spec.OsDiskType,
-					"field is immutable, unsetting is not allowed"))
-		} else if *m.Spec.OsDiskType != *old.Spec.OsDiskType {
-			// changing the field is not allowed
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "OsDiskType"),
-					m.Spec.OsDiskType,
-					"field is immutable"))
-		}
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "OsDiskType"),
+		old.Spec.OsDiskType,
+		m.Spec.OsDiskType); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
@@ -355,22 +318,4 @@ func (m *AzureManagedMachinePool) validateEnableNodePublicIP() error {
 			"must be set to true when NodePublicIPPrefixID is set")
 	}
 	return nil
-}
-
-func ensureStringSlicesAreEqual(a []string, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	m := map[string]bool{}
-	for _, v := range a {
-		m[v] = true
-	}
-
-	for _, v := range b {
-		if _, ok := m[v]; !ok {
-			return false
-		}
-	}
-	return true
 }
