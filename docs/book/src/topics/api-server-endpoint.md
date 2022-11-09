@@ -94,7 +94,7 @@ spec:
         - name: lb-public-ip-frontend
           publicIP:
             name: my-public-ip
-            dns: my-cluster-986b4408.eastus.cloudapp.azure.com
+            dnsName: my-cluster-986b4408.eastus.cloudapp.azure.com
 ````
 
 Note that `dns` is the FQDN associated to your public IP address (look for "DNS name" in the Azure Portal).
