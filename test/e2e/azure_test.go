@@ -553,7 +553,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating an AKS cluster [EXPERIMENTAL]", func() {
+	Context("Creating an AKS cluster [EXPERIMENTAL][Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
 			clusterName = getClusterName(clusterNamePrefix, aksClusterNameSuffix)
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig)
