@@ -1913,6 +1913,11 @@ spec:
                   - type
                   type: object
                 type: array
+              customDataHash:
+                description: CustomDataHash saves the hash for the stored custom data
+                  to be able to check if we need to update the custom data in reconciliation
+                  loops.
+                type: string
               failureMessage:
                 description: "FailureMessage will be set in the event that there is
                   a terminal problem reconciling the MachinePool and will contain

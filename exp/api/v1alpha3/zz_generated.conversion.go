@@ -548,6 +548,7 @@ func autoConvert_v1beta1_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStat
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
 	out.Conditions = *(*apiv1alpha3.Conditions)(unsafe.Pointer(&in.Conditions))
 	// WARNING: in.LongRunningOperationStates requires manual conversion: does not exist in peer-type
+	// WARNING: in.CustomDataHash requires manual conversion: does not exist in peer-type
 	return nil
 }
 

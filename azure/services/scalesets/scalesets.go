@@ -18,13 +18,16 @@ package scalesets
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -51,6 +54,7 @@ type (
 		SetAnnotation(string, string)
 		SetProviderID(string)
 		SetVMSSState(*azure.VMSS)
+		HasBootstrapDataChanges(context.Context) (bool, error)
 	}
 
 	// Service provides operations on Azure resources.
@@ -270,8 +274,18 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 		return nil, errors.Wrap(err, "failed to calculate maxSurge")
 	}
 
+	hasCustomDataChanges, err := s.Scope.HasBootstrapDataChanges(ctx)
+	if err != nil {
+		log.V(4).Error(err, "unable to calculate custom data hash, ignoring")
+	}
+	if hasCustomDataChanges {
+		log.V(4).Info("custom data changed")
+	} else {
+		log.V(4).Info("custom data unchanged")
+	}
+
 	hasModelChanges := hasModelModifyingDifferences(infraVMSS, vmss)
-	if maxSurge > 0 && (hasModelChanges || !infraVMSS.HasEnoughLatestModelOrNotMixedModel()) {
+	if maxSurge > 0 && (hasCustomDataChanges || hasModelChanges || !infraVMSS.HasEnoughLatestModelOrNotMixedModel()) {
 		// surge capacity with the intention of lowering during instance reconciliation
 		surge := spec.Capacity + int64(maxSurge)
 		log.V(4).Info("surging...", "surge", surge)
@@ -280,7 +294,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 
 	// If there are no model changes and no increase in the replica count, do not update the VMSS.
 	// Decreases in replica count is handled by deleting AzureMachinePoolMachine instances in the MachinePoolScope
-	if *patch.Sku.Capacity <= infraVMSS.Capacity && !hasModelChanges {
+	if *patch.Sku.Capacity <= infraVMSS.Capacity && !hasModelChanges && !hasCustomDataChanges {
 		log.V(4).Info("nothing to update on vmss", "scale set", spec.Name, "newReplicas", *patch.Sku.Capacity, "oldReplicas", infraVMSS.Capacity, "hasChanges", hasModelChanges)
 		return nil, nil
 	}
@@ -302,6 +316,19 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 func hasModelModifyingDifferences(infraVMSS *azure.VMSS, vmss compute.VirtualMachineScaleSet) bool {
 	other := converters.SDKToVMSS(vmss, []compute.VirtualMachineScaleSetVM{})
 	return infraVMSS.HasModelChanges(*other)
+}
+
+// hasCustomDataHashDifference calculates the sha256 hash of the vmss CustomData and compares it with the existingHash.
+// It returns the newHash if possible to calculate and whether or not the hashes are different.
+func hasCustomDataHashDifference(vmss compute.VirtualMachineScaleSet, existingHash string) (string, bool, error) {
+	newCustomData := pointer.StringDeref(vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.OsProfile.CustomData, "")
+	h := sha256.New()
+	n, err := io.WriteString(h, newCustomData)
+	if err != nil || n == 0 {
+		return "", false, fmt.Errorf("unable to write custom data (bytes written: %q): %w", n, err)
+	}
+	newHash := string(h.Sum(nil))
+	return newHash, newHash != existingHash, nil
 }
 
 func (s *Service) validateSpec(ctx context.Context) error {

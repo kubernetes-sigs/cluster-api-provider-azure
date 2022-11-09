@@ -99,3 +99,7 @@ func Convert_v1alpha4_SpotVMOptions_To_v1beta1_SpotVMOptions(in *infrav1alpha4.S
 	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
 	return nil
 }
+
+func Convert_v1beta1_AzureMachinePoolStatus_To_v1alpha4_AzureMachinePoolStatus(in *infrav1exp.AzureMachinePoolStatus, out *AzureMachinePoolStatus, s convert.Scope) error {
+	return autoConvert_v1beta1_AzureMachinePoolStatus_To_v1alpha4_AzureMachinePoolStatus(in, out, s)
+}

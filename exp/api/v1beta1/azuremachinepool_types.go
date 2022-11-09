@@ -289,6 +289,11 @@ type (
 		// next reconciliation loop.
 		// +optional
 		LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
+
+		// CustomDataHash saves the hash for the stored custom data to be able to check if we need to update the custom data
+		// in reconciliation loops.
+		// +optional
+		CustomDataHash string `json:"customDataHash"`
 	}
 
 	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
