@@ -742,7 +742,7 @@ func (s *ClusterScope) CloudProviderConfigOverrides() *infrav1.CloudProviderConf
 }
 
 // ExtendedLocation returns the cluster extendedLocation.
-func (s *ClusterScope) ExtendedLocation() infrav1.ExtendedLocationSpec {
+func (s *ClusterScope) ExtendedLocation() *infrav1.ExtendedLocationSpec {
 	return s.AzureCluster.Spec.ExtendedLocation
 }
 

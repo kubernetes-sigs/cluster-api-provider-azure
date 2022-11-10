@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -149,10 +148,7 @@ func (s *azureClusterService) setFailureDomainsForLocation(ctx context.Context) 
 
 	log.Info(fmt.Sprintf("qliang1: extendedlocation info: %v", s.scope.ExtendedLocation()))
 
-	if s.scope.ExtendedLocation() != (infrav1.ExtendedLocationSpec{}) {
-		if s.scope.ExtendedLocation().Name == "" || s.scope.ExtendedLocation().Type == "" {
-			return errors.Errorf("Not all fields of ExtendedLocationSpec are assigned")
-		}
+	if s.scope.ExtendedLocation() != nil && s.scope.ExtendedLocation().Name != "" {
 		return nil
 	}
 

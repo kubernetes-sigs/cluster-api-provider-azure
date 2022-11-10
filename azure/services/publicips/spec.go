@@ -34,7 +34,7 @@ type PublicIPSpec struct {
 	DNSName          string
 	IsIPv6           bool
 	Location         string
-	ExtendedLocation infrav1.ExtendedLocationSpec
+	ExtendedLocation *infrav1.ExtendedLocationSpec
 	FailureDomains   []string
 	AdditionalTags   infrav1.Tags
 	IPTags           []infrav1.IPTag
@@ -86,13 +86,10 @@ func (s *PublicIPSpec) Parameters(existing interface{}) (params interface{}, err
 			Name:        to.StringPtr(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
-		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Name:     to.StringPtr(s.Name),
-		Location: to.StringPtr(s.Location),
-		ExtendedLocation: &network.ExtendedLocation{
-			Name: to.StringPtr(s.ExtendedLocation.Name),
-			Type: network.ExtendedLocationTypes(s.ExtendedLocation.Type),
-		},
+		Sku:              &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		Name:             to.StringPtr(s.Name),
+		Location:         to.StringPtr(s.Location),
+		ExtendedLocation: converters.ExtendedLocationToSDK(s.ExtendedLocation),
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   addressVersion,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
