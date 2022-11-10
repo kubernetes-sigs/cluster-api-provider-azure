@@ -180,14 +180,17 @@ func (s *Service) getSKUAndVersion(ctx context.Context, location, publisher, off
 
 // getUbuntuOSVersion returns the default Ubuntu OS version for the given Kubernetes version.
 func getUbuntuOSVersion(major, minor, patch uint64) string {
-	// Default to Ubuntu 20.04 LTS, except for k8s versions which have only 18.04 reference images.
-	osVersion := "2004"
-	if (major == 1 && minor == 21 && patch < 2) ||
-		(major == 1 && minor == 20 && patch < 8) ||
-		(major == 1 && minor == 19 && patch < 12) ||
-		(major == 1 && minor == 18 && patch < 20) ||
-		(major == 1 && minor < 18) {
+	// Default to Ubuntu 22.04 LTS for Kubernetes v1.25.3 and later.
+	osVersion := "2204"
+	if major == 1 && minor == 21 && patch < 2 ||
+		major == 1 && minor == 20 && patch < 8 ||
+		major == 1 && minor == 19 && patch < 12 ||
+		major == 1 && minor == 18 && patch < 20 ||
+		major == 1 && minor < 18 {
 		osVersion = "1804"
+	} else if major == 1 && minor == 25 && patch < 3 ||
+		major == 1 && minor < 25 {
+		osVersion = "2004"
 	}
 	return osVersion
 }
