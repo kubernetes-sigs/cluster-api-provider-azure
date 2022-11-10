@@ -93,7 +93,7 @@ The community holds office hours every week, with sessions open to all users and
 developers.
 
 Office hours are hosted on a zoom video chat every Thursday
-at 09:00 (PT) / 12:00 (ET) / 16:00 (UTC),
+at 09:00 (PT) / 12:00 (ET) [Convert to your timezone](http://www.thetimezoneconverter.com/?t=09:00&tz=PT%20%28Pacific%20Time%29)
 and are published on the [Kubernetes community meetings calendar][gcal]. Please add your questions or ideas to [the agenda][capz_agenda].
 
 ### Other ways to communicate with the contributors
