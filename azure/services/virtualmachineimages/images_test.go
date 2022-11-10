@@ -116,6 +116,16 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			},
 		},
 		{
+			k8sVersion:      "v1.22.16",
+			expectedSKU:     "ubuntu-2004-gen1",
+			expectedVersion: "122.16.20221117",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("122.16.20221117")},
+				},
+			},
+		},
+		{
 			k8sVersion:      "v1.23.6",
 			expectedSKU:     "k8s-1dot23dot6-ubuntu-2004",
 			expectedVersion: "latest",
@@ -140,6 +150,66 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
 					{Name: to.StringPtr("124.0.20220512")},
+				},
+			},
+		},
+		{
+			k8sVersion:      "v1.23.12",
+			expectedSKU:     "ubuntu-2004-gen1",
+			expectedVersion: "123.12.20220921",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("123.12.20220921")},
+				},
+			},
+		},
+		{
+			k8sVersion:      "v1.23.13",
+			expectedSKU:     "ubuntu-2004-gen1",
+			expectedVersion: "123.13.20221014",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("123.13.20221014")},
+				},
+			},
+		},
+		{
+			k8sVersion:      "v1.24.6",
+			expectedSKU:     "ubuntu-2004-gen1",
+			expectedVersion: "124.6.20220921",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("124.6.20220921")},
+				},
+			},
+		},
+		{
+			k8sVersion:      "v1.24.7",
+			expectedSKU:     "ubuntu-2004-gen1",
+			expectedVersion: "124.7.20221014",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("124.7.20221014")},
+				},
+			},
+		},
+		{
+			k8sVersion:      "v1.25.2",
+			expectedSKU:     "ubuntu-2004-gen1",
+			expectedVersion: "125.2.20220921",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("125.2.20220921")},
+				},
+			},
+		},
+		{
+			k8sVersion:      "v1.25.3",
+			expectedSKU:     "ubuntu-2204-gen1",
+			expectedVersion: "125.3.20221014",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("125.3.20221014")},
 				},
 			},
 		},
@@ -393,11 +463,37 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			osAndVersion:    "ubuntu-2004",
 		},
 		{
-			k8sVersion:      "v1.23.13",
-			expectedSKU:     "ubuntu-2004-gen1",
-			expectedVersion: "123.13.20220524",
+			k8sVersion:      "v1.22.0",
+			expectedSKU:     "k8s-1dot22dot0-ubuntu-2004",
+			expectedVersion: "latest",
 			expectedError:   false,
 			osAndVersion:    "ubuntu-2004",
+		},
+		{
+			k8sVersion:      "v1.22.9",
+			expectedSKU:     "k8s-1dot22dot9-ubuntu-2004",
+			expectedVersion: "latest",
+			expectedError:   false,
+			osAndVersion:    "ubuntu-2004",
+		},
+		{
+			k8sVersion:      "v1.23.12",
+			expectedSKU:     "ubuntu-2004-gen1",
+			expectedVersion: "123.12.20220921",
+			expectedError:   false,
+			osAndVersion:    "ubuntu-2004",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("123.12.20220921")},
+				},
+			},
+		},
+		{
+			k8sVersion:      "v1.23.13",
+			expectedSKU:     "ubuntu-2204-gen1",
+			expectedVersion: "123.13.20220524",
+			expectedError:   false,
+			osAndVersion:    "ubuntu-2204",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
 					{Name: to.StringPtr("123.13.20220524")},
@@ -443,6 +539,18 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
 					{Name: to.StringPtr("124.0.20220606")},
+				},
+			},
+		},
+		{
+			k8sVersion:      "v1.25.4",
+			expectedSKU:     "ubuntu-2204-gen1",
+			expectedVersion: "125.4.20221011",
+			expectedError:   false,
+			osAndVersion:    "ubuntu-2204",
+			versions: compute.ListVirtualMachineImageResource{
+				Value: &[]compute.VirtualMachineImageResource{
+					{Name: to.StringPtr("125.4.20221011")},
 				},
 			},
 		},
