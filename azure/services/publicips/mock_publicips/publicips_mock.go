@@ -191,6 +191,20 @@ func (mr *MockPublicIPScopeMockRecorder) DeleteLongRunningOperationState(arg0, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockPublicIPScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
 }
 
+// ExtendedLocation mocks base method.
+func (m *MockPublicIPScope) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocation")
+	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	return ret0
+}
+
+// ExtendedLocation indicates an expected call of ExtendedLocation.
+func (mr *MockPublicIPScopeMockRecorder) ExtendedLocation() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocation", reflect.TypeOf((*MockPublicIPScope)(nil).ExtendedLocation))
+}
+
 // FailureDomains mocks base method.
 func (m *MockPublicIPScope) FailureDomains() []string {
 	m.ctrl.T.Helper()

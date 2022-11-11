@@ -150,6 +150,7 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 	spec := &virtualmachines.VMSpec{
 		Name:                   m.Name(),
 		Location:               m.Location(),
+		ExtendedLocation:       m.ExtendedLocation(),
 		ResourceGroup:          m.ResourceGroup(),
 		ClusterName:            m.ClusterName(),
 		Role:                   m.Role(),
@@ -192,14 +193,15 @@ func (m *MachineScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 	var specs []azure.ResourceSpecGetter
 	if m.AzureMachine.Spec.AllocatePublicIP {
 		specs = append(specs, &publicips.PublicIPSpec{
-			Name:           azure.GenerateNodePublicIPName(m.Name()),
-			ResourceGroup:  m.ResourceGroup(),
-			ClusterName:    m.ClusterName(),
-			DNSName:        "",    // Set to default value
-			IsIPv6:         false, // Set to default value
-			Location:       m.Location(),
-			FailureDomains: m.FailureDomains(),
-			AdditionalTags: m.ClusterScoper.AdditionalTags(),
+			Name:             azure.GenerateNodePublicIPName(m.Name()),
+			ResourceGroup:    m.ResourceGroup(),
+			ClusterName:      m.ClusterName(),
+			DNSName:          "",    // Set to default value
+			IsIPv6:           false, // Set to default value
+			Location:         m.Location(),
+			ExtendedLocation: m.ExtendedLocation(),
+			FailureDomains:   m.FailureDomains(),
+			AdditionalTags:   m.ClusterScoper.AdditionalTags(),
 		})
 	}
 	return specs
@@ -232,6 +234,7 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 		Name:                  azure.GenerateNICName(m.Name()),
 		ResourceGroup:         m.ResourceGroup(),
 		Location:              m.Location(),
+		ExtendedLocation:      m.ExtendedLocation(),
 		SubscriptionID:        m.SubscriptionID(),
 		MachineName:           m.Name(),
 		VNetName:              m.Vnet().Name,

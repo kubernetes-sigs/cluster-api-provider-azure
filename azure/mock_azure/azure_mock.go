@@ -690,6 +690,20 @@ func (mr *MockClusterDescriberMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockClusterDescriber)(nil).ClusterName))
 }
 
+// ExtendedLocation mocks base method.
+func (m *MockClusterDescriber) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocation")
+	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	return ret0
+}
+
+// ExtendedLocation indicates an expected call of ExtendedLocation.
+func (mr *MockClusterDescriberMockRecorder) ExtendedLocation() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocation", reflect.TypeOf((*MockClusterDescriber)(nil).ExtendedLocation))
+}
+
 // FailureDomains mocks base method.
 func (m *MockClusterDescriber) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -1090,6 +1104,20 @@ func (mr *MockClusterScoperMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneSubnet))
 }
 
+// ExtendedLocation mocks base method.
+func (m *MockClusterScoper) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocation")
+	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	return ret0
+}
+
+// ExtendedLocation indicates an expected call of ExtendedLocation.
+func (mr *MockClusterScoperMockRecorder) ExtendedLocation() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocation", reflect.TypeOf((*MockClusterScoper)(nil).ExtendedLocation))
+}
+
 // FailureDomains mocks base method.
 func (m *MockClusterScoper) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -1473,6 +1501,20 @@ func (m *MockManagedClusterScoper) ClusterName() string {
 func (mr *MockManagedClusterScoperMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockManagedClusterScoper)(nil).ClusterName))
+}
+
+// ExtendedLocation mocks base method.
+func (m *MockManagedClusterScoper) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocation")
+	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	return ret0
+}
+
+// ExtendedLocation indicates an expected call of ExtendedLocation.
+func (mr *MockManagedClusterScoperMockRecorder) ExtendedLocation() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocation", reflect.TypeOf((*MockManagedClusterScoper)(nil).ExtendedLocation))
 }
 
 // FailureDomains mocks base method.

@@ -17,6 +17,7 @@ limitations under the License.
 package converters
 
 import (
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -30,6 +31,17 @@ func ExtendedLocationToSDK(src *infrav1.ExtendedLocationSpec) *network.ExtendedL
 		return &network.ExtendedLocation{
 			Name: to.StringPtr(src.Name),
 			Type: network.ExtendedLocationTypes(src.Type),
+		}
+	}
+}
+
+func ExtendedLocationToComputeSDK(src *infrav1.ExtendedLocationSpec) *compute.ExtendedLocation {
+	if src == nil {
+		return nil
+	} else {
+		return &compute.ExtendedLocation{
+			Name: to.StringPtr(src.Name),
+			Type: compute.ExtendedLocationTypes(src.Type),
 		}
 	}
 }
