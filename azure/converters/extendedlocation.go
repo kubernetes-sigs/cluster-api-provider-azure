@@ -23,8 +23,8 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-// MapToTags converts a map[string]*string into a infrav1.Tags.
-func ExtendedLocationToSDK(src *infrav1.ExtendedLocationSpec) *network.ExtendedLocation {
+//  ExtendedLocationToNetworkSDK converts infrav1.ExtendedLocationSpec to network.ExtendedLocation.
+func ExtendedLocationToNetworkSDK(src *infrav1.ExtendedLocationSpec) *network.ExtendedLocation {
 	if src == nil {
 		return nil
 	} else {
@@ -35,6 +35,7 @@ func ExtendedLocationToSDK(src *infrav1.ExtendedLocationSpec) *network.ExtendedL
 	}
 }
 
+//  ExtendedLocationToComputeSDK converts infrav1.ExtendedLocationSpec to compute.ExtendedLocation.
 func ExtendedLocationToComputeSDK(src *infrav1.ExtendedLocationSpec) *compute.ExtendedLocation {
 	if src == nil {
 		return nil

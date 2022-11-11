@@ -64,7 +64,7 @@ func (s *VNetSpec) Parameters(existing interface{}) (interface{}, error) {
 			Additional:  s.AdditionalTags,
 		})),
 		Location:         to.StringPtr(s.Location),
-		ExtendedLocation: converters.ExtendedLocationToSDK(s.ExtendedLocation),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
 				AddressPrefixes: &s.CIDRs,

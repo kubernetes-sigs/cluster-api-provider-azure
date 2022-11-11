@@ -141,7 +141,7 @@ func (s *LBSpec) Parameters(existing interface{}) (parameters interface{}, err e
 		Etag:             etag,
 		Sku:              &network.LoadBalancerSku{Name: converters.SKUtoSDK(s.SKU)},
 		Location:         to.StringPtr(s.Location),
-		ExtendedLocation: converters.ExtendedLocationToSDK(s.ExtendedLocation),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,

@@ -89,7 +89,7 @@ func (s *PublicIPSpec) Parameters(existing interface{}) (params interface{}, err
 		Sku:              &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 		Name:             to.StringPtr(s.Name),
 		Location:         to.StringPtr(s.Location),
-		ExtendedLocation: converters.ExtendedLocationToSDK(s.ExtendedLocation),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   addressVersion,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,

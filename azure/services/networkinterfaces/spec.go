@@ -158,7 +158,7 @@ func (s *NICSpec) Parameters(existing interface{}) (parameters interface{}, err 
 
 	return network.Interface{
 		Location:         to.StringPtr(s.Location),
-		ExtendedLocation: converters.ExtendedLocationToSDK(s.ExtendedLocation),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			EnableAcceleratedNetworking: s.AcceleratedNetworking,
 			IPConfigurations:            &ipConfigurations,
