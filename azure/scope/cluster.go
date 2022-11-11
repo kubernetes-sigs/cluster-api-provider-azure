@@ -451,12 +451,13 @@ func (s *ClusterScope) VnetPeeringSpecs() []azure.ResourceSpecGetter {
 // VNetSpec returns the virtual network spec.
 func (s *ClusterScope) VNetSpec() azure.ResourceSpecGetter {
 	return &virtualnetworks.VNetSpec{
-		ResourceGroup:  s.Vnet().ResourceGroup,
-		Name:           s.Vnet().Name,
-		CIDRs:          s.Vnet().CIDRBlocks,
-		Location:       s.Location(),
-		ClusterName:    s.ClusterName(),
-		AdditionalTags: s.AdditionalTags(),
+		ResourceGroup:    s.Vnet().ResourceGroup,
+		Name:             s.Vnet().Name,
+		CIDRs:            s.Vnet().CIDRBlocks,
+		ExtendedLocation: s.ExtendedLocation(),
+		Location:         s.Location(),
+		ClusterName:      s.ClusterName(),
+		AdditionalTags:   s.AdditionalTags(),
 	}
 }
 
