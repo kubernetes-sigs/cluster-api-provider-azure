@@ -37,7 +37,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var kubeSemver = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
+var (
+	kubeSemver                       = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
+	controlPlaneEndpointErrorMessage = "can not be set by the user, will be set automatically by AKS after the cluster is Ready"
+)
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (m *AzureManagedControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -90,6 +93,20 @@ func (m *AzureManagedControlPlane) ValidateCreate(client client.Client) error {
 			"can be set only if the AKS feature flag is enabled",
 		)
 	}
+
+	if m.Spec.ControlPlaneEndpoint.Host != "" {
+		return field.Forbidden(
+			field.NewPath("Spec", "ControlPlaneEndpoint", "Host"),
+			controlPlaneEndpointErrorMessage,
+		)
+	}
+	if m.Spec.ControlPlaneEndpoint.Port != 0 {
+		return field.Forbidden(
+			field.NewPath("Spec", "ControlPlaneEndpoint", "Port"),
+			controlPlaneEndpointErrorMessage,
+		)
+	}
+
 	return m.Validate(client)
 }
 
@@ -190,6 +207,24 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client 
 						m.Spec.AADProfile.AdminGroupObjectIDs,
 						"length of AADProfile.AdminGroupObjectIDs cannot be zero"))
 			}
+		}
+	}
+
+	if old.Spec.ControlPlaneEndpoint.Host != "" {
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("Spec", "ControlPlaneEndpoint", "Host"),
+			old.Spec.ControlPlaneEndpoint.Host,
+			m.Spec.ControlPlaneEndpoint.Host); err != nil {
+			allErrs = append(allErrs, err)
+		}
+	}
+
+	if old.Spec.ControlPlaneEndpoint.Port != 0 {
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("Spec", "ControlPlaneEndpoint", "Port"),
+			old.Spec.ControlPlaneEndpoint.Port,
+			m.Spec.ControlPlaneEndpoint.Port); err != nil {
+			allErrs = append(allErrs, err)
 		}
 	}
 

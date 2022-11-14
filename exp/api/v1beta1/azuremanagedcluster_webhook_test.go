@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
@@ -119,10 +120,121 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "ControlPlaneEndpoint.Port is immutable",
+			oldAMC: &AzureManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec: AzureManagedClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
+						Port: 443,
+					},
+				},
+			},
+			amc: &AzureManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec: AzureManagedClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
+						Port: 444,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "ControlPlaneEndpoint.Host is immutable",
+			oldAMC: &AzureManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec: AzureManagedClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
+						Port: 443,
+					},
+				},
+			},
+			amc: &AzureManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec: AzureManagedClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "this-is-not-allowed",
+						Port: 443,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "ControlPlaneEndpoint update from zero values are allowed",
+			oldAMC: &AzureManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec: AzureManagedClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{},
+				},
+			},
+			amc: &AzureManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec: AzureManagedClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
+						Port: 443,
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.amc.ValidateUpdate(tc.oldAMC)
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
+	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the web hook
+	// must prevent creating new objects in case the feature flag is disabled.
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
+
+	g := NewWithT(t)
+
+	tests := []struct {
+		name    string
+		oldAMC  *AzureManagedCluster
+		amc     *AzureManagedCluster
+		wantErr bool
+	}{
+		{
+			name: "can't set Spec.ControlPlaneEndpoint.Host during create",
+			amc: &AzureManagedCluster{
+				Spec: AzureManagedClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "my-host",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "can't set Spec.ControlPlaneEndpoint.Port during create",
+			amc: &AzureManagedCluster{
+				Spec: AzureManagedClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Port: 4443,
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.amc.ValidateCreate()
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

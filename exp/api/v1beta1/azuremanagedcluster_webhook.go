@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
+	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
@@ -51,6 +52,18 @@ func (r *AzureManagedCluster) ValidateCreate() error {
 			"can be set only if the AKS feature flag is enabled",
 		)
 	}
+	if r.Spec.ControlPlaneEndpoint.Host != "" {
+		return field.Forbidden(
+			field.NewPath("Spec", "ControlPlaneEndpoint", "Host"),
+			controlPlaneEndpointErrorMessage,
+		)
+	}
+	if r.Spec.ControlPlaneEndpoint.Port != 0 {
+		return field.Forbidden(
+			field.NewPath("Spec", "ControlPlaneEndpoint", "Port"),
+			controlPlaneEndpointErrorMessage,
+		)
+	}
 	return nil
 }
 
@@ -68,6 +81,24 @@ func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) error {
 				field.NewPath("metadata", "annotations"),
 				r.ObjectMeta.Annotations,
 				fmt.Sprintf("annotations with '%s' prefix are immutable", azure.CustomHeaderPrefix)))
+	}
+
+	if old.Spec.ControlPlaneEndpoint.Host != "" {
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("Spec", "ControlPlaneEndpoint", "Host"),
+			old.Spec.ControlPlaneEndpoint.Host,
+			r.Spec.ControlPlaneEndpoint.Host); err != nil {
+			allErrs = append(allErrs, err)
+		}
+	}
+
+	if old.Spec.ControlPlaneEndpoint.Port != 0 {
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("Spec", "ControlPlaneEndpoint", "Port"),
+			old.Spec.ControlPlaneEndpoint.Port,
+			r.Spec.ControlPlaneEndpoint.Port); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	if len(allErrs) != 0 {
