@@ -105,6 +105,9 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Diagnostics = restored.Spec.Template.Diagnostics
 	}
 
+	// Restore orchestration mode
+	dst.Spec.OrchestrationMode = restored.Spec.OrchestrationMode
+
 	return nil
 }
 

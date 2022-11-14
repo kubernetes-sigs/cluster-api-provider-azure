@@ -126,6 +126,8 @@ providers:
         targetName: "cluster-template-conformance-presubmit-artifacts-windows-containerd.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-external-cloud-provider.yaml"
         targetName: "cluster-template-external-cloud-provider.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-external-cloud-provider-vmss-flex.yaml"
+        targetName: "cluster-template-external-cloud-provider-vmss-flex.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azurediskcsi-migration-off.yaml"
         targetName: "cluster-template-azurediskcsi-migration-off.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-external-azurediskcsi-driver.yaml"

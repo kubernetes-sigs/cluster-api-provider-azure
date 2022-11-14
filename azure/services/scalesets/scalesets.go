@@ -277,10 +277,21 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	}
 
 	hasModelChanges := hasModelModifyingDifferences(infraVMSS, vmss)
-	if maxSurge > 0 && (hasModelChanges || !infraVMSS.HasEnoughLatestModelOrNotMixedModel()) {
+	var isFlex bool
+	for _, instance := range infraVMSS.Instances {
+		if instance.IsFlex() {
+			isFlex = true
+			break
+		}
+	}
+	updated := true
+	if !isFlex {
+		updated = infraVMSS.HasEnoughLatestModelOrNotMixedModel()
+	}
+	if maxSurge > 0 && (hasModelChanges || !updated) {
 		// surge capacity with the intention of lowering during instance reconciliation
 		surge := spec.Capacity + int64(maxSurge)
-		log.V(4).Info("surging...", "surge", surge)
+		log.V(4).Info("surging...", "surge", surge, "hasModelChanges", hasModelChanges, "updated", updated)
 		patch.Sku.Capacity = to.Int64Ptr(surge)
 	}
 
@@ -468,6 +479,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		return compute.VirtualMachineScaleSet{}, err
 	}
 
+	orchestrationMode := converters.GetOrchestrationMode(s.Scope.ScaleSetSpec().OrchestrationMode)
 	vmss := compute.VirtualMachineScaleSet{
 		Location: to.StringPtr(s.Scope.Location()),
 		Sku: &compute.Sku{
@@ -478,11 +490,8 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		Zones: to.StringSlicePtr(vmssSpec.FailureDomains),
 		Plan:  s.generateImagePlan(ctx),
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+			OrchestrationMode:    orchestrationMode,
 			SinglePlacementGroup: to.BoolPtr(false),
-			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.UpgradeModeManual,
-			},
-			Overprovision: to.BoolPtr(false),
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile:          osProfile,
 				StorageProfile:     storageProfile,
@@ -521,6 +530,20 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 				},
 			},
 		},
+	}
+
+	// Set properties specific to VMSS orchestration mode
+	switch orchestrationMode {
+	case compute.OrchestrationModeUniform:
+		vmss.VirtualMachineScaleSetProperties.Overprovision = to.BoolPtr(false)
+		vmss.VirtualMachineScaleSetProperties.UpgradePolicy = &compute.UpgradePolicy{Mode: compute.UpgradeModeManual}
+	case compute.OrchestrationModeFlexible:
+		vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkAPIVersion =
+			compute.NetworkAPIVersionTwoZeroTwoZeroHyphenMinusOneOneHyphenMinusZeroOne
+		vmss.VirtualMachineScaleSetProperties.PlatformFaultDomainCount = to.Int32Ptr(1)
+		if len(vmssSpec.FailureDomains) > 1 {
+			vmss.VirtualMachineScaleSetProperties.PlatformFaultDomainCount = to.Int32Ptr(int32(len(vmssSpec.FailureDomains)))
+		}
 	}
 
 	// Use custom NIC definitions in VMSS if set

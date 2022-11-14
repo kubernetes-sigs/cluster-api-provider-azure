@@ -33,10 +33,27 @@
 
 ## AzureMachinePool
 Cluster API Provider Azure (CAPZ) has experimental support for `MachinePool` through the infrastructure
-type `AzureMachinePool` and `AzureMachinePoolMachine`. An `AzureMachinePool` corresponds to an 
-[Azure Virtual Machine Scale Set](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview),
-which provides the cloud provider specific resource for orchestrating a group of Virtual Machines. The 
-`AzureMachinePoolMachine` corresponds to a virtual machine instance within the Virtual Machine Scale Set.
+types `AzureMachinePool` and `AzureMachinePoolMachine`. An `AzureMachinePool` corresponds to a
+[Virtual Machine Scale Set](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview) (VMSS),
+which provides the cloud provider-specific resource for orchestrating a group of Virtual Machines. The
+`AzureMachinePoolMachine` corresponds to a virtual machine instance within the VMSS.
+
+### Orchestration Modes
+
+Azure Virtual Machine Scale Sets support two orchestration modes: `Uniform` and `Flexible`. CAPZ defaults to `Uniform` mode. See [VMSS Orchestration modes in Azure](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-orchestration-modes) for more information.
+
+To use `Flexible` mode requires Kubernetes v1.26.0 or later with a workload cluster template like CAPZ's "external-cloud-provider-machinepool" flavor. Ensure that `orchestrationMode` on the `AzureMachinePool` spec is set:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: capz-mp-0
+spec:
+  orchestrationMode: Flexible
+```
+
+Then, after applying the template to start provisioning, install the [cloud-provider-azure Helm chart](https://github.com/kubernetes-sigs/cloud-provider-azure/tree/master/helm/cloud-provider-azure#readme) to the workload cluster.
 
 ### Safe Rolling Upgrades and Delete Policy
 `AzureMachinePools` provides the ability to safely deploy new versions of Kubernetes, or more generally, changes to the

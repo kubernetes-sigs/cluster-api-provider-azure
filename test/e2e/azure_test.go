@@ -494,6 +494,70 @@ var _ = Describe("Workload cluster creation", func() {
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
 	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
 	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
+	Context("Creating a cluster that uses the external cloud provider and machinepools [OPTIONAL]", func() {
+		It("with 1 control plane node and 1 machinepool", func() {
+			By("using user-assigned identity")
+			clusterName = getClusterName(clusterNamePrefix, "flex")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "external-cloud-provider-vmss-flex",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        "v1.26.0",
+					ControlPlaneMachineCount: pointer.Int64Ptr(1),
+					WorkerMachineCount:       pointer.Int64Ptr(1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
+			}, result)
+
+			By("Verifying machinepool resources", func() {
+				AzureMachinePoolsSpec(ctx, func() AzureMachinePoolsSpecInput {
+					return AzureMachinePoolsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("Creating an accessible load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
+	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
+	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
 	Context("Creating a cluster that uses the external cloud provider and external azurediskcsi driver [OPTIONAL]", func() {
 		It("with a 1 control plane nodes and 2 worker nodes", func() {
 			By("using user-assigned identity")

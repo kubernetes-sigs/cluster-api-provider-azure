@@ -17,19 +17,23 @@ limitations under the License.
 package v1beta1
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"reflect"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/blang/semver"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
@@ -41,10 +45,8 @@ func (amp *AzureMachinePool) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=create;update,versions=v1beta1,name=default.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Defaulter = &AzureMachinePool{}
-
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (amp *AzureMachinePool) Default() {
+func (amp *AzureMachinePool) Default(client client.Client) {
 	if err := amp.SetDefaultSSHPublicKey(); err != nil {
 		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "SetDefaultSshPublicKey failed")
 	}
@@ -55,10 +57,8 @@ func (amp *AzureMachinePool) Default() {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Validator = &AzureMachinePool{}
-
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (amp *AzureMachinePool) ValidateCreate() error {
+func (amp *AzureMachinePool) ValidateCreate(client client.Client) error {
 	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
 	// must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
@@ -67,27 +67,28 @@ func (amp *AzureMachinePool) ValidateCreate() error {
 			"can be set only if the MachinePool feature flag is enabled",
 		)
 	}
-	return amp.Validate(nil)
+	return amp.Validate(nil, client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (amp *AzureMachinePool) ValidateUpdate(old runtime.Object) error {
-	return amp.Validate(old)
+func (amp *AzureMachinePool) ValidateUpdate(old runtime.Object, client client.Client) error {
+	return amp.Validate(old, client)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (amp *AzureMachinePool) ValidateDelete() error {
+func (amp *AzureMachinePool) ValidateDelete(client.Client) error {
 	return nil
 }
 
 // Validate the Azure Machine Pool and return an aggregate error.
-func (amp *AzureMachinePool) Validate(old runtime.Object) error {
+func (amp *AzureMachinePool) Validate(old runtime.Object, client client.Client) error {
 	validators := []func() error{
 		amp.ValidateImage,
 		amp.ValidateTerminateNotificationTimeout,
 		amp.ValidateSSHKey,
 		amp.ValidateUserAssignedIdentity,
 		amp.ValidateDiagnostics,
+		amp.ValidateOrchestrationMode(client),
 		amp.ValidateStrategy(),
 		amp.ValidateSystemAssignedIdentity(old),
 		amp.ValidateNetwork,
@@ -241,4 +242,37 @@ func (amp *AzureMachinePool) ValidateDiagnostics() error {
 	}
 
 	return nil
+}
+
+// ValidateOrchestrationMode validates requirements for the VMSS orchestration mode.
+func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() error {
+	return func() error {
+		// Only Flexible orchestration mode requires validation.
+		if amp.Spec.OrchestrationMode == infrav1.OrchestrationModeType(compute.OrchestrationModeFlexible) {
+			// Find the owner MachinePool
+			ownerMachinePool := &expv1.MachinePool{}
+			key := client.ObjectKey{
+				Namespace: amp.Namespace,
+				Name:      amp.Name,
+			}
+			ctx := context.Background()
+			if err := c.Get(ctx, key, ownerMachinePool); err != nil {
+				return errors.Wrap(err, "failed to get owner MachinePool")
+			}
+
+			// Kubernetes must be >= 1.26.0 for cloud-provider-azure Helm chart support.
+			if ownerMachinePool.Spec.Template.Spec.Version == nil {
+				return errors.New("could not find Kubernetes version in MachinePool")
+			}
+			k8sVersion, err := semver.ParseTolerant(*ownerMachinePool.Spec.Template.Spec.Version)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse Kubernetes version")
+			}
+			if k8sVersion.LT(semver.MustParse("1.26.0")) {
+				return errors.New(fmt.Sprintf("specified Kubernetes version %s must be >= 1.26.0 for Flexible orchestration mode", k8sVersion))
+			}
+		}
+
+		return nil
+	}
 }
