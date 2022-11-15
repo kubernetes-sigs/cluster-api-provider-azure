@@ -239,3 +239,63 @@ func TestValidateImmutableInt32(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureStringSlicesAreEquivalent(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name           string
+		input1         []string
+		input2         []string
+		expectedOutput bool
+	}{
+		{
+			name:           "nil",
+			input1:         nil,
+			input2:         nil,
+			expectedOutput: true,
+		},
+		{
+			name:           "no change",
+			input1:         []string{"foo", "bar"},
+			input2:         []string{"foo", "bar"},
+			expectedOutput: true,
+		},
+		{
+			name:           "different",
+			input1:         []string{"foo", "bar"},
+			input2:         []string{"foo", "foo"},
+			expectedOutput: false,
+		},
+		{
+			name:           "different order, but equal",
+			input1:         []string{"1", "2"},
+			input2:         []string{"2", "1"},
+			expectedOutput: true,
+		},
+		{
+			name:           "different lengths",
+			input1:         []string{"foo"},
+			input2:         []string{"foo", "foo"},
+			expectedOutput: false,
+		},
+		{
+			name:           "different",
+			input1:         []string{"1", "2", "3", "4", "5", "6", "7", "8", "9"},
+			input2:         []string{"1", "2", "3", "4", "5", "7", "8", "9"},
+			expectedOutput: false,
+		},
+		{
+			name:           "another different variant",
+			input1:         []string{"a", "a", "b"},
+			input2:         []string{"a", "b", "b"},
+			expectedOutput: false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ret := EnsureStringSlicesAreEquivalent(tc.input1, tc.input2)
+			g.Expect(ret).To(Equal(tc.expectedOutput))
+		})
+	}
+}

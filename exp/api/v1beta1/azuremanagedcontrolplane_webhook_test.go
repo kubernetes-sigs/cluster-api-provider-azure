@@ -369,6 +369,7 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 
 func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 	g := NewWithT(t)
+	commonSSHKey := generateSSHPublicKey(true)
 
 	tests := []struct {
 		name    string
@@ -377,16 +378,16 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "AzureManagedControlPlane with valid SSHPublicKey",
+			name:    "can't add a SSHPublicKey to an existing AzureManagedControlPlane",
 			oldAMCP: createAzureManagedControlPlane("192.168.0.0", "v1.18.0", ""),
 			amcp:    createAzureManagedControlPlane("192.168.0.0", "v1.18.0", generateSSHPublicKey(true)),
-			wantErr: false,
+			wantErr: true,
 		},
 		{
-			name:    "AzureManagedControlPlane with invalid SSHPublicKey",
-			oldAMCP: createAzureManagedControlPlane("192.168.0.0", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane("192.168.0.0", "v1.18.0", generateSSHPublicKey(false)),
-			wantErr: true,
+			name:    "same SSHPublicKey is valid",
+			oldAMCP: createAzureManagedControlPlane("192.168.0.0", "v1.18.0", commonSSHKey),
+			amcp:    createAzureManagedControlPlane("192.168.0.0", "v1.18.0", commonSSHKey),
+			wantErr: false,
 		},
 		{
 			name:    "AzureManagedControlPlane with invalid serviceIP",
