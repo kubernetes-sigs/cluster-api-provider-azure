@@ -1077,6 +1077,7 @@ func autoConvert_v1beta1_AzureManagedControlPlaneSpec_To_v1alpha4_AzureManagedCo
 	}
 	out.SubscriptionID = in.SubscriptionID
 	out.Location = in.Location
+	// WARNING: in.ExtendedLocation requires manual conversion: does not exist in peer-type
 	if err := Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}

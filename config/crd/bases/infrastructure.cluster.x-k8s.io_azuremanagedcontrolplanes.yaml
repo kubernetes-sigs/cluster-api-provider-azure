@@ -597,6 +597,16 @@ spec:
                   DNS service. It must be within the Kubernetes service address range
                   specified in serviceCidr.
                 type: string
+              extendedLocation:
+                properties:
+                  name:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - name
+                - type
+                type: object
               identityRef:
                 description: IdentityRef is a reference to a AzureClusterIdentity
                   to be used when reconciling this cluster
