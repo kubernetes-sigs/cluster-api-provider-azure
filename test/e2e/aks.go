@@ -578,9 +578,8 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	var publicIPPrefix network.PublicIPPrefix
 	Eventually(func() error {
 		publicIPPrefix, err = publicIPPrefixFuture.Result(publicIPPrefixClient)
-		Logf("Got err %v", err)
 		return err
-	}, input.WaitIntervals...).Should(Succeed())
+	}, input.WaitIntervals...).Should(Succeed(), "failed to create public IP prefix")
 
 	By("Creating node pool with 3 nodes")
 	infraMachinePool := &infrav1exp.AzureManagedMachinePool{
