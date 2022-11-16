@@ -22,6 +22,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
@@ -353,6 +354,97 @@ func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, lo
 		return "", errors.New("latest stable AKS version not found")
 	}
 	return maxVersion, nil
+}
+
+type AKSMachinePoolSpecInput struct {
+	Cluster       *clusterv1.Cluster
+	MachinePools  []*expv1.MachinePool
+	WaitIntervals []interface{}
+}
+
+func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSpecInput) {
+	input := inputGetter()
+	var wg sync.WaitGroup
+
+	originalReplicas := map[types.NamespacedName]int32{}
+	for _, mp := range input.MachinePools {
+		originalReplicas[client.ObjectKeyFromObject(mp)] = to.Int32(mp.Spec.Replicas)
+	}
+
+	By("Scaling the machine pools out")
+	for _, mp := range input.MachinePools {
+		wg.Add(1)
+		go func(mp *expv1.MachinePool) {
+			defer GinkgoRecover()
+			defer wg.Done()
+			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+				ClusterProxy:              bootstrapClusterProxy,
+				Cluster:                   input.Cluster,
+				Replicas:                  to.Int32(mp.Spec.Replicas) + 1,
+				MachinePools:              []*expv1.MachinePool{mp},
+				WaitForMachinePoolToScale: input.WaitIntervals,
+			})
+		}(mp)
+	}
+	wg.Wait()
+
+	By("Scaling the machine pools in")
+	for _, mp := range input.MachinePools {
+		wg.Add(1)
+		go func(mp *expv1.MachinePool) {
+			defer GinkgoRecover()
+			defer wg.Done()
+			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+				ClusterProxy:              bootstrapClusterProxy,
+				Cluster:                   input.Cluster,
+				Replicas:                  to.Int32(mp.Spec.Replicas) - 1,
+				MachinePools:              []*expv1.MachinePool{mp},
+				WaitForMachinePoolToScale: input.WaitIntervals,
+			})
+		}(mp)
+	}
+	wg.Wait()
+
+	By("Scaling the machine pools to zero")
+	// System node pools cannot be scaled to 0, so only include user node pools.
+	var machinePoolsToScale []*expv1.MachinePool
+	for _, mp := range input.MachinePools {
+		ammp := &infrav1exp.AzureManagedMachinePool{}
+		err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
+			Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+			Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+		}, ammp)
+		Expect(err).NotTo(HaveOccurred())
+
+		if ammp.Spec.Mode != string(infrav1exp.NodePoolModeSystem) {
+			machinePoolsToScale = append(machinePoolsToScale, mp)
+		}
+	}
+
+	framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+		ClusterProxy:              bootstrapClusterProxy,
+		Cluster:                   input.Cluster,
+		Replicas:                  0,
+		MachinePools:              machinePoolsToScale,
+		WaitForMachinePoolToScale: input.WaitIntervals,
+	})
+
+	By("Restoring initial replica count")
+	for _, mp := range input.MachinePools {
+		wg.Add(1)
+		go func(mp *expv1.MachinePool) {
+			defer GinkgoRecover()
+			defer wg.Done()
+			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+				ClusterProxy:              bootstrapClusterProxy,
+				Cluster:                   input.Cluster,
+				Replicas:                  originalReplicas[client.ObjectKeyFromObject(mp)],
+				MachinePools:              []*expv1.MachinePool{mp},
+				WaitForMachinePoolToScale: input.WaitIntervals,
+			})
+		}(mp)
+	}
+	wg.Wait()
 }
 
 type AKSAutoscaleSpecInput struct {
