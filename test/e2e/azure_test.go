@@ -592,6 +592,9 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 
 			By("creating a machine pool with public IP addresses from a prefix", func() {
+				// This test is also currently serving as the canonical
+				// "create/delete node pool" test. Eventually, that should be
+				// made more distinct from this public IP prefix test.
 				AKSPublicIPPrefixSpec(ctx, func() AKSPublicIPPrefixSpecInput {
 					return AKSPublicIPPrefixSpecInput{
 						Cluster:           result.Cluster,
