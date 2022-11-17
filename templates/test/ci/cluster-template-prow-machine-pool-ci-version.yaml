@@ -156,10 +156,6 @@ spec:
               mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
             done
             IMAGE_REGISTRY_PREFIX=registry.k8s.io
-            # Kubernetes builds from 1.20 through 1.24 are tagged with k8s.gcr.io
-            if [[ "$${CI_VERSION}" =~ ^v1\.2[0-4][\.[0-9]+ ]]; then
-              IMAGE_REGISTRY_PREFIX=k8s.gcr.io
-            fi
             for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
               echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
               wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -nv -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
@@ -344,10 +340,6 @@ spec:
             mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
           done
           IMAGE_REGISTRY_PREFIX=registry.k8s.io
-          # Kubernetes builds from 1.20 through 1.24 are tagged with k8s.gcr.io
-          if [[ "$${CI_VERSION}" =~ ^v1\.2[0-4][\.[0-9]+ ]]; then
-            IMAGE_REGISTRY_PREFIX=k8s.gcr.io
-          fi
           for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
             echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
             wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -nv -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
