@@ -114,7 +114,16 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "failed to determine if the AzureCluster resource group is managed")
 	}
 	if managed {
-		// if the resource group is managed, we delete the entire resource group directly.
+		// If the resource group is managed, delete it.
+		// We need to explicitly delete vnet peerings, as it is not part of the resource group.
+		vnetPeeringsSvc, err := s.getService(vnetpeerings.ServiceName)
+		if err != nil {
+			return errors.Wrap(err, "failed to get vnet peerings service")
+		}
+		if err := vnetPeeringsSvc.Delete(ctx); err != nil {
+			return errors.Wrap(err, "failed to delete peerings")
+		}
+		// Delete the entire resource group directly.
 		if err := groupSvc.Delete(ctx); err != nil {
 			return errors.Wrap(err, "failed to delete resource group")
 		}

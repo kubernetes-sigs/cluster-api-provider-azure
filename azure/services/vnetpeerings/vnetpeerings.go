@@ -26,7 +26,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-const serviceName = "vnetpeerings"
+// ServiceName is the name of this service.
+const ServiceName = "vnetpeerings"
 
 // VnetPeeringScope defines the scope interface for a subnet service.
 type VnetPeeringScope interface {
@@ -52,7 +53,7 @@ func New(scope VnetPeeringScope) *Service {
 
 // Name returns the service name.
 func (s *Service) Name() string {
-	return serviceName
+	return ServiceName
 }
 
 // Reconcile gets/creates/updates a peering.
@@ -73,14 +74,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var result error
 	for _, peeringSpec := range specs {
-		if _, err := s.CreateResource(ctx, peeringSpec, serviceName); err != nil {
+		if _, err := s.CreateResource(ctx, peeringSpec, ServiceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
 		}
 	}
 
-	s.Scope.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, serviceName, result)
+	s.Scope.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, ServiceName, result)
 	return result
 }
 
@@ -102,13 +103,13 @@ func (s *Service) Delete(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
 	var result error
 	for _, peeringSpec := range specs {
-		if err := s.DeleteResource(ctx, peeringSpec, serviceName); err != nil {
+		if err := s.DeleteResource(ctx, peeringSpec, ServiceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
 			}
 		}
 	}
-	s.Scope.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, serviceName, result)
+	s.Scope.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, ServiceName, result)
 	return result
 }
 
