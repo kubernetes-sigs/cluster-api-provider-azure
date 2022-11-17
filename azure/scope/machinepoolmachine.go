@@ -32,6 +32,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -246,7 +247,13 @@ func (s *MachinePoolMachineScope) SetFailureReason(v capierrors.MachineStatusErr
 
 // ProviderID returns the AzureMachinePool ID by parsing Spec.FakeProviderID.
 func (s *MachinePoolMachineScope) ProviderID() string {
-	return s.AzureMachinePoolMachine.Spec.ProviderID
+	// Transform the VMSS instance resource representation to conform to the cloud-provider-azure representation
+	providerID, err := azureutil.ConvertResourceGroupNameToLower(s.AzureMachinePoolMachine.Spec.ProviderID)
+	if err != nil {
+		// return original providerID
+		return s.AzureMachinePoolMachine.Spec.ProviderID
+	}
+	return providerID
 }
 
 // PatchObject persists the MachinePoolMachine spec and status.
@@ -277,7 +284,7 @@ func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 // version of the VM instance if the node is found.
 // Note: This func should be called at the end of a reconcile request and after updating the scope with the most recent Azure data.
 func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
+	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
 		"scope.MachinePoolMachineScope.UpdateNodeStatus",
 	)
@@ -300,6 +307,7 @@ func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
 		conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1.WaitingForNodeRefReason, clusterv1.ConditionSeverityInfo, "")
 	case !found && s.ProviderID() != "":
 		// Node was not found due to not finding a matching node by providerID
+		log.V(4).Info(fmt.Sprintf("Node with ProviderID: %s was not found in the list of Nodes on the Workload cluster", s.ProviderID()))
 		conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1.NodeProvisioningReason, clusterv1.ConditionSeverityInfo, "")
 	default:
 		// Node was found. Check if it is ready.
