@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -100,20 +101,23 @@ func TestAzureClusterServiceReconcile(t *testing.T) {
 func TestAzureClusterServiceDelete(t *testing.T) {
 	cases := map[string]struct {
 		expectedError string
-		expect        func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder)
+		expect        func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder)
 	}{
 		"Resource Group is deleted successfully": {
 			expectedError: "",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
 					grp.IsManaged(gomockinternal.AContext()).Return(true, nil),
+					grp.Name().Return(groups.ServiceName),
+					vpr.Name().Return(vnetpeerings.ServiceName),
+					vpr.Delete(gomockinternal.AContext()).Return(nil),
 					grp.Delete(gomockinternal.AContext()).Return(nil))
 			},
 		},
 		"Error when checking if resource group is managed": {
 			expectedError: "failed to determine if the AzureCluster resource group is managed: an error happened",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
 					grp.IsManaged(gomockinternal.AContext()).Return(false, errors.New("an error happened")))
@@ -121,28 +125,32 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 		},
 		"Resource Group delete fails": {
 			expectedError: "failed to delete resource group: internal error",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
 					grp.IsManaged(gomockinternal.AContext()).Return(true, nil),
+					grp.Name().Return(groups.ServiceName),
+					vpr.Name().Return(vnetpeerings.ServiceName),
+					vpr.Delete(gomockinternal.AContext()).Return(nil),
 					grp.Delete(gomockinternal.AContext()).Return(errors.New("internal error")))
 			},
 		},
 		"Resource Group not owned by cluster": {
 			expectedError: "",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
 					grp.IsManaged(gomockinternal.AContext()).Return(false, nil),
 					three.Delete(gomockinternal.AContext()).Return(nil),
 					two.Delete(gomockinternal.AContext()).Return(nil),
 					one.Delete(gomockinternal.AContext()).Return(nil),
+					vpr.Delete(gomockinternal.AContext()).Return(nil),
 					grp.Delete(gomockinternal.AContext()).Return(nil))
 			},
 		},
 		"service delete fails": {
 			expectedError: "failed to delete AzureCluster service two: some error happened",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Name().Return(groups.ServiceName),
 					grp.IsManaged(gomockinternal.AContext()).Return(false, nil),
@@ -162,11 +170,12 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			groupsMock := mock_azure.NewMockServiceReconciler(mockCtrl)
+			vnetpeeringsMock := mock_azure.NewMockServiceReconciler(mockCtrl)
 			svcOneMock := mock_azure.NewMockServiceReconciler(mockCtrl)
 			svcTwoMock := mock_azure.NewMockServiceReconciler(mockCtrl)
 			svcThreeMock := mock_azure.NewMockServiceReconciler(mockCtrl)
 
-			tc.expect(groupsMock.EXPECT(), svcOneMock.EXPECT(), svcTwoMock.EXPECT(), svcThreeMock.EXPECT())
+			tc.expect(groupsMock.EXPECT(), vnetpeeringsMock.EXPECT(), svcOneMock.EXPECT(), svcTwoMock.EXPECT(), svcThreeMock.EXPECT())
 
 			s := &azureClusterService{
 				scope: &scope.ClusterScope{
@@ -174,6 +183,7 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 				},
 				services: []azure.ServiceReconciler{
 					groupsMock,
+					vnetpeeringsMock,
 					svcOneMock,
 					svcTwoMock,
 					svcThreeMock,
