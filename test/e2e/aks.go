@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -623,6 +624,22 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	}
 	err = mgmtClient.Create(ctx, machinePool)
 	Expect(err).NotTo(HaveOccurred())
+
+	defer func() {
+		By("Deleting the node pool")
+		err := mgmtClient.Delete(ctx, machinePool)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), &expv1.MachinePool{})
+			return apierrors.IsNotFound(err)
+		}, input.WaitIntervals...).Should(BeTrue(), "Deleted MachinePool %s/%s still exists", machinePool.Namespace, machinePool.Name)
+
+		Eventually(func() bool {
+			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraMachinePool), &infrav1exp.AzureManagedMachinePool{})
+			return apierrors.IsNotFound(err)
+		}, input.WaitIntervals...).Should(BeTrue(), "Deleted AzureManagedMachinePool %s/%s still exists", infraMachinePool.Namespace, infraMachinePool.Name)
+	}()
 
 	By("Verifying the AzureManagedMachinePool converges to a failed ready status")
 	Eventually(func(g Gomega) {
