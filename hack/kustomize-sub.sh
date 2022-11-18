@@ -17,9 +17,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-root=$(dirname "${BASH_SOURCE[0]}")/..
-kustomize="${root}/hack/tools/bin/kustomize"
-envsubst="${root}/hack/tools/bin/envsubst"
-make --directory="${root}" "${kustomize##*/}" "${envsubst##*/}"
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+# shellcheck source=hack/common-vars.sh
+source "${REPO_ROOT}/hack/common-vars.sh"
 
-"${kustomize}" build "$1" | "${envsubst}"
+make --directory="${REPO_ROOT}" "${KUSTOMIZE##*/}" "${ENVSUBST##*/}"
+
+"${KUSTOMIZE}" build "$1" | "${ENVSUBST}"

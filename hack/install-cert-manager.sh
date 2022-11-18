@@ -48,7 +48,9 @@ END
 
 # Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+# shellcheck source=hack/common-vars.sh
+source "${REPO_ROOT}/hack/common-vars.sh"
+
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
 ## Install cert manager and wait for availability
