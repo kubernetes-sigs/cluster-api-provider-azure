@@ -93,7 +93,7 @@ The community holds office hours every week, with sessions open to all users and
 developers.
 
 Office hours are hosted on a zoom video chat every Thursday
-at 09:00 (PT) / 12:00 (ET) [Convert to your timezone](http://www.thetimezoneconverter.com/?t=09:00&tz=PT%20%28Pacific%20Time%29)
+at 09:00 (PT) / 12:00 (ET) [Convert to your timezone](https://www.thetimezoneconverter.com/?t=09:00&tz=PT%20%28Pacific%20Time%29)
 and are published on the [Kubernetes community meetings calendar][gcal]. Please add your questions or ideas to [the agenda][capz_agenda].
 
 ### Other ways to communicate with the contributors
@@ -139,4 +139,4 @@ We also use the issue tracker to track features. If you have an idea for a featu
 [cluster_api]: https://github.com/kubernetes-sigs/cluster-api
 [quickstart]: https://cluster-api.sigs.k8s.io/user/quick-start.html
 [flavors_doc]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/flavors/README.md
-[capz_agenda]: http://bit.ly/k8s-capz-agenda
+[capz_agenda]: https://bit.ly/k8s-capz-agenda
