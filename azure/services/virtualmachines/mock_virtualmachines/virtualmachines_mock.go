@@ -188,6 +188,18 @@ func (mr *MockVMScopeMockRecorder) SetAnnotation(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotation", reflect.TypeOf((*MockVMScope)(nil).SetAnnotation), arg0, arg1)
 }
 
+// SetConditionFalse mocks base method.
+func (m *MockVMScope) SetConditionFalse(arg0 v1beta10.ConditionType, arg1 string, arg2 v1beta10.ConditionSeverity, arg3 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetConditionFalse", arg0, arg1, arg2, arg3)
+}
+
+// SetConditionFalse indicates an expected call of SetConditionFalse.
+func (mr *MockVMScopeMockRecorder) SetConditionFalse(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConditionFalse", reflect.TypeOf((*MockVMScope)(nil).SetConditionFalse), arg0, arg1, arg2, arg3)
+}
+
 // SetLongRunningOperationState mocks base method.
 func (m *MockVMScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 	m.ctrl.T.Helper()

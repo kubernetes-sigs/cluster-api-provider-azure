@@ -530,6 +530,11 @@ func (m *MachineScope) SetFailureReason(v capierrors.MachineStatusError) {
 	m.AzureMachine.Status.FailureReason = &v
 }
 
+// SetConditionFalse sets the specified AzureMachine condition to false.
+func (m *MachineScope) SetConditionFalse(conditionType clusterv1.ConditionType, reason string, severity clusterv1.ConditionSeverity, message string) {
+	conditions.MarkFalse(m.AzureMachine, conditionType, reason, severity, message)
+}
+
 // SetBootstrapConditions sets the AzureMachine BootstrapSucceeded condition based on the extension provisioning states.
 func (m *MachineScope) SetBootstrapConditions(ctx context.Context, provisioningState string, extensionName string) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachineScope.SetBootstrapConditions")

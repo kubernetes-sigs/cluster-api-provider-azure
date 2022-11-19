@@ -284,6 +284,15 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		return reconcile.Result{}, errors.Wrap(err, "failed to init machine scope cache")
 	}
 
+	// Mark the AzureMachine as failed if the identities are not ready.
+	cond := conditions.Get(machineScope.AzureMachine, infrav1.VMIdentitiesReadyCondition)
+	if cond != nil && cond.Status == corev1.ConditionFalse && cond.Reason == infrav1.UserAssignedIdentityMissingReason {
+		amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, infrav1.UserAssignedIdentityMissingReason, "VM is unhealthy")
+		machineScope.SetFailureReason(capierrors.UnsupportedChangeMachineError)
+		machineScope.SetFailureMessage(errors.New("VM identities are not ready"))
+		return reconcile.Result{}, errors.New("VM identities are not ready")
+	}
+
 	ams, err := amr.createAzureMachineService(machineScope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create azure machine service")
