@@ -1,10 +1,12 @@
 # Managed Clusters (AKS)
+
 - **Feature status:** Experimental
 - **Feature gate:** AKS=true,MachinePool=true
 
 Cluster API Provider Azure (CAPZ) experimentally supports managing Azure
 Kubernetes Service (AKS) clusters. CAPZ implements this with three
 custom resources:
+
 - AzureManagedControlPlane
 - AzureManagedCluster
 - AzureManagedMachinePool
@@ -42,6 +44,9 @@ Create a new service principal and save to a local file:
 az ad sp create-for-rbac --role Contributor --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}" --sdk-auth > sp.json
 ```
 
+export the following variables in your current shell.
+
+```bash
 export AZURE_SUBSCRIPTION_ID="$(cat sp.json | jq -r .subscriptionId | tr -d '\n')"
 export AZURE_CLIENT_SECRET="$(cat sp.json | jq -r .clientSecret | tr -d '\n')"
 export AZURE_CLIENT_ID="$(cat sp.json | jq -r .clientId | tr -d '\n')"
@@ -190,8 +195,7 @@ should be fairly clear from context.
 | networkPlugin             | azure, kubenet                |
 | networkPolicy             | azure, calico                 |
 
-
-### Use an existing Virtual Network to provision an AKS cluster.
+### Use an existing Virtual Network to provision an AKS cluster
 
 If you'd like to deploy your AKS cluster in an existing Virtual Network, but create the cluster itself in a different resource group, you can configure the AzureManagedControlPlane resource with a reference to the existing Virtual Network and subnet. For example:
 
@@ -214,6 +218,7 @@ spec:
       cidrBlock: 10.0.2.0/24
       name: test-subnet
 ```
+
 ### Multitenancy
 
 Multitenancy for managed clusters can be configured by using `aks-multi-tenancy` flavor. The steps for creating an azure managed identity and mapping it to an `AzureClusterIdentity` are similar to the ones described [here](https://capz.sigs.k8s.io/topics/multitenancy.html).
@@ -287,7 +292,7 @@ spec:
 
 Azure Kubernetes Service can be configured to use cluster autoscaler by specifying `scaling` spec in the `AzureManagedMachinePool`
 
-```
+```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
@@ -307,7 +312,7 @@ You can configure the `NodeLabels` value for each AKS node pool (`AzureManagedMa
 
 Below an example `nodeLabels` configuration is assigned to `agentpool0`, specifying that each node in the pool will add a label `dedicated : kafka`
 
-```
+```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
@@ -326,7 +331,7 @@ You can configure the `MaxPods` value for each AKS node pool (`AzureManagedMachi
 
 Below an example `maxPods` configuration is assigned to `agentpool0`, specifying that each node in the pool will enforce a maximum of 24 scheduled pods:
 
-```
+```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
@@ -344,7 +349,7 @@ You can configure the `OsDiskType` value for each AKS node pool (`AzureManagedMa
 
 Below an example `osDiskType` configuration is assigned to `agentpool0`, specifying that each node in the pool will use a local, ephemeral OS disk for faster disk I/O at the expense of possible data loss:
 
-```
+```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
@@ -362,7 +367,7 @@ You can configure the `Taints` value for each AKS node pool (`AzureManagedMachin
 
 Below is an example of `taints` configuration for the `agentpool0`:
 
-```
+```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
@@ -378,11 +383,12 @@ spec:
 ```
 
 ### AKS Node Pool OS Type
+
 If your cluster uses the Azure network plugin (`AzureManagedControlPlane.networkPlugin`) you can set the operating system
 for your User nodepools. The `osType` field is immutable and only can be set at creation time, it defaults to `Linux` and
 can be either `Linux` or `Windows`.
 
-```
+```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
@@ -395,8 +401,8 @@ spec:
   osType: Windows
 ```
 
-
 ### Enable AKS features with custom headers (--aks-custom-headers)
+
 To enable some AKS cluster / node pool features you need to pass special headers to the cluster / node pool create request.
 For example, to [add a node pool for GPU nodes](https://docs.microsoft.com/en-us/azure/aks/gpu-cluster#add-a-node-pool-for-gpu-nodes),
 you need to pass a custom header `UseGPUDedicatedVHD=true` (with `--aks-custom-headers UseGPUDedicatedVHD=true` argument).
@@ -404,7 +410,8 @@ To do this with CAPZ, you need to add special annotations to AzureManagedCluster
 features) or AzureManagedMachinePool (for node pool features). These annotations should have a prefix `infrastructure.cluster.x-k8s.io/custom-header-` followed
 by the name of the AKS feature. For example, to create a node pool with GPU support, you would add the following
 annotation to AzureManagedMachinePool:
-```
+
+```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
@@ -419,6 +426,7 @@ spec:
 ### Use a public Standard Load Balancer
 
 A public Load Balancer when integrated with AKS serves two purposes:
+
 - To provide outbound connections to the cluster nodes inside the AKS virtual network. It achieves this objective by translating the nodes private IP address to a public IP address that is part of its Outbound Pool.
 - To provide access to applications via Kubernetes services of type LoadBalancer. With it, you can easily scale your applications and create highly available services.
 
@@ -510,9 +518,9 @@ and need an additional feature, please open a pull request or issue with
 details. We're happy to help!
 
 Current limitations
+
 - DNS IP is hardcoded to the x.x.x.10 inside the service CIDR.
-  - primarily due to lack of validation, see
-    https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/612
+  - primarily due to lack of validation, see [#612](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/612)
 - Only supports system managed identities.
   - We would like to support user managed identities where appropriate.
 - Only supports Standard load balancer (SLB).

@@ -6,7 +6,7 @@ A failure domain in the Azure provider maps to an **availability zone** within a
 
 To ensure a cluster (or any application) is resilient to failure it is best to spread instances across all the availability zones within a region. If a zone goes down, your cluster will continue to run as the other 2 zones are physically separated and can continue to run.
 
-Full details of availability zones, regions can be found in the [Azure docs](https://docs.microsoft.com/en-us/azure/availability-zones/az-overview).
+Full details of availability zones, regions can be found in the [Azure docs](https://learn.microsoft.com/azure/reliability/availability-zones-overview).
 
 ## How to use failure domains
 
