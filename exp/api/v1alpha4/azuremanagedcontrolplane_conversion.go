@@ -40,6 +40,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Status.Conditions = restored.Status.Conditions
 	dst.Spec.VirtualNetwork.ResourceGroup = restored.Spec.VirtualNetwork.ResourceGroup
 	dst.Spec.VirtualNetwork.Subnet.ServiceEndpoints = restored.Spec.VirtualNetwork.Subnet.ServiceEndpoints
+	dst.Spec.AutoScalerProfile = restored.Spec.AutoScalerProfile
 
 	return nil
 }

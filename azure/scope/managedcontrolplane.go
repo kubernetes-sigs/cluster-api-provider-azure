@@ -501,6 +501,28 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 		}
 	}
 
+	if s.ControlPlane.Spec.AutoScalerProfile != nil {
+		managedClusterSpec.AutoScalerProfile = &managedclusters.AutoScalerProfile{
+			BalanceSimilarNodeGroups:      (*string)(s.ControlPlane.Spec.AutoScalerProfile.BalanceSimilarNodeGroups),
+			Expander:                      (*string)(s.ControlPlane.Spec.AutoScalerProfile.Expander),
+			MaxEmptyBulkDelete:            s.ControlPlane.Spec.AutoScalerProfile.MaxEmptyBulkDelete,
+			MaxGracefulTerminationSec:     s.ControlPlane.Spec.AutoScalerProfile.MaxGracefulTerminationSec,
+			MaxNodeProvisionTime:          s.ControlPlane.Spec.AutoScalerProfile.MaxNodeProvisionTime,
+			MaxTotalUnreadyPercentage:     s.ControlPlane.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage,
+			NewPodScaleUpDelay:            s.ControlPlane.Spec.AutoScalerProfile.NewPodScaleUpDelay,
+			OkTotalUnreadyCount:           s.ControlPlane.Spec.AutoScalerProfile.OkTotalUnreadyCount,
+			ScanInterval:                  s.ControlPlane.Spec.AutoScalerProfile.ScanInterval,
+			ScaleDownDelayAfterAdd:        s.ControlPlane.Spec.AutoScalerProfile.ScaleDownDelayAfterAdd,
+			ScaleDownDelayAfterDelete:     s.ControlPlane.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete,
+			ScaleDownDelayAfterFailure:    s.ControlPlane.Spec.AutoScalerProfile.ScaleDownDelayAfterFailure,
+			ScaleDownUnneededTime:         s.ControlPlane.Spec.AutoScalerProfile.ScaleDownUnneededTime,
+			ScaleDownUnreadyTime:          s.ControlPlane.Spec.AutoScalerProfile.ScaleDownUnreadyTime,
+			ScaleDownUtilizationThreshold: s.ControlPlane.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold,
+			SkipNodesWithLocalStorage:     (*string)(s.ControlPlane.Spec.AutoScalerProfile.SkipNodesWithLocalStorage),
+			SkipNodesWithSystemPods:       (*string)(s.ControlPlane.Spec.AutoScalerProfile.SkipNodesWithSystemPods),
+		}
+	}
+
 	return &managedClusterSpec
 }
 

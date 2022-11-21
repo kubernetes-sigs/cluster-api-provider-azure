@@ -577,6 +577,111 @@ spec:
                     - None
                     type: string
                 type: object
+              autoscalerProfile:
+                description: AutoscalerProfile is the parameters to be applied to
+                  the cluster-autoscaler when enabled
+                properties:
+                  balanceSimilarNodeGroups:
+                    description: BalanceSimilarNodeGroups - Valid values are 'true'
+                      and 'false'. The default is false.
+                    enum:
+                    - "true"
+                    - "false"
+                    type: string
+                  expander:
+                    description: Expander - If not specified, the default is 'random'.
+                      See [expanders](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-expanders)
+                      for more information.
+                    enum:
+                    - least-waste
+                    - most-pods
+                    - priority
+                    - random
+                    type: string
+                  maxEmptyBulkDelete:
+                    description: MaxEmptyBulkDelete - The default is 10.
+                    type: string
+                  maxGracefulTerminationSec:
+                    description: MaxGracefulTerminationSec - The default is 600.
+                    pattern: ^(\d+)$
+                    type: string
+                  maxNodeProvisionTime:
+                    description: MaxNodeProvisionTime - The default is '15m'. Values
+                      must be an integer followed by an 'm'. No unit of time other
+                      than minutes (m) is supported.
+                    pattern: ^(\d+)m$
+                    type: string
+                  maxTotalUnreadyPercentage:
+                    description: MaxTotalUnreadyPercentage - The default is 45. The
+                      maximum is 100 and the minimum is 0.
+                    maxLength: 3
+                    minLength: 1
+                    pattern: ^(\d+)$
+                    type: string
+                  newPodScaleUpDelay:
+                    description: NewPodScaleUpDelay - For scenarios like burst/batch
+                      scale where you don't want CA to act before the kubernetes scheduler
+                      could schedule all the pods, you can tell CA to ignore unscheduled
+                      pods before they're a certain age. The default is '0s'. Values
+                      must be an integer followed by a unit ('s' for seconds, 'm'
+                      for minutes, 'h' for hours, etc).
+                    type: string
+                  okTotalUnreadyCount:
+                    description: OkTotalUnreadyCount - This must be an integer. The
+                      default is 3.
+                    pattern: ^(\d+)$
+                    type: string
+                  scaleDownDelayAfterAdd:
+                    description: ScaleDownDelayAfterAdd - The default is '10m'. Values
+                      must be an integer followed by an 'm'. No unit of time other
+                      than minutes (m) is supported.
+                    pattern: ^(\d+)m$
+                    type: string
+                  scaleDownDelayAfterDelete:
+                    description: ScaleDownDelayAfterDelete - The default is the scan-interval.
+                      Values must be an integer followed by an 's'. No unit of time
+                      other than seconds (s) is supported.
+                    pattern: ^(\d+)s$
+                    type: string
+                  scaleDownDelayAfterFailure:
+                    description: ScaleDownDelayAfterFailure - The default is '3m'.
+                      Values must be an integer followed by an 'm'. No unit of time
+                      other than minutes (m) is supported.
+                    pattern: ^(\d+)m$
+                    type: string
+                  scaleDownUnneededTime:
+                    description: ScaleDownUnneededTime - The default is '10m'. Values
+                      must be an integer followed by an 'm'. No unit of time other
+                      than minutes (m) is supported.
+                    pattern: ^(\d+)m$
+                    type: string
+                  scaleDownUnreadyTime:
+                    description: ScaleDownUnreadyTime - The default is '20m'. Values
+                      must be an integer followed by an 'm'. No unit of time other
+                      than minutes (m) is supported.
+                    pattern: ^(\d+)m$
+                    type: string
+                  scaleDownUtilizationThreshold:
+                    description: ScaleDownUtilizationThreshold - The default is '0.5'.
+                    type: string
+                  scanInterval:
+                    description: ScanInterval - How often cluster is reevaluated for
+                      scale up or down. The default is '10s'.
+                    pattern: ^(\d+)s$
+                    type: string
+                  skipNodesWithLocalStorage:
+                    description: SkipNodesWithLocalStorage - The default is false.
+                    enum:
+                    - "true"
+                    - "false"
+                    type: string
+                  skipNodesWithSystemPods:
+                    description: SkipNodesWithSystemPods - The default is true.
+                    enum:
+                    - "true"
+                    - "false"
+                    type: string
+                type: object
               controlPlaneEndpoint:
                 description: ControlPlaneEndpoint represents the endpoint used to
                   communicate with the control plane.

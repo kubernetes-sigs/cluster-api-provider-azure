@@ -1094,6 +1094,7 @@ func autoConvert_v1beta1_AzureManagedControlPlaneSpec_To_v1alpha4_AzureManagedCo
 	out.SKU = (*SKU)(unsafe.Pointer(in.SKU))
 	out.LoadBalancerProfile = (*LoadBalancerProfile)(unsafe.Pointer(in.LoadBalancerProfile))
 	out.APIServerAccessProfile = (*APIServerAccessProfile)(unsafe.Pointer(in.APIServerAccessProfile))
+	// WARNING: in.AutoScalerProfile requires manual conversion: does not exist in peer-type
 	return nil
 }
 
