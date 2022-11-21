@@ -1505,3 +1505,27 @@ func TestServiceEndpointsLackRequiredFieldLocations(t *testing.T) {
 		g.Expect(errs[0].Error()).To(ContainSubstring("locations are required for all service endpoints"))
 	})
 }
+
+func TestClusterWithExtendedLocationInvalid(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		name    string
+		cluster *AzureCluster
+	}
+
+	testCase := test{
+		name:    "azurecluster spec with extended location but not enable EdgeZone feature gate flag",
+		cluster: createValidCluster(),
+	}
+
+	testCase.cluster.Spec.ExtendedLocation = &ExtendedLocationSpec{
+		Name: "rr4",
+		Type: "EdgeZone",
+	}
+
+	t.Run(testCase.name, func(t *testing.T) {
+		err := testCase.cluster.validateClusterSpec(nil)
+		g.Expect(err).NotTo(BeNil())
+	})
+}

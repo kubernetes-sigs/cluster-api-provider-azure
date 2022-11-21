@@ -75,6 +75,9 @@ type ClusterDescriber interface {
 	ResourceGroup() string
 	ClusterName() string
 	Location() string
+	ExtendedLocation() *infrav1.ExtendedLocationSpec
+	ExtendedLocationName() string
+	ExtendedLocationType() string
 	AdditionalTags() infrav1.Tags
 	AvailabilitySetEnabled() bool
 	CloudProviderConfigOverrides() *infrav1.CloudProviderConfigOverrides

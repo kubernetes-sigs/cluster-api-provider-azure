@@ -1,0 +1,30 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+        managedDisk:
+          storageAccountType: StandardSSD_LRS
+      osDisk:
+        managedDisk:
+          storageAccountType: StandardSSD_LRS
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      osDisk:
+        managedDisk:
+          storageAccountType: StandardSSD_LRS
+      

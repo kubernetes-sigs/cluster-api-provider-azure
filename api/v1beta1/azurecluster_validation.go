@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 const (
@@ -95,6 +96,11 @@ func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
 	}
 	allErrs = append(allErrs, validateCloudProviderConfigOverrides(c.Spec.CloudProviderConfigOverrides, oldCloudProviderConfigOverrides,
 		field.NewPath("spec").Child("cloudProviderConfigOverrides"))...)
+
+	// If ClusterSpec has non-nil ExtendedLocation field but not enable EdgeZone feature gate flag, ClusterSpec validation failed.
+	if !feature.Gates.Enabled(feature.EdgeZone) && c.Spec.ExtendedLocation != nil {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "ExtendedLocation"), "can be set only if the EdgeZone feature flag is enabled"))
+	}
 
 	if err := validateBastionSpec(c.Spec.BastionSpec, field.NewPath("spec").Child("azureBastion").Child("bastionSpec")); err != nil {
 		allErrs = append(allErrs, err)

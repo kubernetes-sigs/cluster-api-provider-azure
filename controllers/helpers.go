@@ -266,6 +266,8 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			SecurityGroupName:            subnet.SecurityGroup.Name,
 			SecurityGroupResourceGroup:   d.Vnet().ResourceGroup,
 			Location:                     d.Location(),
+			ExtendedLocationType:         d.ExtendedLocationType(),
+			ExtendedLocationName:         d.ExtendedLocationName(),
 			VMType:                       "vmss",
 			VnetName:                     d.Vnet().Name,
 			VnetResourceGroup:            d.Vnet().ResourceGroup,
@@ -287,6 +289,8 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			SecurityGroupName:            subnet.SecurityGroup.Name,
 			SecurityGroupResourceGroup:   d.Vnet().ResourceGroup,
 			Location:                     d.Location(),
+			ExtendedLocationType:         d.ExtendedLocationType(),
+			ExtendedLocationName:         d.ExtendedLocationName(),
 			VMType:                       "vmss",
 			VnetName:                     d.Vnet().Name,
 			VnetResourceGroup:            d.Vnet().ResourceGroup,
@@ -321,6 +325,8 @@ type CloudProviderConfig struct {
 	SecurityGroupName            string `json:"securityGroupName"`
 	SecurityGroupResourceGroup   string `json:"securityGroupResourceGroup"`
 	Location                     string `json:"location"`
+	ExtendedLocationType         string `json:"extendedLocationType,omitempty"`
+	ExtendedLocationName         string `json:"extendedLocationName,omitempty"`
 	VMType                       string `json:"vmType"`
 	VnetName                     string `json:"vnetName"`
 	VnetResourceGroup            string `json:"vnetResourceGroup"`

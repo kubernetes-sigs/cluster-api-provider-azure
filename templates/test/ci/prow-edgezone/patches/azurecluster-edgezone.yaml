@@ -1,0 +1,6 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  location: ${AZURE_LOCATION_EDGEZONE}

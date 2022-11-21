@@ -406,6 +406,22 @@ spec:
                               type: object
                             type: array
                         type: object
+                      extendedLocation:
+                        description: ExtendedLocation is an optional set of ExtendedLocation
+                          properties for clusters on Azure public MEC.
+                        properties:
+                          name:
+                            description: Name defines the name for the extended location.
+                            type: string
+                          type:
+                            description: Type defines the type for the extended location.
+                            enum:
+                            - EdgeZone
+                            type: string
+                        required:
+                        - name
+                        - type
+                        type: object
                       identityRef:
                         description: IdentityRef is a reference to an AzureIdentity
                           to be used when reconciling this cluster

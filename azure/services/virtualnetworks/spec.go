@@ -27,12 +27,13 @@ import (
 
 // VNetSpec defines the specification for a Virtual Network.
 type VNetSpec struct {
-	ResourceGroup  string
-	Name           string
-	CIDRs          []string
-	Location       string
-	ClusterName    string
-	AdditionalTags infrav1.Tags
+	ResourceGroup    string
+	Name             string
+	CIDRs            []string
+	Location         string
+	ExtendedLocation *infrav1.ExtendedLocationSpec
+	ClusterName      string
+	AdditionalTags   infrav1.Tags
 }
 
 // ResourceName returns the name of the vnet.
@@ -64,7 +65,8 @@ func (s *VNetSpec) Parameters(ctx context.Context, existing interface{}) (interf
 			Role:        pointer.String(infrav1.CommonRole),
 			Additional:  s.AdditionalTags,
 		})),
-		Location: pointer.String(s.Location),
+		Location:         pointer.String(s.Location),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
 				AddressPrefixes: &s.CIDRs,

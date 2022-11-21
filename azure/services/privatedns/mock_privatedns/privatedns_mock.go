@@ -191,6 +191,48 @@ func (mr *MockScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
 }
 
+// ExtendedLocation mocks base method.
+func (m *MockScope) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocation")
+	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	return ret0
+}
+
+// ExtendedLocation indicates an expected call of ExtendedLocation.
+func (mr *MockScopeMockRecorder) ExtendedLocation() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocation", reflect.TypeOf((*MockScope)(nil).ExtendedLocation))
+}
+
+// ExtendedLocationName mocks base method.
+func (m *MockScope) ExtendedLocationName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocationName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ExtendedLocationName indicates an expected call of ExtendedLocationName.
+func (mr *MockScopeMockRecorder) ExtendedLocationName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocationName", reflect.TypeOf((*MockScope)(nil).ExtendedLocationName))
+}
+
+// ExtendedLocationType mocks base method.
+func (m *MockScope) ExtendedLocationType() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocationType")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ExtendedLocationType indicates an expected call of ExtendedLocationType.
+func (mr *MockScopeMockRecorder) ExtendedLocationType() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocationType", reflect.TypeOf((*MockScope)(nil).ExtendedLocationType))
+}
+
 // FailureDomains mocks base method.
 func (m *MockScope) FailureDomains() []string {
 	m.ctrl.T.Helper()

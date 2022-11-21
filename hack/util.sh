@@ -51,6 +51,11 @@ capz::util::get_random_region_gpu() {
     local REGIONS=("eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
+# all regions below must support ExtendedLocation
+capz::util::get_random_region_edgezone() {
+    local REGIONS=("canadacentral")
+    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
+}
 
 capz::util::generate_ssh_key() {
     # Generate SSH key.

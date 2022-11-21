@@ -116,6 +116,9 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 	// Restore list of virtual network peerings
 	dst.Spec.NetworkSpec.Vnet.Peerings = restored.Spec.NetworkSpec.Vnet.Peerings
 
+	// Restore ExtendedLocation properties
+	dst.Spec.ExtendedLocation = restored.Spec.ExtendedLocation
+
 	return nil
 }
 
