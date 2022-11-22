@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Build architecture
+ARG ARCH
+
 # Build the manager binary
 FROM golang:1.19 as builder
 WORKDIR /workspace
@@ -52,7 +55,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -o manager ${package}
 
 # Production image
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static:nonroot-${ARCH}
 WORKDIR /
 COPY --from=builder /workspace/manager .
 # Use uid of nonroot user (65532) because kubernetes expects numeric user when applying pod security policies
