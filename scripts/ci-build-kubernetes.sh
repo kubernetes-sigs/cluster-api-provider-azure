@@ -41,6 +41,11 @@ declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
 declare -a WINDOWS_BINARIES=("kubeadm" "kubectl" "kubelet" "kube-proxy")
 declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
 
+GREP_BINARY="grep"
+if [[ "${OSTYPE}" == "darwin"* ]]; then
+  GREP_BINARY="ggrep"
+fi
+
 setup() {
     KUBE_ROOT="$(go env GOPATH)/src/k8s.io/kubernetes"
     export KUBE_ROOT
@@ -55,8 +60,8 @@ setup() {
 
     # get the latest ci version for a particular release so that kubeadm is
     # able to pull existing images before being replaced by custom images
-    major="$(echo "${KUBE_GIT_VERSION}" | grep -Po "(?<=v)[0-9]+")"
-    minor="$(echo "${KUBE_GIT_VERSION}" | grep -Po "(?<=v${major}.)[0-9]+")"
+    major="$(echo "${KUBE_GIT_VERSION}" | ${GREP_BINARY} -Po "(?<=v)[0-9]+")"
+    minor="$(echo "${KUBE_GIT_VERSION}" | ${GREP_BINARY} -Po "(?<=v${major}.)[0-9]+")"
     CI_VERSION="$(capz::util::get_latest_ci_version "${major}.${minor}")"
     export CI_VERSION
     export KUBERNETES_VERSION="${CI_VERSION}"
@@ -92,7 +97,7 @@ main() {
 
         for IMAGE_NAME in "${IMAGES[@]}"; do
             # extract docker image URL form `docker load` output
-            OLD_IMAGE_URL="$(docker load --input "${KUBE_ROOT}/_output/release-images/amd64/${IMAGE_NAME}.tar" | grep -oP '(?<=Loaded image: )[^ ]*')"
+            OLD_IMAGE_URL="$(docker load --input "${KUBE_ROOT}/_output/release-images/amd64/${IMAGE_NAME}.tar" | ${GREP_BINARY} -oP '(?<=Loaded image: )[^ ]*' | head -n 1)"
             NEW_IMAGE_URL="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
             # retag and push images to ACR
             docker tag "${OLD_IMAGE_URL}" "${NEW_IMAGE_URL}" && docker push "${NEW_IMAGE_URL}"
