@@ -99,7 +99,7 @@ main() {
         done
 
         for BINARY in "${BINARIES[@]}"; do
-            az storage blob upload --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
+            az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
         done
 
         if [[ "${WINDOWS:-}" == "true" ]]; then
@@ -110,10 +110,10 @@ main() {
             done
 
             for BINARY in "${WINDOWS_BINARIES[@]}"; do
-                az storage blob upload --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe"
+                az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe"
             done
         fi
-    fi 
+    fi
 }
 
 # can_reuse_artifacts returns true if there exists Kubernetes artifacts built from a PR that we can reuse
