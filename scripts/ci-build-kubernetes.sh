@@ -57,6 +57,7 @@ setup() {
     pushd "${KUBE_ROOT}" && kube::version::get_version_vars && popd
     : "${KUBE_GIT_VERSION:?Environment variable empty or not defined.}"
     export KUBE_GIT_VERSION
+    echo "using KUBE_GIT_VERSION=${KUBE_GIT_VERSION}"
 
     # get the latest ci version for a particular release so that kubeadm is
     # able to pull existing images before being replaced by custom images
@@ -64,11 +65,14 @@ setup() {
     minor="$(echo "${KUBE_GIT_VERSION}" | ${GREP_BINARY} -Po "(?<=v${major}.)[0-9]+")"
     CI_VERSION="$(capz::util::get_latest_ci_version "${major}.${minor}")"
     export CI_VERSION
+    echo "using CI_VERSION=${CI_VERSION}"
     export KUBERNETES_VERSION="${CI_VERSION}"
+    echo "using KUBERNETES_VERSION=${KUBERNETES_VERSION}"
 
     # Docker tags cannot contain '+'
     # ref: https://github.com/kubernetes/kubernetes/blob/5491484aa91fd09a01a68042e7674bc24d42687a/build/lib/release.sh#L345-L346
     export IMAGE_TAG="${KUBE_GIT_VERSION/+/_}"
+    echo "using IMAGE_TAG=${IMAGE_TAG}"
 }
 
 main() {
