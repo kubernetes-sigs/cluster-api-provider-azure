@@ -559,7 +559,9 @@ var _ = Describe("Workload cluster creation", func() {
 	Context("Creating an AKS cluster [EXPERIMENTAL][Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
 			clusterName = getClusterName(clusterNamePrefix, aksClusterNameSuffix)
-			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig)
+			kubernetesVersionUpgradeFrom, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersionUpgradeFrom)
+			Expect(err).To(BeNil())
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
 			Expect(err).To(BeNil())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
@@ -572,18 +574,30 @@ var _ = Describe("Workload cluster creation", func() {
 					Flavor:                   "aks",
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        kubernetesVersion,
+					KubernetesVersion:        kubernetesVersionUpgradeFrom,
 					ControlPlaneMachineCount: pointer.Int64Ptr(1),
 					WorkerMachineCount:       pointer.Int64Ptr(1),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				},
 			}, result)
+
+			By("Upgrading the Kubernetes version of the cluster", func() {
+				AKSUpgradeSpec(ctx, func() AKSUpgradeSpecInput {
+					return AKSUpgradeSpecInput{
+						Cluster:                    result.Cluster,
+						MachinePools:               result.MachinePools,
+						KubernetesVersionUpgradeTo: kubernetesVersion,
+						WaitForControlPlane:        e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
+						WaitForMachinePools:        e2eConfig.GetIntervals(specName, "wait-machine-pool-upgrade"),
+					}
+				})
+			})
 
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
