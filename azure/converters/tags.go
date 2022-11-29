@@ -23,6 +23,10 @@ import (
 
 // MapToTags converts a map[string]*string into a infrav1.Tags.
 func MapToTags(src map[string]*string) infrav1.Tags {
+	if src == nil {
+		return nil
+	}
+
 	tags := make(infrav1.Tags, len(src))
 
 	for k, v := range src {
@@ -34,6 +38,10 @@ func MapToTags(src map[string]*string) infrav1.Tags {
 
 // TagsToMap converts infrav1.Tags into a map[string]*string.
 func TagsToMap(src infrav1.Tags) map[string]*string {
+	if src == nil {
+		return nil
+	}
+
 	tags := make(map[string]*string, len(src))
 
 	for k, v := range src {
