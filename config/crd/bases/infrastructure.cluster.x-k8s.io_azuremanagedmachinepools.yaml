@@ -199,6 +199,13 @@ spec:
             description: AzureManagedMachinePoolSpec defines the desired state of
               AzureManagedMachinePool.
             properties:
+              additionalTags:
+                additionalProperties:
+                  type: string
+                description: AdditionalTags is an optional set of tags to add to Azure
+                  resources managed by the Azure provider, in addition to the ones
+                  added by default.
+                type: object
               availabilityZones:
                 description: AvailabilityZones - Availability zones for nodes. Must
                   use VirtualMachineScaleSets AgentPoolType.
