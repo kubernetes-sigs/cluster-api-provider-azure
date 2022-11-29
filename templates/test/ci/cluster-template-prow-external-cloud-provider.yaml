@@ -1,6 +1,10 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
+  labels:
+    cni-windows: ${CLUSTER_NAME}-calico
+    containerd-logger: enabled
+    csi-proxy: enabled
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -57,7 +61,7 @@ spec:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: external
-          feature-gates: MixedProtocolLBService=true
+          feature-gates: ${K8S_FEATURE_GATES:-""}
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -240,3 +244,445 @@ spec:
     namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
   tenantID: ${AZURE_TENANT_ID}
   type: ServicePrincipal
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-win
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-win
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-win
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  annotations:
+    runtime: containerd
+  name: ${CLUSTER_NAME}-md-win
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        runtime: containerd
+    spec:
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Windows
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-win
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-win-azure-json
+        owner: root:root
+        path: c:/k/azure.json
+        permissions: "0644"
+      - content: |-
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
+        path: C:/defender-exclude-calico.ps1
+        permissions: "0744"
+      - content: |
+          # /tmp is assumed created and required for upstream e2e tests to pass
+          New-Item -ItemType Directory -Force -Path C:\tmp\
+        path: C:/create-temp-folder.ps1
+        permissions: "0744"
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: npipe:////./pipe/containerd-containerd
+          kubeletExtraArgs:
+            azure-container-registry-config: c:/k/azure.json
+            cloud-config: c:/k/azure.json
+            cloud-provider: external
+            feature-gates: WindowsHostProcessContainers=true
+            v: "2"
+            windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - nssm set kubelet start SERVICE_AUTO_START
+      - powershell C:/defender-exclude-calico.ps1
+      preKubeadmCommands:
+      - powershell C:/create-temp-folder.ps1
+      users:
+      - groups: Administrators
+        name: capi
+        sshAuthorizedKeys:
+        - ${AZURE_SSH_PUBLIC_KEY:=""}
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: containerd-logger-${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      containerd-logger: enabled
+  resources:
+  - kind: ConfigMap
+    name: containerd-logger-${CLUSTER_NAME}
+  strategy: ApplyOnce
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: ${CLUSTER_NAME}-calico-windows
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      cni-windows: ${CLUSTER_NAME}-calico
+  resources:
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-calico-windows
+  strategy: ApplyOnce
+---
+apiVersion: v1
+data:
+  proxy: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: kube-proxy
+      name: kube-proxy-windows
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: kube-proxy-windows
+      template:
+        metadata:
+          labels:
+            k8s-app: kube-proxy-windows
+        spec:
+          serviceAccountName: kube-proxy
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\system"
+          hostNetwork: true
+          containers:
+          - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess
+            args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1"]
+            workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/"
+            name: kube-proxy
+            env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: KUBEPROXY_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: windows-kubeproxy-ci
+                  key: KUBEPROXY_PATH
+                  optional: true
+            volumeMounts:
+            - mountPath: /var/lib/kube-proxy
+              name: kube-proxy
+          nodeSelector:
+            kubernetes.io/os: windows
+          tolerations:
+          - key: CriticalAddonsOnly
+            operator: Exists
+          - operator: Exists
+          volumes:
+          - configMap:
+              name: kube-proxy
+            name: kube-proxy
+      updateStrategy:
+        type: RollingUpdate
+  windows-cni: "# strictAffinity required for windows\napiVersion: crd.projectcalico.org/v1\nkind:
+    IPAMConfig\nmetadata:\n  name: default\nspec:\n  autoAllocateBlocks: true\n  strictAffinity:
+    true\n---\nkind: ConfigMap\napiVersion: v1\nmetadata:\n  name: calico-static-rules\n
+    \ namespace: calico-system\n  labels:\n    tier: node\n    app: calico\ndata:\n
+    \ static-rules.json: |\n    {\n      \"Provider\": \"azure\",\n      \"Version\":
+    \"0.1\",\n      \"Rules\": [\n        {\n          \"Name\": \"EndpointPolicy\",\n
+    \         \"Rule\": {\n              \"Id\": \"wireserver\",\n              \"Type\":
+    \"ACL\",\n              \"Protocol\": 6,\n              \"Action\": \"Block\",\n
+    \             \"Direction\": \"Out\",\n              \"RemoteAddresses\": \"168.63.129.16/32\",\n
+    \             \"RemotePorts\": \"80\",\n              \"Priority\": 200,\n              \"RuleType\":
+    \"Switch\"\n            }\n          }\n      ]\n    } \n---\nkind: ConfigMap\napiVersion:
+    v1\nmetadata:\n  name: calico-config-windows\n  namespace: calico-system\n  labels:\n
+    \   tier: node\n    app: calico\ndata:\n  veth_mtu: \"1350\"\n  \n  cni_network_config:
+    |\n    {\n      \"name\": \"Calico\",\n      \"cniVersion\": \"0.3.1\",\n      \"plugins\":
+    [\n        {\n          \"windows_use_single_network\": true,\n          \"type\":
+    \"calico\",\n          \"mode\": \"vxlan\",\n          \"nodename\": \"__KUBERNETES_NODE_NAME__\",\n
+    \         \"nodename_file_optional\": true,\n          \"log_file_path\": \"c:/cni.log\",\n
+    \         \"log_level\": \"debug\",\n\n          \"vxlan_mac_prefix\": \"0E-2A\",\n
+    \         \"vxlan_vni\": 4096,\n          \"mtu\": __CNI_MTU__,\n          \"policy\":
+    {\n            \"type\": \"k8s\"\n          },\n\n          \"log_level\": \"info\",\n\n
+    \         \"capabilities\": {\"dns\": true},\n          \"DNS\":  {\n            \"Search\":
+    \ [\n              \"svc.cluster.local\"\n            ]\n          },\n\n          \"datastore_type\":
+    \"kubernetes\",\n\n          \"kubernetes\": {\n            \"kubeconfig\": \"__KUBECONFIG_FILEPATH__\"\n
+    \         },\n\n          \"ipam\": {\n            \"type\": \"calico-ipam\",\n
+    \           \"subnet\": \"usePodCidr\"\n          },\n\n          \"policies\":
+    \ [\n            {\n              \"Name\":  \"EndpointPolicy\",\n              \"Value\":
+    \ {\n                \"Type\":  \"OutBoundNAT\",\n                \"ExceptionList\":
+    \ [\n                  \"__K8S_SERVICE_CIDR__\"\n                ]\n              }\n
+    \           },\n            {\n              \"Name\":  \"EndpointPolicy\",\n
+    \             \"Value\":  {\n                \"Type\":  \"SDNROUTE\",\n                \"DestinationPrefix\":
+    \ \"__K8S_SERVICE_CIDR__\",\n                \"NeedEncap\":  true\n              }\n
+    \           }\n          ]\n        }\n      ]\n\n    }\n---\napiVersion: apps/v1\nkind:
+    DaemonSet\nmetadata:\n  name: calico-node-windows\n  labels:\n    tier: node\n
+    \   app: calico\n  namespace: calico-system\nspec:\n  selector:\n    matchLabels:\n
+    \     app: calico\n  template:\n    metadata:\n      labels:\n        tier: node\n
+    \       app: calico\n    spec:\n      affinity:\n        nodeAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n
+    \           nodeSelectorTerms:\n              - matchExpressions:\n                  -
+    key: kubernetes.io/os\n                    operator: In\n                    values:\n
+    \                     - windows\n                  - key: kubernetes.io/arch\n
+    \                   operator: In\n                    values:\n                      -
+    amd64\n      securityContext:\n        windowsOptions:\n          hostProcess:
+    true\n          runAsUserName: \"NT AUTHORITY\\\\system\"\n      hostNetwork:
+    true\n      serviceAccountName: calico-node\n      tolerations:\n      - operator:
+    Exists\n        effect: NoSchedule\n        # Mark the pod as a critical add-on
+    for rescheduling.\n      - key: CriticalAddonsOnly\n        operator: Exists\n
+    \     - effect: NoExecute\n        operator: Exists\n      initContainers:\n        #
+    This container installs the CNI binaries\n        # and CNI network config file
+    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.24.5-hostprocess\n
+    \         args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1\"]\n
+    \         imagePullPolicy: Always\n          env:\n            # Name of the CNI
+    config file to create.\n            - name: CNI_CONF_NAME\n              value:
+    \"10-calico.conflist\"\n            # The CNI network config to install on each
+    node.\n            - name: CNI_NETWORK_CONFIG\n              valueFrom:\n                configMapKeyRef:\n
+    \                 name: calico-config-windows\n                  key: cni_network_config\n
+    \           # Set the hostname based on the k8s node name.\n            - name:
+    KUBERNETES_NODE_NAME\n              valueFrom:\n                fieldRef:\n                  fieldPath:
+    spec.nodeName\n            # CNI MTU Config variable\n            - name: CNI_MTU\n
+    \             valueFrom:\n                configMapKeyRef:\n                  name:
+    calico-config-windows\n                  key: veth_mtu\n            # Prevents
+    the container from sleeping forever.\n            - name: SLEEP\n              value:
+    \"false\"\n            - name: K8S_SERVICE_CIDR\n              value: \"10.96.0.0/12\"\n
+    \         volumeMounts:\n            - mountPath: /host/opt/cni/bin\n              name:
+    cni-bin-dir\n            - mountPath: /host/etc/cni/net.d\n              name:
+    cni-net-dir\n            - name: kubeadm-config\n              mountPath: /etc/kubeadm-config/\n
+    \         securityContext:\n            windowsOptions:\n              hostProcess:
+    true\n              runAsUserName: \"NT AUTHORITY\\\\system\"\n      containers:\n
+    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.24.5-hostprocess\n
+    \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1\"]\n
+    \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        imagePullPolicy:
+    Always\n        volumeMounts:\n        - name: calico-config-windows\n          mountPath:
+    /etc/kube-calico-windows/\n        env:\n        - name: POD_NAME\n          valueFrom:\n
+    \           fieldRef:\n              apiVersion: v1\n              fieldPath:
+    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
+    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
+    name: CNI_IPAM_TYPE\n          value: \"calico-ipam\"\n        - name: CALICO_NETWORKING_BACKEND\n
+    \         value: \"vxlan\"\n        - name: KUBECONFIG\n          value: \"C:/etc/cni/net.d/calico-kubeconfig\"\n
+    \       - name: VXLAN_VNI\n          value: \"4096\"\n      - name: calico-node-felix\n
+    \       image: sigwindowstools/calico-node:v3.24.5-hostprocess\n        args:
+    [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1\"]\n        imagePullPolicy:
+    Always\n        workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        volumeMounts:\n
+    \       - name: calico-config-windows\n          mountPath: /etc/kube-calico-windows/\n
+    \       - name: calico-static-rules\n          mountPath: /calico/static-rules.json\n
+    \         subPath: static-rules.json\n        env:\n        - name: POD_NAME\n
+    \         valueFrom:\n            fieldRef:\n              apiVersion: v1\n              fieldPath:
+    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
+    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
+    name: VXLAN_VNI\n          value: \"4096\"\n        - name: KUBECONFIG\n          value:
+    \"C:/etc/cni/net.d/calico-kubeconfig\"\n      volumes:\n      - name: calico-config-windows\n
+    \       configMap:\n          name: calico-config-windows\n      - name: calico-static-rules\n
+    \       configMap:\n          name: calico-static-rules\n      # Used to install
+    CNI.\n      - name: cni-bin-dir\n        hostPath:\n          path: /opt/cni/bin\n
+    \     - name: cni-net-dir\n        hostPath:\n          path: /etc/cni/net.d\n
+    \     - name: kubeadm-config\n        configMap:\n          name: kubeadm-config\n"
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: cni-${CLUSTER_NAME}-calico-windows
+  namespace: default
+---
+apiVersion: v1
+data:
+  csi-proxy: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: csi-proxy
+      name: csi-proxy
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: csi-proxy
+      template:
+        metadata:
+          labels:
+            k8s-app: csi-proxy
+        spec:
+          nodeSelector:
+            "kubernetes.io/os": windows
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\SYSTEM"
+          hostNetwork: true
+          containers:
+            - name: csi-proxy
+              image: ghcr.io/kubernetes-sigs/sig-windows/csi-proxy:v1.0.2
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: csi-proxy-addon
+  namespace: default
+---
+apiVersion: v1
+data:
+  containerd-windows-logger: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: containerd-logger
+      name: containerd-logger
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: containerd-logger
+      template:
+        metadata:
+          labels:
+            k8s-app: containerd-logger
+        spec:
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\system"
+          hostNetwork: true
+          containers:
+          - image: ghcr.io/kubernetes-sigs/sig-windows/eventflow-logger:v0.1.0
+            args: [ "config.json" ]
+            name: containerd-logger
+            imagePullPolicy: Always
+            volumeMounts:
+            - name: containerd-logger-config
+              mountPath: /config.json
+              subPath: config.json
+          nodeSelector:
+            kubernetes.io/os: windows
+          tolerations:
+          - key: CriticalAddonsOnly
+            operator: Exists
+          - operator: Exists
+          volumes:
+          - configMap:
+              name: containerd-logger-config
+            name: containerd-logger-config
+      updateStrategy:
+        type: RollingUpdate
+    ---
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: containerd-logger-config
+      namespace: kube-system
+    data:
+      config.json: |
+        {
+          "inputs": [
+            {
+              "type": "ETW",
+              "sessionNamePrefix": "containerd",
+              "cleanupOldSessions": true,
+              "reuseExistingSession": true,
+              "providers": [
+                {
+                  "providerName": "Microsoft.Virtualization.RunHCS",
+                  "providerGuid": "0B52781F-B24D-5685-DDF6-69830ED40EC3",
+                  "level": "Verbose"
+                },
+                {
+                  "providerName": "ContainerD",
+                  "providerGuid": "2acb92c0-eb9b-571a-69cf-8f3410f383ad",
+                  "level": "Verbose"
+                }
+              ]
+            }
+          ],
+          "filters": [
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == Stats && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::LayerID && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::NameToGuid && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.Stats && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.State && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetProcessProperties && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetComputeSystemProperties && hasnoproperty error"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "StdOutput"
+            }
+          ],
+          "schemaVersion": "2016-08-11"
+        }
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: containerd-logger-${CLUSTER_NAME}
+  namespace: default

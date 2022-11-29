@@ -3,9 +3,40 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/external-cloud-provider
+  - ../../../flavors/windows/machine-deployment-windows.yaml
+  - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
+  - ../prow/cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/apiserver.yaml
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
+  - ../patches/windows-containerd-patch.yaml
+  - ../patches/windows-containerd-labels.yaml
+  - patches/kubeadmconfig-win.yaml
+configMapGenerator:
+  - name: cni-${CLUSTER_NAME}-calico-windows
+    files:
+      - windows-cni=../../../addons/windows/calico/calico.yaml
+      - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
+  - name: csi-proxy-addon
+    files:
+      - csi-proxy=../../../addons/windows/csi-proxy/csi-proxy.yaml
+  - name: containerd-logger-${CLUSTER_NAME}
+    files:
+      - containerd-windows-logger=../../../addons/windows/containerd-logging/containerd-logger.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated
+patches:
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1beta1
+    kind: KubeadmConfigTemplate
+    name: .*-md-win
+    namespace: default
+  path: ../patches/windows-tmp-folder.yaml
