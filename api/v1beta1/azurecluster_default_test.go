@@ -862,6 +862,9 @@ func TestAPIServerLBDefaults(t *testing.T) {
 									},
 								},
 							},
+							BackendPool: BackendPool{
+								Name: "cluster-test-public-lb-backendPool",
+							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
@@ -902,6 +905,57 @@ func TestAPIServerLBDefaults(t *testing.T) {
 										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
 								},
+							},
+							BackendPool: BackendPool{
+								Name: "cluster-test-internal-lb-backendPool",
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
+								Type:                 Internal,
+								IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
+							},
+							Name: "cluster-test-internal-lb",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "with custom backend pool name",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								Type: Internal,
+							},
+							BackendPool: BackendPool{
+								Name: "custom-backend-pool",
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-internal-lb-frontEnd",
+									FrontendIPClass: FrontendIPClass{
+										PrivateIPAddress: DefaultInternalLBIPAddress,
+									},
+								},
+							},
+							BackendPool: BackendPool{
+								Name: "custom-backend-pool",
 							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
@@ -1086,6 +1140,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 									Name: "pip-cluster-test-node-outbound",
 								},
 							}},
+							BackendPool: BackendPool{
+								Name: "cluster-test-outboundBackendPool",
+							},
 							FrontendIPsCount: to.Int32Ptr(1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
@@ -1264,6 +1321,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 									Name: "pip-cluster-test-node-outbound",
 								},
 							}},
+							BackendPool: BackendPool{
+								Name: "cluster-test-outboundBackendPool",
+							},
 							FrontendIPsCount: to.Int32Ptr(1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
@@ -1374,6 +1434,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								},
 							}},
 							FrontendIPsCount: to.Int32Ptr(1),
+							BackendPool: BackendPool{
+								Name: "cluster-test-outboundBackendPool",
+							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
@@ -1544,7 +1607,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "NodeOutboundLB declared as input with non-default IdleTimeoutInMinutes and FrontendIPsCount values",
+			name: "NodeOutboundLB declared as input with non-default IdleTimeoutInMinutes, FrontendIPsCount, BackendPool values",
 			cluster: &AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
@@ -1554,6 +1617,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						NodeOutboundLB: &LoadBalancerSpec{
 							FrontendIPsCount: to.Int32Ptr(2),
+							BackendPool: BackendPool{
+								Name: "custom-backend-pool",
+							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								IdleTimeoutInMinutes: to.Int32Ptr(15),
 							},
@@ -1587,6 +1653,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 									},
 								},
 							},
+							BackendPool: BackendPool{
+								Name: "custom-backend-pool",
+							},
 							FrontendIPsCount: to.Int32Ptr(2), // we expect the original value to be respected here
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
@@ -1594,6 +1663,102 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								IdleTimeoutInMinutes: to.Int32Ptr(15), // we expect the original value to be respected here
 							},
 							Name: "cluster-test",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "ensure that existing lb names are not overwritten",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Name: "user-defined-name",
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								Type: Public,
+							},
+						},
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
+								},
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: SubnetNode,
+									Name: "node-subnet",
+								},
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
+						ControlPlaneOutboundLB: &LoadBalancerSpec{
+							Name: "user-defined-name",
+						},
+						NodeOutboundLB: &LoadBalancerSpec{
+							Name: "user-defined-name",
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: SubnetControlPlane,
+									Name: "control-plane-subnet",
+								},
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: SubnetNode,
+									Name: "node-subnet",
+								},
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
+						APIServerLB: LoadBalancerSpec{
+							Name: "user-defined-name",
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								Type: Public,
+							},
+						},
+						NodeOutboundLB: &LoadBalancerSpec{
+							Name: "user-defined-name",
+							FrontendIPs: []FrontendIP{{
+								Name: "user-defined-name-frontEnd",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-cluster-test-node-outbound",
+								},
+							}},
+							BackendPool: BackendPool{
+								Name: "user-defined-name-outboundBackendPool",
+							},
+							FrontendIPsCount: to.Int32Ptr(1),
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
+								Type:                 Public,
+								IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
+							},
+						},
+						ControlPlaneOutboundLB: &LoadBalancerSpec{
+							Name: "user-defined-name",
 						},
 					},
 				},
@@ -1706,6 +1871,9 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 						},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
 							Name: "cluster-test-outbound-lb",
+							BackendPool: BackendPool{
+								Name: "cluster-test-outbound-lb-outboundBackendPool",
+							},
 							FrontendIPs: []FrontendIP{
 								{
 									Name: "cluster-test-outbound-lb-frontEnd-1",
@@ -1721,6 +1889,61 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 								},
 							},
 							FrontendIPsCount: to.Int32Ptr(2),
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
+								Type:                 Public,
+								IdleTimeoutInMinutes: to.Int32Ptr(15),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "custom outbound lb backend pool",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						ControlPlaneOutboundLB: &LoadBalancerSpec{
+							BackendPool: BackendPool{
+								Name: "custom-outbound-lb",
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								IdleTimeoutInMinutes: to.Int32Ptr(15),
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								Type: Internal,
+							},
+						},
+						ControlPlaneOutboundLB: &LoadBalancerSpec{
+							Name: "cluster-test-outbound-lb",
+							BackendPool: BackendPool{
+								Name: "custom-outbound-lb",
+							},
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-outbound-lb-frontEnd",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-controlplane-outbound",
+									},
+								},
+							},
+							FrontendIPsCount: to.Int32Ptr(1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,

@@ -1704,6 +1704,16 @@ spec:
                     description: APIServerLB is the configuration for the control-plane
                       load balancer.
                     properties:
+                      backendPool:
+                        description: BackendPool describes the backend pool of the
+                          load balancer.
+                        properties:
+                          name:
+                            description: Name specifies the name of backend pool for
+                              the load balancer. If not specified, the default name
+                              will be set, depending on the load balancer role.
+                            type: string
+                        type: object
                       frontendIPs:
                         items:
                           description: FrontendIP defines a load balancer frontend
@@ -1777,6 +1787,16 @@ spec:
                       APIServerLB, and is used only in private clusters (optionally)
                       for enabling outbound traffic.
                     properties:
+                      backendPool:
+                        description: BackendPool describes the backend pool of the
+                          load balancer.
+                        properties:
+                          name:
+                            description: Name specifies the name of backend pool for
+                              the load balancer. If not specified, the default name
+                              will be set, depending on the load balancer role.
+                            type: string
+                        type: object
                       frontendIPs:
                         items:
                           description: FrontendIP defines a load balancer frontend
@@ -1848,6 +1868,16 @@ spec:
                     description: NodeOutboundLB is the configuration for the node
                       outbound load balancer.
                     properties:
+                      backendPool:
+                        description: BackendPool describes the backend pool of the
+                          load balancer.
+                        properties:
+                          name:
+                            description: Name specifies the name of backend pool for
+                              the load balancer. If not specified, the default name
+                              will be set, depending on the load balancer role.
+                            type: string
+                        type: object
                       frontendIPs:
                         items:
                           description: FrontendIP defines a load balancer frontend
