@@ -13,7 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+if [[ -z "$REPO_ROOT" ]]; then
+  echo >&2 "REPO_ROOT must be set"
+  exit 1
+fi
+
 # shellcheck disable=SC2034
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
 # shellcheck disable=SC2034
