@@ -241,6 +241,15 @@ export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 # create cluster
 create_cluster
 
+# Get CCM cluster CIDRs from Cluster object if not set
+if [[ -z "${CCM_CLUSTER_CIDR:-}" ]]; then
+    CCM_CLUSTER_CIDR=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
+    if CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}' 2> /dev/null); then
+        CCM_CLUSTER_CIDR="${CCM_CLUSTER_CIDR:-}\,${CIDR1}"
+    fi
+fi
+echo "CCM cluster CIDR: ${CCM_CLUSTER_CIDR:-}"
+
 # export the target cluster KUBECONFIG if not already set
 export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 
@@ -278,7 +287,8 @@ if [[ -n "${TEST_CCM:-}" ]]; then
         --set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}" \
         --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
         --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
-        --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}"
+        --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}" \
+        --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}"
 
     echo "Waiting for all kube-system pods to be ready"
     "${KUBECTL}" wait --for=condition=Ready pod -n kube-system --all --timeout=10m
