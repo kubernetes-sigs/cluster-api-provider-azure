@@ -73,9 +73,6 @@ setup() {
     # ref: https://github.com/kubernetes/kubernetes/blob/5491484aa91fd09a01a68042e7674bc24d42687a/build/lib/release.sh#L345-L346
     export IMAGE_TAG="${KUBE_GIT_VERSION/+/_}"
     echo "using IMAGE_TAG=${IMAGE_TAG}"
-    local git=(git --work-tree "${KUBE_ROOT}")
-    "${git[@]}" log -n 1
-    "${git[@]}" diff HEAD^ HEAD
 }
 
 main() {
