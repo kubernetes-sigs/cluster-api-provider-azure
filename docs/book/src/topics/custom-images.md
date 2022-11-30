@@ -57,7 +57,7 @@ To upgrade to a new Kubernetes release with custom images requires this preparat
 - create the new `AzureMachineTemplate` on the management cluster
 - modify the existing `KubeadmControlPlane` and `MachineDeployment` to reference the new `AzureMachineTemplate` and update the `version:` field to match
 
-See [Upgrading workload clusters][upgrading-workload-clusters] for more details.
+See [Upgrading clusters][upgrading-clusters] for more details.
 
 ## Creating a cluster from a custom image
 
@@ -231,4 +231,4 @@ In the case of a third party image, you must accept the license terms with the [
 [replication-recommendations]: https://docs.microsoft.com/azure/virtual-machines/linux/shared-image-galleries#scaling
 [supported-capi]: https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions
 [supported-k8s]: https://kubernetes.io/releases/version-skew-policy/#supported-versions
-[upgrading-workload-clusters]: https://cluster-api.sigs.k8s.io/tasks/kubeadm-control-plane.html#upgrading-workload-clusters
+[upgrading-clusters]: https://cluster-api.sigs.k8s.io/tasks/upgrading-clusters.html
