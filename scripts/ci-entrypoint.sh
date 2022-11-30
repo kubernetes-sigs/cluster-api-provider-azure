@@ -131,6 +131,59 @@ create_cluster() {
     "${REPO_ROOT}/hack/create-dev-cluster.sh"
 }
 
+install_addons() {
+    # Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
+    "${KUBECTL}" create ns calico-system
+    "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml \
+    | sed 's/namespace: kube-system/namespace: calico-system/' \
+    | ${KUBECTL} create -f -
+
+    # install cni
+    echo "Installing Calico CNI via helm"
+    "${HELM}" repo add projectcalico https://projectcalico.docs.tigera.io/charts
+    "${HELM}" install calico projectcalico/tigera-operator -f "${CALICO_VALUES:-${REPO_ROOT}/templates/addons/calico/values.yaml}" --namespace tigera-operator --create-namespace
+
+    export -f wait_for_nodes
+    timeout --foreground 1800 bash -c wait_for_nodes
+
+    # Add FeatureOverride for ChecksumOffloadBroken in FelixConfiguration.
+    # This is the recommended workaround for https://github.com/projectcalico/calico/issues/3145.
+    "${KUBECTL}" apply -f "${REPO_ROOT}"/templates/addons/calico/felix-override.yaml
+
+    # install cloud-provider-azure components, if using out-of-tree
+    if [[ -n "${TEST_CCM:-}" ]]; then
+        CLOUD_CONFIG="/etc/kubernetes/azure.json"
+        CONFIG_SECRET_NAME=""
+        ENABLE_DYNAMIC_RELOADING=false
+        if [[ -n "${LOAD_CLOUD_CONFIG_FROM_SECRET:-}" ]]; then
+            CLOUD_CONFIG=""
+            CONFIG_SECRET_NAME="azure-cloud-provider"
+            ENABLE_DYNAMIC_RELOADING=true
+            copy_secret
+        fi
+
+        echo "Installing cloud-provider-azure components via helm"
+        "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name \
+            --set infra.clusterName="${CLUSTER_NAME}" \
+            --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
+            --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
+            --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
+            --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
+            --set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
+            --set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
+            --set cloudControllerManager.replicas="${CCM_COUNT}" \
+            --set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}"  \
+            --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
+            --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}"
+    fi
+
+    echo "Waiting for all calico-system pods to be ready"
+    "${KUBECTL}" wait --for=condition=Ready pod -n calico-system --all --timeout=10m
+
+    echo "Waiting for all kube-system pods to be ready"
+    "${KUBECTL}" wait --for=condition=Ready pod -n kube-system --all --timeout=10m
+}
+
 wait_for_nodes() {
     echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT} windows machine(s) to become Ready"
 

@@ -6,12 +6,10 @@ resources:
   - cni-resource-set.yaml
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
 patchesStrategicMerge:
-  - ../patches/cluster-cni.yaml
-  - ../patches/windows-csi-proxy-enabled.yaml
+  - ../patches/windows-containerd-labels.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
+  - name: cni-${CLUSTER_NAME}-calico-windows
     files:
-      - resources=../../../addons/calico.yaml
       - windows-cni=../../../addons/windows/calico/calico.yaml
       - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
   - name: csi-proxy-addon

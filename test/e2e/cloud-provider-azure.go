@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
+	helmVals "helm.sh/helm/v3/pkg/cli/values"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
@@ -34,25 +35,32 @@ const (
 	azureDiskCSIDriverHelmRepoURL     = "https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts"
 	azureDiskCSIDriverChartName       = "azuredisk-csi-driver"
 	azureDiskCSIDriverHelmReleaseName = "azuredisk-csi-driver-oot"
+	defaultNamespace                  = "default"
 )
 
-// InstallCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
+// InstallCalicoAndCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
 // and validates that expected pods exist and are Ready.
-func InstallCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput) {
+func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	specName := "cloud-provider-azure-install"
 	By("Installing the correct version of cloud-provider-azure components via helm")
-	values := []string{fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName)}
-	InstallHelmChart(ctx, input, cloudProviderAzureHelmRepoURL, cloudProviderAzureChartName, cloudProviderAzureHelmReleaseName, values)
+	options := &helmVals.Options{
+		Values: []string{fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName)},
+	}
+	InstallHelmChart(ctx, input, defaultNamespace, cloudProviderAzureHelmRepoURL, cloudProviderAzureChartName, cloudProviderAzureHelmReleaseName, options)
+
+	// Install Calico CNI Helm Chart. We do this before waiting for the pods to be ready because there is a co-dependency between CNI (nodes ready) and cloud-provider being initialized.
+	InstallCalicoHelmChart(ctx, input, cidrBlocks, hasWindows)
+
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
-	workloadClusterClient := clusterProxy.GetClient()
 	By("Waiting for Ready cloud-controller-manager deployment pods")
 	for _, d := range []string{"cloud-controller-manager"} {
-		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, "kube-system", specName)
+		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, kubesystem, specName)
 		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 	}
 	By("Waiting for Ready cloud-node-manager daemonset pods")
 	for _, ds := range []string{"cloud-node-manager", "cloud-node-manager-windows"} {
-		WaitForDaemonset(ctx, input, workloadClusterClient, ds, "kube-system")
+		waitInput := GetWaitForDaemonsetAvailableInput(ctx, clusterProxy, ds, kubesystem, specName)
+		WaitForDaemonset(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-daemonset")...)
 	}
 }
 
@@ -60,17 +68,16 @@ func InstallCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.Ap
 func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput) {
 	specName := "azuredisk-csi-drivers-install"
 	By("Installing the correct version of azure-disk CSI driver components via helm")
-	values := []string{}
-	InstallHelmChart(ctx, input, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, values)
+	InstallHelmChart(ctx, input, defaultNamespace, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, nil)
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
-	workloadClusterClient := clusterProxy.GetClient()
 	By("Waiting for Ready csi-azuredisk-controller deployment pods")
 	for _, d := range []string{"csi-azuredisk-controller"} {
-		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, "default", specName)
+		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, defaultNamespace, specName)
 		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 	}
 	By("Waiting for Running azure-disk-csi node pods")
 	for _, ds := range []string{"csi-azuredisk-node", "csi-azuredisk-node-win"} {
-		WaitForDaemonset(ctx, input, workloadClusterClient, ds, "default")
+		waitInput := GetWaitForDaemonsetAvailableInput(ctx, clusterProxy, ds, defaultNamespace, specName)
+		WaitForDaemonset(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-daemonset")...)
 	}
 }

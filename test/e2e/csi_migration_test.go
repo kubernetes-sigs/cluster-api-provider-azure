@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 )
 
-var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", func() {
+var _ = Describe("[K8s-Upgrade] Running the CSI migration tests", func() {
 	var (
 		ctx                      = context.TODO()
 		specName                 = "csi-migration"
@@ -164,8 +164,8 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 				configCluster.KubernetesVersion = preCSIKubernetesVersion
 				configCluster.WorkerMachineCount = pointer.Int64Ptr(3)
 				configCluster.Flavor = "user-assigned-managed-identity"
-				// Create the workload cluster with k8s version PreCSIKubernetesVer
-				createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
+				// Create the workload cluster with k8s version preCSIKubernetesVersion
+				createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{WaitForControlPlaneInitialized: EnsureControlPlaneInitialized}, result)
 				// create a stateful deployment and confirm it is working
 				By("Create a stateful deployment and verify it is working.")
 				deployment := AzureDiskCSISpec(ctx, func() AzureDiskCSISpecInput {
@@ -224,7 +224,7 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 				configCluster.WorkerMachineCount = pointer.Int64Ptr(3)
 				configCluster.Flavor = "user-assigned-managed-identity"
 				// Create the workload cluster with k8s version PreCSIKubernetesVer
-				createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
+				createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{WaitForControlPlaneInitialized: EnsureControlPlaneInitialized}, result)
 				// create a stateful deployment and confirm it is working
 				By("Create a stateful deployment and verify it is working.")
 				deployment := AzureDiskCSISpec(ctx, func() AzureDiskCSISpecInput {
@@ -242,10 +242,7 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 				configCluster.KubernetesVersion = postCSIKubernetesVersion
 				// This flavour uses external csi driver and in tree cloud provider
 				configCluster.Flavor = "external-azurediskcsi-driver"
-				cpWaiters := clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				}
-				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, cpWaiters, result)
+				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
 				// Wait for control plane to be upgraded successfully
 				By("Waiting for control-plane machines to have the upgraded kubernetes version")
 				framework.WaitForControlPlaneMachinesToBeUpgraded(ctx, framework.WaitForControlPlaneMachinesToBeUpgradedInput{
@@ -286,7 +283,7 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 				configCluster.WorkerMachineCount = pointer.Int64Ptr(3)
 				configCluster.Flavor = "user-assigned-managed-identity"
 				// Create the workload cluster with k8s version PreCSIKubernetesVer
-				createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
+				createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{WaitForControlPlaneInitialized: EnsureControlPlaneInitialized}, result)
 				// create a stateful deployment and confirm it is working
 				By("Create a stateful deployment and verify it is working.")
 				deployment := AzureDiskCSISpec(ctx, func() AzureDiskCSISpecInput {
@@ -303,10 +300,7 @@ var _ = Describe("[K8s-Upgrade] Running the workload cluster upgrade tests", fun
 				By("Upgrade the workload cluster to v1.23")
 				configCluster.KubernetesVersion = postCSIKubernetesVersion
 				configCluster.Flavor = "external-cloud-provider"
-				cpWaiters := clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				}
-				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, cpWaiters, result)
+				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
 
 				// Wait for control plane to be upgraded successfully
 				By("Waiting for control-plane machines to have the upgraded kubernetes version")

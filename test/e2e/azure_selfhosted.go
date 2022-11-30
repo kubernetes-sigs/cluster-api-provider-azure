@@ -46,6 +46,7 @@ type SelfHostedSpecInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 	ArtifactFolder        string
 	SkipCleanup           bool
+	ControlPlaneWaiters   clusterctl.ControlPlaneWaiters
 }
 
 // SelfHostedSpec implements a test that verifies Cluster API creating a cluster, pivoting to a self-hosted cluster.
@@ -123,6 +124,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 			WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane"),
 			WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
+			ControlPlaneWaiters:          input.ControlPlaneWaiters,
 		}, clusterResources)
 
 		By("Turning the workload cluster into a management cluster")

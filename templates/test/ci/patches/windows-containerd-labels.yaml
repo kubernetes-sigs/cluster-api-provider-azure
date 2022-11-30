@@ -1,8 +1,8 @@
----
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
-  namespace: default
   labels:
-    cni: "${CLUSTER_NAME}-calico"
+    cni-windows: ${CLUSTER_NAME}-calico
+    csi-proxy: enabled
+    containerd-logger: enabled

@@ -177,6 +177,9 @@ var _ = Describe("Conformance Tests", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
 			}, result)
 		})
 

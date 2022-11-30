@@ -249,10 +249,6 @@ def create_identity_secret():
 
 def create_crs():
     # create config maps
-    local(kubectl_cmd + " delete configmaps calico-addon --ignore-not-found=true")
-    local(kubectl_cmd + " create configmap calico-addon --from-file=templates/addons/calico.yaml")
-    local(kubectl_cmd + " delete configmaps calico-ipv6-addon --ignore-not-found=true")
-    local(kubectl_cmd + " create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml")
     local(kubectl_cmd + " delete configmaps csi-proxy-addon --ignore-not-found=true")
     local(kubectl_cmd + " create configmap csi-proxy-addon --from-file=templates/addons/windows/csi-proxy/csi-proxy.yaml")
 
@@ -261,7 +257,7 @@ def create_crs():
     local(kubectl_cmd + " create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
 
     # set up crs
-    local(kubectl_cmd + " apply -f templates/addons/calico-resource-set.yaml")
+    local(kubectl_cmd + " apply -f templates/addons/windows/calico-resource-set.yaml")
     local(kubectl_cmd + " apply -f templates/addons/windows/csi-proxy/csi-proxy-resource-set.yaml")
 
 # create flavor resources from cluster-template files in the templates directory
@@ -350,8 +346,20 @@ def deploy_worker_templates(template, substitutions):
     yaml = yaml.replace('"', '\\"')  # add escape character to double quotes in yaml
     flavor_name = os.path.basename(flavor)
     flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+
+    # wait for kubeconfig to be available
+    flavor_cmd += "; until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; chmod 600 ./${CLUSTER_NAME}.kubeconfig; until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done"
+
+    # install calico
+    if "ipv6" in flavor_name:
+        calico_values = "./templates/addons/calico-ipv6/values.yaml"
+    elif "dual-stack" in flavor_name:
+        calico_values = "./templates/addons/calico-dual-stack/values.yaml"
+    else:
+        calico_values = "./templates/addons/calico/values.yaml"
+    flavor_cmd += "; " + helm_cmd + " repo add projectcalico https://projectcalico.docs.tigera.io/charts; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install calico projectcalico/tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace; kubectl --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f ./templates/addons/calico/felix-override.yaml"
     if "external-cloud-provider" in flavor_name:
-        flavor_cmd += "; until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; chmod 600 ./${CLUSTER_NAME}.kubeconfig; until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
+        flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
     local_resource(
         name = flavor_name,
         cmd = flavor_cmd,

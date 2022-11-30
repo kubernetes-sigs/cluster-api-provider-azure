@@ -11,7 +11,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: calico-static-rules
-  namespace: kube-system
+  namespace: calico-system
   labels:
     tier: node
     app: calico
@@ -42,7 +42,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: calico-config-windows
-  namespace: kube-system
+  namespace: calico-system
   labels:
     tier: node
     app: calico
@@ -121,7 +121,7 @@ metadata:
   labels:
     tier: node
     app: calico
-  namespace: kube-system
+  namespace: calico-system
 spec:
   selector:
     matchLabels:
@@ -163,7 +163,7 @@ spec:
         # This container installs the CNI binaries
         # and CNI network config file on each node.
         - name: install-cni
-          image: sigwindowstools/calico-install:v3.23.0-hostprocess
+          image: sigwindowstools/calico-install:v3.24.5-hostprocess
           args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1"]
           imagePullPolicy: Always
           env:
@@ -205,7 +205,7 @@ spec:
               runAsUserName: "NT AUTHORITY\\system"
       containers:
       - name: calico-node-startup
-        image: sigwindowstools/calico-node:v3.23.0-hostprocess
+        image: sigwindowstools/calico-node:v3.24.5-hostprocess
         args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1"]
         workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/"
         imagePullPolicy: Always
@@ -232,7 +232,7 @@ spec:
         - name: VXLAN_VNI
           value: "4096"
       - name: calico-node-felix
-        image: sigwindowstools/calico-node:v3.23.0-hostprocess
+        image: sigwindowstools/calico-node:v3.24.5-hostprocess
         args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1"]
         imagePullPolicy: Always
         workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/"

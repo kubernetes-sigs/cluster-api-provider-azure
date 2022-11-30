@@ -25,7 +25,7 @@ patches:
     namespace: default
   path: patches/kubeadm-bootstrap-windows-k8s-ci-binaries.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
+  - name: cni-${CLUSTER_NAME}-calico-windows
     behavior: merge
     files:
       - kube-proxy-patch=../patches/windows-kubeproxy-ci.yaml

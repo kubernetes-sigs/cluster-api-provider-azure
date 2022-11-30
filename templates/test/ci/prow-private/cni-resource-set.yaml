@@ -7,8 +7,8 @@ metadata:
 spec:
   clusterSelector:
     matchLabels:
-      cni-windows: ${CLUSTER_NAME}-calico
+      cni: ${CLUSTER_NAME}-calico
   resources:
   - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-calico-windows
+    name: cni-${CLUSTER_NAME}-calico
   strategy: ApplyOnce
