@@ -28,18 +28,16 @@ flavors_dir="${REPO_ROOT}/templates/flavors/"
 ci_dir="${REPO_ROOT}/templates/test/ci/"
 dev_dir="${REPO_ROOT}/templates/test/dev/"
 
-# NOTE: On macOS, the kustomize commands run by xargs that use the -I
-# replacement string may only be 255 characters. Commands longer than that will
-# not expand the replacement string when that would go over that limit,
-# resulting in generated manifests like "templates/test/ci/cluster-template-{}".
-#
-# Currently, the longest command is *exactly* 255 characters, so making these
-# commands any longer or adding a new template with a longer name will run into
-# this problem.
-
-find "${flavors_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v base | xargs -I {} sh -c "${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone --reorder none ${flavors_dir}{} > ${REPO_ROOT}/templates/cluster-template-{}.yaml"
+for name in $(find "${flavors_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v base); do
+  ${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone --reorder none "${flavors_dir}${name}" > "${REPO_ROOT}/templates/cluster-template-${name}.yaml"
+done
 # move the default template to the default file expected by clusterctl
 mv "${REPO_ROOT}/templates/cluster-template-default.yaml" "${REPO_ROOT}/templates/cluster-template.yaml"
 
-find "${ci_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone --reorder none ${ci_dir}{} > ${ci_dir}cluster-template-{}.yaml"
-find "${dev_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone --reorder none ${dev_dir}{} > ${dev_dir}cluster-template-{}.yaml"
+for name in $(find "${ci_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches); do
+  ${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone --reorder none "${ci_dir}${name}" > "${ci_dir}cluster-template-${name}.yaml"
+done
+
+for name in $(find "${dev_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches); do
+  ${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone --reorder none "${dev_dir}${name}" > "${dev_dir}cluster-template-${name}.yaml"
+done
