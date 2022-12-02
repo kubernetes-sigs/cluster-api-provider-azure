@@ -275,12 +275,12 @@ func WaitForDaemonset(ctx context.Context, input WaitForDaemonsetInput, interval
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := input.Getter.Get(ctx, key, input.DaemonSet); err == nil {
 			if input.DaemonSet.Status.DesiredNumberScheduled == input.DaemonSet.Status.NumberReady {
+				Logf("%d daemonset %s/%s pods are running, took %v", input.DaemonSet.Status.NumberReady, namespace, name, time.Since(start))
 				return true
 			}
 		}
 		return false
 	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedDaemonset(ctx, input) })
-	Logf("daemonset %s/%s pods are running, took %v", namespace, name, time.Since(start))
 }
 
 // GetWaitForDaemonsetAvailableInput is a convenience func to compose a WaitForDaemonsetInput
