@@ -17,6 +17,7 @@ limitations under the License.
 package bastionhosts
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -60,7 +61,7 @@ func (s *AzureBastionSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the bastion host.
-func (s *AzureBastionSpec) Parameters(existing interface{}) (parameters interface{}, err error) {
+func (s *AzureBastionSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(network.BastionHost); !ok {
 			return nil, errors.Errorf("%T is not a network.BastionHost", existing)

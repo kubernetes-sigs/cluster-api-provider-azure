@@ -17,6 +17,8 @@ limitations under the License.
 package roleassignments
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -50,7 +52,7 @@ func (s *RoleAssignmentSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the RoleAssignmentSpec.
-func (s *RoleAssignmentSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *RoleAssignmentSpec) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
 	if existing != nil {
 		if _, ok := existing.(authorization.RoleAssignment); !ok {
 			return nil, errors.Errorf("%T is not a authorization.RoleAssignment", existing)

@@ -17,6 +17,8 @@ limitations under the License.
 package privatedns
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -49,7 +51,7 @@ func (s ZoneSpec) ResourceGroupName() string {
 }
 
 // Parameters returns the parameters for the private dns zone.
-func (s ZoneSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s ZoneSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		_, ok := existing.(privatedns.PrivateZone)
 		if !ok {

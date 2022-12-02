@@ -17,6 +17,8 @@ limitations under the License.
 package inboundnatrules
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -47,7 +49,7 @@ func (s *InboundNatSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the inbound NAT rule.
-func (s *InboundNatSpec) Parameters(existing interface{}) (parameters interface{}, err error) {
+func (s *InboundNatSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(network.InboundNatRule); !ok {
 			return nil, errors.Errorf("%T is not a network.InboundNatRule", existing)

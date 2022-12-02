@@ -402,7 +402,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		vmssSpec.AcceleratedNetworking = &accelNet
 	}
 
-	extensions, err := s.generateExtensions()
+	extensions, err := s.generateExtensions(ctx)
 	if err != nil {
 		return compute.VirtualMachineScaleSet{}, err
 	}
@@ -588,11 +588,11 @@ func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *i
 	return converters.SDKToVMSS(vmss, vmssInstances), nil
 }
 
-func (s *Service) generateExtensions() ([]compute.VirtualMachineScaleSetExtension, error) {
+func (s *Service) generateExtensions(ctx context.Context) ([]compute.VirtualMachineScaleSetExtension, error) {
 	extensions := make([]compute.VirtualMachineScaleSetExtension, len(s.Scope.VMSSExtensionSpecs()))
 	for i, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
 		extensionSpec := extensionSpec
-		parameters, err := extensionSpec.Parameters(nil)
+		parameters, err := extensionSpec.Parameters(ctx, nil)
 		if err != nil {
 			return nil, err
 		}

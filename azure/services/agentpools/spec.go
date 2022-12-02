@@ -17,6 +17,7 @@ limitations under the License.
 package agentpools
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -155,7 +156,7 @@ func (s *AgentPoolSpec) CustomHeaders() map[string]string {
 }
 
 // Parameters returns the parameters for the agent pool.
-func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	nodeLabels := s.NodeLabels
 	if existing != nil {
 		existingPool, ok := existing.(containerservice.AgentPool)

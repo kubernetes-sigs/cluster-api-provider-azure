@@ -17,6 +17,8 @@ limitations under the License.
 package networkinterfaces
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -68,7 +70,7 @@ func (s *NICSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the network interface.
-func (s *NICSpec) Parameters(existing interface{}) (parameters interface{}, err error) {
+func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(network.Interface); !ok {
 			return nil, errors.Errorf("%T is not a network.Interface", existing)

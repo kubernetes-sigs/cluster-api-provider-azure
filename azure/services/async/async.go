@@ -123,7 +123,7 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.Resourc
 	}
 
 	// Construct parameters using the resource spec and information from the existing resource, if there is one.
-	parameters, err := spec.Parameters(existingResource)
+	parameters, err := spec.Parameters(ctx, existingResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get desired parameters for resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	} else if parameters == nil {

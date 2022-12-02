@@ -17,6 +17,7 @@ limitations under the License.
 package privatedns
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
@@ -114,7 +115,7 @@ func TestLinkSpec_Parameters(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 
-			result, err := tc.spec.Parameters(tc.existing)
+			result, err := tc.spec.Parameters(context.TODO(), tc.existing)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

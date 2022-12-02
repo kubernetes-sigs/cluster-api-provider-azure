@@ -17,6 +17,7 @@ limitations under the License.
 package availabilitysets
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
@@ -53,7 +54,7 @@ func (s *AvailabilitySetSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the availability set.
-func (s *AvailabilitySetSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s *AvailabilitySetSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(compute.AvailabilitySet); !ok {
 			return nil, errors.Errorf("%T is not a compute.AvailabilitySet", existing)

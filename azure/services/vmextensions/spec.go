@@ -17,6 +17,8 @@ limitations under the License.
 package vmextensions
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -46,7 +48,7 @@ func (s *VMExtensionSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the VM extension.
-func (s *VMExtensionSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *VMExtensionSpec) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
 	if existing != nil {
 		_, ok := existing.(compute.VirtualMachineExtension)
 		if !ok {

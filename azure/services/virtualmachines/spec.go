@@ -17,6 +17,7 @@ limitations under the License.
 package virtualmachines
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 
@@ -72,7 +73,7 @@ func (s *VMSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the virtual machine.
-func (s *VMSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s *VMSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(compute.VirtualMachine); !ok {
 			return nil, errors.Errorf("%T is not a compute.VirtualMachine", existing)
