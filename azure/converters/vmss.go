@@ -21,6 +21,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.
@@ -63,8 +64,15 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 
 // SDKToVMSSVM converts an Azure SDK VirtualMachineScaleSetVM into an infrav1exp.VMSSVM.
 func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
+	// Convert resourceGroup Name ID ( ProviderID in capz objects )
+	var convertedID string
+	convertedID, err := azureutil.ConvertResourceGroupNameToLower(to.String(sdkInstance.ID))
+	if err != nil {
+		convertedID = to.String(sdkInstance.ID)
+	}
+
 	instance := azure.VMSSVM{
-		ID:         to.String(sdkInstance.ID),
+		ID:         convertedID,
 		InstanceID: to.String(sdkInstance.InstanceID),
 	}
 
