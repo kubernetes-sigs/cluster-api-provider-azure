@@ -222,9 +222,9 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 	}, intervals...).Should(Equal(true), "System machine pools not detected")
 }
 
-// GetAKSKubernetesVersion gets the kubernetes version for AKS clusters.
-func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfig) (string, error) {
-	e2eAKSVersion := e2eConfig.GetVariable(AKSKubernetesVersion)
+// GetAKSKubernetesVersion gets the kubernetes version for AKS clusters as specified by the environment variable defined by versionVar.
+func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfig, versionVar string) (string, error) {
+	e2eAKSVersion := e2eConfig.GetVariable(versionVar)
 
 	location := e2eConfig.GetVariable(AzureLocation)
 
@@ -232,10 +232,14 @@ func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfi
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
 	var maxVersion string
-	if e2eAKSVersion == "latest" {
+	switch e2eAKSVersion {
+	case "latest":
 		maxVersion, err = GetLatestStableAKSKubernetesVersion(ctx, subscriptionID, location)
 		Expect(err).NotTo(HaveOccurred())
-	} else {
+	case "latest-1":
+		maxVersion, err = GetNextLatestStableAKSKubernetesVersion(ctx, subscriptionID, location)
+		Expect(err).NotTo(HaveOccurred())
+	default:
 		maxVersion, err = GetWorkingAKSKubernetesVersion(ctx, subscriptionID, location, e2eAKSVersion)
 		Expect(err).NotTo(HaveOccurred())
 	}
@@ -318,6 +322,16 @@ func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, locatio
 
 // GetLatestStableAKSKubernetesVersion returns the latest stable available Kubernetes version of AKS.
 func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, location string) (string, error) {
+	return getLatestStableAKSKubernetesVersionOffset(ctx, subscriptionID, location, 0)
+}
+
+// GetNextLatestStableAKSKubernetesVersion returns the stable available
+// Kubernetes version of AKS immediately preceding the latest.
+func GetNextLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, location string) (string, error) {
+	return getLatestStableAKSKubernetesVersionOffset(ctx, subscriptionID, location, 1)
+}
+
+func getLatestStableAKSKubernetesVersionOffset(ctx context.Context, subscriptionID, location string, offset int) (string, error) {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get settings from environment")
@@ -347,7 +361,7 @@ func GetLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID, lo
 		orchestratorversions = append(orchestratorversions, orchVersion)
 	}
 	semver.Sort(orchestratorversions)
-	maxVersion = orchestratorversions[len(orchestratorversions)-1]
+	maxVersion = orchestratorversions[len(orchestratorversions)-1-offset]
 	if semver.IsValid(maxVersion) {
 		foundWorkingVersion = true
 	}
@@ -667,4 +681,56 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(conditions.IsTrue(infraMachinePool, infrav1.AgentPoolsReadyCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
+}
+
+type AKSUpgradeSpecInput struct {
+	Cluster                    *clusterv1.Cluster
+	MachinePools               []*expv1.MachinePool
+	KubernetesVersionUpgradeTo string
+	WaitForControlPlane        []interface{}
+	WaitForMachinePools        []interface{}
+}
+
+func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput) {
+	input := inputGetter()
+
+	settings, err := auth.GetSettingsFromEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	subscriptionID := settings.GetSubscriptionID()
+	auth, err := settings.GetAuthorizer()
+	Expect(err).NotTo(HaveOccurred())
+
+	managedClustersClient := containerservice.NewManagedClustersClient(subscriptionID)
+	managedClustersClient.Authorizer = auth
+
+	mgmtClient := bootstrapClusterProxy.GetClient()
+	Expect(mgmtClient).NotTo(BeNil())
+
+	infraControlPlane := &infrav1exp.AzureManagedControlPlane{}
+	err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Upgrading the control plane")
+	infraControlPlane.Spec.Version = input.KubernetesVersionUpgradeTo
+	Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+
+	Eventually(func() (string, error) {
+		aksCluster, err := managedClustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name)
+		if err != nil {
+			return "", err
+		}
+		if aksCluster.ManagedClusterProperties == nil || aksCluster.ManagedClusterProperties.KubernetesVersion == nil {
+			return "", errors.New("Kubernetes version unknown")
+		}
+		return "v" + *aksCluster.KubernetesVersion, nil
+	}, input.WaitForControlPlane...).Should(Equal(input.KubernetesVersionUpgradeTo))
+
+	By("Upgrading the machinepool instances")
+	framework.UpgradeMachinePoolAndWait(ctx, framework.UpgradeMachinePoolAndWaitInput{
+		ClusterProxy:                   bootstrapClusterProxy,
+		Cluster:                        input.Cluster,
+		UpgradeVersion:                 input.KubernetesVersionUpgradeTo,
+		WaitForMachinePoolToBeUpgraded: input.WaitForMachinePools,
+		MachinePools:                   input.MachinePools,
+	})
 }
