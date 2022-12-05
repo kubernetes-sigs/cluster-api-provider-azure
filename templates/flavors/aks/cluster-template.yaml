@@ -48,7 +48,7 @@ metadata:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: "pool0"
+  name: "${CLUSTER_NAME}-pool0"
 spec:
   clusterName: "${CLUSTER_NAME}"
   replicas: ${WORKER_MACHINE_COUNT}
@@ -61,7 +61,7 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: "pool0"
+        name: "${CLUSTER_NAME}-pool0"
       version: "${KUBERNETES_VERSION}"
 ---
 # The Azure-specific machine pool implementation drives the configuration of the
@@ -69,18 +69,19 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: "pool0"
+  name: "${CLUSTER_NAME}-pool0"
 spec:
   mode: System
   osDiskSizeGB: 30
   sku: "${AZURE_NODE_MACHINE_TYPE}"
   enableNodePublicIP: false
+  name: pool0
 ---
 # Deploy a second agent pool with the same number of machines, but using potentially different infrastructure.
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: "pool1"
+  name: "${CLUSTER_NAME}-pool1"
 spec:
   clusterName: "${CLUSTER_NAME}"
   replicas: ${WORKER_MACHINE_COUNT}
@@ -93,17 +94,18 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: "pool1"
+        name: "${CLUSTER_NAME}-pool1"
       version: "${KUBERNETES_VERSION}"
 ---
 # The infrastructure backing the second pool will use the same VM sku, but a larger OS disk.
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: "pool1"
+  name: "${CLUSTER_NAME}-pool1"
 spec:
   mode: User
   osDiskSizeGB: 40
   sku: "${AZURE_NODE_MACHINE_TYPE}"
   enableNodePublicIP: false
   scaleSetPriority: Regular
+  name: pool1

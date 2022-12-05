@@ -49,7 +49,7 @@ metadata:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: pool0
+  name: ${CLUSTER_NAME}-pool0
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
@@ -63,13 +63,13 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: pool0
+        name: ${CLUSTER_NAME}-pool0
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: pool0
+  name: ${CLUSTER_NAME}-pool0
   namespace: default
 spec:
   availabilityZones:
@@ -79,6 +79,7 @@ spec:
   enableUltraSSD: true
   maxPods: 30
   mode: System
+  name: pool0
   osDiskSizeGB: 30
   osDiskType: Managed
   sku: ${AZURE_NODE_MACHINE_TYPE}
@@ -86,7 +87,7 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: pool1
+  name: ${CLUSTER_NAME}-pool1
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
@@ -100,18 +101,19 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: pool1
+        name: ${CLUSTER_NAME}-pool1
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: pool1
+  name: ${CLUSTER_NAME}-pool1
   namespace: default
 spec:
   enableNodePublicIP: false
   maxPods: 64
   mode: User
+  name: pool1
   nodeLabels:
     type: shared
   osDiskSizeGB: 40
@@ -142,7 +144,7 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: pool2
+  name: ${CLUSTER_NAME}-pool2
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
@@ -156,15 +158,16 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: pool2
+        name: ${CLUSTER_NAME}-pool2
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: pool2
+  name: ${CLUSTER_NAME}-pool2
   namespace: default
 spec:
   mode: User
+  name: pool2
   osType: Windows
   sku: ${AZURE_NODE_MACHINE_TYPE}

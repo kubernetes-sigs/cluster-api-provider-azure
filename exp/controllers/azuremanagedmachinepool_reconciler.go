@@ -96,7 +96,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	defer done()
 
 	log.Info("reconciling managed machine pool")
-	agentPoolName := s.scope.Name()
+	agentPoolName := s.scope.AgentPoolSpec().ResourceName()
 
 	if err := s.agentPoolsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)

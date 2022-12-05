@@ -2,7 +2,7 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: "pool2"
+  name: "${CLUSTER_NAME}-pool2"
 spec:
   clusterName: "${CLUSTER_NAME}"
   replicas: 1
@@ -15,15 +15,16 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: "pool2"
+        name: "${CLUSTER_NAME}-pool2"
       version: "${KUBERNETES_VERSION}"
 ---
 # The infrastructure backing the third pool will use the same VM SKU, which is the only required configuration
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: "pool2"
+  name: "${CLUSTER_NAME}-pool2"
 spec:
   mode: User
   sku: "${AZURE_NODE_MACHINE_TYPE}"
   osType: Windows
+  name: pool2
