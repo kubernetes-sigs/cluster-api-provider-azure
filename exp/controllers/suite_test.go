@@ -21,14 +21,13 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/env"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -41,13 +40,10 @@ var (
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Controller Suite")
 }
 
-var _ = BeforeSuite(func(done Done) {
+var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = env.NewTestEnvironment()
 
@@ -90,9 +86,7 @@ var _ = BeforeSuite(func(done Done) {
 		}
 		return true
 	}).Should(BeTrue())
-
-	close(done)
-}, 60)
+})
 
 var _ = AfterSuite(func() {
 	if testEnv != nil {

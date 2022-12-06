@@ -7,7 +7,7 @@ With CAPZ you can create GPU-enabled Kubernetes clusters on Microsoft Azure.
 Before you begin, be aware that:
 
 - [Scheduling GPUs](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/) is a Kubernetes beta feature
-- [NVIDIA GPUs](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes-gpu) are supported on Azure NC-series, NV-series, and NVv3-series VMs
+- [NVIDIA GPUs](https://learn.microsoft.com/azure/virtual-machines/sizes-gpu) are supported on Azure NC-series, NV-series, and NVv3-series VMs
 - [NVIDIA GPU Operator](https://github.com/NVIDIA/gpu-operator) allows administrators of Kubernetes clusters to manage GPU nodes just like CPU nodes in the cluster.
 
 To deploy a cluster with support for GPU nodes, use the [nvidia-gpu flavor](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-nvidia-gpu.yaml).

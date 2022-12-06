@@ -146,7 +146,7 @@ issues:
         - prealloc
     - path: ^test/
       text: exported (.+) should have comment( \(or a comment on this block\))? or be unexported
-    - source: \"github.com/onsi/(ginkgo|gomega)\"
+    - source: \"github.com/onsi/(ginkgo/v2|gomega)\"
       text: "should not use dot imports"
   include:
   - EXC0012  # revive: check for comments

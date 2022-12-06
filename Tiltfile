@@ -19,10 +19,10 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v1.2.6",
-    "cert_manager_version": "v1.1.0",
-    "kubernetes_version": "v1.23.9",
-    "aks_kubernetes_version": "v1.23.8",
+    "capi_version": "v1.3.0",
+    "cert_manager_version": "v1.10.0",
+    "kubernetes_version": "v1.24.6",
+    "aks_kubernetes_version": "v1.24.5",
 }
 
 keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]

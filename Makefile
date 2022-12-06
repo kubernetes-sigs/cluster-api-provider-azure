@@ -101,11 +101,11 @@ KPROMO_VER := v3.3.0-beta.3
 KPROMO_BIN := kpromo
 KPROMO := $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER)
 
-GO_APIDIFF_VER := v0.4.0
+GO_APIDIFF_VER := v0.5.0
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
-GINKGO_VER := v1.16.5
+GINKGO_VER := v2.5.0
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
@@ -121,7 +121,7 @@ YQ_VER := v4.14.2
 YQ_BIN := yq
 YQ :=  $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER)
 
-KIND_VER := v0.14.0
+KIND_VER := v0.17.0
 KIND_BIN := kind
 KIND :=  $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
@@ -279,7 +279,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.2.6/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.0/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAPZ
 	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
@@ -649,7 +649,7 @@ test-cover: $(SETUP_ENVTEST) ## Run tests with code coverage and code generate r
 .PHONY: test-e2e-run
 test-e2e-run: generate-e2e-templates install-tools ## Run e2e tests.
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-    $(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) $(GINKGO_ARGS) ./test/e2e -- \
+    $(GINKGO) -v --trace --timeout=3h --tags=e2e --focus="$(GINKGO_FOCUS)" --skip="$(GINKGO_SKIP)" --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) --output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) ./test/e2e -- \
     	-e2e.artifacts-folder="$(ARTIFACTS)" \
     	-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
     	-e2e.skip-log-collection="$(SKIP_LOG_COLLECTION)" \
@@ -661,13 +661,10 @@ test-e2e: ## Run "docker-build" and "docker-push" rules then run e2e tests.
 	$(MAKE) docker-build docker-push \
 	test-e2e-run
 
-LOCAL_GINKGO_ARGS ?= -stream --progress
-LOCAL_GINKGO_ARGS += $(GINKGO_ARGS)
 .PHONY: test-e2e-local
 test-e2e-local: ## Run "docker-build" rule then run e2e tests.
 	PULL_POLICY=IfNotPresent MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(MAKE) docker-build \
-	GINKGO_ARGS='$(LOCAL_GINKGO_ARGS)' \
 	test-e2e-run
 
 CONFORMANCE_FLAVOR ?= 
@@ -675,7 +672,7 @@ CONFORMANCE_E2E_ARGS ?= -kubetest.config-file=$(KUBETEST_CONF_PATH)
 CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 .PHONY: test-conformance
 test-conformance: ## Run conformance test on workload cluster.
-	$(MAKE) test-e2e-local GINKGO_FOCUS="Conformance" E2E_ARGS='$(CONFORMANCE_E2E_ARGS)' GINKGO_ARGS='$(LOCAL_GINKGO_ARGS)' CONFORMANCE_FLAVOR='$(CONFORMANCE_FLAVOR)'
+	$(MAKE) test-e2e-local GINKGO_FOCUS="Conformance" E2E_ARGS='$(CONFORMANCE_E2E_ARGS)' CONFORMANCE_FLAVOR='$(CONFORMANCE_FLAVOR)'
 
 test-conformance-fast: ## Run conformance test on workload cluster using a subset of the conformance suite in parallel.
 	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_FAST_CONF_PATH) -kubetest.ginkgo-nodes=5 $(E2E_ARGS)"
@@ -764,7 +761,7 @@ $(GO_APIDIFF): ## Build go-apidiff from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/joelanford/go-apidiff $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
 $(GINKGO): ## Build ginkgo from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/v2/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
 
 $(KUBECTL): ## Build kubectl from tools folder.
 	mkdir -p $(TOOLS_BIN_DIR)
