@@ -128,6 +128,7 @@ var _ = Describe("[K8s-Upgrade] Running the CSI migration tests", func() {
 			CancelWatches:     cancelWatches,
 			IntervalsGetter:   e2eConfig.GetIntervals,
 			SkipCleanup:       skipCleanup,
+			SkipLogCollection: skipLogCollection,
 			AdditionalCleanup: additionalCleanup,
 			ArtifactFolder:    artifactFolder,
 		}

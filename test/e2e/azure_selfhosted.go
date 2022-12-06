@@ -234,14 +234,15 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		}
 
 		cleanInput := cleanupInput{
-			SpecName:        specName,
-			Cluster:         clusterResources.Cluster,
-			ClusterProxy:    input.BootstrapClusterProxy,
-			Namespace:       namespace,
-			CancelWatches:   cancelWatches,
-			IntervalsGetter: input.E2EConfig.GetIntervals,
-			SkipCleanup:     input.SkipCleanup,
-			ArtifactFolder:  input.ArtifactFolder,
+			SpecName:          specName,
+			Cluster:           clusterResources.Cluster,
+			ClusterProxy:      input.BootstrapClusterProxy,
+			Namespace:         namespace,
+			CancelWatches:     cancelWatches,
+			IntervalsGetter:   input.E2EConfig.GetIntervals,
+			SkipCleanup:       input.SkipCleanup,
+			SkipLogCollection: skipLogCollection,
+			ArtifactFolder:    input.ArtifactFolder,
 		}
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
