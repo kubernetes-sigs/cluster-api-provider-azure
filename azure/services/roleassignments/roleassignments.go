@@ -103,6 +103,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	for _, roleAssignmentSpec := range s.Scope.RoleAssignmentSpecs(principalID) {
 		log.V(2).Info("Creating role assignment")
+		if roleAssignmentSpec.ResourceName() == "" {
+			log.V(2).Info("RoleAssignmentName is empty. This is not expected and will cause this System Assigned Identity to have no permissions.")
+		}
 		_, err := s.CreateOrUpdateResource(ctx, roleAssignmentSpec, serviceName)
 		if err != nil {
 			return errors.Wrapf(err, "cannot assign role to %s system assigned identity", resourceType)
