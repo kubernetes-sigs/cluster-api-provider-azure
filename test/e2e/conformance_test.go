@@ -246,14 +246,15 @@ var _ = Describe("Conformance Tests", func() {
 		CheckTestBeforeCleanup()
 
 		cleanInput := cleanupInput{
-			SpecName:        specName,
-			Cluster:         result.Cluster,
-			ClusterProxy:    bootstrapClusterProxy,
-			Namespace:       namespace,
-			CancelWatches:   cancelWatches,
-			IntervalsGetter: e2eConfig.GetIntervals,
-			SkipCleanup:     skipCleanup,
-			ArtifactFolder:  artifactFolder,
+			SpecName:          specName,
+			Cluster:           result.Cluster,
+			ClusterProxy:      bootstrapClusterProxy,
+			Namespace:         namespace,
+			CancelWatches:     cancelWatches,
+			IntervalsGetter:   e2eConfig.GetIntervals,
+			SkipCleanup:       skipCleanup,
+			SkipLogCollection: skipLogCollection,
+			ArtifactFolder:    artifactFolder,
 		}
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)

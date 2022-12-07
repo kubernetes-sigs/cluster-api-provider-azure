@@ -169,6 +169,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 			CancelWatches:          publicCancelWatches,
 			IntervalsGetter:        e2eConfig.GetIntervals,
 			SkipCleanup:            input.SkipCleanup,
+			SkipLogCollection:      skipLogCollection,
 			ArtifactFolder:         input.ArtifactFolder,
 			SkipResourceGroupCheck: true, // We don't expect the resource group to be deleted since the private cluster does not own the resource group.
 		}
