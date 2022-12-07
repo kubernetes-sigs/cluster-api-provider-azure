@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -76,6 +77,7 @@ func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 		m.validateNodeLabels,
 		m.validateNodePublicIPPrefixID,
 		m.validateEnableNodePublicIP,
+		m.validateKubeletConfig,
 	}
 
 	var errs []error
@@ -187,6 +189,13 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		field.NewPath("Spec", "NodePublicIPPrefixID"),
 		old.Spec.NodePublicIPPrefixID,
 		m.Spec.NodePublicIPPrefixID); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "KubeletConfig"),
+		old.Spec.KubeletConfig,
+		m.Spec.KubeletConfig); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
@@ -316,6 +325,53 @@ func (m *AzureManagedMachinePool) validateEnableNodePublicIP() error {
 			field.NewPath("Spec", "EnableNodePublicIP"),
 			m.Spec.EnableNodePublicIP,
 			"must be set to true when NodePublicIPPrefixID is set")
+	}
+	return nil
+}
+
+// validateKubeletConfig enforces the AKS API configuration for KubeletConfig.
+// See:  https://learn.microsoft.com/en-us/azure/aks/custom-node-configuration.
+func (m *AzureManagedMachinePool) validateKubeletConfig() error {
+	var allowedUnsafeSysctlsPatterns = []string{
+		`^kernel\.shm.+$`,
+		`^kernel\.msg.+$`,
+		`^kernel\.sem$`,
+		`^fs\.mqueue\..+$`,
+		`^net\..+$`,
+	}
+	if m.Spec.KubeletConfig != nil {
+		if m.Spec.KubeletConfig.CPUCfsQuotaPeriod != nil {
+			if !strings.HasSuffix(to.String(m.Spec.KubeletConfig.CPUCfsQuotaPeriod), "ms") {
+				return field.Invalid(
+					field.NewPath("Spec", "KubeletConfig", "CPUCfsQuotaPeriod"),
+					m.Spec.KubeletConfig.CPUCfsQuotaPeriod,
+					"must be a string value in milliseconds with a 'ms' suffix, e.g., '100ms'")
+			}
+		}
+		if m.Spec.KubeletConfig.ImageGcHighThreshold != nil && m.Spec.KubeletConfig.ImageGcLowThreshold != nil {
+			if to.Int32(m.Spec.KubeletConfig.ImageGcLowThreshold) > to.Int32(m.Spec.KubeletConfig.ImageGcHighThreshold) {
+				return field.Invalid(
+					field.NewPath("Spec", "KubeletConfig", "ImageGcLowThreshold"),
+					m.Spec.KubeletConfig.ImageGcLowThreshold,
+					fmt.Sprintf("must not be greater than ImageGcHighThreshold, ImageGcLowThreshold=%d, ImageGcHighThreshold=%d",
+						to.Int32(m.Spec.KubeletConfig.ImageGcLowThreshold), to.Int32(m.Spec.KubeletConfig.ImageGcHighThreshold)))
+			}
+		}
+		for _, val := range m.Spec.KubeletConfig.AllowedUnsafeSysctls {
+			var hasMatch bool
+			for _, p := range allowedUnsafeSysctlsPatterns {
+				if m, _ := regexp.MatchString(p, val); m {
+					hasMatch = true
+					break
+				}
+			}
+			if !hasMatch {
+				return field.Invalid(
+					field.NewPath("Spec", "KubeletConfig", "AllowedUnsafeSysctls"),
+					m.Spec.KubeletConfig.AllowedUnsafeSysctls,
+					fmt.Sprintf("%s is not a supported AllowedUnsafeSysctls configuration", val))
+			}
+		}
 	}
 	return nil
 }

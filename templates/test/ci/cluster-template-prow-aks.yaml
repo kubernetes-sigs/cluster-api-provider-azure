@@ -111,6 +111,20 @@ metadata:
   namespace: default
 spec:
   enableNodePublicIP: false
+  kubeletConfig:
+    allowedUnsafeSysctls:
+    - net.*
+    - kernel.msg*
+    containerLogMaxFiles: 50
+    containerLogMaxSizeMB: 500
+    cpuCfsQuota: true
+    cpuCfsQuotaPeriod: 110ms
+    cpuManagerPolicy: static
+    failSwapOn: false
+    imageGcHighThreshold: 70
+    imageGcLowThreshold: 50
+    podMaxPids: 2048
+    topologyManagerPolicy: best-effort
   maxPods: 64
   mode: User
   name: pool1

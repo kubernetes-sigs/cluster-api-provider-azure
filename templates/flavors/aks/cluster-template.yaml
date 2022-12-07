@@ -109,3 +109,17 @@ spec:
   enableNodePublicIP: false
   scaleSetPriority: Regular
   name: pool1
+  kubeletConfig:
+    cpuManagerPolicy: "static"
+    cpuCfsQuota: true
+    cpuCfsQuotaPeriod: "110ms"
+    imageGcHighThreshold: 70
+    imageGcLowThreshold: 50
+    topologyManagerPolicy: "best-effort"
+    allowedUnsafeSysctls:
+      - "net.*"
+      - "kernel.msg*"
+    failSwapOn: false
+    containerLogMaxSizeMB: 500
+    containerLogMaxFiles: 50
+    podMaxPids: 2048

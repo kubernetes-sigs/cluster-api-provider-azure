@@ -401,6 +401,59 @@ spec:
   osType: Windows
 ```
 
+### AKS Node Pool Kubelet Custom Configuration
+
+Reference:
+
+- https://learn.microsoft.com/en-us/azure/aks/custom-node-configuration
+
+When you create your node pool (`AzureManagedMachinePool`), you may specify various kubelet configuration which tunes the kubelet runtime on all nodes in that pool. For example:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: pool1
+spec:
+  mode: User
+  kubeletConfig:
+    cpuManagerPolicy: "static"
+    cpuCfsQuota: true
+    cpuCfsQuotaPeriod: "110ms"
+    imageGcHighThreshold: 70
+    imageGcLowThreshold: 50
+    topologyManagerPolicy: "best-effort"
+    allowedUnsafeSysctls:
+      - "net.*"
+      - "kernel.msg*"
+    failSwapOn: false
+    containerLogMaxSizeMB: 500
+    containerLogMaxFiles: 50
+    podMaxPids: 2048
+```
+
+Below are the full set of AKS-supported kubeletConfig configurations. All properties are children of the `spec.kubeletConfig` configuration in an `AzureManagedMachinePool` resource:
+
+| Configuration               | Property Type     | Allowed Value(s)                                                                         |
+|-----------------------------|-------------------|------------------------------------------------------------------------------------------|
+| `cpuManagerPolicy`          | string            | `"none"`, `"static"`                                                                     |
+| `cpuCfsQuota`               | boolean           | `true`, `false`                                                                          |
+| `cpuCfsQuotaPeriod`         | string            | value in milliseconds, must end in `"ms"`, e.g., `"100ms"`                               |
+| `failSwapOn`                | boolean           | `true`, `false`                                                                          |
+| `imageGcHighThreshold`      | integer           | integer values in the range 0-100 (inclusive)                                            |
+| `imageGcLowThreshold`       | integer           | integer values in the range 0-100 (inclusive), must be lower than `imageGcHighThreshold` |
+| `topologyManagerPolicy`     | string            | `"none"`, `"best-effort"`, `"restricted"`, `"single-numa-node"`                          |
+| `allowedUnsafeSysctls`      | string            | `"kernel.shm*"`, `"kernel.msg*"`, `"kernel.sem"`, `"fs.mqueue.*"`, `"net.*"`             |
+| `containerLogMaxSizeMB`     | integer           | any integer                                                                              |
+| `containerLogMaxFiles`      | integer           | any integer >= `2`                                                                       |
+| `podMaxPids`                | integer           | any integer >= `-1`, note that this must not be higher than kernel PID limit             |
+
+For more detailed information on the behaviors of the above configurations, see [the official Kubernetes documentation](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/). Note that not all possible Kubernetes Kubelet Configuration options are available to use on your AKS node pool, only those specified above.
+
+CAPZ will not assign any default values for any excluded configuration properties. It is also not required to include the `spec.kubeletConfig` configuration in an `AzureManagedMachinePool` resource spec. In cases where no CAPZ configuration is declared, AKS will apply its own opinionated default configurations when the node pool is created.
+
+Note: these configurations can not be updated after a node pool is created.
+
 ### Enable AKS features with custom headers (--aks-custom-headers)
 
 To enable some AKS cluster / node pool features you need to pass special headers to the cluster / node pool create request.
@@ -508,6 +561,7 @@ Following is the list of immutable fields for managed clusters:
 | AzureManagedMachinePool   | .spec.osType                 |                           |
 | AzureManagedMachinePool   | .spec.enableNodePublicIP     |                           |
 | AzureManagedMachinePool   | .spec.nodePublicIPPrefixID   |                           |
+| AzureManagedMachinePool   | .spec.kubeletConfig          |                           |
 
 ## Features
 

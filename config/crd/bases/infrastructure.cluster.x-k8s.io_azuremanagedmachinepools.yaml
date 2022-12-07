@@ -220,6 +220,75 @@ spec:
                 description: EnableUltraSSD enables the storage type UltraSSD_LRS
                   for the agent pool.
                 type: boolean
+              kubeletConfig:
+                description: KubeletConfig specifies the kubelet configurations for
+                  nodes.
+                properties:
+                  allowedUnsafeSysctls:
+                    description: AllowedUnsafeSysctls - Allowlist of unsafe sysctls
+                      or unsafe sysctl patterns (ending in `*`).
+                    items:
+                      type: string
+                    type: array
+                  containerLogMaxFiles:
+                    description: ContainerLogMaxFiles - The maximum number of container
+                      log files that can be present for a container. The number must
+                      be ≥ 2.
+                    format: int32
+                    minimum: 2
+                    type: integer
+                  containerLogMaxSizeMB:
+                    description: ContainerLogMaxSizeMB - The maximum size (e.g. 10Mi)
+                      of container log file before it is rotated.
+                    format: int32
+                    type: integer
+                  cpuCfsQuota:
+                    description: CPUCfsQuota - Enable CPU CFS quota enforcement for
+                      containers that specify CPU limits.
+                    type: boolean
+                  cpuCfsQuotaPeriod:
+                    description: CPUCfsQuotaPeriod - Sets CPU CFS quota period value.
+                    type: string
+                  cpuManagerPolicy:
+                    description: CPUManagerPolicy - CPU Manager policy to use.
+                    enum:
+                    - none
+                    - static
+                    type: string
+                  failSwapOn:
+                    description: FailSwapOn - If set to true it will make the Kubelet
+                      fail to start if swap is enabled on the node.
+                    type: boolean
+                  imageGcHighThreshold:
+                    description: ImageGcHighThreshold - The percent of disk usage
+                      after which image garbage collection is always run.
+                    format: int32
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                  imageGcLowThreshold:
+                    description: ImageGcLowThreshold - The percent of disk usage before
+                      which image garbage collection is never run.
+                    format: int32
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                  podMaxPids:
+                    description: PodMaxPids - The maximum number of processes per
+                      pod.
+                    format: int32
+                    minimum: -1
+                    type: integer
+                  topologyManagerPolicy:
+                    description: TopologyManagerPolicy - Topology Manager policy to
+                      use.
+                    enum:
+                    - none
+                    - best-effort
+                    - restricted
+                    - single-numa-node
+                    type: string
+                type: object
               maxPods:
                 description: MaxPods specifies the kubelet --max-pods configuration
                   for the node pool.

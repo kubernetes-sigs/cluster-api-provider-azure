@@ -206,6 +206,24 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		}
 	}
 
+	if managedMachinePool.Spec.KubeletConfig != nil {
+		agentPoolSpec.KubeletConfig = &agentpools.KubeletConfig{
+			CPUManagerPolicy:      (*string)(managedMachinePool.Spec.KubeletConfig.CPUManagerPolicy),
+			CPUCfsQuota:           managedMachinePool.Spec.KubeletConfig.CPUCfsQuota,
+			CPUCfsQuotaPeriod:     managedMachinePool.Spec.KubeletConfig.CPUCfsQuotaPeriod,
+			ImageGcHighThreshold:  managedMachinePool.Spec.KubeletConfig.ImageGcHighThreshold,
+			ImageGcLowThreshold:   managedMachinePool.Spec.KubeletConfig.ImageGcLowThreshold,
+			TopologyManagerPolicy: (*string)(managedMachinePool.Spec.KubeletConfig.TopologyManagerPolicy),
+			FailSwapOn:            managedMachinePool.Spec.KubeletConfig.FailSwapOn,
+			ContainerLogMaxSizeMB: managedMachinePool.Spec.KubeletConfig.ContainerLogMaxSizeMB,
+			ContainerLogMaxFiles:  managedMachinePool.Spec.KubeletConfig.ContainerLogMaxFiles,
+			PodMaxPids:            managedMachinePool.Spec.KubeletConfig.PodMaxPids,
+		}
+		if len(managedMachinePool.Spec.KubeletConfig.AllowedUnsafeSysctls) > 0 {
+			agentPoolSpec.KubeletConfig.AllowedUnsafeSysctls = &managedMachinePool.Spec.KubeletConfig.AllowedUnsafeSysctls
+		}
+	}
+
 	return agentPoolSpec
 }
 

@@ -734,6 +734,8 @@ func newManagedMachinePoolInfraReference(clusterName, poolName string) *expv1.Ma
 }
 
 func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1exp.AzureManagedMachinePool {
+	var cpuManagerPolicyStatic = infrav1exp.CPUManagerPolicyStatic
+	var topologyManagerPolicy = infrav1exp.TopologyManagerPolicyBestEffort
 	return &infrav1exp.AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -746,6 +748,10 @@ func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1exp.
 			Mode:         mode,
 			SKU:          "Standard_D2s_v3",
 			OSDiskSizeGB: to.Int32Ptr(512),
+			KubeletConfig: &infrav1exp.KubeletConfig{
+				CPUManagerPolicy:      &cpuManagerPolicyStatic,
+				TopologyManagerPolicy: &topologyManagerPolicy,
+			},
 		},
 	}
 }

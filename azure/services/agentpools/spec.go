@@ -30,6 +30,32 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
+// KubeletConfig defines the set of kubelet configurations for nodes in pools.
+type KubeletConfig struct {
+	// CPUManagerPolicy - CPU Manager policy to use.
+	CPUManagerPolicy *string
+	// CPUCfsQuota - Enable CPU CFS quota enforcement for containers that specify CPU limits.
+	CPUCfsQuota *bool
+	// CPUCfsQuotaPeriod - Sets CPU CFS quota period value.
+	CPUCfsQuotaPeriod *string
+	// ImageGcHighThreshold - The percent of disk usage after which image garbage collection is always run.
+	ImageGcHighThreshold *int32
+	// ImageGcLowThreshold - The percent of disk usage before which image garbage collection is never run.
+	ImageGcLowThreshold *int32
+	// TopologyManagerPolicy - Topology Manager policy to use.
+	TopologyManagerPolicy *string
+	// AllowedUnsafeSysctls - Allowlist of unsafe sysctls or unsafe sysctl patterns (ending in `*`).
+	AllowedUnsafeSysctls *[]string
+	// FailSwapOn - If set to true it will make the Kubelet fail to start if swap is enabled on the node.
+	FailSwapOn *bool
+	// ContainerLogMaxSizeMB - The maximum size (e.g. 10Mi) of container log file before it is rotated.
+	ContainerLogMaxSizeMB *int32
+	// ContainerLogMaxFiles - The maximum number of container log files that can be present for a container. The number must be ≥ 2.
+	ContainerLogMaxFiles *int32
+	// PodMaxPids - The maximum number of processes per pod.
+	PodMaxPids *int32
+}
+
 // AgentPoolSpec contains agent pool specification details.
 type AgentPoolSpec struct {
 	// Name is the name of agent pool.
@@ -101,6 +127,9 @@ type AgentPoolSpec struct {
 	// ScaleSetPriority specifies the ScaleSetPriority for the node pool. Allowed values are 'Spot' and 'Regular'
 	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
 
+	// KubeletConfig specifies the kubelet configurations for nodes.
+	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
+
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the ones added by default.
 	AdditionalTags infrav1.Tags
 }
@@ -153,6 +182,7 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 				NodeLabels:          existingPool.NodeLabels,
 				NodeTaints:          existingPool.NodeTaints,
 				Tags:                existingPool.Tags,
+				KubeletConfig:       existingPool.KubeletConfig,
 			},
 		}
 
@@ -168,6 +198,22 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 				NodeTaints:          existingPool.NodeTaints,
 				Tags:                converters.TagsToMap(s.AdditionalTags),
 			},
+		}
+
+		if s.KubeletConfig != nil {
+			normalizedProfile.KubeletConfig = &containerservice.KubeletConfig{
+				CPUManagerPolicy:      s.KubeletConfig.CPUManagerPolicy,
+				CPUCfsQuota:           s.KubeletConfig.CPUCfsQuota,
+				CPUCfsQuotaPeriod:     s.KubeletConfig.CPUCfsQuotaPeriod,
+				ImageGcHighThreshold:  s.KubeletConfig.ImageGcHighThreshold,
+				ImageGcLowThreshold:   s.KubeletConfig.ImageGcLowThreshold,
+				TopologyManagerPolicy: s.KubeletConfig.TopologyManagerPolicy,
+				FailSwapOn:            s.KubeletConfig.FailSwapOn,
+				ContainerLogMaxSizeMB: s.KubeletConfig.ContainerLogMaxSizeMB,
+				ContainerLogMaxFiles:  s.KubeletConfig.ContainerLogMaxFiles,
+				PodMaxPids:            s.KubeletConfig.PodMaxPids,
+				AllowedUnsafeSysctls:  s.KubeletConfig.AllowedUnsafeSysctls,
+			}
 		}
 
 		// When autoscaling is set, the count of the nodes differ based on the autoscaler and should not depend on the
@@ -208,12 +254,30 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 		vnetSubnetID = &s.VnetSubnetID
 	}
 
-	return containerservice.AgentPool{
+	var kubeletConfig *containerservice.KubeletConfig
+	if s.KubeletConfig != nil {
+		kubeletConfig = &containerservice.KubeletConfig{
+			CPUManagerPolicy:      s.KubeletConfig.CPUManagerPolicy,
+			CPUCfsQuota:           s.KubeletConfig.CPUCfsQuota,
+			CPUCfsQuotaPeriod:     s.KubeletConfig.CPUCfsQuotaPeriod,
+			ImageGcHighThreshold:  s.KubeletConfig.ImageGcHighThreshold,
+			ImageGcLowThreshold:   s.KubeletConfig.ImageGcLowThreshold,
+			TopologyManagerPolicy: s.KubeletConfig.TopologyManagerPolicy,
+			FailSwapOn:            s.KubeletConfig.FailSwapOn,
+			ContainerLogMaxSizeMB: s.KubeletConfig.ContainerLogMaxSizeMB,
+			ContainerLogMaxFiles:  s.KubeletConfig.ContainerLogMaxFiles,
+			PodMaxPids:            s.KubeletConfig.PodMaxPids,
+			AllowedUnsafeSysctls:  s.KubeletConfig.AllowedUnsafeSysctls,
+		}
+	}
+
+	agentPool := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			AvailabilityZones:    availabilityZones,
 			Count:                &s.Replicas,
 			EnableAutoScaling:    s.EnableAutoScaling,
 			EnableUltraSSD:       s.EnableUltraSSD,
+			KubeletConfig:        kubeletConfig,
 			MaxCount:             s.MaxCount,
 			MaxPods:              s.MaxPods,
 			MinCount:             s.MinCount,
@@ -232,7 +296,9 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
 			Tags:                 converters.TagsToMap(s.AdditionalTags),
 		},
-	}, nil
+	}
+
+	return agentPool, nil
 }
 
 // mergeSystemNodeLabels appends any kubernetes.azure.com-prefixed labels from the AKS label set

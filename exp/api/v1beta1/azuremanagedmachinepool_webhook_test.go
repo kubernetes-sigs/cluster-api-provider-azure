@@ -482,6 +482,24 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Can't update kubeletconfig",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						CPUCfsQuota: to.BoolPtr(true),
+					},
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						CPUCfsQuota: to.BoolPtr(false),
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
@@ -704,6 +722,107 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "KubeletConfig CPUCfsQuotaPeriod needs 'ms' suffix",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						CPUCfsQuotaPeriod: to.StringPtr("100"),
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "KubeletConfig CPUCfsQuotaPeriod has valid 'ms' suffix",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						CPUCfsQuotaPeriod: to.StringPtr("100ms"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "KubeletConfig ImageGcLowThreshold can't be more than ImageGcHighThreshold",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						ImageGcLowThreshold:  to.Int32Ptr(100),
+						ImageGcHighThreshold: to.Int32Ptr(99),
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "KubeletConfig ImageGcLowThreshold is lower than ImageGcHighThreshold",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						ImageGcLowThreshold:  to.Int32Ptr(99),
+						ImageGcHighThreshold: to.Int32Ptr(100),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid KubeletConfig AllowedUnsafeSysctls values",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						AllowedUnsafeSysctls: []string{
+							"kernel.shm*",
+							"kernel.msg*",
+							"kernel.sem",
+							"fs.mqueue.*",
+							"net.*",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "more valid KubeletConfig AllowedUnsafeSysctls values",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						AllowedUnsafeSysctls: []string{
+							"kernel.shm.something",
+							"kernel.msg.foo.bar",
+							"kernel.sem",
+							"fs.mqueue.baz",
+							"net.my.configuration.path",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "an invalid KubeletConfig AllowedUnsafeSysctls value in a set",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						AllowedUnsafeSysctls: []string{
+							"kernel.shm.something",
+							"kernel.msg.foo.bar",
+							"kernel.sem",
+							"fs.mqueue.baz",
+							"net.my.configuration.path",
+							"kernel.not.allowed",
+						},
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
 		},
 	}
 	var client client.Client
