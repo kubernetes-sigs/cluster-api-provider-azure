@@ -5,6 +5,9 @@ metadata:
 spec:
   maxPods: 64
   osDiskType: "Ephemeral"
+  osDiskSizeGB: 40
+  enableNodePublicIP: false
+  scaleSetPriority: Regular
   taints:
     - effect: NoSchedule
       key: type
@@ -13,3 +16,17 @@ spec:
     "type": "shared"
   name: pool1
   sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
+  kubeletConfig:
+    cpuManagerPolicy: "static"
+    cpuCfsQuota: true
+    cpuCfsQuotaPeriod: "110ms"
+    imageGcHighThreshold: 70
+    imageGcLowThreshold: 50
+    topologyManagerPolicy: "best-effort"
+    allowedUnsafeSysctls:
+      - "net.*"
+      - "kernel.msg*"
+    failSwapOn: false
+    containerLogMaxSizeMB: 500
+    containerLogMaxFiles: 50
+    podMaxPids: 2048

@@ -5,6 +5,8 @@ metadata:
 spec:
   maxPods: 30
   osDiskType: "Managed"
+  osDiskSizeGB: 30
+  enableNodePublicIP: false
   enableUltraSSD: true
   availabilityZones: ["1", "2"]
   name: pool0
