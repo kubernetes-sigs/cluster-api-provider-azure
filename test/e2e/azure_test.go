@@ -632,6 +632,16 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("modifying additionalTags configuration", func() {
+				AKSAdditionalTagsSpec(ctx, func() AKSAdditionalTagsSpecInput {
+					return AKSAdditionalTagsSpecInput{
+						Cluster:       result.Cluster,
+						MachinePools:  result.MachinePools,
+						WaitForUpdate: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+					}
+				})
+			})
 		})
 	})
 
