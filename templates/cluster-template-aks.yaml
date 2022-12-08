@@ -65,10 +65,8 @@ metadata:
   name: ${CLUSTER_NAME}-pool0
   namespace: default
 spec:
-  enableNodePublicIP: false
   mode: System
   name: pool0
-  osDiskSizeGB: 30
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -97,25 +95,8 @@ metadata:
   name: ${CLUSTER_NAME}-pool1
   namespace: default
 spec:
-  enableNodePublicIP: false
-  kubeletConfig:
-    allowedUnsafeSysctls:
-    - net.*
-    - kernel.msg*
-    containerLogMaxFiles: 50
-    containerLogMaxSizeMB: 500
-    cpuCfsQuota: true
-    cpuCfsQuotaPeriod: 110ms
-    cpuManagerPolicy: static
-    failSwapOn: false
-    imageGcHighThreshold: 70
-    imageGcLowThreshold: 50
-    podMaxPids: 2048
-    topologyManagerPolicy: best-effort
   mode: User
   name: pool1
-  osDiskSizeGB: 40
-  scaleSetPriority: Regular
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
