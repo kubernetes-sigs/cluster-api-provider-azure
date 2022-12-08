@@ -32,7 +32,7 @@ kustomize_substitutions:
 ```
 After updating tilt-settings.yaml, follow these two steps to deploy a workload cluster:
 
-1. Run ``make tilt up`` in the root of cluster-api-provider-azure repo. Note that the tilt-settings.yaml also resides here in the 
+1. Run ``make tilt up`` in the root of cluster-api-provider-azure repo. Note that the tilt-settings.yaml also resides here in the
 root of this repo. After tilt has initialized, press `space` to open the tilt web UI in a browser. See the following example:
    ![plot](../../docs/book/theme/tilt-up.png)
 2. Once your browser is open, click the clockwise arrow icon ⟳ on a resource listed. For example, `default` to deploy a default flavor.
@@ -65,9 +65,9 @@ worker-templates:
     AZURE_RESOURCE_GROUP: test-resource-group-name
     CONTROL_PLANE_MACHINE_COUNT: "1"
     KUBERNETES_VERSION: v1.22.1
-    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_D2s_v3
+    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_B2s
     WORKER_MACHINE_COUNT: "2"
-    AZURE_NODE_MACHINE_TYPE: Standard_D2s_v3
+    AZURE_NODE_MACHINE_TYPE: Standard_B2s
 ```
 
 Here is a practical example: creating a GPU-enabled cluster requires N-series nodes. You can set an
@@ -84,7 +84,7 @@ worker-templates:
     nvidia-gpu:
       AZURE_NODE_MACHINE_TYPE: Standard_NC6s_v3
   metadata:
-    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_D2s_v3
+    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_B2s
     AZURE_LOCATION: southcentralus
     KUBERNETES_VERSION: v1.22.1
     WORKER_MACHINE_COUNT: "1"
