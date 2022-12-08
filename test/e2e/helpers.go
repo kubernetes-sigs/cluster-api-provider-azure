@@ -48,9 +48,11 @@ import (
 	helmCli "helm.sh/helm/v3/pkg/cli"
 	helmVals "helm.sh/helm/v3/pkg/cli/values"
 	helmGetter "helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/storage/driver"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -824,38 +826,58 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	actionConfig := new(helmAction.Configuration)
 	err := actionConfig.Init(settings.RESTClientGetter(), namespace, "secret", Logf)
 	Expect(err).To(BeNil())
-	i := helmAction.NewInstall(actionConfig)
-	if repoURL != "" {
-		i.RepoURL = repoURL
-	}
-	i.ReleaseName = releaseName
-	i.Namespace = namespace
-	i.CreateNamespace = true
+
+	// If the release does not exist, install it.
+	histClient := helmAction.NewHistory(actionConfig)
+	histClient.Max = 1
+	var releaseExists bool
 	Eventually(func() error {
-		cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
-		if err != nil {
-			return err
+		_, err := histClient.Run(releaseName)
+		if err == driver.ErrReleaseNotFound {
+			releaseExists = false
+			return nil
+		} else if err == nil {
+			releaseExists = true
 		}
-		p := helmGetter.All(settings)
-		if options == nil {
-			options = &helmVals.Options{}
-		}
-		valueOpts := options
-		vals, err := valueOpts.MergeValues(p)
-		if err != nil {
-			return err
-		}
-		chartRequested, err := helmLoader.Load(cp)
-		if err != nil {
-			return err
-		}
-		release, err := i.RunWithContext(ctx, chartRequested, vals)
-		if err != nil {
-			return err
-		}
-		Logf(release.Info.Description)
-		return nil
+		return err
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
+	if releaseExists {
+		Logf("Release %s already exists, skipping install", releaseName)
+	} else {
+		Logf("Release %s does not exist, installing it", releaseName)
+		i := helmAction.NewInstall(actionConfig)
+		if repoURL != "" {
+			i.RepoURL = repoURL
+		}
+		i.ReleaseName = releaseName
+		i.Namespace = namespace
+		i.CreateNamespace = true
+		Eventually(func() error {
+			cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
+			if err != nil {
+				return err
+			}
+			p := helmGetter.All(settings)
+			if options == nil {
+				options = &helmVals.Options{}
+			}
+			valueOpts := options
+			vals, err := valueOpts.MergeValues(p)
+			if err != nil {
+				return err
+			}
+			chartRequested, err := helmLoader.Load(cp)
+			if err != nil {
+				return err
+			}
+			release, err := i.RunWithContext(ctx, chartRequested, vals)
+			if err != nil {
+				return err
+			}
+			Logf(release.Info.Description)
+			return nil
+		}, input.WaitForControlPlaneIntervals...).Should(Succeed())
+	}
 }
 
 func defaultConfigCluster(clusterName, namespace string) clusterctl.ConfigClusterInput {
@@ -894,5 +916,8 @@ func CopyConfigMap(ctx context.Context, cl client.Client, cmName, fromNamespace,
 	cm.SetNamespace(toNamespace)
 	cm.SetResourceVersion("")
 	framework.EnsureNamespace(ctx, cl, toNamespace)
-	Expect(cl.Create(ctx, cm.DeepCopy())).To(Succeed())
+	err := cl.Create(ctx, cm.DeepCopy())
+	if !apierrors.IsAlreadyExists(err) {
+		Expect(err).To(Succeed())
+	}
 }
