@@ -137,7 +137,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	if os.Getenv("LOCAL_ONLY") != "true" {
+	if os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
 		Context("Running the self-hosted spec", func() {
 			SelfHostedSpec(context.TODO(), func() SelfHostedSpecInput {
 				return SelfHostedSpecInput{
@@ -214,7 +214,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	if os.Getenv("LOCAL_ONLY") != "true" {
+	if os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
 		Context("API Version Upgrade", func() {
 
 			Context("upgrade from v1alpha4 to v1beta1, and scale workload clusters created in v1alpha4", func() {
