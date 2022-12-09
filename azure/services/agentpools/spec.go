@@ -294,7 +294,7 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 			VnetSubnetID:         vnetSubnetID,
 			EnableNodePublicIP:   s.EnableNodePublicIP,
 			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
-			Tags:                 converters.TagsToMap(s.AdditionalTags),
+			Tags:                 *to.StringMapPtr(s.AdditionalTags),
 		},
 	}
 

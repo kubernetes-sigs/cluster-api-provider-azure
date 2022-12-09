@@ -190,6 +190,7 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 			Type: containerservice.ResourceIdentityTypeSystemAssigned,
 		},
 		Location: &s.Location,
+		Tags:     *to.StringMapPtr(s.Tags),
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 			NodeResourceGroup: &s.NodeResourceGroup,
 			EnableRBAC:        to.BoolPtr(true),
@@ -215,10 +216,6 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 				NetworkPolicy:   containerservice.NetworkPolicy(s.NetworkPolicy),
 			},
 		},
-	}
-
-	if tags := *to.StringMapPtr(s.Tags); len(tags) != 0 {
-		managedCluster.Tags = tags
 	}
 
 	if s.PodCIDR != "" {
@@ -326,6 +323,12 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 		// Avoid changing agent pool profiles through AMCP and just use the existing agent pool profiles
 		// AgentPool changes are managed through AMMP.
 		managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
+
+		// Do not trigger an update because of nil/empty discrepancies between the two sets of tags.
+		if len(existingMC.Tags) == 0 && len(managedCluster.Tags) == 0 {
+			existingMC.Tags = nil
+			managedCluster.Tags = nil
+		}
 
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff == "" {

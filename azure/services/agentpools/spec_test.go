@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -51,6 +52,7 @@ var (
 		Version:           to.StringPtr("fake-version"),
 		VnetSubnetID:      "fake-vnet-subnet-id",
 		Headers:           map[string]string{"fake-header": "fake-value"},
+		AdditionalTags:    infrav1.Tags{"fake": "tag"},
 	}
 	fakeAgentPoolSpecWithoutAutoscaling = AgentPoolSpec{
 		Name:              "fake-agent-pool-name",
@@ -73,6 +75,7 @@ var (
 		Version:           to.StringPtr("fake-version"),
 		VnetSubnetID:      "fake-vnet-subnet-id",
 		Headers:           map[string]string{"fake-header": "fake-value"},
+		AdditionalTags:    infrav1.Tags{"fake": "tag"},
 	}
 	fakeAgentPoolSpecWithZeroReplicas = AgentPoolSpec{
 		Name:              "fake-agent-pool-name",
@@ -95,6 +98,7 @@ var (
 		Version:           to.StringPtr("fake-version"),
 		VnetSubnetID:      "fake-vnet-subnet-id",
 		Headers:           map[string]string{"fake-header": "fake-value"},
+		AdditionalTags:    infrav1.Tags{"fake": "tag"},
 	}
 
 	fakeAgentPoolAutoScalingOutOfDate = containerservice.AgentPool{
@@ -241,6 +245,7 @@ func fakeAgentPoolWithProvisioningStateAndCountAndAutoscaling(provisioningState 
 			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
 			OsType:              containerservice.OSType("fake-os-type"),
 			ProvisioningState:   state,
+			Tags:                map[string]*string{"fake": to.StringPtr("tag")},
 			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VMSize:              to.StringPtr("fake-sku"),
 			VnetSubnetID:        to.StringPtr("fake-vnet-subnet-id"),
@@ -266,6 +271,7 @@ func fakeAgentPoolWithAutoscalingAndCount(enableAutoScaling bool, count int32) c
 			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
 			OsType:              containerservice.OSType("fake-os-type"),
 			ProvisioningState:   to.StringPtr("Succeeded"),
+			Tags:                map[string]*string{"fake": to.StringPtr("tag")},
 			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VMSize:              to.StringPtr("fake-sku"),
 			VnetSubnetID:        to.StringPtr("fake-vnet-subnet-id"),
