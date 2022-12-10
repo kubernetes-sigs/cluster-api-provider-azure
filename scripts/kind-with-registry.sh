@@ -41,10 +41,43 @@ if [ "${running}" != 'true' ]; then
   docker run -d --restart=always -p "127.0.0.1:${reg_port}:5000" --name "${reg_name}" registry:2
 fi
 
+SERVICE_ACCOUNT_ISSUER="${SERVICE_ACCOUNT_ISSUER:-https://oidcissuercapzci.blob.core.windows.net/oidc-capzci/}"
+
+if [[ -z "${SERVICE_ACCOUNT_SIGNING_PUB}" ]]; then
+  echo "'SERVICE_ACCOUNT_SIGNING_PUB' is not set."
+  exit 1
+fi
+
+if [[ -z "${SERVICE_ACCOUNT_SIGNING_KEY}" ]]; then
+  echo "'SERVICE_ACCOUNT_SIGNING_KEY' is not set."
+  exit 1
+fi
+
+mkdir -p "$HOME"/azwi/creds
+echo "${SERVICE_ACCOUNT_SIGNING_PUB}" > "$HOME"/azwi/creds/sa.pub
+echo  "${SERVICE_ACCOUNT_SIGNING_KEY}" > "$HOME"/azwi/creds/sa.key
 # create a cluster with the local registry enabled in containerd
 cat <<EOF | "${KIND}" create cluster --name "${KIND_CLUSTER_NAME}" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraMounts:
+    - hostPath: $HOME/azwi/creds/sa.pub
+      containerPath: /etc/kubernetes/pki/sa.pub
+    - hostPath: $HOME/azwi/creds/sa.key
+      containerPath: /etc/kubernetes/pki/sa.key
+  kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    apiServer:
+      extraArgs:
+        service-account-issuer: ${SERVICE_ACCOUNT_ISSUER}
+        service-account-key-file: /etc/kubernetes/pki/sa.pub
+        service-account-signing-key-file: /etc/kubernetes/pki/sa.key
+    controllerManager:
+      extraArgs:
+        service-account-private-key-file: /etc/kubernetes/pki/sa.key
 containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]

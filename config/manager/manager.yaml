@@ -16,6 +16,7 @@ spec:
       labels:
         control-plane: capz-controller-manager
         aadpodidbinding: capz-controller-aadpodidentity-selector
+        azure.workload.identity/use: "true"
       annotations:
         kubectl.kubernetes.io/default-container: manager
     spec:

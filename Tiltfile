@@ -23,6 +23,7 @@ settings = {
     "cert_manager_version": "v1.11.1",
     "kubernetes_version": "v1.25.6",
     "aks_kubernetes_version": "v1.25.6",
+    "azwi_version": "v1.1.0",
     "flatcar_version": "3374.2.1",
 }
 
@@ -45,6 +46,13 @@ if "allowed_contexts" in settings:
 
 if "default_registry" in settings:
     default_registry(settings.get("default_registry"))
+
+# deploy AZWI webhook
+def deploy_azwi():
+    version = settings.get("azwi_version")
+    azwi_uri = "https://github.com/Azure/azure-workload-identity/releases/download/{}/azure-wi-webhook.yaml".format(version)
+    cmd = "curl -sSL {} | {} | {} apply -f -".format(azwi_uri, envsubst_cmd, kubectl_cmd)
+    local(cmd, quiet = True)
 
 # deploy CAPI
 def deploy_capi():
@@ -434,6 +442,8 @@ load("ext://cert_manager", "deploy_cert_manager")
 
 if settings.get("deploy_cert_manager"):
     deploy_cert_manager(version = settings.get("cert_manager_version"))
+
+deploy_azwi()
 
 deploy_capi()
 
