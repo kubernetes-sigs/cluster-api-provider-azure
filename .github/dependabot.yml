@@ -6,7 +6,8 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/" # Location of package manifests
     schedule:
-      interval: "monday"
+      interval: "weekly"
+      day: "monday"      
     commit-message:
       include: "scope"
     ignore:
@@ -28,7 +29,8 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monday"
+      interval: "weekly"
+      day: "monday"
     commit-message:
       include: "scope"
     labels:
