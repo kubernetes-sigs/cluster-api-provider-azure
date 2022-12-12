@@ -128,6 +128,19 @@ func TestParameters(t *testing.T) {
 				g.Expect(result.(containerservice.ManagedCluster).KubernetesVersion).To(Equal(to.StringPtr("v1.22.99")))
 			},
 		},
+		{
+			name:     "delete all tags",
+			existing: getExistingCluster(),
+			spec: &ManagedClusterSpec{
+				Tags: nil,
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
+				tags := result.(containerservice.ManagedCluster).Tags
+				g.Expect(tags).NotTo(BeNil())
+				g.Expect(tags).To(BeEmpty())
+			},
+		},
 	}
 	for _, tc := range testcases {
 		tc := tc
