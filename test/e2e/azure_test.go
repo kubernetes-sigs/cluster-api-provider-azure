@@ -589,6 +589,15 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
+			By("Validating that webhooks are working as expected", func() {
+				AKSWebhooksSpec(ctx, func() AKSWebhooksSpecInput {
+					return AKSWebhooksSpecInput{
+						Cluster:      result.Cluster,
+						MachinePools: result.MachinePools,
+					}
+				})
+			})
+
 			By("Upgrading the Kubernetes version of the cluster", func() {
 				AKSUpgradeSpec(ctx, func() AKSUpgradeSpecInput {
 					return AKSUpgradeSpecInput{

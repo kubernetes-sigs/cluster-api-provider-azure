@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -207,4 +208,69 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 
 		return false
 	}, intervals...).Should(Equal(true), "System machine pools not detected")
+}
+
+func getAzureCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1.AzureCluster, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}
+
+	azCluster := &infrav1.AzureCluster{}
+	err := managementClusterClient.Get(ctx, key, azCluster)
+	return azCluster, err
+}
+
+func getAzureManagedControlPlane(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1exp.AzureManagedControlPlane, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}
+
+	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
+	err := managementClusterClient.Get(ctx, key, azManagedControlPlane)
+	return azManagedControlPlane, err
+}
+
+func getAzureManagedCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1exp.AzureManagedCluster, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}
+	azManagedCluster := &infrav1exp.AzureManagedCluster{}
+	err := managementClusterClient.Get(ctx, key, azManagedCluster)
+	return azManagedCluster, err
+}
+
+func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*infrav1.AzureMachine, error) {
+	key := client.ObjectKey{
+		Namespace: m.Spec.InfrastructureRef.Namespace,
+		Name:      m.Spec.InfrastructureRef.Name,
+	}
+
+	azMachine := &infrav1.AzureMachine{}
+	err := managementClusterClient.Get(ctx, key, azMachine)
+	return azMachine, err
+}
+
+func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1exp.AzureMachinePool, error) {
+	key := client.ObjectKey{
+		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+	}
+
+	azMachinePool := &infrav1exp.AzureMachinePool{}
+	err := managementClusterClient.Get(ctx, key, azMachinePool)
+	return azMachinePool, err
+}
+
+func getAzureManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1exp.AzureManagedMachinePool, error) {
+	key := client.ObjectKey{
+		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+	}
+
+	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
+	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
+	return azManagedMachinePool, err
 }

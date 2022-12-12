@@ -99,13 +99,6 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client 
 	old := oldRaw.(*AzureManagedControlPlane)
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Name"),
-		old.Name,
-		m.Name); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "SubscriptionID"),
 		old.Spec.SubscriptionID,
 		m.Spec.SubscriptionID); err != nil {

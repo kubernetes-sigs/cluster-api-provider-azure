@@ -777,31 +777,6 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "AzureManagedControlPlane Name is mutable",
-			oldAMCP: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					Version:      "v1.18.0",
-				},
-			},
-			amcp: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "new-test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					Version:      "v1.18.0",
-					APIServerAccessProfile: &APIServerAccessProfile{
-						AuthorizedIPRanges: []string{"192.168.0.1/32"},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
 			name: "AzureManagedControlPlane.VirtualNetwork Name is mutable",
 			oldAMCP: &AzureManagedControlPlane{
 				ObjectMeta: metav1.ObjectMeta{
