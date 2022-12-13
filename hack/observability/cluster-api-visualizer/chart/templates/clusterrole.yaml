@@ -3,9 +3,30 @@ kind: ClusterRole
 metadata:
   name: capi-visualizer
 rules:
-# TODO: Consider restricting the rights to the relevant CAPI apiGroups.
 - apiGroups:
+  - ''
+  resources:
   - '*'
+  verbs:
+  - 'list'
+  - 'get'
+  - 'watch'
+- apiGroups:
+  - 'apiextensions.k8s.io'
+  resources:
+  - 'customresourcedefinitions'
+  verbs:
+  - 'list'
+  - 'get'
+  - 'watch'
+- apiGroups:
+  - 'cluster.x-k8s.io'
+  - 'addons.cluster.x-k8s.io'
+  - 'bootstrap.cluster.x-k8s.io'
+  - 'controlplane.cluster.x-k8s.io'
+  - 'ipam.cluster.x-k8s.io'
+  - 'infrastructure.cluster.x-k8s.io'
+  - 'runtime.cluster.x-k8s.io'
   resources:
   - '*'
   verbs:
