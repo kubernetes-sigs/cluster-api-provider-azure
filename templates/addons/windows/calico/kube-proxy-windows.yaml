@@ -4,7 +4,7 @@ metadata:
   labels:
     k8s-app: kube-proxy
   name: kube-proxy-windows
-  namespace: calico-system
+  namespace: kube-system
 spec:
   selector:
     matchLabels:
