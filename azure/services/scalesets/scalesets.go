@@ -25,11 +25,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -107,7 +107,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 
 		if fetchedVMSS != nil {
 			// Transform the VMSS resource representation to conform to the cloud-provider-azure representation
-			providerID, err := azureutil.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + fetchedVMSS.ID)
+			providerID, err := azprovider.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + fetchedVMSS.ID)
 			if err != nil {
 				log.Error(err, "failed to parse VMSS ID", "ID", fetchedVMSS.ID)
 			}

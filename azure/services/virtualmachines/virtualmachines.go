@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -32,7 +33,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -102,7 +102,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 		infraVM := converters.SDKToVM(vm)
 		// Transform the VM resource representation to conform to the cloud-provider-azure representation
-		providerID, err := azureutil.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + infraVM.ID)
+		providerID, err := azprovider.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + infraVM.ID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse VM ID %s", infraVM.ID)
 		}
