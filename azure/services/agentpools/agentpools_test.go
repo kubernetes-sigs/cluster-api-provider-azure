@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -54,6 +55,7 @@ var (
 		EnableUltraSSD:    to.BoolPtr(true),
 		OSType:            to.StringPtr("fake-os-type"),
 		Headers:           map[string]string{"fake-header": "fake-value"},
+		KubeletDiskType:   (*infrav1exp.KubeletDiskType)(to.StringPtr("fake-kubelet-disk-type")),
 	}
 
 	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")

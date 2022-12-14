@@ -54,6 +54,16 @@ const (
 // TopologyManagerPolicy enumerates the values for KubeletConfig.TopologyManagerPolicy.
 type TopologyManagerPolicy string
 
+// KubeletDiskType enumerates the values for the agent pool's KubeletDiskType.
+type KubeletDiskType string
+
+const (
+	// KubeletDiskTypeOS ...
+	KubeletDiskTypeOS KubeletDiskType = "OS"
+	// KubeletDiskTypeTemporary ...
+	KubeletDiskTypeTemporary KubeletDiskType = "Temporary"
+)
+
 const (
 	// TopologyManagerPolicyNone ...
 	TopologyManagerPolicyNone TopologyManagerPolicy = "none"
@@ -189,6 +199,12 @@ type AzureManagedMachinePoolSpec struct {
 	// KubeletConfig specifies the kubelet configurations for nodes.
 	// +optional
 	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
+
+	// KubeletDiskType specifies the kubelet disk type. Default to OS. Possible values include: 'OS', 'Temporary'.
+	// Requires kubeletDisk preview feature to be set.
+	// +kubebuilder:validation:Enum=OS;Temporary
+	// +optional
+	KubeletDiskType *KubeletDiskType `json:"kubeletDiskType,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.

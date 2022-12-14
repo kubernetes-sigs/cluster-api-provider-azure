@@ -361,6 +361,30 @@ spec:
   osDiskType: "Ephemeral"
 ```
 
+## AKS Node Pool KubeletDiskType configuration
+
+You can configure the `KubeletDiskType` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec (see [here](https://learn.microsoft.com/en-us/rest/api/aks/agent-pools/create-or-update?tabs=HTTP#kubeletdisktype) for the official AKS documentation). There are two options to choose from: `"OS"` or `"Temporary"`.
+
+Before this feature can be used, you must register the `KubeletDisk` feature on your Azure subscription with the following az cli command.
+
+```bash
+az feature register --namespace Microsoft.ContainerService --name KubeletDisk
+```
+
+Below an example `kubeletDiskType` configuration is assigned to `agentpool0`, specifying that the emptyDir volumes, container runtime data root, and Kubelet ephemeral storage will be stored on the temporary disk:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool0
+spec:
+  mode: System
+  osDiskSizeGB: 30
+  sku: Standard_D2s_v3
+  kubeletDiskType: "Temporary"
+```
+
 ### AKS Node Pool Taints
 
 You can configure the `Taints` value for each AKS node pool (`AzureManagedMachinePool`) that you define in your spec.
