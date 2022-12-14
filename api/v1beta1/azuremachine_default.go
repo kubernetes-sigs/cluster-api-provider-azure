@@ -98,6 +98,23 @@ func (s *AzureMachineSpec) SetSpotEvictionPolicyDefaults() {
 	}
 }
 
+// SetDiagnosticsDefaults sets the defaults for Diagnostic settings for an AzureMachinePool.
+func (s *AzureMachineSpec) SetDiagnosticsDefaults() {
+	bootDiagnosticsDefault := &BootDiagnostics{
+		StorageAccountType: ManagedDiagnosticsStorage,
+	}
+
+	diagnosticsDefault := &Diagnostics{Boot: bootDiagnosticsDefault}
+
+	if s.Diagnostics == nil {
+		s.Diagnostics = diagnosticsDefault
+	}
+
+	if s.Diagnostics.Boot == nil {
+		s.Diagnostics.Boot = bootDiagnosticsDefault
+	}
+}
+
 // SetDefaults sets to the defaults for the AzureMachineSpec.
 func (s *AzureMachineSpec) SetDefaults() {
 	if err := s.SetDefaultSSHPublicKey(); err != nil {
@@ -107,4 +124,5 @@ func (s *AzureMachineSpec) SetDefaults() {
 	s.SetDataDisksDefaults()
 	s.SetIdentityDefaults()
 	s.SetSpotEvictionPolicyDefaults()
+	s.SetDiagnosticsDefaults()
 }

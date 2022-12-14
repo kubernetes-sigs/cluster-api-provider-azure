@@ -372,6 +372,28 @@ func (s *Service) validateSpec(ctx context.Context) error {
 		}
 	}
 
+	// Validate DiagnosticProfile spec
+	if spec.DiagnosticsProfile.Boot != nil {
+		if spec.DiagnosticsProfile.Boot.StorageAccountType == infrav1.UserManagedDiagnosticsStorage {
+			if spec.DiagnosticsProfile.Boot.UserManaged == nil {
+				return azure.WithTerminalError(fmt.Errorf("userManaged must be specified when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage))
+			} else if spec.DiagnosticsProfile.Boot.UserManaged.StorageAccountURI == "" {
+				return azure.WithTerminalError(fmt.Errorf("storageAccountURI cannot be empty when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage))
+			}
+		}
+
+		possibleStorageAccountTypeValues := []string{
+			string(infrav1.DisabledDiagnosticsStorage),
+			string(infrav1.ManagedDiagnosticsStorage),
+			string(infrav1.UserManagedDiagnosticsStorage),
+		}
+
+		if !slice.Contains(possibleStorageAccountTypeValues, string(spec.DiagnosticsProfile.Boot.StorageAccountType)) {
+			return azure.WithTerminalError(fmt.Errorf("invalid storageAccountType: %s. Allowed values are %v",
+				spec.DiagnosticsProfile.Boot.StorageAccountType, possibleStorageAccountTypeValues))
+		}
+	}
+
 	// Checking if selected availability zones are available selected VM type in location
 	azsInLocation, err := s.resourceSKUCache.GetZonesWithVMSize(ctx, spec.Size, s.Scope.Location())
 	if err != nil {
@@ -422,6 +444,8 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		return compute.VirtualMachineScaleSet{}, errors.Wrapf(err, "failed to get Spot VM options")
 	}
 
+	diagnosticsProfile := converters.GetDiagnosticsProfile(vmssSpec.DiagnosticsProfile)
+
 	// Get the node outbound LB backend pool ID
 	var backendAddressPools []compute.SubResource
 	if vmssSpec.PublicLBName != "" {
@@ -454,14 +478,10 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 			},
 			Overprovision: to.BoolPtr(false),
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
-				OsProfile:       osProfile,
-				StorageProfile:  storageProfile,
-				SecurityProfile: securityProfile,
-				DiagnosticsProfile: &compute.DiagnosticsProfile{
-					BootDiagnostics: &compute.BootDiagnostics{
-						Enabled: to.BoolPtr(true),
-					},
-				},
+				OsProfile:          osProfile,
+				StorageProfile:     storageProfile,
+				SecurityProfile:    securityProfile,
+				DiagnosticsProfile: diagnosticsProfile,
 				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 						{

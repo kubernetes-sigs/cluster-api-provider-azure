@@ -71,6 +71,11 @@ type (
 		// +optional
 		AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
 
+		// Diagnostics specifies the diagnostics settings for a virtual machine.
+		// If not specified then Boot diagnostics (Managed) will be enabled.
+		// +optional
+		Diagnostics *infrav1.Diagnostics `json:"diagnostics,omitempty"`
+
 		// TerminateNotificationTimeout enables or disables VMSS scheduled events termination notification with specified timeout
 		// allowed values are between 5 and 15 (mins)
 		// +optional

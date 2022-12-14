@@ -623,6 +623,108 @@ func TestReconcileVMSS(t *testing.T) {
 				s.Location().AnyTimes().Return("test-location")
 			},
 		},
+		{
+			name:          "fail to create a vm with diagnostics set to User Managed but empty StorageAccountURI",
+			expectedError: "reconcile error that cannot be recovered occurred: userManaged must be specified when storageAccountType is 'UserManaged'. Object will not be requeued",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       defaultVMSSName,
+					Size:       "VM_SIZE",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					DiagnosticsProfile: &infrav1.Diagnostics{
+						Boot: &infrav1.BootDiagnostics{
+							StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+							UserManaged:        nil,
+						},
+					},
+				})
+				s.Location().AnyTimes().Return("test-location")
+			},
+		},
+		{
+			name:          "successfully create a vm with diagnostics set to User Managed and StorageAccountURI set",
+			expectedError: "",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				storageURI := "https://fakeurl"
+
+				spec := newDefaultVMSSSpec()
+				spec.DiagnosticsProfile = &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+						UserManaged: &infrav1.UserManagedBootDiagnostics{
+							StorageAccountURI: storageURI,
+						},
+					},
+				}
+				s.ScaleSetSpec().Return(spec).AnyTimes()
+
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
+					Enabled:    to.BoolPtr(true),
+					StorageURI: &storageURI,
+				}}
+
+				instances := newDefaultInstances()
+
+				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, vmss, instances)
+				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PutFuture)
+				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PatchFuture)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.Location().AnyTimes().Return("test-location")
+			},
+		},
+		{
+			name:          "successfully create a vm with diagnostics set to Managed",
+			expectedError: "",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				spec := newDefaultVMSSSpec()
+				spec.DiagnosticsProfile = &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+					},
+				}
+
+				s.ScaleSetSpec().Return(spec).AnyTimes()
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
+					Enabled: to.BoolPtr(true),
+				}}
+
+				instances := newDefaultInstances()
+
+				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, vmss, instances)
+				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PutFuture)
+				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PatchFuture)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.Location().AnyTimes().Return("test-location")
+			},
+		},
+		{
+			name:          "successfully create a vm with diagnostics set to Disabled",
+			expectedError: "",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				spec := newDefaultVMSSSpec()
+				spec.DiagnosticsProfile = &infrav1.Diagnostics{
+					Boot: &infrav1.BootDiagnostics{
+						StorageAccountType: infrav1.DisabledDiagnosticsStorage,
+					},
+				}
+				s.ScaleSetSpec().Return(spec).AnyTimes()
+
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
+					Enabled: to.BoolPtr(false),
+				}}
+				instances := newDefaultInstances()
+
+				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, vmss, instances)
+				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PutFuture)
+				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PatchFuture)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.Location().AnyTimes().Return("test-location")
+			},
+		},
 	}
 
 	for _, tc := range testcases {
@@ -1035,6 +1137,11 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 						ID: "encryption_id",
 					},
 				},
+			},
+		},
+		DiagnosticsProfile: &infrav1.Diagnostics{
+			Boot: &infrav1.BootDiagnostics{
+				StorageAccountType: infrav1.ManagedDiagnosticsStorage,
 			},
 		},
 		SubnetName:                   "my-subnet",

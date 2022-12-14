@@ -123,6 +123,31 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "azuremachinepool with managed diagnostics profile",
+			amp:     createMachinePoolWithDiagnostics(infrav1.ManagedDiagnosticsStorage, nil),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with disabled diagnostics profile",
+			amp:     createMachinePoolWithDiagnostics(infrav1.ManagedDiagnosticsStorage, nil),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with user managed diagnostics profile and defined user managed storage account",
+			amp:     createMachinePoolWithDiagnostics(infrav1.UserManagedDiagnosticsStorage, &infrav1.UserManagedBootDiagnostics{StorageAccountURI: "https://fakeurl"}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with empty diagnostics profile",
+			amp:     createMachinePoolWithDiagnostics("", nil),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with user managed diagnostics profile, but empty user managed storage account",
+			amp:     createMachinePoolWithDiagnostics(infrav1.UserManagedDiagnosticsStorage, nil),
+			wantErr: true,
+		},
+		{
 			name: "azuremachinepool with invalid MaxSurge and MaxUnavailable rolling upgrade configuration",
 			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
 				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
@@ -343,6 +368,30 @@ func createMachinePoolWithSystemAssignedIdentity(role string) *AzureMachinePool 
 		Spec: AzureMachinePoolSpec{
 			Identity:           infrav1.VMIdentitySystemAssigned,
 			RoleAssignmentName: role,
+		},
+	}
+}
+
+func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsStorageAccountType, userManaged *infrav1.UserManagedBootDiagnostics) *AzureMachinePool {
+	var diagnostics *infrav1.Diagnostics
+
+	if diagnosticsType != "" {
+		diagnostics = &infrav1.Diagnostics{
+			Boot: &infrav1.BootDiagnostics{
+				StorageAccountType: diagnosticsType,
+			},
+		}
+	}
+
+	if userManaged != nil {
+		diagnostics.Boot.UserManaged = userManaged
+	}
+
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				Diagnostics: diagnostics,
+			},
 		},
 	}
 }

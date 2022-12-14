@@ -56,6 +56,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.SpotVMOptions.EvictionPolicy = restored.Spec.SpotVMOptions.EvictionPolicy
 	}
 
+	if restored.Spec.Diagnostics != nil {
+		dst.Spec.Diagnostics = restored.Spec.Diagnostics
+	}
+
 	return nil
 }
 

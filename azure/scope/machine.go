@@ -164,6 +164,7 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 		UserAssignedIdentities: m.AzureMachine.Spec.UserAssignedIdentities,
 		SpotVMOptions:          m.AzureMachine.Spec.SpotVMOptions,
 		SecurityProfile:        m.AzureMachine.Spec.SecurityProfile,
+		DiagnosticsProfile:     m.AzureMachine.Spec.Diagnostics,
 		AdditionalTags:         m.AdditionalTags(),
 		AdditionalCapabilities: m.AzureMachine.Spec.AdditionalCapabilities,
 		ProviderID:             m.ProviderID(),

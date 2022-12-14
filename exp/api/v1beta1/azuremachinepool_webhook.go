@@ -49,6 +49,7 @@ func (amp *AzureMachinePool) Default() {
 		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "SetDefaultSshPublicKey failed")
 	}
 	amp.SetIdentityDefaults()
+	amp.SetDiagnosticsDefaults()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -85,6 +86,7 @@ func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 		amp.ValidateTerminateNotificationTimeout,
 		amp.ValidateSSHKey,
 		amp.ValidateUserAssignedIdentity,
+		amp.ValidateDiagnostics,
 		amp.ValidateStrategy(),
 		amp.ValidateSystemAssignedIdentity(old),
 	}
@@ -188,4 +190,45 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) 
 
 		return nil
 	}
+}
+
+// ValidateDiagnostics validates the Diagnostic spec.
+func (amp *AzureMachinePool) ValidateDiagnostics() error {
+	var allErrs field.ErrorList
+	fieldPath := field.NewPath("diagnostics")
+
+	diagnostics := amp.Spec.Template.Diagnostics
+
+	if diagnostics != nil && diagnostics.Boot != nil {
+		switch diagnostics.Boot.StorageAccountType {
+		case infrav1.UserManagedDiagnosticsStorage:
+			if diagnostics.Boot.UserManaged == nil {
+				allErrs = append(allErrs, field.Required(fieldPath.Child("UserManaged"),
+					fmt.Sprintf("userManaged must be specified when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage)))
+			} else if diagnostics.Boot.UserManaged.StorageAccountURI == "" {
+				allErrs = append(allErrs, field.Required(fieldPath.Child("StorageAccountURI"),
+					fmt.Sprintf("StorageAccountURI cannot be empty when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage)))
+			}
+		case infrav1.ManagedDiagnosticsStorage:
+			if diagnostics.Boot.UserManaged != nil &&
+				diagnostics.Boot.UserManaged.StorageAccountURI != "" {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Child("StorageAccountURI"), diagnostics.Boot.UserManaged.StorageAccountURI,
+					fmt.Sprintf("StorageAccountURI cannot be set when storageAccountType is '%s'",
+						infrav1.ManagedDiagnosticsStorage)))
+			}
+		case infrav1.DisabledDiagnosticsStorage:
+			if diagnostics.Boot.UserManaged != nil &&
+				diagnostics.Boot.UserManaged.StorageAccountURI != "" {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Child("StorageAccountURI"), diagnostics.Boot.UserManaged.StorageAccountURI,
+					fmt.Sprintf("StorageAccountURI cannot be set when storageAccountType is '%s'",
+						infrav1.ManagedDiagnosticsStorage)))
+			}
+		}
+	}
+
+	if len(allErrs) > 0 {
+		return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+	}
+
+	return nil
 }

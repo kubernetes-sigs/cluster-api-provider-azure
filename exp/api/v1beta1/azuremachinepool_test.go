@@ -129,6 +129,84 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				g.Expect(actual.Error()).To(gomega.ContainSubstring("minimum timeout 5 is allowed for TerminateNotificationTimeout"))
 			},
 		},
+		{
+			Name: "HasNoDiagnostics",
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							Diagnostics: nil,
+						},
+					},
+				}
+			},
+			Expect: func(g *gomega.GomegaWithT, actual error) {
+				g.Expect(actual).NotTo(gomega.HaveOccurred())
+			},
+		},
+		{
+			Name: "HasValidDiagnostics",
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							Diagnostics: &infrav1.Diagnostics{
+								Boot: &infrav1.BootDiagnostics{
+									StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+								},
+							},
+						},
+					},
+				}
+			},
+			Expect: func(g *gomega.GomegaWithT, actual error) {
+				g.Expect(actual).ToNot(gomega.HaveOccurred())
+			},
+		},
+		{
+			Name: "HasMismatcingManagedDiagnosticsWithStorageAccountURI",
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							Diagnostics: &infrav1.Diagnostics{
+								Boot: &infrav1.BootDiagnostics{
+									StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+									UserManaged: &infrav1.UserManagedBootDiagnostics{
+										StorageAccountURI: "https://fake",
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			Expect: func(g *gomega.GomegaWithT, actual error) {
+				g.Expect(actual).To(gomega.HaveOccurred())
+			},
+		},
+		{
+			Name: "HasMismatcingDisabledDiagnosticsWithStorageAccountURI",
+			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
+				return &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							Diagnostics: &infrav1.Diagnostics{
+								Boot: &infrav1.BootDiagnostics{
+									StorageAccountType: infrav1.DisabledDiagnosticsStorage,
+									UserManaged: &infrav1.UserManagedBootDiagnostics{
+										StorageAccountURI: "https://fake",
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			Expect: func(g *gomega.GomegaWithT, actual error) {
+				g.Expect(actual).To(gomega.HaveOccurred())
+			},
+		},
 	}
 
 	for _, c := range cases {

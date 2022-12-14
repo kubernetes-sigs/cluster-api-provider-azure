@@ -58,6 +58,10 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Spec.AdditionalCapabilities = restored.Spec.Template.Spec.AdditionalCapabilities
 	}
 
+	if restored.Spec.Template.Spec.Diagnostics != nil {
+		dst.Spec.Template.Spec.Diagnostics = restored.Spec.Template.Spec.Diagnostics
+	}
+
 	dst.Spec.Template.Spec.SubnetName = restored.Spec.Template.Spec.SubnetName
 	dst.Spec.Template.ObjectMeta = restored.Spec.Template.ObjectMeta
 

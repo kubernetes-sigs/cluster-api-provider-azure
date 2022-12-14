@@ -473,6 +473,7 @@ func autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachin
 	out.DataDisks = *(*[]clusterapiproviderazureapiv1alpha3.DataDisk)(unsafe.Pointer(&in.DataDisks))
 	out.SSHPublicKey = in.SSHPublicKey
 	out.AcceleratedNetworking = (*bool)(unsafe.Pointer(in.AcceleratedNetworking))
+	// WARNING: in.Diagnostics requires manual conversion: does not exist in peer-type
 	out.TerminateNotificationTimeout = (*int)(unsafe.Pointer(in.TerminateNotificationTimeout))
 	out.SecurityProfile = (*clusterapiproviderazureapiv1alpha3.SecurityProfile)(unsafe.Pointer(in.SecurityProfile))
 	if in.SpotVMOptions != nil {
