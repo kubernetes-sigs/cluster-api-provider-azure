@@ -16,7 +16,6 @@ aliases:
     - sbueringer
     - vincepri
   cluster-api-azure-maintainers:
-    - alexeldeib
     - CecileRobertMichon
     - devigned
     - jackfrancis

@@ -11,6 +11,7 @@ reviewers:
   - cluster-api-azure-reviewers
 
 emeritus_approvers:
+  - alexeldeib
   - awesomenix
   - justaugustus
   - nader-ziada
