@@ -177,7 +177,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 				return err
 			}
 			return nil
-		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+		}, retryableDeleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 		Logf("waiting for the ilb service to be deleted: %s", ilbService.Name)
 		Eventually(func() bool {
 			_, err := servicesClient.Get(ctx, ilbService.GetName(), metav1.GetOptions{})
@@ -268,7 +268,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 			return err
 		}
 		return nil
-	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+	}, retryableDeleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	Logf("waiting for the external LB service to be deleted: %s", elbService.Name)
 	Eventually(func() bool {
 		_, err := servicesClient.Get(ctx, elbService.GetName(), metav1.GetOptions{})
