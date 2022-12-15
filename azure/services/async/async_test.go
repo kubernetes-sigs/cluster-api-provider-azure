@@ -235,7 +235,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
-				r.Parameters(&fakeExistingResource).Return(&fakeResourceParameters, nil)
+				r.Parameters(gomockinternal.AContext(), &fakeExistingResource).Return(&fakeResourceParameters, nil)
 				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{}), &fakeResourceParameters).Return("test-resource", nil, nil)
 			},
 		},
@@ -260,7 +260,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(nil, fakeNotFoundError)
-				r.Parameters(nil).Return(&fakeResourceParameters, nil)
+				r.Parameters(gomockinternal.AContext(), nil).Return(&fakeResourceParameters, nil)
 				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{}), &fakeResourceParameters).Return(&fakeExistingResource, nil, nil)
 			},
 		},
@@ -273,7 +273,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
-				r.Parameters(&fakeExistingResource).Return(nil, fakeInternalError)
+				r.Parameters(gomockinternal.AContext(), &fakeExistingResource).Return(nil, fakeInternalError)
 			},
 		},
 		{
@@ -286,7 +286,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
-				r.Parameters(&fakeExistingResource).Return(nil, nil)
+				r.Parameters(gomockinternal.AContext(), &fakeExistingResource).Return(nil, nil)
 			},
 		},
 		{
@@ -298,7 +298,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
-				r.Parameters(&fakeExistingResource).Return(&fakeResourceParameters, nil)
+				r.Parameters(gomockinternal.AContext(), &fakeExistingResource).Return(&fakeResourceParameters, nil)
 				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{}), &fakeResourceParameters).Return(nil, nil, fakeInternalError)
 			},
 		},
@@ -311,7 +311,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				r.ResourceGroupName().Return("test-group")
 				s.GetLongRunningOperationState("test-resource", "test-service", infrav1.PutFuture).Return(nil)
 				c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{})).Return(&fakeExistingResource, nil)
-				r.Parameters(&fakeExistingResource).Return(&fakeResourceParameters, nil)
+				r.Parameters(gomockinternal.AContext(), &fakeExistingResource).Return(&fakeResourceParameters, nil)
 				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(&mock_azure.MockResourceSpecGetter{}), &fakeResourceParameters).Return(nil, &azureautorest.Future{}, errCtxExceeded)
 				s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{}))
 			},

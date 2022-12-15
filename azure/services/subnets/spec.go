@@ -17,6 +17,8 @@ limitations under the License.
 package subnets
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
@@ -57,7 +59,7 @@ func (s *SubnetSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the subnet.
-func (s *SubnetSpec) Parameters(existing interface{}) (parameters interface{}, err error) {
+func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
 	if existing != nil {
 		existingSubnet, ok := existing.(network.Subnet)
 		if !ok {

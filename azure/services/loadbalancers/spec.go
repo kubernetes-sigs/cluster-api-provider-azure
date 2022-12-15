@@ -17,6 +17,8 @@ limitations under the License.
 package loadbalancers
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -61,7 +63,7 @@ func (s *LBSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the load balancer.
-func (s *LBSpec) Parameters(existing interface{}) (parameters interface{}, err error) {
+func (s *LBSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
 	var (
 		etag                *string
 		frontendIDs         []network.SubResource

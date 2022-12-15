@@ -17,6 +17,7 @@ limitations under the License.
 package securitygroups
 
 import (
+	"context"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
@@ -52,7 +53,7 @@ func (s *NSGSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the security group.
-func (s *NSGSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
 	securityRules := make([]network.SecurityRule, 0)
 	var etag *string
 

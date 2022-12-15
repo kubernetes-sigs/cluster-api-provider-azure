@@ -17,6 +17,7 @@ limitations under the License.
 package publicips
 
 import (
+	"context"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
@@ -55,7 +56,7 @@ func (s *PublicIPSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the public IP.
-func (s *PublicIPSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s *PublicIPSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(network.PublicIPAddress); !ok {
 			return nil, errors.Errorf("%T is not a network.PublicIPAddress", existing)

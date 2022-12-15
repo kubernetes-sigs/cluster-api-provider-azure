@@ -17,6 +17,8 @@ limitations under the License.
 package privatedns
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -47,7 +49,7 @@ func (s RecordSpec) ResourceGroupName() string {
 }
 
 // Parameters returns the parameters for a record set.
-func (s RecordSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s RecordSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(privatedns.RecordSet); !ok {
 			return nil, errors.Errorf("%T is not a privatedns.RecordSet", existing)

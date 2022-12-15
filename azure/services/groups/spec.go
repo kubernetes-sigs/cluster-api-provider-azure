@@ -17,6 +17,8 @@ limitations under the License.
 package groups
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -48,7 +50,7 @@ func (s *GroupSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the group.
-func (s *GroupSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s *GroupSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		// rg already exists, nothing to update.
 		// Note that rg tags are updated separately using tags service.

@@ -17,6 +17,8 @@ limitations under the License.
 package natgateways
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	autorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -53,7 +55,7 @@ func (s *NatGatewaySpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the NAT gateway.
-func (s *NatGatewaySpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s *NatGatewaySpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		existingNatGateway, ok := existing.(network.NatGateway)
 		if !ok {

@@ -1611,18 +1611,18 @@ func (mr *MockResourceSpecGetterMockRecorder) OwnerResourceName() *gomock.Call {
 }
 
 // Parameters mocks base method.
-func (m *MockResourceSpecGetter) Parameters(existing interface{}) (interface{}, error) {
+func (m *MockResourceSpecGetter) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Parameters", existing)
+	ret := m.ctrl.Call(m, "Parameters", ctx, existing)
 	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Parameters indicates an expected call of Parameters.
-func (mr *MockResourceSpecGetterMockRecorder) Parameters(existing interface{}) *gomock.Call {
+func (mr *MockResourceSpecGetterMockRecorder) Parameters(ctx, existing interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockResourceSpecGetter)(nil).Parameters), existing)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockResourceSpecGetter)(nil).Parameters), ctx, existing)
 }
 
 // ResourceGroupName mocks base method.
@@ -1705,18 +1705,18 @@ func (mr *MockResourceSpecGetterWithHeadersMockRecorder) OwnerResourceName() *go
 }
 
 // Parameters mocks base method.
-func (m *MockResourceSpecGetterWithHeaders) Parameters(existing interface{}) (interface{}, error) {
+func (m *MockResourceSpecGetterWithHeaders) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Parameters", existing)
+	ret := m.ctrl.Call(m, "Parameters", ctx, existing)
 	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Parameters indicates an expected call of Parameters.
-func (mr *MockResourceSpecGetterWithHeadersMockRecorder) Parameters(existing interface{}) *gomock.Call {
+func (mr *MockResourceSpecGetterWithHeadersMockRecorder) Parameters(ctx, existing interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).Parameters), existing)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).Parameters), ctx, existing)
 }
 
 // ResourceGroupName mocks base method.

@@ -17,6 +17,8 @@ limitations under the License.
 package virtualnetworks
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -49,7 +51,7 @@ func (s *VNetSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the vnet.
-func (s *VNetSpec) Parameters(existing interface{}) (interface{}, error) {
+func (s *VNetSpec) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
 	if existing != nil {
 		// vnet already exists, nothing to update.
 		return nil, nil

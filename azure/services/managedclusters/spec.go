@@ -17,6 +17,7 @@ limitations under the License.
 package managedclusters
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net"
@@ -29,6 +30,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // ManagedClusterSpec contains properties to create a managed cluster.
@@ -180,7 +182,10 @@ func (s *ManagedClusterSpec) CustomHeaders() map[string]string {
 }
 
 // Parameters returns the parameters for the managed clusters.
-func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Parameters")
+	defer done()
+
 	decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(s.SSHPublicKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode SSHPublicKey")
@@ -332,8 +337,10 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff == "" {
+			log.V(4).Info("no changes found between user-updated spec and existing spec")
 			return nil, nil
 		}
+		log.V(4).Info("found a diff between the desired spec and the existing managed cluster", "difference", diff)
 	} else {
 		// Add all agent pools to cluster spec that will be submitted to the API
 		agentPoolSpecs, err := s.GetAllAgentPools()
@@ -342,7 +349,7 @@ func (s *ManagedClusterSpec) Parameters(existing interface{}) (params interface{
 		}
 
 		for _, spec := range agentPoolSpecs {
-			params, err := spec.Parameters(nil)
+			params, err := spec.Parameters(ctx, nil)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get agent pool parameters for managed cluster %s", s.Name)
 			}

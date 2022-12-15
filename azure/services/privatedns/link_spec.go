@@ -17,6 +17,8 @@ limitations under the License.
 package privatedns
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -53,7 +55,7 @@ func (s LinkSpec) ResourceGroupName() string {
 }
 
 // Parameters returns the parameters for the virtual network link.
-func (s LinkSpec) Parameters(existing interface{}) (params interface{}, err error) {
+func (s LinkSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		_, ok := existing.(privatedns.VirtualNetworkLink)
 		if !ok {
