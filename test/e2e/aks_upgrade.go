@@ -28,6 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -48,7 +49,7 @@ func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput)
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	auth, err := settings.GetAuthorizer()
+	auth, err := azureutil.GetAuthorizer(settings)
 	Expect(err).NotTo(HaveOccurred())
 
 	managedClustersClient := containerservice.NewManagedClustersClient(subscriptionID)

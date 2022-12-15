@@ -31,6 +31,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // GetAKSKubernetesVersion gets the kubernetes version for AKS clusters as specified by the environment variable defined by versionVar.
@@ -77,7 +79,7 @@ func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, locatio
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get settings from environment")
 	}
-	authorizer, err := settings.GetAuthorizer()
+	authorizer, err := azureutil.GetAuthorizer(settings)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create an Authorizer")
 	}
@@ -147,7 +149,7 @@ func getLatestStableAKSKubernetesVersionOffset(ctx context.Context, subscription
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get settings from environment")
 	}
-	authorizer, err := settings.GetAuthorizer()
+	authorizer, err := azureutil.GetAuthorizer(settings)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create an Authorizer")
 	}
