@@ -23,6 +23,7 @@ package mock_managedclusters
 import (
 	context "context"
 	reflect "reflect"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
@@ -359,4 +360,18 @@ func (m *MockManagedClusterScope) TenantID() string {
 func (mr *MockManagedClusterScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockManagedClusterScope)(nil).TenantID))
+}
+
+// GetManagedControlPlaneCredentialsProvider mocks base method.
+func (m *MockManagedClusterScope) GetManagedControlPlaneCredentialsProvider() *scope.ManagedControlPlaneCredentialsProvider {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedControlPlaneCredentialsProvider")
+	ret0, _ := ret[0].(*scope.ManagedControlPlaneCredentialsProvider)
+	return ret0
+}
+
+// GetManagedControlPlaneCredentialsProvider indicates an expected call of GetManagedControlPlaneCredentialsProvider.
+func (mr *MockManagedClusterScopeMockRecorder) GetManagedControlPlaneCredentialsProvider() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedControlPlaneCredentialsProvider", reflect.TypeOf((*MockManagedClusterScope)(nil).GetManagedControlPlaneCredentialsProvider))
 }
