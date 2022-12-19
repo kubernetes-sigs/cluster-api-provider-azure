@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	autorest "github.com/Azure/go-autorest/autorest/azure"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -398,7 +398,7 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 	}
 
 	resourceID := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
-	resource, err := autorest.ParseResourceID(resourceID)
+	resource, err := azureautorest.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}
@@ -428,7 +428,7 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 	v := strings.Split(resourceID, "/")
 	instanceID := v[len(v)-1]
 	resourceID = strings.TrimSuffix(resourceID, "/virtualMachines/"+instanceID)
-	resource, err := autorest.ParseResourceID(resourceID)
+	resource, err := azureautorest.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}

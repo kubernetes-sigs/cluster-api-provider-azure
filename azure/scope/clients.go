@@ -25,9 +25,8 @@ import (
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -154,9 +153,9 @@ func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s aut
 	setValue(s, auth.Password)
 	setValue(s, auth.Resource)
 	if v := s.Values[auth.EnvironmentName]; v == "" {
-		s.Environment = azure.PublicCloud
+		s.Environment = azureautorest.PublicCloud
 	} else {
-		s.Environment, err = azure.EnvironmentFromName(v)
+		s.Environment, err = azureautorest.EnvironmentFromName(v)
 	}
 	if s.Values[auth.Resource] == "" {
 		s.Values[auth.Resource] = s.Environment.ResourceManagerEndpoint
