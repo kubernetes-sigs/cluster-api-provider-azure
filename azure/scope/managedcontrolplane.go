@@ -73,6 +73,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		return nil, errors.New("failed to generate new scope from nil ControlPlane")
 	}
 
+	var cp *ManagedControlPlaneCredentialsProvider
 	if params.ControlPlane.Spec.IdentityRef == nil {
 		if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, ""); err != nil {
 			return nil, errors.Wrap(err, "failed to create Azure session")
@@ -86,6 +87,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, "", credentialsProvider); err != nil {
 			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 		}
+		cp = credentialsProvider
 	}
 
 	helper, err := patch.NewHelper(params.PatchTarget, params.Client)
@@ -94,14 +96,15 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 	}
 
 	return &ManagedControlPlaneScope{
-		Client:           params.Client,
-		AzureClients:     params.AzureClients,
-		Cluster:          params.Cluster,
-		ControlPlane:     params.ControlPlane,
-		MachinePool:      params.MachinePool,
-		InfraMachinePool: params.InfraMachinePool,
-		PatchTarget:      params.PatchTarget,
-		patchHelper:      helper,
+		Client:              params.Client,
+		AzureClients:        params.AzureClients,
+		Cluster:             params.Cluster,
+		ControlPlane:        params.ControlPlane,
+		MachinePool:         params.MachinePool,
+		InfraMachinePool:    params.InfraMachinePool,
+		PatchTarget:         params.PatchTarget,
+		patchHelper:         helper,
+		credentialsProvider: cp,
 	}, nil
 }
 
@@ -112,11 +115,12 @@ type ManagedControlPlaneScope struct {
 	kubeConfigData []byte
 
 	AzureClients
-	Cluster          *clusterv1.Cluster
-	MachinePool      *expv1.MachinePool
-	ControlPlane     *infrav1exp.AzureManagedControlPlane
-	InfraMachinePool *infrav1exp.AzureManagedMachinePool
-	PatchTarget      conditions.Setter
+	Cluster             *clusterv1.Cluster
+	MachinePool         *expv1.MachinePool
+	ControlPlane        *infrav1exp.AzureManagedControlPlane
+	InfraMachinePool    *infrav1exp.AzureManagedMachinePool
+	PatchTarget         conditions.Setter
+	credentialsProvider *ManagedControlPlaneCredentialsProvider
 
 	AllNodePools []infrav1exp.AzureManagedMachinePool
 }
@@ -721,6 +725,12 @@ func (s *ManagedControlPlaneScope) GetKubeConfigData() []byte {
 // SetKubeConfigData sets kubeconfig data.
 func (s *ManagedControlPlaneScope) SetKubeConfigData(kubeConfigData []byte) {
 	s.kubeConfigData = kubeConfigData
+}
+
+// GetManagedControlPlaneCredentialsProvider returns a credentials provider for the managed control plane.
+// Returns a valid credentials provider when the control plane has a valid Azure cluster identity reference.
+func (s *ManagedControlPlaneScope) GetManagedControlPlaneCredentialsProvider() *ManagedControlPlaneCredentialsProvider {
+	return s.credentialsProvider
 }
 
 // SetLongRunningOperationState will set the future on the AzureManagedControlPlane status to allow the resource to continue
