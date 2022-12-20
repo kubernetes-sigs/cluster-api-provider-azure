@@ -562,6 +562,48 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "validTest: azuremachine.spec.Diagnostics should not error on updating nil diagnostics",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.Diagnostics is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage}},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.Diagnostics is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{
+						Boot: &BootDiagnostics{},
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage}},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
