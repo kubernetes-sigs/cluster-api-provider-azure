@@ -45,7 +45,7 @@ var (
 )
 
 func TestAzureMachinePool_ValidateCreate(t *testing.T) {
-	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 
@@ -227,7 +227,7 @@ func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Ob
 }
 
 func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
-	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 
@@ -324,7 +324,7 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 }
 
 func TestAzureMachinePool_Default(t *testing.T) {
-	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 

@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -87,14 +87,14 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 	// System node pools cannot be scaled to 0, so only include user node pools.
 	var machinePoolsToScale []*expv1.MachinePool
 	for _, mp := range input.MachinePools {
-		ammp := &infrav1exp.AzureManagedMachinePool{}
+		ammp := &infrav1.AzureManagedMachinePool{}
 		err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
 			Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 			Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 		}, ammp)
 		Expect(err).NotTo(HaveOccurred())
 
-		if ammp.Spec.Mode != string(infrav1exp.NodePoolModeSystem) {
+		if ammp.Spec.Mode != string(infrav1.NodePoolModeSystem) {
 			machinePoolsToScale = append(machinePoolsToScale, mp)
 		}
 	}

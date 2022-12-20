@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,12 +24,13 @@ import (
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 )
 
 func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
-	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the web hook
+	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 
 	g := NewWithT(t)
 
@@ -197,9 +198,9 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 }
 
 func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
-	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the web hook
+	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 
 	g := NewWithT(t)
 
@@ -255,7 +256,7 @@ func TestAzureManagedCluster_ValidateCreateFailure(t *testing.T) {
 		{
 			name:      "feature gate explicitly disabled",
 			amc:       getKnownValidAzureManagedCluster(),
-			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, false),
+			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
 		},
 		{
 			name:      "feature gate implicitly disabled",

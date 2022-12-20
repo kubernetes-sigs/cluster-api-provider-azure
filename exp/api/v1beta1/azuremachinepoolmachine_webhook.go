@@ -44,7 +44,7 @@ func (ampm *AzureMachinePoolMachine) ValidateCreate() error {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (ampm *AzureMachinePoolMachine) ValidateUpdate(old runtime.Object) error {
-	// NOTE: AzureMachinePoolMachine is behind MachinePool feature gate flag; the web hook
+	// NOTE: AzureMachinePoolMachine is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects new case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
 		return field.Forbidden(

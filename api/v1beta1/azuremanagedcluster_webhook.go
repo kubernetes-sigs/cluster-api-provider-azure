@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
@@ -44,12 +44,12 @@ var _ webhook.Validator = &AzureManagedCluster{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedCluster) ValidateCreate() error {
-	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the web hook
-	// must prevent creating new objects in case the feature flag is disabled.
-	if !feature.Gates.Enabled(feature.AKS) {
+	// NOTE: AzureManagedCluster relies upon MachinePools, which is behind a feature gate flag.
+	// The webhook must prevent creating new objects in case the feature flag is disabled.
+	if !feature.Gates.Enabled(capifeature.MachinePool) {
 		return field.Forbidden(
 			field.NewPath("spec"),
-			"can be set only if the AKS feature flag is enabled",
+			"can be set only if the Cluster API 'MachinePool' feature flag is enabled",
 		)
 	}
 	if r.Spec.ControlPlaneEndpoint.Host != "" {
@@ -73,14 +73,14 @@ func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	var allErrs field.ErrorList
 
 	// custom headers are immutable
-	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
-	newCustomHeaders := maps.FilterByKeyPrefix(r.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
+	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, CustomHeaderPrefix)
+	newCustomHeaders := maps.FilterByKeyPrefix(r.ObjectMeta.Annotations, CustomHeaderPrefix)
 	if !reflect.DeepEqual(oldCustomHeaders, newCustomHeaders) {
 		allErrs = append(allErrs,
 			field.Invalid(
 				field.NewPath("metadata", "annotations"),
 				r.ObjectMeta.Annotations,
-				fmt.Sprintf("annotations with '%s' prefix are immutable", azure.CustomHeaderPrefix)))
+				fmt.Sprintf("annotations with '%s' prefix are immutable", CustomHeaderPrefix)))
 	}
 
 	if old.Spec.ControlPlaneEndpoint.Host != "" {

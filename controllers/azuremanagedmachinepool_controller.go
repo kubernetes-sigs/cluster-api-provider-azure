@@ -26,8 +26,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -71,7 +69,7 @@ func NewAzureManagedMachinePoolReconciler(client client.Client, recorder record.
 }
 
 // SetupWithManager initializes this controller with a manager.
-func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
+func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options Options) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureManagedMachinePoolReconciler.SetupWithManager",
 		tele.KVP("controller", "AzureManagedMachinePool"),
@@ -83,7 +81,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		r = coalescing.NewReconciler(ammpr, options.Cache, log)
 	}
 
-	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
+	azManagedMachinePool := &infrav1.AzureManagedMachinePool{}
 	// create mapper to transform incoming AzureManagedControlPlanes into AzureManagedMachinePool requests
 	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx, ammpr.Client, mgr.GetScheme(), log)
 	if err != nil {
@@ -97,11 +95,11 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &expv1.MachinePool{}},
-			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"), log)),
+			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), log)),
 		).
 		// watch for changes in AzureManagedControlPlanes
 		Watches(
-			&source.Kind{Type: &infrav1exp.AzureManagedControlPlane{}},
+			&source.Kind{Type: &infrav1.AzureManagedControlPlane{}},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
 		Build(r)
@@ -112,7 +110,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"), mgr.GetClient(), &infrav1exp.AzureManagedMachinePool{})),
+		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), mgr.GetClient(), &infrav1.AzureManagedMachinePool{})),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, ammpr.WatchFilterValue),
 	); err != nil {
@@ -140,7 +138,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	defer done()
 
 	// Fetch the AzureManagedMachinePool instance
-	infraPool := &infrav1exp.AzureManagedMachinePool{}
+	infraPool := &infrav1.AzureManagedMachinePool{}
 	err := ammpr.Get(ctx, req.NamespacedName, infraPool)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -150,7 +148,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	}
 
 	// Fetch the owning MachinePool.
-	ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, ammpr.Client, infraPool.ObjectMeta)
+	ownerPool, err := GetOwnerMachinePool(ctx, ammpr.Client, infraPool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -178,7 +176,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	}
 
 	// Fetch the corresponding control plane which has all the interesting data.
-	controlPlane := &infrav1exp.AzureManagedControlPlane{}
+	controlPlane := &infrav1.AzureManagedControlPlane{}
 	controlPlaneName := client.ObjectKey{
 		Namespace: ownerCluster.Spec.ControlPlaneRef.Namespace,
 		Name:      ownerCluster.Spec.ControlPlaneRef.Name,

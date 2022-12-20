@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 )
 
 func TestDefaultingWebhook(t *testing.T) {
@@ -79,9 +80,9 @@ func TestDefaultingWebhook(t *testing.T) {
 }
 
 func TestValidatingWebhook(t *testing.T) {
-	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the web hook
+	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 	g := NewWithT(t)
 	tests := []struct {
 		name      string
@@ -559,9 +560,9 @@ func TestValidatingWebhook(t *testing.T) {
 }
 
 func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
-	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the web hook
+	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 	g := NewWithT(t)
 
 	tests := []struct {
@@ -696,7 +697,7 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 		{
 			name:      "feature gate explicitly disabled",
 			amcp:      getKnownValidAzureManagedControlPlane(),
-			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, false),
+			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
 		},
 		{
 			name:      "feature gate implicitly disabled",
@@ -1121,31 +1122,6 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: false,
-		},
-		{
-			name: "AzureManagedControlPlane Name is mutable",
-			oldAMCP: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					Version:      "v1.18.0",
-				},
-			},
-			amcp: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "new-test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					Version:      "v1.18.0",
-					APIServerAccessProfile: &APIServerAccessProfile{
-						AuthorizedIPRanges: []string{"192.168.0.1/32"},
-					},
-				},
-			},
-			wantErr: true,
 		},
 		{
 			name: "AzureManagedControlPlane.VirtualNetwork Name is mutable",

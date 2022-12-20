@@ -19,7 +19,6 @@ package v1alpha4
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	clusterv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
@@ -62,7 +61,7 @@ type AzureManagedControlPlaneSpec struct {
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
 	// +optional
-	AdditionalTags infrav1alpha4.Tags `json:"additionalTags,omitempty"`
+	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
 	// +kubebuilder:validation:Enum=azure;kubenet
@@ -95,9 +94,9 @@ type AzureManagedControlPlaneSpec struct {
 	// +optional
 	AADProfile *AADProfile `json:"aadProfile,omitempty"`
 
-	// SKU is the SKU of the AKS to be provisioned.
+	// SKU is the AKSSku of the AKS to be provisioned.
 	// +optional
-	SKU *SKU `json:"sku,omitempty"`
+	SKU *AKSSku `json:"sku,omitempty"`
 
 	// LoadBalancerProfile is the profile of the cluster load balancer.
 	// +optional
@@ -119,8 +118,8 @@ type AADProfile struct {
 	AdminGroupObjectIDs []string `json:"adminGroupObjectIDs"`
 }
 
-// SKU - AKS SKU.
-type SKU struct {
+// AKSSku - AKS SKU.
+type AKSSku struct {
 	// Tier - Tier of a managed cluster SKU.
 	// +kubebuilder:validation:Enum=Free;Paid
 	Tier string `json:"tier"`
@@ -199,7 +198,7 @@ type AzureManagedControlPlaneStatus struct {
 	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
 	// next reconciliation loop.
 	// +optional
-	LongRunningOperationStates infrav1alpha4.Futures `json:"longRunningOperationStates,omitempty"`
+	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -225,12 +224,12 @@ type AzureManagedControlPlaneList struct {
 }
 
 // GetFutures returns the list of long running operation states for an AzureManagedControlPlane API object.
-func (m *AzureManagedControlPlane) GetFutures() infrav1alpha4.Futures {
+func (m *AzureManagedControlPlane) GetFutures() Futures {
 	return m.Status.LongRunningOperationStates
 }
 
 // SetFutures will set the given long running operation states on an AzureManagedControlPlane object.
-func (m *AzureManagedControlPlane) SetFutures(futures infrav1alpha4.Futures) {
+func (m *AzureManagedControlPlane) SetFutures(futures Futures) {
 	m.Status.LongRunningOperationStates = futures
 }
 

@@ -213,7 +213,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			// Don't add t.Parallel() here or the test will fail.
-			// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+			// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
 			// must prevent creating new objects in case the feature flag is disabled.
 			defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 			g := gomega.NewGomegaWithT(t)

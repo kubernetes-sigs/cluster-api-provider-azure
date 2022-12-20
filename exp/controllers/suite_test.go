@@ -52,19 +52,6 @@ var _ = BeforeSuite(func() {
 
 	ctx = log.IntoContext(ctx, logr.New(testEnv.Log))
 
-	Expect((&AzureManagedClusterReconciler{
-		Client:   testEnv,
-		Recorder: testEnv.GetEventRecorderFor("azuremanagedcluster-reconciler"),
-	}).SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
-
-	Expect((&AzureManagedControlPlaneReconciler{
-		Client:   testEnv,
-		Recorder: testEnv.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
-	}).SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
-
-	Expect(NewAzureManagedMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremanagedmachinepool-reconciler"),
-		reconciler.DefaultLoopTimeout, "").SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
-
 	Expect(NewAzureMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachinepool-reconciler"),
 		reconciler.DefaultLoopTimeout, "").SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 

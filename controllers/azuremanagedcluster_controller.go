@@ -24,8 +24,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -50,7 +49,7 @@ type AzureManagedClusterReconciler struct {
 }
 
 // SetupWithManager initializes this controller with a manager.
-func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
+func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options Options) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureManagedClusterReconciler.SetupWithManager",
 		tele.KVP("controller", "AzureManagedCluster"),
@@ -62,7 +61,7 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 		r = coalescing.NewReconciler(amcr, options.Cache, log)
 	}
 
-	azManagedCluster := &infrav1exp.AzureManagedCluster{}
+	azManagedCluster := &infrav1.AzureManagedCluster{}
 	// create mapper to transform incoming AzureManagedControlPlanes into AzureManagedCluster requests
 	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedClusterMapper(ctx, amcr.Client, log)
 	if err != nil {
@@ -75,7 +74,7 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, amcr.WatchFilterValue)).
 		// watch AzureManagedControlPlane resources
 		Watches(
-			&source.Kind{Type: &infrav1exp.AzureManagedControlPlane{}},
+			&source.Kind{Type: &infrav1.AzureManagedControlPlane{}},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
 		Build(r)
@@ -86,7 +85,7 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 	// Add a watch on clusterv1.Cluster object for unpause notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1exp.GroupVersion.WithKind("AzureManagedCluster"), mgr.GetClient(), &infrav1exp.AzureManagedCluster{})),
+		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureManagedCluster"), mgr.GetClient(), &infrav1.AzureManagedCluster{})),
 		predicates.ClusterUnpaused(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, amcr.WatchFilterValue),
 	); err != nil {
@@ -115,7 +114,7 @@ func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	defer done()
 
 	// Fetch the AzureManagedCluster instance
-	aksCluster := &infrav1exp.AzureManagedCluster{}
+	aksCluster := &infrav1.AzureManagedCluster{}
 	err := amcr.Get(ctx, req.NamespacedName, aksCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -134,7 +133,7 @@ func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 		return reconcile.Result{}, nil
 	}
 
-	controlPlane := &infrav1exp.AzureManagedControlPlane{}
+	controlPlane := &infrav1.AzureManagedControlPlane{}
 	controlPlaneRef := types.NamespacedName{
 		Name:      cluster.Spec.ControlPlaneRef.Name,
 		Namespace: cluster.Namespace,

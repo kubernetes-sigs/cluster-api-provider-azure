@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ func (m *AzureManagedControlPlane) setDefaultSubnet() {
 
 func (m *AzureManagedControlPlane) setDefaultSku() {
 	if m.Spec.SKU == nil {
-		m.Spec.SKU = &SKU{
+		m.Spec.SKU = &AKSSku{
 			Tier: FreeManagedControlPlaneTier,
 		}
 	}

@@ -30,7 +30,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -39,7 +38,7 @@ import (
 func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
-	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -55,18 +54,18 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool0"),
-					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -89,12 +88,12 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
@@ -137,7 +136,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
-	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -153,18 +152,18 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool0"),
-					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -186,12 +185,12 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
@@ -236,7 +235,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
-	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -252,18 +251,18 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool0"),
-					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -285,12 +284,12 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
@@ -335,7 +334,7 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
-	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -351,18 +350,18 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool0"),
-					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -384,12 +383,12 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
@@ -430,7 +429,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 func TestManagedMachinePoolScope_Taints(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
-	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -446,18 +445,18 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool0"),
-					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -480,19 +479,19 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool: getMachinePool("pool1"),
-					InfraMachinePool: getAzureMachinePoolWithTaints("pool1", infrav1exp.Taints{
-						infrav1exp.Taint{
+					InfraMachinePool: getAzureMachinePoolWithTaints("pool1", infrav1.Taints{
+						infrav1.Taint{
 							Key:    "key1",
 							Value:  "value1",
 							Effect: "NoSchedule",
@@ -532,7 +531,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
-	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -548,18 +547,18 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool0"),
-					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -581,12 +580,12 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
@@ -627,7 +626,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
-	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -643,18 +642,18 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool0"),
-					InfraMachinePool: getAzureMachinePool("pool0", infrav1exp.NodePoolModeSystem),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -676,18 +675,18 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
 						SubscriptionID: "00000000-0000-0000-0000-000000000000",
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool1"),
-					InfraMachinePool: getAzureMachinePoolWithKubeletDiskType("pool1", (*infrav1exp.KubeletDiskType)(to.StringPtr("Temporary"))),
+					InfraMachinePool: getAzureMachinePoolWithKubeletDiskType("pool1", (*infrav1.KubeletDiskType)(to.StringPtr("Temporary"))),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -696,7 +695,7 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 				Mode:            "User",
 				Cluster:         "cluster1",
 				Replicas:        1,
-				KubeletDiskType: (*infrav1exp.KubeletDiskType)(to.StringPtr("Temporary")),
+				KubeletDiskType: (*infrav1.KubeletDiskType)(to.StringPtr("Temporary")),
 				VnetSubnetID:    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				Headers:         map[string]string{},
 			},
@@ -719,8 +718,8 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 	}
 }
 
-func getAzureMachinePool(name string, mode infrav1exp.NodePoolMode) *infrav1exp.AzureManagedMachinePool {
-	return &infrav1exp.AzureManagedMachinePool{
+func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureManagedMachinePool {
+	return &infrav1.AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
@@ -735,7 +734,7 @@ func getAzureMachinePool(name string, mode infrav1exp.NodePoolMode) *infrav1exp.
 				},
 			},
 		},
-		Spec: infrav1exp.AzureManagedMachinePoolSpec{
+		Spec: infrav1.AzureManagedMachinePoolSpec{
 			Mode: string(mode),
 			SKU:  "Standard_D2s_v3",
 			Name: to.StringPtr(name),
@@ -743,47 +742,47 @@ func getAzureMachinePool(name string, mode infrav1exp.NodePoolMode) *infrav1exp.
 	}
 }
 
-func getAzureMachinePoolWithScaling(name string, min, max int32) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeUser)
-	managedPool.Spec.Scaling = &infrav1exp.ManagedMachinePoolScaling{
+func getAzureMachinePoolWithScaling(name string, min, max int32) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
+	managedPool.Spec.Scaling = &infrav1.ManagedMachinePoolScaling{
 		MinSize: to.Int32Ptr(min),
 		MaxSize: to.Int32Ptr(max),
 	}
 	return managedPool
 }
 
-func getAzureMachinePoolWithMaxPods(name string, maxPods int32) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeSystem)
+func getAzureMachinePoolWithMaxPods(name string, maxPods int32) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeSystem)
 	managedPool.Spec.MaxPods = to.Int32Ptr(maxPods)
 	return managedPool
 }
 
-func getAzureMachinePoolWithTaints(name string, taints infrav1exp.Taints) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeUser)
+func getAzureMachinePoolWithTaints(name string, taints infrav1.Taints) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.Taints = taints
 	return managedPool
 }
 
-func getAzureMachinePoolWithOsDiskType(name string, osDiskType string) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeUser)
+func getAzureMachinePoolWithOsDiskType(name string, osDiskType string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.OsDiskType = to.StringPtr(osDiskType)
 	return managedPool
 }
 
-func getAzureMachinePoolWithKubeletDiskType(name string, kubeletDiskType *infrav1exp.KubeletDiskType) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeUser)
+func getAzureMachinePoolWithKubeletDiskType(name string, kubeletDiskType *infrav1.KubeletDiskType) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.KubeletDiskType = kubeletDiskType
 	return managedPool
 }
 
-func getAzureMachinePoolWithLabels(name string, nodeLabels map[string]string) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeSystem)
+func getAzureMachinePoolWithLabels(name string, nodeLabels map[string]string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeSystem)
 	managedPool.Spec.NodeLabels = nodeLabels
 	return managedPool
 }
 
-func getAzureMachinePoolWithAdditionalTags(name string, additionalTags infrav1.Tags) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeSystem)
+func getAzureMachinePoolWithAdditionalTags(name string, additionalTags infrav1.Tags) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeSystem)
 	managedPool.Spec.AdditionalTags = additionalTags
 	return managedPool
 }
@@ -803,14 +802,14 @@ func getMachinePool(name string) *expv1.MachinePool {
 	}
 }
 
-func getLinuxAzureMachinePool(name string) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeUser)
+func getLinuxAzureMachinePool(name string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.OSType = to.StringPtr(azure.LinuxOS)
 	return managedPool
 }
 
-func getWindowsAzureMachinePool(name string) *infrav1exp.AzureManagedMachinePool {
-	managedPool := getAzureMachinePool(name, infrav1exp.NodePoolModeUser)
+func getWindowsAzureMachinePool(name string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.OSType = to.StringPtr(azure.WindowsOS)
 	return managedPool
 }

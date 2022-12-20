@@ -212,7 +212,7 @@ func generateNegativeTestCases() []osDiskTestInput {
 func generateValidOSDisk() OSDisk {
 	return OSDisk{
 		DiskSizeGB: to.Int32Ptr(30),
-		OSType:     "Linux",
+		OSType:     LinuxOS,
 		ManagedDisk: &ManagedDiskParameters{
 			StorageAccountType: "Premium_LRS",
 		},

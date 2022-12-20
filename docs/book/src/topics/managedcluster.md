@@ -1,9 +1,9 @@
 # Managed Clusters (AKS)
 
-- **Feature status:** Experimental
-- **Feature gate:** AKS=true,MachinePool=true
+- **Feature status:** GA
+- **Feature gate:** MachinePool=true
 
-Cluster API Provider Azure (CAPZ) experimentally supports managing Azure
+Cluster API Provider Azure (CAPZ) supports managing Azure
 Kubernetes Service (AKS) clusters. CAPZ implements this with three
 custom resources:
 
@@ -56,14 +56,13 @@ export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
 export CLUSTER_IDENTITY_NAME="cluster-identity"
 ```
 
-Managed clusters also require the following feature flags set as environment variables:
+Managed clusters require the Cluster API "MachinePool" feature flag enabled. You can do that via an environment variable thusly:
 
 ```bash
 export EXP_MACHINE_POOL=true
-export EXP_AKS=true
 ```
 
-Optionally, the following feature flags may be set:
+Optionally, the you can enable the CAPZ "AKSResourceHealth" feature flag as well:
 
 ```bash
 export EXP_AKS_RESOURCE_HEALTH=true

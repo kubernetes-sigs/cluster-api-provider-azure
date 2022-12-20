@@ -31,7 +31,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -57,7 +56,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	mgmtClient := bootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
 
-	infraControlPlane := &infrav1exp.AzureManagedControlPlane{}
+	infraControlPlane := &infrav1.AzureManagedControlPlane{}
 	err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -84,12 +83,12 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	}, input.WaitIntervals...).Should(Succeed(), "failed to create public IP prefix")
 
 	By("Creating node pool with 3 nodes")
-	infraMachinePool := &infrav1exp.AzureManagedMachinePool{
+	infraMachinePool := &infrav1.AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pool3",
 			Namespace: input.Cluster.Namespace,
 		},
-		Spec: infrav1exp.AzureManagedMachinePoolSpec{
+		Spec: infrav1.AzureManagedMachinePoolSpec{
 			Mode:                 "User",
 			SKU:                  "Standard_D2s_v3",
 			EnableNodePublicIP:   to.BoolPtr(true),
@@ -114,7 +113,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 					},
 					ClusterName: input.Cluster.Name,
 					InfrastructureRef: corev1.ObjectReference{
-						APIVersion: infrav1exp.GroupVersion.String(),
+						APIVersion: infrav1.GroupVersion.String(),
 						Kind:       "AzureManagedMachinePool",
 						Name:       infraMachinePool.Name,
 					},
@@ -137,14 +136,14 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 		}, input.WaitIntervals...).Should(BeTrue(), "Deleted MachinePool %s/%s still exists", machinePool.Namespace, machinePool.Name)
 
 		Eventually(func() bool {
-			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraMachinePool), &infrav1exp.AzureManagedMachinePool{})
+			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraMachinePool), &infrav1.AzureManagedMachinePool{})
 			return apierrors.IsNotFound(err)
 		}, input.WaitIntervals...).Should(BeTrue(), "Deleted AzureManagedMachinePool %s/%s still exists", infraMachinePool.Namespace, infraMachinePool.Name)
 	}()
 
 	By("Verifying the AzureManagedMachinePool converges to a failed ready status")
 	Eventually(func(g Gomega) {
-		infraMachinePool := &infrav1exp.AzureManagedMachinePool{}
+		infraMachinePool := &infrav1.AzureManagedMachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), infraMachinePool)
 		g.Expect(err).NotTo(HaveOccurred())
 		cond := conditions.Get(infraMachinePool, infrav1.AgentPoolsReadyCondition)
@@ -163,7 +162,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 
 	By("Verifying the AzureManagedMachinePool becomes ready")
 	Eventually(func(g Gomega) {
-		infraMachinePool := &infrav1exp.AzureManagedMachinePool{}
+		infraMachinePool := &infrav1.AzureManagedMachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), infraMachinePool)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(conditions.IsTrue(infraMachinePool, infrav1.AgentPoolsReadyCondition)).To(BeTrue())

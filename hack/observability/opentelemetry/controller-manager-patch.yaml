@@ -11,5 +11,5 @@ spec:
           args:
             - "--metrics-bind-addr=:8080"
             - "--leader-elect"
-            - "--feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKS=${EXP_AKS:=false},AKSResourceHealth=${EXP_AKS_RESOURCE_HEALTH:=false}"
+            - "--feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKSResourceHealth=${EXP_AKS_RESOURCE_HEALTH:=false}"
             - "--enable-tracing"

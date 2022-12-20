@@ -24,9 +24,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -70,7 +70,7 @@ func TestParameters(t *testing.T) {
 					return []azure.ResourceSpecGetter{
 						&agentpools.AgentPoolSpec{
 							Name:          "test-agentpool-0",
-							Mode:          string(infrav1exp.NodePoolModeSystem),
+							Mode:          string(infrav1.NodePoolModeSystem),
 							ResourceGroup: "test-rg",
 							Replicas:      int32(2),
 							AdditionalTags: map[string]string{
@@ -79,7 +79,7 @@ func TestParameters(t *testing.T) {
 						},
 						&agentpools.AgentPoolSpec{
 							Name:              "test-agentpool-1",
-							Mode:              string(infrav1exp.NodePoolModeUser),
+							Mode:              string(infrav1.NodePoolModeUser),
 							ResourceGroup:     "test-rg",
 							Replicas:          int32(4),
 							Cluster:           "test-managedcluster",
@@ -182,7 +182,7 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{
 				{
 					Name:         to.StringPtr("test-agentpool-0"),
-					Mode:         containerservice.AgentPoolMode(infrav1exp.NodePoolModeSystem),
+					Mode:         containerservice.AgentPoolMode(infrav1.NodePoolModeSystem),
 					Count:        to.Int32Ptr(2),
 					Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
 					OsDiskSizeGB: to.Int32Ptr(0),
@@ -192,7 +192,7 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 				},
 				{
 					Name:                to.StringPtr("test-agentpool-1"),
-					Mode:                containerservice.AgentPoolMode(infrav1exp.NodePoolModeUser),
+					Mode:                containerservice.AgentPoolMode(infrav1.NodePoolModeUser),
 					Count:               to.Int32Ptr(4),
 					Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
 					OsDiskSizeGB:        to.Int32Ptr(0),
