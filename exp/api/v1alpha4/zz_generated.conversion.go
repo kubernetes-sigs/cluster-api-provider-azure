@@ -551,6 +551,7 @@ func autoConvert_v1beta1_AzureMachinePoolSpec_To_v1alpha4_AzureMachinePoolSpec(i
 	out.ProviderID = in.ProviderID
 	out.ProviderIDList = *(*[]string)(unsafe.Pointer(&in.ProviderIDList))
 	out.Identity = clusterapiproviderazureapiv1alpha4.VMIdentity(in.Identity)
+	// WARNING: in.SystemAssignedIdentityRole requires manual conversion: does not exist in peer-type
 	out.UserAssignedIdentities = *(*[]clusterapiproviderazureapiv1alpha4.UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
 	out.RoleAssignmentName = in.RoleAssignmentName
 	if err := Convert_v1beta1_AzureMachinePoolDeploymentStrategy_To_v1alpha4_AzureMachinePoolDeploymentStrategy(&in.Strategy, &out.Strategy, s); err != nil {

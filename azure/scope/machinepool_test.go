@@ -34,6 +34,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -653,6 +654,123 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 			}
 			err := s.updateReplicasAndProviderIDs(context.TODO())
 			c.Verify(g, s.AzureMachinePool, err)
+		})
+	}
+}
+
+func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
+	tests := []struct {
+		name             string
+		machinePoolScope MachinePoolScope
+		want             []azure.ResourceSpecGetter
+	}{
+		{
+			name: "returns empty if VM identity is not system assigned",
+			machinePoolScope: MachinePoolScope{
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{},
+		},
+		{
+			name: "returns role assignment spec if VM identity is system assigned",
+			machinePoolScope: MachinePoolScope{
+				MachinePool: &expv1.MachinePool{},
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Identity: infrav1.VMIdentitySystemAssigned,
+						SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+							Name: "role-assignment-name",
+						},
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&roleassignments.RoleAssignmentSpec{
+					ResourceType:  azure.VirtualMachineScaleSet,
+					MachineName:   "machine-name",
+					Name:          "role-assignment-name",
+					ResourceGroup: "my-rg",
+					PrincipalID:   pointer.String("fakePrincipalID"),
+				},
+			},
+		},
+		{
+			name: "returns role assignment spec if scope and role definition ID are set",
+			machinePoolScope: MachinePoolScope{
+				MachinePool: &expv1.MachinePool{},
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Identity: infrav1.VMIdentitySystemAssigned,
+						SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+							Name:         "role-assignment-name",
+							Scope:        "scope",
+							DefinitionID: "role-definition-id",
+						},
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&roleassignments.RoleAssignmentSpec{
+					ResourceType:     azure.VirtualMachineScaleSet,
+					MachineName:      "machine-name",
+					Name:             "role-assignment-name",
+					ResourceGroup:    "my-rg",
+					Scope:            "scope",
+					RoleDefinitionID: "role-definition-id",
+					PrincipalID:      pointer.String("fakePrincipalID"),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.machinePoolScope.RoleAssignmentSpecs(pointer.String("fakePrincipalID")); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RoleAssignmentSpecs() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

@@ -165,6 +165,30 @@ func (m *MachinePoolScope) SetProviderID(v string) {
 	m.AzureMachinePool.Spec.ProviderID = v
 }
 
+// SystemAssignedIdentityName returns the scope for the system assigned identity.
+func (m *MachinePoolScope) SystemAssignedIdentityName() string {
+	if m.AzureMachinePool.Spec.SystemAssignedIdentityRole != nil {
+		return m.AzureMachinePool.Spec.SystemAssignedIdentityRole.Name
+	}
+	return ""
+}
+
+// SystemAssignedIdentityScope returns the scope for the system assigned identity.
+func (m *MachinePoolScope) SystemAssignedIdentityScope() string {
+	if m.AzureMachinePool.Spec.SystemAssignedIdentityRole != nil {
+		return m.AzureMachinePool.Spec.SystemAssignedIdentityRole.Scope
+	}
+	return ""
+}
+
+// SystemAssignedIdentityDefinitionID returns the role definition ID for the system assigned identity.
+func (m *MachinePoolScope) SystemAssignedIdentityDefinitionID() string {
+	if m.AzureMachinePool.Spec.SystemAssignedIdentityRole != nil {
+		return m.AzureMachinePool.Spec.SystemAssignedIdentityRole.DefinitionID
+	}
+	return ""
+}
+
 // ProvisioningState returns the AzureMachinePool provisioning state.
 func (m *MachinePoolScope) ProvisioningState() infrav1.ProvisioningState {
 	if m.AzureMachinePool.Status.ProvisioningState != nil {
@@ -586,11 +610,13 @@ func (m *MachinePoolScope) RoleAssignmentSpecs(principalID *string) []azure.Reso
 	roles := make([]azure.ResourceSpecGetter, 1)
 	if m.HasSystemAssignedIdentity() {
 		roles[0] = &roleassignments.RoleAssignmentSpec{
-			Name:          m.AzureMachinePool.Spec.RoleAssignmentName,
-			MachineName:   m.Name(),
-			ResourceGroup: m.ResourceGroup(),
-			ResourceType:  azure.VirtualMachineScaleSet,
-			PrincipalID:   principalID,
+			Name:             m.SystemAssignedIdentityName(),
+			MachineName:      m.Name(),
+			ResourceGroup:    m.ResourceGroup(),
+			ResourceType:     azure.VirtualMachineScaleSet,
+			Scope:            m.SystemAssignedIdentityScope(),
+			RoleDefinitionID: m.SystemAssignedIdentityDefinitionID(),
+			PrincipalID:      principalID,
 		}
 		return roles
 	}

@@ -104,6 +104,24 @@ spec:
 
 The CAPZ controller will look for `SystemAssigned` value in `identity` field under `AzureMachineTemplate`, and enable system-assigned managed identity in the virtual machine.
 
+For more granularity regarding permissions, you can specify the scope and the role assignment of the system-assigned managed identity by setting the `scope` and `definitionID` fields inside the `systemAssignedIdentityRole` struct. In the following example, we assign the `Owner` role to the system-assigned managed identity on the resource group. IDs for the role assignments can be found in the [Azure docs](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles).
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      identity: SystemAssigned
+      systemAssignedIdentityRole:
+        scope: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}
+        definitionID: $/subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/8e3af657-a8ff-443c-a75c-2fe8c4bcb635
+      ...
+```
+
 * In Machine Pool
 
 ```yaml

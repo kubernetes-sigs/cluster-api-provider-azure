@@ -425,7 +425,7 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 		want         []azure.ResourceSpecGetter
 	}{
 		{
-			name: "returns empty if VM identity is system assigned",
+			name: "returns empty if VM identity is not system assigned",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
@@ -437,7 +437,7 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{},
 		},
 		{
-			name: "returns RoleAssignmentSpec if VM identity is not system assigned",
+			name: "returns RoleAssignmentSpec if VM identity is system assigned",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
@@ -445,8 +445,55 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						Identity:           infrav1.VMIdentitySystemAssigned,
-						RoleAssignmentName: "azure-role-assignment-name",
+						Identity: infrav1.VMIdentitySystemAssigned,
+						SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+							Name: "azure-role-assignment-name",
+						},
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&roleassignments.RoleAssignmentSpec{
+					ResourceType:  azure.VirtualMachine,
+					MachineName:   "machine-name",
+					Name:          "azure-role-assignment-name",
+					ResourceGroup: "my-rg",
+					PrincipalID:   pointer.String("fakePrincipalID"),
+				},
+			},
+		},
+		{
+			name: "returns RoleAssignmentSpec with specified scope and role assignment id",
+			machineScope: MachineScope{
+				Machine: &clusterv1.Machine{},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						Identity: infrav1.VMIdentitySystemAssigned,
+						SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+							Name:         "azure-role-assignment-name",
+							Scope:        "/subscriptions/123/resourceGroups/my-rg",
+							DefinitionID: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Authorization/roleAssignments/123",
+						},
 					},
 				},
 				ClusterScoper: &ClusterScope{
@@ -473,8 +520,8 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 					MachineName:      "machine-name",
 					Name:             "azure-role-assignment-name",
 					ResourceGroup:    "my-rg",
-					Scope:            azure.GenerateSubscriptionScope("123"),
-					RoleDefinitionID: azure.GenerateContributorRoleDefinitionID("123"),
+					Scope:            "/subscriptions/123/resourceGroups/my-rg",
+					RoleDefinitionID: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Authorization/roleAssignments/123",
 					PrincipalID:      pointer.String("fakePrincipalID"),
 				},
 			},

@@ -1062,6 +1062,7 @@ func autoConvert_v1beta1_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1bet
 	}
 	out.Identity = VMIdentity(in.Identity)
 	out.UserAssignedIdentities = *(*[]UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
+	// WARNING: in.SystemAssignedIdentityRole requires manual conversion: does not exist in peer-type
 	out.RoleAssignmentName = in.RoleAssignmentName
 	if err := Convert_v1beta1_OSDisk_To_v1alpha3_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err

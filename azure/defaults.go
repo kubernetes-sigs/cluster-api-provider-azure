@@ -94,9 +94,6 @@ const (
 	// ProviderIDPrefix will be appended to the beginning of Azure resource IDs to form the Kubernetes Provider ID.
 	// NOTE: this format matches the 2 slashes format used in cloud-provider and cluster-autoscaler.
 	ProviderIDPrefix = "azure://"
-	// azureBuiltInContributorID the ID of the Contributor role in Azure
-	// Ref: https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
-	azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
 )
 
 const (
@@ -118,16 +115,6 @@ var (
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
 func GenerateBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "backendPool")
-}
-
-// GenerateSubscriptionScope generates a role assignment scope that applies to all resources in the subscription.
-func GenerateSubscriptionScope(subscriptionID string) string {
-	return fmt.Sprintf("/subscriptions/%s/", subscriptionID)
-}
-
-// GenerateContributorRoleDefinitionID generates the contributor role definition ID.
-func GenerateContributorRoleDefinitionID(subscriptionID string) string {
-	return fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", subscriptionID, azureBuiltInContributorID)
 }
 
 // GenerateOutboundBackendAddressPoolName generates a load balancer outbound backend address pool name.

@@ -1401,9 +1401,8 @@ spec:
                   type: string
                 type: array
               roleAssignmentName:
-                description: RoleAssignmentName is the name of the role assignment
-                  to create for a system assigned identity. It can be any valid GUID.
-                  If not specified, a random GUID will be generated.
+                description: 'Deprecated: RoleAssignmentName should be set in the
+                  systemAssignedIdentityRole field.'
                 type: string
               strategy:
                 default:
@@ -1473,6 +1472,26 @@ spec:
                       strategy is RollingUpdate
                     enum:
                     - RollingUpdate
+                    type: string
+                type: object
+              systemAssignedIdentityRole:
+                description: SystemAssignedIdentityRole defines the role and scope
+                  to assign to the system assigned identity.
+                properties:
+                  definitionID:
+                    description: 'DefinitionID is the ID of the role definition to
+                      create for a system assigned identity. It can be an Azure built-in
+                      role or a custom role. Refer to built-in roles: https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles'
+                    type: string
+                  name:
+                    description: Name is the name of the role assignment to create
+                      for a system assigned identity. It can be any valid UUID. If
+                      not specified, a random UUID will be generated.
+                    type: string
+                  scope:
+                    description: Scope is the scope that the role assignment or definition
+                      applies to. The scope can be any REST resource instance. If
+                      not specified, the scope will be the subscription.
                     type: string
                 type: object
               template:

@@ -17,10 +17,12 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -52,29 +54,49 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 		machinePool *AzureMachinePool
 	}
 
+	fakeSubscriptionID := uuid.New().String()
+	fakeClusterName := "testcluster"
+	fakeRoleDefinitionID := "testroledefinitionid"
+	fakeScope := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", fakeSubscriptionID, fakeClusterName)
 	existingRoleAssignmentName := "42862306-e485-4319-9bf0-35dbc6f6fe9c"
 	roleAssignmentExistTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-		Identity:           infrav1.VMIdentitySystemAssigned,
-		RoleAssignmentName: existingRoleAssignmentName,
-	}}}
-	roleAssignmentEmptyTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-		Identity:           infrav1.VMIdentitySystemAssigned,
-		RoleAssignmentName: "",
+		Identity: infrav1.VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			Name: existingRoleAssignmentName,
+		},
 	}}}
 	notSystemAssignedTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
 		Identity: infrav1.VMIdentityUserAssigned,
 	}}}
+	systemAssignedIdentityRoleExistTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity: infrav1.VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			DefinitionID: fakeRoleDefinitionID,
+			Scope:        fakeScope,
+		},
+	}}}
+	emptyTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity:                   infrav1.VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{},
+	}}}
 
-	roleAssignmentExistTest.machinePool.SetIdentityDefaults()
-	g.Expect(roleAssignmentExistTest.machinePool.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
+	roleAssignmentExistTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(roleAssignmentExistTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
 
-	roleAssignmentEmptyTest.machinePool.SetIdentityDefaults()
-	g.Expect(roleAssignmentEmptyTest.machinePool.Spec.RoleAssignmentName).To(Not(BeEmpty()))
-	_, err := uuid.Parse(roleAssignmentEmptyTest.machinePool.Spec.RoleAssignmentName)
+	notSystemAssignedTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(notSystemAssignedTest.machinePool.Spec.SystemAssignedIdentityRole).To(BeNil())
+
+	systemAssignedIdentityRoleExistTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(systemAssignedIdentityRoleExistTest.machinePool.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fakeScope))
+	g.Expect(systemAssignedIdentityRoleExistTest.machinePool.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fakeRoleDefinitionID))
+
+	emptyTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
+	_, err := uuid.Parse(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.Name)
 	g.Expect(err).To(Not(HaveOccurred()))
-
-	notSystemAssignedTest.machinePool.SetIdentityDefaults()
-	g.Expect(notSystemAssignedTest.machinePool.Spec.RoleAssignmentName).To(BeEmpty())
+	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole).To(Not(BeNil()))
+	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
+	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, infrav1.ContributorRoleID)))
 }
 
 func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
@@ -247,6 +269,9 @@ func hardcodedAzureMachinePoolWithSSHKey(sshPublicKey string) *AzureMachinePool 
 			Template: AzureMachinePoolMachineTemplate{
 				SSHPublicKey: sshPublicKey,
 			},
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "testmachinepool",
 		},
 	}
 }

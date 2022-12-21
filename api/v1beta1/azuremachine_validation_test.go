@@ -499,6 +499,87 @@ func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
 	}
 }
 
+func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name               string
+		Identity           VMIdentity
+		roleAssignmentName string
+		role               *SystemAssignedIdentityRole
+		wantErr            bool
+	}{
+		{
+			name:     "valid role",
+			Identity: VMIdentitySystemAssigned,
+			role: &SystemAssignedIdentityRole{
+				Name:         uuid.New().String(),
+				Scope:        "fake-scope",
+				DefinitionID: "fake-definition-id",
+			},
+		},
+		{
+			name:               "valid role using deprecated role assignment name",
+			Identity:           VMIdentitySystemAssigned,
+			roleAssignmentName: uuid.New().String(),
+			role: &SystemAssignedIdentityRole{
+				Scope:        "fake-scope",
+				DefinitionID: "fake-definition-id",
+			},
+		},
+		{
+			name:               "set both system assigned identity role and role assignment name",
+			Identity:           VMIdentitySystemAssigned,
+			roleAssignmentName: uuid.New().String(),
+			role: &SystemAssignedIdentityRole{
+				Name:         uuid.New().String(),
+				Scope:        "fake-scope",
+				DefinitionID: "fake-definition-id",
+			},
+			wantErr: true,
+		},
+		{
+			name:     "wrong Identity type",
+			Identity: VMIdentityUserAssigned,
+			role: &SystemAssignedIdentityRole{
+				Name:         uuid.New().String(),
+				Scope:        "fake-scope",
+				DefinitionID: "fake-definition-id",
+			},
+			wantErr: true,
+		},
+		{
+			name:     "missing scope",
+			Identity: VMIdentitySystemAssigned,
+			role: &SystemAssignedIdentityRole{
+				Name:         uuid.New().String(),
+				DefinitionID: "fake-definition-id",
+			},
+			wantErr: true,
+		},
+		{
+			name:     "missing definition id",
+			Identity: VMIdentitySystemAssigned,
+			role: &SystemAssignedIdentityRole{
+				Name:  uuid.New().String(),
+				Scope: "fake-scope",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateSystemAssignedIdentityRole(tc.Identity, tc.roleAssignmentName, tc.role, field.NewPath("systemAssignedIdentityRole"))
+			if tc.wantErr {
+				g.Expect(err).NotTo(BeEmpty())
+			} else {
+				g.Expect(err).To(BeEmpty())
+			}
+		})
+	}
+}
+
 func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 	g := NewWithT(t)
 

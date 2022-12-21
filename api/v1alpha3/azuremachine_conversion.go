@@ -78,6 +78,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.NetworkInterfaces = restored.Spec.NetworkInterfaces
 	}
 
+	if restored.Spec.SystemAssignedIdentityRole != nil {
+		dst.Spec.SystemAssignedIdentityRole = restored.Spec.SystemAssignedIdentityRole
+	}
+
 	//nolint:staticcheck // SubnetName is now deprecated, but the v1beta1 defaulting webhook will migrate it to the networkInterfaces field
 	dst.Spec.SubnetName = restored.Spec.SubnetName
 

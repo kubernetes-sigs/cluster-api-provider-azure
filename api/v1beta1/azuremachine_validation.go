@@ -58,6 +58,10 @@ func ValidateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateSystemAssignedIdentityRole(spec.Identity, spec.RoleAssignmentName, spec.SystemAssignedIdentityRole, field.NewPath("systemAssignedIdentityRole")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	return allErrs
 }
 
@@ -117,11 +121,31 @@ func ValidateSystemAssignedIdentity(identityType VMIdentity, oldIdentity, newIde
 }
 
 // ValidateUserAssignedIdentity validates the user-assigned identities list.
-func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdenteties []UserAssignedIdentity, fldPath *field.Path) field.ErrorList {
+func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdentities []UserAssignedIdentity, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if identityType == VMIdentityUserAssigned && len(userAssignedIdenteties) == 0 {
+	if identityType == VMIdentityUserAssigned && len(userAssignedIdentities) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath, "must be specified for the 'UserAssigned' identity type"))
+	}
+	return allErrs
+}
+
+// ValidateSystemAssignedIdentityRole validates the system-assigned identity role.
+func ValidateSystemAssignedIdentityRole(identityType VMIdentity, roleAssignmentName string, role *SystemAssignedIdentityRole, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	if roleAssignmentName != "" && role != nil && role.Name != "" {
+		allErrs = append(allErrs, field.Invalid(fldPath, role.Name, "cannot set both roleAssignmentName and systemAssignedIdentityRole.name"))
+	}
+	if identityType == VMIdentitySystemAssigned {
+		if role.DefinitionID == "" {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "SystemAssignedIdentityRole", "DefinitionID"), role.DefinitionID, "the definitionID field cannot be empty"))
+		}
+		if role.Scope == "" {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "SystemAssignedIdentityRole", "Scope"), role.Scope, "the scope field cannot be empty"))
+		}
+	}
+	if identityType != VMIdentitySystemAssigned && role != nil {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("Spec", "Role"), "systemAssignedIdentityRole can only be set when identity is set to SystemAssigned"))
 	}
 	return allErrs
 }

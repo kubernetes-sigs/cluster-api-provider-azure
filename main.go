@@ -488,11 +488,6 @@ func registerWebhooks(mgr manager.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&infrav1.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
-		os.Exit(1)
-	}
-
 	if err := (&infrav1.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachineTemplate")
 		os.Exit(1)
@@ -521,6 +516,12 @@ func registerWebhooks(mgr manager.Manager) {
 	))
 	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool", webhookutils.NewValidatingWebhook(
 		&infrav1exp.AzureMachinePool{}, mgr.GetClient(),
+	))
+	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachine", webhookutils.NewMutatingWebhook(
+		&infrav1.AzureMachine{}, mgr.GetClient(),
+	))
+	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachine", webhookutils.NewValidatingWebhook(
+		&infrav1.AzureMachine{}, mgr.GetClient(),
 	))
 	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhookutils.NewMutatingWebhook(
 		&infrav1.AzureManagedMachinePool{}, mgr.GetClient(),

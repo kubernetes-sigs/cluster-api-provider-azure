@@ -335,12 +335,12 @@ func (m *MachineScope) RoleAssignmentSpecs(principalID *string) []azure.Resource
 	roles := make([]azure.ResourceSpecGetter, 1)
 	if m.HasSystemAssignedIdentity() {
 		roles[0] = &roleassignments.RoleAssignmentSpec{
-			Name:             m.AzureMachine.Spec.RoleAssignmentName,
+			Name:             m.SystemAssignedIdentityName(),
 			MachineName:      m.Name(),
 			ResourceType:     azure.VirtualMachine,
 			ResourceGroup:    m.ResourceGroup(),
-			Scope:            azure.GenerateSubscriptionScope(m.SubscriptionID()),
-			RoleDefinitionID: azure.GenerateContributorRoleDefinitionID(m.SubscriptionID()),
+			Scope:            m.SystemAssignedIdentityScope(),
+			RoleDefinitionID: m.SystemAssignedIdentityDefinitionID(),
 			PrincipalID:      principalID,
 		}
 		return roles
@@ -519,6 +519,30 @@ func (m *MachineScope) AvailabilitySetID() string {
 		asID = azure.AvailabilitySetID(m.SubscriptionID(), m.ResourceGroup(), asName)
 	}
 	return asID
+}
+
+// SystemAssignedIdentityName returns the role assignment name for the system assigned identity.
+func (m *MachineScope) SystemAssignedIdentityName() string {
+	if m.AzureMachine.Spec.SystemAssignedIdentityRole != nil {
+		return m.AzureMachine.Spec.SystemAssignedIdentityRole.Name
+	}
+	return ""
+}
+
+// SystemAssignedIdentityScope returns the scope for the system assigned identity.
+func (m *MachineScope) SystemAssignedIdentityScope() string {
+	if m.AzureMachine.Spec.SystemAssignedIdentityRole != nil {
+		return m.AzureMachine.Spec.SystemAssignedIdentityRole.Scope
+	}
+	return ""
+}
+
+// SystemAssignedIdentityDefinitionID returns the role definition id for the system assigned identity.
+func (m *MachineScope) SystemAssignedIdentityDefinitionID() string {
+	if m.AzureMachine.Spec.SystemAssignedIdentityRole != nil {
+		return m.AzureMachine.Spec.SystemAssignedIdentityRole.DefinitionID
+	}
+	return ""
 }
 
 // SetProviderID sets the AzureMachine providerID in spec.

@@ -64,6 +64,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.NetworkInterfaces = restored.Spec.NetworkInterfaces
 	}
 
+	if restored.Spec.SystemAssignedIdentityRole != nil {
+		dst.Spec.SystemAssignedIdentityRole = restored.Spec.SystemAssignedIdentityRole
+	}
+
 	return nil
 }
 
