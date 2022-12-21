@@ -140,9 +140,6 @@ var _ = Describe("[K8s-Upgrade] Running the CSI migration tests", func() {
 		Expect(os.Unsetenv(ClusterIdentitySecretName)).To(Succeed())
 		Expect(os.Unsetenv(ClusterIdentitySecretNamespace)).To(Succeed())
 
-		Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
-		Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
-
 		logCheckpoint(specTimes)
 	})
 
@@ -243,7 +240,7 @@ var _ = Describe("[K8s-Upgrade] Running the CSI migration tests", func() {
 				configCluster.KubernetesVersion = postCSIKubernetesVersion
 				// This flavour uses external csi driver and in tree cloud provider
 				configCluster.Flavor = "external-azurediskcsi-driver"
-				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
+				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{WaitForControlPlaneInitialized: EnsureControlPlaneInitialized}, result)
 				// Wait for control plane to be upgraded successfully
 				By("Waiting for control-plane machines to have the upgraded kubernetes version")
 				framework.WaitForControlPlaneMachinesToBeUpgraded(ctx, framework.WaitForControlPlaneMachinesToBeUpgradedInput{
@@ -276,7 +273,7 @@ var _ = Describe("[K8s-Upgrade] Running the CSI migration tests", func() {
 		})
 
 		Context("CSI=external CCM=external AzureDiskCSIMigration=true: upgrade to v1.23", func() {
-			It("should create volumes dynamically with intree cloud provider", func() {
+			It("should create volumes dynamically with out-of-tree cloud provider", func() {
 				By("Creating workload cluster v1.22 using user-assigned identity")
 				clusterName = getClusterName(clusterNamePrefix, "external-providers")
 				configCluster := defaultConfigCluster(clusterName, namespace.Name)
@@ -301,7 +298,7 @@ var _ = Describe("[K8s-Upgrade] Running the CSI migration tests", func() {
 				By("Upgrade the workload cluster to v1.23")
 				configCluster.KubernetesVersion = postCSIKubernetesVersion
 				configCluster.Flavor = "external-cloud-provider"
-				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{}, result)
+				upgradedCluster, kcp := createClusterWithControlPlaneWaiters(ctx, configCluster, clusterctl.ControlPlaneWaiters{WaitForControlPlaneInitialized: EnsureControlPlaneInitialized}, result)
 
 				// Wait for control plane to be upgraded successfully
 				By("Waiting for control-plane machines to have the upgraded kubernetes version")

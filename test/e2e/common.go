@@ -30,6 +30,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -261,7 +262,13 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 		InstallCalicoHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	}
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
-	InstallAzureDiskCSIDriverHelmChart(ctx, input)
+	v, err := semver.ParseTolerant(input.ConfigCluster.KubernetesVersion)
+	Expect(err).NotTo(HaveOccurred())
+	if v.GTE(semver.MustParse("1.23.0")) {
+		InstallAzureDiskCSIDriverHelmChart(ctx, input, hasWindows)
+	} else {
+		Logf("Skipping Azure Disk CSI Driver installation for Kubernetes version %s", input.ConfigCluster.KubernetesVersion)
+	}
 	result.ControlPlane = controlPlane
 }
 

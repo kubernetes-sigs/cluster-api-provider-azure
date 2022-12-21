@@ -43,7 +43,7 @@ const (
 // and validates that expected pods exist and are Ready.
 func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	specName := "cloud-provider-azure-install"
-	By("Installing the correct version of cloud-provider-azure components via helm")
+	By("Installing cloud-provider-azure components via helm")
 	options := &helmVals.Options{
 		Values: []string{fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName), fmt.Sprintf("cloudControllerManager.clusterCIDR=%s", strings.Join(cidrBlocks, `,`))},
 	}
@@ -66,11 +66,15 @@ func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clus
 }
 
 // InstallAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
-func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput) {
+func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, hasWindows bool) {
 	specName := "azuredisk-csi-drivers-install"
-	By("Installing the correct version of azure-disk CSI driver components via helm")
+	By("Installing azure-disk CSI driver components via helm")
 	options := &helmVals.Options{
-		Values: []string{"windows.useHostProcessContainers=true", "controller.replicas=1", "controller.runOnControlPlane=true"},
+		Values: []string{"controller.replicas=1", "controller.runOnControlPlane=true"},
+	}
+	// TODO: make this always true once HostProcessContainers are on for all supported k8s versions.
+	if hasWindows {
+		options.Values = append(options.Values, "windows.useHostProcessContainers=true")
 	}
 	InstallHelmChart(ctx, input, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options)
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
