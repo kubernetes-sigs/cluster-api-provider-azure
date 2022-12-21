@@ -1,3 +1,12 @@
+# Overview
+
+This section provides examples for addons for self-managed clusters. For manged cluster addons, please go to the [managed cluster specifications](https://capz.sigs.k8s.io/topics/managedcluster.html#specification).
+
+Self managed cluster addon options covered here:
+
+- CNI - including Calico for IPv4, IPv6, dual stack, and Flannel
+- [External Cloud provider](#external-cloud-provider) - including Azure File, Azure Disk CSI storage drivers
+
 # CNI
 
 By default, the CNI plugin is not installed for self-managed clusters, so you have to [install your own](https://cluster-api.sigs.k8s.io/user/quick-start.html#deploy-a-cni-solution).
