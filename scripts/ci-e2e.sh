@@ -42,16 +42,21 @@ source "${REPO_ROOT}/hack/util.sh"
 capz::util::ensure_azure_envs
 
 export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
+export USE_LOCAL_KIND_REGISTRY=${USE_LOCAL_KIND_REGISTRY:-${LOCAL_ONLY}} 
+export BUILD_MANAGER_IMAGE=${BUILD_MANAGER_IMAGE:-"true"}
 
-if [[ "${LOCAL_ONLY}" == "false" ]]; then
+if [[ "${USE_LOCAL_KIND_REGISTRY}" == "false" ]]; then
   : "${REGISTRY:?Environment variable empty or not defined.}"
   "${REPO_ROOT}/hack/ensure-acr-login.sh"
 else
   export REGISTRY="localhost:5000/ci-e2e"
 fi
 
-defaultTag=$(date -u '+%Y%m%d%H%M%S')
-export TAG="${defaultTag:-dev}"
+if [[ "${BUILD_MANAGER_IMAGE}" == "true" ]]; then
+  defaultTag=$(date -u '+%Y%m%d%H%M%S')
+  export TAG="${defaultTag:-dev}"
+fi
+
 export GINKGO_NODES=10
 
 export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
@@ -67,9 +72,14 @@ cleanup() {
 }
 
 trap cleanup EXIT
-
-if [[ "${LOCAL_ONLY}" == "true" ]]; then
-  make test-e2e-local
+# Image is configured as `${CONTROLLER_IMG}-${ARCH}:${TAG}` where `CONTROLLER_IMG` is defaulted to `${REGISTRY}/${IMAGE_NAME}`.
+if [[ "${BUILD_MANAGER_IMAGE}" == "false" ]]; then
+  # Load an existing image, skip docker-build and docker-push.
+  make test-e2e-skip-build-and-push
+elif [[ "${USE_LOCAL_KIND_REGISTRY}" == "true" ]]; then
+  # Build an image with kind local registry, skip docker-push. REGISTRY is set to `localhost:5000/ci-e2e`. TAG is set to `$(date -u '+%Y%m%d%H%M%S')`.
+  make test-e2e-skip-push
 else
+  # Build an image and push to the registry. TAG is set to `$(date -u '+%Y%m%d%H%M%S')`.
   make test-e2e
 fi

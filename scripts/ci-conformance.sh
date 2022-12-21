@@ -43,8 +43,9 @@ source "${REPO_ROOT}/hack/util.sh"
 capz::util::ensure_azure_envs
 
 export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
+export USE_LOCAL_KIND_REGISTRY=${USE_LOCAL_KIND_REGISTRY:-${LOCAL_ONLY}} 
 
-if [[ "${LOCAL_ONLY}" == "true" ]]; then
+if [[ "${USE_LOCAL_KIND_REGISTRY}" == "true" ]]; then
   export REGISTRY="localhost:5000/ci-e2e"
 else
   : "${REGISTRY:?Environment variable empty or not defined.}"

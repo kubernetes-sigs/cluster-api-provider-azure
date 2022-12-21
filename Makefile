@@ -665,18 +665,25 @@ test-e2e: ## Run "docker-build" and "docker-push" rules then run e2e tests.
 	$(MAKE) docker-build docker-push \
 	test-e2e-run
 
-.PHONY: test-e2e-local
-test-e2e-local: ## Run "docker-build" rule then run e2e tests.
+.PHONY: test-e2e-skip-push
+test-e2e-skip-push: ## Run "docker-build" rule then run e2e tests.
 	PULL_POLICY=IfNotPresent MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(MAKE) docker-build \
 	test-e2e-run
 
-CONFORMANCE_FLAVOR ?=
+.PHONY: test-e2e-skip-build-and-push
+test-e2e-skip-build-and-push:
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/default/manager_pull_policy.yaml" PULL_POLICY=IfNotPresent
+	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
+	$(MAKE) test-e2e-run
+
+CONFORMANCE_FLAVOR ?= 
 CONFORMANCE_E2E_ARGS ?= -kubetest.config-file=$(KUBETEST_CONF_PATH)
 CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 .PHONY: test-conformance
 test-conformance: ## Run conformance test on workload cluster.
-	$(MAKE) test-e2e-local GINKGO_FOCUS="Conformance" E2E_ARGS='$(CONFORMANCE_E2E_ARGS)' CONFORMANCE_FLAVOR='$(CONFORMANCE_FLAVOR)'
+	$(MAKE) test-e2e-skip-push GINKGO_FOCUS="Conformance" E2E_ARGS='$(CONFORMANCE_E2E_ARGS)' CONFORMANCE_FLAVOR='$(CONFORMANCE_FLAVOR)'
 
 test-conformance-fast: ## Run conformance test on workload cluster using a subset of the conformance suite in parallel.
 	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_FAST_CONF_PATH) -kubetest.ginkgo-nodes=5 $(E2E_ARGS)"
