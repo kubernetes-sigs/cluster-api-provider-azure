@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/onsi/gomega"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -119,6 +120,150 @@ func Test_SDKToVMSS(t *testing.T) {
 			vmss, instances := c.SubjectFactory(g)
 			subject := converters.SDKToVMSS(vmss, instances)
 			c.Expect(g, subject)
+		})
+	}
+}
+
+func Test_SDKToVMSSVM(t *testing.T) {
+	cases := []struct {
+		Name        string
+		SDKInstance compute.VirtualMachineScaleSetVM
+		VMSSVM      *azure.VMSSVM
+	}{
+		{
+			Name: "minimal VM",
+			SDKInstance: compute.VirtualMachineScaleSetVM{
+				ID: to.StringPtr("vm/0"),
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID: "vm/0",
+			},
+		},
+		{
+			Name: "VM with nil properties",
+			SDKInstance: compute.VirtualMachineScaleSetVM{
+				ID:                                 to.StringPtr("vm/0.5"),
+				VirtualMachineScaleSetVMProperties: nil,
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID: "vm/0.5",
+			},
+		},
+		{
+			Name: "VM with state",
+			SDKInstance: compute.VirtualMachineScaleSetVM{
+				ID: to.StringPtr("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
+				VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+					ProvisioningState: to.StringPtr(string(compute.ProvisioningState1Succeeded)),
+					OsProfile:         &compute.OSProfile{ComputerName: to.StringPtr("instance-000000")},
+				},
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID:    "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
+				Name:  "instance-000000",
+				State: "Succeeded",
+			},
+		},
+		{
+			Name: "VM with storage",
+			SDKInstance: compute.VirtualMachineScaleSetVM{
+				ID: to.StringPtr("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
+				VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+					OsProfile: &compute.OSProfile{ComputerName: to.StringPtr("instance-000001")},
+					StorageProfile: &compute.StorageProfile{
+						ImageReference: &compute.ImageReference{
+							ID: to.StringPtr("imageID"),
+						},
+					},
+				},
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID:   "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
+				Name: "instance-000001",
+				Image: infrav1.Image{
+					ID:          to.StringPtr("imageID"),
+					Marketplace: &infrav1.AzureMarketplaceImage{},
+				},
+				State: "Creating",
+			},
+		},
+		{
+			Name: "VM with zones",
+			SDKInstance: compute.VirtualMachineScaleSetVM{
+				ID: to.StringPtr("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
+				VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+					OsProfile: &compute.OSProfile{ComputerName: to.StringPtr("instance-000002")},
+				},
+				Zones: &[]string{"zone0", "zone1"},
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID:               "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
+				Name:             "instance-000002",
+				AvailabilityZone: "zone0",
+				State:            "Creating",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
+			g := gomega.NewGomegaWithT(t)
+			g.Expect(converters.SDKToVMSSVM(c.SDKInstance)).To(gomega.Equal(c.VMSSVM))
+		})
+	}
+}
+
+func Test_SDKImageToImage(t *testing.T) {
+	cases := []struct {
+		Name         string
+		SDKImageRef  *compute.ImageReference
+		IsThirdParty bool
+		Image        infrav1.Image
+	}{
+		{
+			Name: "minimal image",
+			SDKImageRef: &compute.ImageReference{
+				ID: to.StringPtr("imageID"),
+			},
+			IsThirdParty: false,
+			Image: infrav1.Image{
+				ID:          to.StringPtr("imageID"),
+				Marketplace: &infrav1.AzureMarketplaceImage{},
+			},
+		},
+		{
+			Name: "marketplace image",
+			SDKImageRef: &compute.ImageReference{
+				ID:        to.StringPtr("imageID"),
+				Publisher: to.StringPtr("publisher"),
+				Offer:     to.StringPtr("offer"),
+				Sku:       to.StringPtr("sku"),
+				Version:   to.StringPtr("version"),
+			},
+			IsThirdParty: true,
+			Image: infrav1.Image{
+				ID: to.StringPtr("imageID"),
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "publisher",
+						Offer:     "offer",
+						SKU:       "sku",
+					},
+					Version:         "version",
+					ThirdPartyImage: true,
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
+			g := gomega.NewGomegaWithT(t)
+			g.Expect(converters.SDKImageToImage(c.SDKImageRef, c.IsThirdParty)).To(gomega.Equal(c.Image))
 		})
 	}
 }
