@@ -1023,6 +1023,10 @@ spec:
       name: VM Size
       priority: 1
       type: string
+    - description: Time duration since creation of this AzureMachine
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
     name: v1beta1
     schema:
       openAPIV3Schema:
