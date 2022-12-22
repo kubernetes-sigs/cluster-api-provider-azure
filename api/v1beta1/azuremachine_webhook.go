@@ -143,11 +143,13 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 		allErrs = append(allErrs, err)
 	}
 
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "Diagnostics"),
-		old.Spec.Diagnostics,
-		m.Spec.Diagnostics); err != nil {
-		allErrs = append(allErrs, err)
+	if old.Spec.Diagnostics != nil {
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("Spec", "Diagnostics"),
+			old.Spec.Diagnostics,
+			m.Spec.Diagnostics); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	if len(allErrs) == 0 {
