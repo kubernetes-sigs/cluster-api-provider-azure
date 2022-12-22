@@ -25,6 +25,7 @@ import (
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func TestDefaultingWebhook(t *testing.T) {
@@ -325,13 +326,55 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			wantErr:  true,
 			errorLen: 1,
 		},
+		{
+			name: "can't set Spec.ControlPlaneEndpoint.Host during create",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "my-host",
+					},
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					SSHPublicKey: generateSSHPublicKey(true),
+					AADProfile: &AADProfile{
+						Managed: true,
+						AdminGroupObjectIDs: []string{
+							"616077a8-5db7-4c98-b856-b34619afg75h",
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "can't set Spec.ControlPlaneEndpoint.Port during create",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Port: 444,
+					},
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					SSHPublicKey: generateSSHPublicKey(true),
+					AADProfile: &AADProfile{
+						Managed: true,
+						AdminGroupObjectIDs: []string{
+							"616077a8-5db7-4c98-b856-b34619afg75h",
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.amcp.ValidateCreate(nil)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(HaveLen(tc.errorLen))
+				if tc.errorLen > 0 {
+					g.Expect(err).To(HaveLen(tc.errorLen))
+				}
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -902,6 +945,81 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane ControlPlaneEndpoint.Port is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
+						Port: 443,
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
+						Port: 444,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane ControlPlaneEndpoint.Host is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
+						Port: 443,
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "this-is-not-allowed",
+						Port: 443,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "ControlPlaneEndpoint update from zero values are allowed",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
+						Port: 443,
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tc := range tests {
