@@ -105,7 +105,7 @@ GO_APIDIFF_VER := v0.5.0
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
-GINKGO_VER := v2.5.1
+GINKGO_VER := v2.6.0
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
@@ -279,7 +279,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.0/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.1/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAPZ
 	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
