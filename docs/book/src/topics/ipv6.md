@@ -121,11 +121,6 @@ The reference [ipv6 flavor](https://raw.githubusercontent.com/kubernetes-sigs/cl
 
 - Kubernetes version needs to be 1.18+
 
-- etcd needs to listen on 127.0.0.1:2379 in addition to IPv6 IPs to resolve an issue with the etcd health check as the dial transport is only doing IPv4. This is done by modifying the `listen-client-urls` etcd arg in postKubeadmCommands as follows:
-```yaml
-    - sed -i '\#--listen-client-urls#s#$#,https://127.0.0.1:2379#' /etc/kubernetes/manifests/etcd.yaml
-```
-
 - The :53 port needs to be free on the host so coredns can use it. In 18.04, systemd-resolved uses the port :53 on the host and is used by default for DNS. This causes the coredns pods to crash for single stack IPv6 with bind address already in use as coredns pods are run on hostNetwork to leverage the host routes for DNS resolution. This is done by running the following commands in postKubeadmCommands:
 ```yaml
     - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
