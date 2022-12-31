@@ -125,6 +125,39 @@ spec:
     imageGcLowThreshold: 50
     podMaxPids: 2048
     topologyManagerPolicy: best-effort
+  linuxOSConfig:
+    swapFileSizeMB: 1500
+    sysctls:
+      fsAioMaxNr: 65536
+      fsFileMax: 709620
+      fsInotifyMaxUserWatches: 1048576
+      fsNrOpen: 1048576
+      kernelThreadsMax: 55601
+      netCoreNetdevMaxBacklog: 1000
+      netCoreOptmemMax: 20480
+      netCoreRmemDefault: 212992
+      netCoreRmemMax: 212992
+      netCoreSomaxconn: 16384
+      netCoreWmemDefault: 212992
+      netCoreWmemMax: 212992
+      netIpv4IPLocalPortRange: 32768 60999
+      netIpv4NeighDefaultGcThresh1: 4096
+      netIpv4NeighDefaultGcThresh2: 8192
+      netIpv4NeighDefaultGcThresh3: 16384
+      netIpv4TCPFinTimeout: 60
+      netIpv4TCPKeepaliveProbes: 9
+      netIpv4TCPKeepaliveTime: 7200
+      netIpv4TCPMaxSynBacklog: 16384
+      netIpv4TCPMaxTwBuckets: 32768
+      netIpv4TCPTwReuse: false
+      netIpv4TCPkeepaliveIntvl: 75
+      netNetfilterNfConntrackBuckets: 65536
+      netNetfilterNfConntrackMax: 131072
+      vmMaxMapCount: 65530
+      vmSwappiness: 60
+      vmVfsCachePressure: 100
+    transparentHugePageDefrag: madvise
+    transparentHugePageEnabled: always
   maxPods: 64
   mode: User
   name: pool1

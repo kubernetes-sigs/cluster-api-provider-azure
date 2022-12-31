@@ -517,6 +517,24 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Can't update LinuxOSConfig",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						SwapFileSizeMB: pointer.Int32(10),
+					},
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						SwapFileSizeMB: pointer.Int32(5),
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
@@ -841,7 +859,132 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			wantErr:  true,
 			errorLen: 1,
 		},
+		{
+			name: "validLinuxOSConfig Sysctls NetIpv4IpLocalPortRange.First is less than NetIpv4IpLocalPortRange.Last",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						Sysctls: &SysctlConfig{
+							NetIpv4IPLocalPortRange: pointer.String("2000 33000"),
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.First string is ill-formed",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						Sysctls: &SysctlConfig{
+							NetIpv4IPLocalPortRange: pointer.String("wrong 33000"),
+						},
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.Last string is ill-formed",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						Sysctls: &SysctlConfig{
+							NetIpv4IPLocalPortRange: pointer.String("2000 wrong"),
+						},
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.First less than allowed value",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						Sysctls: &SysctlConfig{
+							NetIpv4IPLocalPortRange: pointer.String("1020 32999"),
+						},
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.Last less than allowed value",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						Sysctls: &SysctlConfig{
+							NetIpv4IPLocalPortRange: pointer.String("1024 32000"),
+						},
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.First is greater than NetIpv4IpLocalPortRange.Last",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						Sysctls: &SysctlConfig{
+							NetIpv4IPLocalPortRange: pointer.String("33000 32999"),
+						},
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "valid LinuxOSConfig Sysctls is set by disabling FailSwapOn",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						FailSwapOn: pointer.Bool(false),
+					},
+					LinuxOSConfig: &LinuxOSConfig{
+						SwapFileSizeMB: pointer.Int32(1500),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "an invalid LinuxOSConfig Sysctls is set with FailSwapOn set to true",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					KubeletConfig: &KubeletConfig{
+						FailSwapOn: pointer.BoolPtr(true),
+					},
+					LinuxOSConfig: &LinuxOSConfig{
+						SwapFileSizeMB: pointer.Int32(1500),
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "an invalid LinuxOSConfig Sysctls is set without disabling FailSwapOn",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					LinuxOSConfig: &LinuxOSConfig{
+						SwapFileSizeMB: pointer.Int32(1500),
+					},
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
 	}
+
 	var client client.Client
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

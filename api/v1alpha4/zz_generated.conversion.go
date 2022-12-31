@@ -1868,6 +1868,7 @@ func autoConvert_v1beta1_AzureManagedMachinePoolSpec_To_v1alpha4_AzureManagedMac
 	// WARNING: in.ScaleSetPriority requires manual conversion: does not exist in peer-type
 	// WARNING: in.KubeletConfig requires manual conversion: does not exist in peer-type
 	// WARNING: in.KubeletDiskType requires manual conversion: does not exist in peer-type
+	// WARNING: in.LinuxOSConfig requires manual conversion: does not exist in peer-type
 	return nil
 }
 

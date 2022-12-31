@@ -1184,6 +1184,8 @@ func newManagedMachinePoolInfraReference(clusterName, poolName string) *expv1.Ma
 func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1.AzureManagedMachinePool {
 	var cpuManagerPolicyStatic = infrav1.CPUManagerPolicyStatic
 	var topologyManagerPolicy = infrav1.TopologyManagerPolicyBestEffort
+	var transparentHugePageDefragMAdvise = infrav1.TransparentHugePageOptionMadvise
+	var transparentHugePageEnabledAlways = infrav1.TransparentHugePageOptionAlways
 	return &infrav1.AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -1199,6 +1201,10 @@ func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1.Azu
 			KubeletConfig: &infrav1.KubeletConfig{
 				CPUManagerPolicy:      &cpuManagerPolicyStatic,
 				TopologyManagerPolicy: &topologyManagerPolicy,
+			},
+			LinuxOSConfig: &infrav1.LinuxOSConfig{
+				TransparentHugePageDefrag:  &transparentHugePageDefragMAdvise,
+				TransparentHugePageEnabled: &transparentHugePageEnabledAlways,
 			},
 		},
 	}

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -78,6 +79,7 @@ func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
 		m.validateNodePublicIPPrefixID,
 		m.validateEnableNodePublicIP,
 		m.validateKubeletConfig,
+		m.validateLinuxOSConfig,
 	}
 
 	var errs []error
@@ -210,6 +212,13 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		field.NewPath("Spec", "KubeletDiskType"),
 		old.Spec.KubeletDiskType,
 		m.Spec.KubeletDiskType); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "LinuxOSConfig"),
+		old.Spec.LinuxOSConfig,
+		m.Spec.LinuxOSConfig); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
@@ -392,4 +401,65 @@ func (m *AzureManagedMachinePool) validateKubeletConfig() error {
 		}
 	}
 	return nil
+}
+
+// validateLinuxOSConfig enforces AKS API configuration for Linux OS custom configuration
+// See: https://learn.microsoft.com/en-us/azure/aks/custom-node-configuration#linux-os-custom-configuration for detailed information.
+func (m *AzureManagedMachinePool) validateLinuxOSConfig() error {
+	var errs []error
+	if m.Spec.LinuxOSConfig == nil {
+		return nil
+	}
+
+	if m.Spec.LinuxOSConfig.SwapFileSizeMB != nil {
+		if m.Spec.KubeletConfig == nil || pointer.BoolDeref(m.Spec.KubeletConfig.FailSwapOn, true) {
+			errs = append(errs, field.Invalid(
+				field.NewPath("Spec", "LinuxOSConfig", "SwapFileSizeMB"),
+				m.Spec.LinuxOSConfig.SwapFileSizeMB,
+				"KubeletConfig.FailSwapOn must be set to false to enable swap file on nodes"))
+		}
+	}
+
+	if m.Spec.LinuxOSConfig.Sysctls != nil && m.Spec.LinuxOSConfig.Sysctls.NetIpv4IPLocalPortRange != nil {
+		// match numbers separated by a space
+		portRangeRegex := `^[0-9]+ [0-9]+$`
+		portRange := *m.Spec.LinuxOSConfig.Sysctls.NetIpv4IPLocalPortRange
+
+		match, matchErr := regexp.MatchString(portRangeRegex, portRange)
+		if matchErr != nil {
+			errs = append(errs, matchErr)
+		}
+		if !match {
+			errs = append(errs, field.Invalid(
+				field.NewPath("Spec", "LinuxOSConfig", "Sysctls", "NetIpv4IpLocalPortRange"),
+				m.Spec.LinuxOSConfig.Sysctls.NetIpv4IPLocalPortRange,
+				"LinuxOSConfig.Sysctls.NetIpv4IpLocalPortRange must be of the format \"<int> <int>\""))
+		} else {
+			ports := strings.Split(portRange, " ")
+			firstPort, _ := strconv.Atoi(ports[0])
+			lastPort, _ := strconv.Atoi(ports[1])
+
+			if firstPort < 1024 || firstPort > 60999 {
+				errs = append(errs, field.Invalid(
+					field.NewPath("Spec", "LinuxOSConfig", "Sysctls", "NetIpv4IpLocalPortRange", "First"),
+					m.Spec.LinuxOSConfig.Sysctls.NetIpv4IPLocalPortRange,
+					fmt.Sprintf("first port of NetIpv4IpLocalPortRange=%d must be in between [1024 - 60999]", firstPort)))
+			}
+
+			if lastPort < 32768 || lastPort > 65000 {
+				errs = append(errs, field.Invalid(
+					field.NewPath("Spec", "LinuxOSConfig", "Sysctls", "NetIpv4IpLocalPortRange", "Last"),
+					m.Spec.LinuxOSConfig.Sysctls.NetIpv4IPLocalPortRange,
+					fmt.Sprintf("last port of NetIpv4IpLocalPortRange=%d must be in between [32768 -65000]", lastPort)))
+			}
+
+			if firstPort > lastPort {
+				errs = append(errs, field.Invalid(
+					field.NewPath("Spec", "LinuxOSConfig", "Sysctls", "NetIpv4IpLocalPortRange", "First"),
+					m.Spec.LinuxOSConfig.Sysctls.NetIpv4IPLocalPortRange,
+					fmt.Sprintf("first port of NetIpv4IpLocalPortRange=%d cannot be greater than last port of NetIpv4IpLocalPortRange=%d", firstPort, lastPort)))
+			}
+		}
+	}
+	return kerrors.NewAggregate(errs)
 }
