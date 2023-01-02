@@ -80,10 +80,11 @@ func TestGetExistingVMSS(t *testing.T) {
 				Zones:    []string{"1", "3"},
 				Instances: []azure.VMSSVM{
 					{
-						ID:         "my-vm-id",
-						InstanceID: "my-vm-1",
-						Name:       "instance-000001",
-						State:      "Succeeded",
+						ID:                 "my-vm-id",
+						InstanceID:         "my-vm-1",
+						Name:               "instance-000001",
+						State:              "Succeeded",
+						LatestModelApplied: true,
 					},
 				},
 			},
@@ -109,7 +110,8 @@ func TestGetExistingVMSS(t *testing.T) {
 						InstanceID: to.StringPtr("my-vm-1"),
 						Name:       to.StringPtr("my-vm"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-							ProvisioningState: to.StringPtr("Succeeded"),
+							ProvisioningState:  to.StringPtr("Succeeded"),
+							LatestModelApplied: to.BoolPtr(true),
 							OsProfile: &compute.OSProfile{
 								ComputerName: to.StringPtr("instance-000001"),
 							},
@@ -1373,7 +1375,8 @@ func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 			InstanceID: to.StringPtr("my-vm-1"),
 			Name:       to.StringPtr("my-vm"),
 			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-				ProvisioningState: to.StringPtr("Succeeded"),
+				ProvisioningState:  to.StringPtr("Succeeded"),
+				LatestModelApplied: to.BoolPtr(true),
 				OsProfile: &compute.OSProfile{
 					ComputerName: to.StringPtr("instance-000001"),
 				},
@@ -1392,7 +1395,8 @@ func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 			InstanceID: to.StringPtr("my-vm-2"),
 			Name:       to.StringPtr("my-vm"),
 			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-				ProvisioningState: to.StringPtr("Succeeded"),
+				ProvisioningState:  to.StringPtr("Succeeded"),
+				LatestModelApplied: to.BoolPtr(true),
 				OsProfile: &compute.OSProfile{
 					ComputerName: to.StringPtr("instance-000002"),
 				},

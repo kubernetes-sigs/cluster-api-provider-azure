@@ -99,6 +99,8 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 		instance.AvailabilityZone = to.StringSlice(sdkInstance.Zones)[0]
 	}
 
+	instance.LatestModelApplied = *sdkInstance.LatestModelApplied
+
 	return &instance
 }
 

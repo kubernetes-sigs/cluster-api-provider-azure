@@ -63,7 +63,8 @@ func Test_SDKToVMSS(t *testing.T) {
 							Name:       to.StringPtr("vm0"),
 							Zones:      to.StringSlicePtr([]string{"zone0"}),
 							VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-								ProvisioningState: to.StringPtr(string(compute.ProvisioningState1Succeeded)),
+								ProvisioningState:  to.StringPtr(string(compute.ProvisioningState1Succeeded)),
+								LatestModelApplied: to.BoolPtr(true),
 								OsProfile: &compute.OSProfile{
 									ComputerName: to.StringPtr("instance-000000"),
 								},
@@ -75,7 +76,8 @@ func Test_SDKToVMSS(t *testing.T) {
 							Name:       to.StringPtr("vm1"),
 							Zones:      to.StringSlicePtr([]string{"zone1"}),
 							VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-								ProvisioningState: to.StringPtr(string(compute.ProvisioningState1Succeeded)),
+								ProvisioningState:  to.StringPtr(string(compute.ProvisioningState1Succeeded)),
+								LatestModelApplied: to.BoolPtr(true),
 								OsProfile: &compute.OSProfile{
 									ComputerName: to.StringPtr("instance-000001"),
 								},
@@ -99,11 +101,12 @@ func Test_SDKToVMSS(t *testing.T) {
 
 				for i := 0; i < 2; i++ {
 					expected.Instances[i] = azure.VMSSVM{
-						ID:               fmt.Sprintf("vm/%d", i),
-						InstanceID:       fmt.Sprintf("%d", i),
-						Name:             fmt.Sprintf("instance-00000%d", i),
-						AvailabilityZone: fmt.Sprintf("zone%d", i),
-						State:            "Succeeded",
+						ID:                 fmt.Sprintf("vm/%d", i),
+						InstanceID:         fmt.Sprintf("%d", i),
+						Name:               fmt.Sprintf("instance-00000%d", i),
+						AvailabilityZone:   fmt.Sprintf("zone%d", i),
+						State:              "Succeeded",
+						LatestModelApplied: true,
 					}
 				}
 				g.Expect(actual).To(gomega.Equal(&expected))

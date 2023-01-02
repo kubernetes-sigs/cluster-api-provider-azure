@@ -523,8 +523,13 @@ func (s *MachinePoolMachineScope) hasLatestModelApplied(ctx context.Context) (bo
 		return false, errors.New("machinepoolscope image must not be nil")
 	}
 
-	// if the images match, then the VM is of the same model
-	return reflect.DeepEqual(s.instance.Image, *image), nil
+	// if the images match, then the VM is of the same model , AND with the value returned by Azure
+
+	var latestModelApplied bool
+
+	latestModelApplied = reflect.DeepEqual(s.instance.Image, *image) && s.instance.LatestModelApplied
+
+	return latestModelApplied, nil
 }
 
 func newWorkloadClusterProxy(c client.Client, cluster client.ObjectKey) *workloadClusterProxy {
