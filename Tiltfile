@@ -147,14 +147,10 @@ def observability():
         ],
     ))
 
-    internal_kubeconfig = str(local(kind_cmd + " get kubeconfig --name ${KIND_CLUSTER_NAME:-capz} --internal"))
     k8s_yaml(helm(
         "./hack/observability/cluster-api-visualizer/chart",
         name = "visualize-cluster",
         namespace = "capz-system",
-        set = [
-            "kubeconfig=" + internal_kubeconfig,
-        ],
     ))
 
     k8s_resource(
