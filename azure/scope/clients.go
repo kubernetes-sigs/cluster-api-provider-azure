@@ -27,7 +27,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 

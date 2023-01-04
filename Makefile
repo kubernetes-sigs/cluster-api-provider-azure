@@ -646,7 +646,7 @@ go-test: $(SETUP_ENVTEST) ## Run go tests.
 
 .PHONY: test-cover
 test-cover: TEST_ARGS+= -coverprofile coverage.out
-test-cover: go-test-race ## Run tests with code coverage and generate reports.
+test-cover: test ## Run tests with code coverage and generate reports.
 	go tool cover -func=coverage.out -o coverage.txt
 	go tool cover -html=coverage.out -o coverage.html
 

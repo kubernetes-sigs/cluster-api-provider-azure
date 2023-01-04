@@ -60,7 +60,7 @@ func getCloudConfig(environment azure.Environment) cloud.Configuration {
 	return config
 }
 
-// GetAuthorizer returns an autorest.Authorizer-compatible object from MSAL
+// GetAuthorizer returns an autorest.Authorizer-compatible object from MSAL.
 func GetAuthorizer(settings auth.EnvironmentSettings) (autorest.Authorizer, error) {
 	// azidentity uses different envvars for certificate authentication:
 	//  azidentity: AZURE_CLIENT_CERTIFICATE_{PATH,PASSWORD}
