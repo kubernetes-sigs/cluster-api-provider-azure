@@ -31,7 +31,7 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
-// AzureClients contains all the Azure clients used by the scopes.
+// AzureClients contains all the Azure clients used by the scopes
 type AzureClients struct {
 	auth.EnvironmentSettings
 
