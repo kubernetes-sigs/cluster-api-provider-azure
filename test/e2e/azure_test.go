@@ -511,7 +511,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
