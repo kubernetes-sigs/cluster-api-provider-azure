@@ -835,7 +835,7 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	var releaseExists bool
 	Eventually(func() error {
 		_, err := histClient.Run(releaseName)
-		if err == driver.ErrReleaseNotFound {
+		if errors.Is(err, driver.ErrReleaseNotFound) {
 			releaseExists = false
 			return nil
 		} else if err == nil {
