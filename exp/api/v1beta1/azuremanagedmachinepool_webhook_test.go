@@ -83,6 +83,20 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "Cannot change Name of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Name: to.StringPtr("pool-new"),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Name: to.StringPtr("pool-old"),
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "Cannot change SKU of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{

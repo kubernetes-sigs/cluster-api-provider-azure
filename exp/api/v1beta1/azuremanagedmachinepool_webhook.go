@@ -93,6 +93,13 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 	old := oldRaw.(*AzureManagedMachinePool)
 	var allErrs field.ErrorList
 
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "Name"),
+		old.Spec.Name,
+		m.Spec.Name); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	if err := m.validateNodeLabels(); err != nil {
 		allErrs = append(allErrs,
 			field.Invalid(
