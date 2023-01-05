@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	autorest "github.com/Azure/go-autorest/autorest/azure"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -99,7 +99,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 
 		// get the resource group name
 		resourceID := strings.TrimPrefix(*machineList.Items[0].Spec.ProviderID, azure.ProviderIDPrefix)
-		resource, err := autorest.ParseResourceID(resourceID)
+		resource, err := azureautorest.ParseResourceID(resourceID)
 		Expect(err).NotTo(HaveOccurred())
 
 		vmListResults, err := vmClient.List(ctx, resource.ResourceGroup, "")
@@ -147,7 +147,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 
 		// get the resource group name
 		resourceID := strings.TrimPrefix(machinePoolList.Items[0].Spec.ProviderID, azure.ProviderIDPrefix)
-		resource, err := autorest.ParseResourceID(resourceID)
+		resource, err := azureautorest.ParseResourceID(resourceID)
 		Expect(err).NotTo(HaveOccurred())
 
 		vmssListResults, err := vmssClient.List(ctx, resource.ResourceGroup)

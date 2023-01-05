@@ -28,11 +28,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // GetAKSKubernetesVersion gets the kubernetes version for AKS clusters as specified by the environment variable defined by versionVar.

@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/jongio/azidext/go/azidext"
 )
@@ -37,7 +37,7 @@ func IsAzureSystemNodeLabelKey(labelKey string) bool {
 	return strings.HasPrefix(labelKey, AzureSystemNodeLabelPrefix)
 }
 
-func getCloudConfig(environment azure.Environment) cloud.Configuration {
+func getCloudConfig(environment azureautorest.Environment) cloud.Configuration {
 	var config cloud.Configuration
 	switch environment.Name {
 	case "AzureStackCloud":
@@ -60,7 +60,7 @@ func getCloudConfig(environment azure.Environment) cloud.Configuration {
 	return config
 }
 
-// GetAuthorizer returns an autorest.Authorizer-compatible object from MSAL
+// GetAuthorizer returns an autorest.Authorizer-compatible object from MSAL.
 func GetAuthorizer(settings auth.EnvironmentSettings) (autorest.Authorizer, error) {
 	// azidentity uses different envvars for certificate authentication:
 	//  azidentity: AZURE_CLIENT_CERTIFICATE_{PATH,PASSWORD}

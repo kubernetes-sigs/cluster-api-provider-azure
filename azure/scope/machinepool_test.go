@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	autorestazure "github.com/Azure/go-autorest/autorest/azure"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -665,8 +665,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
 						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: autorestazure.Environment{
-								Name: autorestazure.PublicCloud.Name,
+							Environment: azureautorest.Environment{
+								Name: azureautorest.PublicCloud.Name,
 							},
 						},
 					},
@@ -711,8 +711,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
 						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: autorestazure.Environment{
-								Name: autorestazure.USGovernmentCloud.Name,
+							Environment: azureautorest.Environment{
+								Name: azureautorest.USGovernmentCloud.Name,
 							},
 						},
 					},
@@ -745,8 +745,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
 						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: autorestazure.Environment{
-								Name: autorestazure.PublicCloud.Name,
+							Environment: azureautorest.Environment{
+								Name: azureautorest.PublicCloud.Name,
 							},
 						},
 					},
@@ -792,8 +792,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
 						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: autorestazure.Environment{
-								Name: autorestazure.USGovernmentCloud.Name,
+							Environment: azureautorest.Environment{
+								Name: azureautorest.USGovernmentCloud.Name,
 							},
 						},
 					},
@@ -825,8 +825,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
 						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: autorestazure.Environment{
-								Name: autorestazure.PublicCloud.Name,
+							Environment: azureautorest.Environment{
+								Name: azureautorest.PublicCloud.Name,
 							},
 						},
 					},
@@ -858,8 +858,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
 						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: autorestazure.Environment{
-								Name: autorestazure.USGovernmentCloud.Name,
+							Environment: azureautorest.Environment{
+								Name: azureautorest.USGovernmentCloud.Name,
 							},
 						},
 					},
@@ -904,8 +904,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
 						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: autorestazure.Environment{
-								Name: autorestazure.PublicCloud.Name,
+							Environment: azureautorest.Environment{
+								Name: azureautorest.PublicCloud.Name,
 							},
 						},
 					},
