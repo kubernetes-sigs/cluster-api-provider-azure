@@ -214,8 +214,6 @@ func getJobPodLogs(ctx context.Context, input WaitForJobCompleteInput) string {
 		logs[pod.Name] = getPodLogs(ctx, input.Clientset, pod)
 	}
 	b := strings.Builder{}
-	args := input.Job.Spec.Template.Spec.Containers[0].Args
-	b.WriteString(fmt.Sprintf("Output of \"kubescape %s\":\n", strings.Join(args, " ")))
 	var lastLog string
 	for podName, log := range logs {
 		b.WriteString(fmt.Sprintf("\nLogs for pod %s:\n", podName))
