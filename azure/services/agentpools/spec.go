@@ -28,6 +28,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -130,6 +131,9 @@ type AgentPoolSpec struct {
 
 	// KubeletConfig specifies the kubelet configurations for nodes.
 	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
+
+	// KubeletDiskType specifies the kubelet disk type for each node in the pool. Allowed values are 'OS' and 'Temporary'
+	KubeletDiskType *infrav1exp.KubeletDiskType `json:"kubeletDiskType,omitempty"`
 
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the ones added by default.
 	AdditionalTags infrav1.Tags
@@ -279,6 +283,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			EnableAutoScaling:    s.EnableAutoScaling,
 			EnableUltraSSD:       s.EnableUltraSSD,
 			KubeletConfig:        kubeletConfig,
+			KubeletDiskType:      containerservice.KubeletDiskType(to.String((*string)(s.KubeletDiskType))),
 			MaxCount:             s.MaxCount,
 			MaxPods:              s.MaxPods,
 			MinCount:             s.MinCount,

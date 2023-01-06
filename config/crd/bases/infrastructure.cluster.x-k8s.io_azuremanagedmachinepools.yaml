@@ -289,6 +289,14 @@ spec:
                     - single-numa-node
                     type: string
                 type: object
+              kubeletDiskType:
+                description: 'KubeletDiskType specifies the kubelet disk type. Default
+                  to OS. Possible values include: ''OS'', ''Temporary''. Requires
+                  kubeletDisk preview feature to be set.'
+                enum:
+                - OS
+                - Temporary
+                type: string
               maxPods:
                 description: MaxPods specifies the kubelet --max-pods configuration
                   for the node pool.

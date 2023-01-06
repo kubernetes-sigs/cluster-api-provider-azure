@@ -46,6 +46,7 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) 
 		NodePublicIPPrefixID: properties.NodePublicIPPrefixID,
 		ScaleSetPriority:     properties.ScaleSetPriority,
 		Tags:                 properties.Tags,
+		KubeletDiskType:      properties.KubeletDiskType,
 	}
 	if properties.KubeletConfig != nil {
 		agentPool.KubeletConfig = properties.KubeletConfig

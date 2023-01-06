@@ -206,6 +206,13 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		allErrs = append(allErrs, err)
 	}
 
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "KubeletDiskType"),
+		old.Spec.KubeletDiskType,
+		m.Spec.KubeletDiskType); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	if len(allErrs) != 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), m.Name, allErrs)
 	}
