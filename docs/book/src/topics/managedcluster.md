@@ -492,6 +492,7 @@ Following is the list of immutable fields for managed clusters:
 | AzureManagedControlPlane  | .spec.apiServerAccessProfile | except AuthorizedIPRanges |
 | AzureManagedControlPlane  | .spec.virtualNetwork         |                           |
 | AzureManagedControlPlane  | .spec.virtualNetwork.subnet  | except serviceEndpoints   |
+| AzureManagedMachinePool   | .spec.name                   |                           |
 | AzureManagedMachinePool   | .spec.sku                    |                           |
 | AzureManagedMachinePool   | .spec.osDiskSizeGB           |                           |
 | AzureManagedMachinePool   | .spec.osDiskType             |                           |
