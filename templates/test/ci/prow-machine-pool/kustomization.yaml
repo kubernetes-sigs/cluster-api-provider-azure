@@ -4,6 +4,8 @@ namespace: default
 resources:
   - ../../../flavors/machinepool-windows
   - ../prow/cni-resource-set.yaml
+  - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
+  - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/azuremachinepool-vmextension.yaml
   - ../patches/tags.yaml
