@@ -65,9 +65,7 @@ type (
 		// SSHPublicKey is the SSH public key string base64 encoded to add to a Virtual Machine
 		SSHPublicKey string `json:"sshPublicKey"`
 
-		// AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on
-		// whether the requested VMSize supports accelerated networking.
-		// If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
+		// Deprecated: AcceleratedNetworking should be set in the networkInterfaces field.
 		// +optional
 		AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
 
@@ -89,13 +87,20 @@ type (
 		// +optional
 		SpotVMOptions *infrav1.SpotVMOptions `json:"spotVMOptions,omitempty"`
 
-		// SubnetName selects the Subnet where the VMSS will be placed
+		// Deprecated: SubnetName should be set in the networkInterfaces field.
 		// +optional
 		SubnetName string `json:"subnetName,omitempty"`
 
 		// VMExtensions specifies a list of extensions to be added to the scale set.
 		// +optional
 		VMExtensions []infrav1.VMExtension `json:"vmExtensions,omitempty"`
+
+		// NetworkInterfaces specifies a list of network interface configurations.
+		// If left unspecified, the VM will get a single network interface with a
+		// single IPConfig in the subnet specified in the cluster's node subnet field.
+		// The primary interface will be the first networkInterface specified (index 0) in the list.
+		// +optional
+		NetworkInterfaces []infrav1.NetworkInterface `json:"networkInterfaces,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.

@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -141,6 +142,99 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 
 	nilDiagnostics.machinePool.SetDiagnosticsDefaults()
 	g.Expect(nilDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
+}
+
+func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
+	g := NewWithT(t)
+
+	testCases := []struct {
+		name        string
+		machinePool *AzureMachinePool
+		want        *AzureMachinePool
+	}{
+		{
+			name: "defaulting webhook updates MachinePool with deprecated subnetName field",
+			machinePool: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SubnetName: "test-subnet",
+					},
+				},
+			},
+			want: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SubnetName: "",
+						NetworkInterfaces: []infrav1.NetworkInterface{
+							{
+								SubnetName:       "test-subnet",
+								PrivateIPConfigs: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "defaulting webhook updates MachinePool with deprecated acceleratedNetworking field",
+			machinePool: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SubnetName:            "test-subnet",
+						AcceleratedNetworking: to.BoolPtr(true),
+					},
+				},
+			},
+			want: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SubnetName:            "",
+						AcceleratedNetworking: nil,
+						NetworkInterfaces: []infrav1.NetworkInterface{
+							{
+								SubnetName:            "test-subnet",
+								PrivateIPConfigs:      1,
+								AcceleratedNetworking: to.BoolPtr(true),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "defaulting webhook does nothing if both new and deprecated subnetName fields are set",
+			machinePool: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SubnetName: "test-subnet",
+						NetworkInterfaces: []infrav1.NetworkInterface{{
+							SubnetName: "test-subnet",
+						}},
+					},
+				},
+			},
+			want: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SubnetName:            "test-subnet",
+						AcceleratedNetworking: nil,
+						NetworkInterfaces: []infrav1.NetworkInterface{
+							{
+								SubnetName: "test-subnet",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.machinePool.SetNetworkInterfacesDefaults()
+			g.Expect(tc.machinePool).To(Equal(tc.want))
+		})
+	}
 }
 
 func createMachinePoolWithSSHPublicKey(sshPublicKey string) *AzureMachinePool {

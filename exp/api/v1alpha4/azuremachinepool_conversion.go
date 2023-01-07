@@ -41,6 +41,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		return err
 	}
 
+	if restored.Spec.Template.NetworkInterfaces != nil {
+		dst.Spec.Template.NetworkInterfaces = restored.Spec.Template.NetworkInterfaces
+	}
+
 	if restored.Spec.Template.Image != nil && restored.Spec.Template.Image.ComputeGallery != nil {
 		dst.Spec.Template.Image.ComputeGallery = restored.Spec.Template.Image.ComputeGallery
 	}
@@ -68,6 +72,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1exp.AzureMachinePool)
 	if err := Convert_v1beta1_AzureMachinePool_To_v1alpha4_AzureMachinePool(src, dst, nil); err != nil {
+		return err
+	}
+
+	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
 	}
 

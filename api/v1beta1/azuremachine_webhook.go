@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"reflect"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -149,6 +151,24 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 			old.Spec.Diagnostics,
 			m.Spec.Diagnostics); err != nil {
 			allErrs = append(allErrs, err)
+		}
+	}
+
+	if !reflect.DeepEqual(m.Spec.NetworkInterfaces, old.Spec.NetworkInterfaces) {
+		// The defaulting webhook may have migrated values from the old SubnetName field to the new NetworkInterfaces format.
+		old.Spec.SetNetworkInterfacesDefaults()
+
+		// The reconciler will populate the SubnetName on the first interface if the user left it blank.
+		if old.Spec.NetworkInterfaces[0].SubnetName == "" && m.Spec.NetworkInterfaces[0].SubnetName != "" {
+			old.Spec.NetworkInterfaces[0].SubnetName = m.Spec.NetworkInterfaces[0].SubnetName
+		}
+
+		// Enforce immutability for all other changes to NetworkInterfaces.
+		if !reflect.DeepEqual(m.Spec.NetworkInterfaces, old.Spec.NetworkInterfaces) {
+			allErrs = append(allErrs,
+				field.Invalid(field.NewPath("spec", "networkInterfaces"),
+					m.Spec.NetworkInterfaces, "field is immutable"),
+			)
 		}
 	}
 

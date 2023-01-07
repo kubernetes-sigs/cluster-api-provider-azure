@@ -49,6 +49,7 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		}
 	}
 
+	//nolint:staticcheck // SubnetName is now deprecated, but the v1beta1 defaulting webhook will migrate it to the networkInterfaces field
 	dst.Spec.Template.SubnetName = restored.Spec.Template.SubnetName
 
 	dst.Spec.Strategy.Type = restored.Spec.Strategy.Type
@@ -76,6 +77,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 
 	if dst.Spec.Template.Image != nil && restored.Spec.Template.Image.ComputeGallery != nil {
 		dst.Spec.Template.Image.ComputeGallery = restored.Spec.Template.Image.ComputeGallery
+	}
+
+	if restored.Spec.Template.NetworkInterfaces != nil {
+		dst.Spec.Template.NetworkInterfaces = restored.Spec.Template.NetworkInterfaces
 	}
 
 	if len(dst.Annotations) == 0 {

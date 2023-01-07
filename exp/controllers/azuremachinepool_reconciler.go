@@ -57,6 +57,9 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachinePoolService.Reconcile")
 	defer done()
 
+	// Ensure that the deprecated networking field values have been migrated to the new NetworkInterfaces field.
+	s.scope.AzureMachinePool.SetNetworkInterfacesDefaults()
+
 	if err := s.scope.SetSubnetName(); err != nil {
 		return errors.Wrap(err, "failed defaulting subnet name")
 	}

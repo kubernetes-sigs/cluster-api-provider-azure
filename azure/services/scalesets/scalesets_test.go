@@ -259,6 +259,76 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
+			name:          "should start creating vmss with custom networking when specified",
+			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				spec := newDefaultVMSSSpec()
+				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
+					NameSuffix: "my_disk_with_ultra_disks",
+					DiskSizeGB: 128,
+					Lun:        to.Int32Ptr(3),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+				})
+				spec.NetworkInterfaces = []infrav1.NetworkInterface{
+					{
+						SubnetName:            "my-subnet",
+						PrivateIPConfigs:      1,
+						AcceleratedNetworking: pointer.Bool(true),
+					},
+					{
+						SubnetName:            "subnet2",
+						PrivateIPConfigs:      2,
+						AcceleratedNetworking: pointer.Bool(true),
+					},
+				}
+				s.ScaleSetSpec().Return(spec).AnyTimes()
+				setupDefaultVMSSStartCreatingExpectations(s, m)
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
+				(*netConfigs)[0].Name = to.StringPtr("my-vmss-0")
+				(*netConfigs)[0].EnableIPForwarding = nil
+				nic1IPConfigs := (*netConfigs)[0].IPConfigurations
+				(*nic1IPConfigs)[0].Name = to.StringPtr("private-ipConfig-0")
+				(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
+				(*netConfigs)[0].EnableAcceleratedNetworking = to.BoolPtr(true)
+				(*netConfigs)[0].Primary = to.BoolPtr(true)
+				vmssIPConfigs := []compute.VirtualMachineScaleSetIPConfiguration{
+					{
+						Name: to.StringPtr("private-ipConfig-0"),
+						VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+							Primary:                 to.BoolPtr(true),
+							PrivateIPAddressVersion: compute.IPVersionIPv4,
+							Subnet: &compute.APIEntityReference{
+								ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
+							},
+						},
+					},
+					{
+						Name: to.StringPtr("private-ipConfig-1"),
+						VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+							PrivateIPAddressVersion: compute.IPVersionIPv4,
+							Subnet: &compute.APIEntityReference{
+								ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
+							},
+						},
+					},
+				}
+				*netConfigs = append(*netConfigs, compute.VirtualMachineScaleSetNetworkConfiguration{
+					Name: to.StringPtr("my-vmss-1"),
+					VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
+						EnableAcceleratedNetworking: to.BoolPtr(true),
+						IPConfigurations:            &vmssIPConfigs,
+					},
+				})
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
+					Return(putFuture, nil)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
+			},
+		},
+		{
 			name:          "should start creating a vmss with spot vm",
 			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {

@@ -62,6 +62,7 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Spec.Diagnostics = restored.Spec.Template.Spec.Diagnostics
 	}
 
+	//nolint:staticcheck // SubnetName is now deprecated, but the v1beta1 defaulting webhook will migrate it to the networkInterfaces field
 	dst.Spec.Template.Spec.SubnetName = restored.Spec.Template.Spec.SubnetName
 	dst.Spec.Template.ObjectMeta = restored.Spec.Template.ObjectMeta
 
@@ -75,6 +76,10 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 
 	if restored.Spec.Template.Spec.SpotVMOptions != nil && restored.Spec.Template.Spec.SpotVMOptions.EvictionPolicy != nil {
 		dst.Spec.Template.Spec.SpotVMOptions.EvictionPolicy = restored.Spec.Template.Spec.SpotVMOptions.EvictionPolicy
+	}
+
+	if restored.Spec.Template.Spec.NetworkInterfaces != nil {
+		dst.Spec.Template.Spec.NetworkInterfaces = restored.Spec.Template.Spec.NetworkInterfaces
 	}
 
 	return nil

@@ -1048,11 +1048,8 @@ spec:
             description: AzureMachineSpec defines the desired state of AzureMachine.
             properties:
               acceleratedNetworking:
-                description: AcceleratedNetworking enables or disables Azure accelerated
-                  networking. If omitted, it will be set based on whether the requested
-                  VMSize supports accelerated networking. If AcceleratedNetworking
-                  is set to true with a VMSize that does not support it, Azure will
-                  return an error.
+                description: 'Deprecated: AcceleratedNetworking should be set in the
+                  networkInterfaces field.'
                 type: boolean
               additionalCapabilities:
                 description: AdditionalCapabilities specifies additional capabilities
@@ -1378,6 +1375,33 @@ spec:
                     - version
                     type: object
                 type: object
+              networkInterfaces:
+                description: NetworkInterfaces specifies a list of network interface
+                  configurations. If left unspecified, the VM will get a single network
+                  interface with a single IPConfig in the subnet specified in the
+                  cluster's node subnet field. The primary interface will be the first
+                  networkInterface specified (index 0) in the list.
+                items:
+                  description: NetworkInterface defines a network interface.
+                  properties:
+                    acceleratedNetworking:
+                      description: AcceleratedNetworking enables or disables Azure
+                        accelerated networking. If omitted, it will be set based on
+                        whether the requested VMSize supports accelerated networking.
+                        If AcceleratedNetworking is set to true with a VMSize that
+                        does not support it, Azure will return an error.
+                      type: boolean
+                    privateIPConfigs:
+                      description: PrivateIPConfigs specifies the number of private
+                        IP addresses to attach to the interface. Defaults to 1 if
+                        not specified.
+                      type: integer
+                    subnetName:
+                      description: SubnetName specifies the subnet in which the new
+                        network interface will be placed.
+                      type: string
+                  type: object
+                type: array
               osDisk:
                 description: OSDisk specifies the parameters for the operating system
                   disk of the machine
@@ -1471,7 +1495,8 @@ spec:
               sshPublicKey:
                 type: string
               subnetName:
-                description: SubnetName selects the Subnet where the VM will be placed
+                description: 'Deprecated: SubnetName should be set in the networkInterfaces
+                  field.'
                 type: string
               userAssignedIdentities:
                 description: UserAssignedIdentities is a list of standalone Azure

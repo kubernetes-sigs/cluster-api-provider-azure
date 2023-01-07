@@ -50,6 +50,7 @@ func (amp *AzureMachinePool) Default() {
 	}
 	amp.SetIdentityDefaults()
 	amp.SetDiagnosticsDefaults()
+	amp.SetNetworkInterfacesDefaults()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -89,6 +90,7 @@ func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 		amp.ValidateDiagnostics,
 		amp.ValidateStrategy(),
 		amp.ValidateSystemAssignedIdentity(old),
+		amp.ValidateNetwork,
 	}
 
 	var errs []error
@@ -99,6 +101,14 @@ func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 	}
 
 	return kerrors.NewAggregate(errs)
+}
+
+// ValidateNetwork of an AzureMachinePool.
+func (amp *AzureMachinePool) ValidateNetwork() error {
+	if (amp.Spec.Template.NetworkInterfaces != nil) && len(amp.Spec.Template.NetworkInterfaces) > 0 && amp.Spec.Template.SubnetName != "" {
+		return errors.New("cannot set both NetworkInterfaces and machine SubnetName")
+	}
+	return nil
 }
 
 // ValidateImage of an AzureMachinePool.

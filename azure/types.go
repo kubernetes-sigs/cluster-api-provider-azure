@@ -66,6 +66,7 @@ type ScaleSetSpec struct {
 	DiagnosticsProfile           *infrav1.Diagnostics
 	FailureDomains               []string
 	VMExtensions                 []infrav1.VMExtension
+	NetworkInterfaces            []infrav1.NetworkInterface
 }
 
 // TagsSpec defines the specification for a set of tags.

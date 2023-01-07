@@ -115,12 +115,12 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		SSHKeyData:                   m.AzureMachinePool.Spec.Template.SSHPublicKey,
 		OSDisk:                       m.AzureMachinePool.Spec.Template.OSDisk,
 		DataDisks:                    m.AzureMachinePool.Spec.Template.DataDisks,
-		SubnetName:                   m.AzureMachinePool.Spec.Template.SubnetName,
+		SubnetName:                   m.AzureMachinePool.Spec.Template.NetworkInterfaces[0].SubnetName,
 		VNetName:                     m.Vnet().Name,
 		VNetResourceGroup:            m.Vnet().ResourceGroup,
 		PublicLBName:                 m.OutboundLBName(infrav1.Node),
 		PublicLBAddressPoolName:      azure.GenerateOutboundBackendAddressPoolName(m.OutboundLBName(infrav1.Node)),
-		AcceleratedNetworking:        m.AzureMachinePool.Spec.Template.AcceleratedNetworking,
+		AcceleratedNetworking:        m.AzureMachinePool.Spec.Template.NetworkInterfaces[0].AcceleratedNetworking,
 		Identity:                     m.AzureMachinePool.Spec.Identity,
 		UserAssignedIdentities:       m.AzureMachinePool.Spec.UserAssignedIdentities,
 		DiagnosticsProfile:           m.AzureMachinePool.Spec.Template.Diagnostics,
@@ -128,6 +128,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		SpotVMOptions:                m.AzureMachinePool.Spec.Template.SpotVMOptions,
 		FailureDomains:               m.MachinePool.Spec.FailureDomains,
 		TerminateNotificationTimeout: m.AzureMachinePool.Spec.Template.TerminateNotificationTimeout,
+		NetworkInterfaces:            m.AzureMachinePool.Spec.Template.NetworkInterfaces,
 	}
 }
 
@@ -655,7 +656,7 @@ func (m *MachinePoolScope) getDeploymentStrategy() machinepool.TypedDeleteSelect
 // Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without the `subnetName` field being
 // set, and should be removed in the future when this field is no longer optional.
 func (m *MachinePoolScope) SetSubnetName() error {
-	if m.AzureMachinePool.Spec.Template.SubnetName == "" {
+	if m.AzureMachinePool.Spec.Template.NetworkInterfaces[0].SubnetName == "" {
 		subnetName := ""
 		for _, subnet := range m.NodeSubnets() {
 			subnetName = subnet.Name
@@ -664,7 +665,7 @@ func (m *MachinePoolScope) SetSubnetName() error {
 			return errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of role 'node' exist")
 		}
 
-		m.AzureMachinePool.Spec.Template.SubnetName = subnetName
+		m.AzureMachinePool.Spec.Template.NetworkInterfaces[0].SubnetName = subnetName
 	}
 
 	return nil

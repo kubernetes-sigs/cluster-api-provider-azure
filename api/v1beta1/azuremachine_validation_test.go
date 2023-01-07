@@ -694,3 +694,96 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureMachine_ValidateNetwork(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name                  string
+		subnetName            string
+		acceleratedNetworking *bool
+		networkInterfaces     []NetworkInterface
+		wantErr               bool
+	}{
+		{
+			name:                  "valid config with deprecated network fields",
+			subnetName:            "subnet1",
+			acceleratedNetworking: to.BoolPtr(true),
+			networkInterfaces:     nil,
+			wantErr:               false,
+		},
+		{
+			name:                  "valid config with networkInterfaces fields",
+			subnetName:            "",
+			acceleratedNetworking: nil,
+			networkInterfaces: []NetworkInterface{{
+				SubnetName:            "subnet1",
+				AcceleratedNetworking: to.BoolPtr(true),
+				PrivateIPConfigs:      1,
+			}},
+			wantErr: false,
+		},
+		{
+			name:                  "valid config with multiple networkInterfaces",
+			subnetName:            "",
+			acceleratedNetworking: nil,
+			networkInterfaces: []NetworkInterface{
+				{
+					SubnetName:            "subnet1",
+					AcceleratedNetworking: to.BoolPtr(true),
+					PrivateIPConfigs:      1,
+				},
+				{
+					SubnetName:            "subnet2",
+					AcceleratedNetworking: to.BoolPtr(true),
+					PrivateIPConfigs:      30,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:                  "invalid config using both deprecated subnetName and networkInterfaces",
+			subnetName:            "subnet1",
+			acceleratedNetworking: nil,
+			networkInterfaces: []NetworkInterface{{
+				SubnetName:            "subnet1",
+				AcceleratedNetworking: nil,
+				PrivateIPConfigs:      1,
+			}},
+			wantErr: true,
+		},
+		{
+			name:                  "invalid config using both deprecated acceleratedNetworking and networkInterfaces",
+			subnetName:            "",
+			acceleratedNetworking: to.BoolPtr(true),
+			networkInterfaces: []NetworkInterface{{
+				SubnetName:            "subnet1",
+				AcceleratedNetworking: to.BoolPtr(true),
+				PrivateIPConfigs:      1,
+			}},
+			wantErr: true,
+		},
+		{
+			name:                  "invalid config setting privateIPConfigs to less than 1",
+			subnetName:            "",
+			acceleratedNetworking: nil,
+			networkInterfaces: []NetworkInterface{{
+				SubnetName:            "subnet1",
+				AcceleratedNetworking: to.BoolPtr(true),
+				PrivateIPConfigs:      0,
+			}},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateNetwork(test.subnetName, test.acceleratedNetworking, test.networkInterfaces, field.NewPath("networkInterfaces"))
+			if test.wantErr {
+				g.Expect(err).ToNot(BeEmpty())
+			} else {
+				g.Expect(err).To(BeEmpty())
+			}
+		})
+	}
+}

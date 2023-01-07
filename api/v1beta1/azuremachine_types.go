@@ -100,9 +100,7 @@ type AzureMachineSpec struct {
 	// +optional
 	EnableIPForwarding bool `json:"enableIPForwarding,omitempty"`
 
-	// AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on
-	// whether the requested VMSize supports accelerated networking.
-	// If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
+	// Deprecated: AcceleratedNetworking should be set in the networkInterfaces field.
 	// +kubebuilder:validation:nullable
 	// +optional
 	AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
@@ -120,7 +118,7 @@ type AzureMachineSpec struct {
 	// +optional
 	SecurityProfile *SecurityProfile `json:"securityProfile,omitempty"`
 
-	// SubnetName selects the Subnet where the VM will be placed
+	// Deprecated: SubnetName should be set in the networkInterfaces field.
 	// +optional
 	SubnetName string `json:"subnetName,omitempty"`
 
@@ -131,6 +129,13 @@ type AzureMachineSpec struct {
 	// VMExtensions specifies a list of extensions to be added to the virtual machine.
 	// +optional
 	VMExtensions []VMExtension `json:"vmExtensions,omitempty"`
+
+	// NetworkInterfaces specifies a list of network interface configurations.
+	// If left unspecified, the VM will get a single network interface with a
+	// single IPConfig in the subnet specified in the cluster's node subnet field.
+	// The primary interface will be the first networkInterface specified (index 0) in the list.
+	// +optional
+	NetworkInterfaces []NetworkInterface `json:"networkInterfaces,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs.

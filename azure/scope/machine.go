@@ -229,50 +229,78 @@ func (m *MachineScope) InboundNatSpecs() []azure.ResourceSpecGetter {
 
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
+	nicSpecs := []azure.ResourceSpecGetter{}
+
+	// For backwards compatibility we need to ensure the NIC Name does not change on existing machines
+	// created prior to multiple NIC support
+	isMultiNIC := len(m.AzureMachine.Spec.NetworkInterfaces) > 1
+
+	for i := 0; i < len(m.AzureMachine.Spec.NetworkInterfaces); i++ {
+		isPrimary := i == 0
+		nicName := azure.GenerateNICName(m.Name(), isMultiNIC, i)
+		nicSpecs = append(nicSpecs, m.BuildNICSpec(nicName, m.AzureMachine.Spec.NetworkInterfaces[i], isPrimary))
+	}
+	return nicSpecs
+}
+
+// BuildNICSpec takes a NetworkInterface from the AzureMachineSpec and returns a NICSpec for use by the networkinterfaces service.
+func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infrav1.NetworkInterface, primaryNetworkInterface bool) *networkinterfaces.NICSpec {
 	spec := &networkinterfaces.NICSpec{
-		Name:                  azure.GenerateNICName(m.Name()),
+		Name:                  nicName,
 		ResourceGroup:         m.ResourceGroup(),
 		Location:              m.Location(),
 		SubscriptionID:        m.SubscriptionID(),
 		MachineName:           m.Name(),
 		VNetName:              m.Vnet().Name,
 		VNetResourceGroup:     m.Vnet().ResourceGroup,
-		SubnetName:            m.AzureMachine.Spec.SubnetName,
-		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
-		DNSServers:            m.AzureMachine.Spec.DNSServers,
+		AcceleratedNetworking: infrav1NetworkInterface.AcceleratedNetworking,
 		IPv6Enabled:           m.IsIPv6Enabled(),
 		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
+		SubnetName:            infrav1NetworkInterface.SubnetName,
 		AdditionalTags:        m.AdditionalTags(),
 		ClusterName:           m.ClusterName(),
-	}
-
-	if m.Role() == infrav1.ControlPlane {
-		spec.PublicLBName = m.OutboundLBName(m.Role())
-		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-		if m.IsAPIServerPrivate() {
-			spec.InternalLBName = m.APIServerLBName()
-			spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
-		} else {
-			spec.PublicLBNATRuleName = m.Name()
-			spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
-		}
-	}
-
-	// If NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
-	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
-		spec.PublicLBName = m.OutboundLBName(m.Role())
-		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-	}
-
-	if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
-		spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
+		IPConfigs:             []networkinterfaces.IPConfig{},
 	}
 
 	if m.cache != nil {
 		spec.SKU = &m.cache.VMSKU
 	}
 
-	return []azure.ResourceSpecGetter{spec}
+	for i := 0; i < infrav1NetworkInterface.PrivateIPConfigs; i++ {
+		spec.IPConfigs = append(spec.IPConfigs, networkinterfaces.IPConfig{})
+	}
+
+	if primaryNetworkInterface {
+		spec.DNSServers = m.AzureMachine.Spec.DNSServers
+
+		if m.Role() == infrav1.ControlPlane {
+			spec.PublicLBName = m.OutboundLBName(m.Role())
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+			if m.IsAPIServerPrivate() {
+				spec.InternalLBName = m.APIServerLBName()
+				spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+			} else {
+				spec.PublicLBNATRuleName = m.Name()
+				spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+			}
+		}
+
+		if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
+			spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
+		}
+		// If the NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
+			spec.PublicLBName = m.OutboundLBName(m.Role())
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+		}
+		// If the NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
+			spec.PublicLBName = m.OutboundLBName(m.Role())
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+		}
+	}
+
+	return spec
 }
 
 // NICIDs returns the NIC resource IDs.
@@ -282,6 +310,7 @@ func (m *MachineScope) NICIDs() []string {
 	for i, nic := range nicspecs {
 		nicIDs[i] = azure.NetworkInterfaceID(m.SubscriptionID(), nic.ResourceGroupName(), nic.ResourceName())
 	}
+
 	return nicIDs
 }
 
@@ -365,7 +394,7 @@ func (m *MachineScope) VMExtensionSpecs() []azure.ResourceSpecGetter {
 // Subnet returns the machine's subnet.
 func (m *MachineScope) Subnet() infrav1.SubnetSpec {
 	for _, subnet := range m.Subnets() {
-		if subnet.Name == m.AzureMachine.Spec.SubnetName {
+		if subnet.Name == m.AzureMachine.Spec.NetworkInterfaces[0].SubnetName {
 			return subnet
 		}
 	}
@@ -681,7 +710,7 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 // Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without the `subnetName` field being
 // set, and should be removed in the future when this field is no longer optional.
 func (m *MachineScope) SetSubnetName() error {
-	if m.AzureMachine.Spec.SubnetName == "" {
+	if m.AzureMachine.Spec.NetworkInterfaces[0].SubnetName == "" {
 		subnetName := ""
 		subnets := m.Subnets()
 		var subnetCount int
@@ -695,7 +724,7 @@ func (m *MachineScope) SetSubnetName() error {
 			return errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of the same role exist")
 		}
 
-		m.AzureMachine.Spec.SubnetName = subnetName
+		m.AzureMachine.Spec.NetworkInterfaces[0].SubnetName = subnetName
 	}
 
 	return nil

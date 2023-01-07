@@ -266,6 +266,107 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 	}
 }
 
+func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name    string
+		machine *AzureMachine
+		want    *AzureMachine
+	}{
+		{
+			name: "defaulting webhook updates machine with deprecated subnetName field",
+			machine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName: "test-subnet",
+				},
+			},
+			want: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName: "",
+					NetworkInterfaces: []NetworkInterface{
+						{
+							SubnetName:       "test-subnet",
+							PrivateIPConfigs: 1,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "defaulting webhook updates machine with deprecated subnetName field and empty NetworkInterfaces slice",
+			machine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName:        "test-subnet",
+					NetworkInterfaces: []NetworkInterface{},
+				},
+			},
+			want: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName: "",
+					NetworkInterfaces: []NetworkInterface{
+						{
+							SubnetName:       "test-subnet",
+							PrivateIPConfigs: 1,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "defaulting webhook updates machine with deprecated acceleratedNetworking field",
+			machine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName:            "test-subnet",
+					AcceleratedNetworking: to.BoolPtr(true),
+				},
+			},
+			want: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName:            "",
+					AcceleratedNetworking: nil,
+					NetworkInterfaces: []NetworkInterface{
+						{
+							SubnetName:            "test-subnet",
+							PrivateIPConfigs:      1,
+							AcceleratedNetworking: to.BoolPtr(true),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "defaulting webhook does nothing if both new and deprecated subnetName fields are set",
+			machine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName: "test-subnet",
+					NetworkInterfaces: []NetworkInterface{{
+						SubnetName: "test-subnet",
+					}},
+				},
+			},
+			want: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName:            "test-subnet",
+					AcceleratedNetworking: nil,
+					NetworkInterfaces: []NetworkInterface{
+						{
+							SubnetName: "test-subnet",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.machine.Spec.SetNetworkInterfacesDefaults()
+			g.Expect(tc.machine).To(Equal(tc.want))
+		})
+	}
+}
+
 func createMachineWithSSHPublicKey(sshPublicKey string) *AzureMachine {
 	machine := hardcodedAzureMachineWithSSHKey(sshPublicKey)
 	return machine

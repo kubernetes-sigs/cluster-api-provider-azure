@@ -60,6 +60,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Diagnostics = restored.Spec.Diagnostics
 	}
 
+	if restored.Spec.NetworkInterfaces != nil {
+		dst.Spec.NetworkInterfaces = restored.Spec.NetworkInterfaces
+	}
+
 	return nil
 }
 

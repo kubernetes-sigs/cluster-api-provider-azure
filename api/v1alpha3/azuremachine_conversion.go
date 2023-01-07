@@ -74,6 +74,11 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Diagnostics = restored.Spec.Diagnostics
 	}
 
+	if restored.Spec.NetworkInterfaces != nil {
+		dst.Spec.NetworkInterfaces = restored.Spec.NetworkInterfaces
+	}
+
+	//nolint:staticcheck // SubnetName is now deprecated, but the v1beta1 defaulting webhook will migrate it to the networkInterfaces field
 	dst.Spec.SubnetName = restored.Spec.SubnetName
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates

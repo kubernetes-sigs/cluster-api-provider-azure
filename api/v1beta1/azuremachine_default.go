@@ -115,6 +115,34 @@ func (s *AzureMachineSpec) SetDiagnosticsDefaults() {
 	}
 }
 
+// SetNetworkInterfacesDefaults sets the defaults for the network interfaces.
+func (s *AzureMachineSpec) SetNetworkInterfacesDefaults() {
+	// Ensure the deprecated fields and new fields are not populated simultaneously
+	if (s.SubnetName != "" || s.AcceleratedNetworking != nil) && len(s.NetworkInterfaces) > 0 {
+		// Both the deprecated and the new fields are both set, return without changes
+		// and reject the request in the validating webhook which runs later.
+		return
+	}
+
+	if len(s.NetworkInterfaces) == 0 {
+		s.NetworkInterfaces = []NetworkInterface{
+			{
+				SubnetName:            s.SubnetName,
+				AcceleratedNetworking: s.AcceleratedNetworking,
+			},
+		}
+		s.SubnetName = ""
+		s.AcceleratedNetworking = nil
+	}
+
+	// Ensure that PrivateIPConfigs defaults to 1 if not specified.
+	for i := 0; i < len(s.NetworkInterfaces); i++ {
+		if s.NetworkInterfaces[i].PrivateIPConfigs == 0 {
+			s.NetworkInterfaces[i].PrivateIPConfigs = 1
+		}
+	}
+}
+
 // SetDefaults sets to the defaults for the AzureMachineSpec.
 func (s *AzureMachineSpec) SetDefaults() {
 	if err := s.SetDefaultSSHPublicKey(); err != nil {
@@ -125,4 +153,5 @@ func (s *AzureMachineSpec) SetDefaults() {
 	s.SetIdentityDefaults()
 	s.SetSpotEvictionPolicyDefaults()
 	s.SetDiagnosticsDefaults()
+	s.SetNetworkInterfacesDefaults()
 }
