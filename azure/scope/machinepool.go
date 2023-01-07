@@ -63,11 +63,12 @@ type (
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
 	MachinePoolScope struct {
 		azure.ClusterScoper
-		AzureMachinePool *infrav1exp.AzureMachinePool
-		MachinePool      *expv1.MachinePool
-		client           client.Client
-		patchHelper      *patch.Helper
-		vmssState        *azure.VMSS
+		AzureMachinePool           *infrav1exp.AzureMachinePool
+		MachinePool                *expv1.MachinePool
+		client                     client.Client
+		patchHelper                *patch.Helper
+		capiMachinePoolPatchHelper *patch.Helper
+		vmssState                  *azure.VMSS
 	}
 
 	// NodeStatus represents the status of a Kubernetes node.
@@ -97,12 +98,18 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
+	capiMachinePoolPatchHelper, err := patch.NewHelper(params.MachinePool, params.Client)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to init capi patch helper")
+	}
+
 	return &MachinePoolScope{
-		client:           params.Client,
-		MachinePool:      params.MachinePool,
-		AzureMachinePool: params.AzureMachinePool,
-		patchHelper:      helper,
-		ClusterScoper:    params.ClusterScope,
+		client:                     params.Client,
+		MachinePool:                params.MachinePool,
+		AzureMachinePool:           params.AzureMachinePool,
+		patchHelper:                helper,
+		capiMachinePoolPatchHelper: capiMachinePoolPatchHelper,
+		ClusterScoper:              params.ClusterScope,
 	}, nil
 }
 
@@ -525,7 +532,13 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 		}
 	}
 
-	return m.PatchObject(ctx)
+	if err := m.PatchObject(ctx); err != nil {
+		return errors.Wrap(err, "unable to patch AzureMachinePool")
+	}
+	if err := m.PatchCAPIMachinePoolObject(ctx); err != nil {
+		return errors.Wrap(err, "unable to patch CAPI MachinePool")
+	}
+	return nil
 }
 
 // GetBootstrapData returns the bootstrap data from the secret in the MachinePool's bootstrap.dataSecretName.
@@ -705,4 +718,40 @@ func (m *MachinePoolScope) UpdatePatchStatus(condition clusterv1.ConditionType, 
 	default:
 		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
 	}
+}
+
+// PatchCAPIMachinePoolObject persists the capi machinepool configuration and status.
+func (m *MachinePoolScope) PatchCAPIMachinePoolObject(ctx context.Context) error {
+	return m.capiMachinePoolPatchHelper.Patch(
+		ctx,
+		m.MachinePool,
+	)
+}
+
+// UpdateCAPIMachinePoolReplicas updates the associated MachinePool replica count.
+func (m *MachinePoolScope) UpdateCAPIMachinePoolReplicas(ctx context.Context, replicas *int32) {
+	m.MachinePool.Spec.Replicas = replicas
+}
+
+// HasReplicasExternallyManaged returns true if the externally managed annotation is set on the CAPI MachinePool resource.
+func (m *MachinePoolScope) HasReplicasExternallyManaged(ctx context.Context) bool {
+	return m.MachinePool.Annotations[azure.ReplicasManagedByAutoscalerAnnotation] == "true"
+}
+
+// ReconcileReplicas ensures MachinePool replicas match VMSS capacity if replicas are externally managed by an autoscaler.
+func (m *MachinePoolScope) ReconcileReplicas(ctx context.Context, vmss *azure.VMSS) error {
+	if !m.HasReplicasExternallyManaged(ctx) {
+		return nil
+	}
+
+	var replicas int32 = 0
+	if m.MachinePool.Spec.Replicas != nil {
+		replicas = *m.MachinePool.Spec.Replicas
+	}
+
+	if capacity := int32(vmss.Capacity); capacity != replicas {
+		m.UpdateCAPIMachinePoolReplicas(ctx, &capacity)
+	}
+
+	return nil
 }

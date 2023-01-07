@@ -52,6 +52,7 @@ type (
 		SetAnnotation(string, string)
 		SetProviderID(string)
 		SetVMSSState(*azure.VMSS)
+		ReconcileReplicas(context.Context, *azure.VMSS) error
 	}
 
 	// Service provides operations on Azure resources.
@@ -253,6 +254,10 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) (*infrav1.Future, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.patchVMSSIfNeeded")
 	defer done()
+
+	if err := s.Scope.ReconcileReplicas(ctx, infraVMSS); err != nil {
+		return nil, errors.Wrap(err, "unable to reconcile replicas")
+	}
 
 	spec := s.Scope.ScaleSetSpec()
 
