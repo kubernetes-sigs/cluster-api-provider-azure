@@ -152,6 +152,7 @@ spec:
     - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
       /etc/resolv.conf
     - systemctl restart systemd-resolved
+    - crictl pods -q | xargs -n1 crictl stopp
     preKubeadmCommands: []
   machineTemplate:
     infrastructureRef:
@@ -277,3 +278,4 @@ spec:
       - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
         /etc/resolv.conf
       - systemctl restart systemd-resolved
+      - crictl pods -q | xargs -n1 crictl stopp
