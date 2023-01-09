@@ -200,12 +200,14 @@ func GetCloudProviderSecret(d azure.ClusterScoper, namespace, name string, owner
 		controlPlaneConfig, workerNodeConfig = newCloudProviderConfig(d)
 	}
 
-	// Enable VMSS Flexible nodes if MachinePools are enabled
+	// Enable VMSS and Flexible nodes if MachinePools are enabled
 	if feature.Gates.Enabled(capifeature.MachinePool) {
-		if controlPlaneConfig != nil && controlPlaneConfig.VMType == "vmss" {
+		if controlPlaneConfig != nil {
+			controlPlaneConfig.VMType = "vmss"
 			controlPlaneConfig.EnableVmssFlexNodes = true
 		}
-		if workerNodeConfig != nil && workerNodeConfig.VMType == "vmss" {
+		if workerNodeConfig != nil {
+			workerNodeConfig.VMType = "vmss"
 			workerNodeConfig.EnableVmssFlexNodes = true
 		}
 	}
@@ -265,7 +267,7 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			SecurityGroupName:            subnet.SecurityGroup.Name,
 			SecurityGroupResourceGroup:   d.Vnet().ResourceGroup,
 			Location:                     d.Location(),
-			VMType:                       "vmss",
+			VMType:                       "standard",
 			VnetName:                     d.Vnet().Name,
 			VnetResourceGroup:            d.Vnet().ResourceGroup,
 			SubnetName:                   subnet.Name,
@@ -285,7 +287,7 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			SecurityGroupName:            subnet.SecurityGroup.Name,
 			SecurityGroupResourceGroup:   d.Vnet().ResourceGroup,
 			Location:                     d.Location(),
-			VMType:                       "vmss",
+			VMType:                       "standard",
 			VnetName:                     d.Vnet().Name,
 			VnetResourceGroup:            d.Vnet().ResourceGroup,
 			SubnetName:                   subnet.Name,
