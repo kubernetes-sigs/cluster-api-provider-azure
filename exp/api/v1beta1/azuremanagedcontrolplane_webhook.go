@@ -68,10 +68,6 @@ func (m *AzureManagedControlPlane) Default(_ client.Client) {
 		loadBalancerSKU := "Standard"
 		m.Spec.LoadBalancerSKU = &loadBalancerSKU
 	}
-	if m.Spec.NetworkPolicy == nil {
-		NetworkPolicy := "calico"
-		m.Spec.NetworkPolicy = &NetworkPolicy
-	}
 
 	if m.Spec.Version != "" && !strings.HasPrefix(m.Spec.Version, "v") {
 		normalizedVersion := "v" + m.Spec.Version
