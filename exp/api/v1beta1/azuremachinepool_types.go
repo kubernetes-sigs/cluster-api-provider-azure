@@ -157,6 +157,10 @@ type (
 		// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
 		// +optional
 		NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
+
+		// OrchestrationMode specifies the orchestration mode for the Virtual Machine Scale Set
+		// +kubebuilder:default=Uniform
+		OrchestrationMode infrav1.OrchestrationModeType `json:"orchestrationMode,omitempty"`
 	}
 
 	// AzureMachinePoolDeploymentStrategyType is the type of deployment strategy employed to rollout a new version of

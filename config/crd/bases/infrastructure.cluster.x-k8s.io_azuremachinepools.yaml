@@ -1380,6 +1380,14 @@ spec:
                   meaning that the node can be drained without any time limitations.
                   NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`'
                 type: string
+              orchestrationMode:
+                default: Uniform
+                description: OrchestrationMode specifies the orchestration mode for
+                  the Virtual Machine Scale Set
+                enum:
+                - Flexible
+                - Uniform
+                type: string
               providerID:
                 description: ProviderID is the identification ID of the Virtual Machine
                   Scale Set

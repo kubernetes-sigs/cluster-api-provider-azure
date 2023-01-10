@@ -103,6 +103,7 @@ func TestService_Reconcile(t *testing.T) {
 			Setup: func(s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, m *mock_scalesetvms.MockclientMockRecorder) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
+				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				vm := compute.VirtualMachineScaleSetVM{
 					InstanceID: to.StringPtr("0"),
@@ -116,6 +117,7 @@ func TestService_Reconcile(t *testing.T) {
 			Setup: func(s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, m *mock_scalesetvms.MockclientMockRecorder) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
+				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, autorest404)
 			},
@@ -127,6 +129,7 @@ func TestService_Reconcile(t *testing.T) {
 			Setup: func(s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, m *mock_scalesetvms.MockclientMockRecorder) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
+				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(compute.VirtualMachineScaleSetVM{}, errors.New("boom"))
 			},
@@ -144,9 +147,9 @@ func TestService_Reconcile(t *testing.T) {
 			)
 			defer mockCtrl.Finish()
 
-			scopeMock.EXPECT().SubscriptionID().Return("subID")
-			scopeMock.EXPECT().BaseURI().Return("https://localhost/")
-			scopeMock.EXPECT().Authorizer().Return(nil)
+			scopeMock.EXPECT().SubscriptionID().Return("subID").AnyTimes()
+			scopeMock.EXPECT().BaseURI().Return("https://localhost/").AnyTimes()
+			scopeMock.EXPECT().Authorizer().Return(nil).AnyTimes()
 
 			service := NewService(scopeMock)
 			service.Client = clientMock
@@ -177,6 +180,7 @@ func TestService_Delete(t *testing.T) {
 			Setup: func(s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, m *mock_scalesetvms.MockclientMockRecorder) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
+				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				s.GetLongRunningOperationState("0", serviceName, infrav1.DeleteFuture).Return(nil)
 				future := &infrav1.Future{
@@ -197,6 +201,7 @@ func TestService_Delete(t *testing.T) {
 			Setup: func(s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, m *mock_scalesetvms.MockclientMockRecorder) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
+				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				future := &infrav1.Future{
 					Type: infrav1.DeleteFuture,
@@ -212,6 +217,7 @@ func TestService_Delete(t *testing.T) {
 			Setup: func(s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, m *mock_scalesetvms.MockclientMockRecorder) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
+				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				s.GetLongRunningOperationState("0", serviceName, infrav1.DeleteFuture).Return(nil)
 				m.DeleteAsync(gomock2.AContext(), "rg", "scaleset", "0").Return(nil, autorest404)
@@ -223,6 +229,7 @@ func TestService_Delete(t *testing.T) {
 			Setup: func(s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, m *mock_scalesetvms.MockclientMockRecorder) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
+				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				s.GetLongRunningOperationState("0", serviceName, infrav1.DeleteFuture).Return(nil)
 				m.DeleteAsync(gomock2.AContext(), "rg", "scaleset", "0").Return(nil, errors.New("boom"))
@@ -235,6 +242,7 @@ func TestService_Delete(t *testing.T) {
 			Setup: func(s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, m *mock_scalesetvms.MockclientMockRecorder) {
 				s.ResourceGroup().Return("rg")
 				s.InstanceID().Return("0")
+				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				future := &infrav1.Future{
 					Type: infrav1.DeleteFuture,
@@ -257,9 +265,9 @@ func TestService_Delete(t *testing.T) {
 			)
 			defer mockCtrl.Finish()
 
-			scopeMock.EXPECT().SubscriptionID().Return("subID")
-			scopeMock.EXPECT().BaseURI().Return("https://localhost/")
-			scopeMock.EXPECT().Authorizer().Return(nil)
+			scopeMock.EXPECT().SubscriptionID().Return("subID").AnyTimes()
+			scopeMock.EXPECT().BaseURI().Return("https://localhost/").AnyTimes()
+			scopeMock.EXPECT().Authorizer().Return(nil).AnyTimes()
 
 			service := NewService(scopeMock)
 			service.Client = clientMock

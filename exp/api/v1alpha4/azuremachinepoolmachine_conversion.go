@@ -40,7 +40,13 @@ func (src *AzureMachinePoolMachine) ConvertTo(dstRaw conversion.Hub) error {
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
 func (dst *AzureMachinePoolMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1exp.AzureMachinePoolMachine)
-	return Convert_v1beta1_AzureMachinePoolMachine_To_v1alpha4_AzureMachinePoolMachine(src, dst, nil)
+
+	if err := Convert_v1beta1_AzureMachinePoolMachine_To_v1alpha4_AzureMachinePoolMachine(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Preserve Hub data on down-conversion.
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureMachinePoolMachineList to the Hub version (v1beta1).

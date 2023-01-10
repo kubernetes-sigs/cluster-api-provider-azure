@@ -504,12 +504,6 @@ func registerWebhooks(mgr manager.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureClusterIdentity")
 		os.Exit(1)
 	}
-	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
-	// is going to prevent creating or updating new objects in case the feature flag is disabled
-	if err := (&infrav1exp.AzureMachinePool{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
-		os.Exit(1)
-	}
 
 	if err := (&infrav1exp.AzureMachinePoolMachine{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePoolMachine")
@@ -524,6 +518,12 @@ func registerWebhooks(mgr manager.Manager) {
 	}
 
 	hookServer := mgr.GetWebhookServer()
+	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool", webhookutils.NewMutatingWebhook(
+		&infrav1exp.AzureMachinePool{}, mgr.GetClient(),
+	))
+	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool", webhookutils.NewValidatingWebhook(
+		&infrav1exp.AzureMachinePool{}, mgr.GetClient(),
+	))
 	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhookutils.NewMutatingWebhook(
 		&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
 	))

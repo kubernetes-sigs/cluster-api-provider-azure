@@ -1,0 +1,41 @@
+---
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  kubeadmConfigSpec:
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+          feature-gates: CSIMigrationAzureDisk=true
+          azure-container-registry-config: /etc/kubernetes/azure.json
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+          feature-gates: CSIMigrationAzureDisk=true
+          azure-container-registry-config: /etc/kubernetes/azure.json
+    clusterConfiguration:
+      apiServer:
+        timeoutForControlPlane: 20m
+        extraArgs:
+          cloud-provider: external
+      controllerManager:
+        extraArgs:
+          cloud-provider: external
+          external-cloud-volume-plugin: azure
+          feature-gates: CSIMigrationAzureDisk=true
+  version: "${KUBERNETES_VERSION}"
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+spec:
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        feature-gates: CSIMigrationAzureDisk=true
+        cloud-provider: external

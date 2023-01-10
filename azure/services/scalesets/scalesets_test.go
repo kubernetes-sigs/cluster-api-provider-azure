@@ -1267,7 +1267,8 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,
 			},
-			Overprovision: to.BoolPtr(false),
+			Overprovision:     to.BoolPtr(false),
+			OrchestrationMode: compute.OrchestrationModeUniform,
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 					ComputerNamePrefix: to.StringPtr(defaultVMSSName),

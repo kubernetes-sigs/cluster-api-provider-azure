@@ -1,0 +1,7 @@
+namespace: default
+resources:
+  - ../machinepool
+
+patchesStrategicMerge:
+  - patches/external-cloud-provider.yaml
+  - patches/vmss-flex.yaml

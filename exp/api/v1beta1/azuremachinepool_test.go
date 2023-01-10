@@ -218,7 +218,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 			g := gomega.NewGomegaWithT(t)
 			amp := c.Factory(g)
-			actualErr := amp.Validate(nil)
+			actualErr := amp.Validate(nil, nil)
 			c.Expect(g, actualErr)
 		})
 	}

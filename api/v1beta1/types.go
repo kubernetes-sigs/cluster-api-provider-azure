@@ -873,3 +873,14 @@ type UserManagedBootDiagnostics struct {
 	// +kubebuilder:validation:MaxLength=1024
 	StorageAccountURI string `json:"storageAccountURI"`
 }
+
+// OrchestrationModeType represents the orchestration mode for a Virtual Machine Scale Set backing an AzureMachinePool.
+// +kubebuilder:validation:Enum=Flexible;Uniform
+type OrchestrationModeType string
+
+const (
+	// FlexibleOrchestrationMode treats VMs as individual resources accessible by standard VM APIs.
+	FlexibleOrchestrationMode OrchestrationModeType = "Flexible"
+	// UniformOrchestrationMode treats VMs as identical instances accessible by the VMSS VM API.
+	UniformOrchestrationMode OrchestrationModeType = "Uniform"
+)

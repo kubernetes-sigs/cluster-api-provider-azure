@@ -38,11 +38,13 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -198,6 +200,16 @@ func GetCloudProviderSecret(d azure.ClusterScoper, namespace, name string, owner
 		controlPlaneConfig, workerNodeConfig = newCloudProviderConfig(d)
 	}
 
+	// Enable VMSS Flexible nodes if MachinePools are enabled
+	if feature.Gates.Enabled(capifeature.MachinePool) {
+		if controlPlaneConfig != nil && controlPlaneConfig.VMType == "vmss" {
+			controlPlaneConfig.EnableVmssFlexNodes = true
+		}
+		if workerNodeConfig != nil && workerNodeConfig.VMType == "vmss" {
+			workerNodeConfig.EnableVmssFlexNodes = true
+		}
+	}
+
 	controlPlaneData, err := json.MarshalIndent(controlPlaneConfig, "", "    ")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed control plane json marshal")
@@ -315,6 +327,7 @@ type CloudProviderConfig struct {
 	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
 	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
 	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
+	EnableVmssFlexNodes          bool   `json:"enableVmssFlexNodes,omitempty"`
 	UserAssignedIdentityID       string `json:"userAssignedIdentityID,omitempty"`
 	CloudProviderRateLimitConfig
 	BackOffConfig

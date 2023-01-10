@@ -261,6 +261,20 @@ func (mr *MockScaleSetVMScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScaleSetVMScope)(nil).Location))
 }
 
+// ProviderID mocks base method.
+func (m *MockScaleSetVMScope) ProviderID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProviderID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ProviderID indicates an expected call of ProviderID.
+func (mr *MockScaleSetVMScopeMockRecorder) ProviderID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProviderID", reflect.TypeOf((*MockScaleSetVMScope)(nil).ProviderID))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockScaleSetVMScope) ResourceGroup() string {
 	m.ctrl.T.Helper()

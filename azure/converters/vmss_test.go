@@ -267,3 +267,102 @@ func Test_SDKImageToImage(t *testing.T) {
 		})
 	}
 }
+
+func Test_SDKVMToVMSSVM(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Subject  compute.VirtualMachine
+		Expected *azure.VMSSVM
+	}{
+		{
+			Name: "minimal VM",
+			Subject: compute.VirtualMachine{
+				ID: to.StringPtr("vmID1"),
+			},
+			Expected: &azure.VMSSVM{
+				ID: "vmID1",
+			},
+		},
+		{
+			Name: "VM with zones",
+			Subject: compute.VirtualMachine{
+				ID: to.StringPtr("vmID2"),
+				VirtualMachineProperties: &compute.VirtualMachineProperties{
+					OsProfile: &compute.OSProfile{
+						ComputerName: to.StringPtr("vmwithzones"),
+					},
+				},
+				Zones: to.StringSlicePtr([]string{"zone0", "zone1"}),
+			},
+			Expected: &azure.VMSSVM{
+				ID:               "vmID2",
+				Name:             "vmwithzones",
+				State:            "Creating",
+				AvailabilityZone: "zone0",
+			},
+		},
+		{
+			Name: "VM with storage",
+			Subject: compute.VirtualMachine{
+				ID: to.StringPtr("vmID3"),
+				VirtualMachineProperties: &compute.VirtualMachineProperties{
+					OsProfile: &compute.OSProfile{
+						ComputerName: to.StringPtr("vmwithstorage"),
+					},
+					StorageProfile: &compute.StorageProfile{
+						ImageReference: &compute.ImageReference{
+							ID: to.StringPtr("imageID"),
+						},
+					},
+				},
+			},
+			Expected: &azure.VMSSVM{
+				ID: "vmID3",
+				Image: infrav1.Image{
+					ID:          to.StringPtr("imageID"),
+					Marketplace: &infrav1.AzureMarketplaceImage{},
+				},
+				Name:  "vmwithstorage",
+				State: "Creating",
+			},
+		},
+		{
+			Name: "VM with provisioning state",
+			Subject: compute.VirtualMachine{
+				ID: to.StringPtr("vmID4"),
+				VirtualMachineProperties: &compute.VirtualMachineProperties{
+					OsProfile: &compute.OSProfile{
+						ComputerName: to.StringPtr("vmwithstate"),
+					},
+					ProvisioningState: to.StringPtr("Succeeded"),
+				},
+			},
+			Expected: &azure.VMSSVM{
+				ID:    "vmID4",
+				Name:  "vmwithstate",
+				State: "Succeeded",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
+			g := gomega.NewGomegaWithT(t)
+			subject := converters.SDKVMToVMSSVM(c.Subject)
+			g.Expect(subject).To(gomega.Equal(c.Expected))
+		})
+	}
+}
+
+func Test_GetOrchestrationMode(t *testing.T) {
+	g := gomega.NewGomegaWithT(t)
+
+	g.Expect(converters.GetOrchestrationMode(infrav1.FlexibleOrchestrationMode)).
+		To(gomega.Equal(compute.OrchestrationModeFlexible))
+	g.Expect(converters.GetOrchestrationMode(infrav1.UniformOrchestrationMode)).
+		To(gomega.Equal(compute.OrchestrationModeUniform))
+	g.Expect(converters.GetOrchestrationMode("invalid")).
+		To(gomega.Equal(compute.OrchestrationModeUniform))
+}

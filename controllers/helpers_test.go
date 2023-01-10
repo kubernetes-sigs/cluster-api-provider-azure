@@ -35,10 +35,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	utilfeature "k8s.io/component-base/featuregate/testing"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -97,6 +99,7 @@ func TestGetCloudProviderConfig(t *testing.T) {
 		azureCluster               *infrav1.AzureCluster
 		identityType               infrav1.VMIdentity
 		identityID                 string
+		machinePoolFeature         bool
 		expectedControlPlaneConfig string
 		expectedWorkerNodeConfig   string
 	}{
@@ -143,6 +146,14 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			expectedControlPlaneConfig: backOffCloudConfig,
 			expectedWorkerNodeConfig:   backOffCloudConfig,
 		},
+		"with machinepools": {
+			cluster:                    cluster,
+			azureCluster:               azureCluster,
+			identityType:               infrav1.VMIdentityNone,
+			machinePoolFeature:         true,
+			expectedControlPlaneConfig: vmssCloudConfig,
+			expectedWorkerNodeConfig:   vmssCloudConfig,
+		},
 	}
 
 	os.Setenv(auth.ClientID, "fooClient")
@@ -151,6 +162,9 @@ func TestGetCloudProviderConfig(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			if tc.machinePoolFeature {
+				defer utilfeature.SetFeatureGateDuringTest(t, capifeature.Gates, capifeature.MachinePool, true)()
+			}
 			initObjects := []runtime.Object{tc.cluster, tc.azureCluster}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -676,6 +690,27 @@ const (
     "cloudProviderBackoffExponent": 1.2000000000000002,
     "cloudProviderBackoffDuration": 60,
     "cloudProviderBackoffJitter": 1.2000000000000002
+}`
+	vmssCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
+    "aadClientId": "fooClient",
+    "aadClientSecret": "fooSecret",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "bar",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "foo-vnet",
+    "vnetResourceGroup": "bar",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true
 }`
 )
 

@@ -17,11 +17,13 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	guuid "github.com/google/uuid"
 	. "github.com/onsi/gomega"
@@ -31,7 +33,9 @@ import (
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -50,6 +54,7 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	tests := []struct {
 		name    string
 		amp     *AzureMachinePool
+		version string
 		wantErr bool
 	}{
 		{
@@ -184,10 +189,24 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			amp:     createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
 			wantErr: false,
 		},
+		{
+			name:    "azuremachinepool with Flexible orchestration mode",
+			amp:     createMachinePoolWithOrchestrationMode(compute.OrchestrationModeFlexible),
+			version: "v1.26.0",
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with Flexible orchestration mode and invalid Kubernetes version",
+			amp:     createMachinePoolWithOrchestrationMode(compute.OrchestrationModeFlexible),
+			version: "v1.25.6",
+			wantErr: true,
+		},
 	}
+
 	for _, tc := range tests {
+		client := mockClient{Version: tc.version}
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amp.ValidateCreate()
+			err := tc.amp.ValidateCreate(client)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -195,6 +214,16 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			}
 		})
 	}
+}
+
+type mockClient struct {
+	client.Client
+	Version string
+}
+
+func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	obj.(*expv1.MachinePool).Spec.Template.Spec.Version = &m.Version
+	return nil
 }
 
 func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
@@ -284,7 +313,7 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amp.ValidateUpdate(tc.oldAMP)
+			err := tc.amp.ValidateUpdate(tc.oldAMP, nil)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -320,18 +349,18 @@ func TestAzureMachinePool_Default(t *testing.T) {
 		RoleAssignmentName: "",
 	}}}
 
-	roleAssignmentExistTest.amp.Default()
+	roleAssignmentExistTest.amp.Default(nil)
 	g.Expect(roleAssignmentExistTest.amp.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
 
-	roleAssignmentEmptyTest.amp.Default()
+	roleAssignmentEmptyTest.amp.Default(nil)
 	g.Expect(roleAssignmentEmptyTest.amp.Spec.RoleAssignmentName).To(Not(BeEmpty()))
 	_, err := guuid.Parse(roleAssignmentEmptyTest.amp.Spec.RoleAssignmentName)
 	g.Expect(err).To(Not(HaveOccurred()))
 
-	publicKeyExistTest.amp.Default()
+	publicKeyExistTest.amp.Default(nil)
 	g.Expect(publicKeyExistTest.amp.Spec.Template.SSHPublicKey).To(Equal(existingPublicKey))
 
-	publicKeyNotExistTest.amp.Default()
+	publicKeyNotExistTest.amp.Default(nil)
 	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
 }
 
@@ -474,6 +503,14 @@ func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) 
 	}
 }
 
+func createMachinePoolWithOrchestrationMode(mode compute.OrchestrationMode) *AzureMachinePool {
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			OrchestrationMode: infrav1.OrchestrationModeType(mode),
+		},
+	}
+}
+
 func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 	g := NewWithT(t)
 
@@ -496,7 +533,7 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
-			err := tc.amp.ValidateCreate()
+			err := tc.amp.ValidateCreate(nil)
 			g.Expect(err).To(HaveOccurred())
 		})
 	}

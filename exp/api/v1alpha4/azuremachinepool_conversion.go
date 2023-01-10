@@ -20,7 +20,7 @@ import (
 	unsafe "unsafe"
 
 	"k8s.io/apimachinery/pkg/api/resource"
-	convert "k8s.io/apimachinery/pkg/conversion"
+	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -65,6 +65,15 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Template.Diagnostics = restored.Spec.Template.Diagnostics
 	}
 
+	for i, r := range restored.Status.LongRunningOperationStates {
+		if r.Name == dst.Status.LongRunningOperationStates[i].Name {
+			dst.Status.LongRunningOperationStates[i].ServiceName = r.ServiceName
+		}
+	}
+
+	// Restore orchestration mode
+	dst.Spec.OrchestrationMode = restored.Spec.OrchestrationMode
+
 	return nil
 }
 
@@ -83,6 +92,11 @@ func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error {
 	return utilconversion.MarshalData(src, dst)
 }
 
+// Convert_v1beta1_AzureMachinePoolSpec_To_v1alpha4_AzureMachinePoolSpec converts a v1beta1 AzureMachinePool.Spec to a v1alpha4 AzureMachinePool.Spec.
+func Convert_v1beta1_AzureMachinePoolSpec_To_v1alpha4_AzureMachinePoolSpec(in *infrav1exp.AzureMachinePoolSpec, out *AzureMachinePoolSpec, s apiconversion.Scope) error {
+	return autoConvert_v1beta1_AzureMachinePoolSpec_To_v1alpha4_AzureMachinePoolSpec(in, out, s)
+}
+
 // ConvertTo converts this AzureMachinePool to the Hub version (v1beta1).
 func (src *AzureMachinePoolList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1exp.AzureMachinePoolList)
@@ -96,18 +110,18 @@ func (dst *AzureMachinePoolList) ConvertFrom(srcRaw conversion.Hub) error {
 }
 
 // Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate converts an Azure Machine Pool Machine Template from v1beta1 to v1alpha4.
-func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate(in *infrav1exp.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error {
+func Convert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate(in *infrav1exp.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1alpha4_AzureMachinePoolMachineTemplate(in, out, s)
 }
 
 // Convert_v1beta1_SpotVMOptions_To_v1alpha4_SpotVMOptions converts a SpotVMOptions from v1beta1 to v1alpha4.
-func Convert_v1beta1_SpotVMOptions_To_v1alpha4_SpotVMOptions(in *infrav1.SpotVMOptions, out *infrav1alpha4.SpotVMOptions, s convert.Scope) error {
+func Convert_v1beta1_SpotVMOptions_To_v1alpha4_SpotVMOptions(in *infrav1.SpotVMOptions, out *infrav1alpha4.SpotVMOptions, s apiconversion.Scope) error {
 	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
 	return nil
 }
 
 // Convert_v1alpha4_SpotVMOptions_To_v1beta1_SpotVMOptions converts a SpotVMOptions from v1alpha4 to v1beta1.
-func Convert_v1alpha4_SpotVMOptions_To_v1beta1_SpotVMOptions(in *infrav1alpha4.SpotVMOptions, out *infrav1.SpotVMOptions, s convert.Scope) error {
+func Convert_v1alpha4_SpotVMOptions_To_v1beta1_SpotVMOptions(in *infrav1alpha4.SpotVMOptions, out *infrav1.SpotVMOptions, s apiconversion.Scope) error {
 	out.MaxPrice = (*resource.Quantity)(unsafe.Pointer(in.MaxPrice))
 	return nil
 }
