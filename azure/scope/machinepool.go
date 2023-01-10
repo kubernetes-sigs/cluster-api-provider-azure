@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -735,7 +736,7 @@ func (m *MachinePoolScope) UpdateCAPIMachinePoolReplicas(ctx context.Context, re
 
 // HasReplicasExternallyManaged returns true if the externally managed annotation is set on the CAPI MachinePool resource.
 func (m *MachinePoolScope) HasReplicasExternallyManaged(ctx context.Context) bool {
-	return m.MachinePool.Annotations[azure.ReplicasManagedByAutoscalerAnnotation] == "true"
+	return annotations.ReplicasManagedByExternalAutoscaler(m.MachinePool)
 }
 
 // ReconcileReplicas ensures MachinePool replicas match VMSS capacity if replicas are externally managed by an autoscaler.
