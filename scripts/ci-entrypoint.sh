@@ -132,14 +132,9 @@ create_cluster() {
 }
 
 install_addons() {
-    # Get CCM cluster CIDRs from Cluster object if not set
-    if [[ -z "${CCM_CLUSTER_CIDR:-}" ]]; then
-        CCM_CLUSTER_CIDR=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
-        if CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}' 2> /dev/null); then
-            CCM_CLUSTER_CIDR="${CCM_CLUSTER_CIDR:-}\,${CIDR1}"
-        fi
-    fi
-    echo "CCM cluster CIDR: ${CCM_CLUSTER_CIDR:-}"
+    # Get cluster CIDRs from Cluster object
+    CIDR0=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
+    CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}' 2> /dev/null) || true
 
     # export the target cluster KUBECONFIG if not already set
     export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
@@ -150,10 +145,24 @@ install_addons() {
     | sed 's/namespace: kube-system/namespace: calico-system/' \
     | ${KUBECTL} create -f -
 
-    # install cni
+    # install Calico CNI
     echo "Installing Calico CNI via helm"
+    if [[ "${CIDR0}" =~ .*:.* ]]; then
+        echo "Cluster CIDR is IPv6"
+        CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico-ipv6/values.yaml"
+        CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
+    elif [[ "${CIDR1}" =~ .*:.* ]]; then
+        echo "Cluster CIDR is dual-stack"
+        CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico-dual-stack/values.yaml"
+        CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0},installation.calicoNetwork.ipPools[1].cidr=${CIDR1}"
+    else
+        echo "Cluster CIDR is IPv4"
+        CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico/values.yaml"
+        CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
+    fi
+
     "${HELM}" repo add projectcalico https://projectcalico.docs.tigera.io/charts
-    "${HELM}" install calico projectcalico/tigera-operator -f "${CALICO_VALUES:-${REPO_ROOT}/templates/addons/calico/values.yaml}" --namespace tigera-operator --create-namespace
+    "${HELM}" install calico projectcalico/tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace tigera-operator --create-namespace
 
     export -f wait_for_nodes
     timeout --foreground 1800 bash -c wait_for_nodes
@@ -173,6 +182,12 @@ install_addons() {
             ENABLE_DYNAMIC_RELOADING=true
             copy_secret
         fi
+
+        CCM_CLUSTER_CIDR="${CIDR0}"
+        if [[ -n "${CIDR1}" ]]; then
+            CCM_CLUSTER_CIDR="${CIDR0}\,${CIDR1}"
+        fi
+        echo "CCM cluster CIDR: ${CCM_CLUSTER_CIDR:-}"
 
         export CCM_LOG_VERBOSITY="${CCM_LOG_VERBOSITY:-4}"
         echo "Installing cloud-provider-azure components via helm"
