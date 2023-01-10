@@ -241,6 +241,310 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 			expectErr: true,
 		},
+		{
+			name: "Testing valid AutoScalerProfile",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						BalanceSimilarNodeGroups:      (*BalanceSimilarNodeGroups)(to.StringPtr(string(BalanceSimilarNodeGroupsFalse))),
+						Expander:                      (*Expander)(to.StringPtr(string(ExpanderRandom))),
+						MaxEmptyBulkDelete:            to.StringPtr("10"),
+						MaxGracefulTerminationSec:     to.StringPtr("600"),
+						MaxNodeProvisionTime:          to.StringPtr("10m"),
+						MaxTotalUnreadyPercentage:     to.StringPtr("45"),
+						NewPodScaleUpDelay:            to.StringPtr("10m"),
+						OkTotalUnreadyCount:           to.StringPtr("3"),
+						ScanInterval:                  to.StringPtr("60s"),
+						ScaleDownDelayAfterAdd:        to.StringPtr("10m"),
+						ScaleDownDelayAfterDelete:     to.StringPtr("10s"),
+						ScaleDownDelayAfterFailure:    to.StringPtr("10m"),
+						ScaleDownUnneededTime:         to.StringPtr("10m"),
+						ScaleDownUnreadyTime:          to.StringPtr("10m"),
+						ScaleDownUtilizationThreshold: to.StringPtr("0.5"),
+						SkipNodesWithLocalStorage:     (*SkipNodesWithLocalStorage)(to.StringPtr(string(SkipNodesWithLocalStorageTrue))),
+						SkipNodesWithSystemPods:       (*SkipNodesWithSystemPods)(to.StringPtr(string(SkipNodesWithSystemPodsTrue))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.ExpanderRandom",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						Expander: (*Expander)(to.StringPtr(string(ExpanderRandom))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.ExpanderLeastWaste",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						Expander: (*Expander)(to.StringPtr(string(ExpanderLeastWaste))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.ExpanderMostPods",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						Expander: (*Expander)(to.StringPtr(string(ExpanderMostPods))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.ExpanderPriority",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						Expander: (*Expander)(to.StringPtr(string(ExpanderPriority))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.BalanceSimilarNodeGroupsTrue",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						BalanceSimilarNodeGroups: (*BalanceSimilarNodeGroups)(to.StringPtr(string(BalanceSimilarNodeGroupsTrue))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.BalanceSimilarNodeGroupsFalse",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						BalanceSimilarNodeGroups: (*BalanceSimilarNodeGroups)(to.StringPtr(string(BalanceSimilarNodeGroupsFalse))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.MaxEmptyBulkDelete",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						MaxEmptyBulkDelete: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.MaxGracefulTerminationSec",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						MaxGracefulTerminationSec: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.MaxNodeProvisionTime",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						MaxNodeProvisionTime: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.MaxTotalUnreadyPercentage",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						MaxTotalUnreadyPercentage: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.NewPodScaleUpDelay",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						NewPodScaleUpDelay: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.OkTotalUnreadyCount",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						OkTotalUnreadyCount: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScanInterval",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						ScanInterval: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownDelayAfterAdd",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						ScaleDownDelayAfterAdd: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownDelayAfterDelete",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						ScaleDownDelayAfterDelete: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownDelayAfterFailure",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						ScaleDownDelayAfterFailure: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownUnneededTime",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						ScaleDownUnneededTime: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownUnreadyTime",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						ScaleDownUnreadyTime: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownUtilizationThreshold",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						ScaleDownUtilizationThreshold: to.StringPtr("invalid"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.SkipNodesWithLocalStorageTrue",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						SkipNodesWithLocalStorage: (*SkipNodesWithLocalStorage)(to.StringPtr(string(SkipNodesWithLocalStorageTrue))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.SkipNodesWithLocalStorageFalse",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						SkipNodesWithLocalStorage: (*SkipNodesWithLocalStorage)(to.StringPtr(string(SkipNodesWithLocalStorageFalse))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.SkipNodesWithSystemPodsTrue",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						SkipNodesWithSystemPods: (*SkipNodesWithSystemPods)(to.StringPtr(string(SkipNodesWithSystemPodsTrue))),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.SkipNodesWithSystemPodsFalse",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					AutoScalerProfile: &AutoScalerProfile{
+						SkipNodesWithSystemPods: (*SkipNodesWithSystemPods)(to.StringPtr(string(SkipNodesWithSystemPodsFalse))),
+					},
+				},
+			},
+			expectErr: false,
+		},
 	}
 
 	for _, tt := range tests {

@@ -23,8 +23,11 @@ import (
 	"net"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -40,6 +43,10 @@ import (
 var (
 	kubeSemver                       = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
 	controlPlaneEndpointErrorMessage = "can not be set by the user, will be set automatically by AKS after the cluster is Ready"
+	rMaxNodeProvisionTime            = regexp.MustCompile(`^(\d+)m$`)
+	rScaleDownTime                   = regexp.MustCompile(`^(\d+)m$`)
+	rScaleDownDelayAfterDelete       = regexp.MustCompile(`^(\d+)s$`)
+	rScanInterval                    = regexp.MustCompile(`^(\d+)s$`)
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
@@ -79,6 +86,7 @@ func (m *AzureManagedControlPlane) Default(_ client.Client) {
 	m.setDefaultVirtualNetwork()
 	m.setDefaultSubnet()
 	m.setDefaultSku()
+	m.setDefaultAutoScalerProfile()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1beta1,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -258,6 +266,7 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 		m.validateLoadBalancerProfile,
 		m.validateAPIServerAccessProfile,
 		m.validateManagedClusterNetwork,
+		m.validateAutoScalerProfile,
 	}
 
 	var errs []error
@@ -520,4 +529,147 @@ func (m *AzureManagedControlPlane) validateName(_ client.Client) error {
 	}
 
 	return nil
+}
+
+// validateAutoScalerProfile validates an AutoScalerProfile.
+func (m *AzureManagedControlPlane) validateAutoScalerProfile(_ client.Client) error {
+	var allErrs field.ErrorList
+
+	if m.Spec.AutoScalerProfile == nil {
+		return nil
+	}
+
+	if errs := m.validateIntegerStringGreaterThanZero(m.Spec.AutoScalerProfile.MaxEmptyBulkDelete, "MaxEmptyBulkDelete"); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateIntegerStringGreaterThanZero(m.Spec.AutoScalerProfile.MaxGracefulTerminationSec, "MaxGracefulTerminationSec"); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateMaxNodeProvisionTime(); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if m.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage != nil {
+		val, err := strconv.Atoi(*m.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage)
+		if err != nil || val < 0 || val > 100 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "MaxTotalUnreadyPercentage"), m.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage, "invalid value"))
+		}
+	}
+
+	if errs := m.validateNewPodScaleUpDelay(); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateIntegerStringGreaterThanZero(m.Spec.AutoScalerProfile.OkTotalUnreadyCount, "OkTotalUnreadyCount"); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateScanInterval(); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateScaleDownTime(m.Spec.AutoScalerProfile.ScaleDownDelayAfterAdd, "ScaleDownDelayAfterAdd"); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateScaleDownDelayAfterDelete(); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateScaleDownTime(m.Spec.AutoScalerProfile.ScaleDownDelayAfterFailure, "ScaleDownDelayAfterFailure"); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateScaleDownTime(m.Spec.AutoScalerProfile.ScaleDownUnneededTime, "ScaleDownUnneededTime"); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateScaleDownTime(m.Spec.AutoScalerProfile.ScaleDownUnreadyTime, "ScaleDownUnreadyTime"); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if m.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold != nil {
+		val, err := strconv.ParseFloat(*m.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold, 32)
+		if err != nil || val < 0 || val > 1 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "ScaleDownUtilizationThreshold"), m.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold, "invalid value"))
+		}
+	}
+
+	if len(allErrs) > 0 {
+		return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+	}
+
+	return nil
+}
+
+// validateMaxNodeProvisionTime validates update to AutoscalerProfile.MaxNodeProvisionTime.
+func (m *AzureManagedControlPlane) validateMaxNodeProvisionTime() field.ErrorList {
+	var allErrs field.ErrorList
+	if to.String(m.Spec.AutoScalerProfile.MaxNodeProvisionTime) != "" {
+		if !rMaxNodeProvisionTime.MatchString(to.String(m.Spec.AutoScalerProfile.MaxNodeProvisionTime)) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "MaxNodeProvisionTime"), m.Spec.AutoScalerProfile.MaxNodeProvisionTime, "invalid value"))
+		}
+	}
+	return allErrs
+}
+
+// validateScanInterval validates update to AutoscalerProfile.ScanInterval.
+func (m *AzureManagedControlPlane) validateScanInterval() field.ErrorList {
+	var allErrs field.ErrorList
+	if to.String(m.Spec.AutoScalerProfile.ScanInterval) != "" {
+		if !rScanInterval.MatchString(to.String(m.Spec.AutoScalerProfile.ScanInterval)) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "ScanInterval"), m.Spec.AutoScalerProfile.ScanInterval, "invalid value"))
+		}
+	}
+	return allErrs
+}
+
+// validateNewPodScaleUpDelay validates update to AutoscalerProfile.NewPodScaleUpDelay.
+func (m *AzureManagedControlPlane) validateNewPodScaleUpDelay() field.ErrorList {
+	var allErrs field.ErrorList
+	if to.String(m.Spec.AutoScalerProfile.NewPodScaleUpDelay) != "" {
+		_, err := time.ParseDuration(to.String(m.Spec.AutoScalerProfile.NewPodScaleUpDelay))
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "NewPodScaleUpDelay"), m.Spec.AutoScalerProfile.NewPodScaleUpDelay, "invalid value"))
+		}
+	}
+	return allErrs
+}
+
+// validateScaleDownDelayAfterDelete validates update to AutoscalerProfile.ScaleDownDelayAfterDelete value.
+func (m *AzureManagedControlPlane) validateScaleDownDelayAfterDelete() field.ErrorList {
+	var allErrs field.ErrorList
+	if to.String(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete) != "" {
+		if !rScaleDownDelayAfterDelete.MatchString(to.String(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete)) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "ScaleDownDelayAfterDelete"), to.String(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete), "invalid value"))
+		}
+	}
+	return allErrs
+}
+
+// validateScaleDownTime validates update to AutoscalerProfile.ScaleDown* values.
+func (m *AzureManagedControlPlane) validateScaleDownTime(scaleDownValue *string, fieldName string) field.ErrorList {
+	var allErrs field.ErrorList
+	if to.String(scaleDownValue) != "" {
+		if !rScaleDownTime.MatchString(to.String(scaleDownValue)) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", fieldName), to.String(scaleDownValue), "invalid value"))
+		}
+	}
+	return allErrs
+}
+
+// validateIntegerStringGreaterThanZero validates that a string value is an integer greater than zero.
+func (m *AzureManagedControlPlane) validateIntegerStringGreaterThanZero(input *string, fieldName string) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if input != nil {
+		val, err := strconv.Atoi(*input)
+		if err != nil || val < 0 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", fieldName), input, "invalid value"))
+		}
+	}
+
+	return allErrs
 }

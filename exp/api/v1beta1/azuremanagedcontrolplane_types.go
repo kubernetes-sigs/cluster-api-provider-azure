@@ -116,6 +116,10 @@ type AzureManagedControlPlaneSpec struct {
 	// APIServerAccessProfile is the access profile for AKS API server.
 	// +optional
 	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
+
+	// AutoscalerProfile is the parameters to be applied to the cluster-autoscaler when enabled
+	// +optional
+	AutoScalerProfile *AutoScalerProfile `json:"autoscalerProfile,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
@@ -246,6 +250,122 @@ type AzureManagedControlPlaneStatus struct {
 	// +optional
 	LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
 }
+
+// AutoScalerProfile parameters to be applied to the cluster-autoscaler.
+// See the [FAQ](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-parameters-to-ca) for more details about each parameter.
+type AutoScalerProfile struct {
+	// BalanceSimilarNodeGroups - Valid values are 'true' and 'false'. The default is false.
+	// +kubebuilder:validation:Enum="true";"false"
+	// +optional
+	BalanceSimilarNodeGroups *BalanceSimilarNodeGroups `json:"balanceSimilarNodeGroups,omitempty"`
+	// Expander - If not specified, the default is 'random'. See [expanders](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-expanders) for more information.
+	// +kubebuilder:validation:Enum=least-waste;most-pods;priority;random
+	// +optional
+	Expander *Expander `json:"expander,omitempty"`
+	// MaxEmptyBulkDelete - The default is 10.
+	// +optional
+	MaxEmptyBulkDelete *string `json:"maxEmptyBulkDelete,omitempty"`
+	// MaxGracefulTerminationSec - The default is 600.
+	// +kubebuilder:validation:Pattern=`^(\d+)$`
+	// +optional
+	MaxGracefulTerminationSec *string `json:"maxGracefulTerminationSec,omitempty"`
+	// MaxNodeProvisionTime - The default is '15m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	// +kubebuilder:validation:Pattern=`^(\d+)m$`
+	// +optional
+	MaxNodeProvisionTime *string `json:"maxNodeProvisionTime,omitempty"`
+	// MaxTotalUnreadyPercentage - The default is 45. The maximum is 100 and the minimum is 0.
+	// +kubebuilder:validation:Pattern=`^(\d+)$`
+	// +kubebuilder:validation:MaxLength=3
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	MaxTotalUnreadyPercentage *string `json:"maxTotalUnreadyPercentage,omitempty"`
+	// NewPodScaleUpDelay - For scenarios like burst/batch scale where you don't want CA to act before the kubernetes scheduler could schedule all the pods, you can tell CA to ignore unscheduled pods before they're a certain age. The default is '0s'. Values must be an integer followed by a unit ('s' for seconds, 'm' for minutes, 'h' for hours, etc).
+	// +optional
+	NewPodScaleUpDelay *string `json:"newPodScaleUpDelay,omitempty"`
+	// OkTotalUnreadyCount - This must be an integer. The default is 3.
+	// +kubebuilder:validation:Pattern=`^(\d+)$`
+	// +optional
+	OkTotalUnreadyCount *string `json:"okTotalUnreadyCount,omitempty"`
+	// ScanInterval - How often cluster is reevaluated for scale up or down. The default is '10s'.
+	// +kubebuilder:validation:Pattern=`^(\d+)s$`
+	// +optional
+	ScanInterval *string `json:"scanInterval,omitempty"`
+	// ScaleDownDelayAfterAdd - The default is '10m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	// +kubebuilder:validation:Pattern=`^(\d+)m$`
+	// +optional
+	ScaleDownDelayAfterAdd *string `json:"scaleDownDelayAfterAdd,omitempty"`
+	// ScaleDownDelayAfterDelete - The default is the scan-interval. Values must be an integer followed by an 's'. No unit of time other than seconds (s) is supported.
+	// +kubebuilder:validation:Pattern=`^(\d+)s$`
+	// +optional
+	ScaleDownDelayAfterDelete *string `json:"scaleDownDelayAfterDelete,omitempty"`
+	// ScaleDownDelayAfterFailure - The default is '3m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	// +kubebuilder:validation:Pattern=`^(\d+)m$`
+	// +optional
+	ScaleDownDelayAfterFailure *string `json:"scaleDownDelayAfterFailure,omitempty"`
+	// ScaleDownUnneededTime - The default is '10m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	// +kubebuilder:validation:Pattern=`^(\d+)m$`
+	// +optional
+	ScaleDownUnneededTime *string `json:"scaleDownUnneededTime,omitempty"`
+	// ScaleDownUnreadyTime - The default is '20m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	// +kubebuilder:validation:Pattern=`^(\d+)m$`
+	// +optional
+	ScaleDownUnreadyTime *string `json:"scaleDownUnreadyTime,omitempty"`
+	// ScaleDownUtilizationThreshold - The default is '0.5'.
+	// +optional
+	ScaleDownUtilizationThreshold *string `json:"scaleDownUtilizationThreshold,omitempty"`
+	// SkipNodesWithLocalStorage - The default is false.
+	// +kubebuilder:validation:Enum="true";"false"
+	// +optional
+	SkipNodesWithLocalStorage *SkipNodesWithLocalStorage `json:"skipNodesWithLocalStorage,omitempty"`
+	// SkipNodesWithSystemPods - The default is true.
+	// +kubebuilder:validation:Enum="true";"false"
+	// +optional
+	SkipNodesWithSystemPods *SkipNodesWithSystemPods `json:"skipNodesWithSystemPods,omitempty"`
+}
+
+// BalanceSimilarNodeGroups enumerates the values for BalanceSimilarNodeGroups.
+type BalanceSimilarNodeGroups string
+
+const (
+	// BalanceSimilarNodeGroupsTrue ...
+	BalanceSimilarNodeGroupsTrue BalanceSimilarNodeGroups = "true"
+	// BalanceSimilarNodeGroupsFalse ...
+	BalanceSimilarNodeGroupsFalse BalanceSimilarNodeGroups = "false"
+)
+
+// SkipNodesWithLocalStorage enumerates the values for SkipNodesWithLocalStorage.
+type SkipNodesWithLocalStorage string
+
+const (
+	// SkipNodesWithLocalStorageTrue ...
+	SkipNodesWithLocalStorageTrue SkipNodesWithLocalStorage = "true"
+	// SkipNodesWithLocalStorageFalse ...
+	SkipNodesWithLocalStorageFalse SkipNodesWithLocalStorage = "false"
+)
+
+// SkipNodesWithSystemPods enumerates the values for SkipNodesWithSystemPods.
+type SkipNodesWithSystemPods string
+
+const (
+	// SkipNodesWithSystemPodsTrue ...
+	SkipNodesWithSystemPodsTrue SkipNodesWithSystemPods = "true"
+	// SkipNodesWithSystemPodsFalse ...
+	SkipNodesWithSystemPodsFalse SkipNodesWithSystemPods = "false"
+)
+
+// Expander enumerates the values for Expander.
+type Expander string
+
+const (
+	// ExpanderLeastWaste ...
+	ExpanderLeastWaste Expander = "least-waste"
+	// ExpanderMostPods ...
+	ExpanderMostPods Expander = "most-pods"
+	// ExpanderPriority ...
+	ExpanderPriority Expander = "priority"
+	// ExpanderRandom ...
+	ExpanderRandom Expander = "random"
+)
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedcontrolplanes,scope=Namespaced,categories=cluster-api,shortName=amcp

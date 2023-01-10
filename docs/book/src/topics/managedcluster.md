@@ -318,7 +318,7 @@ spec:
 
 ### AKS Cluster Autoscaler
 
-Azure Kubernetes Service can be configured to use cluster autoscaler by specifying `scaling` spec in the `AzureManagedMachinePool`
+Azure Kubernetes Service can have the cluster autoscaler enabled by specifying `scaling` spec in any of the `AzureManagedMachinePool` defined.
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -332,6 +332,34 @@ spec:
   scaling:
     minSize: 2
     maxSize: 10
+```
+
+The cluster autoscaler behavior settings can be set in the `AzureManagedControlPlane`. Not setting a property will default to the value used by AKS. All values are expected to be strings.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: my-cluster-control-plane
+spec:
+  autoscalerProfile:
+    balanceSimilarNodeGroups: "false"
+    expander: "random"
+    maxEmptyBulkDelete: "10"
+    maxGracefulTerminationSec: "600"
+    maxNodeProvisionTime: "15m"
+    maxTotalUnreadyPercentage: "45"
+    newPodScaleUpDelay: "0s"
+    okTotalUnreadyCount: "3"
+    scanInterval: "10s"
+    scaleDownDelayAfterAdd: "10m"
+    scaleDownDelayAfterDelete: "10s"
+    scaleDownDelayAfterFailure: "3m"
+    scaleDownUnneededTime: "10m"
+    scaleDownUnreadyTime: "20m"
+    scaleDownUtilizationThreshold: "0.5"
+    skipNodesWithLocalStorage: "false"
+    skipNodesWithSystemPods: "true"
 ```
 
 ### AKS Node Labels to an Agent Pool

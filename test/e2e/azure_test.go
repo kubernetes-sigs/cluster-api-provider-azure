@@ -642,6 +642,15 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("modifying the azure cluster-autoscaler settings", func() {
+				AKSAzureClusterAutoscalerSettingsSpec(ctx, func() AKSAzureClusterAutoscalerSettingsSpecInput {
+					return AKSAzureClusterAutoscalerSettingsSpecInput{
+						Cluster:       result.Cluster,
+						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+					}
+				})
+			})
 		})
 	})
 

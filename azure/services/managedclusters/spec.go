@@ -23,7 +23,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
@@ -97,6 +97,9 @@ type ManagedClusterSpec struct {
 
 	// Headers is the list of headers to add to the HTTP requests to update this resource.
 	Headers map[string]string
+
+	// AutoScalerProfile is the parameters to be applied to the cluster-autoscaler when enabled.
+	AutoScalerProfile *AutoScalerProfile
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
@@ -159,6 +162,44 @@ type APIServerAccessProfile struct {
 	EnablePrivateClusterPublicFQDN *bool
 }
 
+// AutoScalerProfile parameters to be applied to the cluster-autoscaler when enabled.
+type AutoScalerProfile struct {
+	// BalanceSimilarNodeGroups - Valid values are 'true' and 'false'
+	BalanceSimilarNodeGroups *string
+	// Expander - If not specified, the default is 'random'. See [expanders](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-expanders) for more information.
+	Expander *string
+	// MaxEmptyBulkDelete - The default is 10.
+	MaxEmptyBulkDelete *string
+	// MaxGracefulTerminationSec - The default is 600.
+	MaxGracefulTerminationSec *string
+	// MaxNodeProvisionTime - The default is '15m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	MaxNodeProvisionTime *string
+	// MaxTotalUnreadyPercentage - The default is 45. The maximum is 100 and the minimum is 0.
+	MaxTotalUnreadyPercentage *string
+	// NewPodScaleUpDelay - For scenarios like burst/batch scale where you don't want CA to act before the kubernetes scheduler could schedule all the pods, you can tell CA to ignore unscheduled pods before they're a certain age. The default is '0s'. Values must be an integer followed by a unit ('s' for seconds, 'm' for minutes, 'h' for hours, etc).
+	NewPodScaleUpDelay *string
+	// OkTotalUnreadyCount - This must be an integer. The default is 3.
+	OkTotalUnreadyCount *string
+	// ScanInterval - The default is '10s'. Values must be an integer number of seconds.
+	ScanInterval *string
+	// ScaleDownDelayAfterAdd - The default is '10m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	ScaleDownDelayAfterAdd *string
+	// ScaleDownDelayAfterDelete - The default is the scan-interval. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	ScaleDownDelayAfterDelete *string
+	// ScaleDownDelayAfterFailure - The default is '3m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	ScaleDownDelayAfterFailure *string
+	// ScaleDownUnneededTime - The default is '10m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	ScaleDownUnneededTime *string
+	// ScaleDownUnreadyTime - The default is '20m'. Values must be an integer followed by an 'm'. No unit of time other than minutes (m) is supported.
+	ScaleDownUnreadyTime *string
+	// ScaleDownUtilizationThreshold - The default is '0.5'.
+	ScaleDownUtilizationThreshold *string
+	// SkipNodesWithLocalStorage - The default is true.
+	SkipNodesWithLocalStorage *string
+	// SkipNodesWithSystemPods - The default is true.
+	SkipNodesWithSystemPods *string
+}
+
 var _ azure.ResourceSpecGetterWithHeaders = (*ManagedClusterSpec)(nil)
 
 // ResourceName returns the name of the AKS cluster.
@@ -179,6 +220,37 @@ func (s *ManagedClusterSpec) OwnerResourceName() string {
 // CustomHeaders returns custom headers to be added to the Azure API calls.
 func (s *ManagedClusterSpec) CustomHeaders() map[string]string {
 	return s.Headers
+}
+
+// buildAutoScalerProfile builds the AutoScalerProfile for the ManagedClusterProperties.
+func buildAutoScalerProfile(autoScalerProfile *AutoScalerProfile) *containerservice.ManagedClusterPropertiesAutoScalerProfile {
+	if autoScalerProfile == nil {
+		return nil
+	}
+
+	mcAutoScalerProfile := &containerservice.ManagedClusterPropertiesAutoScalerProfile{
+		BalanceSimilarNodeGroups:      autoScalerProfile.BalanceSimilarNodeGroups,
+		MaxEmptyBulkDelete:            autoScalerProfile.MaxEmptyBulkDelete,
+		MaxGracefulTerminationSec:     autoScalerProfile.MaxGracefulTerminationSec,
+		MaxNodeProvisionTime:          autoScalerProfile.MaxNodeProvisionTime,
+		MaxTotalUnreadyPercentage:     autoScalerProfile.MaxTotalUnreadyPercentage,
+		NewPodScaleUpDelay:            autoScalerProfile.NewPodScaleUpDelay,
+		OkTotalUnreadyCount:           autoScalerProfile.OkTotalUnreadyCount,
+		ScanInterval:                  autoScalerProfile.ScanInterval,
+		ScaleDownDelayAfterAdd:        autoScalerProfile.ScaleDownDelayAfterAdd,
+		ScaleDownDelayAfterDelete:     autoScalerProfile.ScaleDownDelayAfterDelete,
+		ScaleDownDelayAfterFailure:    autoScalerProfile.ScaleDownDelayAfterFailure,
+		ScaleDownUnneededTime:         autoScalerProfile.ScaleDownUnneededTime,
+		ScaleDownUnreadyTime:          autoScalerProfile.ScaleDownUnreadyTime,
+		ScaleDownUtilizationThreshold: autoScalerProfile.ScaleDownUtilizationThreshold,
+		SkipNodesWithLocalStorage:     autoScalerProfile.SkipNodesWithLocalStorage,
+		SkipNodesWithSystemPods:       autoScalerProfile.SkipNodesWithSystemPods,
+	}
+	if autoScalerProfile.Expander != nil {
+		mcAutoScalerProfile.Expander = containerservice.Expander(*autoScalerProfile.Expander)
+	}
+
+	return mcAutoScalerProfile
 }
 
 // Parameters returns the parameters for the managed clusters.
@@ -305,6 +377,8 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 		}
 	}
 
+	managedCluster.AutoScalerProfile = buildAutoScalerProfile(s.AutoScalerProfile)
+
 	if existing != nil {
 		existingMC, ok := existing.(containerservice.ManagedCluster)
 		if !ok {
@@ -384,11 +458,13 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 	propertiesNormalized := &containerservice.ManagedClusterProperties{
 		KubernetesVersion: managedCluster.ManagedClusterProperties.KubernetesVersion,
 		NetworkProfile:    &containerservice.NetworkProfile{},
+		AutoScalerProfile: &containerservice.ManagedClusterPropertiesAutoScalerProfile{},
 	}
 
 	existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
 		KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
 		NetworkProfile:    &containerservice.NetworkProfile{},
+		AutoScalerProfile: &containerservice.ManagedClusterPropertiesAutoScalerProfile{},
 	}
 
 	if managedCluster.AadProfile != nil {
@@ -425,6 +501,57 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 		existingMCPropertiesNormalized.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
 			AuthorizedIPRanges: existingMC.APIServerAccessProfile.AuthorizedIPRanges,
 		}
+	}
+
+	if managedCluster.AutoScalerProfile != nil {
+		propertiesNormalized.AutoScalerProfile = &containerservice.ManagedClusterPropertiesAutoScalerProfile{
+			BalanceSimilarNodeGroups:      managedCluster.AutoScalerProfile.BalanceSimilarNodeGroups,
+			Expander:                      managedCluster.AutoScalerProfile.Expander,
+			MaxEmptyBulkDelete:            managedCluster.AutoScalerProfile.MaxEmptyBulkDelete,
+			MaxGracefulTerminationSec:     managedCluster.AutoScalerProfile.MaxGracefulTerminationSec,
+			MaxNodeProvisionTime:          managedCluster.AutoScalerProfile.MaxNodeProvisionTime,
+			MaxTotalUnreadyPercentage:     managedCluster.AutoScalerProfile.MaxTotalUnreadyPercentage,
+			NewPodScaleUpDelay:            managedCluster.AutoScalerProfile.NewPodScaleUpDelay,
+			OkTotalUnreadyCount:           managedCluster.AutoScalerProfile.OkTotalUnreadyCount,
+			ScanInterval:                  managedCluster.AutoScalerProfile.ScanInterval,
+			ScaleDownDelayAfterAdd:        managedCluster.AutoScalerProfile.ScaleDownDelayAfterAdd,
+			ScaleDownDelayAfterDelete:     managedCluster.AutoScalerProfile.ScaleDownDelayAfterDelete,
+			ScaleDownDelayAfterFailure:    managedCluster.AutoScalerProfile.ScaleDownDelayAfterFailure,
+			ScaleDownUnneededTime:         managedCluster.AutoScalerProfile.ScaleDownUnneededTime,
+			ScaleDownUnreadyTime:          managedCluster.AutoScalerProfile.ScaleDownUnreadyTime,
+			ScaleDownUtilizationThreshold: managedCluster.AutoScalerProfile.ScaleDownUtilizationThreshold,
+			SkipNodesWithLocalStorage:     managedCluster.AutoScalerProfile.SkipNodesWithLocalStorage,
+			SkipNodesWithSystemPods:       managedCluster.AutoScalerProfile.SkipNodesWithSystemPods,
+		}
+	}
+
+	if existingMC.AutoScalerProfile != nil {
+		existingMCPropertiesNormalized.AutoScalerProfile = &containerservice.ManagedClusterPropertiesAutoScalerProfile{
+			BalanceSimilarNodeGroups:      existingMC.AutoScalerProfile.BalanceSimilarNodeGroups,
+			Expander:                      existingMC.AutoScalerProfile.Expander,
+			MaxEmptyBulkDelete:            existingMC.AutoScalerProfile.MaxEmptyBulkDelete,
+			MaxGracefulTerminationSec:     existingMC.AutoScalerProfile.MaxGracefulTerminationSec,
+			MaxNodeProvisionTime:          existingMC.AutoScalerProfile.MaxNodeProvisionTime,
+			MaxTotalUnreadyPercentage:     existingMC.AutoScalerProfile.MaxTotalUnreadyPercentage,
+			NewPodScaleUpDelay:            existingMC.AutoScalerProfile.NewPodScaleUpDelay,
+			OkTotalUnreadyCount:           existingMC.AutoScalerProfile.OkTotalUnreadyCount,
+			ScanInterval:                  existingMC.AutoScalerProfile.ScanInterval,
+			ScaleDownDelayAfterAdd:        existingMC.AutoScalerProfile.ScaleDownDelayAfterAdd,
+			ScaleDownDelayAfterDelete:     existingMC.AutoScalerProfile.ScaleDownDelayAfterDelete,
+			ScaleDownDelayAfterFailure:    existingMC.AutoScalerProfile.ScaleDownDelayAfterFailure,
+			ScaleDownUnneededTime:         existingMC.AutoScalerProfile.ScaleDownUnneededTime,
+			ScaleDownUnreadyTime:          existingMC.AutoScalerProfile.ScaleDownUnreadyTime,
+			ScaleDownUtilizationThreshold: existingMC.AutoScalerProfile.ScaleDownUtilizationThreshold,
+			SkipNodesWithLocalStorage:     existingMC.AutoScalerProfile.SkipNodesWithLocalStorage,
+			SkipNodesWithSystemPods:       existingMC.AutoScalerProfile.SkipNodesWithSystemPods,
+		}
+	}
+
+	// Once the AKS autoscaler has been updated it will always return values so we need to
+	// respect those values even though the settings are now not being explicitly set by CAPZ.
+	if existingMC.AutoScalerProfile != nil && managedCluster.AutoScalerProfile == nil {
+		existingMCPropertiesNormalized.AutoScalerProfile = nil
+		propertiesNormalized.AutoScalerProfile = nil
 	}
 
 	clusterNormalized := &containerservice.ManagedCluster{
