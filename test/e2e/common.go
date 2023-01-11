@@ -37,11 +37,13 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmv1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
+	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
@@ -290,4 +292,116 @@ func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clust
 		Lister:  input.ClusterProxy.GetClient(),
 		Cluster: result.Cluster,
 	}, input.WaitForControlPlaneIntervals...)
+}
+
+func createApplyClusterTemplateInput(specName string, changes ...func(*clusterctl.ApplyClusterTemplateAndWaitInput)) clusterctl.ApplyClusterTemplateAndWaitInput {
+	input := clusterctl.ApplyClusterTemplateAndWaitInput{
+		ClusterProxy: bootstrapClusterProxy,
+		ConfigCluster: clusterctl.ConfigClusterInput{
+			LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+			ClusterctlConfigPath:     clusterctlConfigPath,
+			KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+			InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+			Flavor:                   clusterctl.DefaultFlavor,
+			Namespace:                "default",
+			ClusterName:              "cluster",
+			KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+			ControlPlaneMachineCount: pointer.Int64Ptr(1),
+			WorkerMachineCount:       pointer.Int64Ptr(1),
+		},
+		WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+		WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+		WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+	}
+	for _, change := range changes {
+		change(&input)
+	}
+
+	return input
+}
+
+func withClusterProxy(proxy framework.ClusterProxy) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.ClusterProxy = proxy
+	}
+}
+
+func withFlavor(flavor string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.ConfigCluster.Flavor = flavor
+	}
+}
+
+func withNamespace(namespace string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.ConfigCluster.Namespace = namespace
+	}
+}
+
+func withClusterName(clusterName string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.ConfigCluster.ClusterName = clusterName
+	}
+}
+
+func withKubernetesVersion(version string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.ConfigCluster.KubernetesVersion = version
+	}
+}
+
+func withControlPlaneMachineCount(count int64) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.ConfigCluster.ControlPlaneMachineCount = pointer.Int64Ptr(count)
+	}
+}
+
+func withWorkerMachineCount(count int64) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.ConfigCluster.WorkerMachineCount = pointer.Int64Ptr(count)
+	}
+}
+
+func withClusterInterval(specName string, intervalName string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		if intervalName != "" {
+			input.WaitForClusterIntervals = e2eConfig.GetIntervals(specName, intervalName)
+		}
+	}
+}
+
+func withControlPlaneInterval(specName string, intervalName string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		if intervalName != "" {
+			input.WaitForControlPlaneIntervals = e2eConfig.GetIntervals(specName, intervalName)
+		}
+	}
+}
+
+func withMachineDeploymentInterval(specName string, intervalName string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		if intervalName != "" {
+			input.WaitForMachineDeployments = e2eConfig.GetIntervals(specName, intervalName)
+		}
+	}
+}
+
+func withMachinePoolInterval(specName string, intervalName string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		if intervalName != "" {
+			input.WaitForMachinePools = e2eConfig.GetIntervals(specName, intervalName)
+		}
+	}
+}
+
+func withControlPlaneWaiters(waiters clusterctl.ControlPlaneWaiters) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.ControlPlaneWaiters = waiters
+	}
+}
+
+func withPostMachinesProvisioned(postMachinesProvisioned func()) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.PostMachinesProvisioned = postMachinesProvisioned
+	}
 }

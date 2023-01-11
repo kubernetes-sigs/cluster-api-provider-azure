@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -34,7 +33,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -164,27 +162,18 @@ var _ = Describe("Conformance Tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		stopwatch := experiment.NewStopwatch()
-		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
-			ClusterProxy: bootstrapClusterProxy,
-			ConfigCluster: clusterctl.ConfigClusterInput{
-				LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
-				ClusterctlConfigPath:     clusterctlConfigPath,
-				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-				Flavor:                   flavor,
-				Namespace:                namespace.Name,
-				ClusterName:              clusterName,
-				KubernetesVersion:        kubernetesVersion,
-				ControlPlaneMachineCount: pointer.Int64(controlPlaneMachineCount),
-				WorkerMachineCount:       pointer.Int64(linuxWorkerMachineCount),
-			},
-			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-			ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+		clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+			specName,
+			withFlavor(flavor),
+			withNamespace(namespace.Name),
+			withClusterName(clusterName),
+			withKubernetesVersion(kubernetesVersion),
+			withControlPlaneMachineCount(controlPlaneMachineCount),
+			withWorkerMachineCount(linuxWorkerMachineCount),
+			withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 				WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-			},
-		}, result)
+			}),
+		), result)
 		stopwatch.Record("cluster creation")
 
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
