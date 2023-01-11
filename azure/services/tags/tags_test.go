@@ -23,9 +23,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags/mock_tags"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -62,8 +62,8 @@ func TestReconcileTags(t *testing.T) {
 					}),
 					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
 						Tags: map[string]*string{
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
-							"externalSystemTag": to.StringPtr("randomValue"),
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
+							"externalSystemTag": pointer.String("randomValue"),
 						},
 					}}, nil),
 					s.AnnotationJSON("my-annotation"),
@@ -71,16 +71,16 @@ func TestReconcileTags(t *testing.T) {
 						Operation: "Merge",
 						Properties: &resources.Tags{
 							Tags: map[string]*string{
-								"foo":   to.StringPtr("bar"),
-								"thing": to.StringPtr("stuff"),
+								"foo":   pointer.String("bar"),
+								"thing": pointer.String("stuff"),
 							},
 						},
 					}),
 					s.UpdateAnnotationJSON("my-annotation", map[string]interface{}{"foo": "bar", "thing": "stuff"}),
 					m.GetAtScope(gomockinternal.AContext(), "/sub/123/other/scope").Return(resources.TagsResource{Properties: &resources.Tags{
 						Tags: map[string]*string{
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
-							"externalSystem2Tag": to.StringPtr("randomValue2"),
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
+							"externalSystem2Tag": pointer.String("randomValue2"),
 						},
 					}}, nil),
 					s.AnnotationJSON("my-annotation-2"),
@@ -88,7 +88,7 @@ func TestReconcileTags(t *testing.T) {
 						Operation: "Merge",
 						Properties: &resources.Tags{
 							Tags: map[string]*string{
-								"tag1": to.StringPtr("value1"),
+								"tag1": pointer.String("value1"),
 							},
 						},
 					}),
@@ -131,9 +131,9 @@ func TestReconcileTags(t *testing.T) {
 					}),
 					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
 						Tags: map[string]*string{
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
-							"foo":   to.StringPtr("bar"),
-							"thing": to.StringPtr("stuff"),
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
+							"foo":   pointer.String("bar"),
+							"thing": pointer.String("stuff"),
 						},
 					}}, nil),
 					s.AnnotationJSON("my-annotation").Return(map[string]interface{}{"foo": "bar", "thing": "stuff"}, nil),
@@ -141,7 +141,7 @@ func TestReconcileTags(t *testing.T) {
 						Operation: "Delete",
 						Properties: &resources.Tags{
 							Tags: map[string]*string{
-								"thing": to.StringPtr("stuff"),
+								"thing": pointer.String("stuff"),
 							},
 						},
 					}),
@@ -183,7 +183,7 @@ func TestReconcileTags(t *testing.T) {
 				})
 				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
 					Tags: map[string]*string{
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
 					},
 				}}, nil)
 				s.AnnotationJSON("my-annotation")
@@ -191,7 +191,7 @@ func TestReconcileTags(t *testing.T) {
 					Operation: "Merge",
 					Properties: &resources.Tags{
 						Tags: map[string]*string{
-							"key": to.StringPtr("value"),
+							"key": pointer.String("value"),
 						},
 					},
 				}).Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
@@ -213,8 +213,8 @@ func TestReconcileTags(t *testing.T) {
 				})
 				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
 					Tags: map[string]*string{
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
-						"key": to.StringPtr("value"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
+						"key": pointer.String("value"),
 					},
 				}}, nil)
 				s.AnnotationJSON("my-annotation").Return(map[string]interface{}{"key": "value"}, nil)
@@ -270,7 +270,7 @@ func TestTagsChanged(t *testing.T) {
 				"foo": "hello",
 			},
 			currentTags: map[string]*string{
-				"foo": to.StringPtr("hello"),
+				"foo": pointer.String("hello"),
 			},
 			expectedResult:           false,
 			expectedCreatedOrUpdated: map[string]string{},
@@ -286,7 +286,7 @@ func TestTagsChanged(t *testing.T) {
 				"foo": "goodbye",
 			},
 			currentTags: map[string]*string{
-				"foo": to.StringPtr("hello"),
+				"foo": pointer.String("hello"),
 			},
 			expectedResult: true,
 			expectedCreatedOrUpdated: map[string]string{
@@ -302,7 +302,7 @@ func TestTagsChanged(t *testing.T) {
 			},
 			desiredTags: map[string]string{},
 			currentTags: map[string]*string{
-				"foo": to.StringPtr("hello"),
+				"foo": pointer.String("hello"),
 			},
 			expectedResult:           true,
 			expectedCreatedOrUpdated: map[string]string{},
@@ -319,7 +319,7 @@ func TestTagsChanged(t *testing.T) {
 				"bar": "welcome",
 			},
 			currentTags: map[string]*string{
-				"foo": to.StringPtr("hello"),
+				"foo": pointer.String("hello"),
 			},
 			expectedResult: true,
 			expectedCreatedOrUpdated: map[string]string{
@@ -338,7 +338,7 @@ func TestTagsChanged(t *testing.T) {
 				"bar": "welcome",
 			},
 			currentTags: map[string]*string{
-				"foo": to.StringPtr("hello"),
+				"foo": pointer.String("hello"),
 			},
 			expectedResult: true,
 			expectedCreatedOrUpdated: map[string]string{
@@ -361,7 +361,7 @@ func TestTagsChanged(t *testing.T) {
 				"bar": "welcome",
 			},
 			currentTags: map[string]*string{
-				"foo": to.StringPtr("hello"),
+				"foo": pointer.String("hello"),
 			},
 			expectedResult: true,
 			expectedCreatedOrUpdated: map[string]string{
@@ -383,8 +383,8 @@ func TestTagsChanged(t *testing.T) {
 				"bar": "welcome",
 			},
 			currentTags: map[string]*string{
-				"foo": to.StringPtr("hello"),
-				"bar": to.StringPtr("random"),
+				"foo": pointer.String("hello"),
+				"bar": pointer.String("random"),
 			},
 			expectedResult: true,
 			expectedCreatedOrUpdated: map[string]string{

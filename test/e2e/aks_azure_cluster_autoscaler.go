@@ -24,10 +24,10 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -100,7 +100,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 		}, amcp)
 		g.Expect(err).NotTo(HaveOccurred())
 		amcp.Spec.AutoScalerProfile = &infrav1.AutoScalerProfile{
-			Expander: (*infrav1.Expander)(to.StringPtr(string(newExpanderValue))),
+			Expander: (*infrav1.Expander)(pointer.String(string(newExpanderValue))),
 		}
 		g.Expect(mgmtClient.Update(ctx, amcp)).To(Succeed())
 	}, input.WaitIntervals...).Should(Succeed())

@@ -17,7 +17,7 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -30,7 +30,7 @@ func MapToTags(src map[string]*string) infrav1.Tags {
 	tags := make(infrav1.Tags, len(src))
 
 	for k, v := range src {
-		tags[k] = to.String(v)
+		tags[k] = pointer.StringDeref(v, "")
 	}
 
 	return tags
@@ -45,7 +45,7 @@ func TagsToMap(src infrav1.Tags) map[string]*string {
 	tags := make(map[string]*string, len(src))
 
 	for k, v := range src {
-		tags[k] = to.StringPtr(v)
+		tags[k] = pointer.String(v)
 	}
 
 	return tags

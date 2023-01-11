@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -70,13 +70,13 @@ func TestLinkSpec_Parameters(t *testing.T) {
 				g.Expect(result).To(Equal(privatedns.VirtualNetworkLink{
 					VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
 						VirtualNetwork: &privatedns.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-vnet-rg/providers/Microsoft.Network/virtualNetworks/my-vnet"),
 						},
-						RegistrationEnabled: to.BoolPtr(false),
+						RegistrationEnabled: pointer.Bool(false),
 					},
-					Location: to.StringPtr(azure.Global),
+					Location: pointer.String(azure.Global),
 					Tags: map[string]*string{
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
 					},
 				}))
 			},
@@ -86,7 +86,7 @@ func TestLinkSpec_Parameters(t *testing.T) {
 			expectedError: "",
 			spec:          linkSpec,
 			existing: privatedns.VirtualNetworkLink{Tags: map[string]*string{
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
 			}},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())

@@ -20,8 +20,8 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -141,11 +141,11 @@ func (s *LBSpec) Parameters(ctx context.Context, existing interface{}) (paramete
 	lb := network.LoadBalancer{
 		Etag:     etag,
 		Sku:      &network.LoadBalancerSku{Name: converters.SKUtoSDK(s.SKU)},
-		Location: to.StringPtr(s.Location),
+		Location: pointer.String(s.Location),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Role:        to.StringPtr(s.Role),
+			Role:        pointer.String(s.Role),
 			Additional:  s.AdditionalTags,
 		})),
 		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -169,23 +169,23 @@ func getFrontendIPConfigs(lbSpec LBSpec) ([]network.FrontendIPConfiguration, []n
 			properties = network.FrontendIPConfigurationPropertiesFormat{
 				PrivateIPAllocationMethod: network.IPAllocationMethodStatic,
 				Subnet: &network.Subnet{
-					ID: to.StringPtr(azure.SubnetID(lbSpec.SubscriptionID, lbSpec.VNetResourceGroup, lbSpec.VNetName, lbSpec.SubnetName)),
+					ID: pointer.String(azure.SubnetID(lbSpec.SubscriptionID, lbSpec.VNetResourceGroup, lbSpec.VNetName, lbSpec.SubnetName)),
 				},
-				PrivateIPAddress: to.StringPtr(ipConfig.PrivateIPAddress),
+				PrivateIPAddress: pointer.String(ipConfig.PrivateIPAddress),
 			}
 		} else {
 			properties = network.FrontendIPConfigurationPropertiesFormat{
 				PublicIPAddress: &network.PublicIPAddress{
-					ID: to.StringPtr(azure.PublicIPID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, ipConfig.PublicIP.Name)),
+					ID: pointer.String(azure.PublicIPID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, ipConfig.PublicIP.Name)),
 				},
 			}
 		}
 		frontendIPConfigurations = append(frontendIPConfigurations, network.FrontendIPConfiguration{
 			FrontendIPConfigurationPropertiesFormat: &properties,
-			Name:                                    to.StringPtr(ipConfig.Name),
+			Name:                                    pointer.String(ipConfig.Name),
 		})
 		frontendIDs = append(frontendIDs, network.SubResource{
-			ID: to.StringPtr(azure.FrontendIPConfigID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, ipConfig.Name)),
+			ID: pointer.String(azure.FrontendIPConfigID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, ipConfig.Name)),
 		})
 	}
 	return frontendIPConfigurations, frontendIDs
@@ -197,13 +197,13 @@ func getOutboundRules(lbSpec LBSpec, frontendIDs []network.SubResource) []networ
 	}
 	return []network.OutboundRule{
 		{
-			Name: to.StringPtr(outboundNAT),
+			Name: pointer.String(outboundNAT),
 			OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
 				Protocol:                 network.LoadBalancerOutboundRuleProtocolAll,
 				IdleTimeoutInMinutes:     lbSpec.IdleTimeoutInMinutes,
 				FrontendIPConfigurations: &frontendIDs,
 				BackendAddressPool: &network.SubResource{
-					ID: to.StringPtr(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
+					ID: pointer.String(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
 				},
 			},
 		},
@@ -220,21 +220,21 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []network.SubResource) []n
 		}
 		return []network.LoadBalancingRule{
 			{
-				Name: to.StringPtr(lbRuleHTTPS),
+				Name: pointer.String(lbRuleHTTPS),
 				LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-					DisableOutboundSnat:     to.BoolPtr(true),
+					DisableOutboundSnat:     pointer.Bool(true),
 					Protocol:                network.TransportProtocolTCP,
-					FrontendPort:            to.Int32Ptr(lbSpec.APIServerPort),
-					BackendPort:             to.Int32Ptr(lbSpec.APIServerPort),
+					FrontendPort:            pointer.Int32(lbSpec.APIServerPort),
+					BackendPort:             pointer.Int32(lbSpec.APIServerPort),
 					IdleTimeoutInMinutes:    lbSpec.IdleTimeoutInMinutes,
-					EnableFloatingIP:        to.BoolPtr(false),
+					EnableFloatingIP:        pointer.Bool(false),
 					LoadDistribution:        network.LoadDistributionDefault,
 					FrontendIPConfiguration: &frontendIPConfig,
 					BackendAddressPool: &network.SubResource{
-						ID: to.StringPtr(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
+						ID: pointer.String(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
 					},
 					Probe: &network.SubResource{
-						ID: to.StringPtr(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, tcpProbe)),
+						ID: pointer.String(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, tcpProbe)),
 					},
 				},
 			},
@@ -246,7 +246,7 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []network.SubResource) []n
 func getBackendAddressPools(lbSpec LBSpec) []network.BackendAddressPool {
 	return []network.BackendAddressPool{
 		{
-			Name: to.StringPtr(lbSpec.BackendPoolName),
+			Name: pointer.String(lbSpec.BackendPoolName),
 		},
 	}
 }
@@ -255,12 +255,12 @@ func getProbes(lbSpec LBSpec) []network.Probe {
 	if lbSpec.Role == infrav1.APIServerRole {
 		return []network.Probe{
 			{
-				Name: to.StringPtr(tcpProbe),
+				Name: pointer.String(tcpProbe),
 				ProbePropertiesFormat: &network.ProbePropertiesFormat{
 					Protocol:          network.ProbeProtocolTCP,
-					Port:              to.Int32Ptr(lbSpec.APIServerPort),
-					IntervalInSeconds: to.Int32Ptr(15),
-					NumberOfProbes:    to.Int32Ptr(4),
+					Port:              pointer.Int32(lbSpec.APIServerPort),
+					IntervalInSeconds: pointer.Int32(15),
+					NumberOfProbes:    pointer.Int32(4),
 				},
 			},
 		}
@@ -270,7 +270,7 @@ func getProbes(lbSpec LBSpec) []network.Probe {
 
 func probeExists(probes []network.Probe, probe network.Probe) bool {
 	for _, p := range probes {
-		if to.String(p.Name) == to.String(probe.Name) {
+		if pointer.StringDeref(p.Name, "") == pointer.StringDeref(probe.Name, "") {
 			return true
 		}
 	}
@@ -279,7 +279,7 @@ func probeExists(probes []network.Probe, probe network.Probe) bool {
 
 func outboundRuleExists(rules []network.OutboundRule, rule network.OutboundRule) bool {
 	for _, r := range rules {
-		if to.String(r.Name) == to.String(rule.Name) {
+		if pointer.StringDeref(r.Name, "") == pointer.StringDeref(rule.Name, "") {
 			return true
 		}
 	}
@@ -288,7 +288,7 @@ func outboundRuleExists(rules []network.OutboundRule, rule network.OutboundRule)
 
 func poolExists(pools []network.BackendAddressPool, pool network.BackendAddressPool) bool {
 	for _, p := range pools {
-		if to.String(p.Name) == to.String(pool.Name) {
+		if pointer.StringDeref(p.Name, "") == pointer.StringDeref(pool.Name, "") {
 			return true
 		}
 	}
@@ -297,7 +297,7 @@ func poolExists(pools []network.BackendAddressPool, pool network.BackendAddressP
 
 func lbRuleExists(rules []network.LoadBalancingRule, rule network.LoadBalancingRule) bool {
 	for _, r := range rules {
-		if to.String(r.Name) == to.String(rule.Name) {
+		if pointer.StringDeref(r.Name, "") == pointer.StringDeref(rule.Name, "") {
 			return true
 		}
 	}
@@ -306,7 +306,7 @@ func lbRuleExists(rules []network.LoadBalancingRule, rule network.LoadBalancingR
 
 func ipExists(configs []network.FrontendIPConfiguration, config network.FrontendIPConfiguration) bool {
 	for _, ip := range configs {
-		if to.String(ip.Name) == to.String(config.Name) {
+		if pointer.StringDeref(ip.Name, "") == pointer.StringDeref(config.Name, "") {
 			return true
 		}
 	}

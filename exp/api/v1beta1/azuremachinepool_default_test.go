@@ -19,9 +19,9 @@ package v1beta1
 import (
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -181,7 +181,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 				Spec: AzureMachinePoolSpec{
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName:            "test-subnet",
-						AcceleratedNetworking: to.BoolPtr(true),
+						AcceleratedNetworking: pointer.Bool(true),
 					},
 				},
 			},
@@ -194,7 +194,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 							{
 								SubnetName:            "test-subnet",
 								PrivateIPConfigs:      1,
-								AcceleratedNetworking: to.BoolPtr(true),
+								AcceleratedNetworking: pointer.Bool(true),
 							},
 						},
 					},

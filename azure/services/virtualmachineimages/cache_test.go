@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages/mock_virtualmachineimages"
 )
 
@@ -41,7 +41,7 @@ func TestCacheGet(t *testing.T) {
 			location: "test", publisher: "foo", offer: "bar", sku: "baz",
 			have: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: to.StringPtr("foo")},
+					{Name: pointer.String("foo")},
 				},
 			},
 			expectedError: nil,

@@ -19,9 +19,9 @@ package webhook
 import (
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 )
 
 func TestValidateImmutableBoolPtr(t *testing.T) {
@@ -40,25 +40,25 @@ func TestValidateImmutableBoolPtr(t *testing.T) {
 		},
 		{
 			name:   "no change",
-			input1: to.BoolPtr(true),
-			input2: to.BoolPtr(true),
+			input1: pointer.Bool(true),
+			input2: pointer.Bool(true),
 		},
 		{
 			name:           "can't unset",
-			input1:         to.BoolPtr(true),
+			input1:         pointer.Bool(true),
 			input2:         nil,
 			expectedOutput: field.Invalid(testPath, nil, unsetMessage),
 		},
 		{
 			name:           "can't set from empty",
 			input1:         nil,
-			input2:         to.BoolPtr(true),
+			input2:         pointer.Bool(true),
 			expectedOutput: field.Invalid(testPath, nil, setMessage),
 		},
 		{
 			name:           "can't change",
-			input1:         to.BoolPtr(true),
-			input2:         to.BoolPtr(false),
+			input1:         pointer.Bool(true),
+			input2:         pointer.Bool(false),
 			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
 		},
 	}
@@ -148,25 +148,25 @@ func TestValidateImmutableStringPtr(t *testing.T) {
 		},
 		{
 			name:   "no change",
-			input1: to.StringPtr("foo"),
-			input2: to.StringPtr("foo"),
+			input1: pointer.String("foo"),
+			input2: pointer.String("foo"),
 		},
 		{
 			name:           "can't unset",
-			input1:         to.StringPtr("foo"),
+			input1:         pointer.String("foo"),
 			input2:         nil,
 			expectedOutput: field.Invalid(testPath, nil, unsetMessage),
 		},
 		{
 			name:           "can't set from empty",
 			input1:         nil,
-			input2:         to.StringPtr("foo"),
+			input2:         pointer.String("foo"),
 			expectedOutput: field.Invalid(testPath, nil, setMessage),
 		},
 		{
 			name:           "can't change",
-			input1:         to.StringPtr("foo"),
-			input2:         to.StringPtr("bar"),
+			input1:         pointer.String("foo"),
+			input2:         pointer.String("bar"),
 			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
 		},
 	}

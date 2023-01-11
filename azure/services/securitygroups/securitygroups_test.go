@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -44,10 +44,10 @@ var (
 				Priority:         2200,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
 				Direction:        infrav1.SecurityRuleDirectionInbound,
-				Source:           to.StringPtr("*"),
-				SourcePorts:      to.StringPtr("*"),
-				Destination:      to.StringPtr("*"),
-				DestinationPorts: to.StringPtr("22"),
+				Source:           pointer.String("*"),
+				SourcePorts:      pointer.String("*"),
+				Destination:      pointer.String("*"),
+				DestinationPorts: pointer.String("22"),
 			},
 			{
 				Name:             "other_rule",
@@ -55,10 +55,10 @@ var (
 				Priority:         500,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
 				Direction:        infrav1.SecurityRuleDirectionInbound,
-				Source:           to.StringPtr("*"),
-				SourcePorts:      to.StringPtr("*"),
-				Destination:      to.StringPtr("*"),
-				DestinationPorts: to.StringPtr("80"),
+				Source:           pointer.String("*"),
+				SourcePorts:      pointer.String("*"),
+				Destination:      pointer.String("*"),
+				DestinationPorts: pointer.String("80"),
 			},
 		},
 		ResourceGroup: "test-group",
@@ -248,41 +248,41 @@ func TestDeleteSecurityGroups(t *testing.T) {
 
 var (
 	ruleA = network.SecurityRule{
-		Name: to.StringPtr("A"),
+		Name: pointer.String("A"),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Description:              to.StringPtr("this is rule A"),
+			Description:              pointer.String("this is rule A"),
 			Protocol:                 network.SecurityRuleProtocolTCP,
-			DestinationPortRange:     to.StringPtr("*"),
-			SourcePortRange:          to.StringPtr("*"),
-			DestinationAddressPrefix: to.StringPtr("*"),
-			SourceAddressPrefix:      to.StringPtr("*"),
-			Priority:                 to.Int32Ptr(100),
+			DestinationPortRange:     pointer.String("*"),
+			SourcePortRange:          pointer.String("*"),
+			DestinationAddressPrefix: pointer.String("*"),
+			SourceAddressPrefix:      pointer.String("*"),
+			Priority:                 pointer.Int32(100),
 			Direction:                network.SecurityRuleDirectionInbound,
 		},
 	}
 	ruleB = network.SecurityRule{
-		Name: to.StringPtr("B"),
+		Name: pointer.String("B"),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Description:              to.StringPtr("this is rule B"),
+			Description:              pointer.String("this is rule B"),
 			Protocol:                 network.SecurityRuleProtocolTCP,
-			DestinationPortRange:     to.StringPtr("*"),
-			SourcePortRange:          to.StringPtr("*"),
-			DestinationAddressPrefix: to.StringPtr("*"),
-			SourceAddressPrefix:      to.StringPtr("*"),
-			Priority:                 to.Int32Ptr(100),
+			DestinationPortRange:     pointer.String("*"),
+			SourcePortRange:          pointer.String("*"),
+			DestinationAddressPrefix: pointer.String("*"),
+			SourceAddressPrefix:      pointer.String("*"),
+			Priority:                 pointer.Int32(100),
 			Direction:                network.SecurityRuleDirectionOutbound,
 		},
 	}
 	ruleBModified = network.SecurityRule{
-		Name: to.StringPtr("B"),
+		Name: pointer.String("B"),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Description:              to.StringPtr("this is rule B"),
+			Description:              pointer.String("this is rule B"),
 			Protocol:                 network.SecurityRuleProtocolTCP,
-			DestinationPortRange:     to.StringPtr("80"),
-			SourcePortRange:          to.StringPtr("*"),
-			DestinationAddressPrefix: to.StringPtr("*"),
-			SourceAddressPrefix:      to.StringPtr("*"),
-			Priority:                 to.Int32Ptr(100),
+			DestinationPortRange:     pointer.String("80"),
+			SourcePortRange:          pointer.String("*"),
+			DestinationAddressPrefix: pointer.String("*"),
+			SourceAddressPrefix:      pointer.String("*"),
+			Priority:                 pointer.Int32(100),
 			Direction:                network.SecurityRuleDirectionOutbound,
 		},
 	}

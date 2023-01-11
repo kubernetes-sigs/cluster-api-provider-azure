@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -175,7 +174,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:     "type",
-								DiskSizeGB: to.Int32Ptr(11),
+								DiskSizeGB: pointer.Int32(11),
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "",
@@ -191,7 +190,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:     "type",
-								DiskSizeGB: to.Int32Ptr(11),
+								DiskSizeGB: pointer.Int32(11),
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "fake ssh key",
@@ -211,7 +210,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:     "type",
-								DiskSizeGB: to.Int32Ptr(11),
+								DiskSizeGB: pointer.Int32(11),
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "fake ssh key",
@@ -230,7 +229,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:     "type",
-								DiskSizeGB: to.Int32Ptr(11),
+								DiskSizeGB: pointer.Int32(11),
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "fake ssh key",
@@ -253,7 +252,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "",
 							},
 							DataDisks:    []DataDisk{},
@@ -273,7 +272,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:    []DataDisk{},
@@ -300,7 +299,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:    []DataDisk{},
@@ -320,7 +319,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:    []DataDisk{},
@@ -344,13 +343,13 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:             []DataDisk{},
 							SSHPublicKey:          "fake ssh key",
 							SubnetName:            "subnet1",
-							AcceleratedNetworking: to.BoolPtr(true),
+							AcceleratedNetworking: pointer.Bool(true),
 						},
 					},
 				},
@@ -363,7 +362,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:             []DataDisk{},
@@ -373,7 +372,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							NetworkInterfaces: []NetworkInterface{
 								{
 									SubnetName:            "subnet1",
-									AcceleratedNetworking: to.BoolPtr(true),
+									AcceleratedNetworking: pointer.Bool(true),
 									PrivateIPConfigs:      1,
 								},
 							},
@@ -393,13 +392,13 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:             []DataDisk{},
 							SSHPublicKey:          "fake ssh key",
 							SubnetName:            "",
-							AcceleratedNetworking: to.BoolPtr(true),
+							AcceleratedNetworking: pointer.Bool(true),
 							NetworkInterfaces:     []NetworkInterface{},
 						},
 					},
@@ -413,7 +412,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:             []DataDisk{},
@@ -423,7 +422,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							NetworkInterfaces: []NetworkInterface{
 								{
 									SubnetName:            "",
-									AcceleratedNetworking: to.BoolPtr(true),
+									AcceleratedNetworking: pointer.Bool(true),
 									PrivateIPConfigs:      1,
 								},
 							},
@@ -443,7 +442,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:    []DataDisk{},
@@ -451,7 +450,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							NetworkInterfaces: []NetworkInterface{
 								{
 									SubnetName:            "subnet1",
-									AcceleratedNetworking: to.BoolPtr(true),
+									AcceleratedNetworking: pointer.Bool(true),
 									PrivateIPConfigs:      1,
 								},
 							},
@@ -467,7 +466,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:      "type",
-								DiskSizeGB:  to.Int32Ptr(11),
+								DiskSizeGB:  pointer.Int32(11),
 								CachingType: "None",
 							},
 							DataDisks:    []DataDisk{},
@@ -475,7 +474,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							NetworkInterfaces: []NetworkInterface{
 								{
 									SubnetName:            "subnet2",
-									AcceleratedNetworking: to.BoolPtr(true),
+									AcceleratedNetworking: pointer.Bool(true),
 									PrivateIPConfigs:      1,
 								},
 							},

@@ -103,10 +103,10 @@ func overrideOutboundLBFunc(codecs runtimeserializer.CodecFactory) []interface{}
 	return []interface{}{
 		func(networkSpec *infrav1.NetworkSpec, c fuzz.Continue) {
 			networkSpec.ControlPlaneOutboundLB = &infrav1.LoadBalancerSpec{
-				FrontendIPsCount: pointer.Int32Ptr(1),
+				FrontendIPsCount: pointer.Int32(1),
 			}
 			networkSpec.NodeOutboundLB = &infrav1.LoadBalancerSpec{
-				FrontendIPsCount: pointer.Int32Ptr(1),
+				FrontendIPsCount: pointer.Int32(1),
 			}
 		},
 	}

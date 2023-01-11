@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -70,10 +70,10 @@ func TestRecordSpec_Parameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(Equal(privatedns.RecordSet{
 					RecordSetProperties: &privatedns.RecordSetProperties{
-						TTL: to.Int64Ptr(300),
+						TTL: pointer.Int64(300),
 						ARecords: &[]privatedns.ARecord{
 							{
-								Ipv4Address: to.StringPtr("10.0.0.8"),
+								Ipv4Address: pointer.String("10.0.0.8"),
 							},
 						},
 					},
@@ -87,10 +87,10 @@ func TestRecordSpec_Parameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(Equal(privatedns.RecordSet{
 					RecordSetProperties: &privatedns.RecordSetProperties{
-						TTL: to.Int64Ptr(300),
+						TTL: pointer.Int64(300),
 						AaaaRecords: &[]privatedns.AaaaRecord{
 							{
-								Ipv6Address: to.StringPtr("2603:1030:805:2::b"),
+								Ipv6Address: pointer.String("2603:1030:805:2::b"),
 							},
 						},
 					},

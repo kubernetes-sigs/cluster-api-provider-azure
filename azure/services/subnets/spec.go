@@ -20,9 +20,9 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -79,7 +79,8 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (para
 		}
 		var newServiceEndpoints []network.ServiceEndpointPropertiesFormat
 		for _, se := range s.ServiceEndpoints {
-			newServiceEndpoints = append(newServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: to.StringPtr(se.Service), Locations: to.StringSlicePtr(se.Locations)})
+			se := se
+			newServiceEndpoints = append(newServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: pointer.String(se.Service), Locations: &se.Locations})
 		}
 
 		// Right now only serviceEndpoints are allowed to be updated. More to come later
@@ -107,25 +108,26 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (para
 
 	if s.RouteTableName != "" {
 		subnetProperties.RouteTable = &network.RouteTable{
-			ID: to.StringPtr(azure.RouteTableID(s.SubscriptionID, s.ResourceGroup, s.RouteTableName)),
+			ID: pointer.String(azure.RouteTableID(s.SubscriptionID, s.ResourceGroup, s.RouteTableName)),
 		}
 	}
 
 	if s.NatGatewayName != "" {
 		subnetProperties.NatGateway = &network.SubResource{
-			ID: to.StringPtr(azure.NatGatewayID(s.SubscriptionID, s.ResourceGroup, s.NatGatewayName)),
+			ID: pointer.String(azure.NatGatewayID(s.SubscriptionID, s.ResourceGroup, s.NatGatewayName)),
 		}
 	}
 
 	if s.SecurityGroupName != "" {
 		subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
-			ID: to.StringPtr(azure.SecurityGroupID(s.SubscriptionID, s.ResourceGroup, s.SecurityGroupName)),
+			ID: pointer.String(azure.SecurityGroupID(s.SubscriptionID, s.ResourceGroup, s.SecurityGroupName)),
 		}
 	}
 
 	serviceEndpoints := make([]network.ServiceEndpointPropertiesFormat, 0, len(s.ServiceEndpoints))
 	for _, se := range s.ServiceEndpoints {
-		serviceEndpoints = append(serviceEndpoints, network.ServiceEndpointPropertiesFormat{Service: to.StringPtr(se.Service), Locations: to.StringSlicePtr(se.Locations)})
+		se := se
+		serviceEndpoints = append(serviceEndpoints, network.ServiceEndpointPropertiesFormat{Service: pointer.String(se.Service), Locations: &se.Locations})
 	}
 	subnetProperties.ServiceEndpoints = &serviceEndpoints
 

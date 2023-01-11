@@ -19,8 +19,8 @@ package azure
 import (
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -107,7 +107,7 @@ func TestVMSS_HasModelChanges(t *testing.T) {
 			Factory: func() (VMSS, VMSS) {
 				l := getDefaultVMSSForModelTesting()
 				l.Image = infrav1.Image{
-					ID: to.StringPtr("foo"),
+					ID: pointer.String("foo"),
 				}
 				r := getDefaultVMSSForModelTesting()
 				return r, l

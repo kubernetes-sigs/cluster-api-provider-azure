@@ -23,10 +23,10 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -49,7 +49,7 @@ var (
 		NatGatewayIP:   infrav1.PublicIPSpec{Name: "pip-node-subnet"},
 	}
 	natGateway1 = network.NatGateway{
-		ID: to.StringPtr("/subscriptions/my-sub/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway-1"),
+		ID: pointer.String("/subscriptions/my-sub/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway-1"),
 	}
 	customVNetTags = infrav1.Tags{
 		"Name": "my-vnet",

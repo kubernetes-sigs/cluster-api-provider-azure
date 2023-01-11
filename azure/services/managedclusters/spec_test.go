@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -42,7 +42,7 @@ func TestParameters(t *testing.T) {
 			name: "managedcluster in non-terminal provisioning state",
 			existing: containerservice.ManagedCluster{
 				ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-					ProvisioningState: to.StringPtr("Deleting"),
+					ProvisioningState: pointer.String("Deleting"),
 				},
 			},
 			spec: &ManagedClusterSpec{
@@ -84,9 +84,9 @@ func TestParameters(t *testing.T) {
 							Replicas:          int32(4),
 							Cluster:           "test-managedcluster",
 							SKU:               "test_SKU",
-							Version:           to.StringPtr("v1.22.0"),
+							Version:           pointer.String("v1.22.0"),
 							VnetSubnetID:      "fake/subnet/id",
-							MaxPods:           to.Int32Ptr(int32(32)),
+							MaxPods:           pointer.Int32(int32(32)),
 							AvailabilityZones: []string{"1", "2"},
 							AdditionalTags: map[string]string{
 								"test-tag": "test-value",
@@ -132,7 +132,7 @@ func TestParameters(t *testing.T) {
 			},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
-				g.Expect(result.(containerservice.ManagedCluster).KubernetesVersion).To(Equal(to.StringPtr("v1.22.99")))
+				g.Expect(result.(containerservice.ManagedCluster).KubernetesVersion).To(Equal(pointer.String("v1.22.99")))
 			},
 		},
 		{
@@ -169,56 +169,56 @@ func TestParameters(t *testing.T) {
 
 func getExistingCluster() containerservice.ManagedCluster {
 	mc := getSampleManagedCluster()
-	mc.ProvisioningState = to.StringPtr("Succeeded")
-	mc.ID = to.StringPtr("test-id")
+	mc.ProvisioningState = pointer.String("Succeeded")
+	mc.ID = pointer.String("test-id")
 	return mc
 }
 
 func getSampleManagedCluster() containerservice.ManagedCluster {
 	return containerservice.ManagedCluster{
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-			KubernetesVersion: to.StringPtr("v1.22.0"),
-			DNSPrefix:         to.StringPtr("test-managedcluster"),
+			KubernetesVersion: pointer.String("v1.22.0"),
+			DNSPrefix:         pointer.String("test-managedcluster"),
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{
 				{
-					Name:         to.StringPtr("test-agentpool-0"),
+					Name:         pointer.String("test-agentpool-0"),
 					Mode:         containerservice.AgentPoolMode(infrav1.NodePoolModeSystem),
-					Count:        to.Int32Ptr(2),
+					Count:        pointer.Int32(2),
 					Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
-					OsDiskSizeGB: to.Int32Ptr(0),
+					OsDiskSizeGB: pointer.Int32(0),
 					Tags: map[string]*string{
-						"test-tag": to.StringPtr("test-value"),
+						"test-tag": pointer.String("test-value"),
 					},
 				},
 				{
-					Name:                to.StringPtr("test-agentpool-1"),
+					Name:                pointer.String("test-agentpool-1"),
 					Mode:                containerservice.AgentPoolMode(infrav1.NodePoolModeUser),
-					Count:               to.Int32Ptr(4),
+					Count:               pointer.Int32(4),
 					Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-					OsDiskSizeGB:        to.Int32Ptr(0),
-					VMSize:              to.StringPtr("test_SKU"),
-					OrchestratorVersion: to.StringPtr("v1.22.0"),
-					VnetSubnetID:        to.StringPtr("fake/subnet/id"),
-					MaxPods:             to.Int32Ptr(int32(32)),
+					OsDiskSizeGB:        pointer.Int32(0),
+					VMSize:              pointer.String("test_SKU"),
+					OrchestratorVersion: pointer.String("v1.22.0"),
+					VnetSubnetID:        pointer.String("fake/subnet/id"),
+					MaxPods:             pointer.Int32(int32(32)),
 					AvailabilityZones:   &[]string{"1", "2"},
 					Tags: map[string]*string{
-						"test-tag": to.StringPtr("test-value"),
+						"test-tag": pointer.String("test-value"),
 					},
 				},
 			},
 			LinuxProfile: &containerservice.LinuxProfile{
-				AdminUsername: to.StringPtr(azure.DefaultAKSUserName),
+				AdminUsername: pointer.String(azure.DefaultAKSUserName),
 				SSH: &containerservice.SSHConfiguration{
 					PublicKeys: &[]containerservice.SSHPublicKey{
 						{
-							KeyData: to.StringPtr(""),
+							KeyData: pointer.String(""),
 						},
 					},
 				},
 			},
-			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{ClientID: to.StringPtr("msi")},
-			NodeResourceGroup:       to.StringPtr("test-node-rg"),
-			EnableRBAC:              to.BoolPtr(true),
+			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{ClientID: pointer.String("msi")},
+			NodeResourceGroup:       pointer.String("test-node-rg"),
+			EnableRBAC:              pointer.Bool(true),
 			NetworkProfile: &containerservice.NetworkProfile{
 				LoadBalancerSku: containerservice.LoadBalancerSku("Standard"),
 			},
@@ -226,9 +226,9 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 		Identity: &containerservice.ManagedClusterIdentity{
 			Type: containerservice.ResourceIdentityTypeSystemAssigned,
 		},
-		Location: to.StringPtr("test-location"),
+		Location: pointer.String("test-location"),
 		Tags: map[string]*string{
-			"test-tag": to.StringPtr("test-value"),
+			"test-tag": pointer.String("test-value"),
 		},
 	}
 }

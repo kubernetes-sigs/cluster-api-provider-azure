@@ -20,10 +20,10 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,7 +40,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 		Spec: AzureManagedMachinePoolSpec{
 			Mode:         "System",
 			SKU:          "StandardD2S_V3",
-			OSDiskSizeGB: to.Int32Ptr(512),
+			OSDiskSizeGB: pointer.Int32(512),
 		},
 	}
 	var client client.Client
@@ -86,12 +86,12 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change Name of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Name: to.StringPtr("pool-new"),
+					Name: pointer.String("pool-new"),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Name: to.StringPtr("pool-old"),
+					Name: pointer.String("pool-old"),
 				},
 			},
 			wantErr: true,
@@ -102,14 +102,14 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
+					OSDiskSizeGB: pointer.Int32(512),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V4",
-					OSDiskSizeGB: to.Int32Ptr(512),
+					OSDiskSizeGB: pointer.Int32(512),
 				},
 			},
 			wantErr: true,
@@ -118,18 +118,18 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change OSType of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					OSType:       to.StringPtr(LinuxOS),
+					OSType:       pointer.String(LinuxOS),
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
+					OSDiskSizeGB: pointer.Int32(512),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					OSType:       to.StringPtr(WindowsOS),
+					OSType:       pointer.String(WindowsOS),
 					Mode:         "System",
 					SKU:          "StandardD2S_V4",
-					OSDiskSizeGB: to.Int32Ptr(512),
+					OSDiskSizeGB: pointer.Int32(512),
 				},
 			},
 			wantErr: true,
@@ -140,14 +140,14 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
+					OSDiskSizeGB: pointer.Int32(512),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(1024),
+					OSDiskSizeGB: pointer.Int32(1024),
 				},
 			},
 			wantErr: true,
@@ -158,7 +158,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      to.Int32Ptr(512),
+					OSDiskSizeGB:      pointer.Int32(512),
 					AvailabilityZones: []string{"1", "2", "3"},
 				},
 			},
@@ -166,7 +166,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
+					OSDiskSizeGB: pointer.Int32(512),
 				},
 			},
 			wantErr: true,
@@ -177,14 +177,14 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
+					OSDiskSizeGB: pointer.Int32(512),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      to.Int32Ptr(512),
+					OSDiskSizeGB:      pointer.Int32(512),
 					AvailabilityZones: []string{"1", "2", "3"},
 				},
 			},
@@ -196,7 +196,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      to.Int32Ptr(512),
+					OSDiskSizeGB:      pointer.Int32(512),
 					AvailabilityZones: []string{"1", "2"},
 				},
 			},
@@ -204,7 +204,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      to.Int32Ptr(512),
+					OSDiskSizeGB:      pointer.Int32(512),
 					AvailabilityZones: []string{"1", "2", "3"},
 				},
 			},
@@ -216,7 +216,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      to.Int32Ptr(512),
+					OSDiskSizeGB:      pointer.Int32(512),
 					AvailabilityZones: []string{"1", "3", "2"},
 				},
 			},
@@ -224,7 +224,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      to.Int32Ptr(512),
+					OSDiskSizeGB:      pointer.Int32(512),
 					AvailabilityZones: []string{"1", "2", "3"},
 				},
 			},
@@ -236,16 +236,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
-					MaxPods:      to.Int32Ptr(24),
+					OSDiskSizeGB: pointer.Int32(512),
+					MaxPods:      pointer.Int32(24),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
-					MaxPods:      to.Int32Ptr(25),
+					OSDiskSizeGB: pointer.Int32(512),
+					MaxPods:      pointer.Int32(25),
 				},
 			},
 			wantErr: true,
@@ -256,16 +256,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
-					MaxPods:      to.Int32Ptr(30),
+					OSDiskSizeGB: pointer.Int32(512),
+					MaxPods:      pointer.Int32(30),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
-					MaxPods:      to.Int32Ptr(30),
+					OSDiskSizeGB: pointer.Int32(512),
+					MaxPods:      pointer.Int32(30),
 				},
 			},
 			wantErr: false,
@@ -276,18 +276,18 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
-					MaxPods:      to.Int32Ptr(24),
-					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+					OSDiskSizeGB: pointer.Int32(512),
+					MaxPods:      pointer.Int32(24),
+					OsDiskType:   pointer.String(string(containerservice.OSDiskTypeEphemeral)),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
-					MaxPods:      to.Int32Ptr(24),
-					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+					OSDiskSizeGB: pointer.Int32(512),
+					MaxPods:      pointer.Int32(24),
+					OsDiskType:   pointer.String(string(containerservice.OSDiskTypeManaged)),
 				},
 			},
 			wantErr: true,
@@ -379,18 +379,18 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
-					MaxPods:      to.Int32Ptr(30),
-					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+					OSDiskSizeGB: pointer.Int32(512),
+					MaxPods:      pointer.Int32(30),
+					OsDiskType:   pointer.String(string(containerservice.OSDiskTypeManaged)),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: to.Int32Ptr(512),
-					MaxPods:      to.Int32Ptr(30),
-					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+					OSDiskSizeGB: pointer.Int32(512),
+					MaxPods:      pointer.Int32(30),
+					OsDiskType:   pointer.String(string(containerservice.OSDiskTypeManaged)),
 				},
 			},
 			wantErr: false,
@@ -399,12 +399,12 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Unexpected error, value EnableUltraSSD is unchanged",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(true),
+					EnableUltraSSD: pointer.Bool(true),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(true),
+					EnableUltraSSD: pointer.Bool(true),
 				},
 			},
 			wantErr: false,
@@ -413,12 +413,12 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(false),
+					EnableUltraSSD: pointer.Bool(false),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: to.BoolPtr(true),
+					EnableUltraSSD: pointer.Bool(true),
 				},
 			},
 			wantErr: true,
@@ -427,12 +427,12 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Unexpected error, value EnableNodePublicIP is unchanged",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: to.BoolPtr(true),
+					EnableNodePublicIP: pointer.Bool(true),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: to.BoolPtr(true),
+					EnableNodePublicIP: pointer.Bool(true),
 				},
 			},
 			wantErr: false,
@@ -441,12 +441,12 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "EnableNodePublicIP feature is immutable and currently enabled on this agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: to.BoolPtr(false),
+					EnableNodePublicIP: pointer.Bool(false),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: to.BoolPtr(true),
+					EnableNodePublicIP: pointer.Bool(true),
 				},
 			},
 			wantErr: true,
@@ -501,14 +501,14 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						CPUCfsQuota: to.BoolPtr(true),
+						CPUCfsQuota: pointer.Bool(true),
 					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						CPUCfsQuota: to.BoolPtr(false),
+						CPUCfsQuota: pointer.Bool(false),
 					},
 				},
 			},
@@ -549,8 +549,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "another valid permutation",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods:    to.Int32Ptr(249),
-					OsDiskType: to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+					MaxPods:    pointer.Int32(249),
+					OsDiskType: pointer.String(string(containerservice.OSDiskTypeManaged)),
 				},
 			},
 			wantErr: false,
@@ -566,7 +566,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "too many MaxPods",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods: to.Int32Ptr(251),
+					MaxPods: pointer.Int32(251),
 				},
 			},
 			wantErr:  true,
@@ -576,7 +576,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "too few MaxPods",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods: to.Int32Ptr(9),
+					MaxPods: pointer.Int32(9),
 				},
 			},
 			wantErr:  true,
@@ -587,7 +587,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "System",
-					OSType: to.StringPtr(WindowsOS),
+					OSType: pointer.String(WindowsOS),
 				},
 			},
 			wantErr:  true,
@@ -598,7 +598,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(WindowsOS),
+					OSType: pointer.String(WindowsOS),
 				},
 			},
 			wantErr: false,
@@ -611,7 +611,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 				},
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(WindowsOS),
+					OSType: pointer.String(WindowsOS),
 				},
 			},
 			wantErr: false,
@@ -624,7 +624,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 				},
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(WindowsOS),
+					OSType: pointer.String(WindowsOS),
 				},
 			},
 			wantErr:  true,
@@ -635,7 +635,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(LinuxOS),
+					OSType: pointer.String(LinuxOS),
 					NodeLabels: map[string]string{
 						"foo": "bar",
 					},
@@ -648,7 +648,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(LinuxOS),
+					OSType: pointer.String(LinuxOS),
 					NodeLabels: map[string]string{
 						"kubernetes.azure.com/scalesetpriority": "spot",
 					},
@@ -661,8 +661,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with invalid public ip prefix",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   to.BoolPtr(true),
-					NodePublicIPPrefixID: to.StringPtr("not a valid resource ID"),
+					EnableNodePublicIP:   pointer.Bool(true),
+					NodePublicIPPrefixID: pointer.String("not a valid resource ID"),
 				},
 			},
 			wantErr:  true,
@@ -673,7 +673,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					EnableNodePublicIP:   nil,
-					NodePublicIPPrefixID: to.StringPtr("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					NodePublicIPPrefixID: pointer.String("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
 				},
 			},
 			wantErr:  true,
@@ -683,8 +683,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with public ip prefix cannot disable node public IP",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   to.BoolPtr(false),
-					NodePublicIPPrefixID: to.StringPtr("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					EnableNodePublicIP:   pointer.Bool(false),
+					NodePublicIPPrefixID: pointer.String("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
 				},
 			},
 			wantErr:  true,
@@ -694,8 +694,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with public ip prefix with node public IP enabled ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   to.BoolPtr(true),
-					NodePublicIPPrefixID: to.StringPtr("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					EnableNodePublicIP:   pointer.Bool(true),
+					NodePublicIPPrefixID: pointer.String("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
 				},
 			},
 			wantErr: false,
@@ -704,8 +704,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with public ip prefix with leading slash with node public IP enabled ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   to.BoolPtr(true),
-					NodePublicIPPrefixID: to.StringPtr("/subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					EnableNodePublicIP:   pointer.Bool(true),
+					NodePublicIPPrefixID: pointer.String("/subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
 				},
 			},
 			wantErr: false,
@@ -723,7 +723,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool without public ip prefix with node public IP enabled ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: to.BoolPtr(true),
+					EnableNodePublicIP: pointer.Bool(true),
 				},
 			},
 			wantErr: false,
@@ -732,7 +732,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool without public ip prefix with node public IP disabled ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: to.BoolPtr(false),
+					EnableNodePublicIP: pointer.Bool(false),
 				},
 			},
 			wantErr: false,
@@ -742,7 +742,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						CPUCfsQuotaPeriod: to.StringPtr("100"),
+						CPUCfsQuotaPeriod: pointer.String("100"),
 					},
 				},
 			},
@@ -754,7 +754,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						CPUCfsQuotaPeriod: to.StringPtr("100ms"),
+						CPUCfsQuotaPeriod: pointer.String("100ms"),
 					},
 				},
 			},
@@ -765,8 +765,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						ImageGcLowThreshold:  to.Int32Ptr(100),
-						ImageGcHighThreshold: to.Int32Ptr(99),
+						ImageGcLowThreshold:  pointer.Int32(100),
+						ImageGcHighThreshold: pointer.Int32(99),
 					},
 				},
 			},
@@ -778,8 +778,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						ImageGcLowThreshold:  to.Int32Ptr(99),
-						ImageGcHighThreshold: to.Int32Ptr(100),
+						ImageGcLowThreshold:  pointer.Int32(99),
+						ImageGcHighThreshold: pointer.Int32(100),
 					},
 				},
 			},
@@ -885,8 +885,8 @@ func TestAzureManagedMachinePool_ValidateCreateFailure(t *testing.T) {
 func getKnownValidAzureManagedMachinePool() *AzureManagedMachinePool {
 	return &AzureManagedMachinePool{
 		Spec: AzureManagedMachinePoolSpec{
-			MaxPods:    to.Int32Ptr(30),
-			OsDiskType: to.StringPtr(string(containerservice.OSDiskTypeEphemeral)),
+			MaxPods:    pointer.Int32(30),
+			OsDiskType: pointer.String(string(containerservice.OSDiskTypeEphemeral)),
 		},
 	}
 }

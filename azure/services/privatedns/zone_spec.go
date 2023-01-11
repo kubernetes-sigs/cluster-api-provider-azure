@@ -20,8 +20,8 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -61,7 +61,7 @@ func (s ZoneSpec) Parameters(ctx context.Context, existing interface{}) (params 
 	}
 
 	return privatedns.PrivateZone{
-		Location: to.StringPtr(azure.Global),
+		Location: pointer.String(azure.Global),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,

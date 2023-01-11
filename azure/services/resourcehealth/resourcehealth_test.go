@@ -21,11 +21,11 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/resourcehealth/mgmt/2020-05-01/resourcehealth"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	utilfeature "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourcehealth/mock_resourcehealth"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -62,7 +62,7 @@ func TestReconcileResourceHealth(t *testing.T) {
 				m.GetByResource(gomockinternal.AContext(), gomock.Any()).Times(1).Return(resourcehealth.AvailabilityStatus{
 					Properties: &resourcehealth.AvailabilityStatusProperties{
 						AvailabilityState: resourcehealth.AvailabilityStateValuesUnavailable,
-						Summary:           to.StringPtr("summary"),
+						Summary:           pointer.String("summary"),
 					},
 				}, nil)
 			},
@@ -85,7 +85,7 @@ func TestReconcileResourceHealth(t *testing.T) {
 				m.GetByResource(gomockinternal.AContext(), gomock.Any()).Times(1).Return(resourcehealth.AvailabilityStatus{
 					Properties: &resourcehealth.AvailabilityStatusProperties{
 						AvailabilityState: resourcehealth.AvailabilityStateValuesUnavailable,
-						Summary:           to.StringPtr("summary"),
+						Summary:           pointer.String("summary"),
 					},
 				}, nil)
 				// ignore the above status

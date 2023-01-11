@@ -24,11 +24,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities/mock_identities"
@@ -52,18 +52,18 @@ var (
 		AvailabilitySetID: "availability-set",
 		Identity:          infrav1.VMIdentitySystemAssigned,
 		AdditionalTags:    map[string]string{"foo": "bar"},
-		Image:             &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+		Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
 		BootstrapData:     "fake data",
 	}
 	fakeExistingVM = compute.VirtualMachine{
-		ID:   to.StringPtr("subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm"),
-		Name: to.StringPtr("test-vm-name"),
+		ID:   pointer.String("subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm"),
+		Name: pointer.String("test-vm-name"),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
-			ProvisioningState: to.StringPtr("Succeeded"),
+			ProvisioningState: pointer.String("Succeeded"),
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
 					{
-						ID: to.StringPtr("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/nic-1"),
+						ID: pointer.String("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/nic-1"),
 					},
 				},
 			},
@@ -78,9 +78,9 @@ var (
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
 				{
 					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-						PrivateIPAddress: to.StringPtr("10.0.0.5"),
+						PrivateIPAddress: pointer.String("10.0.0.5"),
 						PublicIPAddress: &network.PublicIPAddress{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/pip-1"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/pip-1"),
 						},
 					},
 				},
@@ -93,7 +93,7 @@ var (
 	}
 	fakePublicIPs = network.PublicIPAddress{
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			IPAddress: to.StringPtr("10.0.0.6"),
+			IPAddress: pointer.String("10.0.0.6"),
 		},
 	}
 	fakeNodeAddresses = []corev1.NodeAddress{

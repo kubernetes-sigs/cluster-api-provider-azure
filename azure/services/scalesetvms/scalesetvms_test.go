@@ -24,12 +24,12 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -106,7 +106,7 @@ func TestService_Reconcile(t *testing.T) {
 				s.ProviderID().Return("foo")
 				s.ScaleSetName().Return("scaleset")
 				vm := compute.VirtualMachineScaleSetVM{
-					InstanceID: to.StringPtr("0"),
+					InstanceID: pointer.String("0"),
 				}
 				m.Get(gomock2.AContext(), "rg", "scaleset", "0").Return(vm, nil)
 				s.SetVMSSVM(converters.SDKToVMSSVM(vm))

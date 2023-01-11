@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -87,7 +87,7 @@ func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interfa
 	}
 
 	return network.SecurityGroup{
-		Location: to.StringPtr(s.Location),
+		Location: pointer.String(s.Location),
 		SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 			SecurityRules: &securityRules,
 		},
@@ -95,7 +95,7 @@ func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interfa
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.Name),
+			Name:        pointer.String(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
 	}, nil
@@ -104,10 +104,10 @@ func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interfa
 // TODO: review this logic and make sure it is what we want. It seems incorrect to skip rules that don't have a certain protocol, etc.
 func ruleExists(rules []network.SecurityRule, rule network.SecurityRule) bool {
 	for _, existingRule := range rules {
-		if !strings.EqualFold(to.String(existingRule.Name), to.String(rule.Name)) {
+		if !strings.EqualFold(pointer.StringDeref(existingRule.Name, ""), pointer.StringDeref(rule.Name, "")) {
 			continue
 		}
-		if !strings.EqualFold(to.String(existingRule.DestinationPortRange), to.String(rule.DestinationPortRange)) {
+		if !strings.EqualFold(pointer.StringDeref(existingRule.DestinationPortRange, ""), pointer.StringDeref(rule.DestinationPortRange, "")) {
 			continue
 		}
 		if existingRule.Protocol != network.SecurityRuleProtocolTCP &&
@@ -115,9 +115,9 @@ func ruleExists(rules []network.SecurityRule, rule network.SecurityRule) bool {
 			existingRule.Direction != network.SecurityRuleDirectionInbound {
 			continue
 		}
-		if !strings.EqualFold(to.String(existingRule.SourcePortRange), "*") &&
-			!strings.EqualFold(to.String(existingRule.SourceAddressPrefix), "*") &&
-			!strings.EqualFold(to.String(existingRule.DestinationAddressPrefix), "*") {
+		if !strings.EqualFold(pointer.StringDeref(existingRule.SourcePortRange, ""), "*") &&
+			!strings.EqualFold(pointer.StringDeref(existingRule.SourceAddressPrefix, ""), "*") &&
+			!strings.EqualFold(pointer.StringDeref(existingRule.DestinationAddressPrefix, ""), "*") {
 			continue
 		}
 		return true

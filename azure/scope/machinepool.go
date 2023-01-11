@@ -24,7 +24,6 @@ import (
 	"time"
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -122,7 +121,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 	return azure.ScaleSetSpec{
 		Name:                         m.Name(),
 		Size:                         m.AzureMachinePool.Spec.Template.VMSize,
-		Capacity:                     int64(to.Int32(m.MachinePool.Spec.Replicas)),
+		Capacity:                     int64(pointer.Int32Deref(m.MachinePool.Spec.Replicas, 0)),
 		SSHKeyData:                   m.AzureMachinePool.Spec.Template.SSHPublicKey,
 		OSDisk:                       m.AzureMachinePool.Spec.Template.OSDisk,
 		DataDisks:                    m.AzureMachinePool.Spec.Template.DataDisks,
@@ -198,7 +197,7 @@ func (m *MachinePoolScope) NeedsRequeue() bool {
 
 // DesiredReplicas returns the replica count on machine pool or 0 if machine pool replicas is nil.
 func (m MachinePoolScope) DesiredReplicas() int32 {
-	return to.Int32(m.MachinePool.Spec.Replicas)
+	return pointer.Int32Deref(m.MachinePool.Spec.Replicas, 0)
 }
 
 // MaxSurge returns the number of machines to surge, or 0 if the deployment strategy does not support surge.
@@ -362,7 +361,7 @@ func (m *MachinePoolScope) createMachine(ctx context.Context, machine azure.VMSS
 					APIVersion:         infrav1exp.GroupVersion.String(),
 					Kind:               "AzureMachinePool",
 					Name:               m.AzureMachinePool.Name,
-					BlockOwnerDeletion: to.BoolPtr(true),
+					BlockOwnerDeletion: pointer.Bool(true),
 					UID:                m.AzureMachinePool.UID,
 				},
 			},
@@ -450,7 +449,7 @@ func (m *MachinePoolScope) SetNotReady() {
 
 // SetFailureMessage sets the AzureMachinePool status failure message.
 func (m *MachinePoolScope) SetFailureMessage(v error) {
-	m.AzureMachinePool.Status.FailureMessage = pointer.StringPtr(v.Error())
+	m.AzureMachinePool.Status.FailureMessage = pointer.String(v.Error())
 }
 
 // SetFailureReason sets the AzureMachinePool status failure reason.
@@ -589,9 +588,9 @@ func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, erro
 		runtime := m.AzureMachinePool.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachinePool.Annotations["windowsServerVersion"]
 		log.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		defaultImage, err = svc.GetDefaultWindowsImage(ctx, m.Location(), to.String(m.MachinePool.Spec.Template.Spec.Version), runtime, windowsServerVersion)
+		defaultImage, err = svc.GetDefaultWindowsImage(ctx, m.Location(), pointer.StringDeref(m.MachinePool.Spec.Template.Spec.Version, ""), runtime, windowsServerVersion)
 	} else {
-		defaultImage, err = svc.GetDefaultUbuntuImage(ctx, m.Location(), to.String(m.MachinePool.Spec.Template.Spec.Version))
+		defaultImage, err = svc.GetDefaultUbuntuImage(ctx, m.Location(), pointer.StringDeref(m.MachinePool.Spec.Template.Spec.Version, ""))
 	}
 
 	if err != nil {

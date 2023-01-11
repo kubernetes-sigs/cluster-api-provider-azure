@@ -20,13 +20,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	mock_scope "sigs.k8s.io/cluster-api-provider-azure/azure/scope/mocks"
@@ -237,7 +237,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 						Spec: expv1.MachinePoolSpec{
 							Template: clusterv1.MachineTemplateSpec{
 								Spec: clusterv1.MachineSpec{
-									Version: to.StringPtr("v1.19.11"),
+									Version: pointer.String("v1.19.11"),
 								},
 							},
 						},
@@ -335,7 +335,7 @@ func TestMachinePoolMachineScope_CordonAndDrain(t *testing.T) {
 						Spec: expv1.MachinePoolSpec{
 							Template: clusterv1.MachineTemplateSpec{
 								Spec: clusterv1.MachineSpec{
-									Version: to.StringPtr("v1.19.11"),
+									Version: pointer.String("v1.19.11"),
 								},
 							},
 						},

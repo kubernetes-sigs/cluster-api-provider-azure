@@ -24,9 +24,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments/mock_roleassignments"
@@ -45,7 +45,7 @@ var (
 		MachineName:   "test-vm",
 		ResourceGroup: "my-rg",
 		ResourceType:  azure.VirtualMachine,
-		PrincipalID:   to.StringPtr("fake-principal-id"),
+		PrincipalID:   pointer.String("fake-principal-id"),
 	}
 	fakeRoleAssignment2 = RoleAssignmentSpec{
 		MachineName:   "test-vmss",

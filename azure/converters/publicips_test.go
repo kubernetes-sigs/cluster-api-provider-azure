@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -50,12 +50,12 @@ func TestIPTagsToSDK(t *testing.T) {
 			},
 			want: &[]network.IPTag{
 				{
-					IPTagType: to.StringPtr("tag"),
-					Tag:       to.StringPtr("value"),
+					IPTagType: pointer.String("tag"),
+					Tag:       pointer.String("value"),
 				},
 				{
-					IPTagType: to.StringPtr("internal"),
-					Tag:       to.StringPtr("foo"),
+					IPTagType: pointer.String("internal"),
+					Tag:       pointer.String("foo"),
 				},
 			},
 		},

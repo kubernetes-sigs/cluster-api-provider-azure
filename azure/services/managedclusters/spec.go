@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -270,24 +270,24 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			Type: containerservice.ResourceIdentityTypeSystemAssigned,
 		},
 		Location: &s.Location,
-		Tags:     *to.StringMapPtr(s.Tags),
+		Tags:     *azure.StringMapPtr(s.Tags),
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 			NodeResourceGroup: &s.NodeResourceGroup,
-			EnableRBAC:        to.BoolPtr(true),
+			EnableRBAC:        pointer.Bool(true),
 			DNSPrefix:         &s.Name,
 			KubernetesVersion: &s.Version,
 			LinuxProfile: &containerservice.LinuxProfile{
-				AdminUsername: to.StringPtr(azure.DefaultAKSUserName),
+				AdminUsername: pointer.String(azure.DefaultAKSUserName),
 				SSH: &containerservice.SSHConfiguration{
 					PublicKeys: &[]containerservice.SSHPublicKey{
 						{
-							KeyData: to.StringPtr(string(decodedSSHPublicKey)),
+							KeyData: pointer.String(string(decodedSSHPublicKey)),
 						},
 					},
 				},
 			},
 			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{
-				ClientID: to.StringPtr("msi"),
+				ClientID: pointer.String("msi"),
 			},
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{},
 			NetworkProfile: &containerservice.NetworkProfile{
@@ -338,7 +338,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			Enabled: &item.Enabled,
 		}
 		if item.Config != nil {
-			addonProfile.Config = *to.StringMapPtr(item.Config)
+			addonProfile.Config = *azure.StringMapPtr(item.Config)
 		}
 		managedCluster.AddonProfiles[item.Name] = addonProfile
 	}
@@ -438,7 +438,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			if !ok {
 				return nil, fmt.Errorf("%T is not a containerservice.AgentPool", agentPool)
 			}
-			agentPool.Name = to.StringPtr(spec.ResourceName())
+			agentPool.Name = pointer.String(spec.ResourceName())
 			profile := converters.AgentPoolToManagedClusterAgentPoolProfile(agentPool)
 			*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 		}

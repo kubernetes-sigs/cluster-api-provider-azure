@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -42,13 +42,13 @@ var (
 
 	fakeVMExtensionParams = compute.VirtualMachineExtension{
 		VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
-			Publisher:          to.StringPtr("my-publisher"),
-			Type:               to.StringPtr("my-vm-extension"),
-			TypeHandlerVersion: to.StringPtr("1.0"),
+			Publisher:          pointer.String("my-publisher"),
+			Type:               pointer.String("my-vm-extension"),
+			TypeHandlerVersion: pointer.String("1.0"),
 			Settings:           map[string]string{"my-setting": "my-value"},
 			ProtectedSettings:  map[string]string{"my-protected-setting": "my-protected-value"},
 		},
-		Location: to.StringPtr("my-location"),
+		Location: pointer.String("my-location"),
 	}
 )
 

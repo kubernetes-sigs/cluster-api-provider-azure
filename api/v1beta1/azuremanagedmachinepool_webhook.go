@@ -23,12 +23,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
@@ -54,7 +54,7 @@ func (m *AzureManagedMachinePool) Default(client client.Client) {
 	}
 
 	if m.Spec.OSType == nil {
-		m.Spec.OSType = to.StringPtr(DefaultOSType)
+		m.Spec.OSType = pointer.String(DefaultOSType)
 	}
 }
 
@@ -273,7 +273,7 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 
 func (m *AzureManagedMachinePool) validateMaxPods() error {
 	if m.Spec.MaxPods != nil {
-		if to.Int32(m.Spec.MaxPods) < 10 || to.Int32(m.Spec.MaxPods) > 250 {
+		if pointer.Int32Deref(m.Spec.MaxPods, 0) < 10 || pointer.Int32Deref(m.Spec.MaxPods, 0) > 250 {
 			return field.Invalid(
 				field.NewPath("Spec", "MaxPods"),
 				m.Spec.MaxPods,
@@ -355,7 +355,7 @@ func (m *AzureManagedMachinePool) validateKubeletConfig() error {
 	}
 	if m.Spec.KubeletConfig != nil {
 		if m.Spec.KubeletConfig.CPUCfsQuotaPeriod != nil {
-			if !strings.HasSuffix(to.String(m.Spec.KubeletConfig.CPUCfsQuotaPeriod), "ms") {
+			if !strings.HasSuffix(pointer.StringDeref(m.Spec.KubeletConfig.CPUCfsQuotaPeriod, ""), "ms") {
 				return field.Invalid(
 					field.NewPath("Spec", "KubeletConfig", "CPUCfsQuotaPeriod"),
 					m.Spec.KubeletConfig.CPUCfsQuotaPeriod,
@@ -363,12 +363,12 @@ func (m *AzureManagedMachinePool) validateKubeletConfig() error {
 			}
 		}
 		if m.Spec.KubeletConfig.ImageGcHighThreshold != nil && m.Spec.KubeletConfig.ImageGcLowThreshold != nil {
-			if to.Int32(m.Spec.KubeletConfig.ImageGcLowThreshold) > to.Int32(m.Spec.KubeletConfig.ImageGcHighThreshold) {
+			if pointer.Int32Deref(m.Spec.KubeletConfig.ImageGcLowThreshold, 0) > pointer.Int32Deref(m.Spec.KubeletConfig.ImageGcHighThreshold, 0) {
 				return field.Invalid(
 					field.NewPath("Spec", "KubeletConfig", "ImageGcLowThreshold"),
 					m.Spec.KubeletConfig.ImageGcLowThreshold,
 					fmt.Sprintf("must not be greater than ImageGcHighThreshold, ImageGcLowThreshold=%d, ImageGcHighThreshold=%d",
-						to.Int32(m.Spec.KubeletConfig.ImageGcLowThreshold), to.Int32(m.Spec.KubeletConfig.ImageGcHighThreshold)))
+						pointer.Int32Deref(m.Spec.KubeletConfig.ImageGcLowThreshold, 0), pointer.Int32Deref(m.Spec.KubeletConfig.ImageGcHighThreshold, 0)))
 			}
 		}
 		for _, val := range m.Spec.KubeletConfig.AllowedUnsafeSysctls {

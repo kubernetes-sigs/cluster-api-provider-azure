@@ -21,8 +21,8 @@ import (
 	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -88,18 +88,18 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 	}
 
 	primaryIPConfig := &network.InterfaceIPConfigurationPropertiesFormat{
-		Primary: to.BoolPtr(true),
+		Primary: pointer.Bool(true),
 	}
 
 	subnet := &network.Subnet{
-		ID: to.StringPtr(azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNetName, s.SubnetName)),
+		ID: pointer.String(azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNetName, s.SubnetName)),
 	}
 	primaryIPConfig.Subnet = subnet
 
 	primaryIPConfig.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
 	if s.StaticIPAddress != "" {
 		primaryIPConfig.PrivateIPAllocationMethod = network.IPAllocationMethodStatic
-		primaryIPConfig.PrivateIPAddress = to.StringPtr(s.StaticIPAddress)
+		primaryIPConfig.PrivateIPAddress = pointer.String(s.StaticIPAddress)
 	}
 
 	backendAddressPools := []network.BackendAddressPool{}
@@ -107,13 +107,13 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 		if s.PublicLBAddressPoolName != "" {
 			backendAddressPools = append(backendAddressPools,
 				network.BackendAddressPool{
-					ID: to.StringPtr(azure.AddressPoolID(s.SubscriptionID, s.ResourceGroup, s.PublicLBName, s.PublicLBAddressPoolName)),
+					ID: pointer.String(azure.AddressPoolID(s.SubscriptionID, s.ResourceGroup, s.PublicLBName, s.PublicLBAddressPoolName)),
 				})
 		}
 		if s.PublicLBNATRuleName != "" {
 			primaryIPConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 				{
-					ID: to.StringPtr(azure.NATRuleID(s.SubscriptionID, s.ResourceGroup, s.PublicLBName, s.PublicLBNATRuleName)),
+					ID: pointer.String(azure.NATRuleID(s.SubscriptionID, s.ResourceGroup, s.PublicLBName, s.PublicLBNATRuleName)),
 				},
 			}
 		}
@@ -121,14 +121,14 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 	if s.InternalLBName != "" && s.InternalLBAddressPoolName != "" {
 		backendAddressPools = append(backendAddressPools,
 			network.BackendAddressPool{
-				ID: to.StringPtr(azure.AddressPoolID(s.SubscriptionID, s.ResourceGroup, s.InternalLBName, s.InternalLBAddressPoolName)),
+				ID: pointer.String(azure.AddressPoolID(s.SubscriptionID, s.ResourceGroup, s.InternalLBName, s.InternalLBAddressPoolName)),
 			})
 	}
 	primaryIPConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 	if s.PublicIPName != "" {
 		primaryIPConfig.PublicIPAddress = &network.PublicIPAddress{
-			ID: to.StringPtr(azure.PublicIPID(s.SubscriptionID, s.ResourceGroup, s.PublicIPName)),
+			ID: pointer.String(azure.PublicIPID(s.SubscriptionID, s.ResourceGroup, s.PublicIPName)),
 		}
 	}
 
@@ -149,7 +149,7 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 
 	ipConfigurations := []network.InterfaceIPConfiguration{
 		{
-			Name:                                     to.StringPtr("pipConfig"),
+			Name:                                     pointer.String("pipConfig"),
 			InterfaceIPConfigurationPropertiesFormat: primaryIPConfig,
 		},
 	}
@@ -160,7 +160,7 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 		newIPConfigPropertiesFormat := &network.InterfaceIPConfigurationPropertiesFormat{}
 		newIPConfigPropertiesFormat.Subnet = subnet
 		config := network.InterfaceIPConfiguration{
-			Name:                                     to.StringPtr(s.Name + "-" + strconv.Itoa(i)),
+			Name:                                     pointer.String(s.Name + "-" + strconv.Itoa(i)),
 			InterfaceIPConfigurationPropertiesFormat: newIPConfigPropertiesFormat,
 		}
 		if c.PrivateIP != nil && *c.PrivateIP != "" {
@@ -184,15 +184,15 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 				},
 			}
 		}
-		config.InterfaceIPConfigurationPropertiesFormat.Primary = to.BoolPtr(false)
+		config.InterfaceIPConfigurationPropertiesFormat.Primary = pointer.Bool(false)
 		ipConfigurations = append(ipConfigurations, config)
 	}
 	if s.IPv6Enabled {
 		ipv6Config := network.InterfaceIPConfiguration{
-			Name: to.StringPtr("ipConfigv6"),
+			Name: pointer.String("ipConfigv6"),
 			InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 				PrivateIPAddressVersion: "IPv6",
-				Primary:                 to.BoolPtr(false),
+				Primary:                 pointer.Bool(false),
 				Subnet:                  &network.Subnet{ID: subnet.ID},
 			},
 		}
@@ -201,17 +201,17 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 	}
 
 	return network.Interface{
-		Location: to.StringPtr(s.Location),
+		Location: pointer.String(s.Location),
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			EnableAcceleratedNetworking: s.AcceleratedNetworking,
 			IPConfigurations:            &ipConfigurations,
 			DNSSettings:                 &dnsSettings,
-			EnableIPForwarding:          to.BoolPtr(s.EnableIPForwarding),
+			EnableIPForwarding:          pointer.Bool(s.EnableIPForwarding),
 		},
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.Name),
+			Name:        pointer.String(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
 	}, nil

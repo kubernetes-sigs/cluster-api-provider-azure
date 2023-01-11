@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -226,7 +226,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		// When autoscaling is set, the count of the nodes differ based on the autoscaler and should not depend on the
 		// count present in MachinePool or AzureManagedMachinePool, hence we should not make an update API call based
 		// on difference in count.
-		if to.Bool(s.EnableAutoScaling) {
+		if pointer.BoolDeref(s.EnableAutoScaling, false) {
 			normalizedProfile.Count = existingProfile.Count
 		}
 
@@ -285,7 +285,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			EnableAutoScaling:    s.EnableAutoScaling,
 			EnableUltraSSD:       s.EnableUltraSSD,
 			KubeletConfig:        kubeletConfig,
-			KubeletDiskType:      containerservice.KubeletDiskType(to.String((*string)(s.KubeletDiskType))),
+			KubeletDiskType:      containerservice.KubeletDiskType(pointer.StringDeref((*string)(s.KubeletDiskType), "")),
 			MaxCount:             s.MaxCount,
 			MaxPods:              s.MaxPods,
 			MinCount:             s.MinCount,
@@ -294,15 +294,15 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			NodeTaints:           nodeTaints,
 			OrchestratorVersion:  s.Version,
 			OsDiskSizeGB:         &s.OSDiskSizeGB,
-			OsDiskType:           containerservice.OSDiskType(to.String(s.OsDiskType)),
-			OsType:               containerservice.OSType(to.String(s.OSType)),
-			ScaleSetPriority:     containerservice.ScaleSetPriority(to.String(s.ScaleSetPriority)),
+			OsDiskType:           containerservice.OSDiskType(pointer.StringDeref(s.OsDiskType, "")),
+			OsType:               containerservice.OSType(pointer.StringDeref(s.OSType, "")),
+			ScaleSetPriority:     containerservice.ScaleSetPriority(pointer.StringDeref(s.ScaleSetPriority, "")),
 			Type:                 containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VMSize:               sku,
 			VnetSubnetID:         vnetSubnetID,
 			EnableNodePublicIP:   s.EnableNodePublicIP,
 			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
-			Tags:                 *to.StringMapPtr(s.AdditionalTags),
+			Tags:                 *azure.StringMapPtr(s.AdditionalTags),
 		},
 	}
 

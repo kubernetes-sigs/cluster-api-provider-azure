@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -75,7 +75,7 @@ func TestGetSpotVMOptions(t *testing.T) {
 				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
 				vmEvictionPolicyTypes: "",
 				billingProfile: &compute.BillingProfile{
-					MaxPrice: to.Float64Ptr(1000),
+					MaxPrice: pointer.Float64(1000),
 				},
 			},
 		},

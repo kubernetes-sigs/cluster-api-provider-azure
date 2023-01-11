@@ -236,7 +236,7 @@ func (s *MachinePoolMachineScope) IsReady() bool {
 
 // SetFailureMessage sets the AzureMachinePoolMachine status failure message.
 func (s *MachinePoolMachineScope) SetFailureMessage(v error) {
-	s.AzureMachinePoolMachine.Status.FailureMessage = pointer.StringPtr(v.Error())
+	s.AzureMachinePoolMachine.Status.FailureMessage = pointer.String(v.Error())
 }
 
 // SetFailureReason sets the AzureMachinePoolMachine status failure reason.

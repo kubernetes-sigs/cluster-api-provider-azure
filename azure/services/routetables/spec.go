@@ -20,8 +20,8 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -61,12 +61,12 @@ func (s *RouteTableSpec) Parameters(ctx context.Context, existing interface{}) (
 		return nil, nil
 	}
 	return network.RouteTable{
-		Location:                   to.StringPtr(s.Location),
+		Location:                   pointer.String(s.Location),
 		RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.Name),
+			Name:        pointer.String(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
 	}, nil

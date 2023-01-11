@@ -24,13 +24,13 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	guuid "github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	utilfeature "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -64,32 +64,32 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with marketplace image - full",
-			amp:     createMachinePoolWithMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0", pointer.Int(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with marketplace image - missing publisher",
-			amp:     createMachinePoolWithMarketPlaceImage("", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithMarketPlaceImage("", "OFFER1234", "SKU1234", "1.0.0", pointer.Int(10)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with shared gallery image - full",
-			amp:     createMachinePoolWithSharedImage("SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithSharedImage("SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", pointer.Int(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with marketplace image - missing subscription",
-			amp:     createMachinePoolWithSharedImage("", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithSharedImage("", "RG123", "NAME123", "GALLERY1", "1.0.0", pointer.Int(10)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with image by - with id",
-			amp:     createMachinePoolWithImageByID("ID123", to.IntPtr(10)),
+			amp:     createMachinePoolWithImageByID("ID123", pointer.Int(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with image by - without id",
-			amp:     createMachinePoolWithImageByID("", to.IntPtr(10)),
+			amp:     createMachinePoolWithImageByID("", pointer.Int(10)),
 			wantErr: true,
 		},
 		{
@@ -104,7 +104,7 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with wrong terminate notification",
-			amp:     createMachinePoolWithSharedImage("SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(35)),
+			amp:     createMachinePoolWithSharedImage("SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", pointer.Int(35)),
 			wantErr: true,
 		},
 		{
@@ -555,7 +555,7 @@ func getKnownValidAzureMachinePool() *AzureMachinePool {
 			Template: AzureMachinePoolMachineTemplate{
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
-				TerminateNotificationTimeout: to.IntPtr(10),
+				TerminateNotificationTimeout: pointer.Int(10),
 			},
 			Identity:           infrav1.VMIdentitySystemAssigned,
 			RoleAssignmentName: string(uuid.NewUUID()),

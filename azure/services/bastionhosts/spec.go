@@ -22,8 +22,8 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -73,19 +73,19 @@ func (s *AzureBastionSpec) Parameters(ctx context.Context, existing interface{})
 	bastionHostIPConfigName := fmt.Sprintf("%s-%s", s.Name, "bastionIP")
 
 	return network.BastionHost{
-		Name:     to.StringPtr(s.Name),
-		Location: to.StringPtr(s.Location),
+		Name:     pointer.String(s.Name),
+		Location: pointer.String(s.Location),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.Name),
-			Role:        to.StringPtr("Bastion"),
+			Name:        pointer.String(s.Name),
+			Role:        pointer.String("Bastion"),
 		})),
 		BastionHostPropertiesFormat: &network.BastionHostPropertiesFormat{
-			DNSName: to.StringPtr(fmt.Sprintf("%s-bastion", strings.ToLower(s.Name))),
+			DNSName: pointer.String(fmt.Sprintf("%s-bastion", strings.ToLower(s.Name))),
 			IPConfigurations: &[]network.BastionHostIPConfiguration{
 				{
-					Name: to.StringPtr(bastionHostIPConfigName),
+					Name: pointer.String(bastionHostIPConfigName),
 					BastionHostIPConfigurationPropertiesFormat: &network.BastionHostIPConfigurationPropertiesFormat{
 						Subnet: &network.SubResource{
 							ID: &s.SubnetID,

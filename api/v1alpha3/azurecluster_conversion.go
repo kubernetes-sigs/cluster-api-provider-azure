@@ -46,7 +46,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 	// set default control plane outbound lb for private v1alpha3 clusters.
 	if src.Spec.NetworkSpec.APIServerLB.Type == Internal {
 		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = &infrav1.LoadBalancerSpec{
-			FrontendIPsCount: pointer.Int32Ptr(1),
+			FrontendIPsCount: pointer.Int32(1),
 		}
 		// We also need to set the defaults here because "get" won't set defaults, and hence there is no mismatch when a client
 		// gets a v1alpha3 cluster.
@@ -55,7 +55,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 
 	// set default node plane outbound lb for all v1alpha3 clusters.
 	dst.Spec.NetworkSpec.NodeOutboundLB = &infrav1.LoadBalancerSpec{
-		FrontendIPsCount: pointer.Int32Ptr(1),
+		FrontendIPsCount: pointer.Int32(1),
 	}
 	// We also need to set the defaults here because "get" won't set defaults, and hence there is no mismatch when a client
 	// gets a v1alpha3 cluster.

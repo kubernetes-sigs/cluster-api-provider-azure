@@ -22,10 +22,10 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -83,8 +83,8 @@ var (
 	managedTags = resources.TagsResource{
 		Properties: &resources.Tags{
 			Tags: map[string]*string{
-				"foo": to.StringPtr("bar"),
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + clusterName: to.StringPtr("owned"),
+				"foo": pointer.String("bar"),
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + clusterName: pointer.String("owned"),
 			},
 		},
 	}
@@ -92,8 +92,8 @@ var (
 	unmanagedTags = resources.TagsResource{
 		Properties: &resources.Tags{
 			Tags: map[string]*string{
-				"foo":       to.StringPtr("bar"),
-				"something": to.StringPtr("else"),
+				"foo":       pointer.String("bar"),
+				"something": pointer.String("else"),
 			},
 		},
 	}

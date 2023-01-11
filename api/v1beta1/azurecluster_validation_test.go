@@ -1075,7 +1075,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 				}, {
 					Name: "some-frontend-ip-2",
 				}},
-				FrontendIPsCount: pointer.Int32Ptr(2),
+				FrontendIPsCount: pointer.Int32(2),
 			},
 			old: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{{
@@ -1088,7 +1088,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 		{
 			name: "frontend ips count exceeds max value",
 			lb: &LoadBalancerSpec{
-				FrontendIPsCount: pointer.Int32Ptr(100),
+				FrontendIPsCount: pointer.Int32(100),
 			},
 			wantErr: true,
 			expectedErr: field.Error{
@@ -1164,7 +1164,7 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 		{
 			name: "frontend ips count exceeds max value",
 			lb: &LoadBalancerSpec{
-				FrontendIPsCount: pointer.Int32Ptr(100),
+				FrontendIPsCount: pointer.Int32(100),
 			},
 			apiServerLB: LoadBalancerSpec{
 				LoadBalancerClassSpec: LoadBalancerClassSpec{
@@ -1357,7 +1357,7 @@ func createValidAPIServerLB() LoadBalancerSpec {
 
 func createValidNodeOutboundLB() *LoadBalancerSpec {
 	return &LoadBalancerSpec{
-		FrontendIPsCount: pointer.Int32Ptr(1),
+		FrontendIPsCount: pointer.Int32(1),
 	}
 }
 
