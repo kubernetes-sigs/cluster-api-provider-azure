@@ -1,36 +1,35 @@
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+# Please see the documentation for all configuration options: https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
 version: 2
 updates:
-# Dependencies listed in go.mod
-- package-ecosystem: "gomod"
-  directory: "/" # Location of package manifests
+
+# github-actions
+- directory: "/"
+  package-ecosystem: "github-actions"
   schedule:
-    interval: "daily" ## change it to interval:"weekly" once Dependabot starts working. 
-    # day: "monday"
+    interval: "daily"
   commit-message:
-    include: "scope"
+    include: scope
+  labels:
+    - "ok-to-test"
+    - "kind/cleanup"
+
+# Go
+- directory: "/"
+  package-ecosystem: "gomod"
+  schedule:
+    interval: "daily"
+  commit-message:
+    include: scope
   ignore:
-    # Ignore controller-runtime as its upgraded manually.
-    - dependency-name: "sigs.k8s.io/controller-runtime"
-    # Ignore k8s and its transitives modules as they are upgraded manually
-    # together with controller-runtime.
-    - dependency-name: "k8s.io/*"
-    - dependency-name: "go.etcd.io/*"
-    - dependency-name: "google.golang.org/grpc"
+  
+  # Ignore controller-runtime as its upgraded manually.
+  - dependency-name: "sigs.k8s.io/controller-runtime"
+  
+  # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+  - dependency-name: "k8s.io/*"
+  - dependency-name: "go.etcd.io/*"
+  - dependency-name: "google.golang.org/grpc"
   labels:
-    - "ok-to-test"
-    - "kind/cleanup"
-    - "priority/important-soon"
-    - "wg/security-audit"
-# Dependencies listed in .github/workflows/*.yml
-- package-ecosystem: "github-actions"
-  directory: "/"
-  schedule:
-    interval: "weekly"
-    day: "monday"
-  commit-message:
-    include: "scope"
-  labels:
-    - "kind/cleanup"
-    - "ok-to-test"
+  - "ok-to-test"
+  - "kind/cleanup"
