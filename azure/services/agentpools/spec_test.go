@@ -108,8 +108,8 @@ var (
 			MinCount:            to.Int32Ptr(1),                                               // updates if changed
 			Mode:                containerservice.AgentPoolMode("fake-mode"),                  // updates if changed
 			NodeLabels:          map[string]*string{"fake-label": to.StringPtr("fake-value")}, // updates if changed
-			NodeTaints:          &[]string{"fake-taint"},
-			OrchestratorVersion: to.StringPtr("fake-version"), // updates if changed
+			NodeTaints:          &[]string{"fake-taint"},                                      // updates if changed
+			OrchestratorVersion: to.StringPtr("fake-version"),                                 // updates if changed
 			OsDiskSizeGB:        to.Int32Ptr(2),
 			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
 			OsType:              containerservice.OSType("fake-os-type"),
@@ -131,8 +131,8 @@ var (
 			MinCount:            to.Int32Ptr(1),                                               // updates if changed
 			Mode:                containerservice.AgentPoolMode("fake-mode"),                  // updates if changed
 			NodeLabels:          map[string]*string{"fake-label": to.StringPtr("fake-value")}, // updates if changed
-			NodeTaints:          &[]string{"fake-taint"},
-			OrchestratorVersion: to.StringPtr("fake-version"), // updates if changed
+			NodeTaints:          &[]string{"fake-taint"},                                      // updates if changed
+			OrchestratorVersion: to.StringPtr("fake-version"),                                 // updates if changed
 			OsDiskSizeGB:        to.Int32Ptr(2),
 			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
 			OsType:              containerservice.OSType("fake-os-type"),
@@ -154,8 +154,8 @@ var (
 			MinCount:            to.Int32Ptr(3),                                               // updates if changed
 			Mode:                containerservice.AgentPoolMode("fake-mode"),                  // updates if changed
 			NodeLabels:          map[string]*string{"fake-label": to.StringPtr("fake-value")}, // updates if changed
-			NodeTaints:          &[]string{"fake-taint"},
-			OrchestratorVersion: to.StringPtr("fake-version"), // updates if changed
+			NodeTaints:          &[]string{"fake-taint"},                                      // updates if changed
+			OrchestratorVersion: to.StringPtr("fake-version"),                                 // updates if changed
 			OsDiskSizeGB:        to.Int32Ptr(2),
 			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
 			OsType:              containerservice.OSType("fake-os-type"),
@@ -174,11 +174,11 @@ var (
 			EnableUltraSSD:      to.BoolPtr(true),
 			MaxCount:            to.Int32Ptr(5), // updates if changed
 			MaxPods:             to.Int32Ptr(10),
-			MinCount:            to.Int32Ptr(3),                                               // updates if changed
+			MinCount:            to.Int32Ptr(1),                                               // updates if changed
 			Mode:                containerservice.AgentPoolMode("fake-old-mode"),              // updates if changed
 			NodeLabels:          map[string]*string{"fake-label": to.StringPtr("fake-value")}, // updates if changed
-			NodeTaints:          &[]string{"fake-taint"},
-			OrchestratorVersion: to.StringPtr("fake-version"), // updates if changed
+			NodeTaints:          &[]string{"fake-taint"},                                      // updates if changed
+			OrchestratorVersion: to.StringPtr("fake-version"),                                 // updates if changed
 			OsDiskSizeGB:        to.Int32Ptr(2),
 			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
 			OsType:              containerservice.OSType("fake-os-type"),
@@ -197,13 +197,36 @@ var (
 			EnableUltraSSD:    to.BoolPtr(true),
 			MaxCount:          to.Int32Ptr(5), // updates if changed
 			MaxPods:           to.Int32Ptr(10),
-			MinCount:          to.Int32Ptr(3),                                  // updates if changed
+			MinCount:          to.Int32Ptr(1),                                  // updates if changed
 			Mode:              containerservice.AgentPoolMode("fake-old-mode"), // updates if changed
 			NodeLabels: map[string]*string{
 				"fake-label":     to.StringPtr("fake-value"),
 				"fake-old-label": to.StringPtr("fake-old-value")}, // updates if changed
-			NodeTaints:          &[]string{"fake-taint"},
+			NodeTaints:          &[]string{"fake-taint"},      // updates if changed
 			OrchestratorVersion: to.StringPtr("fake-version"), // updates if changed
+			OsDiskSizeGB:        to.Int32Ptr(2),
+			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
+			OsType:              containerservice.OSType("fake-os-type"),
+			ProvisioningState:   to.StringPtr("Succeeded"),
+			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
+			VMSize:              to.StringPtr("fake-sku"),
+			VnetSubnetID:        to.StringPtr("fake-vnet-subnet-id"),
+		},
+	}
+
+	fakeAgentPoolNodeTaintsOutOfDate = containerservice.AgentPool{
+		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+			AvailabilityZones:   &[]string{"fake-zone"},
+			Count:               to.Int32Ptr(1),   // updates if changed
+			EnableAutoScaling:   to.BoolPtr(true), // updates if changed
+			EnableUltraSSD:      to.BoolPtr(true),
+			MaxCount:            to.Int32Ptr(5), // updates if changed
+			MaxPods:             to.Int32Ptr(10),
+			MinCount:            to.Int32Ptr(1),                                               // updates if changed
+			Mode:                containerservice.AgentPoolMode("fake-mode"),                  // updates if changed
+			NodeLabels:          map[string]*string{"fake-label": to.StringPtr("fake-value")}, // updates if changed
+			NodeTaints:          &[]string{"fake-old-taint"},                                  // updates if changed
+			OrchestratorVersion: to.StringPtr("fake-version"),                                 // updates if changed
 			OsDiskSizeGB:        to.Int32Ptr(2),
 			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
 			OsType:              containerservice.OSType("fake-os-type"),
@@ -376,6 +399,13 @@ func TestParameters(t *testing.T) {
 			name:          "parameters with an existing agent pool and update needed on node labels",
 			spec:          fakeAgentPoolSpecWithAutoscaling,
 			existing:      fakeAgentPoolNodeLabelsOutOfDate,
+			expected:      fakeAgentPoolWithProvisioningState(""),
+			expectedError: nil,
+		},
+		{
+			name:          "parameters with an existing agent pool and update needed on node taints",
+			spec:          fakeAgentPoolSpecWithAutoscaling,
+			existing:      fakeAgentPoolNodeTaintsOutOfDate,
 			expected:      fakeAgentPoolWithProvisioningState(""),
 			expectedError: nil,
 		},
