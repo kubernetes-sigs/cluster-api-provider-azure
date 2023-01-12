@@ -200,7 +200,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 				MinCount:            s.MinCount,
 				MaxCount:            s.MaxCount,
 				NodeLabels:          s.NodeLabels,
-				NodeTaints:          existingPool.NodeTaints,
+				NodeTaints:          &s.NodeTaints,
 				Tags:                converters.TagsToMap(s.AdditionalTags),
 			},
 		}
