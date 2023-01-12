@@ -2,32 +2,34 @@
 
 version: 2
 updates:
-
 # github-actions
 - directory: "/"
   package-ecosystem: "github-actions"
   schedule:
-    interval: "daily"
+    interval: "weekly"
+    time: "09:00"
+    # Use America/New_York Standard Time (UTC -05:00)
+    timezone: "America/New_York"
   commit-message:
     prefix: "dependabot"
     include: scope
   labels:
     - "ok-to-test"
     - "kind/cleanup"
-
 # Go
 - directory: "/"
   package-ecosystem: "gomod"
   schedule:
-    interval: "daily"
+    interval: "weekly"
+    time: "09:00"
+    # Use America/New_York Standard Time (UTC -05:00)
+    timezone: "America/New_York"
   commit-message:
     prefix: "dependabot"
     include: scope
   ignore:
-  
   # Ignore controller-runtime as its upgraded manually.
   - dependency-name: "sigs.k8s.io/controller-runtime"
-  
   # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
   - dependency-name: "k8s.io/*"
   - dependency-name: "go.etcd.io/*"
