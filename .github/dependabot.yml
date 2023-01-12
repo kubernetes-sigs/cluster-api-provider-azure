@@ -9,6 +9,7 @@ updates:
   schedule:
     interval: "daily"
   commit-message:
+    prefix: "dependabot"
     include: scope
   labels:
     - "ok-to-test"
@@ -20,6 +21,7 @@ updates:
   schedule:
     interval: "daily"
   commit-message:
+    prefix: "dependabot"
     include: scope
   ignore:
   
