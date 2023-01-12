@@ -808,6 +808,16 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("modifying taints configuration", func() {
+				AKSNodeTaintsSpec(ctx, func() AKSNodeTaintsSpecInput {
+					return AKSNodeTaintsSpecInput{
+						Cluster:       result.Cluster,
+						MachinePools:  result.MachinePools,
+						WaitForUpdate: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+					}
+				})
+			})
 		})
 	})
 
