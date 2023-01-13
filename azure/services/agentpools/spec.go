@@ -160,7 +160,7 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 				MinCount:            s.MinCount,
 				MaxCount:            s.MaxCount,
 				NodeLabels:          s.NodeLabels,
-				NodeTaints:          existingPool.NodeTaints,
+				NodeTaints:          &s.NodeTaints,
 			},
 		}
 
