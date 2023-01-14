@@ -141,9 +141,14 @@ install_addons() {
 
     # Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
     "${KUBECTL}" create ns calico-system
+    until "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system
+    do
+        # Wait for the kubeadm-config configmap to exist.
+        sleep 2
+    done
     "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml \
     | sed 's/namespace: kube-system/namespace: calico-system/' \
-    | ${KUBECTL} create -f -
+    | "${KUBECTL}" create -f -
 
     # install Calico CNI
     echo "Installing Calico CNI via helm"
@@ -163,9 +168,6 @@ install_addons() {
 
     "${HELM}" repo add projectcalico https://projectcalico.docs.tigera.io/charts
     "${HELM}" install calico projectcalico/tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace tigera-operator --create-namespace
-
-    export -f wait_for_nodes
-    timeout --foreground 1800 bash -c wait_for_nodes
 
     # Add FeatureOverride for ChecksumOffloadBroken in FelixConfiguration.
     # This is the recommended workaround for https://github.com/projectcalico/calico/issues/3145.
@@ -207,6 +209,9 @@ install_addons() {
             --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}"
     fi
 
+    export -f wait_for_nodes
+    timeout --foreground 1800 bash -c wait_for_nodes
+
     echo "Waiting for all calico-system pods to be ready"
     "${KUBECTL}" wait --for=condition=Ready pod -n calico-system --all --timeout=10m
 
@@ -215,7 +220,7 @@ install_addons() {
 }
 
 wait_for_nodes() {
-    echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT} windows machine(s) to become Ready"
+    echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
 
     # Ensure that all nodes are registered with the API server before checking for readiness
     local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT))"
