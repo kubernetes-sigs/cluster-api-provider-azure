@@ -70,17 +70,18 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 		}
 	}
 
-	// Restore NAT Gateway IP tags and ServiceEndpoints.
+	// Restore NAT Gateway IP tags, ServiceEndpoints and PrivateEndpoints.
 	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
 		for i, dstSubnet := range dst.Spec.NetworkSpec.Subnets {
 			if dstSubnet.Name == restoredSubnet.Name {
 				dst.Spec.NetworkSpec.Subnets[i].NatGateway.NatGatewayIP.IPTags = restoredSubnet.NatGateway.NatGatewayIP.IPTags
 				dst.Spec.NetworkSpec.Subnets[i].ServiceEndpoints = restoredSubnet.ServiceEndpoints
+				dst.Spec.NetworkSpec.Subnets[i].PrivateEndpoints = restoredSubnet.PrivateEndpoints
 			}
 		}
 	}
 
-	// Restore Azure Bastion IP tags.
+	// Restore Azure Bastion IP tags, ServiceEndpoints and PrivateEndpoints.
 	if restored.Spec.BastionSpec.AzureBastion != nil && dst.Spec.BastionSpec.AzureBastion != nil {
 		if restored.Spec.BastionSpec.AzureBastion.PublicIP.Name == dst.Spec.BastionSpec.AzureBastion.PublicIP.Name {
 			dst.Spec.BastionSpec.AzureBastion.PublicIP.IPTags = restored.Spec.BastionSpec.AzureBastion.PublicIP.IPTags
@@ -89,6 +90,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 			dst.Spec.BastionSpec.AzureBastion.Subnet.NatGateway.NatGatewayIP.IPTags = restored.Spec.BastionSpec.AzureBastion.Subnet.NatGateway.NatGatewayIP.IPTags
 		}
 		dst.Spec.BastionSpec.AzureBastion.Subnet.ServiceEndpoints = restored.Spec.BastionSpec.AzureBastion.Subnet.ServiceEndpoints
+		dst.Spec.BastionSpec.AzureBastion.Subnet.PrivateEndpoints = restored.Spec.BastionSpec.AzureBastion.Subnet.PrivateEndpoints
 	}
 
 	// Restore load balancers' backend pool name

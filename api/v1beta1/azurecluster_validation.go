@@ -55,6 +55,10 @@ const (
 	serviceEndpointServiceRegexPattern = `^Microsoft\.[a-zA-Z]{1,42}[a-zA-Z0-9]{0,42}$`
 	// Must start with an alpha character and then can include alnum OR be only *.
 	serviceEndpointLocationRegexPattern = `^([a-z]{1,42}\d{0,5}|[*])$`
+	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules.
+	privateEndpointRegex = `^[-\w\._]+$`
+	// resource ID Pattern.
+	resourceIDPattern = `(?i)subscriptions/(.+)/resourceGroups/(.+)/providers/(.+?)/(.+?)/(.+)`
 )
 
 var (
@@ -206,6 +210,10 @@ func validateSubnets(subnets Subnets, vnet VnetSpec, fldPath *field.Path) field.
 
 		if len(subnet.ServiceEndpoints) > 0 {
 			allErrs = append(allErrs, validateServiceEndpoints(subnet.ServiceEndpoints, fldPath.Index(i).Child("serviceEndpoints"))...)
+		}
+
+		if len(subnet.PrivateEndpoints) > 0 {
+			allErrs = append(allErrs, validatePrivateEndpoints(subnet.PrivateEndpoints, subnet.CIDRBlocks, fldPath.Index(i).Child("privateEndpoints"))...)
 		}
 	}
 	for k, v := range requiredSubnetRoles {
@@ -610,4 +618,83 @@ func validateServiceEndpointLocationName(location string, fldPath *field.Path) *
 		return field.Invalid(fldPath, location, fmt.Sprintf("location doesn't match regex %s", serviceEndpointLocationRegexPattern))
 	}
 	return nil
+}
+
+func validatePrivateEndpoints(privateEndpointSpecs []PrivateEndpointSpec, subnetCIDRs []string, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	for i, pe := range privateEndpointSpecs {
+		if err := validatePrivateEndpointName(pe.Name, fldPath.Index(i).Child("name")); err != nil {
+			allErrs = append(allErrs, err)
+		}
+
+		if len(pe.PrivateLinkServiceConnections) == 0 {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), pe.PrivateLinkServiceConnections, "privateLinkServiceConnections cannot be empty"))
+		}
+
+		for j, privateLinkServiceConnection := range pe.PrivateLinkServiceConnections {
+			if privateLinkServiceConnection.PrivateLinkServiceID == "" {
+				allErrs = append(allErrs, field.Required(fldPath.Index(i).Child("privateLinkServiceConnections").Index(j), "privateLinkServiceID is required for all privateLinkServiceConnections in private endpoints"))
+			} else {
+				if err := validatePrivateEndpointPrivateLinkServiceConnection(privateLinkServiceConnection, fldPath.Index(i).Child("privateLinkServiceConnections").Index(j)); err != nil {
+					allErrs = append(allErrs, err)
+				}
+			}
+		}
+
+		for _, privateIP := range pe.PrivateIPAddresses {
+			if err := validatePrivateEndpointIPAddress(privateIP, subnetCIDRs, fldPath.Index(i).Child("privateIPAddresses")); err != nil {
+				allErrs = append(allErrs, err)
+			}
+		}
+	}
+
+	return allErrs
+}
+
+// validatePrivateEndpointName validates the Name of a Private Endpoint.
+func validatePrivateEndpointName(name string, fldPath *field.Path) *field.Error {
+	if name == "" {
+		return field.Invalid(fldPath, name, "name of private endpoint cannot be empty")
+	}
+
+	if success, _ := regexp.MatchString(privateEndpointRegex, name); !success {
+		return field.Invalid(fldPath, name,
+			fmt.Sprintf("name of private endpoint doesn't match regex %s", privateEndpointRegex))
+	}
+	return nil
+}
+
+// validatePrivateEndpointServiceID validates the service ID of a Private Endpoint.
+func validatePrivateEndpointPrivateLinkServiceConnection(privateLinkServiceConnection PrivateLinkServiceConnection, fldPath *field.Path) *field.Error {
+	if success, _ := regexp.MatchString(resourceIDPattern, privateLinkServiceConnection.PrivateLinkServiceID); !success {
+		return field.Invalid(fldPath, privateLinkServiceConnection.PrivateLinkServiceID,
+			fmt.Sprintf("private endpoint privateLinkServiceConnection service ID doesn't match regex %s", resourceIDPattern))
+	}
+	if privateLinkServiceConnection.Name != "" {
+		if success, _ := regexp.MatchString(privateEndpointRegex, privateLinkServiceConnection.Name); !success {
+			return field.Invalid(fldPath, privateLinkServiceConnection.Name,
+				fmt.Sprintf("private endpoint privateLinkServiceConnection name doesn't match regex %s", privateEndpointRegex))
+		}
+	}
+	return nil
+}
+
+// validatePrivateEndpointIPAddress validates a Private Endpoint IP Address.
+func validatePrivateEndpointIPAddress(address string, cidrs []string, fldPath *field.Path) *field.Error {
+	ip := net.ParseIP(address)
+	if ip == nil {
+		return field.Invalid(fldPath, address,
+			"Private Endpoint IP address isn't a valid IPv4 or IPv6 address")
+	}
+
+	for _, cidr := range cidrs {
+		_, subnet, _ := net.ParseCIDR(cidr)
+		if subnet != nil && subnet.Contains(ip) {
+			return nil
+		}
+	}
+
+	return field.Invalid(fldPath, address,
+		fmt.Sprintf("Private Endpoint IP address needs to be in subnet range (%s)", cidrs))
 }

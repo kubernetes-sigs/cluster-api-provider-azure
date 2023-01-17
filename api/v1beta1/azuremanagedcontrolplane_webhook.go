@@ -255,7 +255,7 @@ func (m *AzureManagedControlPlane) ValidateDelete(_ client.Client) error {
 	return nil
 }
 
-// Validate the Azure Machine Pool and return an aggregate error.
+// Validate the Azure Managed Control Plane and return an aggregate error.
 func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 	validators := []func(client client.Client) error{
 		m.validateName,
@@ -434,6 +434,10 @@ func (m *AzureManagedControlPlane) validateManagedClusterNetwork(cli client.Clie
 		}
 	}
 
+	if errs := validatePrivateEndpoints(m.Spec.VirtualNetwork.Subnet.PrivateEndpoints, []string{m.Spec.VirtualNetwork.Subnet.CIDRBlock}, field.NewPath("Spec", "VirtualNetwork.Subnet.PrivateEndpoints")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if len(allErrs) > 0 {
 		return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
 	}
@@ -471,7 +475,7 @@ func (m *AzureManagedControlPlane) validateAPIServerAccessProfileUpdate(old *Azu
 	return allErrs
 }
 
-// validateVirtualNetworkUpdate validates update to APIServerAccessProfile.
+// validateVirtualNetworkUpdate validates update to VirtualNetwork.
 func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManagedControlPlane) field.ErrorList {
 	var allErrs field.ErrorList
 	if old.Spec.VirtualNetwork.Name != m.Spec.VirtualNetwork.Name {

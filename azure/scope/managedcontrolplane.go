@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -288,6 +289,7 @@ func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
 			CIDRBlocks:       []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
 			Name:             s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 			ServiceEndpoints: s.ControlPlane.Spec.VirtualNetwork.Subnet.ServiceEndpoints,
+			PrivateEndpoints: s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints,
 		},
 	}
 }
@@ -323,6 +325,7 @@ func (s *ManagedControlPlaneScope) NodeSubnets() []infrav1.SubnetSpec {
 				CIDRBlocks:       []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
 				Name:             s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 				ServiceEndpoints: s.ControlPlane.Spec.VirtualNetwork.Subnet.ServiceEndpoints,
+				PrivateEndpoints: s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints,
 			},
 		},
 	}
@@ -335,6 +338,7 @@ func (s *ManagedControlPlaneScope) Subnet(name string) infrav1.SubnetSpec {
 		subnet.Name = s.ControlPlane.Spec.VirtualNetwork.Subnet.Name
 		subnet.CIDRBlocks = []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock}
 		subnet.ServiceEndpoints = s.ControlPlane.Spec.VirtualNetwork.Subnet.ServiceEndpoints
+		subnet.PrivateEndpoints = s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints
 	}
 
 	return subnet
@@ -705,4 +709,43 @@ func (s *ManagedControlPlaneScope) AvailabilityStatusFilter(cond *clusterv1.Cond
 		return conditions.TrueCondition(infrav1.AzureResourceAvailableCondition)
 	}
 	return cond
+}
+
+// PrivateEndpointSpecs returns the private endpoint specs.
+func (s *ManagedControlPlaneScope) PrivateEndpointSpecs() []azure.ResourceSpecGetter {
+	privateEndpointSpecs := make([]azure.ResourceSpecGetter, len(s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints))
+
+	for _, privateEndpoint := range s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints {
+		privateEndpointSpec := &privateendpoints.PrivateEndpointSpec{
+			Name:                       privateEndpoint.Name,
+			ResourceGroup:              s.VNetSpec().ResourceGroupName(),
+			Location:                   privateEndpoint.Location,
+			CustomNetworkInterfaceName: privateEndpoint.CustomNetworkInterfaceName,
+			PrivateIPAddresses:         privateEndpoint.PrivateIPAddresses,
+			SubnetID: azure.SubnetID(
+				s.ControlPlane.Spec.SubscriptionID,
+				s.VNetSpec().ResourceGroupName(),
+				s.ControlPlane.Spec.VirtualNetwork.Name,
+				s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			),
+			ApplicationSecurityGroups: privateEndpoint.ApplicationSecurityGroups,
+			ManualApproval:            privateEndpoint.ManualApproval,
+			ClusterName:               s.ClusterName(),
+			AdditionalTags:            s.AdditionalTags(),
+		}
+
+		for _, privateLinkServiceConnection := range privateEndpoint.PrivateLinkServiceConnections {
+			pl := privateendpoints.PrivateLinkServiceConnection{
+				PrivateLinkServiceID: privateLinkServiceConnection.PrivateLinkServiceID,
+				Name:                 privateLinkServiceConnection.Name,
+				RequestMessage:       privateLinkServiceConnection.RequestMessage,
+				GroupIDs:             privateLinkServiceConnection.GroupIDs,
+			}
+			privateEndpointSpec.PrivateLinkServiceConnections = append(privateEndpointSpec.PrivateLinkServiceConnections, pl)
+		}
+
+		privateEndpointSpecs = append(privateEndpointSpecs, privateEndpointSpec)
+	}
+
+	return privateEndpointSpecs
 }

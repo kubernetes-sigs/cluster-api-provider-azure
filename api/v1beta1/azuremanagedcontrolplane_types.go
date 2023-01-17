@@ -245,6 +245,10 @@ type ManagedControlPlaneSubnet struct {
 	// ServiceEndpoints is a slice of Virtual Network service endpoints to enable for the subnets.
 	// +optional
 	ServiceEndpoints ServiceEndpoints `json:"serviceEndpoints,omitempty"`
+
+	// PrivateEndpoints is a slice of Virtual Network private endpoints to create for the subnets.
+	// +optional
+	PrivateEndpoints PrivateEndpoints `json:"privateEndpoints,omitempty"`
 }
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.
