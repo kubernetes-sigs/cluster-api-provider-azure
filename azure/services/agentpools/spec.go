@@ -163,6 +163,9 @@ func (s *AgentPoolSpec) Parameters(existing interface{}) (params interface{}, er
 				NodeTaints:          &s.NodeTaints,
 			},
 		}
+		if len(*normalizedProfile.NodeTaints) == 0 {
+			normalizedProfile.NodeTaints = nil
+		}
 
 		// When autoscaling is set, the count of the nodes differ based on the autoscaler and should not depend on the
 		// count present in MachinePool or AzureManagedMachinePool, hence we should not make an update API call based
