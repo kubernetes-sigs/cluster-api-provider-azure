@@ -204,6 +204,9 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 				Tags:                converters.TagsToMap(s.AdditionalTags),
 			},
 		}
+		if len(*normalizedProfile.NodeTaints) == 0 {
+			normalizedProfile.NodeTaints = nil
+		}
 
 		if s.KubeletConfig != nil {
 			normalizedProfile.KubeletConfig = &containerservice.KubeletConfig{
