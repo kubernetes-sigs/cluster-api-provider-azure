@@ -674,6 +674,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
+			/* See https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/3047
 			By("creating a machine pool with public IP addresses from a prefix", func() {
 				// This test is also currently serving as the canonical
 				// "create/delete node pool" test. Eventually, that should be
@@ -685,7 +686,7 @@ var _ = Describe("Workload cluster creation", func() {
 						WaitIntervals:     e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 					}
 				})
-			})
+			})*/
 
 			By("modifying nodepool autoscaling configuration", func() {
 				AKSAutoscaleSpec(ctx, func() AKSAutoscaleSpecInput {
