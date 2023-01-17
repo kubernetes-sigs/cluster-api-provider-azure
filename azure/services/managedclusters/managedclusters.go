@@ -238,6 +238,30 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		},
 	}
 
+	if managedClusterSpec.PodCidrs != nil {
+		var podCidrs []string
+		for _, podCidr := range *managedClusterSpec.PodCidrs {
+			podCidrs = append(podCidrs, podCidr)
+		}
+		managedCluster.NetworkProfile.PodCidrs = &podCidrs
+	}
+
+	if managedClusterSpec.ServiceCidrs != nil {
+		var serviceCidrs []string
+		for _, serviceCidr := range *managedClusterSpec.ServiceCidrs {
+			serviceCidrs = append(serviceCidrs, serviceCidr)
+		}
+		managedCluster.NetworkProfile.ServiceCidrs = &serviceCidrs
+	}
+
+	if managedClusterSpec.IPFamilies != nil {
+		var ipFamilies []containerservice.IPFamily
+		for _, ipf := range *managedClusterSpec.IPFamilies {
+			ipFamilies = append(ipFamilies, containerservice.IPFamily(ipf))
+		}
+		managedCluster.NetworkProfile.IPFamilies = &ipFamilies
+	}
+
 	if managedClusterSpec.PodCIDR != "" {
 		managedCluster.NetworkProfile.PodCidr = &managedClusterSpec.PodCIDR
 	}

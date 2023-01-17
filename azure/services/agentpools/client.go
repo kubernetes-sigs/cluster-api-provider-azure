@@ -90,8 +90,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cl
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, cluster, name string) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.Delete")
 	defer done()
-
-	future, err := ac.agentpools.Delete(ctx, resourceGroupName, cluster, name)
+	ignorePodDisruptionBudget := false
+	future, err := ac.agentpools.Delete(ctx, resourceGroupName, cluster, name, &ignorePodDisruptionBudget)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin operation")
 	}
