@@ -34,6 +34,8 @@ settings.update(read_yaml(
     default = {},
 ))
 
+os_arch = str(local("go env GOARCH")).rstrip("\n")
+
 if settings.get("trigger_mode") == "manual":
     trigger_mode(TRIGGER_MODE_MANUAL)
 
@@ -193,12 +195,18 @@ def capz():
             yaml = str(encode_yaml_stream(yaml_dict))
             yaml = fixup_yaml_empty_arrays(yaml)
 
-    ldflags = str(local("hack/version.sh"))
+    # Forge the build command
+    ldflags = "-extldflags \"-static\" " + str(local("hack/version.sh")).rstrip("\n")
+    build_env = "CGO_ENABLED=0 GOOS=linux GOARCH={arch}".format(arch = os_arch)
+    build_cmd = "{build_env} go build -ldflags '{ldflags}' -o .tiltbuild/manager".format(
+        build_env = build_env,
+        ldflags = ldflags,
+    )
 
     # Set up a local_resource build of the provider's manager binary.
     local_resource(
         "manager",
-        cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags  \'-extldflags "-static" ' + ldflags + "' -o .tiltbuild/manager",
+        cmd = "mkdir -p .tiltbuild; " + build_cmd,
         deps = ["api", "azure", "config", "controllers", "exp", "feature", "pkg", "util", "go.mod", "go.sum", "main.go"],
         labels = ["cluster-api"],
     )
