@@ -118,14 +118,6 @@ type AzureManagedControlPlaneSpec struct {
 	// +optional
 	DisableLocalAccounts *bool `json:"disableLocalAccounts,omitempty"`
 
-	// PodCidrs - One IPv4 CIDR is expected for single-stack networking. Two CIDRs, one for each IP family (IPv4/IPv6), is expected for dual-stack networking.
-	// +optional
-	PodCidrs *[]string `json:"podCidrs,omitempty"`
-
-	// ServiceCidrs - One IPv4 CIDR is expected for single-stack networking. Two CIDRs, one for each IP family (IPv4/IPv6), is expected for dual-stack networking. They must not overlap with any Subnet IP ranges.
-	// +optional
-	ServiceCidrs *[]string `json:"serviceCidrs,omitempty"`
-
 	// IPFamilies - IP families are used to determine single-stack or dual-stack clusters. For single-stack, the expected value is IPv4. For dual-stack, the expected values are IPv4 and IPv6.
 	// +optional
 	IPFamilies *[]string `json:"ipFamilies,omitempty"`

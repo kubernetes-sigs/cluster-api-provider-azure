@@ -201,7 +201,7 @@ type ManagedClusterSpec struct {
 	// LoadBalancerSKU for the managed cluster. Possible values include: 'Standard', 'Basic'. Defaults to Standard.
 	LoadBalancerSKU string
 
-	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet'. Defaults to azure.
+	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet', 'none'. Defaults to azure.
 	NetworkPlugin string
 
 	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'. Defaults to azure.
@@ -239,12 +239,6 @@ type ManagedClusterSpec struct {
 
 	// DisableLocalAccounts - If set to true, getting static credential will be disabled for this cluster. Expected to only be used for AAD clusters.
 	DisableLocalAccounts *bool
-
-	// PodCidrs - One IPv4 CIDR is expected for single-stack networking. Two CIDRs, one for each IP family (IPv4/IPv6), is expected for dual-stack networking.
-	PodCidrs *[]string
-
-	// ServiceCidrs - One IPv4 CIDR is expected for single-stack networking. Two CIDRs, one for each IP family (IPv4/IPv6), is expected for dual-stack networking. They must not overlap with any Subnet IP ranges.
-	ServiceCidrs *[]string
 
 	// IPFamilies - IP families are used to determine single-stack or dual-stack clusters. For single-stack, the expected value is IPv4. For dual-stack, the expected values are IPv4 and IPv6.
 	IPFamilies *[]string
