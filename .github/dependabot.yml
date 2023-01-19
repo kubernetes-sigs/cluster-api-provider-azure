@@ -37,3 +37,51 @@ updates:
   labels:
   - "ok-to-test"
   - "kind/cleanup"
+# Go - release 1.7
+- directory: "/"
+  package-ecosystem: "gomod"
+  schedule:
+    interval: "weekly"
+    time: "09:00"
+    # Use America/New_York Standard Time (UTC -05:00)
+    timezone: "America/New_York"
+  commit-message:
+    prefix: "dependabot"
+    include: scope
+  ignore:
+  # Ignore controller-runtime as its upgraded manually.
+  - dependency-name: "sigs.k8s.io/controller-runtime"
+  # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+  - dependency-name: "k8s.io/*"
+  - dependency-name: "go.etcd.io/*"
+  - dependency-name: "google.golang.org/grpc"
+  labels:
+  - "ok-to-test"
+  - "kind/cleanup"
+  # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.7
+  open-pull-requests-limit: 0
+  target-branch: "release-1.7"
+# Go - release 1.6
+- directory: "/"
+  package-ecosystem: "gomod"
+  schedule:
+    interval: "weekly"
+    time: "09:00"
+    # Use America/New_York Standard Time (UTC -05:00)
+    timezone: "America/New_York"
+  commit-message:
+    prefix: "dependabot"
+    include: scope
+  ignore:
+  # Ignore controller-runtime as its upgraded manually.
+  - dependency-name: "sigs.k8s.io/controller-runtime"
+  # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+  - dependency-name: "k8s.io/*"
+  - dependency-name: "go.etcd.io/*"
+  - dependency-name: "google.golang.org/grpc"
+  labels:
+  - "ok-to-test"
+  - "kind/cleanup"
+  # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.6
+  open-pull-requests-limit: 0
+  target-branch: "release-1.6"
