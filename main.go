@@ -430,51 +430,49 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
-		if feature.Gates.Enabled(feature.AKS) {
-			mmpmCache, err := coalescing.NewRequestCache(debouncingTimer)
-			if err != nil {
-				setupLog.Error(err, "failed to build mmpmCache ReconcileCache")
-			}
+		mmpmCache, err := coalescing.NewRequestCache(debouncingTimer)
+		if err != nil {
+			setupLog.Error(err, "failed to build mmpmCache ReconcileCache")
+		}
 
-			if err := infrav1controllersexp.NewAzureManagedMachinePoolReconciler(
-				mgr.GetClient(),
-				mgr.GetEventRecorderFor("azuremanagedmachinepoolmachine-reconciler"),
-				reconcileTimeout,
-				watchFilterValue,
-			).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}, Cache: mmpmCache}); err != nil {
-				setupLog.Error(err, "unable to create controller", "controller", "AzureManagedMachinePool")
-				os.Exit(1)
-			}
+		if err := controllers.NewAzureManagedMachinePoolReconciler(
+			mgr.GetClient(),
+			mgr.GetEventRecorderFor("azuremanagedmachinepoolmachine-reconciler"),
+			reconcileTimeout,
+			watchFilterValue,
+		).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}, Cache: mmpmCache}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureManagedMachinePool")
+			os.Exit(1)
+		}
 
-			mcCache, err := coalescing.NewRequestCache(debouncingTimer)
-			if err != nil {
-				setupLog.Error(err, "failed to build mcCache ReconcileCache")
-			}
+		mcCache, err := coalescing.NewRequestCache(debouncingTimer)
+		if err != nil {
+			setupLog.Error(err, "failed to build mcCache ReconcileCache")
+		}
 
-			if err := (&infrav1controllersexp.AzureManagedClusterReconciler{
-				Client:           mgr.GetClient(),
-				Recorder:         mgr.GetEventRecorderFor("azuremanagedcluster-reconciler"),
-				ReconcileTimeout: reconcileTimeout,
-				WatchFilterValue: watchFilterValue,
-			}).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: mcCache}); err != nil {
-				setupLog.Error(err, "unable to create controller", "controller", "AzureManagedCluster")
-				os.Exit(1)
-			}
+		if err := (&controllers.AzureManagedClusterReconciler{
+			Client:           mgr.GetClient(),
+			Recorder:         mgr.GetEventRecorderFor("azuremanagedcluster-reconciler"),
+			ReconcileTimeout: reconcileTimeout,
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: mcCache}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureManagedCluster")
+			os.Exit(1)
+		}
 
-			mcpCache, err := coalescing.NewRequestCache(debouncingTimer)
-			if err != nil {
-				setupLog.Error(err, "failed to build mcpCache ReconcileCache")
-			}
+		mcpCache, err := coalescing.NewRequestCache(debouncingTimer)
+		if err != nil {
+			setupLog.Error(err, "failed to build mcpCache ReconcileCache")
+		}
 
-			if err := (&infrav1controllersexp.AzureManagedControlPlaneReconciler{
-				Client:           mgr.GetClient(),
-				Recorder:         mgr.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
-				ReconcileTimeout: reconcileTimeout,
-				WatchFilterValue: watchFilterValue,
-			}).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: mcpCache}); err != nil {
-				setupLog.Error(err, "unable to create controller", "controller", "AzureManagedControlPlane")
-				os.Exit(1)
-			}
+		if err := (&controllers.AzureManagedControlPlaneReconciler{
+			Client:           mgr.GetClient(),
+			Recorder:         mgr.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
+			ReconcileTimeout: reconcileTimeout,
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: mcpCache}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureManagedControlPlane")
+			os.Exit(1)
 		}
 	}
 }
@@ -512,7 +510,7 @@ func registerWebhooks(mgr manager.Manager) {
 
 	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the webhook
 	// is going to prevent creating or updating new objects in case the feature flag is disabled
-	if err := (&infrav1exp.AzureManagedCluster{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&infrav1.AzureManagedCluster{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedCluster")
 		os.Exit(1)
 	}
@@ -525,16 +523,16 @@ func registerWebhooks(mgr manager.Manager) {
 		&infrav1exp.AzureMachinePool{}, mgr.GetClient(),
 	))
 	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhookutils.NewMutatingWebhook(
-		&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
+		&infrav1.AzureManagedMachinePool{}, mgr.GetClient(),
 	))
 	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhookutils.NewValidatingWebhook(
-		&infrav1exp.AzureManagedMachinePool{}, mgr.GetClient(),
+		&infrav1.AzureManagedMachinePool{}, mgr.GetClient(),
 	))
 	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhookutils.NewMutatingWebhook(
-		&infrav1exp.AzureManagedControlPlane{}, mgr.GetClient(),
+		&infrav1.AzureManagedControlPlane{}, mgr.GetClient(),
 	))
 	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhookutils.NewValidatingWebhook(
-		&infrav1exp.AzureManagedControlPlane{}, mgr.GetClient(),
+		&infrav1.AzureManagedControlPlane{}, mgr.GetClient(),
 	))
 
 	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {

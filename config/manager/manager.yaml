@@ -23,7 +23,7 @@ spec:
         - args:
             - --leader-elect
             - "--metrics-bind-addr=localhost:8080"
-            - "--feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKS=${EXP_AKS:=false},AKSResourceHealth=${EXP_AKS_RESOURCE_HEALTH:=false}"
+            - "--feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKSResourceHealth=${EXP_AKS_RESOURCE_HEALTH:=false}"
             - "--v=0"
           image: controller:latest
           imagePullPolicy: Always
@@ -37,7 +37,7 @@ spec:
               path: /readyz
               port: healthz
             initialDelaySeconds: 10
-            periodSeconds: 10  
+            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /healthz
@@ -56,7 +56,7 @@ spec:
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
-                fieldPath: metadata.namespace      
+                fieldPath: metadata.namespace
       terminationGracePeriodSeconds: 10
       serviceAccountName: manager
       tolerations:
@@ -64,4 +64,3 @@ spec:
           key: node-role.kubernetes.io/master
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
-

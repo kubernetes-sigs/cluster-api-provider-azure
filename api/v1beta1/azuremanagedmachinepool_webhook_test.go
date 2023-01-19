@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -50,7 +50,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	g.Expect(ok).To(BeTrue())
 	g.Expect(val).To(Equal("System"))
 	g.Expect(*ammp.Spec.Name).To(Equal("fooName"))
-	g.Expect(*ammp.Spec.OSType).To(Equal(azure.LinuxOS))
+	g.Expect(*ammp.Spec.OSType).To(Equal(LinuxOS))
 
 	t.Logf("Testing ammp defaulting webhook with empty string name specified in Spec")
 	emptyName := ""
@@ -118,7 +118,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change OSType of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					OSType:       to.StringPtr("Linux"),
+					OSType:       to.StringPtr(LinuxOS),
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
 					OSDiskSizeGB: to.Int32Ptr(512),
@@ -126,7 +126,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					OSType:       to.StringPtr("Windows"),
+					OSType:       to.StringPtr(WindowsOS),
 					Mode:         "System",
 					SKU:          "StandardD2S_V4",
 					OSDiskSizeGB: to.Int32Ptr(512),
@@ -531,9 +531,9 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 }
 
 func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
-	// NOTE: AzureManagedMachinePool is behind AKS feature gate flag; the web hook
+	// NOTE: AzureManagedMachinePool is behind AKS feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, true)()
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 	tests := []struct {
 		name     string
 		ammp     *AzureManagedMachinePool
@@ -587,7 +587,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "System",
-					OSType: to.StringPtr(azure.WindowsOS),
+					OSType: to.StringPtr(WindowsOS),
 				},
 			},
 			wantErr:  true,
@@ -598,7 +598,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(azure.WindowsOS),
+					OSType: to.StringPtr(WindowsOS),
 				},
 			},
 			wantErr: false,
@@ -611,7 +611,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 				},
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(azure.WindowsOS),
+					OSType: to.StringPtr(WindowsOS),
 				},
 			},
 			wantErr: false,
@@ -624,7 +624,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 				},
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(azure.WindowsOS),
+					OSType: to.StringPtr(WindowsOS),
 				},
 			},
 			wantErr:  true,
@@ -635,7 +635,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(azure.LinuxOS),
+					OSType: to.StringPtr(LinuxOS),
 					NodeLabels: map[string]string{
 						"foo": "bar",
 					},
@@ -648,7 +648,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:   "User",
-					OSType: to.StringPtr(azure.LinuxOS),
+					OSType: to.StringPtr(LinuxOS),
 					NodeLabels: map[string]string{
 						"kubernetes.azure.com/scalesetpriority": "spot",
 					},
@@ -865,7 +865,7 @@ func TestAzureManagedMachinePool_ValidateCreateFailure(t *testing.T) {
 		{
 			name:      "feature gate explicitly disabled",
 			ammp:      getKnownValidAzureManagedMachinePool(),
-			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKS, false),
+			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
 		},
 		{
 			name:      "feature gate implicitly disabled",

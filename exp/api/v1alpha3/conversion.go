@@ -20,15 +20,9 @@ import (
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
-
-// Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha3_ManagedControlPlaneSubnet is a conversion function.
-func Convert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha3_ManagedControlPlaneSubnet(in *infrav1exp.ManagedControlPlaneSubnet, out *ManagedControlPlaneSubnet, s conversion.Scope) error {
-	return autoConvert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha3_ManagedControlPlaneSubnet(in, out, s)
-}
 
 // Convert_v1alpha3_OSDisk_To_v1beta1_OSDisk is a conversion function.
 func Convert_v1alpha3_OSDisk_To_v1beta1_OSDisk(in *infrav1alpha3.OSDisk, out *infrav1.OSDisk, s conversion.Scope) error {

@@ -49,6 +49,19 @@ var _ = BeforeSuite(func() {
 	Expect(NewAzureMachineReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout, "").
 		SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
+	Expect((&AzureManagedClusterReconciler{
+		Client:   testEnv,
+		Recorder: testEnv.GetEventRecorderFor("azuremanagedcluster-reconciler"),
+	}).SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+
+	Expect((&AzureManagedControlPlaneReconciler{
+		Client:   testEnv,
+		Recorder: testEnv.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
+	}).SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+
+	Expect(NewAzureManagedMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremanagedmachinepool-reconciler"),
+		reconciler.DefaultLoopTimeout, "").SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+
 	// +kubebuilder:scaffold:scheme
 
 	By("starting the manager")

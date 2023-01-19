@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,10 +32,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -89,12 +89,12 @@ func (m *AzureManagedControlPlane) Default(_ client.Client) {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureManagedControlPlane) ValidateCreate(client client.Client) error {
-	// NOTE: AzureManagedControlPlane is behind AKS feature gate flag; the web hook
-	// must prevent creating new objects in case the feature flag is disabled.
-	if !feature.Gates.Enabled(feature.AKS) {
+	// NOTE: AzureManagedControlPlane relies upon MachinePools, which is behind a feature gate flag.
+	// The webhook must prevent creating new objects in case the feature flag is disabled.
+	if !feature.Gates.Enabled(capifeature.MachinePool) {
 		return field.Forbidden(
 			field.NewPath("spec"),
-			"can be set only if the AKS feature flag is enabled",
+			"can be set only if the Cluster API 'MachinePool' feature flag is enabled",
 		)
 	}
 
@@ -118,13 +118,6 @@ func (m *AzureManagedControlPlane) ValidateCreate(client client.Client) error {
 func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client client.Client) error {
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureManagedControlPlane)
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Name"),
-		old.Name,
-		m.Name); err != nil {
-		allErrs = append(allErrs, err)
-	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "SubscriptionID"),
@@ -299,7 +292,7 @@ func (m *AzureManagedControlPlane) validateVersion(_ client.Client) error {
 func (m *AzureManagedControlPlane) validateSSHKey(_ client.Client) error {
 	if m.Spec.SSHPublicKey != "" {
 		sshKey := m.Spec.SSHPublicKey
-		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
+		if errs := ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 	}

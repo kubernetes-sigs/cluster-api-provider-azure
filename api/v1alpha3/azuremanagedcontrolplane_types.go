@@ -18,7 +18,6 @@ package v1alpha3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	clusterv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
@@ -52,7 +51,7 @@ type AzureManagedControlPlaneSpec struct {
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
 	// +optional
-	AdditionalTags infrav1alpha3.Tags `json:"additionalTags,omitempty"`
+	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
 	// +kubebuilder:validation:Enum=azure;kubenet

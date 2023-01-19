@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -54,14 +54,14 @@ func AKSAutoscaleSpec(ctx context.Context, inputGetter func() AKSAutoscaleSpecIn
 	mgmtClient := bootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
 
-	amcp := &infrav1exp.AzureManagedControlPlane{}
+	amcp := &infrav1.AzureManagedControlPlane{}
 	err = mgmtClient.Get(ctx, types.NamespacedName{
 		Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
 		Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 	}, amcp)
 	Expect(err).NotTo(HaveOccurred())
 
-	ammp := &infrav1exp.AzureManagedMachinePool{}
+	ammp := &infrav1.AzureManagedMachinePool{}
 	err = mgmtClient.Get(ctx, client.ObjectKeyFromObject(input.MachinePool), ammp)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -83,7 +83,7 @@ func AKSAutoscaleSpec(ctx context.Context, inputGetter func() AKSAutoscaleSpecIn
 			ammp.Spec.Scaling = nil
 		} else {
 			enabling = "Enabling"
-			ammp.Spec.Scaling = &infrav1exp.ManagedMachinePoolScaling{
+			ammp.Spec.Scaling = &infrav1.ManagedMachinePoolScaling{
 				MinSize: to.Int32Ptr(1),
 				MaxSize: to.Int32Ptr(2),
 			}

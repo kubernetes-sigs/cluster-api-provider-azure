@@ -59,7 +59,7 @@ func (amp *AzureMachinePool) Default(client client.Client) {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (amp *AzureMachinePool) ValidateCreate(client client.Client) error {
-	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the web hook
+	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
 		return field.Forbidden(

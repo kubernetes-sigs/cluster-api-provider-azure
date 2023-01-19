@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package v1beta1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -68,7 +67,7 @@ type AzureManagedControlPlaneSpec struct {
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
 	// +optional
-	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
+	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
 	// +kubebuilder:validation:Enum=azure;kubenet
@@ -107,7 +106,7 @@ type AzureManagedControlPlaneSpec struct {
 
 	// SKU is the SKU of the AKS to be provisioned.
 	// +optional
-	SKU *SKU `json:"sku,omitempty"`
+	SKU *AKSSku `json:"sku,omitempty"`
 
 	// LoadBalancerProfile is the profile of the cluster load balancer.
 	// +optional
@@ -157,9 +156,9 @@ const (
 	PaidManagedControlPlaneTier AzureManagedControlPlaneSkuTier = "Paid"
 )
 
-// SKU - AKS SKU.
-type SKU struct {
-	// Tier - Tier of a managed cluster SKU.
+// AKSSku - AKS SKU.
+type AKSSku struct {
+	// Tier - Tier of an AKS cluster.
 	Tier AzureManagedControlPlaneSkuTier `json:"tier"`
 }
 
@@ -226,7 +225,7 @@ type ManagedControlPlaneSubnet struct {
 
 	// ServiceEndpoints is a slice of Virtual Network service endpoints to enable for the subnets.
 	// +optional
-	ServiceEndpoints infrav1.ServiceEndpoints `json:"serviceEndpoints,omitempty"`
+	ServiceEndpoints ServiceEndpoints `json:"serviceEndpoints,omitempty"`
 }
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.
@@ -248,7 +247,7 @@ type AzureManagedControlPlaneStatus struct {
 	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
 	// next reconciliation loop.
 	// +optional
-	LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
+	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
 }
 
 // AutoScalerProfile parameters to be applied to the cluster-autoscaler.
@@ -401,12 +400,12 @@ func (m *AzureManagedControlPlane) SetConditions(conditions clusterv1.Conditions
 }
 
 // GetFutures returns the list of long running operation states for an AzureManagedControlPlane API object.
-func (m *AzureManagedControlPlane) GetFutures() infrav1.Futures {
+func (m *AzureManagedControlPlane) GetFutures() Futures {
 	return m.Status.LongRunningOperationStates
 }
 
 // SetFutures will set the given long running operation states on an AzureManagedControlPlane object.
-func (m *AzureManagedControlPlane) SetFutures(futures infrav1.Futures) {
+func (m *AzureManagedControlPlane) SetFutures(futures Futures) {
 	m.Status.LongRunningOperationStates = futures
 }
 

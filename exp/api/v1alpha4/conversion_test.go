@@ -37,24 +37,6 @@ func TestFuzzyConversion(t *testing.T) {
 		Spoke:  &AzureMachinePool{},
 	}))
 
-	t.Run("for AzureManagedCluster", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
-		Scheme: scheme,
-		Hub:    &infrav1exp.AzureManagedCluster{},
-		Spoke:  &AzureManagedCluster{},
-	}))
-
-	t.Run("for AzureManagedControlPlane", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
-		Scheme: scheme,
-		Hub:    &infrav1exp.AzureManagedControlPlane{},
-		Spoke:  &AzureManagedControlPlane{},
-	}))
-
-	t.Run("for AzureManagedMachinePool", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
-		Scheme: scheme,
-		Hub:    &infrav1exp.AzureManagedMachinePool{},
-		Spoke:  &AzureManagedMachinePool{},
-	}))
-
 	t.Run("for AzureMachinePoolMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme: scheme,
 		Hub:    &infrav1exp.AzureMachinePoolMachine{},

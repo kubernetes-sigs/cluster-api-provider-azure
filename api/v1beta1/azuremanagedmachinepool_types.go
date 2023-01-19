@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 )
@@ -35,7 +33,7 @@ const (
 	NodePoolModeUser NodePoolMode = "User"
 
 	// DefaultOSType represents the default operating system for azmachinepool.
-	DefaultOSType string = azure.LinuxOS
+	DefaultOSType string = LinuxOS
 )
 
 // NodePoolMode enumerates the values for agent pool mode.
@@ -126,7 +124,7 @@ type AzureManagedMachinePoolSpec struct {
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the
 	// Azure provider, in addition to the ones added by default.
 	// +optional
-	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
+	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
 	// Name - name of the agent pool. If not specified, CAPZ uses the name of the CR as the agent pool name.
 	// +optional
@@ -259,7 +257,7 @@ type AzureManagedMachinePoolStatus struct {
 	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
 	// next reconciliation loop.
 	// +optional
-	LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
+	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -297,12 +295,12 @@ func (m *AzureManagedMachinePool) SetConditions(conditions clusterv1.Conditions)
 }
 
 // GetFutures returns the list of long running operation states for an AzureManagedMachinePool API object.
-func (m *AzureManagedMachinePool) GetFutures() infrav1.Futures {
+func (m *AzureManagedMachinePool) GetFutures() Futures {
 	return m.Status.LongRunningOperationStates
 }
 
 // SetFutures will set the given long running operation states on an AzureManagedMachinePool object.
-func (m *AzureManagedMachinePool) SetFutures(futures infrav1.Futures) {
+func (m *AzureManagedMachinePool) SetFutures(futures Futures) {
 	m.Status.LongRunningOperationStates = futures
 }
 

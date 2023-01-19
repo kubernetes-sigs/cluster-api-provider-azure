@@ -30,9 +30,11 @@ const (
 	// // alpha: v1.X
 	// MyFeature featuregate.Feature = "MyFeature"
 
+	//nolint:godot // Ignore "Comment should end in a period" check.
 	// AKS is the feature gate for AKS managed clusters.
-	// owner: @alexeldeib
+	// owner: @jackfrancis @nojnhuh
 	// alpha: v0.4
+	// GA: v1.8
 	AKS featuregate.Feature = "AKS"
 
 	// AKSResourceHealth is the feature gate for reporting Azure Resource Health
@@ -50,6 +52,6 @@ func init() {
 // To add a new feature, define a key for it above and add it here.
 var defaultCAPZFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	// Every feature should be initiated here:
-	AKS:               {Default: false, PreRelease: featuregate.Alpha},
+	AKS:               {Default: true, PreRelease: featuregate.GA, LockToDefault: true}, // Remove in 1.12
 	AKSResourceHealth: {Default: false, PreRelease: featuregate.Alpha},
 }

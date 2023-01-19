@@ -28,8 +28,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -56,7 +54,7 @@ type AzureManagedControlPlaneReconciler struct {
 }
 
 // SetupWithManager initializes this controller with a manager.
-func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
+func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options Options) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureManagedControlPlaneReconciler.SetupWithManager",
 		tele.KVP("controller", "AzureManagedControlPlane"),
@@ -68,7 +66,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 		r = coalescing.NewReconciler(amcpr, options.Cache, log)
 	}
 
-	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
+	azManagedControlPlane := &infrav1.AzureManagedControlPlane{}
 	// create mapper to transform incoming AzureManagedClusters into AzureManagedControlPlane requests
 	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(ctx, amcpr.Client, log)
 	if err != nil {
@@ -76,7 +74,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	}
 
 	// map requests for machine pools corresponding to AzureManagedControlPlane's defaultPool back to the corresponding AzureManagedControlPlane.
-	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, amcpr.Client, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), log)
+	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, amcpr.Client, infrav1.GroupVersion.WithKind("AzureManagedControlPlane"), log)
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
@@ -84,7 +82,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, amcpr.WatchFilterValue)).
 		// watch AzureManagedCluster resources
 		Watches(
-			&source.Kind{Type: &infrav1exp.AzureManagedCluster{}},
+			&source.Kind{Type: &infrav1.AzureManagedCluster{}},
 			handler.EnqueueRequestsFromMapFunc(azureManagedClusterMapper),
 		).
 		// watch MachinePool resources
@@ -100,7 +98,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), mgr.GetClient(), &infrav1exp.AzureManagedControlPlane{})),
+		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureManagedControlPlane"), mgr.GetClient(), &infrav1.AzureManagedControlPlane{})),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, amcpr.WatchFilterValue),
 	); err != nil {
@@ -127,7 +125,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	defer done()
 
 	// Fetch the AzureManagedControlPlane instance
-	azureControlPlane := &infrav1exp.AzureManagedControlPlane{}
+	azureControlPlane := &infrav1.AzureManagedControlPlane{}
 	err := amcpr.Get(ctx, req.NamespacedName, azureControlPlane)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -160,7 +158,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 		clusterv1.ClusterLabelName: cluster.Name,
 	})
 
-	ammpList := &infrav1exp.AzureManagedMachinePoolList{}
+	ammpList := &infrav1.AzureManagedMachinePoolList{}
 	if err := amcpr.List(ctx, ammpList, opt1, opt2); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -181,7 +179,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 
 	// check if the control plane's namespace is allowed for this identity and update owner references for the identity.
 	if azureControlPlane.Spec.IdentityRef != nil {
-		err := infracontroller.EnsureClusterIdentity(ctx, amcpr.Client, azureControlPlane, azureControlPlane.Spec.IdentityRef, infrav1exp.ManagedClusterFinalizer)
+		err := EnsureClusterIdentity(ctx, amcpr.Client, azureControlPlane, azureControlPlane.Spec.IdentityRef, infrav1.ManagedClusterFinalizer)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -228,7 +226,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 	// Remove deprecated Cluster finalizer if it exists.
 	controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer)
 	// If the AzureManagedControlPlane doesn't have our finalizer, add it.
-	controllerutil.AddFinalizer(scope.ControlPlane, infrav1exp.ManagedClusterFinalizer)
+	controllerutil.AddFinalizer(scope.ControlPlane, infrav1.ManagedClusterFinalizer)
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
 	if err := scope.PatchObject(ctx); err != nil {
 		amcpr.Recorder.Eventf(scope.ControlPlane, corev1.EventTypeWarning, "AzureManagedControlPlane unavailable", "failed to patch resource: %s", err)
@@ -273,10 +271,10 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 	}
 
 	// Cluster is deleted so remove the finalizer.
-	controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1exp.ManagedClusterFinalizer)
+	controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ManagedClusterFinalizer)
 
 	if scope.ControlPlane.Spec.IdentityRef != nil {
-		err := infracontroller.RemoveClusterIdentityFinalizer(ctx, amcpr.Client, scope.ControlPlane, scope.ControlPlane.Spec.IdentityRef, infrav1exp.ManagedClusterFinalizer)
+		err := RemoveClusterIdentityFinalizer(ctx, amcpr.Client, scope.ControlPlane, scope.ControlPlane.Spec.IdentityRef, infrav1.ManagedClusterFinalizer)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

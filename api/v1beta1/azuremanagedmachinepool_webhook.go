@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,12 +29,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -62,12 +62,12 @@ func (m *AzureManagedMachinePool) Default(client client.Client) {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
-	// NOTE: AzureManagedMachinePool is behind AKS feature gate flag; the web hook
-	// must prevent creating new objects in case the feature flag is disabled.
-	if !feature.Gates.Enabled(feature.AKS) {
+	// NOTE: AzureManagedMachinePool relies upon MachinePools, which is behind a feature gate flag.
+	// The webhook must prevent creating new objects in case the feature flag is disabled.
+	if !feature.Gates.Enabled(capifeature.MachinePool) {
 		return field.Forbidden(
 			field.NewPath("spec"),
-			"can be set only if the AKS feature flag is enabled",
+			"can be set only if the Cluster API 'MachinePool' feature flag is enabled",
 		)
 	}
 	validators := []func() error{
@@ -132,14 +132,14 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 	}
 
 	// custom headers are immutable
-	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
-	newCustomHeaders := maps.FilterByKeyPrefix(m.ObjectMeta.Annotations, azure.CustomHeaderPrefix)
+	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, CustomHeaderPrefix)
+	newCustomHeaders := maps.FilterByKeyPrefix(m.ObjectMeta.Annotations, CustomHeaderPrefix)
 	if !reflect.DeepEqual(oldCustomHeaders, newCustomHeaders) {
 		allErrs = append(allErrs,
 			field.Invalid(
 				field.NewPath("metadata", "annotations"),
 				m.ObjectMeta.Annotations,
-				fmt.Sprintf("annotations with '%s' prefix are immutable", azure.CustomHeaderPrefix)))
+				fmt.Sprintf("annotations with '%s' prefix are immutable", CustomHeaderPrefix)))
 	}
 
 	if !webhookutils.EnsureStringSlicesAreEquivalent(m.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {
@@ -286,7 +286,7 @@ func (m *AzureManagedMachinePool) validateMaxPods() error {
 
 func (m *AzureManagedMachinePool) validateOSType() error {
 	if m.Spec.Mode == string(NodePoolModeSystem) {
-		if m.Spec.OSType != nil && *m.Spec.OSType != azure.LinuxOS {
+		if m.Spec.OSType != nil && *m.Spec.OSType != LinuxOS {
 			return field.Forbidden(
 				field.NewPath("Spec", "OSType"),
 				"System node pooll must have OSType 'Linux'")
@@ -297,7 +297,7 @@ func (m *AzureManagedMachinePool) validateOSType() error {
 }
 
 func (m *AzureManagedMachinePool) validateName() error {
-	if m.Spec.OSType != nil && *m.Spec.OSType == azure.WindowsOS {
+	if m.Spec.OSType != nil && *m.Spec.OSType == WindowsOS {
 		if len(m.Name) > 6 {
 			return field.Invalid(
 				field.NewPath("Name"),

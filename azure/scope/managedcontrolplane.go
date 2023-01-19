@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -53,7 +52,7 @@ type ManagedControlPlaneScopeParams struct {
 	AzureClients
 	Client              client.Client
 	Cluster             *clusterv1.Cluster
-	ControlPlane        *infrav1exp.AzureManagedControlPlane
+	ControlPlane        *infrav1.AzureManagedControlPlane
 	ManagedMachinePools []ManagedMachinePool
 	Cache               *ManagedControlPlaneCache
 }
@@ -116,7 +115,7 @@ type ManagedControlPlaneScope struct {
 
 	AzureClients
 	Cluster             *clusterv1.Cluster
-	ControlPlane        *infrav1exp.AzureManagedControlPlane
+	ControlPlane        *infrav1.AzureManagedControlPlane
 	ManagedMachinePools []ManagedMachinePool
 }
 
@@ -426,7 +425,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 		NodeResourceGroup: s.ControlPlane.Spec.NodeResourceGroupName,
 		Location:          s.ControlPlane.Spec.Location,
 		Tags:              s.ControlPlane.Spec.AdditionalTags,
-		Headers:           maps.FilterByKeyPrefix(s.ManagedClusterAnnotations(), azure.CustomHeaderPrefix),
+		Headers:           maps.FilterByKeyPrefix(s.ManagedClusterAnnotations(), infrav1.CustomHeaderPrefix),
 		Version:           strings.TrimPrefix(s.ControlPlane.Spec.Version, "v"),
 		SSHPublicKey:      s.ControlPlane.Spec.SSHPublicKey,
 		DNSServiceIP:      s.ControlPlane.Spec.DNSServiceIP,
@@ -541,7 +540,7 @@ func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.ResourceSpecG
 			}
 		}
 
-		if pool.InfraMachinePool != nil && pool.InfraMachinePool.Spec.Mode == string(infrav1exp.NodePoolModeSystem) {
+		if pool.InfraMachinePool != nil && pool.InfraMachinePool.Spec.Mode == string(infrav1.NodePoolModeSystem) {
 			foundSystemPool = true
 		}
 
@@ -573,7 +572,7 @@ func (s *ManagedControlPlaneScope) MakeEmptyKubeConfigSecret() corev1.Secret {
 			Name:      secret.Name(s.Cluster.Name, secret.Kubeconfig),
 			Namespace: s.Cluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(s.ControlPlane, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane")),
+				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
 			},
 		},
 	}

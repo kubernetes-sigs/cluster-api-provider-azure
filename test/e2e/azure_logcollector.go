@@ -189,13 +189,13 @@ func getAzureCluster(ctx context.Context, managementClusterClient client.Client,
 	return azCluster, err
 }
 
-func getAzureManagedControlPlane(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1exp.AzureManagedControlPlane, error) {
+func getAzureManagedControlPlane(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1.AzureManagedControlPlane, error) {
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}
 
-	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
+	azManagedControlPlane := &infrav1.AzureManagedControlPlane{}
 	err := managementClusterClient.Get(ctx, key, azManagedControlPlane)
 	return azManagedControlPlane, err
 }
@@ -222,13 +222,13 @@ func getAzureMachinePool(ctx context.Context, managementClusterClient client.Cli
 	return azMachinePool, err
 }
 
-func getAzureManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1exp.AzureManagedMachinePool, error) {
+func getAzureManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1.AzureManagedMachinePool, error) {
 	key := client.ObjectKey{
 		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 	}
 
-	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
+	azManagedMachinePool := &infrav1.AzureManagedMachinePool{}
 	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
 	return azManagedMachinePool, err
 }
