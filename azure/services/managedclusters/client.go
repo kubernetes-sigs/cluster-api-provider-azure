@@ -19,7 +19,7 @@ package managedclusters
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/preview/containerservice/mgmt/2022-03-02-preview/containerservice"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -65,7 +65,7 @@ func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.AzureClient.GetCredentials")
 	defer done()
 
-	credentialList, err := ac.managedclusters.ListClusterUserCredentials(ctx, resourceGroupName, name, "")
+	credentialList, err := ac.managedclusters.ListClusterUserCredentials(ctx, resourceGroupName, name, "", containerservice.FormatExec)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,8 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name strin
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.AzureClient.Delete")
 	defer done()
 
-	future, err := ac.managedclusters.Delete(ctx, resourceGroupName, name)
+	ignorePodDisruptionBudget := false
+	future, err := ac.managedclusters.Delete(ctx, resourceGroupName, name, &ignorePodDisruptionBudget)
 	if err != nil {
 		if azure.ResourceGroupNotFound(err) || azure.ResourceNotFound(err) {
 			return nil

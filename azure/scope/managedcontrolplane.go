@@ -435,6 +435,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 			subnetName,
 		),
 		DisableLocalAccounts: s.ControlPlane.Spec.DisableLocalAccounts,
+		IPFamilies:           s.ControlPlane.Spec.IPFamilies,
 	}
 
 	if s.ControlPlane.Spec.NetworkPlugin != nil {

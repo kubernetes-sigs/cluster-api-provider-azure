@@ -72,7 +72,7 @@ type AzureManagedControlPlaneSpec struct {
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
-	// +kubebuilder:validation:Enum=azure;calico
+	// +kubebuilder:validation:Enum=azure;calico;''
 	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
@@ -117,6 +117,10 @@ type AzureManagedControlPlaneSpec struct {
 	// DisableLocalAccounts - If set to true, getting static credential will be disabled for this cluster. Expected to only be used for AAD clusters.
 	// +optional
 	DisableLocalAccounts *bool `json:"disableLocalAccounts,omitempty"`
+
+	// IPFamilies - IP families are used to determine single-stack or dual-stack clusters. For single-stack, the expected value is IPv4. For dual-stack, the expected values are IPv4 and IPv6.
+	// +optional
+	IPFamilies *[]string `json:"ipFamilies,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.

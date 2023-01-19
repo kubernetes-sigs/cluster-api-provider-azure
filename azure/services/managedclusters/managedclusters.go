@@ -20,12 +20,13 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/util/kubelogin"
-	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/preview/containerservice/mgmt/2022-03-02-preview/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
@@ -235,6 +236,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			},
 			DisableLocalAccounts: managedClusterSpec.DisableLocalAccounts,
 		},
+	}
+
+	if managedClusterSpec.IPFamilies != nil {
+		var ipFamilies []containerservice.IPFamily
+		for _, ipf := range *managedClusterSpec.IPFamilies {
+			ipFamilies = append(ipFamilies, containerservice.IPFamily(ipf))
+		}
+		managedCluster.NetworkProfile.IPFamilies = &ipFamilies
 	}
 
 	if managedClusterSpec.PodCIDR != "" {

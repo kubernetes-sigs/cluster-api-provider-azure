@@ -19,7 +19,7 @@ package agentpools
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/preview/containerservice/mgmt/2022-03-02-preview/containerservice"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -90,8 +90,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cl
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, cluster, name string) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.Delete")
 	defer done()
-
-	future, err := ac.agentpools.Delete(ctx, resourceGroupName, cluster, name)
+	ignorePodDisruptionBudget := false
+	future, err := ac.agentpools.Delete(ctx, resourceGroupName, cluster, name, &ignorePodDisruptionBudget)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin operation")
 	}

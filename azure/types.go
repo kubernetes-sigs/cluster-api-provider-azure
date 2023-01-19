@@ -201,10 +201,10 @@ type ManagedClusterSpec struct {
 	// LoadBalancerSKU for the managed cluster. Possible values include: 'Standard', 'Basic'. Defaults to Standard.
 	LoadBalancerSKU string
 
-	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet'. Defaults to azure.
+	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet', 'none'. Defaults to azure.
 	NetworkPlugin string
 
-	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'. Defaults to azure.
+	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure', ''. Defaults to azure.
 	NetworkPolicy string
 
 	// SSHPublicKey is a string literal containing an ssh public key. Will autogenerate and discard if not provided.
@@ -239,6 +239,9 @@ type ManagedClusterSpec struct {
 
 	// DisableLocalAccounts - If set to true, getting static credential will be disabled for this cluster. Expected to only be used for AAD clusters.
 	DisableLocalAccounts *bool
+
+	// IPFamilies - IP families are used to determine single-stack or dual-stack clusters. For single-stack, the expected value is IPv4. For dual-stack, the expected values are IPv4 and IPv6.
+	IPFamilies *[]string
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
