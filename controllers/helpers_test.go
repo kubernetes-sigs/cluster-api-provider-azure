@@ -461,6 +461,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
@@ -482,6 +483,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
@@ -501,6 +503,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true
@@ -519,6 +522,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true
@@ -538,6 +542,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true,
@@ -557,6 +562,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true,
@@ -578,6 +584,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
@@ -598,6 +605,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
@@ -618,6 +626,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true,
@@ -643,6 +652,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true,
@@ -668,6 +678,7 @@ const (
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
+    "loadBalancerName": "foo",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true,
