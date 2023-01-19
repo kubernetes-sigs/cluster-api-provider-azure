@@ -65,7 +65,7 @@ type AzureManagedControlPlaneSpec struct {
 	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
-	// +kubebuilder:validation:Enum=azure;kubenet
+	// +kubebuilder:validation:Enum=azure;kubenet;none
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
