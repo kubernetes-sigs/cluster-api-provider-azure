@@ -13,3 +13,5 @@ spec:
         - ${AZURE_BASTION_SUBNET_CIDR}
         name: AzureBastionSubnet
         role: bastion
+      sku: Standard
+      enableTunneling: true

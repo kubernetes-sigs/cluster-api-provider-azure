@@ -832,6 +832,16 @@ const (
 	AvailabilitySetRateLimit = "availabilitySetRateLimit"
 )
 
+// BastionHostSkuName is the name of the SKU used to specify the tier of Azure Bastion Host.
+type BastionHostSkuName string
+
+const (
+	// BasicBastionHostSku SKU for the Azure Bastion Host.
+	BasicBastionHostSku BastionHostSkuName = "Basic"
+	// StandardBastionHostSku SKU for the Azure Bastion Host.
+	StandardBastionHostSku BastionHostSkuName = "Standard"
+)
+
 // BastionSpec specifies how the Bastion feature should be set up for the cluster.
 type BastionSpec struct {
 	// +optional
@@ -846,6 +856,15 @@ type AzureBastion struct {
 	Subnet SubnetSpec `json:"subnet,omitempty"`
 	// +optional
 	PublicIP PublicIPSpec `json:"publicIP,omitempty"`
+	// BastionHostSkuName configures the tier of the Azure Bastion Host. Can be either Basic or Standard. Defaults to Basic.
+	// +kubebuilder:default=Basic
+	// +kubebuilder:validation:Enum=Basic;Standard
+	// +optional
+	Sku BastionHostSkuName `json:"sku,omitempty"`
+	// EnableTunneling enables the native client support feature for the Azure Bastion Host. Defaults to false.
+	// +kubebuilder:default=false
+	// +optional
+	EnableTunneling bool `json:"enableTunneling,omitempty"`
 }
 
 // BackendPool describes the backend pool of the load balancer.

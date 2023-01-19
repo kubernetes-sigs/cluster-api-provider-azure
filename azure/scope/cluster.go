@@ -520,12 +520,14 @@ func (s *ClusterScope) AzureBastionSpec() azure.ResourceSpecGetter {
 		publicIPID := azure.PublicIPID(s.SubscriptionID(), s.ResourceGroup(), s.AzureBastion().PublicIP.Name)
 
 		return &bastionhosts.AzureBastionSpec{
-			Name:          s.AzureBastion().Name,
-			ResourceGroup: s.ResourceGroup(),
-			Location:      s.Location(),
-			ClusterName:   s.ClusterName(),
-			SubnetID:      subnetID,
-			PublicIPID:    publicIPID,
+			Name:            s.AzureBastion().Name,
+			ResourceGroup:   s.ResourceGroup(),
+			Location:        s.Location(),
+			ClusterName:     s.ClusterName(),
+			SubnetID:        subnetID,
+			PublicIPID:      publicIPID,
+			Sku:             s.AzureBastion().Sku,
+			EnableTunneling: s.AzureBastion().EnableTunneling,
 		}
 	}
 
