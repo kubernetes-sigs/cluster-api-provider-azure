@@ -204,7 +204,7 @@ type ManagedClusterSpec struct {
 	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet', 'none'. Defaults to azure.
 	NetworkPlugin string
 
-	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'. Defaults to azure.
+	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure', ''. Defaults to azure.
 	NetworkPolicy string
 
 	// SSHPublicKey is a string literal containing an ssh public key. Will autogenerate and discard if not provided.

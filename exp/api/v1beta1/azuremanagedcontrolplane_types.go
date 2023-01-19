@@ -72,7 +72,7 @@ type AzureManagedControlPlaneSpec struct {
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
-	// +kubebuilder:validation:Enum=azure;calico
+	// +kubebuilder:validation:Enum=azure;calico;''
 	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
