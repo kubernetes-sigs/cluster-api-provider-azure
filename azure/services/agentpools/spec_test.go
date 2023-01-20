@@ -287,6 +287,18 @@ func TestParameters(t *testing.T) {
 			),
 			expectedError: nil,
 		},
+		{
+			name: "empty node taints should not trigger an update",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) { pool.NodeTaints = nil },
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *containerservice.AgentPool) { pool.NodeTaints = nil },
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      nil,
+			expectedError: nil,
+		},
 	}
 	for _, tc := range testcases {
 		tc := tc
