@@ -87,10 +87,13 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 
 		By("Deleting all tags for control plane")
 		expectedTags = nil
-		Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
-		initialTags := infraControlPlane.Spec.AdditionalTags
-		infraControlPlane.Spec.AdditionalTags = expectedTags
-		Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		var initialTags infrav1.Tags
+		Eventually(func(g Gomega) {
+			g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
+			initialTags = infraControlPlane.Spec.AdditionalTags
+			infraControlPlane.Spec.AdditionalTags = expectedTags
+			g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		}, inputGetter().WaitForUpdate...).Should(Succeed())
 		Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
 		By("Creating tags for control plane")
@@ -98,25 +101,31 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 			"test":    "tag",
 			"another": "value",
 		}
-		Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
-		infraControlPlane.Spec.AdditionalTags = expectedTags
-		Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
+			infraControlPlane.Spec.AdditionalTags = expectedTags
+			g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		}, inputGetter().WaitForUpdate...).Should(Succeed())
 		Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
 		By("Updating tags for control plane")
 		expectedTags["test"] = "updated"
 		delete(expectedTags, "another")
 		expectedTags["new"] = "value"
-		Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
-		infraControlPlane.Spec.AdditionalTags = expectedTags
-		Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
+			infraControlPlane.Spec.AdditionalTags = expectedTags
+			g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		}, inputGetter().WaitForUpdate...).Should(Succeed())
 		Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
 		By("Restoring initial tags for control plane")
 		expectedTags = initialTags
-		Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
-		infraControlPlane.Spec.AdditionalTags = expectedTags
-		Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
+			infraControlPlane.Spec.AdditionalTags = expectedTags
+			g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		}, inputGetter().WaitForUpdate...).Should(Succeed())
 		Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 	}()
 
@@ -146,10 +155,13 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 
 			Byf("Deleting all tags for machine pool %s", mp.Name)
 			expectedTags = nil
-			Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
-			initialTags := ammp.Spec.AdditionalTags
-			ammp.Spec.AdditionalTags = expectedTags
-			Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			var initialTags infrav1.Tags
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				initialTags = ammp.Spec.AdditionalTags
+				ammp.Spec.AdditionalTags = expectedTags
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, inputGetter().WaitForUpdate...).Should(Succeed())
 			Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
 			Byf("Creating tags for machine pool %s", mp.Name)
@@ -157,25 +169,31 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 				"test":    "tag",
 				"another": "value",
 			}
-			Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
-			ammp.Spec.AdditionalTags = expectedTags
-			Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				ammp.Spec.AdditionalTags = expectedTags
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, inputGetter().WaitForUpdate...).Should(Succeed())
 			Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
 			Byf("Updating tags for machine pool %s", mp.Name)
 			expectedTags["test"] = "updated"
 			delete(expectedTags, "another")
 			expectedTags["new"] = "value"
-			Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
-			ammp.Spec.AdditionalTags = expectedTags
-			Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				ammp.Spec.AdditionalTags = expectedTags
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, inputGetter().WaitForUpdate...).Should(Succeed())
 			Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
 			Byf("Restoring initial tags for machine pool %s", mp.Name)
 			expectedTags = initialTags
-			Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
-			ammp.Spec.AdditionalTags = expectedTags
-			Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				ammp.Spec.AdditionalTags = expectedTags
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, inputGetter().WaitForUpdate...).Should(Succeed())
 			Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 		}(mp)
 	}

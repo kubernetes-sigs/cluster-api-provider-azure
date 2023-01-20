@@ -154,11 +154,13 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	}, input.WaitIntervals...).Should(Succeed())
 
 	By("Scaling the MachinePool to 2 nodes")
-	err = mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), machinePool)
-	Expect(err).NotTo(HaveOccurred())
-	machinePool.Spec.Replicas = to.Int32Ptr(2)
-	err = mgmtClient.Update(ctx, machinePool)
-	Expect(err).NotTo(HaveOccurred())
+	Eventually(func(g Gomega) {
+		err = mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), machinePool)
+		g.Expect(err).NotTo(HaveOccurred())
+		machinePool.Spec.Replicas = to.Int32Ptr(2)
+		err = mgmtClient.Update(ctx, machinePool)
+		g.Expect(err).NotTo(HaveOccurred())
+	}, input.WaitIntervals...).Should(Succeed())
 
 	By("Verifying the AzureManagedMachinePool becomes ready")
 	Eventually(func(g Gomega) {
