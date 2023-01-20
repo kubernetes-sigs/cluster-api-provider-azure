@@ -57,7 +57,7 @@ See [Ultra disk](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-t
 
 You may refer to your device as `/dev/disk/azure/scsi1/lun<i>` where `<i>` is the LUN.
 
-See [cloud-init documentation](https://cloudinit.readthedocs.io/en/latest/topics/modules.html#disk-setup) for more information about cloud-init disk setup.
+See [cloud-init documentation](https://cloudinit.readthedocs.io/en/latest/reference/modules.html#disk-setup) for more information about cloud-init disk setup.
 
 
 ## Example
