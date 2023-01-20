@@ -58,11 +58,6 @@ func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clus
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, kubesystem, specName)
 		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 	}
-	By("Waiting for Ready cloud-node-manager daemonset pods")
-	for _, ds := range []string{"cloud-node-manager", "cloud-node-manager-windows"} {
-		waitInput := GetWaitForDaemonsetAvailableInput(ctx, clusterProxy, ds, kubesystem, specName)
-		WaitForDaemonset(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-daemonset")...)
-	}
 }
 
 // InstallAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
@@ -82,10 +77,5 @@ func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.Ap
 	for _, d := range []string{"csi-azuredisk-controller"} {
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, kubesystem, specName)
 		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
-	}
-	By("Waiting for Running azure-disk-csi node pods")
-	for _, ds := range []string{"csi-azuredisk-node", "csi-azuredisk-node-win"} {
-		waitInput := GetWaitForDaemonsetAvailableInput(ctx, clusterProxy, ds, kubesystem, specName)
-		WaitForDaemonset(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-daemonset")...)
 	}
 }

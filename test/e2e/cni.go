@@ -81,25 +81,6 @@ func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTe
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, CalicoAPIServerNamespace, specName)
 		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 	}
-	By("Waiting for Ready calico-node daemonset pods")
-	for _, ds := range []string{"calico-node"} {
-		waitInput := GetWaitForDaemonsetAvailableInput(ctx, clusterProxy, ds, CalicoSystemNamespace, specName)
-		WaitForDaemonset(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-daemonset")...)
-	}
-	// TODO: enable this for all clusters once calico for windows is part of the helm chart.
-	if hasWindows {
-		By("Waiting for Ready calico windows pods")
-		for _, ds := range []string{"calico-node-windows"} {
-			waitInput := GetWaitForDaemonsetAvailableInput(ctx, clusterProxy, ds, CalicoSystemNamespace, specName)
-			WaitForDaemonset(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-daemonset")...)
-		}
-
-		By("Waiting for Ready calico windows pods")
-		for _, ds := range []string{"kube-proxy-windows"} {
-			waitInput := GetWaitForDaemonsetAvailableInput(ctx, clusterProxy, ds, kubesystem, specName)
-			WaitForDaemonset(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-daemonset")...)
-		}
-	}
 }
 
 func getCalicoValues(cidrBlocks []string) *helmVals.Options {

@@ -184,6 +184,15 @@ var _ = Describe("Workload cluster creation", func() {
 					ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 						WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 					},
+					PostMachinesProvisioned: func() {
+						EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+							return DaemonsetsSpecInput{
+								BootstrapClusterProxy: bootstrapClusterProxy,
+								Namespace:             namespace,
+								ClusterName:           clusterName,
+							}
+						})
+					},
 				}, result)
 
 				By("Creating a private cluster from the management cluster", func() {
@@ -235,6 +244,15 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
+				PostMachinesProvisioned: func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
 				},
 			}, result)
 
@@ -320,6 +338,15 @@ var _ = Describe("Workload cluster creation", func() {
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
+				PostMachinesProvisioned: func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				},
 			}, result)
 
 			By("Verifying expected VM extensions are present on the node", func() {
@@ -378,6 +405,15 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
+				PostMachinesProvisioned: func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
 				},
 			}, result)
 
@@ -464,6 +500,15 @@ var _ = Describe("Workload cluster creation", func() {
 				// The workaround is to use server side apply by passing `--server-side` flag to kubectl apply.
 				// More on server side apply here: https://kubernetes.io/docs/reference/using-api/server-side-apply/
 				Args: []string{"--server-side"},
+				PostMachinesProvisioned: func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				},
 			}, result)
 
 			By("Verifying expected VM extensions are present on the node", func() {
@@ -581,6 +626,15 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
+				PostMachinesProvisioned: func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
 				},
 			}, result)
 
@@ -745,6 +799,15 @@ var _ = Describe("Workload cluster creation", func() {
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
+				PostMachinesProvisioned: func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				},
 			}, result)
 
 			By("Verifying expected VM extensions are present on the node", func() {
@@ -817,6 +880,15 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
+				PostMachinesProvisioned: func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
 				},
 			}, result)
 

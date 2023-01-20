@@ -270,13 +270,17 @@ type WaitForDaemonsetInput struct {
 func WaitForDaemonset(ctx context.Context, input WaitForDaemonsetInput, intervals ...interface{}) {
 	start := time.Now()
 	namespace, name := input.DaemonSet.GetNamespace(), input.DaemonSet.GetName()
-	Byf("waiting for daemonset %s/%s to be complete", namespace, name)
-	Logf("waiting for daemonset %s/%s to be complete", namespace, name)
 	Eventually(func() bool {
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := input.Getter.Get(ctx, key, input.DaemonSet); err == nil {
-			if input.DaemonSet.Status.DesiredNumberScheduled == input.DaemonSet.Status.NumberReady {
-				Logf("%d daemonset %s/%s pods are running, took %v", input.DaemonSet.Status.NumberReady, namespace, name, time.Since(start))
+			if input.DaemonSet.Status.DesiredNumberScheduled > 0 {
+				Byf("waiting for %d daemonset %s/%s pods to be Running", input.DaemonSet.Status.DesiredNumberScheduled, namespace, name)
+				if input.DaemonSet.Status.DesiredNumberScheduled == input.DaemonSet.Status.NumberReady {
+					Logf("%d daemonset %s/%s pods are running, took %v", input.DaemonSet.Status.NumberReady, namespace, name, time.Since(start))
+					return true
+				}
+			} else {
+				Byf("daemonset %s/%s has no schedulable nodes, will skip", namespace, name)
 				return true
 			}
 		}
@@ -284,19 +288,21 @@ func WaitForDaemonset(ctx context.Context, input WaitForDaemonsetInput, interval
 	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedDaemonset(ctx, input) })
 }
 
-// GetWaitForDaemonsetAvailableInput is a convenience func to compose a WaitForDaemonsetInput
-func GetWaitForDaemonsetAvailableInput(ctx context.Context, clusterProxy framework.ClusterProxy, name, namespace string, specName string) WaitForDaemonsetInput {
+// WaitForDaemonsets retries during E2E until all daemonsets pods are all Running.
+func WaitForDaemonsets(ctx context.Context, clusterProxy framework.ClusterProxy, specName string, intervals ...interface{}) {
 	Expect(clusterProxy).NotTo(BeNil())
 	cl := clusterProxy.GetClient()
-	var ds = &appsv1.DaemonSet{}
+	var dsList = &appsv1.DaemonSetList{}
 	Eventually(func() error {
-		return cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, ds)
-	}, e2eConfig.GetIntervals(specName, "wait-daemonset")...).Should(Succeed())
-	clientset := clusterProxy.GetClientSet()
-	return WaitForDaemonsetInput{
-		DaemonSet: ds,
-		Clientset: clientset,
-		Getter:    cl,
+		return cl.List(ctx, dsList)
+	}, intervals...).Should(Succeed())
+	for i := range dsList.Items {
+		waitForDaemonsetInput := WaitForDaemonsetInput{
+			DaemonSet: &dsList.Items[i],
+			Clientset: clusterProxy.GetClientSet(),
+			Getter:    cl,
+		}
+		WaitForDaemonset(ctx, waitForDaemonsetInput, intervals...)
 	}
 }
 
