@@ -309,6 +309,9 @@ func (s *ManagedMachinePoolScope) SetCAPIMachinePoolReplicas(replicas *int32) {
 
 // SetCAPIMachinePoolAnnotation sets the specified annotation on the associated MachinePool.
 func (s *ManagedMachinePoolScope) SetCAPIMachinePoolAnnotation(key, value string) {
+	if s.MachinePool.Annotations == nil {
+		s.MachinePool.Annotations = make(map[string]string)
+	}
 	s.MachinePool.Annotations[key] = value
 }
 
