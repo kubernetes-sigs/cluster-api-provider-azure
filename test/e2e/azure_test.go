@@ -769,6 +769,16 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("modifying node labels configuration", func() {
+				AKSNodeLabelsSpec(ctx, func() AKSNodeLabelsSpecInput {
+					return AKSNodeLabelsSpecInput{
+						Cluster:       result.Cluster,
+						MachinePools:  result.MachinePools,
+						WaitForUpdate: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+					}
+				})
+			})
 		})
 	})
 
