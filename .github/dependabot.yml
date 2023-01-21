@@ -16,6 +16,7 @@ updates:
   labels:
     - "ok-to-test"
     - "kind/cleanup"
+    - "release-note-none"
 # Go
 - directory: "/"
   package-ecosystem: "gomod"
@@ -37,6 +38,7 @@ updates:
   labels:
   - "ok-to-test"
   - "kind/cleanup"
+  - "release-note-none"
 # Go - release 1.7
 - directory: "/"
   package-ecosystem: "gomod"
@@ -58,6 +60,7 @@ updates:
   labels:
   - "ok-to-test"
   - "kind/cleanup"
+  - "release-note-none"
   # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.7
   open-pull-requests-limit: 0
   target-branch: "release-1.7"
@@ -82,6 +85,7 @@ updates:
   labels:
   - "ok-to-test"
   - "kind/cleanup"
+  - "release-note-none"
   # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.6
   open-pull-requests-limit: 0
   target-branch: "release-1.6"
