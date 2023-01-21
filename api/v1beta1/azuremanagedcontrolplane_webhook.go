@@ -225,6 +225,16 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client 
 		}
 	}
 
+	// Consider removing this once moves out of preview
+	// Updating outboundType after cluster creation (PREVIEW)
+	// https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype#updating-outboundtype-after-cluster-creation-preview
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "OutboundType"),
+		old.Spec.OutboundType,
+		m.Spec.OutboundType); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	if errs := m.validateVirtualNetworkUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}

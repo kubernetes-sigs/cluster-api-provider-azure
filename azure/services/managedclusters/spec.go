@@ -65,6 +65,9 @@ type ManagedClusterSpec struct {
 	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'.
 	NetworkPolicy string
 
+	// OutboundType used for building Kubernetes network. Possible values include: 'loadBalancer', 'managedNATGateway', 'userAssignedNATGateway', 'userDefinedRouting'.
+	OutboundType *infrav1.ManagedControlPlaneOutboundType
+
 	// SSHPublicKey is a string literal containing an ssh public key. Will autogenerate and discard if not provided.
 	SSHPublicKey string
 
@@ -375,6 +378,10 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			PrivateDNSZone:                 s.APIServerAccessProfile.PrivateDNSZone,
 			EnablePrivateClusterPublicFQDN: s.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
 		}
+	}
+
+	if s.OutboundType != nil {
+		managedCluster.NetworkProfile.OutboundType = containerservice.OutboundType(*s.OutboundType)
 	}
 
 	managedCluster.AutoScalerProfile = buildAutoScalerProfile(s.AutoScalerProfile)

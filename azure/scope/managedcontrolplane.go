@@ -436,6 +436,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure
 			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
 		GetAllAgentPools: s.GetAllAgentPoolSpecs,
+		OutboundType:     s.ControlPlane.Spec.OutboundType,
 	}
 
 	if s.ControlPlane.Spec.NetworkPlugin != nil {

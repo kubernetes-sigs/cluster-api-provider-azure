@@ -34,6 +34,20 @@ const (
 	PrivateDNSZoneModeNone string = "None"
 )
 
+// ManagedControlPlaneOutboundType enumerates the values for the managed control plane OutboundType.
+type ManagedControlPlaneOutboundType string
+
+const (
+	// ManagedControlPlaneOutboundTypeLoadBalancer ...
+	ManagedControlPlaneOutboundTypeLoadBalancer ManagedControlPlaneOutboundType = "loadBalancer"
+	// ManagedControlPlaneOutboundTypeManagedNATGateway ...
+	ManagedControlPlaneOutboundTypeManagedNATGateway ManagedControlPlaneOutboundType = "managedNATGateway"
+	// ManagedControlPlaneOutboundTypeUserAssignedNATGateway ...
+	ManagedControlPlaneOutboundTypeUserAssignedNATGateway ManagedControlPlaneOutboundType = "userAssignedNATGateway"
+	// ManagedControlPlaneOutboundTypeUserDefinedRouting ...
+	ManagedControlPlaneOutboundTypeUserDefinedRouting ManagedControlPlaneOutboundType = "userDefinedRouting"
+)
+
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
@@ -78,6 +92,11 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=azure;calico
 	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
+
+	// Outbound configuration used by Nodes.
+	// +kubebuilder:validation:Enum=loadBalancer;managedNATGateway;userAssignedNATGateway;userDefinedRouting
+	// +optional
+	OutboundType *ManagedControlPlaneOutboundType `json:"outboundType,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
 	SSHPublicKey string `json:"sshPublicKey"`
