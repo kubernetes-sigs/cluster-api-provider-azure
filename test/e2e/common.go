@@ -85,6 +85,7 @@ const (
 	capiWindowsOfferName            = "capi-windows"
 	aksClusterNameSuffix            = "aks"
 	flatcarCAPICommunityGallery     = "flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0"
+	defaultNamespace                = "default"
 )
 
 func Byf(format string, a ...interface{}) {
