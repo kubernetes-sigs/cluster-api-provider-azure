@@ -75,6 +75,8 @@ const (
 	Timestamp                       = "TIMESTAMP"
 	AKSKubernetesVersion            = "AKS_KUBERNETES_VERSION"
 	AKSKubernetesVersionUpgradeFrom = "AKS_KUBERNETES_VERSION_UPGRADE_FROM"
+	FlatcarKubernetesVersion        = "FLATCAR_KUBERNETES_VERSION"
+	FlatcarVersion                  = "FLATCAR_VERSION"
 	SecurityScanFailThreshold       = "SECURITY_SCAN_FAIL_THRESHOLD"
 	SecurityScanContainer           = "SECURITY_SCAN_CONTAINER"
 	ManagedClustersResourceType     = "managedClusters"
@@ -82,6 +84,7 @@ const (
 	capiOfferName                   = "capi"
 	capiWindowsOfferName            = "capi-windows"
 	aksClusterNameSuffix            = "aks"
+	flatcarCAPICommunityGallery     = "flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0"
 )
 
 func Byf(format string, a ...interface{}) {

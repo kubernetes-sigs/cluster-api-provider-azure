@@ -237,23 +237,27 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 	return []func() error{
 		execToPathFn(
 			"journal.log",
-			"journalctl", "--no-pager", "--output=short-precise",
+			"sudo", "journalctl", "--no-pager", "--output=short-precise",
 		),
 		execToPathFn(
 			"kern.log",
-			"journalctl", "--no-pager", "--output=short-precise", "-k",
+			"sudo", "journalctl", "--no-pager", "--output=short-precise", "-k",
 		),
 		execToPathFn(
 			"kubelet-version.txt",
-			"kubelet", "--version",
+			"PATH=/opt/bin:${PATH}", "kubelet", "--version",
 		),
 		execToPathFn(
 			"kubelet.log",
-			"journalctl", "--no-pager", "--output=short-precise", "-u", "kubelet.service",
+			"sudo", "journalctl", "--no-pager", "--output=short-precise", "-u", "kubelet.service",
 		),
 		execToPathFn(
 			"containerd.log",
-			"journalctl", "--no-pager", "--output=short-precise", "-u", "containerd.service",
+			"sudo", "journalctl", "--no-pager", "--output=short-precise", "-u", "containerd.service",
+		),
+		execToPathFn(
+			"ignition.log",
+			"sudo", "journalctl", "--no-pager", "--output=short-precise", "-at", "ignition",
 		),
 		execToPathFn(
 			"cloud-init.log",

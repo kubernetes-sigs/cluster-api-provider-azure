@@ -23,6 +23,7 @@ settings = {
     "cert_manager_version": "v1.10.0",
     "kubernetes_version": "v1.24.6",
     "aks_kubernetes_version": "v1.24.6",
+    "flatcar_version": "3374.2.1",
 }
 
 keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]
@@ -337,6 +338,7 @@ def deploy_worker_templates(template, substitutions):
         "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_B2s",
         "WORKER_MACHINE_COUNT": "2",
         "AZURE_NODE_MACHINE_TYPE": "Standard_B2s",
+        "FLATCAR_VERSION": settings.get("flatcar_version"),
     }
 
     if flavor == "aks":
@@ -347,9 +349,9 @@ def deploy_worker_templates(template, substitutions):
         value = substitutions[substitution]
         yaml = yaml.replace("${" + substitution + "}", value)
 
-    yaml = yaml.replace('"', '\\"')  # add escape character to double quotes in yaml
+    yaml = shlex.quote(yaml)
     flavor_name = os.path.basename(flavor)
-    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
 
     # wait for kubeconfig to be available
     flavor_cmd += "; until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; chmod 600 ./${CLUSTER_NAME}.kubeconfig; until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done"

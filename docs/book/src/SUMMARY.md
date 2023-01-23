@@ -30,6 +30,7 @@
     - [Virtual Networks](./topics/custom-vnet.md)
     - [VM Identity](./topics/vm-identity.md)
     - [Windows](./topics/windows.md)
+    - [Flatcar](./topics/flatcar.md)
 - [Development](./developers/development.md)
     - [Kubernetes Developers](./developers/kubernetes-developers.md)
     - [Releasing](./developers/releasing.md)
