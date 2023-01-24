@@ -20,4 +20,4 @@ set -o pipefail
 
 RESOURCES_ROOT=$(dirname "${BASH_SOURCE[0]}")/resources
 
-curl -s https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/master/bundle.yaml > "${RESOURCES_ROOT}/bundle.yaml"
+curl --retry 3 -s https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/master/bundle.yaml > "${RESOURCES_ROOT}/bundle.yaml"

@@ -59,7 +59,7 @@ BUILDIFIER="${SCRIPT_DIR}/tools/bin/buildifier/${VERSION}/buildifier"
 if [ ! -f "$BUILDIFIER" ]; then
   # install buildifier
   cd "${TMP_DIR}" || exit
-  curl -L "https://github.com/bazelbuild/buildtools/releases/download/${VERSION}/${BINARY}" -o "${TMP_DIR}/buildifier"
+  curl --retry 3 -L "https://github.com/bazelbuild/buildtools/releases/download/${VERSION}/${BINARY}" -o "${TMP_DIR}/buildifier"
   chmod +x "${TMP_DIR}/buildifier"
   cd "${ROOT_PATH}"
   mkdir -p "$(dirname "$0")/tools/bin/buildifier/${VERSION}"

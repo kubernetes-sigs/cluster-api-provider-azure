@@ -18,13 +18,15 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+CURL_RETRIES=3
+
 capz::util::get_latest_ci_version() {
     release="${1}"
     ci_version_url="https://dl.k8s.io/ci/latest-${release}.txt"
-    if ! curl -fL "${ci_version_url}" > /dev/null; then
+    if ! curl --retry "${CURL_RETRIES}" -fL "${ci_version_url}" > /dev/null; then
         ci_version_url="https://dl.k8s.io/ci/latest.txt"
     fi
-    curl -sSL "${ci_version_url}"
+    curl --retry "${CURL_RETRIES}" -sSL "${ci_version_url}"
 }
 
 capz::util::should_build_kubernetes() {

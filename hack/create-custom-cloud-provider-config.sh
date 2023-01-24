@@ -26,7 +26,7 @@ source "${REPO_ROOT}/hack/common-vars.sh"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
 if [[ -n "${CUSTOM_CLOUD_PROVIDER_CONFIG:-}" ]]; then
-  curl -sL -o tmp_azure_json "${CUSTOM_CLOUD_PROVIDER_CONFIG}"
+  curl --retry 3 -sL -o tmp_azure_json "${CUSTOM_CLOUD_PROVIDER_CONFIG}"
   envsubst < tmp_azure_json > azure_json
   kubectl create secret generic "${CLUSTER_NAME}-control-plane-azure-json" \
     --from-file=control-plane-azure.json=azure_json \

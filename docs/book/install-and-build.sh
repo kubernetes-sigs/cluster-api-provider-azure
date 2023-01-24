@@ -57,7 +57,7 @@ esac
 # we hardcode linux/amd64 since rust uses a different naming scheme
 echo "downloading mdBook-${mdBookVersion}-${arch}-${target}.${ext}"
 set -x
-curl -sL -o /tmp/mdbook.${ext} "https://github.com/rust-lang-nursery/mdBook/releases/download/${mdBookVersion}/mdBook-${mdBookVersion}-${arch}-${target}.${ext}"
+curl --retry 3 -sL -o /tmp/mdbook.${ext} "https://github.com/rust-lang-nursery/mdBook/releases/download/${mdBookVersion}/mdBook-${mdBookVersion}-${arch}-${target}.${ext}"
 ${cmd} /tmp/mdbook.${ext}
 chmod +x /tmp/mdbook
 
