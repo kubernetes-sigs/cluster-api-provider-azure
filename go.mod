@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Azure/aad-pod-identity v1.8.14
-	github.com/Azure/azure-sdk-for-go v67.1.0+incompatible
+	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/go-autorest/autorest v0.11.28
