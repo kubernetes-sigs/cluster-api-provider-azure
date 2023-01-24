@@ -52,6 +52,13 @@ const (
 )
 
 const (
+	// BootstrappingExtensionLinux is the name of the Linux CAPZ bootstrapping VM extension.
+	BootstrappingExtensionLinux = "CAPZ.Linux.Bootstrapping"
+	// BootstrappingExtensionWindows is the name of the Windows CAPZ bootstrapping VM extension.
+	BootstrappingExtensionWindows = "CAPZ.Windows.Bootstrapping"
+)
+
+const (
 	// DefaultWindowsOsAndVersion is the default Windows Server version to use when
 	// genearating default images for Windows nodes.
 	DefaultWindowsOsAndVersion = "windows-2019"
@@ -301,7 +308,7 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *Ex
 	if osType == LinuxOS && cloud == azure.PublicCloud.Name {
 		// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
 		return &ExtensionSpec{
-			Name:      "CAPZ.Linux.Bootstrapping",
+			Name:      BootstrappingExtensionLinux,
 			VMName:    vmName,
 			Publisher: "Microsoft.Azure.ContainerUpstream",
 			Version:   "1.0",
@@ -313,7 +320,7 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *Ex
 		// This command for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between reties.
 		// If the file is not present after the retries are exhausted the extension fails with return code '-2' - ERROR_FILE_NOT_FOUND.
 		return &ExtensionSpec{
-			Name:      "CAPZ.Windows.Bootstrapping",
+			Name:      BootstrappingExtensionWindows,
 			VMName:    vmName,
 			Publisher: "Microsoft.Azure.ContainerUpstream",
 			Version:   "1.0",

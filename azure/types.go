@@ -90,12 +90,13 @@ type ExtensionSpec struct {
 type (
 	// VMSSVM defines a VM in a virtual machine scale set.
 	VMSSVM struct {
-		ID               string                    `json:"id,omitempty"`
-		InstanceID       string                    `json:"instanceID,omitempty"`
-		Image            infrav1.Image             `json:"image,omitempty"`
-		Name             string                    `json:"name,omitempty"`
-		AvailabilityZone string                    `json:"availabilityZone,omitempty"`
-		State            infrav1.ProvisioningState `json:"vmState,omitempty"`
+		ID                 string                    `json:"id,omitempty"`
+		InstanceID         string                    `json:"instanceID,omitempty"`
+		Image              infrav1.Image             `json:"image,omitempty"`
+		Name               string                    `json:"name,omitempty"`
+		AvailabilityZone   string                    `json:"availabilityZone,omitempty"`
+		State              infrav1.ProvisioningState `json:"vmState,omitempty"`
+		BootstrappingState infrav1.ProvisioningState `json:"bootstrappingState,omitempty"`
 	}
 
 	// VMSS defines a virtual machine scale set.
