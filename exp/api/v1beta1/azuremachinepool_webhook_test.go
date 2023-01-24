@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	guuid "github.com/google/uuid"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -52,10 +53,11 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	g := NewWithT(t)
 
 	tests := []struct {
-		name    string
-		amp     *AzureMachinePool
-		version string
-		wantErr bool
+		name          string
+		amp           *AzureMachinePool
+		version       string
+		ownerNotFound bool
+		wantErr       bool
 	}{
 		{
 			name:    "valid",
@@ -201,10 +203,17 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			version: "v1.25.6",
 			wantErr: true,
 		},
+		{
+			name:          "azuremachinepool with Flexible orchestration mode and invalid Kubernetes version, no owner",
+			amp:           createMachinePoolWithOrchestrationMode(compute.OrchestrationModeFlexible),
+			version:       "v1.25.6",
+			ownerNotFound: true,
+			wantErr:       true,
+		},
 	}
 
 	for _, tc := range tests {
-		client := mockClient{Version: tc.version}
+		client := mockClient{Version: tc.version, ReturnError: tc.ownerNotFound}
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.amp.ValidateCreate(client)
 			if tc.wantErr {
@@ -218,11 +227,18 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 
 type mockClient struct {
 	client.Client
-	Version string
+	Version     string
+	ReturnError bool
 }
 
-func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-	obj.(*expv1.MachinePool).Spec.Template.Spec.Version = &m.Version
+func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	if m.ReturnError {
+		return errors.New("MachinePool.cluster.x-k8s.io \"mock-machinepool-mp-0\" not found")
+	}
+	mp := &expv1.MachinePool{}
+	mp.Spec.Template.Spec.Version = &m.Version
+	list.(*expv1.MachinePoolList).Items = []expv1.MachinePool{*mp}
+
 	return nil
 }
 
