@@ -986,14 +986,16 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 	}
 }
 
-func CopyConfigMap(ctx context.Context, cl client.Client, cmName, fromNamespace, toNamespace string) {
+func CopyConfigMap(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cl client.Client, cmName, fromNamespace, toNamespace string) {
 	cm := &corev1.ConfigMap{}
-	Expect(cl.Get(ctx, client.ObjectKey{Name: cmName, Namespace: fromNamespace}, cm)).To(Succeed())
-	cm.SetNamespace(toNamespace)
-	cm.SetResourceVersion("")
-	framework.EnsureNamespace(ctx, cl, toNamespace)
-	err := cl.Create(ctx, cm.DeepCopy())
-	if !apierrors.IsAlreadyExists(err) {
-		Expect(err).To(Succeed())
-	}
+	Eventually(func(g Gomega) {
+		g.Expect(cl.Get(ctx, client.ObjectKey{Name: cmName, Namespace: fromNamespace}, cm)).To(Succeed())
+		cm.SetNamespace(toNamespace)
+		cm.SetResourceVersion("")
+		framework.EnsureNamespace(ctx, cl, toNamespace)
+		err := cl.Create(ctx, cm.DeepCopy())
+		if !apierrors.IsAlreadyExists(err) {
+			g.Expect(err).To(Succeed())
+		}
+	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
 }
