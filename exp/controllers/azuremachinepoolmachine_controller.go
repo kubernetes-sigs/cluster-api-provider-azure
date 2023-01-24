@@ -38,6 +38,7 @@ import (
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -287,6 +288,11 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 
 	log.V(2).Info(fmt.Sprintf("Scale Set VM is %s", state), "id", machineScope.ProviderID())
 
+	bootstrappingCondition := conditions.Get(machineScope.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition)
+	if bootstrappingCondition != nil && bootstrappingCondition.Reason == infrav1.BootstrapFailedReason {
+		return reconcile.Result{}, nil
+	}
+
 	if !infrav1.IsTerminalProvisioningState(state) || !machineScope.IsReady() {
 		log.V(2).Info("Requeuing", "state", state, "ready", machineScope.IsReady())
 		// we are in a non-terminal state, retry in a bit
@@ -377,7 +383,7 @@ func (r *azureMachinePoolMachineReconciler) Delete(ctx context.Context) error {
 		}
 
 		if err := r.Scope.UpdateInstanceStatus(ctx); err != nil {
-			log.V(4).Info("failed to update VMSS VM instanace status during delete")
+			log.V(4).Info("failed to update VMSS VM instance status during delete")
 		}
 	}()
 

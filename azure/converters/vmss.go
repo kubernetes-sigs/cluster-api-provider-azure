@@ -121,6 +121,16 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 		instance.Name = *sdkInstance.OsProfile.ComputerName
 	}
 
+	if sdkInstance.Resources != nil {
+		for _, r := range *sdkInstance.Resources {
+			if r.ProvisioningState != nil && r.Name != nil &&
+				(*r.Name == azure.BootstrappingExtensionLinux || *r.Name == azure.BootstrappingExtensionWindows) {
+				instance.BootstrappingState = infrav1.ProvisioningState(pointer.StringDeref(r.ProvisioningState, ""))
+				break
+			}
+		}
+	}
+
 	if sdkInstance.StorageProfile != nil && sdkInstance.StorageProfile.ImageReference != nil {
 		imageRef := sdkInstance.StorageProfile.ImageReference
 		instance.Image = SDKImageToImage(imageRef, sdkInstance.Plan != nil)

@@ -273,15 +273,28 @@ func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 	return s.PatchObject(ctx)
 }
 
-// UpdateNodeStatus AzureMachinePoolMachine conditions and ready status. It will also update the node ref and the Kubernetes
+// UpdateNodeStatus updates AzureMachinePoolMachine conditions and ready status. It will also update the node ref and the Kubernetes
 // version of the VM instance if the node is found.
 // Note: This func should be called at the end of a reconcile request and after updating the scope with the most recent Azure data.
 func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(
+	ctx, log, done := tele.StartSpanWithLogger(
 		ctx,
 		"scope.MachinePoolMachineScope.UpdateNodeStatus",
 	)
 	defer done()
+
+	if s.instance != nil {
+		switch s.instance.BootstrappingState {
+		case infrav1.Creating:
+			conditions.MarkFalse(s.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "VM bootstrapping")
+		case infrav1.Failed:
+			log.Info("VM bootstrapping failed")
+			conditions.MarkFalse(s.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityInfo, "VM bootstrapping failed")
+		case infrav1.Succeeded:
+			log.Info("VM bootstrapping succeeded")
+			conditions.MarkTrue(s.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition)
+		}
+	}
 
 	var node *corev1.Node
 	nodeRef := s.AzureMachinePoolMachine.Status.NodeRef
