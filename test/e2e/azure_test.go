@@ -84,7 +84,7 @@ var _ = Describe("Workload cluster creation", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster-identity-secret",
-				Namespace: namespace.Name,
+				Namespace: defaultNamespace,
 				Labels: map[string]string{
 					clusterctlv1.ClusterctlMoveHierarchyLabelName: "true",
 				},
@@ -92,23 +92,25 @@ var _ = Describe("Workload cluster creation", func() {
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
 		}
-		_, err = bootstrapClusterProxy.GetClientSet().CoreV1().Secrets(namespace.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+		_, err = bootstrapClusterProxy.GetClientSet().CoreV1().Secrets(defaultNamespace).Get(ctx, secret.Name, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			Expect(err).ShouldNot(HaveOccurred())
 		}
 		if err != nil {
 			Logf("Creating cluster identity secret \"%s\"", secret.Name)
 			err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-			Expect(err).NotTo(HaveOccurred())
+			if !apierrors.IsAlreadyExists(err) {
+				Expect(err).NotTo(HaveOccurred())
+			}
 		} else {
 			Logf("Using existing cluster identity secret")
 		}
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
-		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).To(Succeed())
+		Expect(os.Setenv(ClusterIdentityNamespace, defaultNamespace)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).To(Succeed())
-		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).To(Succeed())
+		Expect(os.Setenv(ClusterIdentitySecretNamespace, defaultNamespace)).To(Succeed())
 		additionalCleanup = nil
 	})
 
