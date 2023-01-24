@@ -36,7 +36,6 @@ const (
 	azureDiskCSIDriverHelmRepoURL     = "https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts"
 	azureDiskCSIDriverChartName       = "azuredisk-csi-driver"
 	azureDiskCSIDriverHelmReleaseName = "azuredisk-csi-driver-oot"
-	defaultNamespace                  = "default"
 )
 
 // InstallCalicoAndCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
