@@ -176,13 +176,11 @@ func labelNodesWithMachinePoolName(ctx context.Context, workloadClient client.Cl
 			}, n)
 			if err != nil {
 				LogWarning(err.Error())
+				return err
 			}
-			return err
-		}, waitforResourceOperationTimeout, 3*time.Second).Should(Succeed())
-		n.Labels[clusterv1.OwnerKindAnnotation] = "MachinePool"
-		n.Labels[clusterv1.OwnerNameAnnotation] = mpName
-		Eventually(func() error {
-			err := workloadClient.Update(ctx, n)
+			n.Labels[clusterv1.OwnerKindAnnotation] = "MachinePool"
+			n.Labels[clusterv1.OwnerNameAnnotation] = mpName
+			err = workloadClient.Update(ctx, n)
 			if err != nil {
 				LogWarning(err.Error())
 			}

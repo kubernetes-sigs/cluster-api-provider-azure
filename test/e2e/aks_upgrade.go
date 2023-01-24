@@ -58,13 +58,14 @@ func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput)
 	mgmtClient := bootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
 
-	infraControlPlane := &infrav1exp.AzureManagedControlPlane{}
-	err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
-	Expect(err).NotTo(HaveOccurred())
-
 	By("Upgrading the control plane")
-	infraControlPlane.Spec.Version = input.KubernetesVersionUpgradeTo
-	Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+	var infraControlPlane = &infrav1exp.AzureManagedControlPlane{}
+	Eventually(func(g Gomega) {
+		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+		g.Expect(err).NotTo(HaveOccurred())
+		infraControlPlane.Spec.Version = input.KubernetesVersionUpgradeTo
+		g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+	}, inputGetter().WaitForControlPlane...).Should(Succeed())
 
 	Eventually(func() (string, error) {
 		aksCluster, err := managedClustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name)
