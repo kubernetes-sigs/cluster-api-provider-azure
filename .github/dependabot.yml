@@ -29,16 +29,22 @@ updates:
     prefix: "dependabot"
     include: scope
   ignore:
-  # Ignore controller-runtime as its upgraded manually.
-  - dependency-name: "sigs.k8s.io/controller-runtime"
-  # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
-  - dependency-name: "k8s.io/*"
-  - dependency-name: "go.etcd.io/*"
-  - dependency-name: "google.golang.org/grpc"
+    # Ignore controller-runtime as its upgraded manually.
+    - dependency-name: "sigs.k8s.io/controller-runtime"
+    # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+    - dependency-name: "k8s.io/*"
+    - dependency-name: "go.etcd.io/*"
+    - dependency-name: "google.golang.org/grpc"
+    # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
+    - dependency-name: "go.opentelemetry.io/contrib/*"
+    - dependency-name: "go.opentelemetry.io/otel/exporters/*"
+    - dependency-name: "go.opentelemetry.io/otel/metric"
+    - dependency-name: "go.opentelemetry.io/otel/sdk/*"
+    - dependency-name: "go.opentelemetry.io/otel/trace"
   labels:
-  - "ok-to-test"
-  - "kind/cleanup"
-  - "release-note-none"
+    - "ok-to-test"
+    - "kind/cleanup"
+    - "release-note-none"
 # Go - release 1.7
 - directory: "/"
   package-ecosystem: "gomod"
@@ -51,16 +57,22 @@ updates:
     prefix: "dependabot"
     include: scope
   ignore:
-  # Ignore controller-runtime as its upgraded manually.
-  - dependency-name: "sigs.k8s.io/controller-runtime"
-  # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
-  - dependency-name: "k8s.io/*"
-  - dependency-name: "go.etcd.io/*"
-  - dependency-name: "google.golang.org/grpc"
+    # Ignore controller-runtime as its upgraded manually.
+    - dependency-name: "sigs.k8s.io/controller-runtime"
+    # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+    - dependency-name: "k8s.io/*"
+    - dependency-name: "go.etcd.io/*"
+    - dependency-name: "google.golang.org/grpc"
+    # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
+    - dependency-name: "go.opentelemetry.io/contrib/*"
+    - dependency-name: "go.opentelemetry.io/otel/exporters/*"
+    - dependency-name: "go.opentelemetry.io/otel/metric"
+    - dependency-name: "go.opentelemetry.io/otel/sdk/*"
+    - dependency-name: "go.opentelemetry.io/otel/trace"
   labels:
-  - "ok-to-test"
-  - "kind/cleanup"
-  - "release-note-none"
+    - "ok-to-test"
+    - "kind/cleanup"
+    - "release-note-none"
   # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.7
   open-pull-requests-limit: 0
   target-branch: "release-1.7"
@@ -76,16 +88,22 @@ updates:
     prefix: "dependabot"
     include: scope
   ignore:
-  # Ignore controller-runtime as its upgraded manually.
-  - dependency-name: "sigs.k8s.io/controller-runtime"
-  # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
-  - dependency-name: "k8s.io/*"
-  - dependency-name: "go.etcd.io/*"
-  - dependency-name: "google.golang.org/grpc"
+    # Ignore controller-runtime as its upgraded manually.
+    - dependency-name: "sigs.k8s.io/controller-runtime"
+    # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+    - dependency-name: "k8s.io/*"
+    - dependency-name: "go.etcd.io/*"
+    - dependency-name: "google.golang.org/grpc"
+    # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
+    - dependency-name: "go.opentelemetry.io/contrib/*"
+    - dependency-name: "go.opentelemetry.io/otel/exporters/*"
+    - dependency-name: "go.opentelemetry.io/otel/metric"
+    - dependency-name: "go.opentelemetry.io/otel/sdk/*"
+    - dependency-name: "go.opentelemetry.io/otel/trace"
   labels:
-  - "ok-to-test"
-  - "kind/cleanup"
-  - "release-note-none"
+    - "ok-to-test"
+    - "kind/cleanup"
+    - "release-note-none"
   # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.6
   open-pull-requests-limit: 0
   target-branch: "release-1.6"
