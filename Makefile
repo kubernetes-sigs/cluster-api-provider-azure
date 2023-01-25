@@ -783,7 +783,7 @@ $(KUBECTL): ## Build kubectl from tools folder.
 $(HELM): ## Put helm into tools folder.
 	mkdir -p $(TOOLS_BIN_DIR)
 	rm -f "$(TOOLS_BIN_DIR)/$(HELM_BIN)*"
-	curl -fsSL -o $(TOOLS_BIN_DIR)/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+	curl --retry $(CURL_RETRIES) -fsSL -o $(TOOLS_BIN_DIR)/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 	chmod 700 $(TOOLS_BIN_DIR)/get_helm.sh
 	USE_SUDO=false HELM_INSTALL_DIR=$(TOOLS_BIN_DIR) DESIRED_VERSION=$(HELM_VER) BINARY_NAME=$(HELM_BIN)-$(HELM_VER) $(TOOLS_BIN_DIR)/get_helm.sh
 	ln -sf $(HELM) $(TOOLS_BIN_DIR)/$(HELM_BIN)
