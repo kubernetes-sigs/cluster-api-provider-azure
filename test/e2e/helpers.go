@@ -58,13 +58,10 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -987,36 +984,6 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 			return nil
 		}, input.WaitForControlPlaneIntervals...).Should(Succeed())
 	}
-}
-
-func defaultConfigCluster(clusterName, namespace string) clusterctl.ConfigClusterInput {
-	return clusterctl.ConfigClusterInput{
-		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
-		ClusterctlConfigPath:     clusterctlConfigPath,
-		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-		InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-		Flavor:                   clusterctl.DefaultFlavor,
-		Namespace:                namespace,
-		ClusterName:              clusterName,
-		KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
-		ControlPlaneMachineCount: pointer.Int64Ptr(3),
-		WorkerMachineCount:       pointer.Int64Ptr(0),
-	}
-}
-
-func createClusterWithControlPlaneWaiters(ctx context.Context, configCluster clusterctl.ConfigClusterInput,
-	cpWaiters clusterctl.ControlPlaneWaiters,
-	result *clusterctl.ApplyClusterTemplateAndWaitResult) (*clusterv1.Cluster,
-	*controlplanev1.KubeadmControlPlane) {
-	clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
-		ClusterProxy:                 bootstrapClusterProxy,
-		ConfigCluster:                configCluster,
-		WaitForClusterIntervals:      e2eConfig.GetIntervals("", "wait-cluster"),
-		WaitForControlPlaneIntervals: e2eConfig.GetIntervals("", "wait-control-plane"),
-		WaitForMachineDeployments:    e2eConfig.GetIntervals("", "wait-worker-nodes"),
-		ControlPlaneWaiters:          cpWaiters,
-	}, result)
-	return result.Cluster, result.ControlPlane
 }
 
 func CopyConfigMap(ctx context.Context, cl client.Client, cmName, fromNamespace, toNamespace string) {
