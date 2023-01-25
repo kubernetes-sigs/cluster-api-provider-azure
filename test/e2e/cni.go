@@ -50,8 +50,8 @@ func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTe
 
 	By("Installing Calico CNI via helm")
 	values := getCalicoValues(cidrBlocks)
-	InstallHelmChart(ctx, input, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values)
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+	InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values)
 	workloadClusterClient := clusterProxy.GetClient()
 
 	// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.

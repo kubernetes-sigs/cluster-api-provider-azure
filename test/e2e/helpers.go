@@ -75,6 +75,7 @@ const (
 	retryableOperationTimeout             = 30 * time.Second
 	retryableDeleteOperationTimeout       = 3 * time.Minute
 	retryableOperationSleepBetweenRetries = 3 * time.Second
+	helmInstallTimeout                    = 3 * time.Minute
 )
 
 // deploymentsClientAdapter adapts a Deployment to work with WaitForDeploymentsAvailable.
@@ -924,8 +925,7 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 }
 
 // InstallHelmChart takes a helm repo URL, a chart name, and release name, and installs a helm release onto the E2E workload cluster.
-func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, namespace, repoURL, chartName, releaseName string, options *helmVals.Options) {
-	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, repoURL, chartName, releaseName string, options *helmVals.Options) {
 	kubeConfigPath := clusterProxy.GetKubeconfigPath()
 	settings := helmCli.New()
 	settings.KubeConfig = kubeConfigPath
@@ -946,7 +946,7 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 			releaseExists = true
 		}
 		return err
-	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
+	}, helmInstallTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	if releaseExists {
 		Logf("Release %s already exists, skipping install", releaseName)
 	} else {
@@ -982,7 +982,7 @@ func InstallHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplate
 			}
 			Logf(release.Info.Description)
 			return nil
-		}, input.WaitForControlPlaneIntervals...).Should(Succeed())
+		}, helmInstallTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	}
 }
 

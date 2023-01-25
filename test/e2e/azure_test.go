@@ -525,14 +525,16 @@ var _ = Describe("Workload cluster creation", func() {
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
-				// nvidia-gpu flavor creates a config map as part of a crs, that exceeds the annotations size limit when we do kubectl apply.
-				// This is because the entire config map is stored in `last-applied` annotation for tracking.
-				// The workaround is to use server side apply by passing `--server-side` flag to kubectl apply.
-				// More on server side apply here: https://kubernetes.io/docs/reference/using-api/server-side-apply/
-				Args: []string{"--server-side"},
 				PostMachinesProvisioned: func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
 						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+					InstallGPUOperator(ctx, func() GPUOperatorSpecInput {
+						return GPUOperatorSpecInput{
 							BootstrapClusterProxy: bootstrapClusterProxy,
 							Namespace:             namespace,
 							ClusterName:           clusterName,
