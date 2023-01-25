@@ -1160,6 +1160,11 @@ func (in *AzureManagedControlPlaneSpec) DeepCopyInto(out *AzureManagedControlPla
 		*out = new(string)
 		**out = **in
 	}
+	if in.OutboundType != nil {
+		in, out := &in.OutboundType, &out.OutboundType
+		*out = new(ManagedControlPlaneOutboundType)
+		**out = **in
+	}
 	if in.DNSServiceIP != nil {
 		in, out := &in.DNSServiceIP, &out.DNSServiceIP
 		*out = new(string)

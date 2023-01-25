@@ -34,6 +34,67 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = expv1.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+	explicitOutboundType := infrav1.ManagedControlPlaneOutboundTypeUserDefinedRouting
+	cases := []struct {
+		Name     string
+		Input    ManagedControlPlaneScopeParams
+		Expected bool
+	}{
+		{
+			Name: "With Explicit OutboundType defined",
+			Input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						OutboundType:   &explicitOutboundType,
+					},
+				},
+			},
+			Expected: false,
+		},
+		{
+			Name: "Without OutboundType defined",
+			Input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+			},
+			Expected: true,
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			g := NewWithT(t)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.ControlPlane).Build()
+			c.Input.Client = fakeClient
+			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
+			g.Expect(err).To(Succeed())
+			managedCluster := s.ManagedClusterSpec(context.TODO())
+			result := managedCluster.(*managedclusters.ManagedClusterSpec).OutboundType == nil
+			g.Expect(result).To(Equal(c.Expected))
+		})
+	}
+}
+
 func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
