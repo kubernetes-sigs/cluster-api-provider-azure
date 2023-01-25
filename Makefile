@@ -295,7 +295,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 
 	# install Windows Calico cluster resource set
 	$(KUBECTL) create configmap calico-windows-addon --from-file="$(ADDONS_DIR)/windows/calico" --dry-run=client -o yaml | kubectl apply -f -
-	$(KUBECTL) apply -f templates/addons/windows/calico-resource-set.yaml
+	$(KUBECTL) apply -f templates/addons/windows/calico/calico-resource-set.yaml
 
 	# Wait for CAPZ deployments
 	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure

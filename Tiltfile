@@ -262,7 +262,7 @@ def create_crs():
     local(kubectl_cmd + " create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
 
     # set up crs
-    local(kubectl_cmd + " apply -f templates/addons/windows/calico-resource-set.yaml")
+    local(kubectl_cmd + " apply -f templates/addons/windows/calico/calico-resource-set.yaml")
     local(kubectl_cmd + " apply -f templates/addons/windows/csi-proxy/csi-proxy-resource-set.yaml")
 
 # create flavor resources from cluster-template files in the templates directory
