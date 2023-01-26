@@ -13,9 +13,6 @@ spec:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
-          azure-container-registry-config: /etc/kubernetes/azure.json
           node-ip: "::"
           cluster-dns: "fd00::10"
       localAPIEndpoint:
@@ -25,9 +22,6 @@ spec:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
-          azure-container-registry-config: /etc/kubernetes/azure.json
           node-ip: "::"
           cluster-dns: "fd00::10"
       controlPlane:
@@ -38,13 +32,9 @@ spec:
       apiServer:
         timeoutForControlPlane: 20m
         extraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
           bind-address: "::"
       controllerManager:
         extraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
           #required for ipv6 using calico
           allocate-node-cidrs: "true"
           cluster-cidr: "2001:1234:5678:9a40::/58"

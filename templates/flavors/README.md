@@ -2,10 +2,12 @@
 
 In `clusterctl` the infrastructure provider authors can provide different type of cluster templates,
 or flavors; use the --flavor flag to specify which flavor to use; e.g
+
 ```shell
-clusterctl generate cluster my-cluster --kubernetes-version v1.22.1 \
-    --flavor external-cloud-provider > my-cluster.yaml
+clusterctl generate cluster my-cluster --kubernetes-version v1.26.1 \
+    --flavor private > my-cluster.yaml
 ```
+
 See [`clusterctl` flavors docs](https://cluster-api.sigs.k8s.io/clusterctl/commands/generate-cluster.html#flavors).
 
 This directory contains each of the flavors for CAPZ. Each directory besides `base` will be used to

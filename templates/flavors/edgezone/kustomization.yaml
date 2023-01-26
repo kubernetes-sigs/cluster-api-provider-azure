@@ -3,6 +3,5 @@ resources:
   - ../default
 
 patchesStrategicMerge:
-  - ../external-cloud-provider/patches/external-cloud-provider.yaml
   - patches/azure-extendedlocation.yaml
   - patches/azure-remove-natgateway.yaml

@@ -134,7 +134,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
 
 	// NOTE: We don't add control plane waiters here because Helm install will fail since the apiserver is private and not reachable from the prow cluster.
-	// As a workaround, we use still ClusterResourceSet to install CNI on the private cluster until a Helm integration is available.
+	// As a workaround, we use in-tree cloud-provider-azure and ClusterResourceSet to install CNI on the private cluster until a Helm integration is available.
 	clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 		specName,
 		withClusterProxy(publicClusterProxy),

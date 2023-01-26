@@ -365,7 +365,7 @@ def deploy_worker_templates(template, substitutions):
     else:
         calico_values = "./templates/addons/calico/values.yaml"
     flavor_cmd += "; " + helm_cmd + " repo add projectcalico https://docs.tigera.io/calico/charts; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install calico projectcalico/tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
-    if "external-cloud-provider" in flavor_name:
+    if "intree-cloud-provider" not in flavor_name and "ipv6" not in flavor_name:  # TODO: remove ipv6 once https://github.com/kubernetes-sigs/cloud-provider-azure/issues/3401 is fixed.
         flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
     local_resource(
         name = flavor_name,

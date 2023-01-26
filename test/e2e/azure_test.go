@@ -513,15 +513,12 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
-	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
-	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
-	Context("Creating a cluster that uses the external cloud provider and machinepools [OPTIONAL]", func() {
+	Context("Creating a cluster with VMSS flex machinepools [OPTIONAL]", func() {
 		It("with 1 control plane node and 1 machinepool", func() {
-			By("using user-assigned identity")
 			clusterName = getClusterName(clusterNamePrefix, "flex")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor("external-cloud-provider-vmss-flex"),
+				withFlavor("machine-pool-flex"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(1),
@@ -573,15 +570,13 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
-	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
-	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
-	Context("Creating a cluster that uses the external cloud provider and external azurediskcsi driver [OPTIONAL]", func() {
+	Context("Creating a cluster that uses the intree cloud provider [OPTIONAL]", func() {
 		It("with a 1 control plane nodes and 2 worker nodes", func() {
 			By("using user-assigned identity")
-			clusterName = getClusterName(clusterNamePrefix, "oot")
+			clusterName = getClusterName(clusterNamePrefix, "intree")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor("external-cloud-provider"),
+				withFlavor("intree-cloud-provider"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(1),

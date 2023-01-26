@@ -42,7 +42,7 @@ which provides the cloud provider-specific resource for orchestrating a group of
 
 Azure Virtual Machine Scale Sets support two orchestration modes: `Uniform` and `Flexible`. CAPZ defaults to `Uniform` mode. See [VMSS Orchestration modes in Azure](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-orchestration-modes) for more information.
 
-To use `Flexible` mode requires Kubernetes v1.26.0 or later with a workload cluster template like CAPZ's "external-cloud-provider-machinepool" flavor. Ensure that `orchestrationMode` on the `AzureMachinePool` spec is set:
+To use `Flexible` mode requires Kubernetes v1.26.0 or later. Ensure that `orchestrationMode` on the `AzureMachinePool` spec is set:
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -190,8 +190,5 @@ spec:
     permissions: "0644"
   joinConfiguration:
     nodeRegistration:
-      kubeletExtraArgs:
-        cloud-config: /etc/kubernetes/azure.json
-        cloud-provider: azure
       name: '{{ ds.meta_data["local_hostname"] }}'
 ```

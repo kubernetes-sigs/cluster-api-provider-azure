@@ -41,6 +41,16 @@ capz::util::should_build_kubernetes() {
     echo "false"
 }
 
+capz::util::should_build_ccm() {
+    if [[ -n "${TEST_CCM:-}" ]]; then
+        echo "true" && return
+    fi
+    if [[ "${E2E_ARGS:-}" == "-kubetest.use-ci-artifacts" ]]; then
+        echo "true" && return
+    fi
+    echo "false"
+}
+
 # all test regions must support AvailabilityZones
 capz::util::get_random_region() {
     local REGIONS=("canadacentral" "eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2" "westus3")

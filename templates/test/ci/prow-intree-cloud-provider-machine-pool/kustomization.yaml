@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../prow-user-assigned-managed-identity
+  - ../prow-machine-pool
 patchesStrategicMerge:
-  - ../patches/azurediskcsi-migration-off.yaml
-
+  - ../prow-intree-cloud-provider/patches/intree-cp.yaml
+  - patches/intree-mp.yaml

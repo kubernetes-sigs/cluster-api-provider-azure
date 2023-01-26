@@ -8,28 +8,20 @@ spec:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
           azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-provider: external
     joinConfiguration:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
           azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-provider: external
     clusterConfiguration:
       apiServer:
         timeoutForControlPlane: 20m
         extraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
           oidc-username-claim: oid
           oidc-groups-claim: groups
           oidc-client-id: "${AZURE_SERVER_APP_ID}"
           oidc-issuer-url: "https://sts.windows.net/${AZURE_TENANT_ID}/"
           oidc-username-prefix: "-"
-      controllerManager:
-        extraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json

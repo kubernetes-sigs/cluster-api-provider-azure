@@ -5,7 +5,6 @@ metadata:
     cni-windows: ${CLUSTER_NAME}-calico
     containerd-logger: enabled
     csi-proxy: enabled
-    metrics-server: enabled
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -61,7 +60,7 @@ spec:
       apiServer:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: external
+          cloud-provider: azure
           feature-gates: ${K8S_FEATURE_GATES:-""}
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
@@ -73,10 +72,8 @@ spec:
         extraArgs:
           allocate-node-cidrs: "false"
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: external
+          cloud-provider: azure
           cluster-name: ${CLUSTER_NAME}
-          external-cloud-volume-plugin: azure
-          feature-gates: CSIMigrationAzureDisk=true
           v: "4"
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
@@ -88,7 +85,6 @@ spec:
           dataDir: /var/lib/etcddisk/etcd
           extraArgs:
             quota-backend-bytes: "8589934592"
-      kubernetesVersion: ci/${CI_VERSION}
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -114,92 +110,25 @@ spec:
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
-    - content: |
-        #!/bin/bash
-
-        set -o nounset
-        set -o pipefail
-        set -o errexit
-        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
-
-        # This test installs release packages or binaries that are a result of the CI and release builds.
-        # It runs '... --version' commands to verify that the binaries are correctly installed
-        # and finally uninstalls the packages.
-        # For the release packages it tests all versions in the support skew.
-        LINE_SEPARATOR="*************************************************"
-        echo "$$LINE_SEPARATOR"
-        CI_VERSION=${CI_VERSION}
-        if [[ "$${CI_VERSION}" != "" ]]; then
-          CI_DIR=/tmp/k8s-ci
-          mkdir -p $$CI_DIR
-          declare -a PACKAGES_TO_TEST=("kubectl" "kubelet" "kubeadm")
-          declare -a CONTAINERS_TO_TEST=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
-          CONTAINER_EXT="tar"
-          echo "* testing CI version $$CI_VERSION"
-          # Check for semver
-          if [[ "$${CI_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            VERSION_WITHOUT_PREFIX="${CI_VERSION#v}"
-            DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl
-            curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-            echo 'deb https://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-            apt-get update
-            # replace . with \.
-            VERSION_REGEX="${VERSION_WITHOUT_PREFIX//./\\.}"
-            PACKAGE_VERSION="$(apt-cache madison kubelet|grep $${VERSION_REGEX}- | head -n1 | cut -d '|' -f 2 | tr -d '[:space:]')"
-            for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
-              echo "* installing package: $$CI_PACKAGE $${PACKAGE_VERSION}"
-              DEBIAN_FRONTEND=noninteractive apt-get install -y $$CI_PACKAGE=$$PACKAGE_VERSION
-            done
-          else
-            CI_URL="https://storage.googleapis.com/k8s-release-dev/ci/$${CI_VERSION}/bin/linux/amd64"
-            for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
-              echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-              wget "$$CI_URL/$$CI_PACKAGE" -nv -O "$$CI_DIR/$$CI_PACKAGE"
-              chmod +x "$$CI_DIR/$$CI_PACKAGE"
-              mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
-            done
-            IMAGE_REGISTRY_PREFIX=registry.k8s.io
-            for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
-              echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
-              wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -nv -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
-              $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
-              $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-              $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-            done
-          fi
-        fi
-        echo "* checking binary versions"
-        echo "ctr version: " $(ctr version)
-        echo "kubeadm version: " $(kubeadm version -o=short)
-        echo "kubectl version: " $(kubectl version --client=true --short=true)
-        echo "kubelet version: " $(kubelet --version)
-        echo "$$LINE_SEPARATOR"
-      owner: root:root
-      path: /tmp/kubeadm-bootstrap.sh
-      permissions: "0744"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: external
-          feature-gates: CSIMigrationAzureDisk=true
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: external
-          feature-gates: CSIMigrationAzureDisk=true
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
     postKubeadmCommands: []
-    preKubeadmCommands:
-    - bash -c /tmp/kubeadm-bootstrap.sh
-    verbosity: 5
+    preKubeadmCommands: []
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -220,12 +149,6 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
-      image:
-        marketplace:
-          offer: capi
-          publisher: cncf-upstream
-          sku: ubuntu-1804-gen1
-          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -266,12 +189,6 @@ metadata:
 spec:
   template:
     spec:
-      image:
-        marketplace:
-          offer: capi
-          publisher: cncf-upstream
-          sku: ubuntu-1804-gen1
-          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -303,80 +220,14 @@ spec:
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"
-      - content: |
-          #!/bin/bash
-
-          set -o nounset
-          set -o pipefail
-          set -o errexit
-          [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
-
-          # This test installs release packages or binaries that are a result of the CI and release builds.
-          # It runs '... --version' commands to verify that the binaries are correctly installed
-          # and finally uninstalls the packages.
-          # For the release packages it tests all versions in the support skew.
-          LINE_SEPARATOR="*************************************************"
-          echo "$$LINE_SEPARATOR"
-          CI_VERSION=${CI_VERSION}
-          if [[ "$${CI_VERSION}" != "" ]]; then
-            CI_DIR=/tmp/k8s-ci
-            mkdir -p $$CI_DIR
-            declare -a PACKAGES_TO_TEST=("kubectl" "kubelet" "kubeadm")
-            declare -a CONTAINERS_TO_TEST=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
-            CONTAINER_EXT="tar"
-            echo "* testing CI version $$CI_VERSION"
-            # Check for semver
-            if [[ "$${CI_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              VERSION_WITHOUT_PREFIX="${CI_VERSION#v}"
-              DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl
-              curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-              echo 'deb https://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-              apt-get update
-              # replace . with \.
-              VERSION_REGEX="${VERSION_WITHOUT_PREFIX//./\\.}"
-              PACKAGE_VERSION="$(apt-cache madison kubelet|grep $${VERSION_REGEX}- | head -n1 | cut -d '|' -f 2 | tr -d '[:space:]')"
-              for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
-                echo "* installing package: $$CI_PACKAGE $${PACKAGE_VERSION}"
-                DEBIAN_FRONTEND=noninteractive apt-get install -y $$CI_PACKAGE=$$PACKAGE_VERSION
-              done
-            else
-              CI_URL="https://storage.googleapis.com/k8s-release-dev/ci/$${CI_VERSION}/bin/linux/amd64"
-              for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
-                echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-                wget "$$CI_URL/$$CI_PACKAGE" -nv -O "$$CI_DIR/$$CI_PACKAGE"
-                chmod +x "$$CI_DIR/$$CI_PACKAGE"
-                mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
-              done
-              IMAGE_REGISTRY_PREFIX=registry.k8s.io
-              for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
-                echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
-                wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -nv -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
-                $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
-                $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-                $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-              done
-            fi
-          fi
-          echo "* checking binary versions"
-          echo "ctr version: " $(ctr version)
-          echo "kubeadm version: " $(kubeadm version -o=short)
-          echo "kubectl version: " $(kubectl version --client=true --short=true)
-          echo "kubelet version: " $(kubelet --version)
-          echo "$$LINE_SEPARATOR"
-        owner: root:root
-        path: /tmp/kubeadm-bootstrap.sh
-        permissions: "0744"
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
             azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: external
-            feature-gates: CSIMigrationAzureDisk=true
+            cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands:
-      - bash -c /tmp/kubeadm-bootstrap.sh
-      verbosity: 5
+      preKubeadmCommands: []
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -415,12 +266,6 @@ spec:
         runtime: containerd
         windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
     spec:
-      image:
-        marketplace:
-          offer: capi-windows
-          publisher: cncf-upstream
-          sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
-          version: latest
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -487,42 +332,14 @@ spec:
           sc.exe start sshd
         path: C:/collect-hns-crashes.ps1
         permissions: "0744"
-      - content: |
-          $ErrorActionPreference = 'Stop'
-
-          Stop-Service kubelet -Force
-
-          $$CI_VERSION="${CI_VERSION}"
-          if($$CI_VERSION -ne "")
-          {
-            $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-            $$ci_url="https://storage.googleapis.com/k8s-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
-            foreach ( $$binary in $$binaries )
-            {
-              echo "downloading binary: $$ci_url/$$binary.exe"
-              curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
-            }
-          }
-
-          # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
-          # that is applied at at this stage (windows-kubeproxy-ci.yaml)
-          ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
-          ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
-
-          kubeadm.exe version -o=short
-          kubectl.exe version --client=true --short=true
-          kubelet.exe --version
-          kube-proxy.exe --version
-        path: C:/replace-ci-binaries.ps1
-        permissions: "0744"
       joinConfiguration:
         nodeRegistration:
           criSocket: npipe:////./pipe/containerd-containerd
           kubeletExtraArgs:
             azure-container-registry-config: c:/k/azure.json
             cloud-config: c:/k/azure.json
-            cloud-provider: external
-            feature-gates: WindowsHostProcessContainers=true,CSIMigrationAzureDisk=true
+            cloud-provider: azure
+            feature-gates: WindowsHostProcessContainers=true
             v: "2"
             windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
           name: '{{ ds.meta_data["local_hostname"] }}'
@@ -533,7 +350,6 @@ spec:
       - powershell C:/create-temp-folder.ps1
       - powershell C:/replace-containerd.ps1
       - powershell C:/collect-hns-crashes.ps1
-      - powershell C:/replace-ci-binaries.ps1
       users:
       - groups: Administrators
         name: capi
@@ -616,14 +432,6 @@ spec:
 ---
 apiVersion: v1
 data:
-  kube-proxy-patch: |-
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: windows-kubeproxy-ci
-      namespace: kube-system
-    data:
-      KUBEPROXY_PATH: "c:/k/kube-proxy.exe"
   proxy: |
     apiVersion: apps/v1
     kind: DaemonSet
@@ -941,234 +749,4 @@ metadata:
   labels:
     type: generated
   name: containerd-logger-${CLUSTER_NAME}
-  namespace: default
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: metrics-server-${CLUSTER_NAME}
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      metrics-server: enabled
-  resources:
-  - kind: ConfigMap
-    name: metrics-server-${CLUSTER_NAME}
-  strategy: ApplyOnce
----
-apiVersion: v1
-data:
-  metrics-server: |
-    apiVersion: v1
-    kind: ServiceAccount
-    metadata:
-      labels:
-        k8s-app: metrics-server
-      name: metrics-server
-      namespace: kube-system
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRole
-    metadata:
-      labels:
-        k8s-app: metrics-server
-        rbac.authorization.k8s.io/aggregate-to-admin: "true"
-        rbac.authorization.k8s.io/aggregate-to-edit: "true"
-        rbac.authorization.k8s.io/aggregate-to-view: "true"
-      name: system:aggregated-metrics-reader
-    rules:
-    - apiGroups:
-      - metrics.k8s.io
-      resources:
-      - pods
-      - nodes
-      verbs:
-      - get
-      - list
-      - watch
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRole
-    metadata:
-      labels:
-        k8s-app: metrics-server
-      name: system:metrics-server
-    rules:
-    - apiGroups:
-      - ""
-      resources:
-      - nodes/metrics
-      verbs:
-      - get
-    - apiGroups:
-      - ""
-      resources:
-      - pods
-      - nodes
-      verbs:
-      - get
-      - list
-      - watch
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: RoleBinding
-    metadata:
-      labels:
-        k8s-app: metrics-server
-      name: metrics-server-auth-reader
-      namespace: kube-system
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: Role
-      name: extension-apiserver-authentication-reader
-    subjects:
-    - kind: ServiceAccount
-      name: metrics-server
-      namespace: kube-system
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
-    metadata:
-      labels:
-        k8s-app: metrics-server
-      name: metrics-server:system:auth-delegator
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: system:auth-delegator
-    subjects:
-    - kind: ServiceAccount
-      name: metrics-server
-      namespace: kube-system
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
-    metadata:
-      labels:
-        k8s-app: metrics-server
-      name: system:metrics-server
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: system:metrics-server
-    subjects:
-    - kind: ServiceAccount
-      name: metrics-server
-      namespace: kube-system
-    ---
-    apiVersion: v1
-    kind: Service
-    metadata:
-      labels:
-        k8s-app: metrics-server
-      name: metrics-server
-      namespace: kube-system
-    spec:
-      ports:
-      - name: https
-        port: 443
-        protocol: TCP
-        targetPort: https
-      selector:
-        k8s-app: metrics-server
-    ---
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      labels:
-        k8s-app: metrics-server
-      name: metrics-server
-      namespace: kube-system
-    spec:
-      selector:
-        matchLabels:
-          k8s-app: metrics-server
-      strategy:
-        rollingUpdate:
-          maxUnavailable: 0
-      template:
-        metadata:
-          labels:
-            k8s-app: metrics-server
-        spec:
-          containers:
-          - args:
-            - --cert-dir=/tmp
-            - --secure-port=4443
-            - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
-            - --kubelet-use-node-status-port
-            - --metric-resolution=15s
-            - --kubelet-insecure-tls
-            image: k8s.gcr.io/metrics-server/metrics-server:v0.6.2
-            imagePullPolicy: IfNotPresent
-            livenessProbe:
-              failureThreshold: 3
-              httpGet:
-                path: /livez
-                port: https
-                scheme: HTTPS
-              periodSeconds: 10
-            name: metrics-server
-            ports:
-            - containerPort: 4443
-              name: https
-              protocol: TCP
-            readinessProbe:
-              failureThreshold: 3
-              httpGet:
-                path: /readyz
-                port: https
-                scheme: HTTPS
-              initialDelaySeconds: 20
-              periodSeconds: 10
-            resources:
-              requests:
-                cpu: 100m
-                memory: 200Mi
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              runAsNonRoot: true
-              runAsUser: 1000
-            volumeMounts:
-            - mountPath: /tmp
-              name: tmp-dir
-          nodeSelector:
-            kubernetes.io/os: linux
-          priorityClassName: system-cluster-critical
-          serviceAccountName: metrics-server
-          tolerations:
-          - effect: NoSchedule
-            key: node-role.kubernetes.io/master
-            operator: Exists
-          - effect: NoSchedule
-            key: node-role.kubernetes.io/control-plane
-            operator: Exists
-          volumes:
-          - emptyDir: {}
-            name: tmp-dir
-    ---
-    apiVersion: apiregistration.k8s.io/v1
-    kind: APIService
-    metadata:
-      labels:
-        k8s-app: metrics-server
-      name: v1beta1.metrics.k8s.io
-    spec:
-      group: metrics.k8s.io
-      groupPriorityMinimum: 100
-      insecureSkipTLSVerify: true
-      service:
-        name: metrics-server
-        namespace: kube-system
-      version: v1beta1
-      versionPriority: 100
-kind: ConfigMap
-metadata:
-  annotations:
-    note: generated
-  labels:
-    type: generated
-  name: metrics-server-${CLUSTER_NAME}
   namespace: default

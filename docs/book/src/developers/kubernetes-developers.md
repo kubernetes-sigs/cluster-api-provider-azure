@@ -44,12 +44,11 @@ $ export CNM_IMAGE_NAME=azure-node-controller-manager
 $ export IMAGE_TAG=canary
 ```
 
-Then, use the `external-cloud-provider` flavor to create a cluster:
+Then, create a cluster:
 
 ```bash
 $ export CLUSTER_NAME=my-cluster
-$ CLUSTER_TEMPLATE=cluster-template-external-cloud-provider.yaml \
-make create-workload-cluster
+$ make create-workload-cluster
 ```
 
 Once your cluster deploys, you should receive the kubeconfig to the workload cluster. Set your `KUBECONFIG` environment variable to point to the kubeconfig file, then use the official cloud-provider-azure Helm chart to deploy the cloud-provider-azure components using your custom built images:

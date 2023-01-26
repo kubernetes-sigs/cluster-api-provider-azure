@@ -55,6 +55,13 @@ else
     export KUBE_BUILD_CONFORMANCE="y"
     source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
   fi
+
+  if [[ "$(capz::util::should_build_ccm)" == "true" ]]; then
+    # shellcheck source=scripts/ci-build-azure-ccm.sh
+    source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
+    echo "Will use the ${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG} cloud-controller-manager image for external cloud-provider-cluster"
+    echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG} cloud-node-manager image for external cloud-provider-azure cluster"
+  fi
 fi
 
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
