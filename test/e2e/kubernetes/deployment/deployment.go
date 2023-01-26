@@ -148,14 +148,13 @@ func (d *Builder) AddPVC(pvcName string) *Builder {
 
 func (d *Builder) Deploy(ctx context.Context, clientset *kubernetes.Clientset) (*appsv1.Deployment, error) {
 	var deployment *appsv1.Deployment
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		var err error
 		deployment, err = d.Client(clientset).Create(ctx, d.deployment, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("Error trying to deploy %s in namespace %s:%s\n", d.deployment.Name, d.deployment.ObjectMeta.Namespace, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, deploymentOperationTimeout, deploymentOperationSleepBetweenRetries).Should(Succeed())
 
 	return deployment, nil
@@ -171,14 +170,13 @@ func (d *Builder) GetPodsFromDeployment(ctx context.Context, clientset *kubernet
 		Limit:         100,
 	}
 	var pods *corev1.PodList
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		var err error
 		pods, err = clientset.CoreV1().Pods(d.deployment.GetNamespace()).List(ctx, opts)
 		if err != nil {
 			log.Printf("Error trying to get the pods from deployment %s:%s\n", d.deployment.GetName(), err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, deploymentOperationTimeout, deploymentOperationSleepBetweenRetries).Should(Succeed())
 	return pods.Items, nil
 }

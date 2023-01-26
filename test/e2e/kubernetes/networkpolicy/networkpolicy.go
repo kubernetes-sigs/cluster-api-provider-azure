@@ -65,13 +65,12 @@ func CreateNetworkPolicyFromFile(ctx context.Context, clientset *kubernetes.Clie
 }
 
 func createNetworkPolicyV1(ctx context.Context, clientset *kubernetes.Clientset, namespace string, networkPolicy *networkingv1.NetworkPolicy) error {
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		_, err := clientset.NetworkingV1().NetworkPolicies(namespace).Create(ctx, networkPolicy, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("failed trying to create NetworkPolicy (%s):%s\n", networkPolicy.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, networkPolicyOperationTimeout, networkPolicyOperationSleepBetweenRetries).Should(Succeed())
 	return nil
 }
@@ -79,13 +78,12 @@ func createNetworkPolicyV1(ctx context.Context, clientset *kubernetes.Clientset,
 // DeleteNetworkPolicy will create a NetworkPolicy from file with a name
 func DeleteNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, name, namespace string) {
 	opts := metav1.DeleteOptions{}
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		err := clientset.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, name, opts)
 		if err != nil {
 			log.Printf("failed trying to delete NetworkPolicy (%s):%s\n", name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, networkPolicyOperationTimeout, networkPolicyOperationSleepBetweenRetries).Should(Succeed())
 }
 

@@ -20,7 +20,6 @@ limitations under the License.
 package pod
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -58,19 +57,17 @@ func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod corev1
 	if err != nil {
 		return err
 	}
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		err = exec.Stream(remotecommand.StreamOptions{
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
 		})
 		if testSuccess {
-			return err
+			g.Expect(err).NotTo(HaveOccurred())
+		} else {
+			// If we get here we are validating that the command returned an expected error
+			g.Expect(err).To(HaveOccurred())
 		}
-		// If we get here we are validating that the command returned an expected error
-		if err == nil {
-			return fmt.Errorf("expected error from command %s but got nil", command)
-		}
-		return nil
 	}, podExecOperationTimeout, podExecOperationSleepBetweenRetries).Should(Succeed())
 
 	return nil

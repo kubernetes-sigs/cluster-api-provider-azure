@@ -77,9 +77,9 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	})
 	Expect(err).NotTo(HaveOccurred())
 	var publicIPPrefix network.PublicIPPrefix
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		publicIPPrefix, err = publicIPPrefixFuture.Result(publicIPPrefixClient)
-		return err
+		g.Expect(err).NotTo(HaveOccurred())
 	}, input.WaitIntervals...).Should(Succeed(), "failed to create public IP prefix")
 
 	By("Creating node pool with 3 nodes")
@@ -130,15 +130,15 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 		err := mgmtClient.Delete(ctx, machinePool)
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(func() bool {
+		Eventually(func(g Gomega) {
 			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), &expv1.MachinePool{})
-			return apierrors.IsNotFound(err)
-		}, input.WaitIntervals...).Should(BeTrue(), "Deleted MachinePool %s/%s still exists", machinePool.Namespace, machinePool.Name)
+			g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		}, input.WaitIntervals...).Should(Succeed(), "Deleted MachinePool %s/%s still exists", machinePool.Namespace, machinePool.Name)
 
-		Eventually(func() bool {
+		Eventually(func(g Gomega) {
 			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraMachinePool), &infrav1.AzureManagedMachinePool{})
-			return apierrors.IsNotFound(err)
-		}, input.WaitIntervals...).Should(BeTrue(), "Deleted AzureManagedMachinePool %s/%s still exists", infraMachinePool.Namespace, infraMachinePool.Name)
+			g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		}, input.WaitIntervals...).Should(Succeed(), "Deleted AzureManagedMachinePool %s/%s still exists", infraMachinePool.Namespace, infraMachinePool.Name)
 	}()
 
 	By("Verifying the AzureManagedMachinePool converges to a failed ready status")
