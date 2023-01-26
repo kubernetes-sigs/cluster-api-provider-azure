@@ -43,6 +43,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/kubectl/pkg/describe"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -111,26 +112,21 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 
 	Expect(workload.GetClient().List(ctx, pods)).To(Succeed())
 
-	var events = make(map[string]*corev1.EventList)
 	var err error
+	var podDescribe string
+
+	podDescriber, ok := describe.DescriberFor(schema.GroupKind{Group: corev1.GroupName, Kind: "Pod"}, workload.GetRESTConfig())
+	if !ok {
+		Logf("failed to get pod describer")
+	}
 
 	for _, pod := range pods.Items {
 		podNamespace := pod.GetNamespace()
 
-		// Collect events for Pod.
-		if _, ok := events[podNamespace]; !ok {
-			events[podNamespace], err = workload.GetClientSet().CoreV1().Events(podNamespace).List(ctx, metav1.ListOptions{})
-			if err != nil {
-				Logf("failed to get events in %s namespace: %v", podNamespace, err)
-			}
-		}
-
-		var eventMsgs string
-
-		for _, event := range events[podNamespace].Items {
-			if event.InvolvedObject.Kind == "Pod" && event.InvolvedObject.Name == pod.GetName() {
-				eventMsgs += fmt.Sprintf("%s\n", event.Message)
-			}
+		// Describe the pod.
+		podDescribe, err = podDescriber.Describe(podNamespace, pod.GetName(), describe.DescriberSettings{ShowEvents: true})
+		if err != nil {
+			Logf("failed to describe pod %s/%s: %v", podNamespace, pod.GetName(), err)
 		}
 
 		for _, container := range pod.Spec.Containers {
@@ -180,28 +176,28 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 		go func(pod corev1.Pod) {
 			defer GinkgoRecover()
 
-			Logf("Collecting events for Pod %s/%s", podNamespace, pod.Name)
-			eventFile := path.Join(aboveMachinesPath, podNamespace, pod.Name, "pod-events.txt")
-			if err := os.MkdirAll(filepath.Dir(eventFile), 0o755); err != nil {
+			Logf("Describing Pod %s/%s", podNamespace, pod.Name)
+			describeFile := path.Join(aboveMachinesPath, podNamespace, pod.Name, "pod-describe.txt")
+			if err := os.MkdirAll(filepath.Dir(describeFile), 0o755); err != nil {
 				// Failing to mkdir should not cause the test to fail
 				Logf("Error mkdir: %v", err)
 				return
 			}
 
-			f, err := os.OpenFile(eventFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+			f, err := os.OpenFile(describeFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 			if err != nil {
 				// Failing to open the file should not cause the test to fail
-				Logf("Error opening file to write Pod events: %v", err)
+				Logf("Error opening file to write Pod describe: %v", err)
 				return
 			}
 			defer f.Close()
 
 			out := bufio.NewWriter(f)
 			defer out.Flush()
-			_, err = out.WriteString(eventMsgs)
+			_, err = out.WriteString(podDescribe)
 			if errors.Is(err, io.ErrUnexpectedEOF) {
-				// Failing to collect event message should not cause the test to fail
-				Logf("failed to collect event message of pod %s/%s: %v", podNamespace, pod.Name, err)
+				// Failing to describe pod should not cause the test to fail
+				Logf("failed to describe pod %s/%s: %v", podNamespace, pod.Name, err)
 			}
 		}(pod)
 	}
