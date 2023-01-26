@@ -139,6 +139,10 @@ install_addons() {
     # export the target cluster KUBECONFIG if not already set
     export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 
+    # wait for the apiserver pod to be Ready.
+    APISERVER_POD=$("${KUBECTL}" get pods -n kube-system -o name | grep apiserver)
+    "${KUBECTL}" wait --for=condition=Ready -n kube-system "${APISERVER_POD}" --timeout=5m
+
     # Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
     "${KUBECTL}" create ns calico-system
     until "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system
