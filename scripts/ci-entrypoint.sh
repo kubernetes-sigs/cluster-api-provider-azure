@@ -173,10 +173,6 @@ install_addons() {
     "${HELM}" repo add projectcalico https://projectcalico.docs.tigera.io/charts
     "${HELM}" install calico projectcalico/tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace tigera-operator --create-namespace
 
-    # Add FeatureOverride for ChecksumOffloadBroken in FelixConfiguration.
-    # This is the recommended workaround for https://github.com/projectcalico/calico/issues/3145.
-    "${KUBECTL}" apply -f "${REPO_ROOT}"/templates/addons/calico/felix-override.yaml
-
     # install cloud-provider-azure components, if using out-of-tree
     if [[ -n "${TEST_CCM:-}" ]]; then
         CLOUD_CONFIG="/etc/kubernetes/azure.json"

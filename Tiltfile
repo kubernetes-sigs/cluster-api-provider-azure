@@ -363,7 +363,7 @@ def deploy_worker_templates(template, substitutions):
         calico_values = "./templates/addons/calico-dual-stack/values.yaml"
     else:
         calico_values = "./templates/addons/calico/values.yaml"
-    flavor_cmd += "; " + helm_cmd + " repo add projectcalico https://projectcalico.docs.tigera.io/charts; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install calico projectcalico/tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace; kubectl --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f ./templates/addons/calico/felix-override.yaml"
+    flavor_cmd += "; " + helm_cmd + " repo add projectcalico https://projectcalico.docs.tigera.io/charts; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install calico projectcalico/tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
     if "external-cloud-provider" in flavor_name:
         flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
     local_resource(
