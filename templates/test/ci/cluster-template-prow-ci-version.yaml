@@ -996,11 +996,14 @@ data:
     - apiGroups:
       - ""
       resources:
+      - nodes/metrics
+      verbs:
+      - get
+    - apiGroups:
+      - ""
+      resources:
       - pods
       - nodes
-      - nodes/stats
-      - namespaces
-      - configmaps
       verbs:
       - get
       - list
@@ -1095,7 +1098,7 @@ data:
             - --kubelet-use-node-status-port
             - --metric-resolution=15s
             - --kubelet-insecure-tls
-            image: k8s.gcr.io/metrics-server/metrics-server:v0.5.2
+            image: k8s.gcr.io/metrics-server/metrics-server:v0.6.2
             imagePullPolicy: IfNotPresent
             livenessProbe:
               failureThreshold: 3
@@ -1122,6 +1125,7 @@ data:
                 cpu: 100m
                 memory: 200Mi
             securityContext:
+              allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               runAsNonRoot: true
               runAsUser: 1000
