@@ -147,6 +147,15 @@ Here is a reference PR that applied the required test job changes following the 
 
 ### Communication
 
+#### Roadmap
+
+Consider whether anything should be updated in the [roadmap document](../roadmap.md) by answering the following questions:
+1. Have any of the Epics listed been entirely or largely achieved?  If so, then the Epic should likely be removed and highlighted during the release communications.
+2. Are there any new Epics we want to highlight?  If so, then consider opening a PR to add them and bringing them up in the next office hours planning meeting with the milestone review.
+3. Have any updates to the roadmap document occurred in the past 6 months?  If not, it should be updated in some form.
+
+If any changes need to be made, it should not block the release itself.
+
 #### Patch Releases
 
 1. Announce the release in Kubernetes Slack on the #cluster-api-azure channel.

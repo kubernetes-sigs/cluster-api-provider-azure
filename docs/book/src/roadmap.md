@@ -1,36 +1,21 @@
 # Cluster API Azure Roadmap
 
-This roadmap is a constant work in progress, subject to frequent revision. Dates are approximations. Features are listed in no particular order.
+The best place to see what's coming is in [the public milestones](https://github.com/kubernetes-sigs/cluster-api-provider-azure/milestones).  
+The next numbered milestone (e.g. **1.8**) is planned at the very beginning of the 2-month release cycle. This planning and discussion begins at [Cluster API Azure Office Hours](http://bit.ly/k8s-capz-agenda) after a major release.
+Active community PR contributions are prioritized throughout the release, but unplanned work will arise. Hence the items in the milestone are a rough estimate which may change.
+The "next" milestone is a very rough collection of issues for the milestone after the current numbered one to help prioritize upcoming work.
 
-## v0.5 (v1alpha4) ~ Q1 2021
+## High Level Vision
 
-|Area|Description|Issue/Proposal|
-|--|--|--|
-|OS|Windows worker nodes|[#153](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/153)|
-|Identity|Multi-tenancy within one manager instance|[#586](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/586)|
-|UX|Bootstrap failure detection|[#603](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/603)|
-|UX|Add tracing and metrics|[#311](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/311)|
+CAPZ is the official production-ready Cluster API implementation to administer the entire lifecycle of self-managed or managed Kubernetes clusters (AKS) on Azure. Cluster API extends the Kubernetes API to provide tooling consistent across on-premises and cloud providers to build and maintain Kubernetes clusters at scale while working with GitOps and the surrounding tooling ecosystem.
 
-## v1.0 v1beta1/v1 ~ Q2 2021
+## Epics
 
-|Area|Description|Issue/Proposal|
-|--|--|--|
-|Network|Allow multiple subnets of role "node"|[#664](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/664)|
-|Network|Azure Bastion hosts|[#165](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/165)|
-|Identity|AAD Support|[#481](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/481)|
- ---
+There are a number of large priority "Epics" which may span across milestones which we believe are important to providing CAPZ users an even better experience and improving the vision.  
 
-## Backlog
-
-> Items within this category have been identified as potential candidates for the project
-> and can be moved up into a milestone if there is enough interest.
-
-|Area|Description|Issue/Proposal|
-|--|--|--|
-|Network|Peering of Cluster VNet to Existing VNet|[#532](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/532)|
-|OS|Flatcar Support|[#629](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/629)|
-|Compute|SGX-enabled VMs|[#488](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/488)|
-|Compute|Azure Dedicated hosts|[#675](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/675)|
-|AKS|Integrate AzureMachine with AzureManagedControlPlane|[#826](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/826)|
-|Cloud Provider|Use Out of Tree cloud-controller-manager and Storage Drivers|[#715](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/715)|
-
+-  Latest Core Dependencies - The foundation should keep everything under a supported version of dependencies as well as to enable the latest features. 
+    - Includes: [track 2 go-sdk](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2670), [Azure Service Operator (ASO)](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/416), 100% [k8s out-of-tree Azure provider](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/715)
+-  ManagedClusters - Provisioning new AKS (ManagedClusters) clusters at scale is a common use case we want to enable an excellent experience with stability and all of the same features available in AKS.
+    - Includes: [ManagedClusters E2E Tests](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2873), [ClusterClass support](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2684), [Enabling all AKS features](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2625), [Evolution of standardized CAPI ManagedCluster for CAPZ](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20220725-managed-kubernetes.md)
+-  Latest features for self-managed - These larger or essential features enable a better experience for provisioning self-managed clusters on Azure.
+    - Includes: MachinePools support, Azure CNI v2 support
