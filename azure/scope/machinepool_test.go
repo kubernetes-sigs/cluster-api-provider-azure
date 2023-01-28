@@ -181,69 +181,7 @@ func TestMachinePoolScope_NetworkInterfaces(t *testing.T) {
 	}
 }
 
-func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
-	cases := []struct {
-		Name   string
-		Setup  func() (provisioningState string, extensionName string)
-		Verify func(g *WithT, amp *infrav1exp.AzureMachinePool, err error)
-	}{
-		{
-			Name: "should set bootstrap succeeded condition if provisioning state succeeded",
-			Setup: func() (provisioningState string, extensionName string) {
-				return string(infrav1.Succeeded), "foo"
-			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(conditions.IsTrue(amp, infrav1.BootstrapSucceededCondition))
-			},
-		},
-		{
-			Name: "should set bootstrap succeeded false condition with reason if provisioning state creating",
-			Setup: func() (provisioningState string, extensionName string) {
-				return string(infrav1.Creating), "bazz"
-			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).To(MatchError("extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM. Object will be requeued after 30s"))
-				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
-				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapInProgressReason))
-				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)
-				g.Expect(severity).NotTo(BeNil())
-				g.Expect(*severity).To(Equal(clusterv1.ConditionSeverityInfo))
-			},
-		},
-		{
-			Name: "should set bootstrap succeeded false condition with reason if provisioning state failed",
-			Setup: func() (provisioningState string, extensionName string) {
-				return string(infrav1.Failed), "buzz"
-			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).To(MatchError("reconcile error that cannot be recovered occurred: extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more. Object will not be requeued"))
-				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
-				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapFailedReason))
-				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)
-				g.Expect(severity).NotTo(BeNil())
-				g.Expect(*severity).To(Equal(clusterv1.ConditionSeverityError))
-			},
-		},
-	}
 
-	for _, c := range cases {
-		t.Run(c.Name, func(t *testing.T) {
-			var (
-				g        = NewWithT(t)
-				mockCtrl = gomock.NewController(t)
-			)
-			defer mockCtrl.Finish()
-
-			state, name := c.Setup()
-			s := &MachinePoolScope{
-				AzureMachinePool: &infrav1exp.AzureMachinePool{},
-			}
-			err := s.SetBootstrapConditions(context.TODO(), state, name)
-			c.Verify(g, s.AzureMachinePool, err)
-		})
-	}
-}
 
 func TestMachinePoolScope_MaxSurge(t *testing.T) {
 	cases := []struct {

@@ -458,28 +458,8 @@ func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 	m.AzureMachinePool.Status.FailureReason = &v
 }
 
-// SetBootstrapConditions sets the AzureMachinePool BootstrapSucceeded condition based on the extension provisioning states.
-func (m *MachinePoolScope) SetBootstrapConditions(ctx context.Context, provisioningState string, extensionName string) error {
-	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.SetBootstrapConditions")
-	defer done()
 
-	switch infrav1.ProvisioningState(provisioningState) {
-	case infrav1.Succeeded:
-		log.V(4).Info("extension provisioning state is succeeded", "vm extension", extensionName, "scale set", m.Name())
-		conditions.MarkTrue(m.AzureMachinePool, infrav1.BootstrapSucceededCondition)
-		return nil
-	case infrav1.Creating:
-		log.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "scale set", m.Name())
-		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "")
-		return azure.WithTransientError(errors.New("extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM"), 30*time.Second)
-	case infrav1.Failed:
-		log.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "scale set", m.Name())
-		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityError, "")
-		return azure.WithTerminalError(errors.New("extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more"))
-	default:
-		return nil
-	}
-}
+
 
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachinePool. If the same key is present in both,
 // the value from AzureMachinePool takes precedence.
