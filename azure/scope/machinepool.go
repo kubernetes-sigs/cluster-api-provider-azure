@@ -18,8 +18,10 @@ package scope
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"strings"
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
@@ -535,6 +537,12 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 		if err := m.updateReplicasAndProviderIDs(ctx); err != nil {
 			return errors.Wrap(err, "failed to update replicas and providerIDs")
 		}
+		if m.HasReplicasExternallyManaged(ctx) {
+			if err := m.updateCustomDataHash(ctx); err != nil {
+				// ignore errors to calculating the custom data hash since it's not absolutely crucial.
+				log.V(4).Error(err, "unable to update custom data hash, ignoring.")
+			}
+		}
 	}
 
 	if err := m.PatchObject(ctx); err != nil {
@@ -566,6 +574,39 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 		return "", errors.New("error retrieving bootstrap data: secret value key is missing")
 	}
 	return base64.StdEncoding.EncodeToString(value), nil
+}
+
+// calculateBootstrapDataHash calculates the sha256 hash of the bootstrap data.
+func (m *MachinePoolScope) calculateBootstrapDataHash(ctx context.Context) (string, error) {
+	bootstrapData, err := m.GetBootstrapData(ctx)
+	if err != nil {
+		return "", err
+	}
+	h := sha256.New()
+	n, err := io.WriteString(h, bootstrapData)
+	if err != nil || n == 0 {
+		return "", fmt.Errorf("unable to write custom data (bytes written: %q): %w", n, err)
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+// HasBootstrapDataChanges calculates the sha256 hash of the bootstrap data and compares it with the saved hash in AzureMachinePool.Status.
+func (m *MachinePoolScope) HasBootstrapDataChanges(ctx context.Context) (bool, error) {
+	newHash, err := m.calculateBootstrapDataHash(ctx)
+	if err != nil {
+		return false, err
+	}
+	return m.AzureMachinePool.GetAnnotations()[azure.CustomDataHashAnnotation] != newHash, nil
+}
+
+// updateCustomDataHash calculates the sha256 hash of the bootstrap data and saves it in AzureMachinePool.Status.
+func (m *MachinePoolScope) updateCustomDataHash(ctx context.Context) error {
+	newHash, err := m.calculateBootstrapDataHash(ctx)
+	if err != nil {
+		return err
+	}
+	m.SetAnnotation(azure.CustomDataHashAnnotation, newHash)
+	return nil
 }
 
 // GetVMImage picks an image from the AzureMachinePool configuration, or uses a default one.

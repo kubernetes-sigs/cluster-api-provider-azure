@@ -53,6 +53,8 @@ type (
 		SetProviderID(string)
 		SetVMSSState(*azure.VMSS)
 		ReconcileReplicas(context.Context, *azure.VMSS) error
+		HasReplicasExternallyManaged(context.Context) bool
+		HasBootstrapDataChanges(context.Context) (bool, error)
 	}
 
 	// Service provides operations on Azure resources.
@@ -276,6 +278,20 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 		return nil, errors.Wrap(err, "failed to calculate maxSurge")
 	}
 
+	// If the VMSS is managed by an external autoscaler, we should patch the VMSS if customData has changed.
+	shouldPatchCustomData := false
+	if s.Scope.HasReplicasExternallyManaged(ctx) {
+		shouldPatchCustomData, err := s.Scope.HasBootstrapDataChanges(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to calculate custom data hash")
+		}
+		if shouldPatchCustomData {
+			log.V(4).Info("custom data changed")
+		} else {
+			log.V(4).Info("custom data unchanged")
+		}
+	}
+
 	hasModelChanges := hasModelModifyingDifferences(infraVMSS, vmss)
 	var isFlex bool
 	for _, instance := range infraVMSS.Instances {
@@ -295,10 +311,11 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 		patch.Sku.Capacity = pointer.Int64(surge)
 	}
 
+	// If the VMSS is managed by an external autoscaler, we should patch the VMSS if customData has changed.
 	// If there are no model changes and no increase in the replica count, do not update the VMSS.
 	// Decreases in replica count is handled by deleting AzureMachinePoolMachine instances in the MachinePoolScope
-	if *patch.Sku.Capacity <= infraVMSS.Capacity && !hasModelChanges {
-		log.V(4).Info("nothing to update on vmss", "scale set", spec.Name, "newReplicas", *patch.Sku.Capacity, "oldReplicas", infraVMSS.Capacity, "hasChanges", hasModelChanges)
+	if *patch.Sku.Capacity <= infraVMSS.Capacity && !hasModelChanges && !shouldPatchCustomData {
+		log.V(4).Info("nothing to update on vmss", "scale set", spec.Name, "newReplicas", *patch.Sku.Capacity, "oldReplicas", infraVMSS.Capacity, "hasModelChanges", hasModelChanges, "shouldPatchCustomData", shouldPatchCustomData)
 		return nil, nil
 	}
 
