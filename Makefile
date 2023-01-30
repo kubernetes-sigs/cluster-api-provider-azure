@@ -315,10 +315,10 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	# Wait for the kubeconfig to become available.
 	timeout --foreground 300 bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
-	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout --foreground 600 bash -c "while ! $(KUBECTL) --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
+	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./$(CLUSTER_NAME).kubeconfig
+	timeout --foreground 600 bash -c "while ! $(KUBECTL) --kubeconfig=./$(CLUSTER_NAME).kubeconfig get nodes | grep control-plane; do sleep 1; done"
 
-	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
+	@echo 'run "$(KUBECTL) --kubeconfig=./$(CLUSTER_NAME).kubeconfig ..." to work with the new target cluster'
 
 .PHONY: create-aks-cluster
 create-aks-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) ## Create a aks cluster.
@@ -328,10 +328,10 @@ create-aks-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) ## Create a aks cluster.
 	# Wait for the kubeconfig to become available.
 	timeout --foreground 300 bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
-	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout --foreground 600 bash -c "while ! $(KUBECTL) --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
+	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > $(CLUSTER_NAME).kubeconfig
+	timeout --foreground 600 bash -c "while ! $(KUBECTL) --kubeconfig=./$(CLUSTER_NAME).kubeconfig get nodes | grep control-plane; do sleep 1; done"
 
-	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
+	@echo 'run "$(KUBECTL) --kubeconfig=./$(CLUSTER_NAME).kubeconfig ..." to work with the new target cluster'
 
 
 .PHONY: create-cluster

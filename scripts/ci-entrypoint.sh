@@ -133,26 +133,23 @@ create_cluster() {
 
 install_addons() {
     # Get cluster CIDRs from Cluster object
-    CIDR0=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
-    CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}' 2> /dev/null) || true
-
-    # export the target cluster KUBECONFIG if not already set
-    export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
+    CIDR0=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
+    CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}' 2> /dev/null) || true
 
     # wait for the apiserver pod to be Ready.
-    APISERVER_POD=$("${KUBECTL}" get pods -n kube-system -o name | grep apiserver)
-    "${KUBECTL}" wait --for=condition=Ready -n kube-system "${APISERVER_POD}" --timeout=5m
+    APISERVER_POD=$("${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}".kubeconfig get pods -n kube-system -o name | grep apiserver)
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" wait --for=condition=Ready -n kube-system "${APISERVER_POD}" --timeout=5m
 
     # Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
-    "${KUBECTL}" create ns calico-system
-    until "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" create ns calico-system
+    until "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" get configmap kubeadm-config --namespace=kube-system
     do
         # Wait for the kubeadm-config configmap to exist.
         sleep 2
     done
-    "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml \
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" get configmap kubeadm-config --namespace=kube-system -o yaml \
     | sed 's/namespace: kube-system/namespace: calico-system/' \
-    | "${KUBECTL}" create -f -
+    | "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" create -f -
 
     # install Calico CNI
     echo "Installing Calico CNI via helm"
@@ -170,8 +167,8 @@ install_addons() {
         CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
     fi
 
-    "${HELM}" repo add projectcalico https://projectcalico.docs.tigera.io/charts
-    "${HELM}" install calico projectcalico/tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace tigera-operator --create-namespace
+    "${HELM}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" repo add projectcalico https://projectcalico.docs.tigera.io/charts
+    "${HELM}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" install calico projectcalico/tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace tigera-operator --create-namespace
 
     # install cloud-provider-azure components, if using out-of-tree
     if [[ -n "${TEST_CCM:-}" ]]; then
@@ -193,7 +190,7 @@ install_addons() {
 
         export CCM_LOG_VERBOSITY="${CCM_LOG_VERBOSITY:-4}"
         echo "Installing cloud-provider-azure components via helm"
-        "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name \
+        "${HELM}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name \
             --set infra.clusterName="${CLUSTER_NAME}" \
             --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
             --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
@@ -213,10 +210,10 @@ install_addons() {
     timeout --foreground 1800 bash -c wait_for_nodes
 
     echo "Waiting for all calico-system pods to be ready"
-    "${KUBECTL}" wait --for=condition=Ready pod -n calico-system --all --timeout=10m
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" wait --for=condition=Ready pod -n calico-system --all --timeout=10m
 
     echo "Waiting for all kube-system pods to be ready"
-    "${KUBECTL}" wait --for=condition=Ready pod -n kube-system --all --timeout=10m
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" wait --for=condition=Ready pod -n kube-system --all --timeout=10m
 }
 
 wait_for_nodes() {
@@ -224,22 +221,17 @@ wait_for_nodes() {
 
     # Ensure that all nodes are registered with the API server before checking for readiness
     local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT))"
-    while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
+    while [[ $("${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}".kubeconfig get nodes -o json | jq '.items | length') -ne "${total_nodes}" ]]; do
         sleep 10
     done
 
-    "${KUBECTL}" wait --for=condition=Ready node --all --timeout=5m
-    "${KUBECTL}" get nodes -owide
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" wait --for=condition=Ready node --all --timeout=5m
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" get nodes -o wide
 }
 
 copy_secret() {
-    # point at the management cluster
-    unset KUBECONFIG
     "${KUBECTL}" get secret "${CLUSTER_NAME}-control-plane-azure-json" -o jsonpath='{.data.control-plane-azure\.json}' | base64 --decode >azure_json
-
-    # set KUBECONFIG back to the workload cluster
-    export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
-    "${KUBECTL}" create secret generic "${CONFIG_SECRET_NAME}" -n kube-system \
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" create secret generic "${CONFIG_SECRET_NAME}" -n kube-system \
         --from-file=cloud-config=azure_json
     rm azure_json
 }
@@ -251,14 +243,9 @@ cleanup() {
 }
 
 on_exit() {
-    if [[ -n ${KUBECONFIG:-} ]]; then
-        "${KUBECTL}" get nodes -owide || echo "Unable to get nodes"
-        "${KUBECTL}" get pods -A -owide || echo "Unable to get pods"
-    fi
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" get nodes -o wide || echo "Unable to get nodes"
+    "${KUBECTL}" --kubeconfig "${PWD}/${CLUSTER_NAME}.kubeconfig" get pods -A -o wide || echo "Unable to get pods"
 
-    # unset kubeconfig which is currently pointing at workload cluster.
-    # we want to be pointing at the management cluster (kind in this case)
-    unset KUBECONFIG
     go run -tags e2e "${REPO_ROOT}"/test/logger.go --name "${CLUSTER_NAME}" --namespace default
     "${REPO_ROOT}/hack/log/redact.sh" || true
     # cleanup
@@ -278,6 +265,10 @@ create_cluster
 
 # install CNI and CCM
 install_addons
+
+# For convenience we export the KUBECONFIG environment variable
+# so that future steps in a serialized workflow can target the workload cluster automatically
+export KUBECONFIG="${PWD}/${CLUSTER_NAME}.kubeconfig"
 
 if [[ "${#}" -gt 0 ]]; then
     # disable error exit so we can run post-command cleanup

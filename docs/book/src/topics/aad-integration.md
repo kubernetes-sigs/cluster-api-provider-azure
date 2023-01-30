@@ -64,8 +64,8 @@ Make sure that `AZURE_SERVER_APP_ID` is set to the ID of the server AD applicati
 
 ### Get the admin kubeconfig
 ```bash
-clusterctl get kubeconfig ${CLUSTER_NAME} > ./kubeconfig
-export KUBECONFIG=./kubeconfig
+clusterctl get kubeconfig ${CLUSTER_NAME} > ./${CLUSTER_NAME}.kubeconfig
+export KUBECONFIG=./${CLUSTER_NAME}.kubeconfig
 ```
 
 ## Create Kubernetes RBAC binding
