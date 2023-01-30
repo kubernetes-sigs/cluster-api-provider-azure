@@ -137,13 +137,21 @@ Example versions:
 3. A `metadata.yaml` which maps release series to cluster-api contract version
 4. Release notes
 
-### Update Upstream Tests
+### Update Upstream Tests (skip for patch releases)
 
 For major and minor releases we will need to update the set of capz-dependent `test-infra` jobs so that they use our latest release branch. For example, if we cut a new `1.3.0` minor release, from a newly created `release-1.3` git branch, then we need to update all test jobs to use capz at `release-1.3` instead of `release-1.2`.
 
 Here is a reference PR that applied the required test job changes following the `1.3.0` minor release described above:
 
 - https://github.com/kubernetes/test-infra/pull/26200
+
+### Update Netlify branch (skip for patch releases)
+
+Go to [the Netlify branches and deploy contexts in site settings](https://app.netlify.com/sites/kubernetes-sigs-cluster-api-provider-azure/settings/deploys#branches-and-deploy-contexts) and click "edit settings". Update the "Production branch" to the new release branch and click "Save". The, go to the [Netlify site deploys](https://app.netlify.com/sites/kubernetes-sigs-cluster-api-provider-azure/deploys) and trigger a new deploy.
+
+![Netlify settings screenshot](images/netlify_deploys.png)
+
+Note: this step requires access to the Netlify site. If you don't have access, please ask a maintainer to update the branch.
 
 ### Communication
 
