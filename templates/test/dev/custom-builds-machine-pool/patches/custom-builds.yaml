@@ -16,13 +16,11 @@ spec:
       set -o pipefail
       set -o errexit
 
-      systemctl stop kubelet
       declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
       for BINARY in "$${BINARIES[@]}"; do
         echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
         curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
       done
-      systemctl restart kubelet
 
       echo "kubeadm version: $(kubeadm version -o=short)"
       echo "kubectl version: $(kubectl version --client=true --short=true)"
