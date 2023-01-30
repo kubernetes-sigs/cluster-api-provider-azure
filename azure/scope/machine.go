@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strings"
-	"time"
+	
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"

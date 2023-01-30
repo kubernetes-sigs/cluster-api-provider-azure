@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
-	"time"
+	
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
