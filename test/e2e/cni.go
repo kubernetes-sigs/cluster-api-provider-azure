@@ -22,9 +22,7 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -62,14 +60,6 @@ func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTe
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, calicoOperatorNamespace, specName)
 		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 	}
-
-	// Add FeatureOverride for ChecksumOffloadBroken in FelixConfiguration.
-	// This is the recommended workaround for https://github.com/projectcalico/calico/issues/3145.
-	felixYaml, err := os.ReadFile(filepath.Join(e2eConfig.GetVariable(AddonsPath), "calico", "felix-override.yaml"))
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(func() error {
-		return clusterProxy.Apply(ctx, felixYaml)
-	}, 10*time.Second).Should(Succeed(), "Failed to apply the felix configurations patch")
 
 	By("Waiting for Ready calico-system deployment pods")
 	for _, d := range []string{"calico-kube-controllers", "calico-typha"} {

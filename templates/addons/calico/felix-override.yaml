@@ -1,8 +1,0 @@
-apiVersion: crd.projectcalico.org/v1
-kind: FelixConfiguration
-metadata:
-  name: default
-spec:
-  # Add FeatureOverride for ChecksumOffloadBroken in FelixConfiguration.
-  # This is the recommended workaround for https://github.com/projectcalico/calico/issues/3145.
-  featureDetectOverride: "ChecksumOffloadBroken=true"
