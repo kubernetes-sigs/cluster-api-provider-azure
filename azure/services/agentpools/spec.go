@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // KubeletConfig defines the set of kubelet configurations for nodes in pools.
@@ -160,6 +161,9 @@ func (s *AgentPoolSpec) CustomHeaders() map[string]string {
 
 // Parameters returns the parameters for the agent pool.
 func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
+	_, log, done := tele.StartSpanWithLogger(ctx, "agentpools.Service.Parameters")
+	defer done()
+
 	nodeLabels := s.NodeLabels
 	if existing != nil {
 		existingPool, ok := existing.(containerservice.AgentPool)
@@ -234,8 +238,10 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		diff := cmp.Diff(normalizedProfile, existingProfile)
 		if diff == "" {
 			// agent pool is up to date, nothing to do
+			log.V(4).Info("no changes found between user-updated spec and existing spec")
 			return nil, nil
 		}
+		log.V(4).Info("found a diff between the desired spec and the existing agentpool", "difference", diff)
 		// We do a just-in-time merge of existent kubernetes.azure.com-prefixed labels
 		// So that we don't unintentionally delete them
 		// See https://github.com/Azure/AKS/issues/3152
