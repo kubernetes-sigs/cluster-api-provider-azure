@@ -290,6 +290,9 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-kubeadm-bootstrap-system deployment -l cluster.x-k8s.io/provider=bootstrap-kubeadm
 	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-kubeadm-control-plane-system deployment -l cluster.x-k8s.io/provider=control-plane-kubeadm
 
+	# Wait for the ClusterResourceSet CRD resource to be "installed" onto the mgmt cluster before installing CRS addons
+	timeout --foreground 300 bash -c "until $(KUBECTL) get clusterresourcesets -A; do sleep 3; done"
+
 	# install Windows Calico cluster resource set
 	$(KUBECTL) create configmap calico-windows-addon --from-file="$(ADDONS_DIR)/windows/calico" --dry-run=client -o yaml | kubectl apply -f -
 	$(KUBECTL) apply -f templates/addons/windows/calico-resource-set.yaml
@@ -298,7 +301,10 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
 
 	# required sleep for when creating management and workload cluster simultaneously
-	sleep 10
+	# Wait for the core CRD resources to be "installed" onto the mgmt cluster before returning control
+	timeout --foreground 300 bash -c "until $(KUBECTL) get clusters -A; do sleep 3; done"
+	timeout --foreground 300 bash -c "until $(KUBECTL) get azureclusters -A; do sleep 3; done"
+	timeout --foreground 300 bash -c "until $(KUBECTL) get kubeadmcontrolplanes -A; do sleep 3; done"
 	@echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-capz"'
 
 .PHONY: create-workload-cluster
