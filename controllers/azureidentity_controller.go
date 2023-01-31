@@ -53,7 +53,7 @@ type AzureIdentityReconciler struct {
 
 // SetupWithManager initializes this controller with a manager.
 func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
-	_, log, done := tele.StartSpanWithLogger(ctx,
+	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureIdentityReconciler.SetupWithManager",
 		tele.KVP("controller", "AzureIdentity"),
 	)

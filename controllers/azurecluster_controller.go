@@ -71,7 +71,7 @@ func NewAzureClusterReconciler(client client.Client, recorder record.EventRecord
 
 // SetupWithManager initializes this controller with a manager.
 func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options Options) error {
-	_, log, done := tele.StartSpanWithLogger(ctx,
+	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureClusterReconciler.SetupWithManager",
 		tele.KVP("controller", "AzureCluster"),
 	)

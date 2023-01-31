@@ -571,7 +571,7 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 
 // GetVMImage picks an image from the AzureMachinePool configuration, or uses a default one.
 func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
-	_, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.GetVMImage")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.GetVMImage")
 	defer done()
 
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
