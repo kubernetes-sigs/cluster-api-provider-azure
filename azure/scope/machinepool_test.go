@@ -38,7 +38,6 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -180,8 +179,6 @@ func TestMachinePoolScope_NetworkInterfaces(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestMachinePoolScope_MaxSurge(t *testing.T) {
 	cases := []struct {

@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
-	
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -457,8 +456,6 @@ func (m *MachinePoolScope) SetFailureMessage(v error) {
 func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 	m.AzureMachinePool.Status.FailureReason = &v
 }
-
-
 
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachinePool. If the same key is present in both,
 // the value from AzureMachinePool takes precedence.

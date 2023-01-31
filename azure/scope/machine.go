@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strings"
-	
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -564,7 +563,6 @@ func (m *MachineScope) SetFailureReason(v capierrors.MachineStatusError) {
 func (m *MachineScope) SetConditionFalse(conditionType clusterv1.ConditionType, reason string, severity clusterv1.ConditionSeverity, message string) {
 	conditions.MarkFalse(m.AzureMachine, conditionType, reason, severity, message)
 }
-
 
 // SetAnnotation sets a key value annotation on the AzureMachine.
 func (m *MachineScope) SetAnnotation(key, value string) {
