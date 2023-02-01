@@ -109,12 +109,11 @@ func (d *Builder) WithOotParameters() *Builder {
 
 // DeployStorageClass creates a storage class on the k8s cluster.
 func (d *Builder) DeployStorageClass(clientset *kubernetes.Clientset) {
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		_, err := clientset.StorageV1().StorageClasses().Create(context.TODO(), d.sc, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("Error trying to deploy storage class %s in namespace %s:%s\n", d.sc.Name, d.sc.ObjectMeta.Namespace, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).To(HaveOccurred())
 	}, scOperationTimeout, scOperationSleepBetweenRetries).Should(Succeed())
 }

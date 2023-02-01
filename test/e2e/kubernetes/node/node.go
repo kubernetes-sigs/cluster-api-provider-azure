@@ -47,17 +47,11 @@ func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (wi
 		LabelSelector: "kubernetes.io/os=windows",
 	}
 	var result *corev1.NodeList
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		var err error
 		result, err = clientset.CoreV1().Nodes().List(ctx, options)
-		if err != nil {
-			return err
-		}
-
-		if len(result.Items) == 0 {
-			return fmt.Errorf("no Windows Nodes found")
-		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result.Items).NotTo(BeEmpty())
 	}, nodeOperationTimeout, nodeOperationSleepBetweenRetries).Should(Succeed())
 
 	kernalVersion := result.Items[0].Status.NodeInfo.KernelVersion
@@ -76,18 +70,11 @@ func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (wi
 
 func TaintNode(clientset *kubernetes.Clientset, options metav1.ListOptions, taint *corev1.Taint) error {
 	var result *corev1.NodeList
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		var err error
 		result, err = clientset.CoreV1().Nodes().List(context.Background(), options)
-		if err != nil {
-			log.Printf("Error trying to list nodes %v: %s\n", options, err.Error())
-			return err
-		}
-
-		if len(result.Items) == 0 {
-			return fmt.Errorf("no Nodes found")
-		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result.Items).NotTo(BeEmpty())
 	}, nodeOperationTimeout, nodeOperationSleepBetweenRetries).Should(Succeed())
 
 	for i := range result.Items {
@@ -125,13 +112,12 @@ func PatchNodeTaints(clientset *kubernetes.Clientset, nodeName string, oldNode *
 		return fmt.Errorf("failed to create patch for node %q: %w", nodeName, err)
 	}
 
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		_, err := clientset.CoreV1().Nodes().Patch(context.Background(), nodeName, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
 		if err != nil {
 			log.Printf("Error updating node taints on node %s:%s\n", nodeName, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, nodeOperationTimeout, nodeOperationSleepBetweenRetries).Should(Succeed())
 	return err
 }

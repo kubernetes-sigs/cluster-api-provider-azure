@@ -82,10 +82,10 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	if input.Windows {
 		var windowsVersion windows.OSVersion
-		Eventually(func() error {
-			version, err := node.GetWindowsVersion(ctx, clientset)
-			windowsVersion = version
-			return err
+		Eventually(func(g Gomega) {
+			var err error
+			windowsVersion, err = node.GetWindowsVersion(ctx, clientset)
+			g.Expect(err).NotTo(HaveOccurred())
 		}, 300*time.Second, 5*time.Second).Should(Succeed())
 		iisImage := windows.GetWindowsImage(windows.Httpd, windowsVersion)
 		webDeployment.SetImage(deploymentName, iisImage)
@@ -121,13 +121,12 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	ilbService := webDeployment.CreateServiceResourceSpec(ports, deploymentBuilder.InternalLoadbalancer, input.IPFamilies)
 	Log("starting to create an internal Load Balancer service")
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		_, err := servicesClient.Create(ctx, ilbService, metav1.CreateOptions{})
 		if err != nil {
 			LogWarningf("failed creating service (%s):%s\n", ilbService.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	ilbSvcInput := WaitForServiceAvailableInput{
 		Getter:    servicesClientAdapter{client: servicesClient},
@@ -139,26 +138,24 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	By("connecting to the internal LB service from a curl pod")
 
 	var svc *corev1.Service
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		var err error
 		svc, err = servicesClient.Get(ctx, ilbService.Name, metav1.GetOptions{})
 		if err != nil {
 			LogWarningf("failed getting service (%s):%s\n", ilbService.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	ilbIP := extractServiceIP(svc)
 
 	ilbJob := job.CreateCurlJobResourceSpec("curl-to-ilb-job", ilbIP)
 	Log("starting to create a curl to ilb job")
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		_, err := jobsClient.Create(ctx, ilbJob, metav1.CreateOptions{})
 		if err != nil {
 			LogWarningf("failed creating job (%s):%s\n", ilbJob.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	ilbJobInput := WaitForJobCompleteInput{
 		Getter:    jobsClientAdapter{client: jobsClient},
@@ -170,40 +167,37 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	if !input.SkipCleanup {
 		By("deleting the ilb test resources")
 		Logf("starting to delete the ilb service: %s", ilbService.Name)
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			err := servicesClient.Delete(ctx, ilbService.Name, metav1.DeleteOptions{})
 			if err != nil {
 				LogWarningf("failed deleting service (%s):%s\n", ilbService.Name, err.Error())
-				return err
 			}
-			return nil
+			g.Expect(err).NotTo(HaveOccurred())
 		}, retryableDeleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 		Logf("waiting for the ilb service to be deleted: %s", ilbService.Name)
-		Eventually(func() bool {
+		Eventually(func(g Gomega) {
 			_, err := servicesClient.Get(ctx, ilbService.GetName(), metav1.GetOptions{})
-			return apierrors.IsNotFound(err)
-		}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(BeTrue())
+			g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 		Logf("deleting the ilb job: %s", ilbJob.Name)
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			err := jobsClient.Delete(ctx, ilbJob.Name, metav1.DeleteOptions{})
 			if err != nil {
 				LogWarningf("failed deleting job (%s):%s\n", ilbJob.Name, err.Error())
-				return err
 			}
-			return nil
+			g.Expect(err).NotTo(HaveOccurred())
 		}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	}
 
 	By("creating an external Load Balancer service")
 	elbService := webDeployment.CreateServiceResourceSpec(ports, deploymentBuilder.ExternalLoadbalancer, input.IPFamilies)
 	Log("starting to create an external Load Balancer service")
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		_, err := servicesClient.Create(ctx, elbService, metav1.CreateOptions{})
 		if err != nil {
 			LogWarningf("failed creating service (%s):%s\n", elbService.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	elbSvcInput := WaitForServiceAvailableInput{
 		Getter:    servicesClientAdapter{client: servicesClient},
@@ -213,26 +207,24 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	WaitForServiceAvailable(ctx, elbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
 
 	By("connecting to the external LB service from a curl pod")
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		var err error
 		svc, err = servicesClient.Get(ctx, elbService.Name, metav1.GetOptions{})
 		if err != nil {
 			LogWarningf("failed getting service (%s):%s\n", elbService.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 
 	elbIP := extractServiceIP(svc)
 	Log("starting to create curl-to-elb job")
 	elbJob := job.CreateCurlJobResourceSpec("curl-to-elb-job"+util.RandomString(6), elbIP)
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		_, err := jobsClient.Create(ctx, elbJob, metav1.CreateOptions{})
 		if err != nil {
 			LogWarningf("failed creating job (%s):%s\n", elbJob.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	elbJobInput := WaitForJobCompleteInput{
 		Getter:    jobsClientAdapter{client: jobsClient},
@@ -261,36 +253,33 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 	By("deleting the test resources")
 	Logf("starting to delete external LB service %s", elbService.Name)
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		err := servicesClient.Delete(ctx, elbService.Name, metav1.DeleteOptions{})
 		if err != nil {
 			LogWarningf("failed deleting service (%s):%s\n", elbService.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, retryableDeleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	Logf("waiting for the external LB service to be deleted: %s", elbService.Name)
-	Eventually(func() bool {
+	Eventually(func(g Gomega) {
 		_, err := servicesClient.Get(ctx, elbService.GetName(), metav1.GetOptions{})
-		return apierrors.IsNotFound(err)
-	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(BeTrue())
+		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	Logf("starting to delete deployment %s", deployment.Name)
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		err := webDeployment.Client(clientset).Delete(ctx, deployment.Name, metav1.DeleteOptions{})
 		if err != nil {
 			LogWarningf("failed deleting deployment (%s):%s\n", deployment.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	Logf("starting to delete job %s", elbJob.Name)
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		err := jobsClient.Delete(ctx, elbJob.Name, metav1.DeleteOptions{})
 		if err != nil {
 			LogWarningf("failed deleting job (%s):%s\n", elbJob.Name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, deleteOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 }
 

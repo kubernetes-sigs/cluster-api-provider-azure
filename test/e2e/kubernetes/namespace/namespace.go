@@ -45,14 +45,13 @@ func Create(ctx context.Context, clientset *kubernetes.Clientset, name string, l
 	}
 
 	var namespace *corev1.Namespace
-	Eventually(func() error {
+	Eventually(func(g Gomega) {
 		var err error
 		namespace, err = clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("failed trying to create namespace (%s):%s\n", name, err.Error())
-			return err
 		}
-		return nil
+		g.Expect(err).NotTo(HaveOccurred())
 	}, namespaceOperationTimeout, namespaceOperationSleepBetweenRetries).Should(Succeed())
 	return namespace, nil
 }

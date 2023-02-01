@@ -62,7 +62,7 @@ func AzureFailureDomainsSpec(ctx context.Context, inputGetter func() AzureFailur
 		By("Ensuring zones match CAPI failure domains")
 
 		// fetch updated cluster object to ensure Status.FailureDomains is up-to-date
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			err := input.BootstrapClusterProxy.GetClient().Get(ctx,
 				apimachinerytypes.NamespacedName{
 					Namespace: input.Namespace.Name,
@@ -71,13 +71,12 @@ func AzureFailureDomainsSpec(ctx context.Context, inputGetter func() AzureFailur
 			if err != nil {
 				LogWarning(err.Error())
 			}
-			return err
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(len(input.Cluster.Status.FailureDomains)).To(Equal(len(zones)))
+			for _, z := range zones {
+				g.Expect(input.Cluster.Status.FailureDomains[z]).NotTo(BeNil())
+			}
 		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(input.Cluster.Status.FailureDomains)).To(Equal(len(zones)))
-		for _, z := range zones {
-			Expect(input.Cluster.Status.FailureDomains[z]).NotTo(BeNil())
-		}
 
 		// TODO: Find alternative when the number of zones is > 1 but doesn't equal to number of control plane machines.
 		if len(input.Cluster.Status.FailureDomains) == 3 {

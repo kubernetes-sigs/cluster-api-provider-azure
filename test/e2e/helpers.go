@@ -958,30 +958,21 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 		i.ReleaseName = releaseName
 		i.Namespace = namespace
 		i.CreateNamespace = true
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
-			if err != nil {
-				return err
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 			p := helmGetter.All(settings)
 			if options == nil {
 				options = &helmVals.Options{}
 			}
 			valueOpts := options
 			vals, err := valueOpts.MergeValues(p)
-			if err != nil {
-				return err
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 			chartRequested, err := helmLoader.Load(cp)
-			if err != nil {
-				return err
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 			release, err := i.RunWithContext(ctx, chartRequested, vals)
-			if err != nil {
-				return err
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 			Logf(release.Info.Description)
-			return nil
 		}, helmInstallTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	}
 }

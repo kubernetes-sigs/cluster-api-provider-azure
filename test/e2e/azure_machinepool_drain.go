@@ -169,22 +169,22 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 func labelNodesWithMachinePoolName(ctx context.Context, workloadClient client.Client, mpName string, ampms []infrav1exp.AzureMachinePoolMachine) {
 	for _, ampm := range ampms {
 		n := &corev1.Node{}
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			err := workloadClient.Get(ctx, client.ObjectKey{
 				Name:      ampm.Status.NodeRef.Name,
 				Namespace: ampm.Status.NodeRef.Namespace,
 			}, n)
 			if err != nil {
 				LogWarning(err.Error())
-				return err
 			}
+			g.Expect(err).NotTo(HaveOccurred())
 			n.Labels[clusterv1.OwnerKindAnnotation] = "MachinePool"
 			n.Labels[clusterv1.OwnerNameAnnotation] = mpName
 			err = workloadClient.Update(ctx, n)
 			if err != nil {
 				LogWarning(err.Error())
 			}
-			return err
+			g.Expect(err).NotTo(HaveOccurred())
 		}, waitforResourceOperationTimeout, 3*time.Second).Should(Succeed())
 	}
 }
@@ -212,7 +212,7 @@ func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 
 		if ref.Kind == "MachinePool" && gv.Group == expv1.GroupVersion.Group {
 			mp := &expv1.MachinePool{}
-			Eventually(func() error {
+			Eventually(func(g Gomega) {
 				err := c.Get(ctx, client.ObjectKey{
 					Name:      ref.Name,
 					Namespace: obj.Namespace,
@@ -220,7 +220,7 @@ func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 				if err != nil {
 					LogWarning(err.Error())
 				}
-				return err
+				g.Expect(err).NotTo(HaveOccurred())
 			}, waitforResourceOperationTimeout, 3*time.Second).Should(Succeed())
 			return mp, err
 		}
