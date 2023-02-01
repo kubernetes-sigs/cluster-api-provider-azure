@@ -254,6 +254,10 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 		return nil
 	}
 
+	if ownerCluster.Spec.Paused {
+		return nil
+	}
+
 	opt1 := client.InNamespace(m.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
 		clusterv1.ClusterLabelName: clusterName,
