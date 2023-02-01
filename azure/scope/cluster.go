@@ -242,7 +242,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
 			APIServerPort:        s.APIServerPort(),
 			Type:                 s.APIServerLB().Type,
-			SKU:                  infrav1.SKUStandard,
+			SKU:                  s.APIServerLB().SKU,
 			Role:                 infrav1.APIServerRole,
 			BackendPoolName:      s.APIServerLB().BackendPool.Name,
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
@@ -284,7 +284,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			Type:                 s.ControlPlaneOutboundLB().Type,
 			SKU:                  s.ControlPlaneOutboundLB().SKU,
 			BackendPoolName:      s.ControlPlaneOutboundLB().BackendPool.Name,
-			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
+			IdleTimeoutInMinutes: s.ControlPlaneOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.ControlPlaneOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
 		})
