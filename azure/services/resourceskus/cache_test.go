@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"k8s.io/utils/pointer"
 )
 
 func TestCacheGet(t *testing.T) {
@@ -40,12 +40,12 @@ func TestCacheGet(t *testing.T) {
 			resourceType: "bar",
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("other"),
-					ResourceType: to.StringPtr("baz"),
+					Name:         pointer.String("other"),
+					ResourceType: pointer.String("baz"),
 				},
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr("bar"),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String("bar"),
 				},
 			},
 		},
@@ -55,7 +55,7 @@ func TestCacheGet(t *testing.T) {
 			resourceType: "bar",
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("other"),
+					Name: pointer.String("other"),
 				},
 			},
 			err: "reconcile error that cannot be recovered occurred: resource sku with name 'foo' and category 'bar' not found in location 'test'. Object will not be requeued",
@@ -110,14 +110,14 @@ func TestCacheGetZones(t *testing.T) {
 		"should find 1 result": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1"},
 						},
 					},
@@ -128,27 +128,27 @@ func TestCacheGetZones(t *testing.T) {
 		"should find 2 results": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1"},
 						},
 					},
 				},
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"2"},
 						},
 					},
@@ -159,14 +159,14 @@ func TestCacheGetZones(t *testing.T) {
 		"should not find due to location mismatch": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"foobar",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("foobar"),
+							Location: pointer.String("foobar"),
 							Zones:    &[]string{"1"},
 						},
 					},
@@ -177,14 +177,14 @@ func TestCacheGetZones(t *testing.T) {
 		"should not find due to location restriction": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1"},
 						},
 					},
@@ -201,14 +201,14 @@ func TestCacheGetZones(t *testing.T) {
 		"should not find due to zone restriction": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1"},
 						},
 					},
@@ -254,14 +254,14 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should find 1 result": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1"},
 						},
 					},
@@ -272,14 +272,14 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should find 2 results": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1", "2"},
 						},
 					},
@@ -290,14 +290,14 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should not find due to size mismatch": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foobar"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foobar"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1"},
 						},
 					},
@@ -308,14 +308,14 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should not find due to location mismatch": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"foobar",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("foobar"),
+							Location: pointer.String("foobar"),
 							Zones:    &[]string{"1"},
 						},
 					},
@@ -326,14 +326,14 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should not find due to location restriction": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1"},
 						},
 					},
@@ -350,14 +350,14 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should not find due to zone restriction": {
 			have: []compute.ResourceSku{
 				{
-					Name:         to.StringPtr("foo"),
-					ResourceType: to.StringPtr(string(VirtualMachines)),
+					Name:         pointer.String("foo"),
+					ResourceType: pointer.String(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
 					LocationInfo: &[]compute.ResourceSkuLocationInfo{
 						{
-							Location: to.StringPtr("baz"),
+							Location: pointer.String("baz"),
 							Zones:    &[]string{"1"},
 						},
 					},

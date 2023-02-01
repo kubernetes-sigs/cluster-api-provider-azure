@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -74,8 +74,8 @@ func (s *PublicIPSpec) Parameters(ctx context.Context, existing interface{}) (pa
 	var dnsSettings *network.PublicIPAddressDNSSettings
 	if s.DNSName != "" {
 		dnsSettings = &network.PublicIPAddressDNSSettings{
-			DomainNameLabel: to.StringPtr(strings.Split(s.DNSName, ".")[0]),
-			Fqdn:            to.StringPtr(s.DNSName),
+			DomainNameLabel: pointer.String(strings.Split(s.DNSName, ".")[0]),
+			Fqdn:            pointer.String(s.DNSName),
 		}
 	}
 
@@ -83,18 +83,18 @@ func (s *PublicIPSpec) Parameters(ctx context.Context, existing interface{}) (pa
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.Name),
+			Name:        pointer.String(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
 		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Name:     to.StringPtr(s.Name),
-		Location: to.StringPtr(s.Location),
+		Name:     pointer.String(s.Name),
+		Location: pointer.String(s.Location),
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   addressVersion,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 			DNSSettings:              dnsSettings,
 			IPTags:                   converters.IPTagsToSDK(s.IPTags),
 		},
-		Zones: to.StringSlicePtr(s.FailureDomains),
+		Zones: &s.FailureDomains,
 	}, nil
 }

@@ -20,8 +20,8 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	"golang.org/x/crypto/ssh"
+	"k8s.io/utils/pointer"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 
@@ -92,55 +92,55 @@ func (m *AzureManagedControlPlane) setDefaultAutoScalerProfile() {
 	// Default values are from https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler#using-the-autoscaler-profile
 	// If any values are set, they all need to be set.
 	if m.Spec.AutoScalerProfile.BalanceSimilarNodeGroups == nil {
-		m.Spec.AutoScalerProfile.BalanceSimilarNodeGroups = (*BalanceSimilarNodeGroups)(to.StringPtr(string(BalanceSimilarNodeGroupsFalse)))
+		m.Spec.AutoScalerProfile.BalanceSimilarNodeGroups = (*BalanceSimilarNodeGroups)(pointer.String(string(BalanceSimilarNodeGroupsFalse)))
 	}
 	if m.Spec.AutoScalerProfile.Expander == nil {
-		m.Spec.AutoScalerProfile.Expander = (*Expander)(to.StringPtr(string(ExpanderRandom)))
+		m.Spec.AutoScalerProfile.Expander = (*Expander)(pointer.String(string(ExpanderRandom)))
 	}
 	if m.Spec.AutoScalerProfile.MaxEmptyBulkDelete == nil {
-		m.Spec.AutoScalerProfile.MaxEmptyBulkDelete = to.StringPtr("10")
+		m.Spec.AutoScalerProfile.MaxEmptyBulkDelete = pointer.String("10")
 	}
 	if m.Spec.AutoScalerProfile.MaxGracefulTerminationSec == nil {
-		m.Spec.AutoScalerProfile.MaxGracefulTerminationSec = to.StringPtr("600")
+		m.Spec.AutoScalerProfile.MaxGracefulTerminationSec = pointer.String("600")
 	}
 	if m.Spec.AutoScalerProfile.MaxNodeProvisionTime == nil {
-		m.Spec.AutoScalerProfile.MaxNodeProvisionTime = to.StringPtr("15m")
+		m.Spec.AutoScalerProfile.MaxNodeProvisionTime = pointer.String("15m")
 	}
 	if m.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage == nil {
-		m.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage = to.StringPtr("45")
+		m.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage = pointer.String("45")
 	}
 	if m.Spec.AutoScalerProfile.NewPodScaleUpDelay == nil {
-		m.Spec.AutoScalerProfile.NewPodScaleUpDelay = to.StringPtr("0s")
+		m.Spec.AutoScalerProfile.NewPodScaleUpDelay = pointer.String("0s")
 	}
 	if m.Spec.AutoScalerProfile.OkTotalUnreadyCount == nil {
-		m.Spec.AutoScalerProfile.OkTotalUnreadyCount = to.StringPtr("3")
+		m.Spec.AutoScalerProfile.OkTotalUnreadyCount = pointer.String("3")
 	}
 	if m.Spec.AutoScalerProfile.ScanInterval == nil {
-		m.Spec.AutoScalerProfile.ScanInterval = to.StringPtr("10s")
+		m.Spec.AutoScalerProfile.ScanInterval = pointer.String("10s")
 	}
 	if m.Spec.AutoScalerProfile.ScaleDownDelayAfterAdd == nil {
-		m.Spec.AutoScalerProfile.ScaleDownDelayAfterAdd = to.StringPtr("10m")
+		m.Spec.AutoScalerProfile.ScaleDownDelayAfterAdd = pointer.String("10m")
 	}
 	if m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete == nil {
 		// Default is the same as the ScanInterval so default to that same value if it isn't set
 		m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete = m.Spec.AutoScalerProfile.ScanInterval
 	}
 	if m.Spec.AutoScalerProfile.ScaleDownDelayAfterFailure == nil {
-		m.Spec.AutoScalerProfile.ScaleDownDelayAfterFailure = to.StringPtr("3m")
+		m.Spec.AutoScalerProfile.ScaleDownDelayAfterFailure = pointer.String("3m")
 	}
 	if m.Spec.AutoScalerProfile.ScaleDownUnneededTime == nil {
-		m.Spec.AutoScalerProfile.ScaleDownUnneededTime = to.StringPtr("10m")
+		m.Spec.AutoScalerProfile.ScaleDownUnneededTime = pointer.String("10m")
 	}
 	if m.Spec.AutoScalerProfile.ScaleDownUnreadyTime == nil {
-		m.Spec.AutoScalerProfile.ScaleDownUnreadyTime = to.StringPtr("20m")
+		m.Spec.AutoScalerProfile.ScaleDownUnreadyTime = pointer.String("20m")
 	}
 	if m.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold == nil {
-		m.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold = to.StringPtr("0.5")
+		m.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold = pointer.String("0.5")
 	}
 	if m.Spec.AutoScalerProfile.SkipNodesWithLocalStorage == nil {
-		m.Spec.AutoScalerProfile.SkipNodesWithLocalStorage = (*SkipNodesWithLocalStorage)(to.StringPtr(string(SkipNodesWithLocalStorageFalse)))
+		m.Spec.AutoScalerProfile.SkipNodesWithLocalStorage = (*SkipNodesWithLocalStorage)(pointer.String(string(SkipNodesWithLocalStorageFalse)))
 	}
 	if m.Spec.AutoScalerProfile.SkipNodesWithSystemPods == nil {
-		m.Spec.AutoScalerProfile.SkipNodesWithSystemPods = (*SkipNodesWithSystemPods)(to.StringPtr(string(SkipNodesWithSystemPodsTrue)))
+		m.Spec.AutoScalerProfile.SkipNodesWithSystemPods = (*SkipNodesWithSystemPods)(pointer.String(string(SkipNodesWithSystemPodsTrue)))
 	}
 }

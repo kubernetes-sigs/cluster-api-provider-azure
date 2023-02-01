@@ -18,16 +18,17 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // GetSubnetAddresses returns the address prefixes contained in a subnet.
 func GetSubnetAddresses(subnet network.Subnet) []string {
 	var addresses []string
 	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefix != nil {
-		addresses = []string{to.String(subnet.SubnetPropertiesFormat.AddressPrefix)}
+		addresses = []string{pointer.StringDeref(subnet.SubnetPropertiesFormat.AddressPrefix, "")}
 	} else if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
-		addresses = to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
+		addresses = azure.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
 	}
 	return addresses
 }

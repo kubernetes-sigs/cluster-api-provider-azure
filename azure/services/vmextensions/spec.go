@@ -20,8 +20,8 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -61,12 +61,12 @@ func (s *VMExtensionSpec) Parameters(ctx context.Context, existing interface{}) 
 
 	return compute.VirtualMachineExtension{
 		VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
-			Publisher:          to.StringPtr(s.Publisher),
-			Type:               to.StringPtr(s.Name),
-			TypeHandlerVersion: to.StringPtr(s.Version),
+			Publisher:          pointer.String(s.Publisher),
+			Type:               pointer.String(s.Name),
+			TypeHandlerVersion: pointer.String(s.Version),
 			Settings:           s.Settings,
 			ProtectedSettings:  s.ProtectedSettings,
 		},
-		Location: to.StringPtr(s.Location),
+		Location: pointer.String(s.Location),
 	}, nil
 }

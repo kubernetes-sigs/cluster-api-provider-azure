@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -57,13 +57,13 @@ func (s *GroupSpec) Parameters(ctx context.Context, existing interface{}) (param
 		return nil, nil
 	}
 	return resources.Group{
-		Location: to.StringPtr(s.Location),
+		Location: pointer.String(s.Location),
 		// User defined additional tags are created with the resource group and updated using tags service.
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.Name),
-			Role:        to.StringPtr(infrav1.CommonRole),
+			Name:        pointer.String(s.Name),
+			Role:        pointer.String(infrav1.CommonRole),
 			Additional:  s.AdditionalTags,
 		})),
 	}, nil

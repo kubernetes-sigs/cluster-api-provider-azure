@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -168,39 +168,39 @@ func TestParameters(t *testing.T) {
 func newDefaultNodeOutboundLB() network.LoadBalancer {
 	return network.LoadBalancer{
 		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr(infrav1.NodeOutboundRole),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+			"sigs.k8s.io_cluster-api-provider-azure_role":               pointer.String(infrav1.NodeOutboundRole),
 		},
 		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
-		Location: to.StringPtr("my-location"),
+		Location: pointer.String("my-location"),
 		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
 			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
 				{
-					Name: to.StringPtr("my-cluster-frontEnd"),
+					Name: pointer.String("my-cluster-frontEnd"),
 					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-						PublicIPAddress: &network.PublicIPAddress{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/outbound-publicip")},
+						PublicIPAddress: &network.PublicIPAddress{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/outbound-publicip")},
 					},
 				},
 			},
 			BackendAddressPools: &[]network.BackendAddressPool{
 				{
-					Name: to.StringPtr("my-cluster-outboundBackendPool"),
+					Name: pointer.String("my-cluster-outboundBackendPool"),
 				},
 			},
 			LoadBalancingRules: &[]network.LoadBalancingRule{},
 			Probes:             &[]network.Probe{},
 			OutboundRules: &[]network.OutboundRule{
 				{
-					Name: to.StringPtr("OutboundNATAllProtocols"),
+					Name: pointer.String("OutboundNATAllProtocols"),
 					OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
 						FrontendIPConfigurations: &[]network.SubResource{
-							{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-cluster/frontendIPConfigurations/my-cluster-frontEnd")},
+							{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-cluster/frontendIPConfigurations/my-cluster-frontEnd")},
 						},
 						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-cluster/backendAddressPools/my-cluster-outboundBackendPool"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-cluster/backendAddressPools/my-cluster-outboundBackendPool"),
 						},
 						Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
-						IdleTimeoutInMinutes: to.Int32Ptr(30),
+						IdleTimeoutInMinutes: pointer.Int32(30),
 					},
 				},
 			},
@@ -211,96 +211,96 @@ func newDefaultNodeOutboundLB() network.LoadBalancer {
 func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools bool, verifyLBRules bool, verifyProbes bool, verifyOutboundRules bool) network.LoadBalancer {
 	var subnet *network.Subnet
 	var backendAddressPoolProps *network.BackendAddressPoolPropertiesFormat
-	enableFloatingIP := to.BoolPtr(false)
-	numProbes := to.Int32Ptr(4)
-	idleTimeout := to.Int32Ptr(4)
+	enableFloatingIP := pointer.Bool(false)
+	numProbes := pointer.Int32(4)
+	idleTimeout := pointer.Int32(4)
 
 	if verifyFrontendIP {
 		subnet = &network.Subnet{
-			Name: to.StringPtr("fake-test-subnet"),
+			Name: pointer.String("fake-test-subnet"),
 		}
 	}
 	if verifyBackendAddressPools {
 		backendAddressPoolProps = &network.BackendAddressPoolPropertiesFormat{
-			Location: to.StringPtr("fake-test-location"),
+			Location: pointer.String("fake-test-location"),
 		}
 	}
 	if verifyLBRules {
-		enableFloatingIP = to.BoolPtr(true)
+		enableFloatingIP = pointer.Bool(true)
 	}
 	if verifyProbes {
-		numProbes = to.Int32Ptr(999)
+		numProbes = pointer.Int32(999)
 	}
 	if verifyOutboundRules {
-		idleTimeout = to.Int32Ptr(1000)
+		idleTimeout = pointer.Int32(1000)
 	}
 
 	return network.LoadBalancer{
 		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr(infrav1.APIServerRole),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+			"sigs.k8s.io_cluster-api-provider-azure_role":               pointer.String(infrav1.APIServerRole),
 		},
 		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
-		Location: to.StringPtr("my-location"),
+		Location: pointer.String("my-location"),
 		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
 			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
 				{
-					Name: to.StringPtr("my-publiclb-frontEnd"),
+					Name: pointer.String("my-publiclb-frontEnd"),
 					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-						PublicIPAddress: &network.PublicIPAddress{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/my-publicip")},
+						PublicIPAddress: &network.PublicIPAddress{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/my-publicip")},
 						Subnet:          subnet, // Add to verify that FrontendIPConfigurations aren't overwritten on update
 					},
 				},
 			},
 			BackendAddressPools: &[]network.BackendAddressPool{
 				{
-					Name:                               to.StringPtr("my-publiclb-backendPool"),
+					Name:                               pointer.String("my-publiclb-backendPool"),
 					BackendAddressPoolPropertiesFormat: backendAddressPoolProps, // Add to verify that BackendAddressPools aren't overwritten on update
 				},
 			},
 			LoadBalancingRules: &[]network.LoadBalancingRule{
 				{
-					Name: to.StringPtr(lbRuleHTTPS),
+					Name: pointer.String(lbRuleHTTPS),
 					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-						DisableOutboundSnat:  to.BoolPtr(true),
+						DisableOutboundSnat:  pointer.Bool(true),
 						Protocol:             network.TransportProtocolTCP,
-						FrontendPort:         to.Int32Ptr(6443),
-						BackendPort:          to.Int32Ptr(6443),
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
+						FrontendPort:         pointer.Int32(6443),
+						BackendPort:          pointer.Int32(6443),
+						IdleTimeoutInMinutes: pointer.Int32(4),
 						EnableFloatingIP:     enableFloatingIP, // Add to verify that LoadBalancingRules aren't overwritten on update
 						LoadDistribution:     network.LoadDistributionDefault,
 						FrontendIPConfiguration: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/frontendIPConfigurations/my-publiclb-frontEnd"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/frontendIPConfigurations/my-publiclb-frontEnd"),
 						},
 						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
 						},
 						Probe: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/probes/TCPProbe"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/probes/TCPProbe"),
 						},
 					},
 				},
 			},
 			Probes: &[]network.Probe{
 				{
-					Name: to.StringPtr(tcpProbe),
+					Name: pointer.String(tcpProbe),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
 						Protocol:          network.ProbeProtocolTCP,
-						Port:              to.Int32Ptr(6443),
-						IntervalInSeconds: to.Int32Ptr(15),
+						Port:              pointer.Int32(6443),
+						IntervalInSeconds: pointer.Int32(15),
 						NumberOfProbes:    numProbes, // Add to verify that Probes aren't overwritten on update
 					},
 				},
 			},
 			OutboundRules: &[]network.OutboundRule{
 				{
-					Name: to.StringPtr("OutboundNATAllProtocols"),
+					Name: pointer.String("OutboundNATAllProtocols"),
 					OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
 						FrontendIPConfigurations: &[]network.SubResource{
-							{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/frontendIPConfigurations/my-publiclb-frontEnd")},
+							{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/frontendIPConfigurations/my-publiclb-frontEnd")},
 						},
 						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
 						},
 						Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
 						IdleTimeoutInMinutes: idleTimeout, // Add to verify that OutboundRules aren't overwritten on update
@@ -314,48 +314,48 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 func newDefaultInternalAPIServerLB() network.LoadBalancer {
 	return network.LoadBalancer{
 		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr(infrav1.APIServerRole),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+			"sigs.k8s.io_cluster-api-provider-azure_role":               pointer.String(infrav1.APIServerRole),
 		},
 		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
-		Location: to.StringPtr("my-location"),
+		Location: pointer.String("my-location"),
 		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
 			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
 				{
-					Name: to.StringPtr("my-private-lb-frontEnd"),
+					Name: pointer.String("my-private-lb-frontEnd"),
 					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
 						PrivateIPAllocationMethod: network.IPAllocationMethodStatic,
 						Subnet: &network.Subnet{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-cp-subnet"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-cp-subnet"),
 						},
-						PrivateIPAddress: to.StringPtr("10.0.0.10"),
+						PrivateIPAddress: pointer.String("10.0.0.10"),
 					},
 				},
 			},
 			BackendAddressPools: &[]network.BackendAddressPool{
 				{
-					Name: to.StringPtr("my-private-lb-backendPool"),
+					Name: pointer.String("my-private-lb-backendPool"),
 				},
 			},
 			LoadBalancingRules: &[]network.LoadBalancingRule{
 				{
-					Name: to.StringPtr(lbRuleHTTPS),
+					Name: pointer.String(lbRuleHTTPS),
 					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-						DisableOutboundSnat:  to.BoolPtr(true),
+						DisableOutboundSnat:  pointer.Bool(true),
 						Protocol:             network.TransportProtocolTCP,
-						FrontendPort:         to.Int32Ptr(6443),
-						BackendPort:          to.Int32Ptr(6443),
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
-						EnableFloatingIP:     to.BoolPtr(false),
+						FrontendPort:         pointer.Int32(6443),
+						BackendPort:          pointer.Int32(6443),
+						IdleTimeoutInMinutes: pointer.Int32(4),
+						EnableFloatingIP:     pointer.Bool(false),
 						LoadDistribution:     network.LoadDistributionDefault,
 						FrontendIPConfiguration: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/frontendIPConfigurations/my-private-lb-frontEnd"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/frontendIPConfigurations/my-private-lb-frontEnd"),
 						},
 						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/backendAddressPools/my-private-lb-backendPool"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/backendAddressPools/my-private-lb-backendPool"),
 						},
 						Probe: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/probes/TCPProbe"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/probes/TCPProbe"),
 						},
 					},
 				},
@@ -363,12 +363,12 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 			OutboundRules: &[]network.OutboundRule{},
 			Probes: &[]network.Probe{
 				{
-					Name: to.StringPtr(tcpProbe),
+					Name: pointer.String(tcpProbe),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
 						Protocol:          network.ProbeProtocolTCP,
-						Port:              to.Int32Ptr(6443),
-						IntervalInSeconds: to.Int32Ptr(15),
-						NumberOfProbes:    to.Int32Ptr(4),
+						Port:              pointer.Int32(6443),
+						IntervalInSeconds: pointer.Int32(15),
+						NumberOfProbes:    pointer.Int32(4),
 					},
 				},
 			},

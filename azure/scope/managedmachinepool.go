@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -155,7 +155,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 	}
 
 	agentPoolSpec := &agentpools.AgentPoolSpec{
-		Name:          to.String(managedMachinePool.Spec.Name),
+		Name:          pointer.StringDeref(managedMachinePool.Spec.Name, ""),
 		ResourceGroup: managedControlPlane.Spec.ResourceGroupName,
 		Cluster:       managedControlPlane.Name,
 		SKU:           managedMachinePool.Spec.SKU,
@@ -194,7 +194,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 	}
 
 	if managedMachinePool.Spec.Scaling != nil {
-		agentPoolSpec.EnableAutoScaling = to.BoolPtr(true)
+		agentPoolSpec.EnableAutoScaling = pointer.Bool(true)
 		agentPoolSpec.MaxCount = managedMachinePool.Spec.Scaling.MaxSize
 		agentPoolSpec.MinCount = managedMachinePool.Spec.Scaling.MinSize
 	}
@@ -202,7 +202,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 	if len(managedMachinePool.Spec.NodeLabels) > 0 {
 		agentPoolSpec.NodeLabels = make(map[string]*string, len(managedMachinePool.Spec.NodeLabels))
 		for k, v := range managedMachinePool.Spec.NodeLabels {
-			agentPoolSpec.NodeLabels[k] = to.StringPtr(v)
+			agentPoolSpec.NodeLabels[k] = pointer.String(v)
 		}
 	}
 

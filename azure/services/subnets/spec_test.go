@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -43,10 +43,10 @@ var (
 
 	fakeSubnetOneCidrParams = network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-			AddressPrefix:        to.StringPtr("10.0.0.0/16"),
-			RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
-			NetworkSecurityGroup: &network.SecurityGroup{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
-			NatGateway:           &network.SubResource{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
+			AddressPrefix:        pointer.String("10.0.0.0/16"),
+			RouteTable:           &network.RouteTable{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+			NetworkSecurityGroup: &network.SecurityGroup{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
+			NatGateway:           &network.SubResource{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
 			ServiceEndpoints:     &[]network.ServiceEndpointPropertiesFormat{},
 		},
 	}
@@ -72,9 +72,9 @@ var (
 				"10.1.0.0/16",
 				"10.2.0.0/16",
 			},
-			RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
-			NetworkSecurityGroup: &network.SecurityGroup{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
-			NatGateway:           &network.SubResource{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
+			RouteTable:           &network.RouteTable{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+			NetworkSecurityGroup: &network.SecurityGroup{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
+			NatGateway:           &network.SubResource{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
 			ServiceEndpoints:     &[]network.ServiceEndpointPropertiesFormat{},
 		},
 	}
@@ -93,15 +93,15 @@ var (
 	}
 
 	fakeIpv6SubnetNotManaged = network.Subnet{
-		ID:   to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-ipv6-subnet"),
-		Name: to.StringPtr("my-ipv6-subnet"),
+		ID:   pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-ipv6-subnet"),
+		Name: pointer.String("my-ipv6-subnet"),
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 			AddressPrefixes: &[]string{
 				"10.0.0.0/16",
 				"2001:1234:5678:9abd::/64",
 			},
-			RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
-			NetworkSecurityGroup: &network.SecurityGroup{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
+			RouteTable:           &network.RouteTable{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+			NetworkSecurityGroup: &network.SecurityGroup{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
 		},
 	}
 )

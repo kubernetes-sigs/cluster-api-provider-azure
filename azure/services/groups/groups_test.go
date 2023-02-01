@@ -23,9 +23,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups/mock_groups"
@@ -42,16 +42,16 @@ var (
 	internalError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 	notFoundError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not Found")
 	sampleManagedGroup = resources.Group{
-		Name:       to.StringPtr("test-group"),
-		Location:   to.StringPtr("test-location"),
+		Name:       pointer.String("test-group"),
+		Location:   pointer.String("test-location"),
 		Properties: &resources.GroupProperties{},
-		Tags:       map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned")},
+		Tags:       map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned")},
 	}
 	sampleBYOGroup = resources.Group{
-		Name:       to.StringPtr("test-group"),
-		Location:   to.StringPtr("test-location"),
+		Name:       pointer.String("test-group"),
+		Location:   pointer.String("test-location"),
 		Properties: &resources.GroupProperties{},
-		Tags:       map[string]*string{"foo": to.StringPtr("bar")},
+		Tags:       map[string]*string{"foo": pointer.String("bar")},
 	}
 )
 

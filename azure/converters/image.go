@@ -20,8 +20,8 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -57,7 +57,7 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	idTemplate := "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s"
 	if image.SharedGallery != nil {
 		return &compute.ImageReference{
-			ID: to.StringPtr(fmt.Sprintf(idTemplate,
+			ID: pointer.String(fmt.Sprintf(idTemplate,
 				image.SharedGallery.SubscriptionID,
 				image.SharedGallery.ResourceGroup,
 				image.SharedGallery.Gallery,
@@ -71,9 +71,9 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	// If they are not, we assume use of community gallery.
 	if image.ComputeGallery.ResourceGroup != nil && image.ComputeGallery.SubscriptionID != nil {
 		return &compute.ImageReference{
-			ID: to.StringPtr(fmt.Sprintf(idTemplate,
-				to.String(image.ComputeGallery.SubscriptionID),
-				to.String(image.ComputeGallery.ResourceGroup),
+			ID: pointer.String(fmt.Sprintf(idTemplate,
+				pointer.StringDeref(image.ComputeGallery.SubscriptionID, ""),
+				pointer.StringDeref(image.ComputeGallery.ResourceGroup, ""),
 				image.ComputeGallery.Gallery,
 				image.ComputeGallery.Name,
 				image.ComputeGallery.Version,
@@ -82,7 +82,7 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	}
 
 	return &compute.ImageReference{
-		CommunityGalleryImageID: to.StringPtr(fmt.Sprintf("/CommunityGalleries/%s/Images/%s/Versions/%s",
+		CommunityGalleryImageID: pointer.String(fmt.Sprintf("/CommunityGalleries/%s/Images/%s/Versions/%s",
 			image.ComputeGallery.Gallery,
 			image.ComputeGallery.Name,
 			image.ComputeGallery.Version)),
@@ -109,18 +109,18 @@ func ImageToPlan(image *infrav1.Image) *compute.Plan {
 	// Plan is needed for third party Marketplace images.
 	if image.Marketplace != nil && image.Marketplace.ThirdPartyImage {
 		return &compute.Plan{
-			Publisher: to.StringPtr(image.Marketplace.Publisher),
-			Name:      to.StringPtr(image.Marketplace.SKU),
-			Product:   to.StringPtr(image.Marketplace.Offer),
+			Publisher: pointer.String(image.Marketplace.Publisher),
+			Name:      pointer.String(image.Marketplace.SKU),
+			Product:   pointer.String(image.Marketplace.Offer),
 		}
 	}
 
 	// Plan is needed when using a Azure Compute Gallery image with Plan details.
 	if image.ComputeGallery != nil && image.ComputeGallery.Plan != nil {
 		return &compute.Plan{
-			Publisher: to.StringPtr(image.ComputeGallery.Plan.Publisher),
-			Name:      to.StringPtr(image.ComputeGallery.Plan.SKU),
-			Product:   to.StringPtr(image.ComputeGallery.Plan.Offer),
+			Publisher: pointer.String(image.ComputeGallery.Plan.Publisher),
+			Name:      pointer.String(image.ComputeGallery.Plan.SKU),
+			Product:   pointer.String(image.ComputeGallery.Plan.Offer),
 		}
 	}
 

@@ -18,22 +18,22 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // SecurityRuleToSDK converts a CAPZ security rule to an Azure network security rule.
 func SecurityRuleToSDK(rule infrav1.SecurityRule) network.SecurityRule {
 	secRule := network.SecurityRule{
-		Name: to.StringPtr(rule.Name),
+		Name: pointer.String(rule.Name),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Description:              to.StringPtr(rule.Description),
+			Description:              pointer.String(rule.Description),
 			SourceAddressPrefix:      rule.Source,
 			SourcePortRange:          rule.SourcePorts,
 			DestinationAddressPrefix: rule.Destination,
 			DestinationPortRange:     rule.DestinationPorts,
 			Access:                   network.SecurityRuleAccessAllow,
-			Priority:                 to.Int32Ptr(rule.Priority),
+			Priority:                 pointer.Int32(rule.Priority),
 		},
 	}
 

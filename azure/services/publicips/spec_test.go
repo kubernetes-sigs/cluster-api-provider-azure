@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -51,59 +51,59 @@ var (
 	}
 
 	fakePublicIPWithDNS = network.PublicIPAddress{
-		Name:     to.StringPtr("my-publicip"),
+		Name:     pointer.String("my-publicip"),
 		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Location: to.StringPtr("centralIndia"),
+		Location: pointer.String("centralIndia"),
 		Tags: map[string]*string{
-			"Name": to.StringPtr("my-publicip"),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"foo": to.StringPtr("bar"),
+			"Name": pointer.String("my-publicip"),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+			"foo": pointer.String("bar"),
 		},
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   network.IPVersionIPv4,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 			DNSSettings: &network.PublicIPAddressDNSSettings{
-				DomainNameLabel: to.StringPtr("fakedns"),
-				Fqdn:            to.StringPtr("fakedns.mydomain.io"),
+				DomainNameLabel: pointer.String("fakedns"),
+				Fqdn:            pointer.String("fakedns.mydomain.io"),
 			},
 		},
-		Zones: to.StringSlicePtr([]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"}),
+		Zones: &[]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
 	}
 
 	fakePublicIPWithoutDNS = network.PublicIPAddress{
-		Name:     to.StringPtr("my-publicip-2"),
+		Name:     pointer.String("my-publicip-2"),
 		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Location: to.StringPtr("centralIndia"),
+		Location: pointer.String("centralIndia"),
 		Tags: map[string]*string{
-			"Name": to.StringPtr("my-publicip-2"),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"foo": to.StringPtr("bar"),
+			"Name": pointer.String("my-publicip-2"),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+			"foo": pointer.String("bar"),
 		},
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   network.IPVersionIPv4,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 		},
-		Zones: to.StringSlicePtr([]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"}),
+		Zones: &[]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
 	}
 
 	fakePublicIPIpv6 = network.PublicIPAddress{
-		Name:     to.StringPtr("my-publicip-ipv6"),
+		Name:     pointer.String("my-publicip-ipv6"),
 		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Location: to.StringPtr("centralIndia"),
+		Location: pointer.String("centralIndia"),
 		Tags: map[string]*string{
-			"Name": to.StringPtr("my-publicip-ipv6"),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-			"foo": to.StringPtr("bar"),
+			"Name": pointer.String("my-publicip-ipv6"),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+			"foo": pointer.String("bar"),
 		},
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   network.IPVersionIPv6,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 			DNSSettings: &network.PublicIPAddressDNSSettings{
-				DomainNameLabel: to.StringPtr("fakename"),
-				Fqdn:            to.StringPtr("fakename.mydomain.io"),
+				DomainNameLabel: pointer.String("fakename"),
+				Fqdn:            pointer.String("fakename.mydomain.io"),
 			},
 		},
-		Zones: to.StringSlicePtr([]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"}),
+		Zones: &[]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
 	}
 )
 

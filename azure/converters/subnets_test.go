@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 )
 
 func TestGetSubnetAddresses(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGetSubnetAddresses(t *testing.T) {
 			name: "subnet with single address prefix",
 			subnet: network.Subnet{
 				SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-					AddressPrefix: to.StringPtr("test-address-prefix"),
+					AddressPrefix: pointer.String("test-address-prefix"),
 				},
 			},
 			want: []string{"test-address-prefix"},

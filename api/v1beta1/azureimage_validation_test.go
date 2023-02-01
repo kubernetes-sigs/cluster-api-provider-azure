@@ -19,9 +19,9 @@ package v1beta1
 import (
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 )
 
 func TestImageOptional(t *testing.T) {
@@ -74,15 +74,15 @@ func TestComputeImageGalleryValid(t *testing.T) {
 		},
 		"AzureComputeGalleryImage - fully specified private image": {
 			expectedErrors: 0,
-			image:          createTestComputeImage(to.StringPtr("SUB1234"), to.StringPtr("RG1234")),
+			image:          createTestComputeImage(pointer.String("SUB1234"), pointer.String("RG1234")),
 		},
 		"AzureComputeGalleryImage - private image with missing subscription": {
 			expectedErrors: 1,
-			image:          createTestComputeImage(nil, to.StringPtr("RG1234")),
+			image:          createTestComputeImage(nil, pointer.String("RG1234")),
 		},
 		"AzureComputeGalleryImage - private image with missing resource group": {
 			expectedErrors: 1,
-			image:          createTestComputeImage(to.StringPtr("SUB1234"), nil),
+			image:          createTestComputeImage(pointer.String("SUB1234"), nil),
 		},
 	}
 

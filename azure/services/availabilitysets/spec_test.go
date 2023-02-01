@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 )
 
@@ -69,7 +69,7 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.AvailabilitySet{}))
-				g.Expect(result.(compute.AvailabilitySet).PlatformFaultDomainCount).To(Equal(to.Int32Ptr(int32(fakeFaultDomainCount))))
+				g.Expect(result.(compute.AvailabilitySet).PlatformFaultDomainCount).To(Equal(pointer.Int32(int32(fakeFaultDomainCount))))
 			},
 			expectedError: "",
 		},

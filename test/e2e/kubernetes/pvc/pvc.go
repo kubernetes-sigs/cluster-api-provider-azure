@@ -24,12 +24,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/pointer"
 )
 
 const (
@@ -105,7 +105,7 @@ func (b *Builder) WithAnnotations(annotations map[string]string) *Builder {
 }
 
 func (b *Builder) WithStorageClass(scName string) *Builder {
-	b.pvc.Spec.StorageClassName = to.StringPtr(scName)
+	b.pvc.Spec.StorageClassName = pointer.String(scName)
 	return b
 }
 

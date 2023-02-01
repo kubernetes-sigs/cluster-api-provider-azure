@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -181,7 +181,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					SKU:          "Standard_D2s_v3",
 					Mode:         "System",
 					Replicas:     1,
-					Version:      to.StringPtr("1.21.1"),
+					Version:      pointer.String("1.21.1"),
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 					Headers:      map[string]string{},
@@ -397,7 +397,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 					Replicas:     1,
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-					OSType:       to.StringPtr(azure.LinuxOS),
+					OSType:       pointer.String(azure.LinuxOS),
 					Headers:      map[string]string{},
 				},
 				&agentpools.AgentPoolSpec{
@@ -407,7 +407,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 					Replicas:     1,
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-					OSType:       to.StringPtr(azure.WindowsOS),
+					OSType:       pointer.String(azure.WindowsOS),
 					Headers:      map[string]string{},
 				},
 			},
@@ -545,7 +545,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 					},
 				},
 				Cache: &ManagedControlPlaneCache{
-					isVnetManaged: to.BoolPtr(true),
+					isVnetManaged: pointer.Bool(true),
 				},
 			},
 			Expected: true,
@@ -583,7 +583,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 					},
 				},
 				Cache: &ManagedControlPlaneCache{
-					isVnetManaged: to.BoolPtr(false),
+					isVnetManaged: pointer.Bool(false),
 				},
 			},
 			Expected: false,

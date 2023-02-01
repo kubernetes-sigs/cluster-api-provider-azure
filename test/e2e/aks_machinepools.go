@@ -23,10 +23,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -46,7 +46,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 
 	originalReplicas := map[types.NamespacedName]int32{}
 	for _, mp := range input.MachinePools {
-		originalReplicas[client.ObjectKeyFromObject(mp)] = to.Int32(mp.Spec.Replicas)
+		originalReplicas[client.ObjectKeyFromObject(mp)] = pointer.Int32Deref(mp.Spec.Replicas, 0)
 	}
 
 	By("Scaling the machine pools out")
@@ -58,7 +58,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
 				ClusterProxy:              bootstrapClusterProxy,
 				Cluster:                   input.Cluster,
-				Replicas:                  to.Int32(mp.Spec.Replicas) + 1,
+				Replicas:                  pointer.Int32Deref(mp.Spec.Replicas, 0) + 1,
 				MachinePools:              []*expv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
@@ -75,7 +75,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
 				ClusterProxy:              bootstrapClusterProxy,
 				Cluster:                   input.Cluster,
-				Replicas:                  to.Int32(mp.Spec.Replicas) - 1,
+				Replicas:                  pointer.Int32Deref(mp.Spec.Replicas, 0) - 1,
 				MachinePools:              []*expv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})

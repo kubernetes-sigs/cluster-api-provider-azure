@@ -19,12 +19,12 @@ package controllers
 import (
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -94,7 +94,7 @@ func newMachinePool(clusterName, poolName string) *expv1.MachinePool {
 			Namespace: "default",
 		},
 		Spec: expv1.MachinePoolSpec{
-			Replicas: to.Int32Ptr(2),
+			Replicas: pointer.Int32(2),
 		},
 	}
 }

@@ -25,11 +25,11 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -326,7 +326,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
-							FrontendIPsCount: to.Int32Ptr(0),
+							FrontendIPsCount: pointer.Int32(0),
 						},
 						APIServerLB: infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
@@ -370,7 +370,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
-							FrontendIPsCount: to.Int32Ptr(1),
+							FrontendIPsCount: pointer.Int32(1),
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "my-frontend-ip",
@@ -437,7 +437,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
-							FrontendIPsCount: to.Int32Ptr(3),
+							FrontendIPsCount: pointer.Int32(3),
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "my-frontend-ip-1",
@@ -1497,7 +1497,7 @@ func TestIsVnetManaged(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{},
 				},
 				cache: &ClusterCache{
-					isVnetManaged: to.BoolPtr(false),
+					isVnetManaged: pointer.Bool(false),
 				},
 			},
 			want: false,
@@ -1509,7 +1509,7 @@ func TestIsVnetManaged(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{},
 				},
 				cache: &ClusterCache{
-					isVnetManaged: to.BoolPtr(true),
+					isVnetManaged: pointer.Bool(true),
 				},
 			},
 			want: true,
@@ -1524,8 +1524,8 @@ func TestIsVnetManaged(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("IsVnetManaged() = \n%t, want \n%t", got, tt.want)
 			}
-			if to.Bool(tt.clusterScope.cache.isVnetManaged) != got {
-				t.Errorf("IsVnetManaged() = \n%t, cache = \n%t", got, to.Bool(tt.clusterScope.cache.isVnetManaged))
+			if pointer.BoolDeref(tt.clusterScope.cache.isVnetManaged, false) != got {
+				t.Errorf("IsVnetManaged() = \n%t, cache = \n%t", got, pointer.BoolDeref(tt.clusterScope.cache.isVnetManaged, false))
 			}
 		})
 	}
@@ -2534,7 +2534,7 @@ func TestAPIServerPort(t *testing.T) {
 			name:        "Non nil cluster network and non nil apiserverport",
 			clusterName: "my-cluster",
 			clusterNetowrk: &clusterv1.ClusterNetwork{
-				APIServerPort: to.Int32Ptr(7000),
+				APIServerPort: pointer.Int32(7000),
 			},
 			expectAPIServerPort: 7000,
 		},

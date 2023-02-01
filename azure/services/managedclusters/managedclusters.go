@@ -20,9 +20,9 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
@@ -87,7 +87,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 		// Update control plane endpoint.
 		endpoint := clusterv1.APIEndpoint{
-			Host: to.String(managedCluster.ManagedClusterProperties.Fqdn),
+			Host: pointer.StringDeref(managedCluster.ManagedClusterProperties.Fqdn, ""),
 			Port: 443,
 		}
 		s.Scope.SetControlPlaneEndpoint(endpoint)

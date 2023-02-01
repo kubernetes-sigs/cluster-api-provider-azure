@@ -35,7 +35,6 @@ import (
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -44,6 +43,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kubectl/pkg/describe"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -263,7 +263,7 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 			return
 		}
 		event := itr.Value()
-		if to.String(event.Category.Value) != "Policy" {
+		if pointer.StringDeref(event.Category.Value, "") != "Policy" {
 			b, err := json.MarshalIndent(myEventData(event), "", "    ")
 			if err != nil {
 				Logf("Got error converting activity logs data to json: %v", err)

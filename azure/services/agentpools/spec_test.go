@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -37,21 +37,21 @@ func fakeAgentPool(changes ...func(*AgentPoolSpec)) AgentPoolSpec {
 		ResourceGroup:     "fake-rg",
 		Cluster:           "fake-cluster",
 		AvailabilityZones: []string{"fake-zone"},
-		EnableAutoScaling: to.BoolPtr(true),
-		EnableUltraSSD:    to.BoolPtr(true),
-		KubeletDiskType:   (*infrav1.KubeletDiskType)(to.StringPtr("fake-kubelet-disk-type")),
-		MaxCount:          to.Int32Ptr(5),
-		MaxPods:           to.Int32Ptr(10),
-		MinCount:          to.Int32Ptr(1),
+		EnableAutoScaling: pointer.Bool(true),
+		EnableUltraSSD:    pointer.Bool(true),
+		KubeletDiskType:   (*infrav1.KubeletDiskType)(pointer.String("fake-kubelet-disk-type")),
+		MaxCount:          pointer.Int32(5),
+		MaxPods:           pointer.Int32(10),
+		MinCount:          pointer.Int32(1),
 		Mode:              "fake-mode",
-		NodeLabels:        map[string]*string{"fake-label": to.StringPtr("fake-value")},
+		NodeLabels:        map[string]*string{"fake-label": pointer.String("fake-value")},
 		NodeTaints:        []string{"fake-taint"},
 		OSDiskSizeGB:      2,
-		OsDiskType:        to.StringPtr("fake-os-disk-type"),
-		OSType:            to.StringPtr("fake-os-type"),
+		OsDiskType:        pointer.String("fake-os-disk-type"),
+		OSType:            pointer.String("fake-os-type"),
 		Replicas:          1,
 		SKU:               "fake-sku",
-		Version:           to.StringPtr("fake-version"),
+		Version:           pointer.String("fake-version"),
 		VnetSubnetID:      "fake-vnet-subnet-id",
 		Headers:           map[string]string{"fake-header": "fake-value"},
 		AdditionalTags:    infrav1.Tags{"fake": "tag"},
@@ -72,7 +72,7 @@ func withReplicas(replicas int32) func(*AgentPoolSpec) {
 
 func withAutoscaling(enabled bool) func(*AgentPoolSpec) {
 	return func(pool *AgentPoolSpec) {
-		pool.EnableAutoScaling = to.BoolPtr(enabled)
+		pool.EnableAutoScaling = pointer.Bool(enabled)
 	}
 }
 
@@ -80,24 +80,24 @@ func sdkFakeAgentPool(changes ...func(*containerservice.AgentPool)) containerser
 	pool := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			AvailabilityZones:   &[]string{"fake-zone"},
-			Count:               to.Int32Ptr(1),   // updates if changed
-			EnableAutoScaling:   to.BoolPtr(true), // updates if changed
-			EnableUltraSSD:      to.BoolPtr(true),
+			Count:               pointer.Int32(1),   // updates if changed
+			EnableAutoScaling:   pointer.Bool(true), // updates if changed
+			EnableUltraSSD:      pointer.Bool(true),
 			KubeletDiskType:     containerservice.KubeletDiskType("fake-kubelet-disk-type"),
-			MaxCount:            to.Int32Ptr(5), // updates if changed
-			MaxPods:             to.Int32Ptr(10),
-			MinCount:            to.Int32Ptr(1),                                               // updates if changed
-			Mode:                containerservice.AgentPoolMode("fake-mode"),                  // updates if changed
-			NodeLabels:          map[string]*string{"fake-label": to.StringPtr("fake-value")}, // updates if changed
-			NodeTaints:          &[]string{"fake-taint"},                                      // updates if changed
-			OrchestratorVersion: to.StringPtr("fake-version"),                                 // updates if changed
-			OsDiskSizeGB:        to.Int32Ptr(2),
+			MaxCount:            pointer.Int32(5), // updates if changed
+			MaxPods:             pointer.Int32(10),
+			MinCount:            pointer.Int32(1),                                               // updates if changed
+			Mode:                containerservice.AgentPoolMode("fake-mode"),                    // updates if changed
+			NodeLabels:          map[string]*string{"fake-label": pointer.String("fake-value")}, // updates if changed
+			NodeTaints:          &[]string{"fake-taint"},                                        // updates if changed
+			OrchestratorVersion: pointer.String("fake-version"),                                 // updates if changed
+			OsDiskSizeGB:        pointer.Int32(2),
 			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
 			OsType:              containerservice.OSType("fake-os-type"),
-			Tags:                map[string]*string{"fake": to.StringPtr("tag")},
+			Tags:                map[string]*string{"fake": pointer.String("tag")},
 			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-			VMSize:              to.StringPtr("fake-sku"),
-			VnetSubnetID:        to.StringPtr("fake-vnet-subnet-id"),
+			VMSize:              pointer.String("fake-sku"),
+			VnetSubnetID:        pointer.String("fake-vnet-subnet-id"),
 		},
 	}
 
@@ -110,19 +110,19 @@ func sdkFakeAgentPool(changes ...func(*containerservice.AgentPool)) containerser
 
 func sdkWithAutoscaling(enableAutoscaling bool) func(*containerservice.AgentPool) {
 	return func(pool *containerservice.AgentPool) {
-		pool.ManagedClusterAgentPoolProfileProperties.EnableAutoScaling = to.BoolPtr(enableAutoscaling)
+		pool.ManagedClusterAgentPoolProfileProperties.EnableAutoScaling = pointer.Bool(enableAutoscaling)
 	}
 }
 
 func sdkWithCount(count int32) func(*containerservice.AgentPool) {
 	return func(pool *containerservice.AgentPool) {
-		pool.ManagedClusterAgentPoolProfileProperties.Count = to.Int32Ptr(count)
+		pool.ManagedClusterAgentPoolProfileProperties.Count = pointer.Int32(count)
 	}
 }
 
 func sdkWithProvisioningState(state string) func(*containerservice.AgentPool) {
 	return func(pool *containerservice.AgentPool) {
-		pool.ManagedClusterAgentPoolProfileProperties.ProvisioningState = to.StringPtr(state)
+		pool.ManagedClusterAgentPoolProfileProperties.ProvisioningState = pointer.String(state)
 	}
 }
 
@@ -219,7 +219,7 @@ func TestParameters(t *testing.T) {
 			name: "parameters with an existing agent pool and update needed on max count",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) { pool.MaxCount = to.Int32Ptr(3) },
+				func(pool *containerservice.AgentPool) { pool.MaxCount = pointer.Int32(3) },
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      sdkFakeAgentPool(),
@@ -229,7 +229,7 @@ func TestParameters(t *testing.T) {
 			name: "parameters with an existing agent pool and update needed on min count",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) { pool.MinCount = to.Int32Ptr(3) },
+				func(pool *containerservice.AgentPool) { pool.MinCount = pointer.Int32(3) },
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      sdkFakeAgentPool(),
@@ -251,8 +251,8 @@ func TestParameters(t *testing.T) {
 			existing: sdkFakeAgentPool(
 				func(pool *containerservice.AgentPool) {
 					pool.NodeLabels = map[string]*string{
-						"fake-label":     to.StringPtr("fake-value"),
-						"fake-old-label": to.StringPtr("fake-old-value"),
+						"fake-label":     pointer.String("fake-value"),
+						"fake-old-label": pointer.String("fake-old-value"),
 					}
 				},
 				sdkWithProvisioningState("Succeeded"),
@@ -330,58 +330,58 @@ func TestMergeSystemNodeLabels(t *testing.T) {
 		{
 			name: "update an existing label",
 			capzLabels: map[string]*string{
-				"foo": to.StringPtr("bar"),
+				"foo": pointer.String("bar"),
 			},
 			aksLabels: map[string]*string{
-				"foo": to.StringPtr("baz"),
+				"foo": pointer.String("baz"),
 			},
 			expected: map[string]*string{
-				"foo": to.StringPtr("bar"),
+				"foo": pointer.String("bar"),
 			},
 		},
 		{
 			name:       "delete labels",
 			capzLabels: map[string]*string{},
 			aksLabels: map[string]*string{
-				"foo":   to.StringPtr("bar"),
-				"hello": to.StringPtr("world"),
+				"foo":   pointer.String("bar"),
+				"hello": pointer.String("world"),
 			},
 			expected: map[string]*string{},
 		},
 		{
 			name: "delete one label",
 			capzLabels: map[string]*string{
-				"foo": to.StringPtr("bar"),
+				"foo": pointer.String("bar"),
 			},
 			aksLabels: map[string]*string{
-				"foo":   to.StringPtr("bar"),
-				"hello": to.StringPtr("world"),
+				"foo":   pointer.String("bar"),
+				"hello": pointer.String("world"),
 			},
 			expected: map[string]*string{
-				"foo": to.StringPtr("bar"),
+				"foo": pointer.String("bar"),
 			},
 		},
 		{
 			name: "retain system label during update",
 			capzLabels: map[string]*string{
-				"foo": to.StringPtr("bar"),
+				"foo": pointer.String("bar"),
 			},
 			aksLabels: map[string]*string{
-				"kubernetes.azure.com/scalesetpriority": to.StringPtr("spot"),
+				"kubernetes.azure.com/scalesetpriority": pointer.String("spot"),
 			},
 			expected: map[string]*string{
-				"foo":                                   to.StringPtr("bar"),
-				"kubernetes.azure.com/scalesetpriority": to.StringPtr("spot"),
+				"foo":                                   pointer.String("bar"),
+				"kubernetes.azure.com/scalesetpriority": pointer.String("spot"),
 			},
 		},
 		{
 			name:       "retain system label during delete",
 			capzLabels: map[string]*string{},
 			aksLabels: map[string]*string{
-				"kubernetes.azure.com/scalesetpriority": to.StringPtr("spot"),
+				"kubernetes.azure.com/scalesetpriority": pointer.String("spot"),
 			},
 			expected: map[string]*string{
-				"kubernetes.azure.com/scalesetpriority": to.StringPtr("spot"),
+				"kubernetes.azure.com/scalesetpriority": pointer.String("spot"),
 			},
 		},
 	}

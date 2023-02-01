@@ -25,7 +25,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
@@ -37,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	utilfeature "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
@@ -1183,7 +1183,7 @@ func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1.Azu
 		Spec: infrav1.AzureManagedMachinePoolSpec{
 			Mode:         mode,
 			SKU:          "Standard_B2s",
-			OSDiskSizeGB: to.Int32Ptr(512),
+			OSDiskSizeGB: pointer.Int32(512),
 			KubeletConfig: &infrav1.KubeletConfig{
 				CPUManagerPolicy:      &cpuManagerPolicyStatic,
 				TopologyManagerPolicy: &topologyManagerPolicy,
@@ -1202,7 +1202,7 @@ func newMachinePool(clusterName, poolName string) *expv1.MachinePool {
 			Namespace: "default",
 		},
 		Spec: expv1.MachinePoolSpec{
-			Replicas: to.Int32Ptr(2),
+			Replicas: pointer.Int32(2),
 		},
 	}
 }

@@ -18,7 +18,7 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -29,19 +29,19 @@ func GetDiagnosticsProfile(diagnostics *infrav1.Diagnostics) *compute.Diagnostic
 		case infrav1.DisabledDiagnosticsStorage:
 			return &compute.DiagnosticsProfile{
 				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled: to.BoolPtr(false),
+					Enabled: pointer.Bool(false),
 				},
 			}
 		case infrav1.ManagedDiagnosticsStorage:
 			return &compute.DiagnosticsProfile{
 				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled: to.BoolPtr(true),
+					Enabled: pointer.Bool(true),
 				},
 			}
 		case infrav1.UserManagedDiagnosticsStorage:
 			return &compute.DiagnosticsProfile{
 				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled:    to.BoolPtr(true),
+					Enabled:    pointer.Bool(true),
 					StorageURI: &diagnostics.Boot.UserManaged.StorageAccountURI,
 				},
 			}

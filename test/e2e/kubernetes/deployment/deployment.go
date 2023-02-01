@@ -63,7 +63,7 @@ func Create(image, name, namespace string) *Builder {
 				Labels:    map[string]string{},
 			},
 			Spec: appsv1.DeploymentSpec{
-				Replicas: pointer.Int32Ptr(1),
+				Replicas: pointer.Int32(1),
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						"app": name,

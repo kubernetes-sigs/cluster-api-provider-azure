@@ -24,9 +24,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -44,19 +44,19 @@ var (
 		AdditionalTags: map[string]string{"foo": "bar"},
 	}
 	managedVnet = network.VirtualNetwork{
-		ID:   to.StringPtr("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
-		Name: to.StringPtr("test-vnet"),
+		ID:   pointer.String("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
+		Name: pointer.String("test-vnet"),
 		Tags: map[string]*string{
-			"foo": to.StringPtr("bar"),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+			"foo": pointer.String("bar"),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
 		},
 	}
 
 	managedTags = resources.TagsResource{
 		Properties: &resources.Tags{
 			Tags: map[string]*string{
-				"foo": to.StringPtr("bar"),
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+				"foo": pointer.String("bar"),
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
 			},
 		},
 	}
@@ -64,18 +64,18 @@ var (
 	unmanagedTags = resources.TagsResource{
 		Properties: &resources.Tags{
 			Tags: map[string]*string{
-				"foo":       to.StringPtr("bar"),
-				"something": to.StringPtr("else"),
+				"foo":       pointer.String("bar"),
+				"something": pointer.String("else"),
 			},
 		},
 	}
 
 	customVnet = network.VirtualNetwork{
-		ID:   to.StringPtr("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
-		Name: to.StringPtr("test-vnet"),
+		ID:   pointer.String("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
+		Name: pointer.String("test-vnet"),
 		Tags: map[string]*string{
-			"foo":       to.StringPtr("bar"),
-			"something": to.StringPtr("else"),
+			"foo":       pointer.String("bar"),
+			"something": pointer.String("else"),
 		},
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
@@ -83,13 +83,13 @@ var (
 			},
 			Subnets: &[]network.Subnet{
 				{
-					Name: to.StringPtr("test-subnet"),
+					Name: pointer.String("test-subnet"),
 					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-						AddressPrefix: to.StringPtr("subnet-cidr"),
+						AddressPrefix: pointer.String("subnet-cidr"),
 					},
 				},
 				{
-					Name: to.StringPtr("test-subnet-2"),
+					Name: pointer.String("test-subnet-2"),
 					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 						AddressPrefixes: &[]string{
 							"subnet-cidr-1",

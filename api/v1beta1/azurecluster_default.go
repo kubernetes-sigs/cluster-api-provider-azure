@@ -232,7 +232,7 @@ func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 	}
 
 	if lb.FrontendIPsCount == nil {
-		lb.FrontendIPsCount = pointer.Int32Ptr(1)
+		lb.FrontendIPsCount = pointer.Int32(1)
 	}
 
 	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
@@ -255,7 +255,7 @@ func (c *AzureCluster) SetControlPlaneOutboundLBDefaults() {
 		lb.Name = generateControlPlaneOutboundLBName(c.ObjectMeta.Name)
 	}
 	if lb.FrontendIPsCount == nil {
-		lb.FrontendIPsCount = pointer.Int32Ptr(1)
+		lb.FrontendIPsCount = pointer.Int32(1)
 	}
 	c.setOutboundLBFrontendIPs(lb, generateControlPlaneOutboundIPName)
 
@@ -322,7 +322,7 @@ func (lb *LoadBalancerClassSpec) setAPIServerLBDefaults() {
 		lb.SKU = SKUStandard
 	}
 	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+		lb.IdleTimeoutInMinutes = pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes)
 	}
 }
 
@@ -338,7 +338,7 @@ func (lb *LoadBalancerClassSpec) setOutboundLBDefaults() {
 	lb.Type = Public
 	lb.SKU = SKUStandard
 	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+		lb.IdleTimeoutInMinutes = pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes)
 	}
 }
 
@@ -357,7 +357,7 @@ func setControlPlaneOutboundLBDefaults(lb *LoadBalancerClassSpec, apiserverLBTyp
 	lb.SKU = SKUStandard
 
 	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+		lb.IdleTimeoutInMinutes = pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes)
 	}
 }
 

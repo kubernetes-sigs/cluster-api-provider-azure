@@ -18,7 +18,7 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -27,18 +27,18 @@ import (
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.
 func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) *azure.VMSS {
 	vmss := &azure.VMSS{
-		ID:    to.String(sdkvmss.ID),
-		Name:  to.String(sdkvmss.Name),
-		State: infrav1.ProvisioningState(to.String(sdkvmss.ProvisioningState)),
+		ID:    pointer.StringDeref(sdkvmss.ID, ""),
+		Name:  pointer.StringDeref(sdkvmss.Name, ""),
+		State: infrav1.ProvisioningState(pointer.StringDeref(sdkvmss.ProvisioningState, "")),
 	}
 
 	if sdkvmss.Sku != nil {
-		vmss.Sku = to.String(sdkvmss.Sku.Name)
-		vmss.Capacity = to.Int64(sdkvmss.Sku.Capacity)
+		vmss.Sku = pointer.StringDeref(sdkvmss.Sku.Name, "")
+		vmss.Capacity = pointer.Int64Deref(sdkvmss.Sku.Capacity, 0)
 	}
 
 	if sdkvmss.Zones != nil && len(*sdkvmss.Zones) > 0 {
-		vmss.Zones = to.StringSlice(sdkvmss.Zones)
+		vmss.Zones = azure.StringSlice(sdkvmss.Zones)
 	}
 
 	if len(sdkvmss.Tags) > 0 {
@@ -65,7 +65,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 // SDKVMToVMSSVM converts an Azure SDK VM to a VMSS VM.
 func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine) *azure.VMSSVM {
 	instance := azure.VMSSVM{
-		ID: to.String(sdkInstance.ID),
+		ID: pointer.StringDeref(sdkInstance.ID, ""),
 	}
 
 	if sdkInstance.VirtualMachineProperties == nil {
@@ -74,7 +74,7 @@ func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine) *azure.VMSSVM {
 
 	instance.State = infrav1.Creating
 	if sdkInstance.ProvisioningState != nil {
-		instance.State = infrav1.ProvisioningState(to.String(sdkInstance.ProvisioningState))
+		instance.State = infrav1.ProvisioningState(pointer.StringDeref(sdkInstance.ProvisioningState, ""))
 	}
 
 	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
@@ -88,7 +88,7 @@ func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine) *azure.VMSSVM {
 
 	if sdkInstance.Zones != nil && len(*sdkInstance.Zones) > 0 {
 		// An instance should have only 1 zone, so use the first item of the slice.
-		instance.AvailabilityZone = to.StringSlice(sdkInstance.Zones)[0]
+		instance.AvailabilityZone = azure.StringSlice(sdkInstance.Zones)[0]
 	}
 
 	return &instance
@@ -98,14 +98,14 @@ func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine) *azure.VMSSVM {
 func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 	// Convert resourceGroup Name ID ( ProviderID in capz objects )
 	var convertedID string
-	convertedID, err := azprovider.ConvertResourceGroupNameToLower(to.String(sdkInstance.ID))
+	convertedID, err := azprovider.ConvertResourceGroupNameToLower(pointer.StringDeref(sdkInstance.ID, ""))
 	if err != nil {
-		convertedID = to.String(sdkInstance.ID)
+		convertedID = pointer.StringDeref(sdkInstance.ID, "")
 	}
 
 	instance := azure.VMSSVM{
 		ID:         convertedID,
-		InstanceID: to.String(sdkInstance.InstanceID),
+		InstanceID: pointer.StringDeref(sdkInstance.InstanceID, ""),
 	}
 
 	if sdkInstance.VirtualMachineScaleSetVMProperties == nil {
@@ -114,7 +114,7 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 
 	instance.State = infrav1.Creating
 	if sdkInstance.ProvisioningState != nil {
-		instance.State = infrav1.ProvisioningState(to.String(sdkInstance.ProvisioningState))
+		instance.State = infrav1.ProvisioningState(pointer.StringDeref(sdkInstance.ProvisioningState, ""))
 	}
 
 	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
@@ -128,7 +128,7 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 
 	if sdkInstance.Zones != nil && len(*sdkInstance.Zones) > 0 {
 		// an instance should only have 1 zone, so we select the first item of the slice
-		instance.AvailabilityZone = to.StringSlice(sdkInstance.Zones)[0]
+		instance.AvailabilityZone = azure.StringSlice(sdkInstance.Zones)[0]
 	}
 
 	return &instance
@@ -140,11 +140,11 @@ func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool
 		ID: sdkImageRef.ID,
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			ImagePlan: infrav1.ImagePlan{
-				Publisher: to.String(sdkImageRef.Publisher),
-				Offer:     to.String(sdkImageRef.Offer),
-				SKU:       to.String(sdkImageRef.Sku),
+				Publisher: pointer.StringDeref(sdkImageRef.Publisher, ""),
+				Offer:     pointer.StringDeref(sdkImageRef.Offer, ""),
+				SKU:       pointer.StringDeref(sdkImageRef.Sku, ""),
 			},
-			Version:         to.String(sdkImageRef.Version),
+			Version:         pointer.StringDeref(sdkImageRef.Version, ""),
 			ThirdPartyImage: isThirdPartyImage,
 		},
 	}

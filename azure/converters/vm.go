@@ -18,9 +18,10 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // VM describes an Azure virtual machine.
@@ -48,9 +49,9 @@ type VM struct {
 // SDKToVM converts an Azure SDK VirtualMachine to the CAPZ VM type.
 func SDKToVM(v compute.VirtualMachine) *VM {
 	vm := &VM{
-		ID:    to.String(v.ID),
-		Name:  to.String(v.Name),
-		State: infrav1.ProvisioningState(to.String(v.ProvisioningState)),
+		ID:    pointer.StringDeref(v.ID, ""),
+		Name:  pointer.StringDeref(v.Name, ""),
+		State: infrav1.ProvisioningState(pointer.StringDeref(v.ProvisioningState, "")),
 	}
 
 	if v.VirtualMachineProperties != nil && v.VirtualMachineProperties.HardwareProfile != nil {
@@ -58,7 +59,7 @@ func SDKToVM(v compute.VirtualMachine) *VM {
 	}
 
 	if v.Zones != nil && len(*v.Zones) > 0 {
-		vm.AvailabilityZone = to.StringSlice(v.Zones)[0]
+		vm.AvailabilityZone = azure.StringSlice(v.Zones)[0]
 	}
 
 	if len(v.Tags) > 0 {

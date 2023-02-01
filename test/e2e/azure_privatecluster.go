@@ -33,7 +33,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -145,8 +144,8 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 			Namespace:                input.Namespace.Name,
 			ClusterName:              clusterName,
 			KubernetesVersion:        input.E2EConfig.GetVariable(capi_e2e.KubernetesVersion),
-			ControlPlaneMachineCount: pointer.Int64Ptr(3),
-			WorkerMachineCount:       pointer.Int64Ptr(1),
+			ControlPlaneMachineCount: pointer.Int64(3),
+			WorkerMachineCount:       pointer.Int64(1),
 		},
 		WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-private-cluster"),
 		WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane-ha"),
@@ -238,10 +237,10 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	By("creating a resource group")
 	groupName := os.Getenv(AzureResourceGroup)
 	_, err = groupClient.CreateOrUpdate(ctx, groupName, resources.Group{
-		Location: pointer.StringPtr(os.Getenv(AzureLocation)),
+		Location: pointer.String(os.Getenv(AzureLocation)),
 		Tags: map[string]*string{
-			"jobName":           pointer.StringPtr(os.Getenv(JobName)),
-			"creationTimestamp": pointer.StringPtr(os.Getenv(Timestamp)),
+			"jobName":           pointer.String(os.Getenv(JobName)),
+			"creationTimestamp": pointer.String(os.Getenv(Timestamp)),
 		},
 	})
 	Expect(err).To(BeNil())
@@ -250,36 +249,36 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	nsgName := "control-plane-nsg"
 	securityRules := []network.SecurityRule{
 		{
-			Name: pointer.StringPtr("allow_ssh"),
+			Name: pointer.String("allow_ssh"),
 			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-				Description:              pointer.StringPtr("Allow SSH"),
-				Priority:                 pointer.Int32Ptr(2200),
+				Description:              pointer.String("Allow SSH"),
+				Priority:                 pointer.Int32(2200),
 				Protocol:                 network.SecurityRuleProtocolTCP,
 				Access:                   network.SecurityRuleAccessAllow,
 				Direction:                network.SecurityRuleDirectionInbound,
-				SourceAddressPrefix:      pointer.StringPtr("*"),
-				SourcePortRange:          pointer.StringPtr("*"),
-				DestinationAddressPrefix: pointer.StringPtr("*"),
-				DestinationPortRange:     pointer.StringPtr("22"),
+				SourceAddressPrefix:      pointer.String("*"),
+				SourcePortRange:          pointer.String("*"),
+				DestinationAddressPrefix: pointer.String("*"),
+				DestinationPortRange:     pointer.String("22"),
 			},
 		},
 		{
-			Name: pointer.StringPtr("allow_apiserver"),
+			Name: pointer.String("allow_apiserver"),
 			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-				Description:              pointer.StringPtr("Allow API Server"),
-				SourcePortRange:          pointer.StringPtr("*"),
-				DestinationPortRange:     pointer.StringPtr("6443"),
-				SourceAddressPrefix:      pointer.StringPtr("*"),
-				DestinationAddressPrefix: pointer.StringPtr("*"),
+				Description:              pointer.String("Allow API Server"),
+				SourcePortRange:          pointer.String("*"),
+				DestinationPortRange:     pointer.String("6443"),
+				SourceAddressPrefix:      pointer.String("*"),
+				DestinationAddressPrefix: pointer.String("*"),
 				Protocol:                 network.SecurityRuleProtocolTCP,
 				Access:                   network.SecurityRuleAccessAllow,
 				Direction:                network.SecurityRuleDirectionInbound,
-				Priority:                 pointer.Int32Ptr(2201),
+				Priority:                 pointer.Int32(2201),
 			},
 		},
 	}
 	nsgFuture, err := nsgClient.CreateOrUpdate(ctx, groupName, nsgName, network.SecurityGroup{
-		Location: pointer.StringPtr(os.Getenv(AzureLocation)),
+		Location: pointer.String(os.Getenv(AzureLocation)),
 		SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 			SecurityRules: &securityRules,
 		},
@@ -292,7 +291,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	nsgNodeName := "node-nsg"
 	securityRulesNode := []network.SecurityRule{}
 	nsgNodeFuture, err := nsgClient.CreateOrUpdate(ctx, groupName, nsgNodeName, network.SecurityGroup{
-		Location: pointer.StringPtr(os.Getenv(AzureLocation)),
+		Location: pointer.String(os.Getenv(AzureLocation)),
 		SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 			SecurityRules: &securityRulesNode,
 		},
@@ -304,7 +303,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	By("creating a node routetable")
 	routeTableName := "node-routetable"
 	routeTable := network.RouteTable{
-		Location:                   pointer.StringPtr(os.Getenv(AzureLocation)),
+		Location:                   pointer.String(os.Getenv(AzureLocation)),
 		RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
 	}
 	routetableFuture, err := routetableClient.CreateOrUpdate(ctx, groupName, routeTableName, routeTable)
@@ -317,39 +316,39 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	for name, cidr := range cpSubnetCidrs {
 		subnets = append(subnets, network.Subnet{
 			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-				AddressPrefix: pointer.StringPtr(cidr),
+				AddressPrefix: pointer.String(cidr),
 				NetworkSecurityGroup: &network.SecurityGroup{
-					ID: pointer.StringPtr(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, groupName, nsgName)),
+					ID: pointer.String(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, groupName, nsgName)),
 				},
 			},
-			Name: pointer.StringPtr(name),
+			Name: pointer.String(name),
 		})
 	}
 	for name, cidr := range nodeSubnetCidrs {
 		subnets = append(subnets, network.Subnet{
 			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-				AddressPrefix: pointer.StringPtr(cidr),
+				AddressPrefix: pointer.String(cidr),
 				NetworkSecurityGroup: &network.SecurityGroup{
-					ID: pointer.StringPtr(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, groupName, nsgNodeName)),
+					ID: pointer.String(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, groupName, nsgNodeName)),
 				},
 				RouteTable: &network.RouteTable{
-					ID: pointer.StringPtr(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/routeTables/%s", subscriptionID, groupName, routeTableName)),
+					ID: pointer.String(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/routeTables/%s", subscriptionID, groupName, routeTableName)),
 				},
 			},
-			Name: pointer.StringPtr(name),
+			Name: pointer.String(name),
 		})
 	}
 
 	// Create the AzureBastion subnet.
 	subnets = append(subnets, network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-			AddressPrefix: pointer.StringPtr(bastionSubnetCidr),
+			AddressPrefix: pointer.String(bastionSubnetCidr),
 		},
-		Name: pointer.StringPtr(bastionSubnetName),
+		Name: pointer.String(bastionSubnetName),
 	})
 
 	vnetFuture, err := vnetClient.CreateOrUpdate(ctx, groupName, os.Getenv(AzureCustomVNetName), network.VirtualNetwork{
-		Location: pointer.StringPtr(os.Getenv(AzureLocation)),
+		Location: pointer.String(os.Getenv(AzureLocation)),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
 				AddressPrefixes: &[]string{vnetCidr},
@@ -389,7 +388,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 		resClient := resources.NewClient(subscriptionID)
 		resClient.Authorizer = authorizer
 		Eventually(func() ([]resources.GenericResourceExpanded, error) {
-			page, err := resClient.ListByResourceGroup(ctx, groupName, "", "provisioningState", to.Int32Ptr(10))
+			page, err := resClient.ListByResourceGroup(ctx, groupName, "", "provisioningState", pointer.Int32(10))
 			if err != nil {
 				return nil, err
 			}

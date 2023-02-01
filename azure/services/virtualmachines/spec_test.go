@@ -22,9 +22,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
@@ -33,83 +33,83 @@ import (
 
 var (
 	validSKU = resourceskus.SKU{
-		Name: to.StringPtr("Standard_D2v3"),
-		Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+		Name: pointer.String("Standard_D2v3"),
+		Kind: pointer.String(string(resourceskus.VirtualMachines)),
 		Locations: &[]string{
 			"test-location",
 		},
 		Capabilities: &[]compute.ResourceSkuCapabilities{
 			{
-				Name:  to.StringPtr(resourceskus.VCPUs),
-				Value: to.StringPtr("2"),
+				Name:  pointer.String(resourceskus.VCPUs),
+				Value: pointer.String("2"),
 			},
 			{
-				Name:  to.StringPtr(resourceskus.MemoryGB),
-				Value: to.StringPtr("4"),
+				Name:  pointer.String(resourceskus.MemoryGB),
+				Value: pointer.String("4"),
 			},
 		},
 	}
 
 	validSKUWithEncryptionAtHost = resourceskus.SKU{
-		Name: to.StringPtr("Standard_D2v3"),
-		Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+		Name: pointer.String("Standard_D2v3"),
+		Kind: pointer.String(string(resourceskus.VirtualMachines)),
 		Locations: &[]string{
 			"test-location",
 		},
 		Capabilities: &[]compute.ResourceSkuCapabilities{
 			{
-				Name:  to.StringPtr(resourceskus.VCPUs),
-				Value: to.StringPtr("2"),
+				Name:  pointer.String(resourceskus.VCPUs),
+				Value: pointer.String("2"),
 			},
 			{
-				Name:  to.StringPtr(resourceskus.MemoryGB),
-				Value: to.StringPtr("4"),
+				Name:  pointer.String(resourceskus.MemoryGB),
+				Value: pointer.String("4"),
 			},
 			{
-				Name:  to.StringPtr(resourceskus.EncryptionAtHost),
-				Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
+				Name:  pointer.String(resourceskus.EncryptionAtHost),
+				Value: pointer.String(string(resourceskus.CapabilitySupported)),
 			},
 		},
 	}
 
 	validSKUWithEphemeralOS = resourceskus.SKU{
-		Name: to.StringPtr("Standard_D2v3"),
-		Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+		Name: pointer.String("Standard_D2v3"),
+		Kind: pointer.String(string(resourceskus.VirtualMachines)),
 		Locations: &[]string{
 			"test-location",
 		},
 		Capabilities: &[]compute.ResourceSkuCapabilities{
 			{
-				Name:  to.StringPtr(resourceskus.VCPUs),
-				Value: to.StringPtr("2"),
+				Name:  pointer.String(resourceskus.VCPUs),
+				Value: pointer.String("2"),
 			},
 			{
-				Name:  to.StringPtr(resourceskus.MemoryGB),
-				Value: to.StringPtr("4"),
+				Name:  pointer.String(resourceskus.MemoryGB),
+				Value: pointer.String("4"),
 			},
 			{
-				Name:  to.StringPtr(resourceskus.EphemeralOSDisk),
-				Value: to.StringPtr("True"),
+				Name:  pointer.String(resourceskus.EphemeralOSDisk),
+				Value: pointer.String("True"),
 			},
 		},
 	}
 
 	validSKUWithUltraSSD = resourceskus.SKU{
-		Name: to.StringPtr("Standard_D2v3"),
-		Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+		Name: pointer.String("Standard_D2v3"),
+		Kind: pointer.String(string(resourceskus.VirtualMachines)),
 		Locations: &[]string{
 			"test-location",
 		},
 		LocationInfo: &[]compute.ResourceSkuLocationInfo{
 			{
-				Location: to.StringPtr("test-location"),
+				Location: pointer.String("test-location"),
 				Zones:    &[]string{"1"},
 				ZoneDetails: &[]compute.ResourceSkuZoneDetails{
 					{
 						Capabilities: &[]compute.ResourceSkuCapabilities{
 							{
-								Name:  to.StringPtr("UltraSSDAvailable"),
-								Value: to.StringPtr("True"),
+								Name:  pointer.String("UltraSSDAvailable"),
+								Value: pointer.String("True"),
 							},
 						},
 						Name: &[]string{"1"},
@@ -119,48 +119,48 @@ var (
 		},
 		Capabilities: &[]compute.ResourceSkuCapabilities{
 			{
-				Name:  to.StringPtr(resourceskus.VCPUs),
-				Value: to.StringPtr("2"),
+				Name:  pointer.String(resourceskus.VCPUs),
+				Value: pointer.String("2"),
 			},
 			{
-				Name:  to.StringPtr(resourceskus.MemoryGB),
-				Value: to.StringPtr("4"),
+				Name:  pointer.String(resourceskus.MemoryGB),
+				Value: pointer.String("4"),
 			},
 		},
 	}
 
 	invalidCPUSKU = resourceskus.SKU{
-		Name: to.StringPtr("Standard_D2v3"),
-		Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+		Name: pointer.String("Standard_D2v3"),
+		Kind: pointer.String(string(resourceskus.VirtualMachines)),
 		Locations: &[]string{
 			"test-location",
 		},
 		Capabilities: &[]compute.ResourceSkuCapabilities{
 			{
-				Name:  to.StringPtr(resourceskus.VCPUs),
-				Value: to.StringPtr("1"),
+				Name:  pointer.String(resourceskus.VCPUs),
+				Value: pointer.String("1"),
 			},
 			{
-				Name:  to.StringPtr(resourceskus.MemoryGB),
-				Value: to.StringPtr("4"),
+				Name:  pointer.String(resourceskus.MemoryGB),
+				Value: pointer.String("4"),
 			},
 		},
 	}
 
 	invalidMemSKU = resourceskus.SKU{
-		Name: to.StringPtr("Standard_D2v3"),
-		Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+		Name: pointer.String("Standard_D2v3"),
+		Kind: pointer.String(string(resourceskus.VirtualMachines)),
 		Locations: &[]string{
 			"test-location",
 		},
 		Capabilities: &[]compute.ResourceSkuCapabilities{
 			{
-				Name:  to.StringPtr(resourceskus.VCPUs),
-				Value: to.StringPtr("2"),
+				Name:  pointer.String(resourceskus.VCPUs),
+				Value: pointer.String("2"),
 			},
 			{
-				Name:  to.StringPtr(resourceskus.MemoryGB),
-				Value: to.StringPtr("1"),
+				Name:  pointer.String(resourceskus.MemoryGB),
+				Value: pointer.String("1"),
 			},
 		},
 	}
@@ -214,7 +214,7 @@ func TestParameters(t *testing.T) {
 				SSHKeyData: "fakesshpublickey",
 				Size:       "Standard_D2v3",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				Identity:   infrav1.VMIdentitySystemAssigned,
 				SKU:        validSKU,
 			},
@@ -235,7 +235,7 @@ func TestParameters(t *testing.T) {
 				SSHKeyData:             "fakesshpublickey",
 				Size:                   "Standard_D2v3",
 				Zone:                   "1",
-				Image:                  &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:                  &infrav1.Image{ID: pointer.String("fake-image-id")},
 				Identity:               infrav1.VMIdentityUserAssigned,
 				UserAssignedIdentities: []infrav1.UserAssignedIdentity{{ProviderID: "my-user-id"}},
 				SKU:                    validSKU,
@@ -257,7 +257,7 @@ func TestParameters(t *testing.T) {
 				SSHKeyData:    "fakesshpublickey",
 				Size:          "Standard_D2v3",
 				Zone:          "1",
-				Image:         &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:         &infrav1.Image{ID: pointer.String("fake-image-id")},
 				SpotVMOptions: &infrav1.SpotVMOptions{},
 				SKU:           validSKU,
 			},
@@ -279,7 +279,7 @@ func TestParameters(t *testing.T) {
 				SSHKeyData:    "fakesshpublickey",
 				Size:          "Standard_D2v3",
 				Zone:          "1",
-				Image:         &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:         &infrav1.Image{ID: pointer.String("fake-image-id")},
 				SpotVMOptions: &infrav1.SpotVMOptions{EvictionPolicy: &deletePolicy},
 				SKU:           validSKU,
 			},
@@ -301,10 +301,10 @@ func TestParameters(t *testing.T) {
 				SSHKeyData: "fakesshpublickey",
 				Size:       "Standard_D2v3",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				OSDisk: infrav1.OSDisk{
 					OSType:     "Windows",
-					DiskSizeGB: to.Int32Ptr(128),
+					DiskSizeGB: pointer.Int32(128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
@@ -330,7 +330,7 @@ func TestParameters(t *testing.T) {
 				SSHKeyData: "fakesshpublickey",
 				Size:       "Standard_D2v3",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				OSDisk: infrav1.OSDisk{
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
@@ -344,7 +344,7 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).VirtualMachineProperties.StorageProfile.OsDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(to.StringPtr("my-diskencryptionset-id")))
+				g.Expect(result.(compute.VirtualMachine).VirtualMachineProperties.StorageProfile.OsDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(pointer.String("my-diskencryptionset-id")))
 			},
 			expectedError: "",
 		},
@@ -357,8 +357,8 @@ func TestParameters(t *testing.T) {
 				SSHKeyData:      "fakesshpublickey",
 				Size:            "Standard_D2v3",
 				Zone:            "1",
-				Image:           &infrav1.Image{ID: to.StringPtr("fake-image-id")},
-				SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
+				Image:           &infrav1.Image{ID: pointer.String("fake-image-id")},
+				SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
 				SKU:             validSKUWithEncryptionAtHost,
 			},
 			existing: nil,
@@ -378,14 +378,14 @@ func TestParameters(t *testing.T) {
 				Size:              "Standard_D2v3",
 				AvailabilitySetID: "fake-availability-set-id",
 				Zone:              "",
-				Image:             &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
 				SKU:               validSKU,
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
 				g.Expect(result.(compute.VirtualMachine).Zones).To(BeNil())
-				g.Expect(result.(compute.VirtualMachine).AvailabilitySet.ID).To(Equal(to.StringPtr("fake-availability-set-id")))
+				g.Expect(result.(compute.VirtualMachine).AvailabilitySet.ID).To(Equal(pointer.String("fake-availability-set-id")))
 			},
 			expectedError: "",
 		},
@@ -399,7 +399,7 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				OSDisk: infrav1.OSDisk{
 					OSType:     "Linux",
-					DiskSizeGB: to.Int32Ptr(128),
+					DiskSizeGB: pointer.Int32(128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
@@ -407,7 +407,7 @@ func TestParameters(t *testing.T) {
 						Option: string(compute.DiffDiskOptionsLocal),
 					},
 				},
-				Image: &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image: &infrav1.Image{ID: pointer.String("fake-image-id")},
 				SKU:   validSKUWithEphemeralOS,
 			},
 			existing: nil,
@@ -427,8 +427,8 @@ func TestParameters(t *testing.T) {
 				Size:              "Standard_D2v3",
 				AvailabilitySetID: "fake-availability-set-id",
 				Zone:              "",
-				Image:             &infrav1.Image{ID: to.StringPtr("fake-image-id")},
-				SecurityProfile:   &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				SecurityProfile:   &infrav1.SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
 				SKU:               validSKU,
 			},
 			existing: nil,
@@ -447,7 +447,7 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				OSDisk: infrav1.OSDisk{
 					OSType:     "Linux",
-					DiskSizeGB: to.Int32Ptr(128),
+					DiskSizeGB: pointer.Int32(128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
@@ -455,7 +455,7 @@ func TestParameters(t *testing.T) {
 						Option: string(compute.DiffDiskOptionsLocal),
 					},
 				},
-				Image: &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image: &infrav1.Image{ID: pointer.String("fake-image-id")},
 				SKU:   validSKU,
 			},
 			existing: nil,
@@ -472,7 +472,7 @@ func TestParameters(t *testing.T) {
 				NICIDs:     []string{"my-nic"},
 				SSHKeyData: "fakesshpublickey",
 				Size:       "Standard_D2v3",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				SKU:        invalidCPUSKU,
 			},
 			existing: nil,
@@ -489,7 +489,7 @@ func TestParameters(t *testing.T) {
 				NICIDs:     []string{"my-nic"},
 				SSHKeyData: "fakesshpublickey",
 				Size:       "Standard_D2v3",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				SKU:        invalidMemSKU,
 			},
 			existing: nil,
@@ -522,13 +522,13 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Offer).To(Equal(to.StringPtr("my-offer")))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Publisher).To(Equal(to.StringPtr("fake-publisher")))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Sku).To(Equal(to.StringPtr("sku-id")))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Version).To(Equal(to.StringPtr("1.0")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Name).To(Equal(to.StringPtr("sku-id")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Publisher).To(Equal(to.StringPtr("fake-publisher")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Product).To(Equal(to.StringPtr("my-offer")))
+				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Offer).To(Equal(pointer.String("my-offer")))
+				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Publisher).To(Equal(pointer.String("fake-publisher")))
+				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Sku).To(Equal(pointer.String("sku-id")))
+				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Version).To(Equal(pointer.String("1.0")))
+				g.Expect(result.(compute.VirtualMachine).Plan.Name).To(Equal(pointer.String("sku-id")))
+				g.Expect(result.(compute.VirtualMachine).Plan.Publisher).To(Equal(pointer.String("fake-publisher")))
+				g.Expect(result.(compute.VirtualMachine).Plan.Product).To(Equal(pointer.String("my-offer")))
 			},
 			expectedError: "",
 		},
@@ -547,9 +547,9 @@ func TestParameters(t *testing.T) {
 						Gallery:        "fake-gallery",
 						Name:           "fake-name",
 						Version:        "1.0",
-						Publisher:      to.StringPtr("fake-publisher"),
-						Offer:          to.StringPtr("my-offer"),
-						SKU:            to.StringPtr("sku-id"),
+						Publisher:      pointer.String("fake-publisher"),
+						Offer:          pointer.String("my-offer"),
+						SKU:            pointer.String("sku-id"),
 					},
 				},
 				SKU: validSKU,
@@ -557,10 +557,10 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.ID).To(Equal(to.StringPtr("/subscriptions/fake-sub-id/resourceGroups/fake-rg/providers/Microsoft.Compute/galleries/fake-gallery/images/fake-name/versions/1.0")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Name).To(Equal(to.StringPtr("sku-id")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Publisher).To(Equal(to.StringPtr("fake-publisher")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Product).To(Equal(to.StringPtr("my-offer")))
+				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.ID).To(Equal(pointer.String("/subscriptions/fake-sub-id/resourceGroups/fake-rg/providers/Microsoft.Compute/galleries/fake-gallery/images/fake-name/versions/1.0")))
+				g.Expect(result.(compute.VirtualMachine).Plan.Name).To(Equal(pointer.String("sku-id")))
+				g.Expect(result.(compute.VirtualMachine).Plan.Publisher).To(Equal(pointer.String("fake-publisher")))
+				g.Expect(result.(compute.VirtualMachine).Plan.Product).To(Equal(pointer.String("my-offer")))
 			},
 			expectedError: "",
 		},
@@ -574,17 +574,17 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				DataDisks: []infrav1.DataDisk{
 					{
 						NameSuffix: "mydisk",
 						DiskSizeGB: 64,
-						Lun:        to.Int32Ptr(0),
+						Lun:        pointer.Int32(0),
 					},
 					{
 						NameSuffix: "myDiskWithUltraDisk",
 						DiskSizeGB: 128,
-						Lun:        to.Int32Ptr(1),
+						Lun:        pointer.Int32(1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
@@ -592,7 +592,7 @@ func TestParameters(t *testing.T) {
 					{
 						NameSuffix: "myDiskWithManagedDisk",
 						DiskSizeGB: 128,
-						Lun:        to.Int32Ptr(2),
+						Lun:        pointer.Int32(2),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -600,7 +600,7 @@ func TestParameters(t *testing.T) {
 					{
 						NameSuffix: "managedDiskWithEncryption",
 						DiskSizeGB: 128,
-						Lun:        to.Int32Ptr(3),
+						Lun:        pointer.Int32(3),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 							DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
@@ -614,41 +614,41 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(to.BoolPtr(true)))
+				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(pointer.Bool(true)))
 				expectedDataDisks := &[]compute.DataDisk{
 					{
-						Lun:          to.Int32Ptr(0),
-						Name:         to.StringPtr("my-ultra-ssd-vm_mydisk"),
+						Lun:          pointer.Int32(0),
+						Name:         pointer.String("my-ultra-ssd-vm_mydisk"),
 						CreateOption: "Empty",
-						DiskSizeGB:   to.Int32Ptr(64),
+						DiskSizeGB:   pointer.Int32(64),
 					},
 					{
-						Lun:          to.Int32Ptr(1),
-						Name:         to.StringPtr("my-ultra-ssd-vm_myDiskWithUltraDisk"),
+						Lun:          pointer.Int32(1),
+						Name:         pointer.String("my-ultra-ssd-vm_myDiskWithUltraDisk"),
 						CreateOption: "Empty",
-						DiskSizeGB:   to.Int32Ptr(128),
+						DiskSizeGB:   pointer.Int32(128),
 						ManagedDisk: &compute.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
 					},
 					{
-						Lun:          to.Int32Ptr(2),
-						Name:         to.StringPtr("my-ultra-ssd-vm_myDiskWithManagedDisk"),
+						Lun:          pointer.Int32(2),
+						Name:         pointer.String("my-ultra-ssd-vm_myDiskWithManagedDisk"),
 						CreateOption: "Empty",
-						DiskSizeGB:   to.Int32Ptr(128),
+						DiskSizeGB:   pointer.Int32(128),
 						ManagedDisk: &compute.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 					},
 					{
-						Lun:          to.Int32Ptr(3),
-						Name:         to.StringPtr("my-ultra-ssd-vm_managedDiskWithEncryption"),
+						Lun:          pointer.Int32(3),
+						Name:         pointer.String("my-ultra-ssd-vm_managedDiskWithEncryption"),
 						CreateOption: "Empty",
-						DiskSizeGB:   to.Int32Ptr(128),
+						DiskSizeGB:   pointer.Int32(128),
 						ManagedDisk: &compute.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 							DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
-								ID: to.StringPtr("my_id"),
+								ID: pointer.String("my_id"),
 							},
 						},
 					},
@@ -667,12 +667,12 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				DataDisks: []infrav1.DataDisk{
 					{
 						NameSuffix: "myDiskWithUltraDisk",
 						DiskSizeGB: 128,
-						Lun:        to.Int32Ptr(1),
+						Lun:        pointer.Int32(1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
@@ -696,15 +696,15 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				AdditionalCapabilities: &infrav1.AdditionalCapabilities{
-					UltraSSDEnabled: to.BoolPtr(false),
+					UltraSSDEnabled: pointer.Bool(false),
 				},
 				DataDisks: []infrav1.DataDisk{
 					{
 						NameSuffix: "myDiskWithUltraDisk",
 						DiskSizeGB: 128,
-						Lun:        to.Int32Ptr(1),
+						Lun:        pointer.Int32(1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
@@ -715,13 +715,13 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(to.BoolPtr(false)))
+				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(pointer.Bool(false)))
 				expectedDataDisks := &[]compute.DataDisk{
 					{
-						Lun:          to.Int32Ptr(1),
-						Name:         to.StringPtr("my-ultra-ssd-vm_myDiskWithUltraDisk"),
+						Lun:          pointer.Int32(1),
+						Name:         pointer.String("my-ultra-ssd-vm_myDiskWithUltraDisk"),
 						CreateOption: "Empty",
-						DiskSizeGB:   to.Int32Ptr(128),
+						DiskSizeGB:   pointer.Int32(128),
 						ManagedDisk: &compute.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
@@ -741,12 +741,12 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				DataDisks: []infrav1.DataDisk{
 					{
 						NameSuffix: "myDiskWithUltraDisk",
 						DiskSizeGB: 128,
-						Lun:        to.Int32Ptr(1),
+						Lun:        pointer.Int32(1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
@@ -757,13 +757,13 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(to.BoolPtr(true)))
+				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(pointer.Bool(true)))
 				expectedDataDisks := &[]compute.DataDisk{
 					{
-						Lun:          to.Int32Ptr(1),
-						Name:         to.StringPtr("my-ultra-ssd-vm_myDiskWithUltraDisk"),
+						Lun:          pointer.Int32(1),
+						Name:         pointer.String("my-ultra-ssd-vm_myDiskWithUltraDisk"),
 						CreateOption: "Empty",
-						DiskSizeGB:   to.Int32Ptr(128),
+						DiskSizeGB:   pointer.Int32(128),
 						ManagedDisk: &compute.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
@@ -783,15 +783,15 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				AdditionalCapabilities: &infrav1.AdditionalCapabilities{
-					UltraSSDEnabled: to.BoolPtr(true),
+					UltraSSDEnabled: pointer.Bool(true),
 				},
 				DataDisks: []infrav1.DataDisk{
 					{
 						NameSuffix: "myDiskWithUltraDisk",
 						DiskSizeGB: 128,
-						Lun:        to.Int32Ptr(1),
+						Lun:        pointer.Int32(1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
@@ -802,13 +802,13 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(to.BoolPtr(true)))
+				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(pointer.Bool(true)))
 				expectedDataDisks := &[]compute.DataDisk{
 					{
-						Lun:          to.Int32Ptr(1),
-						Name:         to.StringPtr("my-ultra-ssd-vm_myDiskWithUltraDisk"),
+						Lun:          pointer.Int32(1),
+						Name:         pointer.String("my-ultra-ssd-vm_myDiskWithUltraDisk"),
 						CreateOption: "Empty",
-						DiskSizeGB:   to.Int32Ptr(128),
+						DiskSizeGB:   pointer.Int32(128),
 						ManagedDisk: &compute.ManagedDiskParameters{
 							StorageAccountType: "UltraSSD_LRS",
 						},
@@ -828,16 +828,16 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				AdditionalCapabilities: &infrav1.AdditionalCapabilities{
-					UltraSSDEnabled: to.BoolPtr(true),
+					UltraSSDEnabled: pointer.Bool(true),
 				},
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(to.BoolPtr(true)))
+				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(pointer.Bool(true)))
 			},
 			expectedError: "",
 		},
@@ -851,16 +851,16 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				AdditionalCapabilities: &infrav1.AdditionalCapabilities{
-					UltraSSDEnabled: to.BoolPtr(false),
+					UltraSSDEnabled: pointer.Bool(false),
 				},
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(to.BoolPtr(false)))
+				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(pointer.Bool(false)))
 			},
 			expectedError: "",
 		},
@@ -874,7 +874,7 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				DiagnosticsProfile: &infrav1.Diagnostics{
 					Boot: &infrav1.BootDiagnostics{
 						StorageAccountType: infrav1.DisabledDiagnosticsStorage,
@@ -885,7 +885,7 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(to.BoolPtr(false)))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(pointer.Bool(false)))
 				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
 			},
 			expectedError: "",
@@ -900,7 +900,7 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				DiagnosticsProfile: &infrav1.Diagnostics{
 					Boot: &infrav1.BootDiagnostics{
 						StorageAccountType: infrav1.ManagedDiagnosticsStorage,
@@ -911,7 +911,7 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(to.BoolPtr(true)))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(pointer.Bool(true)))
 				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
 			},
 			expectedError: "",
@@ -926,7 +926,7 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				DiagnosticsProfile: &infrav1.Diagnostics{
 					Boot: &infrav1.BootDiagnostics{
 						StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
@@ -940,8 +940,8 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(to.BoolPtr(true)))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(to.StringPtr("aaa")))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(pointer.Bool(true)))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(pointer.String("aaa")))
 			},
 			expectedError: "",
 		},
@@ -955,7 +955,7 @@ func TestParameters(t *testing.T) {
 				Size:       "Standard_D2v3",
 				Location:   "test-location",
 				Zone:       "1",
-				Image:      &infrav1.Image{ID: to.StringPtr("fake-image-id")},
+				Image:      &infrav1.Image{ID: pointer.String("fake-image-id")},
 				DiagnosticsProfile: &infrav1.Diagnostics{
 					Boot: &infrav1.BootDiagnostics{
 						StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
@@ -969,8 +969,8 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(to.BoolPtr(true)))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(to.StringPtr("aaa")))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(pointer.Bool(true)))
+				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(pointer.String("aaa")))
 			},
 			expectedError: "",
 		},
