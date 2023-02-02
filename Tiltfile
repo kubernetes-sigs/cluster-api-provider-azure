@@ -20,7 +20,7 @@ settings = {
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
     "capi_version": "v1.2.10",
-    "cert_manager_version": "v1.1.0",
+    "cert_manager_version": "v1.11.0",
     "kubernetes_version": "v1.23.9",
     "aks_kubernetes_version": "v1.23.8",
 }
@@ -396,7 +396,7 @@ include_user_tilt_files()
 load("ext://cert_manager", "deploy_cert_manager")
 
 if settings.get("deploy_cert_manager"):
-    deploy_cert_manager()
+    deploy_cert_manager(version = settings.get("cert_manager_version"))
 
 deploy_capi()
 
