@@ -54,6 +54,7 @@ type ClusterScopeParams struct {
 	Client       client.Client
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
+	Cache        *ClusterCache
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -85,6 +86,10 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		}
 	}
 
+	if params.Cache == nil {
+		params.Cache = &ClusterCache{}
+	}
+
 	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
 	if err != nil {
 		return nil, errors.Errorf("failed to init patch helper: %v", err)
@@ -96,6 +101,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		Cluster:      params.Cluster,
 		AzureCluster: params.AzureCluster,
 		patchHelper:  helper,
+		cache:        params.Cache,
 	}, nil
 }
 
@@ -103,10 +109,16 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 type ClusterScope struct {
 	Client      client.Client
 	patchHelper *patch.Helper
+	cache       *ClusterCache
 
 	AzureClients
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
+}
+
+// ClusterCache stores ClusterCache data locally so we don't have to hit the API multiple times within the same reconcile loop.
+type ClusterCache struct {
+	isVnetManaged *bool
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
@@ -473,7 +485,12 @@ func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 
 // IsVnetManaged returns true if the vnet is managed.
 func (s *ClusterScope) IsVnetManaged() bool {
-	return s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
+	if s.cache.isVnetManaged != nil {
+		return to.Bool(s.cache.isVnetManaged)
+	}
+	isVnetManaged := s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
+	s.cache.isVnetManaged = to.BoolPtr(isVnetManaged)
+	return isVnetManaged
 }
 
 // IsIPv6Enabled returns true if IPv6 is enabled.

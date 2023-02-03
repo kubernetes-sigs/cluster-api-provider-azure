@@ -57,6 +57,7 @@ type ManagedControlPlaneScopeParams struct {
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	MachinePool      *expv1.MachinePool
 	PatchTarget      conditions.Setter
+	Cache            *ManagedControlPlaneCache
 }
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
@@ -91,6 +92,11 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 	}
 
 	helper, err := patch.NewHelper(params.PatchTarget, params.Client)
+
+	if params.Cache == nil {
+		params.Cache = &ManagedControlPlaneCache{}
+	}
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
@@ -105,6 +111,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		PatchTarget:         params.PatchTarget,
 		patchHelper:         helper,
 		credentialsProvider: cp,
+		cache:               params.Cache,
 	}, nil
 }
 
@@ -113,6 +120,7 @@ type ManagedControlPlaneScope struct {
 	Client         client.Client
 	patchHelper    *patch.Helper
 	kubeConfigData []byte
+	cache          *ManagedControlPlaneCache
 
 	AzureClients
 	Cluster             *clusterv1.Cluster
@@ -123,6 +131,11 @@ type ManagedControlPlaneScope struct {
 	credentialsProvider *ManagedControlPlaneCredentialsProvider
 
 	AllNodePools []infrav1exp.AzureManagedMachinePool
+}
+
+// ManagedControlPlaneCache stores ManagedControlPlane data locally so we don't have to hit the API multiple times within the same reconcile loop.
+type ManagedControlPlaneCache struct {
+	isVnetManaged *bool
 }
 
 // ResourceGroup returns the managed control plane's resource group.
@@ -349,7 +362,20 @@ func (s *ManagedControlPlaneScope) IsIPv6Enabled() bool {
 
 // IsVnetManaged returns true if the vnet is managed.
 func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
-	return true
+	if s.cache.isVnetManaged != nil {
+		return to.Bool(s.cache.isVnetManaged)
+	}
+	// TODO refactor `IsVnetManaged` so that it is able to use an upstream context
+	// see https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2581
+	ctx := context.Background()
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.IsVnetManaged")
+	defer done()
+	isManaged, err := virtualnetworks.New(s).IsManaged(ctx)
+	if err != nil {
+		log.Error(err, "Unable to determine if ManagedControlPlaneScope VNET is managed by capz", "AzureManagedCluster", s.ClusterName())
+	}
+	s.cache.isVnetManaged = to.BoolPtr(isManaged)
+	return isManaged
 }
 
 // APIServerLBName returns the API Server LB spec.

@@ -116,7 +116,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer cancel()
 
 	if managed, err := s.IsManaged(ctx); err == nil && !managed {
-		log.V(4).Info("Skipping subnets deletion in custom vnet mode")
+		log.Info("Skipping subnets deletion in custom vnet mode")
 		return nil
 	} else if err != nil {
 		return errors.Wrap(err, "failed to check if subnets are managed")

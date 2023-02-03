@@ -183,4 +183,4 @@ spec:
 [shared-image-gallery]: https://docs.microsoft.com/azure/virtual-machines/linux/shared-image-galleries
 [supported-capi]: https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions
 [supported-k8s]: https://kubernetes.io/releases/version-skew-policy/#supported-versions
-[upgrading-workload-clusters]: https://cluster-api.sigs.k8s.io/tasks/kubeadm-control-plane.html#upgrading-workload-clusters
+[upgrading-workload-clusters]: https://cluster-api.sigs.k8s.io/tasks/upgrading-clusters.html
