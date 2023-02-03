@@ -663,7 +663,7 @@ data:
     for rescheduling.\n      - key: CriticalAddonsOnly\n        operator: Exists\n
     \     - effect: NoExecute\n        operator: Exists\n      initContainers:\n        #
     This container installs the CNI binaries\n        # and CNI network config file
-    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.24.5-hostprocess\n
+    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.25.0-hostprocess\n
     \         args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1\"]\n
     \         imagePullPolicy: Always\n          env:\n            # Name of the CNI
     config file to create.\n            - name: CNI_CONF_NAME\n              value:
@@ -682,7 +682,7 @@ data:
     cni-net-dir\n            - name: kubeadm-config\n              mountPath: /etc/kubeadm-config/\n
     \         securityContext:\n            windowsOptions:\n              hostProcess:
     true\n              runAsUserName: \"NT AUTHORITY\\\\system\"\n      containers:\n
-    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.24.5-hostprocess\n
+    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.25.0-hostprocess\n
     \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1\"]\n
     \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        imagePullPolicy:
     Always\n        volumeMounts:\n        - name: calico-config-windows\n          mountPath:
@@ -693,7 +693,7 @@ data:
     name: CNI_IPAM_TYPE\n          value: \"calico-ipam\"\n        - name: CALICO_NETWORKING_BACKEND\n
     \         value: \"vxlan\"\n        - name: KUBECONFIG\n          value: \"C:/etc/cni/net.d/calico-kubeconfig\"\n
     \       - name: VXLAN_VNI\n          value: \"4096\"\n      - name: calico-node-felix\n
-    \       image: sigwindowstools/calico-node:v3.24.5-hostprocess\n        args:
+    \       image: sigwindowstools/calico-node:v3.25.0-hostprocess\n        args:
     [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1\"]\n        imagePullPolicy:
     Always\n        workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        volumeMounts:\n
     \       - name: calico-config-windows\n          mountPath: /etc/kube-calico-windows/\n
