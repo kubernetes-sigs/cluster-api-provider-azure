@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -2671,6 +2672,287 @@ func TestFailureDomains(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.FailureDomains()
 			g.Expect(tc.expectFailureDomains).Should(ConsistOf(got))
+		})
+	}
+}
+
+func TestClusterScope_LBSpecs(t *testing.T) {
+	tests := []struct {
+		name         string
+		azureCluster *infrav1.AzureCluster
+		want         []azure.ResourceSpecGetter
+	}{
+		{
+			name: "API Server LB, Control Plane Oubound LB, and Node Outbound LB",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						SubscriptionID: "123",
+						Location:       "westus2",
+					},
+					ResourceGroup: "my-rg",
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Name:          "my-vnet",
+							ResourceGroup: "my-rg",
+						},
+						Subnets: []infrav1.SubnetSpec{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "cp-subnet",
+									Role: infrav1.SubnetControlPlane,
+								},
+							},
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "node-subnet",
+									Role: infrav1.SubnetNode,
+								},
+							},
+						},
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Name: "api-server-lb",
+							BackendPool: infrav1.BackendPool{
+								Name: "api-server-lb-backend-pool",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Public,
+								IdleTimeoutInMinutes: pointer.Int32(30),
+								SKU:                  infrav1.SKUStandard,
+							},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "api-server-lb-frontend-ip",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "api-server-lb-frontend-ip",
+									},
+								},
+							},
+						},
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							Name: "cp-outbound-lb",
+							BackendPool: infrav1.BackendPool{
+								Name: "cp-outbound-backend-pool",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Public,
+								IdleTimeoutInMinutes: pointer.Int32(15),
+								SKU:                  infrav1.SKUStandard,
+							},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "cp-outbound-lb-frontend-ip",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "cp-outbound-lb-frontend-ip",
+									},
+								},
+							},
+						},
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
+							Name: "node-outbound-lb",
+							BackendPool: infrav1.BackendPool{
+								Name: "node-outbound-backend-pool",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Public,
+								IdleTimeoutInMinutes: pointer.Int32(50),
+								SKU:                  infrav1.SKUStandard,
+							},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "node-outbound-lb-frontend-ip",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "node-outbound-lb-frontend-ip",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&loadbalancers.LBSpec{
+					Name:              "api-server-lb",
+					ResourceGroup:     "my-rg",
+					SubscriptionID:    "123",
+					ClusterName:       "my-cluster",
+					Location:          "westus2",
+					VNetName:          "my-vnet",
+					VNetResourceGroup: "my-rg",
+					SubnetName:        "cp-subnet",
+					FrontendIPConfigs: []infrav1.FrontendIP{
+						{
+							Name: "api-server-lb-frontend-ip",
+							PublicIP: &infrav1.PublicIPSpec{
+								Name: "api-server-lb-frontend-ip",
+							},
+						},
+					},
+					APIServerPort:        6443,
+					Type:                 infrav1.Public,
+					SKU:                  infrav1.SKUStandard,
+					Role:                 infrav1.APIServerRole,
+					BackendPoolName:      "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes: pointer.Int32(30),
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+				},
+				&loadbalancers.LBSpec{
+					Name:              "node-outbound-lb",
+					ResourceGroup:     "my-rg",
+					SubscriptionID:    "123",
+					ClusterName:       "my-cluster",
+					Location:          "westus2",
+					VNetName:          "my-vnet",
+					VNetResourceGroup: "my-rg",
+					FrontendIPConfigs: []infrav1.FrontendIP{
+						{
+							Name: "node-outbound-lb-frontend-ip",
+							PublicIP: &infrav1.PublicIPSpec{
+								Name: "node-outbound-lb-frontend-ip",
+							},
+						},
+					},
+					Type:                 infrav1.Public,
+					SKU:                  infrav1.SKUStandard,
+					Role:                 infrav1.NodeOutboundRole,
+					BackendPoolName:      "node-outbound-backend-pool",
+					IdleTimeoutInMinutes: pointer.Int32(50),
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+				},
+				&loadbalancers.LBSpec{
+					Name:              "cp-outbound-lb",
+					ResourceGroup:     "my-rg",
+					SubscriptionID:    "123",
+					ClusterName:       "my-cluster",
+					Location:          "westus2",
+					VNetName:          "my-vnet",
+					VNetResourceGroup: "my-rg",
+					FrontendIPConfigs: []infrav1.FrontendIP{
+						{
+							Name: "cp-outbound-lb-frontend-ip",
+							PublicIP: &infrav1.PublicIPSpec{
+								Name: "cp-outbound-lb-frontend-ip",
+							},
+						},
+					},
+					Type:                 infrav1.Public,
+					SKU:                  infrav1.SKUStandard,
+					BackendPoolName:      "cp-outbound-backend-pool",
+					IdleTimeoutInMinutes: pointer.Int32(15),
+					Role:                 infrav1.ControlPlaneOutboundRole,
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+				},
+			},
+		},
+		{
+			name: "Private API Server LB",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						Location:       "westus2",
+					},
+					ResourceGroup: "my-rg",
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Name:          "my-vnet",
+							ResourceGroup: "my-rg",
+						},
+						Subnets: []infrav1.SubnetSpec{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "cp-subnet",
+									Role: infrav1.SubnetControlPlane,
+								},
+							},
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "node-subnet",
+									Role: infrav1.SubnetNode,
+								},
+							},
+						},
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Name: "api-server-lb",
+							BackendPool: infrav1.BackendPool{
+								Name: "api-server-lb-backend-pool",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Internal,
+								IdleTimeoutInMinutes: pointer.Int32(30),
+								SKU:                  infrav1.SKUStandard,
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&loadbalancers.LBSpec{
+					Name:                 "api-server-lb",
+					ResourceGroup:        "my-rg",
+					SubscriptionID:       "123",
+					ClusterName:          "my-cluster",
+					Location:             "westus2",
+					VNetName:             "my-vnet",
+					VNetResourceGroup:    "my-rg",
+					SubnetName:           "cp-subnet",
+					APIServerPort:        6443,
+					Type:                 infrav1.Internal,
+					SKU:                  infrav1.SKUStandard,
+					Role:                 infrav1.APIServerRole,
+					BackendPoolName:      "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes: pointer.Int32(30),
+					AdditionalTags:       infrav1.Tags{},
+				},
+			},
+		},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			scheme := runtime.NewScheme()
+			_ = infrav1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
+
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tc.azureCluster.Name,
+					Namespace: "default",
+				},
+			}
+
+			initObjects := []runtime.Object{cluster, tc.azureCluster}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster:      cluster,
+				AzureCluster: tc.azureCluster,
+				Client:       fakeClient,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+			if got := clusterScope.LBSpecs(); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("LBSpecs() diff between expected result and actual result (%v): %s", got, cmp.Diff(tc.want, got))
+			}
 		})
 	}
 }
