@@ -315,11 +315,8 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 		log.Info("Unexpected scale set deletion", "id", machinePoolScope.ProviderID())
 		ampr.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure scale set deletion")
 	case infrav1.Failed:
-		err := ams.Delete(ctx)
-		if err != nil {
-			return reconcile.Result{}, errors.Wrap(err, "failed to delete scale set in a failed state")
-		}
-		return reconcile.Result{}, errors.Wrap(err, "Scale set deleted, retry creating in next reconcile")
+		log.Info("Unexpected scale set failure", "id", machinePoolScope.ProviderID())
+		ampr.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "UnexpectedVMFailure", "Unexpected Azure scale set failure")
 	}
 
 	if machinePoolScope.NeedsRequeue() {
