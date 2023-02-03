@@ -157,7 +157,6 @@ spec:
             - location
             - nodeResourceGroupName
             - resourceGroupName
-            - sshPublicKey
             - version
             type: object
           status:
@@ -266,6 +265,11 @@ spec:
                 - host
                 - port
                 type: object
+              disableLocalAccounts:
+                description: DisableLocalAccounts - If set to true, getting static
+                  credential will be disabled for this cluster. Expected to only be
+                  used for AAD clusters.
+                type: boolean
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
                   DNS service. It must be within the Kubernetes service address range
@@ -405,7 +409,15 @@ spec:
                 properties:
                   cidrBlock:
                     type: string
+                  cidrBlocks:
+                    items:
+                      type: string
+                    type: array
                   name:
+                    type: string
+                  resourceGroupName:
+                    description: ResourceGroupName is the name of the Azure resource
+                      group of the vNet.
                     type: string
                   subnet:
                     description: ManagedControlPlaneSubnet describes a subnet for
@@ -413,20 +425,44 @@ spec:
                     properties:
                       cidrBlock:
                         type: string
+                      cidrBlocks:
+                        items:
+                          type: string
+                        type: array
                       name:
                         type: string
                     required:
                     - cidrBlock
+                    - cidrBlocks
                     - name
                     type: object
+                  subnets:
+                    items:
+                      description: ManagedControlPlaneSubnet describes a subnet for
+                        an AKS cluster.
+                      properties:
+                        cidrBlock:
+                          type: string
+                        cidrBlocks:
+                          items:
+                            type: string
+                          type: array
+                        name:
+                          type: string
+                      required:
+                      - cidrBlock
+                      - cidrBlocks
+                      - name
+                      type: object
+                    type: array
                 required:
                 - cidrBlock
+                - cidrBlocks
                 - name
                 type: object
             required:
             - location
             - resourceGroupName
-            - sshPublicKey
             - version
             type: object
           status:
@@ -591,6 +627,11 @@ spec:
                 - host
                 - port
                 type: object
+              disableLocalAccounts:
+                description: DisableLocalAccounts - If set to true, getting static
+                  credential will be disabled for this cluster. Expected to only be
+                  used for AAD clusters.
+                type: boolean
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
                   DNS service. It must be within the Kubernetes service address range
@@ -730,7 +771,15 @@ spec:
                 properties:
                   cidrBlock:
                     type: string
+                  cidrBlocks:
+                    items:
+                      type: string
+                    type: array
                   name:
+                    type: string
+                  resourceGroupName:
+                    description: ResourceGroupName is the name of the Azure resource
+                      group of the vNet.
                     type: string
                   subnet:
                     description: ManagedControlPlaneSubnet describes a subnet for
@@ -738,20 +787,44 @@ spec:
                     properties:
                       cidrBlock:
                         type: string
+                      cidrBlocks:
+                        items:
+                          type: string
+                        type: array
                       name:
                         type: string
                     required:
                     - cidrBlock
+                    - cidrBlocks
                     - name
                     type: object
+                  subnets:
+                    items:
+                      description: ManagedControlPlaneSubnet describes a subnet for
+                        an AKS cluster.
+                      properties:
+                        cidrBlock:
+                          type: string
+                        cidrBlocks:
+                          items:
+                            type: string
+                          type: array
+                        name:
+                          type: string
+                      required:
+                      - cidrBlock
+                      - cidrBlocks
+                      - name
+                      type: object
+                    type: array
                 required:
                 - cidrBlock
+                - cidrBlocks
                 - name
                 type: object
             required:
             - location
             - resourceGroupName
-            - sshPublicKey
             - version
             type: object
           status:

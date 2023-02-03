@@ -157,6 +157,28 @@ webhooks:
     resources:
     - azuremanagedmachinepools
   sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedmachinepool
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: default.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1alpha4
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - azuremanagedmachinepools
+  sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -351,6 +373,28 @@ webhooks:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
     - v1beta1
+    operations:
+    - UPDATE
+    - DELETE
+    resources:
+    - azuremanagedmachinepools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedmachinepool
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1alpha4
     operations:
     - UPDATE
     - DELETE

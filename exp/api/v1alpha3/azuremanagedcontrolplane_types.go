@@ -55,17 +55,18 @@ type AzureManagedControlPlaneSpec struct {
 	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
-	// +kubebuilder:validation:Enum=azure;kubenet
+	// +kubebuilder:validation:Enum=azure;kubenet;none
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
-	// +kubebuilder:validation:Enum=azure;calico
+	// +kubebuilder:validation:Enum=azure;calico;''
 	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
-	SSHPublicKey string `json:"sshPublicKey"`
+	// +optional
+	SSHPublicKey *string `json:"sshPublicKey,omitempty"`
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
 	// It must be within the Kubernetes service address range specified in serviceCidr.

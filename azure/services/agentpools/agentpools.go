@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/preview/containerservice/mgmt/2022-03-02-preview/containerservice"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -75,6 +75,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	agentPoolSpec := s.scope.AgentPoolSpec()
 	profile := converters.AgentPoolToContainerServiceAgentPool(agentPoolSpec)
 
+	if agentPoolSpec.KubeletConfig != nil {
+		profile.KubeletConfig = (*containerservice.KubeletConfig)(agentPoolSpec.KubeletConfig)
+	}
+
+	profile.Tags = agentPoolSpec.AdditionalTags
+
 	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrap(err, "failed to get existing agent pool")
@@ -102,6 +108,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return azure.WithTransientError(errors.New(msg), 20*time.Second)
 		}
 
+		// When tags are removed, the change will be ignored if only set to nil.
+		if existingPool.Tags != nil && len(existingPool.Tags) > 0 && profile.Tags == nil {
+			profile.Tags = map[string]*string{}
+			log.V(2).Info("Remove additional tags from agent pool")
+		}
+
 		// Normalize individual agent pools to diff in case we need to update
 		existingProfile := containerservice.AgentPool{
 			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
@@ -111,6 +123,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				EnableAutoScaling:   existingPool.EnableAutoScaling,
 				MinCount:            existingPool.MinCount,
 				MaxCount:            existingPool.MaxCount,
+				NodeLabels:          existingPool.NodeLabels,
+				Tags:                existingPool.Tags,
 			},
 		}
 
@@ -122,7 +136,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				EnableAutoScaling:   profile.EnableAutoScaling,
 				MinCount:            profile.MinCount,
 				MaxCount:            profile.MaxCount,
+				NodeLabels:          profile.NodeLabels,
+				Tags:                profile.Tags,
 			},
+		}
+
+		// Auto scaler enabled, no need to reconcile on node pool count
+		if profile.MinCount != nil && profile.MaxCount != nil {
+			normalizedProfile.Count = existingPool.Count
 		}
 
 		// Diff and check if we require an update

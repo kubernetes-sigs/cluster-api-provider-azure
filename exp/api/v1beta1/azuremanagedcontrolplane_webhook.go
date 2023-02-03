@@ -65,14 +65,10 @@ func (m *AzureManagedControlPlane) Default() {
 		m.Spec.Version = normalizedVersion
 	}
 
-	if err := m.setDefaultSSHPublicKey(); err != nil {
-		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "SetDefaultSshPublicKey failed")
-	}
-
 	m.setDefaultNodeResourceGroupName()
 	m.setDefaultVirtualNetwork()
-	m.setDefaultSubnet()
 	m.setDefaultSku()
+	m.setDefaultSubnets()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1beta1,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -121,15 +117,25 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 				"field is immutable"))
 	}
 
-	if old.Spec.SSHPublicKey != "" {
-		// Prevent SSH key modification if it was already set to some value
-		if m.Spec.SSHPublicKey != old.Spec.SSHPublicKey {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "SSHPublicKey"),
-					m.Spec.SSHPublicKey,
-					"field is immutable"))
-		}
+	if !reflect.DeepEqual(m.Spec.SSHPublicKey, old.Spec.SSHPublicKey) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "SSHPublicKey"),
+				m.Spec.SSHPublicKey, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(m.Spec.VirtualNetwork, old.Spec.VirtualNetwork) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "VirtualNetwork"),
+				m.Spec.VirtualNetwork, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(m.Spec.VirtualNetwork, old.Spec.VirtualNetwork) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "VirtualNetwork"),
+				m.Spec.VirtualNetwork, "field is immutable"),
+		)
 	}
 
 	if old.Spec.DNSServiceIP != nil {
@@ -257,6 +263,8 @@ func (m *AzureManagedControlPlane) Validate() error {
 		m.validateSSHKey,
 		m.validateLoadBalancerProfile,
 		m.validateAPIServerAccessProfile,
+		m.validateVnet,
+		m.validateSubnets,
 	}
 
 	var errs []error
@@ -290,8 +298,8 @@ func (m *AzureManagedControlPlane) validateVersion() error {
 
 // ValidateSSHKey validates an SSHKey.
 func (m *AzureManagedControlPlane) validateSSHKey() error {
-	if m.Spec.SSHPublicKey != "" {
-		sshKey := m.Spec.SSHPublicKey
+	if m.Spec.SSHPublicKey != nil {
+		sshKey := *m.Spec.SSHPublicKey
 		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
@@ -361,6 +369,41 @@ func (m *AzureManagedControlPlane) validateAPIServerAccessProfile() error {
 		if len(allErrs) > 0 {
 			return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
 		}
+	}
+	return nil
+}
+
+// validateVnet validates virtual network.
+func (m *AzureManagedControlPlane) validateVnet() error {
+	var allErrs field.ErrorList
+	for _, cidr := range m.Spec.VirtualNetwork.CIDRBlocks {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "CIDRBlocks"), cidr, "invalid CIDR format"))
+		}
+	}
+	if len(allErrs) > 0 {
+		agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+		return agg
+	}
+	return nil
+}
+
+// validateSubnets validates subnets.
+func (m *AzureManagedControlPlane) validateSubnets() error {
+	var allErrs field.ErrorList
+	for _, subnet := range m.Spec.VirtualNetwork.Subnets {
+		if len(subnet.CIDRBlocks) == 0 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "Subnets"), subnet, "subnet must have at least one CIDR block"))
+		}
+		for _, cidr := range subnet.CIDRBlocks {
+			if _, _, err := net.ParseCIDR(cidr); err != nil {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "VirtualNetwork", "Subnets", "CIDRBlocks"), cidr, "invalid CIDR format"))
+			}
+		}
+	}
+	if len(allErrs) > 0 {
+		agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+		return agg
 	}
 	return nil
 }

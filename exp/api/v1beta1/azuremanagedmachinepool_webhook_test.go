@@ -441,6 +441,66 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Cannot change EnableFIPS of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					EnableFIPS:   to.BoolPtr(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					EnableFIPS:   to.BoolPtr(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change EnableNodePublicIP of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:               "System",
+					SKU:                "StandardD2S_V3",
+					OSDiskSizeGB:       to.Int32Ptr(512),
+					EnableNodePublicIP: to.BoolPtr(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:               "System",
+					SKU:                "StandardD2S_V3",
+					OSDiskSizeGB:       to.Int32Ptr(512),
+					EnableNodePublicIP: to.BoolPtr(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change ScaleSetPriority of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:             "System",
+					SKU:              "StandardD2S_V3",
+					OSDiskSizeGB:     to.Int32Ptr(512),
+					ScaleSetPriority: to.StringPtr("Regular"),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:             "System",
+					SKU:              "StandardD2S_V3",
+					OSDiskSizeGB:     to.Int32Ptr(512),
+					ScaleSetPriority: to.StringPtr("Spot"),
+				},
+			},
+			wantErr: true,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
@@ -506,6 +566,31 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					MaxPods: to.Int32Ptr(9),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "valid AllowedUnsafeSysctls",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:          "User",
+					SKU:           "StandardD2S_V3",
+					OSDiskSizeGB:  to.Int32Ptr(512),
+					KubeletConfig: &KubeletConfig{AllowedUnsafeSysctls: &[]string{"net.*"}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AllowedUnsafeSysctls should be one of \"kernel.shm*\", \"kernel.msg*\", \"kernel.sem\", \"fs.mqueue.*\", \"net.*\"",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:          "User",
+					SKU:           "StandardD2S_V3",
+					OSDiskSizeGB:  to.Int32Ptr(512),
+					KubeletConfig: &KubeletConfig{AllowedUnsafeSysctls: &[]string{"net4.*"}},
 				},
 			},
 			wantErr:  true,

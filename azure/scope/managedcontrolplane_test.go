@@ -842,3 +842,110 @@ func getMachinePoolWithVersion(name, version string) *capiv1exp.MachinePool {
 	machine.Spec.Template.Spec.Version = to.StringPtr(version)
 	return machine
 }
+
+func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = expv1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
+
+	cases := []struct {
+		Name     string
+		Input    ManagedControlPlaneScopeParams
+		Expected bool
+	}{
+		{
+			Name: "no Cache value",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+						Version:        "v1.20.1",
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+			},
+			Expected: false,
+		},
+		{
+			Name: "with Cache value of true",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+						Version:        "v1.20.1",
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				Cache: &ManagedControlPlaneCache{
+					isVnetManaged: to.BoolPtr(true),
+				},
+			},
+			Expected: true,
+		},
+		{
+			Name: "with Cache value of false",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1exp.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1exp.AzureManagedControlPlaneSpec{
+						Version:        "v1.20.1",
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				Cache: &ManagedControlPlaneCache{
+					isVnetManaged: to.BoolPtr(false),
+				},
+			},
+			Expected: false,
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			g := NewWithT(t)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.ControlPlane).Build()
+			c.Input.Client = fakeClient
+			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
+			g.Expect(err).To(Succeed())
+			isVnetManaged := s.IsVnetManaged()
+			g.Expect(isVnetManaged).To(Equal(c.Expected))
+		})
+	}
+}

@@ -44,10 +44,9 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal("Standard"))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal("calico"))
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
-	g.Expect(amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
-	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
+	g.Expect(amcp.Spec.VirtualNetwork.Subnets[0].Name).To(Equal("fooName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
@@ -58,20 +57,18 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.LoadBalancerSKU = &lbSKU
 	amcp.Spec.NetworkPolicy = &netPol
 	amcp.Spec.Version = "9.99.99"
-	amcp.Spec.SSHPublicKey = ""
 	amcp.Spec.NodeResourceGroupName = "fooNodeRg"
 	amcp.Spec.VirtualNetwork.Name = "fooVnetName"
-	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
+	amcp.Spec.VirtualNetwork.Subnets[0].Name = "fooSubnetName"
 	amcp.Spec.SKU.Tier = PaidManagedControlPlaneTier
 	amcp.Default()
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal(netPlug))
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal(lbSKU))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal(netPol))
 	g.Expect(amcp.Spec.Version).To(Equal("v9.99.99"))
-	g.Expect(amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("fooNodeRg"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
-	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
+	g.Expect(amcp.Spec.VirtualNetwork.Subnets[0].Name).To(Equal("fooSubnetName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(PaidManagedControlPlaneTier))
 }
 
@@ -233,6 +230,42 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 			expectErr: true,
 		},
+		{
+			name: "Valid CIDR for virtual network / subnets",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+						CIDRBlocks: []string{"1.2.3.4/16", "ace:cab:decb::/48"},
+						Subnets: []ManagedControlPlaneSubnet{
+							{
+								Name:       "my-subnet",
+								CIDRBlocks: []string{"1.2.3.4/32"},
+							},
+						},
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Invalid CIDR for virtual network / subnets",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+						CIDRBlocks: []string{"1.2.3.400/16", "xyz:000:abcd::/48"},
+						Subnets: []ManagedControlPlaneSubnet{
+							{
+								Name:       "my-subnet",
+								CIDRBlocks: []string{"1.2.3.4/64"},
+							},
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -265,7 +298,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP: to.StringPtr("192.168.0.0"),
 					Version:      "v1.18.0",
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: to.StringPtr(generateSSHPublicKey(true)),
 					AADProfile: &AADProfile{
 						Managed: true,
 						AdminGroupObjectIDs: []string{
@@ -324,27 +357,21 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "AzureManagedControlPlane with valid SSHPublicKey",
-			oldAMCP: createAzureManagedControlPlane("192.168.0.0", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane("192.168.0.0", "v1.18.0", generateSSHPublicKey(true)),
-			wantErr: false,
-		},
-		{
 			name:    "AzureManagedControlPlane with invalid SSHPublicKey",
 			oldAMCP: createAzureManagedControlPlane("192.168.0.0", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane("192.168.0.0", "v1.18.0", generateSSHPublicKey(false)),
+			amcp:    createAzureManagedControlPlane("192.168.0.0", "v1.18.0", generateSSHPublicKey(true)),
 			wantErr: true,
 		},
 		{
 			name:    "AzureManagedControlPlane with invalid serviceIP",
 			oldAMCP: createAzureManagedControlPlane("", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane("192.168.0.0.3", "v1.18.0", generateSSHPublicKey(true)),
+			amcp:    createAzureManagedControlPlane("192.168.0.0.3", "v1.18.0", ""),
 			wantErr: true,
 		},
 		{
 			name:    "AzureManagedControlPlane with invalid version",
-			oldAMCP: createAzureManagedControlPlane("", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane("192.168.0.0", "1.999.9", generateSSHPublicKey(true)),
+			oldAMCP: createAzureManagedControlPlane("192.168.0.0", "v1.18.0", ""),
+			amcp:    createAzureManagedControlPlane("192.168.0.0", "1.999.9", ""),
 			wantErr: true,
 		},
 		{
@@ -424,14 +451,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: to.StringPtr(generateSSHPublicKey(true)),
 					Version:      "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: to.StringPtr(generateSSHPublicKey(true)),
 					Version:      "v1.18.0",
 				},
 			},
@@ -739,7 +766,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 func createAzureManagedControlPlane(serviceIP, version, sshKey string) *AzureManagedControlPlane {
 	return &AzureManagedControlPlane{
 		Spec: AzureManagedControlPlaneSpec{
-			SSHPublicKey: sshKey,
+			SSHPublicKey: &sshKey,
 			DNSServiceIP: to.StringPtr(serviceIP),
 			Version:      version,
 		},

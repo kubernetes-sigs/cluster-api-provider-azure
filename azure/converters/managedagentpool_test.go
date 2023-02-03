@@ -50,7 +50,8 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 				NodeLabels: map[string]*string{
 					"custom": to.StringPtr("default"),
 				},
-				Name: "agentpool1",
+				Name:             "agentpool1",
+				ScaleSetPriority: to.StringPtr("Spot"),
 			},
 
 			expect: func(g *GomegaWithT, result containerservice.ManagedClusterAgentPoolProfile) {
@@ -74,6 +75,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					NodeLabels: map[string]*string{
 						"custom": to.StringPtr("default"),
 					},
+					ScaleSetPriority: containerservice.ScaleSetPrioritySpot,
 				}))
 			},
 		},

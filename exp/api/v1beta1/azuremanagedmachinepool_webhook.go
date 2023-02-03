@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -51,8 +52,9 @@ func (m *AzureManagedMachinePool) Default(client client.Client) {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureManagedMachinePool) ValidateCreate(client client.Client) error {
-	validators := []func() error{
+	validators := []func() *field.Error{
 		m.validateMaxPods,
+		m.validateKubeletConfig,
 	}
 
 	var errs []error
@@ -198,6 +200,107 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 					"field is immutable, unsetting is not allowed"))
 		}
 	}
+
+	if old.Spec.VnetSubnetID == nil && m.Spec.VnetSubnetID != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "VnetSubnetID"),
+				m.Spec.VnetSubnetID,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.VnetSubnetID != nil {
+		if m.Spec.VnetSubnetID == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "VnetSubnetID"),
+					m.Spec.VnetSubnetID,
+					"field is immutable, unsetting is not allowed"))
+		} else if *m.Spec.VnetSubnetID != *old.Spec.VnetSubnetID {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "VnetSubnetID"),
+					m.Spec.VnetSubnetID,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.EnableFIPS == nil && m.Spec.EnableFIPS != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "EnableFIPS"),
+				m.Spec.EnableFIPS,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.EnableFIPS != nil {
+		if m.Spec.EnableFIPS == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableFIPS"),
+					m.Spec.EnableFIPS,
+					"field is immutable, unsetting is not allowed"))
+			// changing the field is not allowed
+		} else if *m.Spec.EnableFIPS != *old.Spec.EnableFIPS {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableFIPS"),
+					m.Spec.EnableFIPS,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.EnableNodePublicIP == nil && m.Spec.EnableNodePublicIP != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "EnableNodePublicIP"),
+				m.Spec.EnableNodePublicIP,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.EnableNodePublicIP != nil {
+		if m.Spec.EnableNodePublicIP == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableNodePublicIP"),
+					m.Spec.EnableNodePublicIP,
+					"field is immutable, unsetting is not allowed"))
+		} else if *m.Spec.EnableNodePublicIP != *old.Spec.EnableNodePublicIP {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableNodePublicIP"),
+					m.Spec.EnableNodePublicIP,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.ScaleSetPriority == nil && m.Spec.ScaleSetPriority != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "ScaleSetPriority"),
+				m.Spec.ScaleSetPriority,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.ScaleSetPriority != nil {
+		if m.Spec.ScaleSetPriority == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "ScaleSetPriority"),
+					m.Spec.ScaleSetPriority,
+					"field is immutable, unsetting is not allowed"))
+		} else if *m.Spec.ScaleSetPriority != *old.Spec.ScaleSetPriority {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "ScaleSetPriority"),
+					m.Spec.ScaleSetPriority,
+					"field is immutable"))
+		}
+	}
+
+	if kubeletConfigErr := m.validateKubeletConfig(); kubeletConfigErr != nil {
+		allErrs = append(allErrs, kubeletConfigErr)
+	}
 	if len(allErrs) != 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), m.Name, allErrs)
 	}
@@ -259,13 +362,38 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 	return nil
 }
 
-func (m *AzureManagedMachinePool) validateMaxPods() error {
+func (m *AzureManagedMachinePool) validateMaxPods() *field.Error {
 	if m.Spec.MaxPods != nil {
 		if to.Int32(m.Spec.MaxPods) < 10 || to.Int32(m.Spec.MaxPods) > 250 {
 			return field.Invalid(
 				field.NewPath("Spec", "MaxPods"),
 				m.Spec.MaxPods,
 				"MaxPods must be between 10 and 250")
+		}
+	}
+
+	return nil
+}
+
+func (m *AzureManagedMachinePool) validateKubeletConfig() *field.Error {
+	// AllowedUnsafeSysctls should be one of "kernel.shm*", "kernel.msg*", "kernel.sem", "fs.mqueue.*", "net.*".
+	allowedUnsafeSysctlPatterns := []string{"kernel.shm*", "kernel.msg*", "kernel.sem", "fs.mqueue.*", "net.*"}
+	if m.Spec.KubeletConfig != nil && m.Spec.KubeletConfig.AllowedUnsafeSysctls != nil && len(*m.Spec.KubeletConfig.AllowedUnsafeSysctls) > 0 {
+		for _, v := range *m.Spec.KubeletConfig.AllowedUnsafeSysctls {
+			foundMatch := false
+			for _, pattern := range allowedUnsafeSysctlPatterns {
+				match, _ := regexp.MatchString(pattern, v)
+				if match {
+					foundMatch = true
+					break
+				}
+			}
+			if !foundMatch {
+				return field.Invalid(
+					field.NewPath("Spec", "KubeletConfig"),
+					m.Spec.KubeletConfig,
+					"AllowedUnsafeSysctls are \"kernel.shm*\", \"kernel.msg*\", \"kernel.sem\", \"fs.mqueue.*\", \"net.*\"")
+			}
 		}
 	}
 

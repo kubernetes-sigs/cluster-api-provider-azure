@@ -61,6 +61,8 @@ type AzureManagedMachinePoolSpec struct {
 	AvailabilityZones []string `json:"availabilityZones,omitempty"`
 
 	// Node labels - labels for all of the nodes present in node pool
+	// Disable conversion gen as the upstream version uses map[string]string
+	// +k8s:conversion-gen=false
 	// +optional
 	NodeLabels map[string]string `json:"nodeLabels,omitempty"`
 
@@ -89,12 +91,92 @@ type AzureManagedMachinePoolSpec struct {
 	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
 	// +optional
 	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
+
+	// EnableNodePublicIP - Enable public IP for nodes
+	// +optional
+	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
+
+	// EnableFIPS - Whether to use FIPS enabled OS
+	// +optional
+	EnableFIPS *bool `json:"enableFIPS,omitempty"`
+
+	// VnetSubnetID - VNet SubnetID specifies the VNet's subnet identifier for nodes and maybe pods
+	// +optional
+	VnetSubnetID *string `json:"vnetSubnetID,omitempty"`
+
+	// ScaleSetPriority - ScaleSetPriority to be used to specify virtual machine scale set priority. Default to regular. Possible values include: 'Spot', 'Regular'
+	// +kubebuilder:validation:Enum=Regular;Spot
+	// +optional
+	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
+
+	// KubeletConfig - KubeletConfig specifies the configuration of kubelet on agent nodes.
+	// +optional
+	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
+
+	// AdditionalTags is an optional set of tags to add to an instance, in addition to the ones added by default by the
+	// Azure provider. If both the AzureCluster and the AzureMachine specify the same tag name with different values, the
+	// AzureMachine's value takes precedence.
+	// +optional
+	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.
 type ManagedMachinePoolScaling struct {
 	MinSize *int32 `json:"minSize,omitempty"`
 	MaxSize *int32 `json:"maxSize,omitempty"`
+}
+
+// KubeletConfig kubelet configurations of agent nodes.
+type KubeletConfig struct {
+	// CPUManagerPolicy - CPU Manager policy to use.
+	// +kubebuilder:validation:Enum=none;static
+	// +optional
+	CPUManagerPolicy *string `json:"cpuManagerPolicy,omitempty"`
+
+	// CPUCfsQuota - Enable CPU CFS quota enforcement for containers that specify CPU limits.
+	// +optional
+	CPUCfsQuota *bool `json:"cpuCfsQuota,omitempty"`
+
+	// CPUCfsQuotaPeriod - Sets CPU CFS quota period value.
+	// +optional
+	CPUCfsQuotaPeriod *string `json:"cpuCfsQuotaPeriod,omitempty"`
+
+	// ImageGcHighThreshold - The percent of disk usage after which image garbage collection is always run.
+	// +optional
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:validation:Minimum=0
+	ImageGcHighThreshold *int32 `json:"imageGcHighThreshold,omitempty"`
+
+	// ImageGcLowThreshold - The percent of disk usage before which image garbage collection is never run.
+	// +optional
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:validation:Minimum=0
+	ImageGcLowThreshold *int32 `json:"imageGcLowThreshold,omitempty"`
+
+	// TopologyManagerPolicy - Topology Manager policy to use.
+	// +kubebuilder:validation:Enum=none;best-effort;restricted;single-numa-node
+	// +optional
+	TopologyManagerPolicy *string `json:"topologyManagerPolicy,omitempty"`
+
+	// AllowedUnsafeSysctls - Allowlist of unsafe sysctls or unsafe sysctl patterns (ending in `*`).
+	// +optional
+	AllowedUnsafeSysctls *[]string `json:"allowedUnsafeSysctls,omitempty"`
+
+	// FailSwapOn - If set to true it will make the Kubelet fail to start if swap is enabled on the node.
+	// +optional
+	FailSwapOn *bool `json:"failSwapOn,omitempty"`
+
+	// ContainerLogMaxSizeMB - The maximum size (e.g. 10Mi) of container log file before it is rotated.
+	// +optional
+	ContainerLogMaxSizeMB *int32 `json:"containerLogMaxSizeMB,omitempty"`
+
+	// ContainerLogMaxFiles - The maximum number of container log files that can be present for a container. The number must be ≥ 2.
+	// +optional
+	ContainerLogMaxFiles *int32 `json:"containerLogMaxFiles,omitempty"`
+
+	// PodMaxPids - The maximum number of processes per pod.
+	// +optional
+	PodMaxPids *int32 `json:"podMaxPids,omitempty"`
 }
 
 // TaintEffect is the effect for a Kubernetes taint.

@@ -67,17 +67,18 @@ type AzureManagedControlPlaneSpec struct {
 	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
-	// +kubebuilder:validation:Enum=azure;kubenet
+	// +kubebuilder:validation:Enum=azure;kubenet;none
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
-	// +kubebuilder:validation:Enum=azure;calico
+	// +kubebuilder:validation:Enum=azure;calico;''
 	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
-	SSHPublicKey string `json:"sshPublicKey"`
+	// +optional
+	SSHPublicKey *string `json:"sshPublicKey,omitempty"`
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
 	// It must be within the Kubernetes service address range specified in serviceCidr.
@@ -112,6 +113,14 @@ type AzureManagedControlPlaneSpec struct {
 	// APIServerAccessProfile is the access profile for AKS API server.
 	// +optional
 	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
+
+	// DisableLocalAccounts - If set to true, getting static credential will be disabled for this cluster. Expected to only be used for AAD clusters.
+	// +optional
+	DisableLocalAccounts *bool `json:"disableLocalAccounts,omitempty"`
+
+	// IPFamilies - IP families are used to determine single-stack or dual-stack clusters. For single-stack, the expected value is IPv4. For dual-stack, the expected values are IPv4 and IPv6.
+	// +optional
+	IPFamilies *[]string `json:"ipFamilies,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
@@ -201,16 +210,26 @@ type APIServerAccessProfile struct {
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
 type ManagedControlPlaneVirtualNetwork struct {
-	Name      string `json:"name"`
-	CIDRBlock string `json:"cidrBlock"`
+	Name string `json:"name"`
+	// +deprecated: use `CIDRBlocks` instead. `CIDRBlocks` field will take precedence over `CIDRBlock` field.
+	CIDRBlock  string   `json:"cidrBlock"`
+	CIDRBlocks []string `json:"cidrBlocks"`
 	// +optional
+	// +deprecated: use `Subnets` instead.  `Subnets` field will take precedence over `Subnet` field.
 	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
+	// +optional
+	Subnets []ManagedControlPlaneSubnet `json:"subnets,omitempty"`
+	// ResourceGroupName is the name of the Azure resource group of the vNet.
+	// +optional
+	ResourceGroupName *string `json:"resourceGroupName,omitempty"`
 }
 
 // ManagedControlPlaneSubnet describes a subnet for an AKS cluster.
 type ManagedControlPlaneSubnet struct {
-	Name      string `json:"name"`
-	CIDRBlock string `json:"cidrBlock"`
+	Name string `json:"name"`
+	// +deprecated: use `CIDRBlocks` instead.  `CIDRBlocks` field will take precedence over `CIDRBlock` field.
+	CIDRBlock  string   `json:"cidrBlock"`
+	CIDRBlocks []string `json:"cidrBlocks"`
 }
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.
