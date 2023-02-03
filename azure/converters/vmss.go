@@ -19,6 +19,7 @@ package converters
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -119,6 +120,16 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 
 	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
 		instance.Name = *sdkInstance.OsProfile.ComputerName
+	}
+
+	if sdkInstance.Resources != nil {
+		for _, r := range *sdkInstance.Resources {
+			if r.ProvisioningState != nil && r.Name != nil &&
+				(*r.Name == azure.BootstrappingExtensionLinux || *r.Name == azure.BootstrappingExtensionWindows) {
+				instance.BootstrappingState = infrav1.ProvisioningState(pointer.StringDeref(r.ProvisioningState, ""))
+				break
+			}
+		}
 	}
 
 	if sdkInstance.StorageProfile != nil && sdkInstance.StorageProfile.ImageReference != nil {
