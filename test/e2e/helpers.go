@@ -76,6 +76,7 @@ const (
 	retryableDeleteOperationTimeout       = 3 * time.Minute
 	retryableOperationSleepBetweenRetries = 3 * time.Second
 	helmInstallTimeout                    = 3 * time.Minute
+	sshConnectionTimeout                  = 30 * time.Second
 )
 
 // deploymentsClientAdapter adapts a Deployment to work with WaitForDeploymentsAvailable.
@@ -591,6 +592,7 @@ func newSSHConfig() (*ssh.ClientConfig, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //nolint:gosec // Non-production code
 		User:            azure.DefaultUserName,
 		Auth:            []ssh.AuthMethod{pubkey},
+		Timeout:         sshConnectionTimeout,
 	}
 	return &sshConfig, nil
 }
