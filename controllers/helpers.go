@@ -271,6 +271,7 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			SubnetName:                   subnet.Name,
 			RouteTableName:               subnet.RouteTable.Name,
 			LoadBalancerSku:              "Standard",
+			LoadBalancerName:             d.OutboundLBName(infrav1.Node),
 			MaximumLoadBalancerRuleCount: 250,
 			UseManagedIdentityExtension:  false,
 			UseInstanceMetadata:          true,
@@ -291,6 +292,7 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			SubnetName:                   subnet.Name,
 			RouteTableName:               subnet.RouteTable.Name,
 			LoadBalancerSku:              "Standard",
+			LoadBalancerName:             d.OutboundLBName(infrav1.Node),
 			MaximumLoadBalancerRuleCount: 250,
 			UseManagedIdentityExtension:  false,
 			UseInstanceMetadata:          true,
@@ -324,6 +326,7 @@ type CloudProviderConfig struct {
 	SubnetName                   string `json:"subnetName"`
 	RouteTableName               string `json:"routeTableName"`
 	LoadBalancerSku              string `json:"loadBalancerSku"`
+	LoadBalancerName             string `json:"loadBalancerName"`
 	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
 	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
 	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
