@@ -131,36 +131,42 @@ create_cluster() {
     "${REPO_ROOT}/hack/create-dev-cluster.sh"
 }
 
-install_addons() {
+# get_cidrs derives the CIDR from the Cluster's '.spec.clusterNetwork.pods.cidrBlocks' metadata
+# any retryable operation in this function must return a non-zero exit code on failure so that we can
+# retry it using a `until get_cidrs; do sleep 5; done` pattern;
+# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
+get_cidrs() {
     # Get cluster CIDRs from Cluster object
     CIDR0=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
-    CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}' 2> /dev/null) || true
+    export CIDR0
+    CIDR_LENGTH=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks}' | jq '. | length')
+    if [[ "${CIDR_LENGTH}" == "2" ]]; then
+        CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}')
+        export CIDR1
+    fi
+}
 
-    # export the target cluster KUBECONFIG if not already set
-    export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
-
-    # wait for the apiserver pod to be Ready.
-    APISERVER_POD=$("${KUBECTL}" get pods -n kube-system -o name | grep apiserver)
-    "${KUBECTL}" wait --for=condition=Ready -n kube-system "${APISERVER_POD}" --timeout=5m
-
-    # Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
-    "${KUBECTL}" create ns calico-system
-    until "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system
-    do
-        # Wait for the kubeadm-config configmap to exist.
-        sleep 2
-    done
-    "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml \
-    | sed 's/namespace: kube-system/namespace: calico-system/' \
-    | "${KUBECTL}" create -f -
-
+# install_calico installs Calico CNI componentry onto the Cluster
+# any retryable operation in this function must return a non-zero exit code on failure so that we can
+# retry it using a `until install_calico; do sleep 5; done` pattern;
+# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
+install_calico() {
+    # Copy the kubeadm configmap to the calico-system namespace.
+    # This is a workaround needed for the calico-node-windows daemonset
+    # to be able to run in the calico-system namespace.
+    "${KUBECTL}" create namespace calico-system --dry-run=client -o yaml | kubectl apply -f -
+    if ! "${KUBECTL}" get configmap kubeadm-config --namespace=calico-system; then
+        "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml > kubeadm-config-kube-system
+        sed 's/namespace: kube-system/namespace: calico-system/' kubeadm-config-kube-system | "${KUBECTL}" apply -f -
+        rm kubeadm-config-kube-system
+    fi
     # install Calico CNI
     echo "Installing Calico CNI via helm"
-    if [[ "${CIDR0}" =~ .*:.* ]]; then
+    if [[ "${CIDR0:-}" =~ .*:.* ]]; then
         echo "Cluster CIDR is IPv6"
         CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico-ipv6/values.yaml"
         CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
-    elif [[ "${CIDR1}" =~ .*:.* ]]; then
+    elif [[ "${CIDR1:-}" =~ .*:.* ]]; then
         echo "Cluster CIDR is dual-stack"
         CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico-dual-stack/values.yaml"
         CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0},installation.calicoNetwork.ipPools[1].cidr=${CIDR1}"
@@ -169,56 +175,49 @@ install_addons() {
         CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico/values.yaml"
         CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
     fi
-
-    "${HELM}" repo add projectcalico https://projectcalico.docs.tigera.io/charts
-    "${HELM}" install calico projectcalico/tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace tigera-operator --create-namespace
-
-    # install cloud-provider-azure components, if using out-of-tree
-    if [[ -n "${TEST_CCM:-}" ]]; then
-        CLOUD_CONFIG="/etc/kubernetes/azure.json"
-        CONFIG_SECRET_NAME=""
-        ENABLE_DYNAMIC_RELOADING=false
-        if [[ -n "${LOAD_CLOUD_CONFIG_FROM_SECRET:-}" ]]; then
-            CLOUD_CONFIG=""
-            CONFIG_SECRET_NAME="azure-cloud-provider"
-            ENABLE_DYNAMIC_RELOADING=true
-            copy_secret
-        fi
-
-        CCM_CLUSTER_CIDR="${CIDR0}"
-        if [[ -n "${CIDR1}" ]]; then
-            CCM_CLUSTER_CIDR="${CIDR0}\,${CIDR1}"
-        fi
-        echo "CCM cluster CIDR: ${CCM_CLUSTER_CIDR:-}"
-
-        export CCM_LOG_VERBOSITY="${CCM_LOG_VERBOSITY:-4}"
-        echo "Installing cloud-provider-azure components via helm"
-        "${HELM}" install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name \
-            --set infra.clusterName="${CLUSTER_NAME}" \
-            --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
-            --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
-            --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
-            --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
-            --set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
-            --set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
-            --set cloudControllerManager.replicas="${CCM_COUNT}" \
-            --set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}"  \
-            --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
-            --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
-            --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}" \
-            --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}"
-    fi
-
-    export -f wait_for_nodes
-    timeout --foreground 1800 bash -c wait_for_nodes
-
-    echo "Waiting for all calico-system pods to be ready"
-    "${KUBECTL}" wait --for=condition=Ready pod -n calico-system --all --timeout=10m
-
-    echo "Waiting for all kube-system pods to be ready"
-    "${KUBECTL}" wait --for=condition=Ready pod -n kube-system --all --timeout=10m
+    "${HELM}" upgrade calico --install --repo https://projectcalico.docs.tigera.io/charts tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace calico-system
 }
 
+# install_cloud_provider_azure installs OOT cloud-provider-azure componentry onto the Cluster.
+# Any retryable operation in this function must return a non-zero exit code on failure so that we can
+# retry it using a `until install_cloud_provider_azure; do sleep 5; done` pattern;
+# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
+install_cloud_provider_azure() {
+    CLOUD_CONFIG="/etc/kubernetes/azure.json"
+    CONFIG_SECRET_NAME=""
+    ENABLE_DYNAMIC_RELOADING=false
+    if [[ -n "${LOAD_CLOUD_CONFIG_FROM_SECRET:-}" ]]; then
+        CLOUD_CONFIG=""
+        CONFIG_SECRET_NAME="azure-cloud-provider"
+        ENABLE_DYNAMIC_RELOADING=true
+        copy_secret
+    fi
+
+    CCM_CLUSTER_CIDR="${CIDR0}"
+    if [[ -n "${CIDR1}" ]]; then
+        CCM_CLUSTER_CIDR="${CIDR0}\,${CIDR1}"
+    fi
+    echo "CCM cluster CIDR: ${CCM_CLUSTER_CIDR:-}"
+
+    export CCM_LOG_VERBOSITY="${CCM_LOG_VERBOSITY:-4}"
+    echo "Installing cloud-provider-azure components via helm"
+    "${HELM}" upgrade cloud-provider-azure --install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure \
+        --set infra.clusterName="${CLUSTER_NAME}" \
+        --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
+        --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
+        --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
+        --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
+        --set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
+        --set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
+        --set cloudControllerManager.replicas="${CCM_COUNT}" \
+        --set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}"  \
+        --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
+        --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
+        --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}" \
+        --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}"
+}
+
+# wait_for_nodes returns when all nodes in the workload cluster are Ready.
 wait_for_nodes() {
     echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
 
@@ -228,8 +227,54 @@ wait_for_nodes() {
         sleep 10
     done
 
-    "${KUBECTL}" wait --for=condition=Ready node --all --timeout=5m
-    "${KUBECTL}" get nodes -owide
+    until "${KUBECTL}" wait --for=condition=Ready node --all --timeout=15m; do
+        sleep 5
+    done
+    until "${KUBECTL}" get nodes -o wide; do
+        sleep 5
+    done
+}
+
+# wait_for_pods returns when all pods on the workload cluster are Running.
+wait_for_pods() {
+    echo "Waiting for all pod init containers scheduled in the cluster to be ready"
+    while "${KUBECTL}" get pods --all-namespaces -o jsonpath="{.items[*].status.initContainerStatuses[*].ready}" | grep -q false; do
+        echo "Not all pod init containers are Ready...."
+        sleep 5
+    done
+
+    echo "Waiting for all pod containers scheduled in the cluster to be ready"
+    while "${KUBECTL}" get pods --all-namespaces -o jsonpath="{.items[*].status.containerStatuses[*].ready}" | grep -q false; do
+        echo "Not all pod containers are Ready...."
+        sleep 5
+    done
+    until "${KUBECTL}" get pods --all-namespaces -o wide; do
+        sleep 5
+    done
+}
+
+install_addons() {
+    until get_cidrs; do
+        sleep 5
+    done
+    # export the target cluster KUBECONFIG if not already set
+    export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
+    until install_calico; do
+        sleep 5
+    done
+    # install cloud-provider-azure components, if using out-of-tree
+    if [[ -n "${TEST_CCM:-}" ]]; then
+        until install_cloud_provider_azure; do
+            sleep 5
+        done
+    fi
+    # In order to determine the successful outcome of CNI and cloud-provider-azure,
+    # we need to wait a little bit for nodes and pods terminal state,
+    # so we block successful return upon the cluster being fully operational.
+    export -f wait_for_nodes
+    timeout --foreground 1800 bash -c wait_for_nodes
+    export -f wait_for_pods
+    timeout --foreground 1800 bash -c wait_for_pods
 }
 
 copy_secret() {
@@ -252,10 +297,9 @@ cleanup() {
 
 on_exit() {
     if [[ -n ${KUBECONFIG:-} ]]; then
-        "${KUBECTL}" get nodes -owide || echo "Unable to get nodes"
-        "${KUBECTL}" get pods -A -owide || echo "Unable to get pods"
+        "${KUBECTL}" get nodes -o wide || echo "Unable to get nodes"
+        "${KUBECTL}" get pods -A -o wide || echo "Unable to get pods"
     fi
-
     # unset kubeconfig which is currently pointing at workload cluster.
     # we want to be pointing at the management cluster (kind in this case)
     unset KUBECONFIG
@@ -278,6 +322,7 @@ create_cluster
 
 # install CNI and CCM
 install_addons
+echo "Cluster ${CLUSTER_NAME} created and fully operational"
 
 if [[ "${#}" -gt 0 ]]; then
     # disable error exit so we can run post-command cleanup
