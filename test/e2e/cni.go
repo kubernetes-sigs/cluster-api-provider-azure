@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	calicoHelmChartRepoURL   string = "https://projectcalico.docs.tigera.io/charts"
+	calicoHelmChartRepoURL   string = "https://docs.tigera.io/calico/charts"
 	calicoOperatorNamespace  string = "tigera-operator"
 	CalicoSystemNamespace    string = "calico-system"
 	CalicoAPIServerNamespace string = "calico-apiserver"

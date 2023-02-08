@@ -28,7 +28,7 @@ export IPV4_CIDR_BLOCK=$(kubectl get cluster "${CLUSTER_NAME}" -o=jsonpath='{.sp
 Then install the Helm chart on the workload cluster:
 
 ```bash
-helm repo add projectcalico https://projectcalico.docs.tigera.io/charts && \
+helm repo add projectcalico https://docs.tigera.io/calico/charts && \
 helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
@@ -43,7 +43,7 @@ export IPV6_CIDR_BLOCK=$(kubectl get cluster "${CLUSTER_NAME}" -o=jsonpath='{.sp
 Then install the Helm chart on the workload cluster:
 
 ```bash
-helm repo add projectcalico https://projectcalico.docs.tigera.io/charts && \
+helm repo add projectcalico https://docs.tigera.io/calico/charts && \
 helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-ipv6/values.yaml  --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
@@ -59,7 +59,7 @@ export IPV6_CIDR_BLOCK=$(kubectl get cluster "${CLUSTER_NAME}" -o=jsonpath='{.sp
 Then install the Helm chart on the workload cluster:
 
 ```bash
-helm repo add projectcalico https://projectcalico.docs.tigera.io/charts && \
+helm repo add projectcalico https://docs.tigera.io/calico/charts && \
 helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-dual-stack/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}","installation.calicoNetwork.ipPools[1].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
