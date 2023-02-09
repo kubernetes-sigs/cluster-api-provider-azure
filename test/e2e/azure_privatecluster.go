@@ -42,7 +42,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -133,26 +132,20 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	Expect(os.Setenv(AzureNodeSubnetCidr, "10.255.1.0/24")).To(Succeed())
 	Expect(os.Setenv(AzureBastionSubnetCidr, "10.255.255.224/27")).To(Succeed())
 	result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
-	clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
-		ClusterProxy: publicClusterProxy,
-		ConfigCluster: clusterctl.ConfigClusterInput{
-			LogFolder:                filepath.Join(input.ArtifactFolder, "clusters", publicClusterProxy.GetName()),
-			ClusterctlConfigPath:     input.ClusterctlConfigPath,
-			KubeconfigPath:           publicClusterProxy.GetKubeconfigPath(),
-			InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-			Flavor:                   "private",
-			Namespace:                input.Namespace.Name,
-			ClusterName:              clusterName,
-			KubernetesVersion:        input.E2EConfig.GetVariable(capi_e2e.KubernetesVersion),
-			ControlPlaneMachineCount: pointer.Int64(3),
-			WorkerMachineCount:       pointer.Int64(1),
-		},
-		WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-private-cluster"),
-		WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane-ha"),
-		WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
-		// NOTE: We don't add control plane waiters here because Helm install will fail since the apiserver is private and not reachable from the prow cluster.
-		// As a workaround, we use still ClusterResourceSet to install CNI on the private cluster until a Helm integration is available.
-	}, result)
+
+	// NOTE: We don't add control plane waiters here because Helm install will fail since the apiserver is private and not reachable from the prow cluster.
+	// As a workaround, we use still ClusterResourceSet to install CNI on the private cluster until a Helm integration is available.
+	clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+		specName,
+		withClusterProxy(publicClusterProxy),
+		withFlavor("private"),
+		withNamespace(input.Namespace.Name),
+		withClusterName(clusterName),
+		withControlPlaneMachineCount(3),
+		withWorkerMachineCount(1),
+		withClusterInterval(specName, "wait-private-cluster"),
+		withControlPlaneInterval(specName, "wait-control-plane-ha"),
+	), result)
 	cluster = result.Cluster
 
 	Expect(cluster).NotTo(BeNil())
