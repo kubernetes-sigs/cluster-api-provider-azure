@@ -175,7 +175,7 @@ install_calico() {
         CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico/values.yaml"
         CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
     fi
-    "${HELM}" upgrade calico --install --repo https://projectcalico.docs.tigera.io/charts tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace calico-system
+    "${HELM}" upgrade calico --install --repo https://docs.tigera.io/calico/charts tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace calico-system
 }
 
 # install_cloud_provider_azure installs OOT cloud-provider-azure componentry onto the Cluster.
