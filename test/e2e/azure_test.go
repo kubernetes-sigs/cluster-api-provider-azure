@@ -498,7 +498,6 @@ var _ = Describe("Workload cluster creation", func() {
 	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
 	Context("Creating a cluster that uses the external cloud provider and machinepools [OPTIONAL]", func() {
 		It("with 1 control plane node and 1 machinepool", func() {
-			Skip("VMSS Flex test disabled pending fix for API changes")
 			By("using user-assigned identity")
 			clusterName = getClusterName(clusterNamePrefix, "flex")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
@@ -523,12 +522,14 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
-			By("Verifying machinepool resources", func() {
+			By("Verifying machinepool can scale out", func() {
 				AzureMachinePoolsSpec(ctx, func() AzureMachinePoolsSpecInput {
 					return AzureMachinePoolsSpecInput{
+						Cluster:               result.Cluster,
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
+						WaitIntervals:         e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 					}
 				})
 			})

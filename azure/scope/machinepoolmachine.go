@@ -163,6 +163,11 @@ func (s *MachinePoolMachineScope) ScaleSetName() string {
 	return s.MachinePoolScope.Name()
 }
 
+// OrchestrationMode is the VMSS orchestration mode, either Uniform or Flexible.
+func (s *MachinePoolMachineScope) OrchestrationMode() infrav1.OrchestrationModeType {
+	return s.AzureMachinePool.Spec.OrchestrationMode
+}
+
 // SetLongRunningOperationState will set the future on the AzureMachinePoolMachine status to allow the resource to continue
 // in the next reconciliation.
 func (s *MachinePoolMachineScope) SetLongRunningOperationState(future *infrav1.Future) {
@@ -259,6 +264,7 @@ func (s *MachinePoolMachineScope) PatchObject(ctx context.Context) error {
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			clusterv1.MachineNodeHealthyCondition,
+			clusterv1.DrainingSucceededCondition,
 		}})
 }
 

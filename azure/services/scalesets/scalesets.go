@@ -293,13 +293,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	}
 
 	hasModelChanges := hasModelModifyingDifferences(infraVMSS, vmss)
-	var isFlex bool
-	for _, instance := range infraVMSS.Instances {
-		if instance.IsFlex() {
-			isFlex = true
-			break
-		}
-	}
+	isFlex := s.Scope.ScaleSetSpec().OrchestrationMode == infrav1.FlexibleOrchestrationMode
 	updated := true
 	if !isFlex {
 		updated = infraVMSS.HasEnoughLatestModelOrNotMixedModel()

@@ -261,6 +261,20 @@ func (mr *MockScaleSetVMScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScaleSetVMScope)(nil).Location))
 }
 
+// OrchestrationMode mocks base method.
+func (m *MockScaleSetVMScope) OrchestrationMode() v1beta1.OrchestrationModeType {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OrchestrationMode")
+	ret0, _ := ret[0].(v1beta1.OrchestrationModeType)
+	return ret0
+}
+
+// OrchestrationMode indicates an expected call of OrchestrationMode.
+func (mr *MockScaleSetVMScopeMockRecorder) OrchestrationMode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OrchestrationMode", reflect.TypeOf((*MockScaleSetVMScope)(nil).OrchestrationMode))
+}
+
 // ProviderID mocks base method.
 func (m *MockScaleSetVMScope) ProviderID() string {
 	m.ctrl.T.Helper()
