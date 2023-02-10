@@ -194,7 +194,7 @@ install_cloud_provider_azure() {
     fi
 
     CCM_CLUSTER_CIDR="${CIDR0}"
-    if [[ -n "${CIDR1}" ]]; then
+    if [[ -n "${CIDR1:-}" ]]; then
         CCM_CLUSTER_CIDR="${CIDR0}\,${CIDR1}"
     fi
     echo "CCM cluster CIDR: ${CCM_CLUSTER_CIDR:-}"
