@@ -302,7 +302,7 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 	}
 
 	// determine which machines need to be created to reflect the current state in Azure
-	azureMachinesByProviderID := m.vmssState.InstancesByProviderID()
+	azureMachinesByProviderID := m.vmssState.InstancesByProviderID(m.AzureMachinePool.Spec.OrchestrationMode)
 	for key, val := range azureMachinesByProviderID {
 		if _, ok := existingMachinesByProviderID[key]; !ok {
 			log.V(4).Info("creating AzureMachinePoolMachine", "providerID", key)

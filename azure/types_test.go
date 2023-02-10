@@ -163,35 +163,3 @@ func getDefaultVMSSForModelTesting() VMSS {
 		},
 	}
 }
-
-func TestIsFlex(t *testing.T) {
-	cases := []struct {
-		Name   string
-		VM     VMSSVM
-		IsFlex bool
-	}{
-		{
-			Name:   "default empty VMSSVM",
-			VM:     VMSSVM{},
-			IsFlex: true,
-		},
-		{
-			Name:   "VMSSVM with an instance ID",
-			VM:     VMSSVM{InstanceID: "instance-id"},
-			IsFlex: false,
-		},
-		{
-			Name:   "VMSSVM with empty instance ID",
-			VM:     VMSSVM{InstanceID: ""},
-			IsFlex: true,
-		},
-	}
-
-	for _, c := range cases {
-		c := c
-		t.Run(c.Name, func(t *testing.T) {
-			g := NewWithT(t)
-			g.Expect(c.VM.IsFlex()).To(Equal(c.IsFlex))
-		})
-	}
-}

@@ -350,7 +350,7 @@ func Test_SDKVMToVMSSVM(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
-			subject := converters.SDKVMToVMSSVM(c.Subject)
+			subject := converters.SDKVMToVMSSVM(c.Subject, "")
 			g.Expect(subject).To(gomega.Equal(c.Expected))
 		})
 	}
