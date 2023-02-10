@@ -1,7 +1,7 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
-  name: ci-default
+  name: ${CLUSTER_CLASS_NAME}
 spec:
   variables:
     - name: k8sFeatureGates

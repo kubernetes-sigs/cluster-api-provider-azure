@@ -1,0 +1,65 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-worker
+spec:
+  template:
+    spec:
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ""
+      vmSize: replace_me
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-worker-win
+spec:
+  template:
+    spec:
+      preKubeadmCommands: []
+      postKubeadmCommands:
+        - nssm set kubelet start SERVICE_AUTO_START
+        - powershell C:/defender-exclude-calico.ps1
+      joinConfiguration:
+        nodeRegistration:
+          name: '{{ ds.meta_data["local_hostname"] }}'
+          criSocket: npipe:////./pipe/containerd-containerd
+          kubeletExtraArgs:
+            cloud-provider: azure
+            cloud-config: 'c:/k/azure.json'
+            azure-container-registry-config: 'c:/k/azure.json'
+            feature-gates: "WindowsHostProcessContainers=true"
+            v: "2"
+            windows-priorityclass: "ABOVE_NORMAL_PRIORITY_CLASS"
+      files:
+        - contentFrom:
+            secret:
+              key: worker-node-azure.json
+              name: replace_me
+          owner: root:root
+          path: c:/k/azure.json
+          permissions: "0644"
+        - path: C:/defender-exclude-calico.ps1
+          permissions: "0744"
+          content: |-
+            Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+            Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name:  ${CLUSTER_NAME}-worker-win
+  annotations:
+    runtime: containerd
+spec:
+  template:
+    spec:
+      osDisk:
+        osType: "Windows"
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: "Premium_LRS"
+      sshPublicKey: ""
+      vmSize: replace_me

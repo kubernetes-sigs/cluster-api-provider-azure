@@ -706,7 +706,7 @@ kind-create: $(KUBECTL) ## Create capz kind cluster if needed.
 
 .PHONY: tilt-up
 tilt-up: install-tools kind-create ## Start tilt and build kind cluster if needed.
-	EXP_CLUSTER_RESOURCE_SET=true EXP_MACHINE_POOL=true EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION=true tilt up
+	CLUSTER_TOPOLOGY=true EXP_CLUSTER_RESOURCE_SET=true EXP_MACHINE_POOL=true EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION=true tilt up
 
 .PHONY: delete-cluster
 delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "capz".

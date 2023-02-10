@@ -1,7 +1,7 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
-  name: ci-default
+  name: ${CLUSTER_CLASS_NAME}
   namespace: default
 spec:
   controlPlane:
@@ -9,16 +9,16 @@ spec:
       ref:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureMachineTemplate
-        name: ci-default-control-plane
+        name: ${CLUSTER_NAME}-control-plane
     ref:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: KubeadmControlPlaneTemplate
-      name: ci-default-kubeadm-control-plane
+      name: ${CLUSTER_NAME}-control-plane
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureClusterTemplate
-      name: ci-default-azure-cluster
+      name: ${CLUSTER_NAME}-azure-cluster
   patches:
   - definitions:
     - jsonPatches:
@@ -76,7 +76,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ci-default-worker
+            - ${CLUSTER_NAME}-worker
     name: workerAzureJsonSecretName
   - definitions:
     - jsonPatches:
@@ -102,7 +102,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ci-default-worker-win
+            - ${CLUSTER_NAME}-worker-win
     name: workerAzureJsonSecretNameWin
   - definitions:
     - jsonPatches:
@@ -191,7 +191,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ci-default-worker
+            - ${CLUSTER_NAME}-worker
     name: workerMachineType
   - definitions:
     - jsonPatches:
@@ -205,7 +205,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ci-default-worker-win
+            - ${CLUSTER_NAME}-worker-win
     name: workerMachineTypeWin
   - definitions:
     - jsonPatches:
@@ -219,8 +219,8 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ci-default-worker
-            - ci-default-worker-win
+            - ${CLUSTER_NAME}-worker
+            - ${CLUSTER_NAME}-worker-win
     name: sshPublicKey
   - definitions:
     - jsonPatches:
@@ -238,7 +238,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ci-default-worker-win
+            - ${CLUSTER_NAME}-worker-win
     name: sshPublicKeyWin
   - definitions:
     - jsonPatches:
@@ -262,7 +262,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ci-default-worker-win
+            - ${CLUSTER_NAME}-worker-win
     name: tmpFolder
   variables:
   - name: k8sFeatureGates
@@ -331,7 +331,7 @@ spec:
         type: string
   workers:
     machineDeployments:
-    - class: ci-default-worker
+    - class: ${CLUSTER_NAME}-worker
       machineHealthCheck:
         maxUnhealthy: 100%
         unhealthyConditions:
@@ -343,13 +343,13 @@ spec:
           ref:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
             kind: KubeadmConfigTemplate
-            name: ci-default-worker
+            name: ${CLUSTER_NAME}-worker
         infrastructure:
           ref:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureMachineTemplate
-            name: ci-default-worker
-    - class: ci-default-worker-win
+            name: ${CLUSTER_NAME}-worker
+    - class: ${CLUSTER_NAME}-worker-win
       machineHealthCheck:
         maxUnhealthy: 100%
         unhealthyConditions:
@@ -361,17 +361,17 @@ spec:
           ref:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
             kind: KubeadmConfigTemplate
-            name: ci-default-worker-win
+            name: ${CLUSTER_NAME}-worker-win
         infrastructure:
           ref:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureMachineTemplate
-            name: ci-default-worker-win
+            name: ${CLUSTER_NAME}-worker-win
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlaneTemplate
 metadata:
-  name: ci-default-kubeadm-control-plane
+  name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
   template:
@@ -393,6 +393,7 @@ spec:
               allocate-node-cidrs: "false"
               cloud-config: /etc/kubernetes/azure.json
               cloud-provider: azure
+              cluster-name: ${CLUSTER_NAME}
             extraVolumes:
             - hostPath: /etc/kubernetes/azure.json
               mountPath: /etc/kubernetes/azure.json
@@ -451,7 +452,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterTemplate
 metadata:
-  name: ci-default-azure-cluster
+  name: ${CLUSTER_NAME}-azure-cluster
   namespace: default
 spec:
   template:
@@ -461,7 +462,8 @@ spec:
       identityRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureClusterIdentity
-      location: replace_me
+        name: ${CLUSTER_IDENTITY_NAME}
+      location: ${AZURE_LOCATION}
       networkSpec:
         subnets:
         - name: control-plane-subnet
@@ -470,11 +472,12 @@ spec:
           natGateway:
             name: node-natgateway
           role: node
+      subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
-  name: ci-default-control-plane
+  name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
   template:
@@ -492,7 +495,7 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: ci-default-worker
+  name: ${CLUSTER_NAME}-worker
   namespace: default
 spec:
   template:
@@ -517,7 +520,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
-  name: ci-default-worker
+  name: ${CLUSTER_NAME}-worker
   namespace: default
 spec:
   template:
@@ -531,7 +534,7 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: ci-default-worker-win
+  name: ${CLUSTER_NAME}-worker-win
   namespace: default
 spec:
   template:
@@ -570,7 +573,7 @@ kind: AzureMachineTemplate
 metadata:
   annotations:
     runtime: containerd
-  name: ci-default-worker-win
+  name: ${CLUSTER_NAME}-worker-win
   namespace: default
 spec:
   template:

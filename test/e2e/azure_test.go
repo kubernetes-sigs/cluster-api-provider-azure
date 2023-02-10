@@ -819,6 +819,9 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating clusters using clusterclass [OPTIONAL]", func() {
 		It("with a single control plane node, one linux worker node, and one windows worker node", func() {
+			// use ci-default as the clusterclass name so test infra can find the clusterclass template
+			os.Setenv("CLUSTER_CLASS_NAME", "ci-default")
+
 			// use "cc" as spec name because natgw pip name exceeds limit.
 			clusterName = getClusterName(clusterNamePrefix, "cc")
 

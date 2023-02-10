@@ -3,20 +3,14 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
 spec:
-  clusterNetwork:
-    pods:
-      cidrBlocks: [ "192.168.0.0/16" ]
   topology:
-    class: ci-default
-    version: ${KUBERNETES_VERSION}
-    controlPlane:
-      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    class: ${CLUSTER_CLASS_NAME}
     workers:
       machineDeployments:
-        - class: ci-default-worker
+        - class: ${CLUSTER_NAME}-worker
           name: md-0
           replicas: ${WORKER_MACHINE_COUNT}
-        - class: ci-default-worker-win
+        - class: ${CLUSTER_NAME}-worker-win
           name: md-win
           replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
     variables:
