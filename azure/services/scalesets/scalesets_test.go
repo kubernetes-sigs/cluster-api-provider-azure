@@ -275,11 +275,11 @@ func TestReconcileVMSS(t *testing.T) {
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE_AN")
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
-				(*netConfigs)[0].Name = pointer.String("my-vmss-0")
+				(*netConfigs)[0].Name = pointer.String("my-vmss-nic-0")
 				(*netConfigs)[0].EnableIPForwarding = pointer.Bool(true)
 				(*netConfigs)[0].EnableAcceleratedNetworking = pointer.Bool(true)
 				nic1IPConfigs := (*netConfigs)[0].IPConfigurations
-				(*nic1IPConfigs)[0].Name = pointer.String("private-ipConfig-0")
+				(*nic1IPConfigs)[0].Name = pointer.String("ipConfig0")
 				(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
 				(*nic1IPConfigs)[0].Subnet = &compute.APIEntityReference{
 					ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/somesubnet"),
@@ -321,16 +321,16 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss := newDefaultVMSS("VM_SIZE")
 				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
-				(*netConfigs)[0].Name = pointer.String("my-vmss-0")
+				(*netConfigs)[0].Name = pointer.String("my-vmss-nic-0")
 				(*netConfigs)[0].EnableIPForwarding = pointer.Bool(true)
 				nic1IPConfigs := (*netConfigs)[0].IPConfigurations
-				(*nic1IPConfigs)[0].Name = pointer.String("private-ipConfig-0")
+				(*nic1IPConfigs)[0].Name = pointer.String("ipConfig0")
 				(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
 				(*netConfigs)[0].EnableAcceleratedNetworking = pointer.Bool(true)
 				(*netConfigs)[0].Primary = pointer.Bool(true)
 				vmssIPConfigs := []compute.VirtualMachineScaleSetIPConfiguration{
 					{
-						Name: pointer.String("private-ipConfig-0"),
+						Name: pointer.String("ipConfig0"),
 						VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 							Primary:                 pointer.Bool(true),
 							PrivateIPAddressVersion: compute.IPVersionIPv4,
@@ -340,7 +340,7 @@ func TestReconcileVMSS(t *testing.T) {
 						},
 					},
 					{
-						Name: pointer.String("private-ipConfig-1"),
+						Name: pointer.String("ipConfig1"),
 						VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 							PrivateIPAddressVersion: compute.IPVersionIPv4,
 							Subnet: &compute.APIEntityReference{
@@ -350,7 +350,7 @@ func TestReconcileVMSS(t *testing.T) {
 					},
 				}
 				*netConfigs = append(*netConfigs, compute.VirtualMachineScaleSetNetworkConfiguration{
-					Name: pointer.String("my-vmss-1"),
+					Name: pointer.String("my-vmss-nic-1"),
 					VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
 						EnableAcceleratedNetworking: pointer.Bool(true),
 						IPConfigurations:            &vmssIPConfigs,
@@ -1281,6 +1281,12 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 		AcceleratedNetworking:        nil,
 		TerminateNotificationTimeout: pointer.Int(7),
 		FailureDomains:               []string{"1", "3"},
+		NetworkInterfaces: []infrav1.NetworkInterface{
+			{
+				SubnetName:       "my-subnet",
+				PrivateIPConfigs: 1,
+			},
+		},
 	}
 }
 
@@ -1376,14 +1382,14 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 						{
-							Name: pointer.String("my-vmss"),
+							Name: pointer.String("my-vmss-nic-0"),
 							VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
 								Primary:                     pointer.Bool(true),
 								EnableAcceleratedNetworking: pointer.Bool(false),
 								EnableIPForwarding:          pointer.Bool(true),
 								IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
 									{
-										Name: pointer.String("my-vmss"),
+										Name: pointer.String("ipConfig0"),
 										VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 											Subnet: &compute.APIEntityReference{
 												ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
