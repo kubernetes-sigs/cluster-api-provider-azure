@@ -373,6 +373,21 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// AgentPool changes are managed through AMMP
 		managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
 
+		// [ES-569654] Temporarily add for debugging
+		agentPoolProfiles := *(managedCluster.AgentPoolProfiles)
+		klog.V(2).Infof("YY debugging: " + managedClusterSpec.Name)
+		for _, agentPoolProfile := range agentPoolProfiles {
+			name := *agentPoolProfile.Name
+			orchVersion := ""
+			if agentPoolProfile.OrchestratorVersion != nil {
+				orchVersion = *agentPoolProfile.OrchestratorVersion
+			} else {
+				orchVersion = "nil"
+			}
+			klog.V(2).Infof("YY debugging: " + name + ": " + orchVersion)
+		}
+
+
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
