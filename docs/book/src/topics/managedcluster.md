@@ -610,6 +610,104 @@ spec:
     enablePrivateClusterPublicFQDN: false # Allowed only when enablePrivateCluster is true
 ```
 
+### OS configurations of Linux agent nodes (AKS)
+
+Reference:
+
+- [How-to-guide Linux OS Custom Configuration](https://learn.microsoft.com/en-us/azure/aks/custom-node-configuration#linux-os-custom-configuration)
+- [AKS API definition Linux OS Config](https://learn.microsoft.com/en-us/rest/api/aks/agent-pools/create-or-update?tabs=HTTP#linuxosconfig)
+
+When you create your node pool (`AzureManagedMachinePool`), you can specify configuration which tunes the linux OS configuration on all nodes in that pool. For example:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: "${CLUSTER_NAME}-pool1"
+spec:
+  linuxOSConfig:
+    swapFileSizeMB: 1500
+    sysctls:
+      fsAioMaxNr: 65536
+      fsFileMax: 8192
+      fsInotifyMaxUserWatches: 781250
+      fsNrOpen: 8192
+      kernelThreadsMax: 20
+      netCoreNetdevMaxBacklog: 1000
+      netCoreOptmemMax: 20480
+      netCoreRmemDefault: 212992
+      netCoreRmemMax: 212992
+      netCoreSomaxconn: 163849
+      netCoreWmemDefault: 212992
+      netCoreWmemMax: 212992
+      netIpv4IPLocalPortRange: "32000 60000"
+      netIpv4NeighDefaultGcThresh1: 128
+      netIpv4NeighDefaultGcThresh2: 512
+      netIpv4NeighDefaultGcThresh3: 1024
+      netIpv4TCPFinTimeout: 5
+      netIpv4TCPKeepaliveProbes: 1
+      netIpv4TCPKeepaliveTime: 30
+      netIpv4TCPMaxSynBacklog: 128
+      netIpv4TCPMaxTwBuckets: 8000
+      netIpv4TCPTwReuse: true
+      netIpv4TCPkeepaliveIntvl: 10
+      netNetfilterNfConntrackBuckets: 65536
+      netNetfilterNfConntrackMax: 131072
+      vmMaxMapCount: 65530
+      vmSwappiness: 10
+      vmVfsCachePressure: 15
+    transparentHugePageDefrag: "defer+madvise"
+    transparentHugePageEnabled: "madvise"
+```
+
+Below are the full set of AKS-supported `linuxOSConfig` configurations. All properties are children of the `spec.linuxOSConfig` configuration in an `AzureManagedMachinePool` resource:
+
+| Configuration               | Property Type     | Allowed Value(s)                                                                         |
+|-----------------------------|-------------------|------------------------------------------------------------------------------------------|
+| `swapFileSizeMB`            | integer           | minimum value `1`.                                                                       |
+| `sysctls`                   | SysctlConfig      |                                                                                          |
+| `transparentHugePageDefrag` | string            | `"always"`, `"defer"`, `"defer+madvise"`, `"madvise"` or `"never"`                       |
+| `transparentHugePageEnabled`| string            | `"always"`, `"madvise"` or `"never"`                                                     |
+
+**Note**: To enable swap file on nodes, i.e.`swapFileSizeMB` to be applied, `Kubeletconfig.failSwapOn` must be set to `false`
+
+#### SysctlsConfig
+
+Below are the full set of supported `SysctlConfig` configurations. All properties are children of the `spec.linuxOSConfig.sysctls` configuration in an `AzureManagedMachinePool` resource:
+
+| Configuration                   | Property Type     | Allowed Value(s)                                                                         |
+|---------------------------------|-------------------|------------------------------------------------------------------------------------------|
+| `fsAioMaxNr`                    | integer           | allowed value in the range [`65536` - `6553500`] (inclusive)                             |
+| `fsFileMax`                     | integer           | allowed value in the range [`8192` - `12000500`] (inclusive)                             |
+| `fsInotifyMaxUserWatches`       | integer           | allowed value in the range [`781250` - `2097152`] (inclusive)                            |
+| `fsNrOpen`                      | integer           | allowed value in the range [`8192` - `20000500`] (inclusive)                             |
+| `kernelThreadsMax`              | integer           | allowed value in the range [`20` - `513785`] (inclusive)                                 |
+| `netCoreNetdevMaxBacklog`       | integer           | allowed value in the range [`1000` - `3240000`] (inclusive)                              |
+| `netCoreOptmemMax`              | integer           | allowed value in the range [`20480` - `4194304`] (inclusive)                             |
+| `netCoreRmemDefault`            | integer           | allowed value in the range [`212992` - `134217728`] (inclusive)                          |
+| `netCoreRmemMax`                | integer           | allowed value in the range [`212992` - `134217728`] (inclusive)                          |
+| `netCoreSomaxconn`              | integer           | allowed value in the range [`4096` - `3240000`] (inclusive)                              |
+| `netCoreWmemDefault`            | integer           | allowed value in the range [`212992` - `134217728`] (inclusive)                          |
+| `netCoreWmemMax`                | integer           | allowed value in the range [`212992`- `134217728`] (inclusive)                           |
+| `netIpv4IPLocalPortRange`       | string            | Must be specified as `"first last"`. Ex: `1024 33000`. First must be in `[1024 - 60999]` and last must be in `[32768 - 65000]`|
+| `netIpv4NeighDefaultGcThresh1`  | integer           | allowed value in the range [`128` - `80000`] (inclusive)                                 |
+| `netIpv4NeighDefaultGcThresh2`  | integer           | allowed value in the range [`512` - `90000`] (inclusive)                                 |
+| `netIpv4NeighDefaultGcThresh3`  | integer           | allowed value in the range [`1024` - `100000`] (inclusive)                               |
+| `netIpv4TCPFinTimeout`          | integer           | allowed value in the range [`5` - `120`] (inclusive)                                     |
+| `netIpv4TCPKeepaliveProbes`     | integer           | allowed value in the range [`1` - `15`] (inclusive)                                      |
+| `netIpv4TCPKeepaliveTime`       | integer           | allowed value in the range [`30` - `432000`] (inclusive)                                 |
+| `netIpv4TCPMaxSynBacklog`       | integer           | allowed value in the range [`128` - `3240000`] (inclusive)                               |
+| `netIpv4TCPMaxTwBuckets`        | integer           | allowed value in the range [`8000` - `1440000`] (inclusive)                              |
+| `netIpv4TCPTwReuse`             | bool              | allowed values `true` or `false`                                                         |
+| `netIpv4TCPkeepaliveIntvl`      | integer           | allowed value in the range [`1` - `75`] (inclusive)                                      |
+| `netNetfilterNfConntrackBuckets`| integer           | allowed value in the range [`65536` - `147456`] (inclusive)                              |
+| `netNetfilterNfConntrackMax`    | integer           | allowed value in the range [`131072` - `1048576`] (inclusive)                            |
+| `vmMaxMapCount`                 | integer           | allowed value in the range [`65530` - `262144`] (inclusive)                              |
+| `vmSwappiness`                  | integer           | allowed value in the range [`0` - `100`] (inclusive)                                     |
+| `vmVfsCachePressure`            | integer           | allowed value in the range [`1` - `500`] (inclusive)                                     |
+
+**Note**: Both of the values must be specified to enforce `NetIpv4IPLocalPortRange`.
+
 ## Immutable fields for Managed Clusters (AKS)
 
 Some fields from the family of Managed Clusters CRD are immutable. Which means
@@ -642,6 +740,7 @@ Following is the list of immutable fields for managed clusters:
 | AzureManagedMachinePool   | .spec.enableNodePublicIP     |                           |
 | AzureManagedMachinePool   | .spec.nodePublicIPPrefixID   |                           |
 | AzureManagedMachinePool   | .spec.kubeletConfig          |                           |
+| AzureManagedMachinePool   | .spec.linuxOSConfig          |                           |
 
 ## Features
 

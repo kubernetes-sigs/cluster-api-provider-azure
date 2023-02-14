@@ -137,6 +137,9 @@ type AgentPoolSpec struct {
 
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the ones added by default.
 	AdditionalTags infrav1.Tags
+
+	// LinuxOSConfig specifies the custom Linux OS settings and configurations
+	LinuxOSConfig *infrav1.LinuxOSConfig
 }
 
 // ResourceName returns the name of the agent pool.
@@ -284,6 +287,47 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		}
 	}
 
+	var linuxOSConfig *containerservice.LinuxOSConfig
+	if s.LinuxOSConfig != nil {
+		linuxOSConfig = &containerservice.LinuxOSConfig{
+			SwapFileSizeMB:             s.LinuxOSConfig.SwapFileSizeMB,
+			TransparentHugePageEnabled: (*string)(s.LinuxOSConfig.TransparentHugePageEnabled),
+			TransparentHugePageDefrag:  (*string)(s.LinuxOSConfig.TransparentHugePageDefrag),
+		}
+		if s.LinuxOSConfig.Sysctls != nil {
+			linuxOSConfig.Sysctls = &containerservice.SysctlConfig{
+				FsAioMaxNr:                     s.LinuxOSConfig.Sysctls.FsAioMaxNr,
+				FsFileMax:                      s.LinuxOSConfig.Sysctls.FsFileMax,
+				FsInotifyMaxUserWatches:        s.LinuxOSConfig.Sysctls.FsInotifyMaxUserWatches,
+				FsNrOpen:                       s.LinuxOSConfig.Sysctls.FsNrOpen,
+				KernelThreadsMax:               s.LinuxOSConfig.Sysctls.KernelThreadsMax,
+				NetCoreNetdevMaxBacklog:        s.LinuxOSConfig.Sysctls.NetCoreNetdevMaxBacklog,
+				NetCoreOptmemMax:               s.LinuxOSConfig.Sysctls.NetCoreOptmemMax,
+				NetCoreRmemDefault:             s.LinuxOSConfig.Sysctls.NetCoreRmemDefault,
+				NetCoreRmemMax:                 s.LinuxOSConfig.Sysctls.NetCoreRmemMax,
+				NetCoreSomaxconn:               s.LinuxOSConfig.Sysctls.NetCoreSomaxconn,
+				NetCoreWmemDefault:             s.LinuxOSConfig.Sysctls.NetCoreWmemDefault,
+				NetCoreWmemMax:                 s.LinuxOSConfig.Sysctls.NetCoreWmemMax,
+				NetIpv4IPLocalPortRange:        s.LinuxOSConfig.Sysctls.NetIpv4IPLocalPortRange,
+				NetIpv4NeighDefaultGcThresh1:   s.LinuxOSConfig.Sysctls.NetIpv4NeighDefaultGcThresh1,
+				NetIpv4NeighDefaultGcThresh2:   s.LinuxOSConfig.Sysctls.NetIpv4NeighDefaultGcThresh2,
+				NetIpv4NeighDefaultGcThresh3:   s.LinuxOSConfig.Sysctls.NetIpv4NeighDefaultGcThresh3,
+				NetIpv4TCPFinTimeout:           s.LinuxOSConfig.Sysctls.NetIpv4TCPFinTimeout,
+				NetIpv4TCPKeepaliveProbes:      s.LinuxOSConfig.Sysctls.NetIpv4TCPKeepaliveProbes,
+				NetIpv4TCPKeepaliveTime:        s.LinuxOSConfig.Sysctls.NetIpv4TCPKeepaliveTime,
+				NetIpv4TCPMaxSynBacklog:        s.LinuxOSConfig.Sysctls.NetIpv4TCPMaxSynBacklog,
+				NetIpv4TCPMaxTwBuckets:         s.LinuxOSConfig.Sysctls.NetIpv4TCPMaxTwBuckets,
+				NetIpv4TCPTwReuse:              s.LinuxOSConfig.Sysctls.NetIpv4TCPTwReuse,
+				NetIpv4TcpkeepaliveIntvl:       s.LinuxOSConfig.Sysctls.NetIpv4TCPkeepaliveIntvl,
+				NetNetfilterNfConntrackBuckets: s.LinuxOSConfig.Sysctls.NetNetfilterNfConntrackBuckets,
+				NetNetfilterNfConntrackMax:     s.LinuxOSConfig.Sysctls.NetNetfilterNfConntrackMax,
+				VMMaxMapCount:                  s.LinuxOSConfig.Sysctls.VMMaxMapCount,
+				VMSwappiness:                   s.LinuxOSConfig.Sysctls.VMSwappiness,
+				VMVfsCachePressure:             s.LinuxOSConfig.Sysctls.VMVfsCachePressure,
+			}
+		}
+	}
+
 	agentPool := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			AvailabilityZones:    availabilityZones,
@@ -309,6 +353,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			EnableNodePublicIP:   s.EnableNodePublicIP,
 			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
 			Tags:                 *azure.StringMapPtr(s.AdditionalTags),
+			LinuxOSConfig:        linuxOSConfig,
 		},
 	}
 

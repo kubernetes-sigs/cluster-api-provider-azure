@@ -50,6 +50,8 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.ScaleSetPriority = restored.Spec.ScaleSetPriority
 	dst.Spec.AdditionalTags = restored.Spec.AdditionalTags
 	dst.Spec.KubeletDiskType = restored.Spec.KubeletDiskType
+	dst.Spec.LinuxOSConfig = restored.Spec.LinuxOSConfig
+
 	if restored.Spec.KubeletConfig != nil {
 		dst.Spec.KubeletConfig = restored.Spec.KubeletConfig
 	}
