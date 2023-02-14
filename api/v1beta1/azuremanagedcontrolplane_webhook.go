@@ -363,7 +363,7 @@ func (m *AzureManagedControlPlane) validateLoadBalancerProfile(_ client.Client) 
 func (m *AzureManagedControlPlane) validateAPIServerAccessProfile(_ client.Client) error {
 	if m.Spec.APIServerAccessProfile != nil {
 		var allErrs field.ErrorList
-		for _, ipRange := range m.Spec.APIServerAccessProfile.AuthorizedIPRanges {
+		for _, ipRange := range *m.Spec.APIServerAccessProfile.AuthorizedIPRanges {
 			if _, _, err := net.ParseCIDR(ipRange); err != nil {
 				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "APIServerAccessProfile", "AuthorizedIPRanges"), ipRange, "invalid CIDR format"))
 			}

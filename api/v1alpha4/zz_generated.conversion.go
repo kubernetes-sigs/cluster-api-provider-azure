@@ -738,7 +738,7 @@ func Convert_v1beta1_AKSSku_To_v1alpha4_AKSSku(in *v1beta1.AKSSku, out *AKSSku, 
 }
 
 func autoConvert_v1alpha4_APIServerAccessProfile_To_v1beta1_APIServerAccessProfile(in *APIServerAccessProfile, out *v1beta1.APIServerAccessProfile, s conversion.Scope) error {
-	out.AuthorizedIPRanges = *(*[]string)(unsafe.Pointer(&in.AuthorizedIPRanges))
+	out.AuthorizedIPRanges = (*[]string)(unsafe.Pointer(in.AuthorizedIPRanges))
 	out.EnablePrivateCluster = (*bool)(unsafe.Pointer(in.EnablePrivateCluster))
 	out.PrivateDNSZone = (*string)(unsafe.Pointer(in.PrivateDNSZone))
 	out.EnablePrivateClusterPublicFQDN = (*bool)(unsafe.Pointer(in.EnablePrivateClusterPublicFQDN))
@@ -751,7 +751,7 @@ func Convert_v1alpha4_APIServerAccessProfile_To_v1beta1_APIServerAccessProfile(i
 }
 
 func autoConvert_v1beta1_APIServerAccessProfile_To_v1alpha4_APIServerAccessProfile(in *v1beta1.APIServerAccessProfile, out *APIServerAccessProfile, s conversion.Scope) error {
-	out.AuthorizedIPRanges = *(*[]string)(unsafe.Pointer(&in.AuthorizedIPRanges))
+	out.AuthorizedIPRanges = (*[]string)(unsafe.Pointer(in.AuthorizedIPRanges))
 	out.EnablePrivateCluster = (*bool)(unsafe.Pointer(in.EnablePrivateCluster))
 	out.PrivateDNSZone = (*string)(unsafe.Pointer(in.PrivateDNSZone))
 	out.EnablePrivateClusterPublicFQDN = (*bool)(unsafe.Pointer(in.EnablePrivateClusterPublicFQDN))

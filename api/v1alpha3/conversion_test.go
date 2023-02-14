@@ -70,9 +70,10 @@ func TestFuzzyConversion(t *testing.T) {
 	}))
 
 	t.Run("for AzureManagedControlPlane", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
-		Scheme: scheme,
-		Hub:    &infrav1.AzureManagedControlPlane{},
-		Spoke:  &AzureManagedControlPlane{},
+		Scheme:      scheme,
+		Hub:         &infrav1.AzureManagedControlPlane{},
+		Spoke:       &AzureManagedControlPlane{},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideAPIServerAccessProfileFunc},
 	}))
 
 	t.Run("for AzureManagedMachinePool", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
@@ -108,6 +109,15 @@ func overrideOutboundLBFunc(codecs runtimeserializer.CodecFactory) []interface{}
 			networkSpec.NodeOutboundLB = &infrav1.LoadBalancerSpec{
 				FrontendIPsCount: pointer.Int32(1),
 			}
+		},
+	}
+}
+
+func overrideAPIServerAccessProfileFunc(codecs runtimeserializer.CodecFactory) []interface{} {
+	authIPRange := []string{}
+	return []interface{}{
+		func(apiServerAccessProfile *infrav1.APIServerAccessProfile, c fuzz.Continue) {
+			apiServerAccessProfile.AuthorizedIPRanges = &authIPRange
 		},
 	}
 }

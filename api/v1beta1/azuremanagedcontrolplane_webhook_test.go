@@ -234,7 +234,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					APIServerAccessProfile: &APIServerAccessProfile{
-						AuthorizedIPRanges: []string{"1.2.3.400/32"},
+						AuthorizedIPRanges: &[]string{"1.2.3.400/32"},
 					},
 				},
 			},
@@ -1116,7 +1116,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					DNSServiceIP: pointer.String("192.168.0.0"),
 					Version:      "v1.18.0",
 					APIServerAccessProfile: &APIServerAccessProfile{
-						AuthorizedIPRanges: []string{"192.168.0.1/32"},
+						AuthorizedIPRanges: &[]string{"192.168.0.1/32"},
 					},
 				},
 			},

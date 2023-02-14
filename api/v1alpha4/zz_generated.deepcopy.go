@@ -69,8 +69,12 @@ func (in *APIServerAccessProfile) DeepCopyInto(out *APIServerAccessProfile) {
 	*out = *in
 	if in.AuthorizedIPRanges != nil {
 		in, out := &in.AuthorizedIPRanges, &out.AuthorizedIPRanges
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+		*out = new([]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.EnablePrivateCluster != nil {
 		in, out := &in.EnablePrivateCluster, &out.EnablePrivateCluster

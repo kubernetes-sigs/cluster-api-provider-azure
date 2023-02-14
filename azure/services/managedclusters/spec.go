@@ -156,7 +156,7 @@ type LoadBalancerProfile struct {
 // APIServerAccessProfile is the access profile for AKS API server.
 type APIServerAccessProfile struct {
 	// AuthorizedIPRanges are the authorized IP Ranges to kubernetes API server.
-	AuthorizedIPRanges []string
+	AuthorizedIPRanges *[]string
 	// EnablePrivateCluster defines hether to create the cluster as a private cluster or not.
 	EnablePrivateCluster *bool
 	// PrivateDNSZone is the private dns zone for private clusters.
@@ -373,7 +373,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 
 	if s.APIServerAccessProfile != nil {
 		managedCluster.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
-			AuthorizedIPRanges:             &s.APIServerAccessProfile.AuthorizedIPRanges,
+			AuthorizedIPRanges:             s.APIServerAccessProfile.AuthorizedIPRanges,
 			EnablePrivateCluster:           s.APIServerAccessProfile.EnablePrivateCluster,
 			PrivateDNSZone:                 s.APIServerAccessProfile.PrivateDNSZone,
 			EnablePrivateClusterPublicFQDN: s.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
