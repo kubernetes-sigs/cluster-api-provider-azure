@@ -7,7 +7,7 @@ spec:
   strategy: "ApplyOnce"
   clusterSelector:
     matchLabels:
-      cni: calico
+      cni-windows: calico
       windows: enabled
   resources:
     - name: calico-windows-addon
