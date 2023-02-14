@@ -369,9 +369,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			existingMC.NetworkProfile.LoadBalancerProfile.EffectiveOutboundIPs = nil
 		}
 
-		// Avoid changing agent pool profiles through AMCP and just use the existing agent pool profiles
-		// AgentPool changes are managed through AMMP
-		managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
+		// [ES-569654] We don't pass in agent pool information on update to avoid issues with Nephos worker pools.
+		//managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
 
 		// [ES-569654] Temporarily add for debugging
 		agentPoolProfiles := *(managedCluster.AgentPoolProfiles)
