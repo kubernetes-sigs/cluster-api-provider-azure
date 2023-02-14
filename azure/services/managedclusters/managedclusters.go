@@ -369,26 +369,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			existingMC.NetworkProfile.LoadBalancerProfile.EffectiveOutboundIPs = nil
 		}
 
-		// [ES-569654] We don't pass in agent pool information on update to avoid issues with Nephos worker pools.
-		if managedClusterSpec.Name != "staging-azure-westus-nephos8" {
-			managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
-		}
-
-		// [ES-569654] Temporarily add for debugging
-		agentPoolProfiles := *(managedCluster.AgentPoolProfiles)
-		klog.V(2).Infof("YY debugging: " + managedClusterSpec.Name)
-		for _, agentPoolProfile := range agentPoolProfiles {
-			name := *agentPoolProfile.Name
-			orchVersion := ""
-			if agentPoolProfile.OrchestratorVersion != nil {
-				orchVersion = *agentPoolProfile.OrchestratorVersion
-			} else {
-				orchVersion = "nil"
-			}
-			klog.V(2).Infof("YY debugging: " + name + ": " + orchVersion)
-		}
-
-
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
