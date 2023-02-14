@@ -104,8 +104,8 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error {
 			}
 			dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules = append(dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules, restoredOutboundRules...)
 			dst.Spec.NetworkSpec.Subnets[i].NatGateway = restoredSubnet.NatGateway
-
 			dst.Spec.NetworkSpec.Subnets[i].ServiceEndpoints = restoredSubnet.ServiceEndpoints
+			dst.Spec.NetworkSpec.Subnets[i].PrivateEndpoints = restoredSubnet.PrivateEndpoints
 
 			break
 		}

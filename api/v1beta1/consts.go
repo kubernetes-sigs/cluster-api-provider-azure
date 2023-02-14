@@ -128,6 +128,8 @@ const (
 	DisksReadyCondition clusterv1.ConditionType = "DisksReady"
 	// NetworkInterfaceReadyCondition means the network interfaces exist and are ready to be used.
 	NetworkInterfaceReadyCondition clusterv1.ConditionType = "NetworkInterfacesReady"
+	// PrivateEndpointsReadyCondition means the private endpoints exist and are ready to be used.
+	PrivateEndpointsReadyCondition clusterv1.ConditionType = "PrivateEndpointsReady"
 
 	// CreatingReason means the resource is being created.
 	CreatingReason = "Creating"

@@ -144,6 +144,11 @@ type Subnets []SubnetSpec
 // +listMapKey=service
 type ServiceEndpoints []ServiceEndpointSpec
 
+// PrivateEndpoints is a slice of PrivateEndpointSpec.
+// +listType=map
+// +listMapKey=name
+type PrivateEndpoints []PrivateEndpointSpec
+
 // SecurityGroup defines an Azure security group.
 type SecurityGroup struct {
 	// ID is the Azure resource ID of the security group.
@@ -633,6 +638,48 @@ type ServiceEndpointSpec struct {
 	Service string `json:"service"`
 
 	Locations []string `json:"locations"`
+}
+
+// PrivateLinkServiceConnection defines the specification for a private link service connection associated with a private endpoint.
+type PrivateLinkServiceConnection struct {
+	// Name specifies the name of the private link service.
+	// +optional
+	Name string `json:"name,omitempty"`
+	// PrivateLinkServiceID specifies the resource ID of the private link service.
+	PrivateLinkServiceID string `json:"privateLinkServiceID,omitempty"`
+	// GroupIDs specifies the ID(s) of the group(s) obtained from the remote resource that this private endpoint should connect to.
+	// +optional
+	GroupIDs []string `json:"groupIDs,omitempty"`
+	// RequestMessage specifies a message passed to the owner of the remote resource with the private endpoint connection request.
+	// +kubebuilder:validation:MaxLength=140
+	// +optional
+	RequestMessage string `json:"requestMessage,omitempty"`
+}
+
+// PrivateEndpointSpec configures an Azure Private Endpoint.
+type PrivateEndpointSpec struct {
+	// Name specifies the name of the private endpoint.
+	Name string `json:"name"`
+	// Location specifies the region to create the private endpoint.
+	// +optional
+	Location string `json:"location,omitempty"`
+	// PrivateLinkServiceConnections specifies Private Link Service Connections of the private endpoint.
+	PrivateLinkServiceConnections []PrivateLinkServiceConnection `json:"privateLinkServiceConnections,omitempty"`
+	// CustomNetworkInterfaceName specifies the network interface name associated with the private endpoint.
+	// +optional
+	CustomNetworkInterfaceName string `json:"customNetworkInterfaceName,omitempty"`
+	// PrivateIPAddresses specifies the IP addresses for the network interface associated with the private endpoint.
+	// They have to be part of the subnet where the private endpoint is linked.
+	// +optional
+	PrivateIPAddresses []string `json:"privateIPAddresses,omitempty"`
+	// ApplicationSecurityGroups specifies the Application security group in which the private endpoint IP configuration is included.
+	// +optional
+	ApplicationSecurityGroups []string `json:"applicationSecurityGroups,omitempty"`
+	// ManualApproval specifies if the connection approval needs to be done manually or not.
+	// Set it true when the network admin does not have access to approve connections to the remote resource.
+	// Defaults to false.
+	// +optional
+	ManualApproval bool `json:"manualApproval,omitempty"`
 }
 
 // NetworkInterface defines a network interface.

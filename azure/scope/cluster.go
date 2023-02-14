@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
@@ -788,6 +789,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.PrivateDNSZoneReadyCondition,
 			infrav1.PrivateDNSLinkReadyCondition,
 			infrav1.PrivateDNSRecordReadyCondition,
+			infrav1.PrivateEndpointsReadyCondition,
 		}})
 }
 
@@ -1005,4 +1007,58 @@ func (s *ClusterScope) TagsSpecs() []azure.TagsSpec {
 			Annotation: azure.RGTagsLastAppliedAnnotation,
 		},
 	}
+}
+
+// PrivateEndpointSpecs returns the private endpoint specs.
+func (s *ClusterScope) PrivateEndpointSpecs() []azure.ResourceSpecGetter {
+	numberOfSubnets := len(s.AzureCluster.Spec.NetworkSpec.Subnets)
+	if s.IsAzureBastionEnabled() {
+		numberOfSubnets++
+	}
+
+	privateEndpointSpecs := make([]azure.ResourceSpecGetter, 0, numberOfSubnets)
+
+	subnets := s.AzureCluster.Spec.NetworkSpec.Subnets
+	if s.IsAzureBastionEnabled() {
+		subnets = append(subnets, s.AzureCluster.Spec.BastionSpec.AzureBastion.Subnet)
+	}
+
+	for _, subnet := range subnets {
+		privateEndpointSpecs = append(privateEndpointSpecs, s.getPrivateEndpoints(subnet)...)
+	}
+
+	return privateEndpointSpecs
+}
+
+func (s *ClusterScope) getPrivateEndpoints(subnet infrav1.SubnetSpec) []azure.ResourceSpecGetter {
+	privateEndpointSpecs := make([]azure.ResourceSpecGetter, 0)
+
+	for _, privateEndpoint := range subnet.PrivateEndpoints {
+		privateEndpointSpec := &privateendpoints.PrivateEndpointSpec{
+			Name:                       privateEndpoint.Name,
+			ResourceGroup:              s.ResourceGroup(),
+			Location:                   privateEndpoint.Location,
+			CustomNetworkInterfaceName: privateEndpoint.CustomNetworkInterfaceName,
+			PrivateIPAddresses:         privateEndpoint.PrivateIPAddresses,
+			SubnetID:                   subnet.ID,
+			ApplicationSecurityGroups:  privateEndpoint.ApplicationSecurityGroups,
+			ManualApproval:             privateEndpoint.ManualApproval,
+			ClusterName:                s.ClusterName(),
+			AdditionalTags:             s.AdditionalTags(),
+		}
+
+		for _, privateLinkServiceConnection := range privateEndpoint.PrivateLinkServiceConnections {
+			pl := privateendpoints.PrivateLinkServiceConnection{
+				PrivateLinkServiceID: privateLinkServiceConnection.PrivateLinkServiceID,
+				Name:                 privateLinkServiceConnection.Name,
+				RequestMessage:       privateLinkServiceConnection.RequestMessage,
+				GroupIDs:             privateLinkServiceConnection.GroupIDs,
+			}
+			privateEndpointSpec.PrivateLinkServiceConnections = append(privateEndpointSpec.PrivateLinkServiceConnections, pl)
+		}
+
+		privateEndpointSpecs = append(privateEndpointSpecs, privateEndpointSpec)
+	}
+
+	return privateEndpointSpecs
 }

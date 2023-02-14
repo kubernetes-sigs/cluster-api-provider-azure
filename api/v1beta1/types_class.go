@@ -86,6 +86,10 @@ type SubnetClassSpec struct {
 	// ServiceEndpoints is a slice of Virtual Network service endpoints to enable for the subnets.
 	// +optional
 	ServiceEndpoints ServiceEndpoints `json:"serviceEndpoints,omitempty"`
+
+	// PrivateEndpoints defines a list of private endpoints that should be attached to this subnet.
+	// +optional
+	PrivateEndpoints PrivateEndpoints `json:"privateEndpoints,omitempty"`
 }
 
 // LoadBalancerClassSpec defines the LoadBalancerSpec properties that may be shared across several Azure clusters.

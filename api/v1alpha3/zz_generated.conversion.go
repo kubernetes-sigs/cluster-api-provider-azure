@@ -1964,6 +1964,7 @@ func autoConvert_v1beta1_ManagedControlPlaneSubnet_To_v1alpha3_ManagedControlPla
 	out.Name = in.Name
 	out.CIDRBlock = in.CIDRBlock
 	// WARNING: in.ServiceEndpoints requires manual conversion: does not exist in peer-type
+	// WARNING: in.PrivateEndpoints requires manual conversion: does not exist in peer-type
 	return nil
 }
 

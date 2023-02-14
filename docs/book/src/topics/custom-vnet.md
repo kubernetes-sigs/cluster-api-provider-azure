@@ -211,6 +211,86 @@ spec:
   resourceGroup: cluster-example
 ```
 
+### Private Endpoints
+
+A [Private Endpoint](https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview) is a network interface that uses 
+a private IP address from your virtual network. This network interface connects you privately and securely to a service that's powered 
+by [Azure Private Link](https://learn.microsoft.com/en-us/azure/private-link/private-link-overview). Azure Private Link enables you 
+to access Azure PaaS Services (for example, Azure Storage and SQL Database) and Azure hosted customer-owned/partner services over a 
+private endpoint in your virtual network.
+
+ Private Endpoints are configured on a per-subnet basis. Vnets managed by either
+`AzureCluster`, `AzureClusterTemplates` or `AzureManagedControlPlane` can have `privateEndpoints` optionally set on each subnet.
+
+- `AzureCluster` example:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: cluster-example
+  namespace: default
+spec:
+  location: eastus2
+  resourceGroup: cluster-example
+  networkSpec:
+    vnet:
+      name: my-vnet
+      cidrBlocks:
+        - 10.0.0.0/16
+    subnets:
+      - name: my-subnet-cp
+        role: control-plane
+        cidrBlocks:
+          - 10.0.1.0/24
+      - name: my-subnet-node
+        role: node
+        cidrBlocks:
+          - 10.0.2.0/24
+        privateEndpoints:
+         - name: my-pe
+           privateLinkServiceConnections:
+           - privateLinkServiceID: /subscriptions/<Subscription ID>/resourceGroups/<Remote Resource Group Name>/providers/Microsoft.Network/privateLinkServices/<Private Link Service Name>
+```
+
+- `AzureManagedControlPlane` example:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: cluster-example
+  namespace: default
+spec:
+  version: v1.25.2
+  sshPublicKey: ""
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: cluster-identity
+  location: eastus2
+  resourceGroupName: cluster-example
+  virtualNetwork:
+    name: my-vnet
+    cidrBlock: 10.0.0.0/16
+    subnet:
+      cidrBlock: 10.0.2.0/24
+      name: my-subnet
+      privateEndpoints:
+      - name: my-pe
+        customNetworkInterfaceName: nic-my-pe # optional
+        applicationSecurityGroups: # optional 
+        - <ASG ID>
+        privateIPAddresses: # optional 
+        - 10.0.2.10 
+        location: eastus2 # optional
+        privateLinkServiceConnections:
+        - name: my-pls # optional
+          privateLinkServiceID: /subscriptions/<Subscription ID>/resourceGroups/<Remote Resource Group Name>/providers/Microsoft.Storage/storageAccounts/<Name>
+          groupIds:
+          - "blob"
+```
+
 ### Custom subnets
 
 Sometimes it's desirable to use different subnets for different node pools.
