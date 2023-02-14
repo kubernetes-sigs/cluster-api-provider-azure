@@ -370,7 +370,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		// [ES-569654] We don't pass in agent pool information on update to avoid issues with Nephos worker pools.
-		//managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
+		if managedClusterSpec.Name != "staging-azure-westus-nephos8" {
+			managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
+		}
 
 		// [ES-569654] Temporarily add for debugging
 		agentPoolProfiles := *(managedCluster.AgentPoolProfiles)
