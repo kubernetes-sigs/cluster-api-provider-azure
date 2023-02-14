@@ -68,6 +68,10 @@ const (
 	MaximumPlatformFaultDomainCount = "MaximumPlatformFaultDomainCount"
 	// UltraSSDAvailable identifies the capability for the support of UltraSSD data disks.
 	UltraSSDAvailable = "UltraSSDAvailable"
+	// TrustedLaunchDisabled identifies the absence of the trusted launch capability.
+	TrustedLaunchDisabled = "TrustedLaunchDisabled"
+	// ConfidentialComputingType identifies the capability for confidentical computing.
+	ConfidentialComputingType = "ConfidentialComputingType"
 )
 
 // HasCapability return true for a capability which can be either
