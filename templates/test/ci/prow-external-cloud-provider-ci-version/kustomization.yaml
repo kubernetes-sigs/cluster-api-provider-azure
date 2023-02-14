@@ -5,3 +5,4 @@ resources:
   - ../prow-ci-version
 patchesStrategicMerge:
   - ../../../flavors/external-cloud-provider/patches/external-cloud-provider.yaml
+  - patches/external-cloud-provider-windows.yaml

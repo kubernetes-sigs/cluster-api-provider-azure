@@ -523,8 +523,8 @@ spec:
           kubeletExtraArgs:
             azure-container-registry-config: c:/k/azure.json
             cloud-config: c:/k/azure.json
-            cloud-provider: azure
-            feature-gates: WindowsHostProcessContainers=true
+            cloud-provider: external
+            feature-gates: WindowsHostProcessContainers=true,CSIMigrationAzureDisk=true
             v: "2"
             windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
           name: '{{ ds.meta_data["local_hostname"] }}'
