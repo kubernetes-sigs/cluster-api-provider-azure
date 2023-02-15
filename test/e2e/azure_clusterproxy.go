@@ -95,10 +95,15 @@ func (acp *AzureClusterProxy) CollectWorkloadClusterLogs(ctx context.Context, na
 
 	aboveMachinesPath := strings.Replace(outputPath, "/machines", "", 1)
 
-	Logf("Dumping workload cluster %s/%s kube-system pod logs", namespace, name)
+	Logf("Dumping workload cluster %s/%s nodes", namespace, name)
 	start := time.Now()
+	acp.collectNodes(ctx, namespace, name, aboveMachinesPath)
+	Logf("Fetching nodes took %s", time.Since(start).String())
+
+	Logf("Dumping workload cluster %s/%s pod logs", namespace, name)
+	start = time.Now()
 	acp.collectPodLogs(ctx, namespace, name, aboveMachinesPath)
-	Logf("Fetching kube-system pod logs took %s", time.Since(start).String())
+	Logf("Fetching pod logs took %s", time.Since(start).String())
 
 	Logf("Dumping workload cluster %s/%s Azure activity log", namespace, name)
 	start = time.Now()
@@ -200,6 +205,57 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 				Logf("failed to describe pod %s/%s: %v", podNamespace, pod.Name, err)
 			}
 		}(pod)
+	}
+}
+
+func (acp *AzureClusterProxy) collectNodes(ctx context.Context, namespace string, name string, aboveMachinesPath string) {
+	workload := acp.GetWorkloadCluster(ctx, namespace, name)
+	nodes := &corev1.NodeList{}
+
+	Expect(workload.GetClient().List(ctx, nodes)).To(Succeed())
+
+	var err error
+	var nodeDescribe string
+
+	nodeDescriber, ok := describe.DescriberFor(schema.GroupKind{Group: corev1.GroupName, Kind: "Node"}, workload.GetRESTConfig())
+	if !ok {
+		Logf("failed to get node describer")
+	}
+
+	for _, node := range nodes.Items {
+		// Describe the node.
+		Logf("Describing Node %s", node.GetName())
+		nodeDescribe, err = nodeDescriber.Describe(node.GetNamespace(), node.GetName(), describe.DescriberSettings{ShowEvents: true})
+		if err != nil {
+			Logf("failed to describe node %s: %v", node.GetName(), err)
+		}
+
+		go func(node corev1.Node) {
+			defer GinkgoRecover()
+
+			describeFile := path.Join(aboveMachinesPath, nodesDir, node.GetName(), "node-describe.txt")
+			if err := os.MkdirAll(filepath.Dir(describeFile), 0o755); err != nil {
+				// Failing to mkdir should not cause the test to fail
+				Logf("Error mkdir: %v", err)
+				return
+			}
+
+			f, err := os.OpenFile(describeFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+			if err != nil {
+				// Failing to open the file should not cause the test to fail
+				Logf("Error opening file to write node describe: %v", err)
+				return
+			}
+			defer f.Close()
+
+			out := bufio.NewWriter(f)
+			defer out.Flush()
+			_, err = out.WriteString(nodeDescribe)
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				// Failing to describe node should not cause the test to fail
+				Logf("failed to describe node %s: %v", node.GetName(), err)
+			}
+		}(node)
 	}
 }
 

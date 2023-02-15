@@ -28,6 +28,7 @@ import (
 const (
 	kubesystem  = "kube-system"
 	activitylog = "azure-activity-logs"
+	nodesDir    = "nodes"
 )
 
 // Test suite flags
