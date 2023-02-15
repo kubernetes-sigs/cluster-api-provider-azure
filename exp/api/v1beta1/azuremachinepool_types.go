@@ -135,6 +135,10 @@ type (
 		// +optional
 		Identity infrav1.VMIdentity `json:"identity,omitempty"`
 
+		// SystemAssignedIdentityRole defines the role and scope to assign to the system assigned identity.
+		// +optional
+		SystemAssignedIdentityRole *infrav1.SystemAssignedIdentityRole `json:"systemAssignedIdentityRole,omitempty"`
+
 		// UserAssignedIdentities is a list of standalone Azure identities provided by the user
 		// The lifecycle of a user-assigned identity is managed separately from the lifecycle of
 		// the AzureMachinePool.
@@ -142,8 +146,7 @@ type (
 		// +optional
 		UserAssignedIdentities []infrav1.UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
 
-		// RoleAssignmentName is the name of the role assignment to create for a system assigned identity. It can be any valid GUID.
-		// If not specified, a random GUID will be generated.
+		// Deprecated: RoleAssignmentName should be set in the systemAssignedIdentityRole field.
 		// +optional
 		RoleAssignmentName string `json:"roleAssignmentName,omitempty"`
 

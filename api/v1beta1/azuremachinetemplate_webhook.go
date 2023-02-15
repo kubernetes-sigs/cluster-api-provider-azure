@@ -32,8 +32,9 @@ import (
 
 // AzureMachineTemplateImmutableMsg ...
 const (
-	AzureMachineTemplateImmutableMsg          = "AzureMachineTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/updating-machine-templates.html"
-	AzureMachineTemplateRoleAssignmentNameMsg = "AzureMachineTemplate spec.template.spec.roleAssignmentName field can't be set"
+	AzureMachineTemplateImmutableMsg                      = "AzureMachineTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/updating-machine-templates.html"
+	AzureMachineTemplateRoleAssignmentNameMsg             = "AzureMachineTemplate spec.template.spec.roleAssignmentName field can't be set"
+	AzureMachineTemplateSystemAssignedIdentityRoleNameMsg = "AzureMachineTemplate spec.template.spec.systemAssignedIdentityRole.name field can't be set"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
@@ -61,6 +62,12 @@ func (r *AzureMachineTemplate) ValidateCreate(ctx context.Context, obj runtime.O
 	if spec.RoleAssignmentName != "" {
 		allErrs = append(allErrs,
 			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "roleAssignmentName"), t, AzureMachineTemplateRoleAssignmentNameMsg),
+		)
+	}
+
+	if spec.SystemAssignedIdentityRole != nil && spec.SystemAssignedIdentityRole.Name != "" {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "systemAssignedIdentityRole", "name"), t, AzureMachineTemplateSystemAssignedIdentityRoleNameMsg),
 		)
 	}
 

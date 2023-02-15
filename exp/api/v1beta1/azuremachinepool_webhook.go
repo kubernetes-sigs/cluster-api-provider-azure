@@ -46,12 +46,7 @@ func (amp *AzureMachinePool) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (amp *AzureMachinePool) Default(client client.Client) {
-	if err := amp.SetDefaultSSHPublicKey(); err != nil {
-		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "SetDefaultSshPublicKey failed")
-	}
-	amp.SetIdentityDefaults()
-	amp.SetDiagnosticsDefaults()
-	amp.SetNetworkInterfacesDefaults()
+	amp.SetDefaults(client)
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -90,6 +85,7 @@ func (amp *AzureMachinePool) Validate(old runtime.Object, client client.Client) 
 		amp.ValidateOrchestrationMode(client),
 		amp.ValidateStrategy(),
 		amp.ValidateSystemAssignedIdentity(old),
+		amp.ValidateSystemAssignedIdentityRole,
 		amp.ValidateNetwork,
 	}
 
@@ -190,16 +186,48 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) 
 				return fmt.Errorf("unexpected type for old azure machine pool object. Expected: %q, Got: %q",
 					"AzureMachinePool", reflect.TypeOf(old))
 			}
-			oldRole = oldMachinePool.Spec.RoleAssignmentName
+			if amp.Spec.SystemAssignedIdentityRole != nil {
+				oldRole = oldMachinePool.Spec.SystemAssignedIdentityRole.Name
+			}
+		}
+
+		roleAssignmentName := ""
+		if amp.Spec.SystemAssignedIdentityRole != nil {
+			roleAssignmentName = amp.Spec.SystemAssignedIdentityRole.Name
 		}
 
 		fldPath := field.NewPath("roleAssignmentName")
-		if errs := infrav1.ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, amp.Spec.RoleAssignmentName, fldPath); len(errs) > 0 {
+		if errs := infrav1.ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 
 		return nil
 	}
+}
+
+// ValidateSystemAssignedIdentityRole validates the scope and roleDefinitionID for the system-assigned identity.
+func (amp *AzureMachinePool) ValidateSystemAssignedIdentityRole() error {
+	var allErrs field.ErrorList
+	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole.Name != "" {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole"), amp.Spec.SystemAssignedIdentityRole.Name, "cannot set both roleAssignmentName and systemAssignedIdentityRole.name"))
+	}
+	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
+		if amp.Spec.SystemAssignedIdentityRole.DefinitionID == "" {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole", "DefinitionID"), amp.Spec.SystemAssignedIdentityRole.DefinitionID, "the roleDefinitionID field cannot be empty"))
+		}
+		if amp.Spec.SystemAssignedIdentityRole.Scope == "" {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole", "Scope"), amp.Spec.SystemAssignedIdentityRole.Scope, "the scope field cannot be empty"))
+		}
+	}
+	if amp.Spec.Identity != infrav1.VMIdentitySystemAssigned && amp.Spec.SystemAssignedIdentityRole != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole"), amp.Spec.SystemAssignedIdentityRole, "systemAssignedIdentityRole can only be set when identity is set to 'SystemAssigned'"))
+	}
+
+	if len(allErrs) > 0 {
+		return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+	}
+
+	return nil
 }
 
 // ValidateDiagnostics validates the Diagnostic spec.

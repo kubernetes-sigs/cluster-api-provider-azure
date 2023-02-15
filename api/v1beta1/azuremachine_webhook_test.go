@@ -17,12 +17,14 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -146,7 +148,7 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.machine.ValidateCreate()
+			err := tc.machine.ValidateCreate(nil)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -289,6 +291,50 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			newMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
 					RoleAssignmentName: "role",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.RoleAssignmentName is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+						Name:         "role",
+						Scope:        "scope",
+						DefinitionID: "definitionID",
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+						Name:         "not-role",
+						Scope:        "scope",
+						DefinitionID: "definitionID",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.SystemAssignedIdentityRole is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+						Name:         "role",
+						Scope:        "scope",
+						DefinitionID: "definitionID",
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+						Name:         "role",
+						Scope:        "scope",
+						DefinitionID: "definitionID",
+					},
 				},
 			},
 			wantErr: false,
@@ -650,7 +696,7 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.newMachine.ValidateUpdate(tc.oldMachine)
+			err := tc.newMachine.ValidateUpdate(tc.oldMachine, nil)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -660,6 +706,16 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 	}
 }
 
+type mockDefaultClient struct {
+	client.Client
+	SubscriptionID string
+}
+
+func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	obj.(*AzureCluster).Spec.SubscriptionID = m.SubscriptionID
+	return nil
+}
+
 func TestAzureMachine_Default(t *testing.T) {
 	g := NewWithT(t)
 
@@ -667,23 +723,25 @@ func TestAzureMachine_Default(t *testing.T) {
 		machine *AzureMachine
 	}
 
+	testSubscriptionID := "test-subscription-id"
+	mockClient := mockDefaultClient{SubscriptionID: testSubscriptionID}
 	existingPublicKey := validSSHPublicKey
 	publicKeyExistTest := test{machine: createMachineWithSSHPublicKey(existingPublicKey)}
 	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey("")}
 
-	publicKeyExistTest.machine.Default()
+	publicKeyExistTest.machine.Default(mockClient)
 	g.Expect(publicKeyExistTest.machine.Spec.SSHPublicKey).To(Equal(existingPublicKey))
 
-	publicKeyNotExistTest.machine.Default()
+	publicKeyNotExistTest.machine.Default(mockClient)
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
 
 	cacheTypeNotSpecifiedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: ""}}}}
-	cacheTypeNotSpecifiedTest.machine.Default()
+	cacheTypeNotSpecifiedTest.machine.Default(mockClient)
 	g.Expect(cacheTypeNotSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal("None"))
 
 	for _, possibleCachingType := range compute.PossibleCachingTypesValues() {
 		cacheTypeSpecifiedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
-		cacheTypeSpecifiedTest.machine.Default()
+		cacheTypeSpecifiedTest.machine.Default(mockClient)
 		g.Expect(cacheTypeSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal(string(possibleCachingType)))
 	}
 }
@@ -769,10 +827,14 @@ func createMachineWithOsDiskCacheType(cacheType string) *AzureMachine {
 func createMachineWithRoleAssignmentName() *AzureMachine {
 	machine := &AzureMachine{
 		Spec: AzureMachineSpec{
-			SSHPublicKey:       validSSHPublicKey,
-			OSDisk:             validOSDisk,
-			Identity:           VMIdentitySystemAssigned,
-			RoleAssignmentName: "c6e3443d-bc11-4335-8819-ab6637b10586",
+			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
+			Identity:     VMIdentitySystemAssigned,
+			SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+				Name:         "c6e3443d-bc11-4335-8819-ab6637b10586",
+				Scope:        "test-scope",
+				DefinitionID: "test-definition-id",
+			},
 		},
 	}
 	return machine
@@ -784,6 +846,10 @@ func createMachineWithoutRoleAssignmentName() *AzureMachine {
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
 			Identity:     VMIdentitySystemAssigned,
+			SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+				Scope:        "test-scope",
+				DefinitionID: "test-definition-id",
+			},
 		},
 	}
 	return machine

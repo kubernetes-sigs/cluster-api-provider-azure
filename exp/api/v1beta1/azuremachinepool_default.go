@@ -18,12 +18,37 @@ package v1beta1
 
 import (
 	"encoding/base64"
+	"fmt"
 
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+// SetDefaults sets the default values for an AzureMachinePool.
+func (amp *AzureMachinePool) SetDefaults(client client.Client) {
+	if err := amp.SetDefaultSSHPublicKey(); err != nil {
+		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "SetDefaultSshPublicKey failed")
+	}
+
+	machinePool, err := azureutil.FindParentMachinePoolWithRetry(amp.Name, client, 5)
+	if err != nil {
+		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "findParentMachinePool failed")
+	}
+
+	subscriptionID, err := infrav1.GetSubscriptionID(client, machinePool.Spec.ClusterName, machinePool.Namespace, 5)
+	if err != nil {
+		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "getSubscriptionID failed")
+	}
+
+	amp.SetIdentityDefaults(subscriptionID)
+	amp.SetDiagnosticsDefaults()
+	amp.SetNetworkInterfacesDefaults()
+}
 
 // SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachinePool.
 func (amp *AzureMachinePool) SetDefaultSSHPublicKey() error {
@@ -39,10 +64,34 @@ func (amp *AzureMachinePool) SetDefaultSSHPublicKey() error {
 }
 
 // SetIdentityDefaults sets the defaults for VMSS Identity.
-func (amp *AzureMachinePool) SetIdentityDefaults() {
+func (amp *AzureMachinePool) SetIdentityDefaults(subscriptionID string) {
+	// Ensure the deprecated fields and new fields are not populated simultaneously
+	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole != nil && amp.Spec.SystemAssignedIdentityRole.Name != "" {
+		// Both the deprecated and the new fields are both set, return without changes
+		// and reject the request in the validating webhook which runs later.
+		return
+	}
 	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
 		if amp.Spec.RoleAssignmentName == "" {
 			amp.Spec.RoleAssignmentName = string(uuid.NewUUID())
+		}
+		if amp.Spec.SystemAssignedIdentityRole == nil {
+			amp.Spec.SystemAssignedIdentityRole = &infrav1.SystemAssignedIdentityRole{}
+		}
+		if amp.Spec.SystemAssignedIdentityRole.Name == "" {
+			amp.Spec.SystemAssignedIdentityRole.Name = string(uuid.NewUUID())
+			if amp.Spec.RoleAssignmentName != "" {
+				amp.Spec.SystemAssignedIdentityRole.Name = amp.Spec.RoleAssignmentName
+				amp.Spec.RoleAssignmentName = ""
+			}
+		}
+		if amp.Spec.SystemAssignedIdentityRole.Scope == "" {
+			// Default scope to the subscription.
+			amp.Spec.SystemAssignedIdentityRole.Scope = fmt.Sprintf("/subscriptions/%s/", subscriptionID)
+		}
+		if amp.Spec.SystemAssignedIdentityRole.DefinitionID == "" {
+			// Default role definition ID to Contributor role.
+			amp.Spec.SystemAssignedIdentityRole.DefinitionID = fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", subscriptionID, infrav1.ContributorRoleID)
 		}
 	}
 }

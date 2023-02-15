@@ -334,6 +334,11 @@ func (in *AzureMachinePoolSpec) DeepCopyInto(out *AzureMachinePoolSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.SystemAssignedIdentityRole != nil {
+		in, out := &in.SystemAssignedIdentityRole, &out.SystemAssignedIdentityRole
+		*out = new(apiv1beta1.SystemAssignedIdentityRole)
+		**out = **in
+	}
 	if in.UserAssignedIdentities != nil {
 		in, out := &in.UserAssignedIdentities, &out.UserAssignedIdentities
 		*out = make([]apiv1beta1.UserAssignedIdentity, len(*in))

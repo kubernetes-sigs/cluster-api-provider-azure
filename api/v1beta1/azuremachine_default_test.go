@@ -17,13 +17,17 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestAzureMachineSpec_SetDefaultSSHPublicKey(t *testing.T) {
@@ -53,29 +57,50 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 		machine *AzureMachine
 	}
 
+	fakeSubscriptionID := uuid.New().String()
+	fakeClusterName := "testcluster"
+	fakeRoleDefinitionID := "testroledefinitionid"
+	fakeScope := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", fakeSubscriptionID, fakeClusterName)
 	existingRoleAssignmentName := "42862306-e485-4319-9bf0-35dbc6f6fe9c"
 	roleAssignmentExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity:           VMIdentitySystemAssigned,
-		RoleAssignmentName: existingRoleAssignmentName,
-	}}}
-	roleAssignmentEmptyTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity:           VMIdentitySystemAssigned,
-		RoleAssignmentName: "",
+		Identity: VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			Name: existingRoleAssignmentName,
+		},
 	}}}
 	notSystemAssignedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity: VMIdentityUserAssigned,
+		Identity:                   VMIdentityUserAssigned,
+		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{},
+	}}}
+	systemAssignedIdentityRoleExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		Identity: VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			Scope:        fakeScope,
+			DefinitionID: fakeRoleDefinitionID,
+		},
 	}}}
 
-	roleAssignmentExistTest.machine.Spec.SetIdentityDefaults()
-	g.Expect(roleAssignmentExistTest.machine.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
+	emptyTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		Identity:                   VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{},
+	}}}
 
-	roleAssignmentEmptyTest.machine.Spec.SetIdentityDefaults()
-	g.Expect(roleAssignmentEmptyTest.machine.Spec.RoleAssignmentName).To(Not(BeEmpty()))
-	_, err := uuid.Parse(roleAssignmentEmptyTest.machine.Spec.RoleAssignmentName)
+	roleAssignmentExistTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(roleAssignmentExistTest.machine.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
+
+	notSystemAssignedTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(notSystemAssignedTest.machine.Spec.SystemAssignedIdentityRole.Name).To(BeEmpty())
+
+	systemAssignedIdentityRoleExistTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(systemAssignedIdentityRoleExistTest.machine.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fakeScope))
+	g.Expect(systemAssignedIdentityRoleExistTest.machine.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fakeRoleDefinitionID))
+
+	emptyTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
+	_, err := uuid.Parse(emptyTest.machine.Spec.SystemAssignedIdentityRole.Name)
 	g.Expect(err).To(Not(HaveOccurred()))
-
-	notSystemAssignedTest.machine.Spec.SetIdentityDefaults()
-	g.Expect(notSystemAssignedTest.machine.Spec.RoleAssignmentName).To(BeEmpty())
+	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
+	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, ContributorRoleID)))
 }
 
 func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
@@ -365,6 +390,65 @@ func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 			g.Expect(tc.machine).To(Equal(tc.want))
 		})
 	}
+}
+
+func TestAzureMachineSpec_GetSubscriptionID(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name        string
+		maxAttempts int
+		want        string
+		wantErr     bool
+	}{
+		{
+			name:        "subscription ID is returned",
+			maxAttempts: 1,
+			want:        "test-subscription-id",
+			wantErr:     false,
+		},
+		{
+			name:        "subscription ID is returned after 2 attempts",
+			maxAttempts: 2,
+			want:        "test-subscription-id",
+			wantErr:     false,
+		},
+		{
+			name:        "subscription ID is not returned after 5 attempts",
+			maxAttempts: 5,
+			want:        "",
+			wantErr:     true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := mockClient{ReturnError: tc.wantErr}
+			result, err := GetSubscriptionID(client, "test-cluster", "default", tc.maxAttempts)
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(result).To(Equal(tc.want))
+			}
+		})
+	}
+}
+
+type mockClient struct {
+	client.Client
+	ReturnError bool
+}
+
+func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	if m.ReturnError {
+		return errors.New("AzureCluster not found: failed to find owner cluster for test-cluster")
+	}
+	ac := &AzureCluster{}
+	ac.Spec.SubscriptionID = "test-subscription-id"
+	obj.(*AzureCluster).Spec.SubscriptionID = ac.Spec.SubscriptionID
+
+	return nil
 }
 
 func createMachineWithSSHPublicKey(sshPublicKey string) *AzureMachine {

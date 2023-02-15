@@ -108,6 +108,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	// Restore orchestration mode
 	dst.Spec.OrchestrationMode = restored.Spec.OrchestrationMode
 
+	if restored.Spec.SystemAssignedIdentityRole != nil {
+		dst.Spec.SystemAssignedIdentityRole = restored.Spec.SystemAssignedIdentityRole
+	}
+
 	return nil
 }
 
