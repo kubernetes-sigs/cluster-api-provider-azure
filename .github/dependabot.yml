@@ -39,7 +39,7 @@ updates:
     - dependency-name: "go.opentelemetry.io/contrib/*"
     - dependency-name: "go.opentelemetry.io/otel/exporters/*"
     - dependency-name: "go.opentelemetry.io/otel/metric"
-    - dependency-name: "go.opentelemetry.io/otel/sdk/*"
+    - dependency-name: "go.opentelemetry.io/otel/sdk*"
     - dependency-name: "go.opentelemetry.io/otel/trace"
   labels:
     - "ok-to-test"
@@ -67,7 +67,7 @@ updates:
     - dependency-name: "go.opentelemetry.io/contrib/*"
     - dependency-name: "go.opentelemetry.io/otel/exporters/*"
     - dependency-name: "go.opentelemetry.io/otel/metric"
-    - dependency-name: "go.opentelemetry.io/otel/sdk/*"
+    - dependency-name: "go.opentelemetry.io/otel/sdk*"
     - dependency-name: "go.opentelemetry.io/otel/trace"
   labels:
     - "ok-to-test"
@@ -98,7 +98,7 @@ updates:
     - dependency-name: "go.opentelemetry.io/contrib/*"
     - dependency-name: "go.opentelemetry.io/otel/exporters/*"
     - dependency-name: "go.opentelemetry.io/otel/metric"
-    - dependency-name: "go.opentelemetry.io/otel/sdk/*"
+    - dependency-name: "go.opentelemetry.io/otel/sdk*"
     - dependency-name: "go.opentelemetry.io/otel/trace"
   labels:
     - "ok-to-test"
