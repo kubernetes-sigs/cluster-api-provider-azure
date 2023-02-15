@@ -178,33 +178,9 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 			}(pod, container)
 		}
 
-		go func(pod corev1.Pod) {
-			defer GinkgoRecover()
-
-			Logf("Describing Pod %s/%s", podNamespace, pod.Name)
-			describeFile := path.Join(aboveMachinesPath, podNamespace, pod.Name, "pod-describe.txt")
-			if err := os.MkdirAll(filepath.Dir(describeFile), 0o755); err != nil {
-				// Failing to mkdir should not cause the test to fail
-				Logf("Error mkdir: %v", err)
-				return
-			}
-
-			f, err := os.OpenFile(describeFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-			if err != nil {
-				// Failing to open the file should not cause the test to fail
-				Logf("Error opening file to write Pod describe: %v", err)
-				return
-			}
-			defer f.Close()
-
-			out := bufio.NewWriter(f)
-			defer out.Flush()
-			_, err = out.WriteString(podDescribe)
-			if errors.Is(err, io.ErrUnexpectedEOF) {
-				// Failing to describe pod should not cause the test to fail
-				Logf("failed to describe pod %s/%s: %v", podNamespace, pod.Name, err)
-			}
-		}(pod)
+		Logf("Describing Pod %s/%s", podNamespace, pod.Name)
+		describeFile := path.Join(aboveMachinesPath, podNamespace, pod.Name, "pod-describe.txt")
+		writeLogFile(describeFile, podDescribe)
 	}
 }
 
@@ -230,32 +206,8 @@ func (acp *AzureClusterProxy) collectNodes(ctx context.Context, namespace string
 			Logf("failed to describe node %s: %v", node.GetName(), err)
 		}
 
-		go func(node corev1.Node) {
-			defer GinkgoRecover()
-
-			describeFile := path.Join(aboveMachinesPath, nodesDir, node.GetName(), "node-describe.txt")
-			if err := os.MkdirAll(filepath.Dir(describeFile), 0o755); err != nil {
-				// Failing to mkdir should not cause the test to fail
-				Logf("Error mkdir: %v", err)
-				return
-			}
-
-			f, err := os.OpenFile(describeFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-			if err != nil {
-				// Failing to open the file should not cause the test to fail
-				Logf("Error opening file to write node describe: %v", err)
-				return
-			}
-			defer f.Close()
-
-			out := bufio.NewWriter(f)
-			defer out.Flush()
-			_, err = out.WriteString(nodeDescribe)
-			if errors.Is(err, io.ErrUnexpectedEOF) {
-				// Failing to describe node should not cause the test to fail
-				Logf("failed to describe node %s: %v", node.GetName(), err)
-			}
-		}(node)
+		describeFile := path.Join(aboveMachinesPath, nodesDir, node.GetName(), "node-describe.txt")
+		writeLogFile(describeFile, nodeDescribe)
 	}
 }
 
@@ -329,4 +281,32 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 			}
 		}
 	}
+}
+
+func writeLogFile(logFilepath string, logData string) {
+	go func() {
+		defer GinkgoRecover()
+
+		if err := os.MkdirAll(filepath.Dir(logFilepath), 0o755); err != nil {
+			// Failing to mkdir should not cause the test to fail
+			Logf("Error mkdir: %v", err)
+			return
+		}
+
+		f, err := os.OpenFile(logFilepath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		if err != nil {
+			// Failing to open the file should not cause the test to fail
+			Logf("Error opening file %s to write logs: %v", logFilepath, err)
+			return
+		}
+		defer f.Close()
+
+		out := bufio.NewWriter(f)
+		defer out.Flush()
+		_, err = out.WriteString(logData)
+		if err != nil {
+			// Failing to write a log file should not cause the test to fail
+			Logf("failed to write logFile %s: %v", logFilepath, err)
+		}
+	}()
 }
