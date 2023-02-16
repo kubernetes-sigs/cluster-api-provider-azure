@@ -368,6 +368,11 @@ type AzureManagedControlPlaneStatus struct {
 	// +optional
 	Ready bool `json:"ready,omitempty"`
 
+	// Total number of non-terminated machines targeted by this control plane
+	// (their labels match the selector).
+	// +optional
+	Replicas int32 `json:"replicas"`
+
 	// Initialized is true when the control plane is available for initial contact.
 	// This may occur before the control plane is fully ready.
 	// In the AzureManagedControlPlane implementation, these are identical.

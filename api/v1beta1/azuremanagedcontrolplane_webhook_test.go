@@ -22,6 +22,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -111,6 +112,326 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(amcp.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDRForOverlay))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDRForOverlay))
+}
+
+func TestValidateDNSServiceIP(t *testing.T) {
+	g := NewWithT(t)
+	tests := []struct {
+		name      string
+		dnsIP     *string
+		expectErr bool
+	}{
+		{
+			name:      "Testing valid DNSServiceIP",
+			dnsIP:     ptr.To("192.168.0.0"),
+			expectErr: false,
+		},
+		{
+			name:      "Testing invalid DNSServiceIP",
+			dnsIP:     ptr.To("192.168.0.0.3"),
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			allErrs := validateDNSServiceIP(tt.dnsIP, field.NewPath("spec").Child("DNSServiceIP"))
+			if tt.expectErr {
+				g.Expect(allErrs).NotTo(BeNil())
+			} else {
+				g.Expect(allErrs).To(BeNil())
+			}
+		})
+	}
+}
+
+func TestValidateVersion(t *testing.T) {
+	g := NewWithT(t)
+	tests := []struct {
+		name      string
+		version   string
+		expectErr bool
+	}{
+		{
+			name:      "Invalid Version",
+			version:   "honk",
+			expectErr: true,
+		},
+		{
+			name:      "not following the Kubernetes Version pattern",
+			version:   "1.19.0",
+			expectErr: true,
+		},
+		{
+			name:      "Version not set",
+			version:   "",
+			expectErr: true,
+		},
+		{
+			name:      "Valid Version",
+			version:   "v1.17.8",
+			expectErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			allErrs := validateVersion(tt.version, field.NewPath("spec").Child("Version"))
+			if tt.expectErr {
+				g.Expect(allErrs).NotTo(BeNil())
+			} else {
+				g.Expect(allErrs).To(BeNil())
+			}
+		})
+	}
+}
+
+func TestValidateLoadBalancerProfile(t *testing.T) {
+	g := NewWithT(t)
+	tests := []struct {
+		name      string
+		profile   *LoadBalancerProfile
+		expectErr bool
+	}{
+		{
+			name: "Valid LoadBalancerProfile",
+			profile: &LoadBalancerProfile{
+				ManagedOutboundIPs:     ptr.To[int32](10),
+				AllocatedOutboundPorts: ptr.To[int32](1000),
+				IdleTimeoutInMinutes:   ptr.To[int32](60),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Invalid LoadBalancerProfile.ManagedOutboundIPs",
+			profile: &LoadBalancerProfile{
+				ManagedOutboundIPs: ptr.To[int32](200),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Invalid LoadBalancerProfile.IdleTimeoutInMinutes",
+			profile: &LoadBalancerProfile{
+				IdleTimeoutInMinutes: ptr.To[int32](600),
+			},
+			expectErr: true,
+		},
+		{
+			name: "LoadBalancerProfile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs",
+			profile: &LoadBalancerProfile{
+				ManagedOutboundIPs: ptr.To[int32](1),
+				OutboundIPs: []string{
+					"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/foo-bar/providers/Microsoft.Network/publicIPAddresses/my-public-ip",
+				},
+			},
+			expectErr: true,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			allErrs := validateLoadBalancerProfile(tt.profile, field.NewPath("spec").Child("LoadBalancerProfile"))
+			if tt.expectErr {
+				g.Expect(allErrs).NotTo(BeNil())
+			} else {
+				g.Expect(allErrs).To(BeNil())
+			}
+		})
+	}
+}
+
+func TestValidateAutoScalerProfile(t *testing.T) {
+	g := NewWithT(t)
+	tests := []struct {
+		name      string
+		profile   *AutoScalerProfile
+		expectErr bool
+	}{
+		{
+			name: "Valid AutoScalerProfile",
+			profile: &AutoScalerProfile{
+				BalanceSimilarNodeGroups:      (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsFalse))),
+				Expander:                      (*Expander)(ptr.To(string(ExpanderRandom))),
+				MaxEmptyBulkDelete:            ptr.To("10"),
+				MaxGracefulTerminationSec:     ptr.To("600"),
+				MaxNodeProvisionTime:          ptr.To("10m"),
+				MaxTotalUnreadyPercentage:     ptr.To("45"),
+				NewPodScaleUpDelay:            ptr.To("10m"),
+				OkTotalUnreadyCount:           ptr.To("3"),
+				ScanInterval:                  ptr.To("60s"),
+				ScaleDownDelayAfterAdd:        ptr.To("10m"),
+				ScaleDownDelayAfterDelete:     ptr.To("10s"),
+				ScaleDownDelayAfterFailure:    ptr.To("10m"),
+				ScaleDownUnneededTime:         ptr.To("10m"),
+				ScaleDownUnreadyTime:          ptr.To("10m"),
+				ScaleDownUtilizationThreshold: ptr.To("0.5"),
+				SkipNodesWithLocalStorage:     (*SkipNodesWithLocalStorage)(ptr.To(string(SkipNodesWithLocalStorageTrue))),
+				SkipNodesWithSystemPods:       (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsTrue))),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.ExpanderRandom",
+			profile: &AutoScalerProfile{
+				Expander: (*Expander)(ptr.To(string(ExpanderRandom))),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.ExpanderLeastWaste",
+			profile: &AutoScalerProfile{
+				Expander: (*Expander)(ptr.To(string(ExpanderLeastWaste))),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.ExpanderMostPods",
+			profile: &AutoScalerProfile{
+				Expander: (*Expander)(ptr.To(string(ExpanderMostPods))),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.ExpanderPriority",
+			profile: &AutoScalerProfile{
+				Expander: (*Expander)(ptr.To(string(ExpanderPriority))),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.BalanceSimilarNodeGroupsTrue",
+			profile: &AutoScalerProfile{
+				BalanceSimilarNodeGroups: (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsTrue))),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.BalanceSimilarNodeGroupsFalse",
+			profile: &AutoScalerProfile{
+				BalanceSimilarNodeGroups: (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsFalse))),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.MaxEmptyBulkDelete",
+			profile: &AutoScalerProfile{
+				MaxEmptyBulkDelete: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.MaxGracefulTerminationSec",
+			profile: &AutoScalerProfile{
+				MaxGracefulTerminationSec: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.MaxNodeProvisionTime",
+			profile: &AutoScalerProfile{
+				MaxNodeProvisionTime: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.MaxTotalUnreadyPercentage",
+			profile: &AutoScalerProfile{
+				MaxTotalUnreadyPercentage: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.NewPodScaleUpDelay",
+			profile: &AutoScalerProfile{
+				NewPodScaleUpDelay: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.OkTotalUnreadyCount",
+			profile: &AutoScalerProfile{
+				OkTotalUnreadyCount: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScanInterval",
+			profile: &AutoScalerProfile{
+				ScanInterval: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownDelayAfterAdd",
+			profile: &AutoScalerProfile{
+				ScaleDownDelayAfterAdd: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownDelayAfterDelete",
+			profile: &AutoScalerProfile{
+				ScaleDownDelayAfterDelete: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownDelayAfterFailure",
+			profile: &AutoScalerProfile{
+				ScaleDownDelayAfterFailure: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownUnneededTime",
+			profile: &AutoScalerProfile{
+				ScaleDownUnneededTime: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownUnreadyTime",
+			profile: &AutoScalerProfile{
+				ScaleDownUnreadyTime: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AutoScalerProfile.ScaleDownUtilizationThreshold",
+			profile: &AutoScalerProfile{
+				ScaleDownUtilizationThreshold: ptr.To("invalid"),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.SkipNodesWithLocalStorageTrue",
+			profile: &AutoScalerProfile{
+				SkipNodesWithLocalStorage: (*SkipNodesWithLocalStorage)(ptr.To(string(SkipNodesWithLocalStorageTrue))),
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid AutoScalerProfile.SkipNodesWithLocalStorageFalse",
+			profile: &AutoScalerProfile{
+				SkipNodesWithSystemPods: (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsFalse))),
+			},
+			expectErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			allErrs := validateAutoScalerProfile(tt.profile, field.NewPath("spec").Child("AutoScalerProfile"))
+			if tt.expectErr {
+				g.Expect(allErrs).NotTo(BeNil())
+			} else {
+				g.Expect(allErrs).To(BeNil())
+			}
+		})
+	}
 }
 
 func TestValidatingWebhook(t *testing.T) {
@@ -756,7 +1077,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			name:     "invalid DNSServiceIP",
 			amcp:     createAzureManagedControlPlane("192.168.0.10.3", "v1.18.0", generateSSHPublicKey(true)),
 			wantErr:  true,
-			errorLen: 1,
+			errorLen: 2,
 		},
 		{
 			name:     "invalid DNSServiceIP",
@@ -774,7 +1095,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			name:     "invalid sshKey with a simple text and invalid DNSServiceIP",
 			amcp:     createAzureManagedControlPlane("192.168.0.10.3", "v1.18.0", "invalid_sshkey_honk"),
 			wantErr:  true,
-			errorLen: 2,
+			errorLen: 3,
 		},
 		{
 			name:     "invalid version",

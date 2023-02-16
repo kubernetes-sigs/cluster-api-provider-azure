@@ -682,6 +682,11 @@ spec:
               ready:
                 description: Ready is true when the provider resource is ready.
                 type: boolean
+              replicas:
+                description: Total number of non-terminated machines targeted by this
+                  control plane (their labels match the selector).
+                format: int32
+                type: integer
             type: object
         type: object
     served: true

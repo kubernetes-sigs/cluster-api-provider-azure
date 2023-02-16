@@ -1,0 +1,15 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePoolTemplate
+metadata:
+  name: "${CLUSTER_NAME}-pool0"
+spec:
+  template:
+    spec:
+      maxPods: 30
+      osDiskType: "Managed"
+      osDiskSizeGB: 30
+      enableNodePublicIP: false
+      enableUltraSSD: true
+      availabilityZones: ["1", "2"]
+      name: pool0
+      sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"

@@ -39,6 +39,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -291,7 +292,7 @@ func ensureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCu
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "API Server was not reachable in time")
 
 	_, hasWindows := cluster.Labels["cni-windows"]
-	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] != "azure" {
+	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] != infrav1.CloudProviderName {
 		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
 		InstallCNIAndCloudProviderAzureHelmChart(ctx, input, installHelmCharts, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	} else {

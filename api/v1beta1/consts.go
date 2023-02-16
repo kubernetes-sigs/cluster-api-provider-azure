@@ -166,3 +166,8 @@ const (
 	// value for the label is the CAPI Cluster Name.
 	OwnedByClusterLabelKey = NameAzureProviderPrefix + string(ResourceLifecycleOwned)
 )
+
+const (
+	// CloudProviderName is the name of the Azure cloud provider.
+	CloudProviderName = "azure"
+)

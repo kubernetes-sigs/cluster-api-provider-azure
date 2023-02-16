@@ -36,9 +36,10 @@ import (
 )
 
 type AKSAutoscaleSpecInput struct {
-	Cluster       *clusterv1.Cluster
-	MachinePool   *expv1.MachinePool
-	WaitIntervals []interface{}
+	Cluster        *clusterv1.Cluster
+	MachinePool    *expv1.MachinePool
+	WaitIntervals  []interface{}
+	isClusterClass bool
 }
 
 func AKSAutoscaleSpec(ctx context.Context, inputGetter func() AKSAutoscaleSpecInput) {
@@ -62,7 +63,14 @@ func AKSAutoscaleSpec(ctx context.Context, inputGetter func() AKSAutoscaleSpecIn
 	Expect(err).NotTo(HaveOccurred())
 
 	ammp := &infrav1.AzureManagedMachinePool{}
-	err = mgmtClient.Get(ctx, client.ObjectKeyFromObject(input.MachinePool), ammp)
+	if input.isClusterClass {
+		err = bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
+			Namespace: input.MachinePool.Spec.Template.Spec.InfrastructureRef.Namespace,
+			Name:      input.MachinePool.Spec.Template.Spec.InfrastructureRef.Name,
+		}, ammp)
+	} else {
+		err = mgmtClient.Get(ctx, client.ObjectKeyFromObject(input.MachinePool), ammp)
+	}
 	Expect(err).NotTo(HaveOccurred())
 
 	resourceGroupName := amcp.Spec.ResourceGroupName

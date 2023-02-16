@@ -1,0 +1,23 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePoolTemplate
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+spec:
+  template:
+    spec:
+      mode: System
+      name: pool0
+      sku: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePoolTemplate
+metadata:
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+spec:
+  template:
+    spec:
+      mode: User
+      name: pool1
+      sku: ${AZURE_NODE_MACHINE_TYPE}
