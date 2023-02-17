@@ -372,6 +372,7 @@ def deploy_worker_templates(template, substitutions):
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL,
         labels = ["flavors"],
+        allow_parallel = True,
     )
 
 def base64_encode(to_encode):
