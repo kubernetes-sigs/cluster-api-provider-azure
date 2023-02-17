@@ -218,6 +218,7 @@ func TestReconcileTags(t *testing.T) {
 					},
 				}}, nil)
 				s.AnnotationJSON("my-annotation").Return(map[string]interface{}{"key": "value"}, nil)
+				s.UpdateAnnotationJSON("my-annotation", map[string]interface{}{"key": "value"})
 			},
 		},
 	}

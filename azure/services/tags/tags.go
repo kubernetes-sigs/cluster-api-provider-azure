@@ -105,12 +105,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					return errors.Wrap(err, "cannot update tags")
 				}
 			}
-
-			// We also need to update the annotation if anything changed.
-			if err := s.Scope.UpdateAnnotationJSON(tagsSpec.Annotation, newAnnotation); err != nil {
-				return err
-			}
 			log.V(2).Info("successfully updated tags")
+		}
+
+		// We also need to update the annotation even if nothing changed to
+		// ensure it's set immediately following resource creation.
+		if err := s.Scope.UpdateAnnotationJSON(tagsSpec.Annotation, newAnnotation); err != nil {
+			return err
 		}
 	}
 	return nil
