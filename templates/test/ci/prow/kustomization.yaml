@@ -9,6 +9,7 @@ resources:
   - cni-resource-set.yaml
   - ../../../azure-cluster-identity
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
+  - ../../../addons/windows/calico/kube-proxy-windows-resource-set.yaml
   - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
@@ -20,6 +21,7 @@ patchesStrategicMerge:
   - ../patches/azuremachinetemplate-vmextension.yaml
   - ../patches/windows-containerd-patch.yaml
   - ../patches/windows-containerd-labels.yaml
+  - ../patches/windows-kube-proxy-labels.yaml
   - ../patches/windows-server-version.yaml
 patches:
 - target:
@@ -47,6 +49,8 @@ configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     files:
       - windows-cni=../../../addons/windows/calico/calico.yaml
+  - name: kube-proxy-windows-addon
+    files:
       - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
   - name: csi-proxy-addon
     files:
