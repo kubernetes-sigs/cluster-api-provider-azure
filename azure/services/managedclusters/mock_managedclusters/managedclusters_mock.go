@@ -21,7 +21,6 @@ limitations under the License.
 package mock_managedclusters
 
 import (
-	context "context"
 	reflect "reflect"
 
 	autorest "github.com/Azure/go-autorest/autorest"
@@ -194,17 +193,17 @@ func (mr *MockManagedClusterScopeMockRecorder) MakeEmptyKubeConfigSecret() *gomo
 }
 
 // ManagedClusterSpec mocks base method.
-func (m *MockManagedClusterScope) ManagedClusterSpec(arg0 context.Context) azure.ResourceSpecGetter {
+func (m *MockManagedClusterScope) ManagedClusterSpec() azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ManagedClusterSpec", arg0)
+	ret := m.ctrl.Call(m, "ManagedClusterSpec")
 	ret0, _ := ret[0].(azure.ResourceSpecGetter)
 	return ret0
 }
 
 // ManagedClusterSpec indicates an expected call of ManagedClusterSpec.
-func (mr *MockManagedClusterScopeMockRecorder) ManagedClusterSpec(arg0 interface{}) *gomock.Call {
+func (mr *MockManagedClusterScopeMockRecorder) ManagedClusterSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ManagedClusterSpec", reflect.TypeOf((*MockManagedClusterScope)(nil).ManagedClusterSpec), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ManagedClusterSpec", reflect.TypeOf((*MockManagedClusterScope)(nil).ManagedClusterSpec))
 }
 
 // SetControlPlaneEndpoint mocks base method.

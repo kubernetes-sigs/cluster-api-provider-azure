@@ -57,6 +57,14 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
+// Some resource types are always assumed to be managed by CAPZ whether or not
+// they have the canonical "owned" tag applied to most resources. The annotation
+// key for those types should be listed here so their tags are always
+// interpreted as managed.
+var alwaysManagedAnnotations = map[string]struct{}{
+	azure.ManagedClusterTagsLastAppliedAnnotation: {},
+}
+
 // Reconcile ensures tags are correct.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "tags.Service.Reconcile")
@@ -72,7 +80,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			tags = existingTags.Properties.Tags
 		}
 
-		if !s.isResourceManaged(tags) {
+		if _, alwaysManaged := alwaysManagedAnnotations[tagsSpec.Annotation]; !alwaysManaged && !s.isResourceManaged(tags) {
 			log.V(4).Info("Skipping tags reconcile for not managed resource")
 			continue
 		}

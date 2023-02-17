@@ -115,6 +115,38 @@ func TestReconcileTags(t *testing.T) {
 			},
 		},
 		{
+			name:          "create tags for managed resource without \"owned\" tag",
+			expectedError: "",
+			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
+				annotation := azure.ManagedClusterTagsLastAppliedAnnotation
+				gomock.InOrder(
+					s.ClusterName().AnyTimes().Return("test-cluster"),
+					s.TagsSpecs().Return([]azure.TagsSpec{
+						{
+							Scope: "/sub/123/fake/scope",
+							Tags: map[string]string{
+								"foo":   "bar",
+								"thing": "stuff",
+							},
+							Annotation: annotation,
+						},
+					}),
+					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil),
+					s.AnnotationJSON(annotation),
+					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsPatchResource{
+						Operation: "Merge",
+						Properties: &resources.Tags{
+							Tags: map[string]*string{
+								"foo":   pointer.String("bar"),
+								"thing": pointer.String("stuff"),
+							},
+						},
+					}),
+					s.UpdateAnnotationJSON(annotation, map[string]interface{}{"foo": "bar", "thing": "stuff"}),
+				)
+			},
+		},
+		{
 			name:          "delete removed tags",
 			expectedError: "",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {

@@ -422,11 +422,12 @@ func (s *ManagedControlPlaneScope) ManagedClusterAnnotations() map[string]string
 }
 
 // ManagedClusterSpec returns the managed cluster spec.
-func (s *ManagedControlPlaneScope) ManagedClusterSpec(ctx context.Context) azure.ResourceSpecGetter {
+func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter {
 	managedClusterSpec := managedclusters.ManagedClusterSpec{
 		Name:              s.ControlPlane.Name,
 		ResourceGroup:     s.ControlPlane.Spec.ResourceGroupName,
 		NodeResourceGroup: s.ControlPlane.Spec.NodeResourceGroupName,
+		ClusterName:       s.ClusterName(),
 		Location:          s.ControlPlane.Spec.Location,
 		Tags:              s.ControlPlane.Spec.AdditionalTags,
 		Headers:           maps.FilterByKeyPrefix(s.ManagedClusterAnnotations(), infrav1.CustomHeaderPrefix),
@@ -687,6 +688,11 @@ func (s *ManagedControlPlaneScope) TagsSpecs() []azure.TagsSpec {
 			Scope:      azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
 			Tags:       s.AdditionalTags(),
 			Annotation: azure.RGTagsLastAppliedAnnotation,
+		},
+		{
+			Scope:      azure.ManagedClusterID(s.SubscriptionID(), s.ResourceGroup(), s.ManagedClusterSpec().ResourceName()),
+			Tags:       s.AdditionalTags(),
+			Annotation: azure.ManagedClusterTagsLastAppliedAnnotation,
 		},
 	}
 }

@@ -29,6 +29,12 @@ const (
 	// for annotation formatting rules.
 	RGTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-rg"
 
+	// ManagedClusterTagsLastAppliedAnnotation is the key for the AzureManagedControlPlane
+	// object annotation which tracks the AdditionalTags for managed clusters.
+	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+	// for annotation formatting rules.
+	ManagedClusterTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-managedcluster"
+
 	// CustomDataHashAnnotation is the key for the machine object annotation
 	// which tracks the hash of the custom data.
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/

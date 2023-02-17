@@ -44,14 +44,14 @@ func TestReconcile(t *testing.T) {
 			name:          "noop if managedcluster spec is nil",
 			expectedError: "",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec(gomockinternal.AContext()).Return(nil)
+				s.ManagedClusterSpec().Return(nil)
 			},
 		},
 		{
 			name:          "create managed cluster returns an error",
 			expectedError: "some unexpected error occurred",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil, errors.New("some unexpected error occurred"))
 				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("some unexpected error occurred"))
 			},
@@ -60,7 +60,7 @@ func TestReconcile(t *testing.T) {
 			name:          "create managed cluster succeeds",
 			expectedError: "",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 						Fqdn:              pointer.String("my-managedcluster-fqdn"),
@@ -80,7 +80,7 @@ func TestReconcile(t *testing.T) {
 			name:          "fail to get managed cluster credentials",
 			expectedError: "failed to get credentials for managed cluster: internal server error",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 						Fqdn:              pointer.String("my-managedcluster-fqdn"),
@@ -136,14 +136,14 @@ func TestDelete(t *testing.T) {
 			name:          "noop if no managed cluster spec is found",
 			expectedError: "",
 			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec(gomockinternal.AContext()).Return(nil)
+				s.ManagedClusterSpec().Return(nil)
 			},
 		},
 		{
 			name:          "successfully delete an existing managed cluster",
 			expectedError: "",
 			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.DeleteResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
 			},
@@ -152,7 +152,7 @@ func TestDelete(t *testing.T) {
 			name:          "managed cluster deletion fails",
 			expectedError: "internal error",
 			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec(gomockinternal.AContext()).Return(fakeManagedClusterSpec)
+				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.DeleteResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(errors.New("internal error"))
 				s.UpdateDeleteStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("internal error"))
 			},

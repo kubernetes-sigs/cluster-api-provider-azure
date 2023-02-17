@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -60,6 +61,7 @@ func TestParameters(t *testing.T) {
 				Name:              "test-managedcluster",
 				ResourceGroup:     "test-rg",
 				NodeResourceGroup: "test-node-rg",
+				ClusterName:       "test-cluster",
 				Location:          "test-location",
 				Tags: map[string]string{
 					"test-tag": "test-value",
@@ -139,13 +141,17 @@ func TestParameters(t *testing.T) {
 			name:     "delete all tags",
 			existing: getExistingCluster(),
 			spec: &ManagedClusterSpec{
-				Tags: nil,
+				Name:            "test-managedcluster",
+				ResourceGroup:   "test-rg",
+				Location:        "test-location",
+				Tags:            nil,
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "Standard",
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
-				tags := result.(containerservice.ManagedCluster).Tags
-				g.Expect(tags).NotTo(BeNil())
-				g.Expect(tags).To(BeEmpty())
+				// Additional tags are handled by azure/services/tags, so a diff
+				// here shouldn't trigger an update on the managed cluster resource.
+				g.Expect(result).To(BeNil())
 			},
 		},
 	}
@@ -227,8 +233,14 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 			Type: containerservice.ResourceIdentityTypeSystemAssigned,
 		},
 		Location: pointer.String("test-location"),
-		Tags: map[string]*string{
-			"test-tag": pointer.String("test-value"),
-		},
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			ClusterName: "test-cluster",
+			Name:        pointer.String("test-managedcluster"),
+			Role:        pointer.String(infrav1.CommonRole),
+			Additional: infrav1.Tags{
+				"test-tag": "test-value",
+			},
+		})),
 	}
 }
