@@ -1,0 +1,82 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  location: ${AZURE_LOCATION}
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  clusterConfiguration:
+    apiServer:
+      extraArgs:
+        bind-address: '::'
+    controllerManager:
+      extraArgs:
+        bind-address: '::'
+    scheduler:
+      extraArgs:
+        bind-address: '::'
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-md-0-azure-json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        azure-container-registry-config: /etc/kubernetes/azure.json
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
+        cluster-dns: '[fd00::10]'
+        node-ip: '::'
+      name: '{{ ds.meta_data["local_hostname"] }}'
+  postKubeadmCommands:
+  - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+  - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+    /etc/resolv.conf
+  - systemctl restart systemd-resolved
