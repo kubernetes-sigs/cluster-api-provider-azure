@@ -140,6 +140,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		FailureDomains:               m.MachinePool.Spec.FailureDomains,
 		TerminateNotificationTimeout: m.AzureMachinePool.Spec.Template.TerminateNotificationTimeout,
 		NetworkInterfaces:            m.AzureMachinePool.Spec.Template.NetworkInterfaces,
+		IPv6Enabled:                  m.IsIPv6Enabled(),
 		OrchestrationMode:            m.AzureMachinePool.Spec.OrchestrationMode,
 	}
 }
