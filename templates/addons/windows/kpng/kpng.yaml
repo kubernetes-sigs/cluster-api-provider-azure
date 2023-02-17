@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: kpng
+  name: kpng-windows
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kpng-windows
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        k8s-app: kpng-windows
+        namespace: kube-system
+    spec:
+      serviceAccountName: kpng
+      securityContext:
+        windowsOptions:
+          hostProcess: true
+          runAsUserName: "NT AUTHORITY\\system" # TODO: try and run as network service??
+      hostNetwork: true
+      containers:
+        - image: gcr.io/k8s-staging-win-svc-proxy/kpng:latest
+          imagePullPolicy: Always # for testing
+          name: kpng
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CLUSTER_CIDR
+              value: "10.96.0.0/12"
+            - name: NETWORK_NAME
+              value: "Calico"
+            - name: KUBE_NETWORK
+              value: "Calico"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            # override Kubernetes service env vars to talk to api-server via
+            # CP node directly since we don't have routes programmed yet.
+            # NOTE: These values are specific to the default CAPZ deployment.
+            - name: KUBERNETES_SERVICE_HOST
+              value: "10.0.0.4"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "6443"
+            - name: KUBERNETES_SERVICE_PORT_HTTPS
+              value: "6443"
+          command: ["powershell", "./start-kpng.ps1"]
+      nodeSelector:
+        kubernetes.io/os: windows
+      os:
+        name: windows
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
