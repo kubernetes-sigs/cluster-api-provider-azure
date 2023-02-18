@@ -339,6 +339,7 @@ def deploy_worker_templates(template, substitutions):
         "WORKER_MACHINE_COUNT": "2",
         "AZURE_NODE_MACHINE_TYPE": "Standard_B2s",
         "FLATCAR_VERSION": settings.get("flatcar_version"),
+        "CLUSTER_CLASS_NAME": "default",
     }
 
     if flavor == "aks":

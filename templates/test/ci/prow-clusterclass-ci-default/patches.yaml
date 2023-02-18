@@ -1,8 +1,46 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
-  name: ci-default
+  name: ${CLUSTER_CLASS_NAME}
 spec:
+  workers:
+    machineDeployments:
+      - class: ${CLUSTER_NAME}-worker
+        machineHealthCheck:
+          maxUnhealthy: 100%
+          unhealthyConditions:
+            - type: E2ENodeUnhealthy
+              status: "True"
+              timeout: 30s
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: KubeadmConfigTemplate
+              name: ${CLUSTER_NAME}-worker
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: AzureMachineTemplate
+              name: ${CLUSTER_NAME}-worker
+      - class: ${CLUSTER_NAME}-worker-win
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: KubeadmConfigTemplate
+              name: ${CLUSTER_NAME}-worker-win
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: AzureMachineTemplate
+              name: ${CLUSTER_NAME}-worker-win
+        machineHealthCheck:
+          maxUnhealthy: 100%
+          unhealthyConditions:
+            - type: E2ENodeUnhealthy
+              status: "True"
+              timeout: 30s
   patches:
     - name: k8sFeatureGates
       enabledIf: "{{ if .k8sFeatureGates }}true{{end}}"
@@ -49,7 +87,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - ci-default-worker
+                  - ${CLUSTER_NAME}-worker
           jsonPatches:
             - op: replace
               path: "/spec/template/spec/files"
@@ -70,7 +108,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - ci-default-worker-win
+                  - ${CLUSTER_NAME}-worker-win
           jsonPatches:
             - op: replace
               path: "/spec/template/spec/files"
@@ -171,7 +209,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - ci-default-worker
+                  - ${CLUSTER_NAME}-worker
           jsonPatches:
             - op: add
               path: /spec/template/spec/vmSize
@@ -185,7 +223,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - ci-default-worker-win
+                  - ${CLUSTER_NAME}-worker-win
           jsonPatches:
             - op: add
               path: /spec/template/spec/vmSize
@@ -199,8 +237,8 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - ci-default-worker
-                  - ci-default-worker-win
+                  - ${CLUSTER_NAME}-worker
+                  - ${CLUSTER_NAME}-worker-win
           jsonPatches:
             - op: add
               path: /spec/template/spec/sshPublicKey
@@ -214,7 +252,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - ci-default-worker-win
+                  - ${CLUSTER_NAME}-worker-win
           jsonPatches:
             - op: add
               path: /spec/template/spec/users
@@ -232,7 +270,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - ci-default-worker-win
+                  - ${CLUSTER_NAME}-worker-win
           jsonPatches:
             - op: add
               path: /spec/template/spec/files/-
@@ -248,4 +286,23 @@ spec:
               valueFrom:
                 template: |
                   - "powershell C:/create-temp-folder.ps1"
-
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterTemplate
+metadata:
+  name: ${CLUSTER_NAME}-azure-cluster
+spec:
+  template:
+    spec:
+      additionalTags:
+        replace_me_key: replace_me_val
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      sshPublicKey: ""
+      vmSize: replace_me

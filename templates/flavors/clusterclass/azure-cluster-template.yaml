@@ -1,0 +1,22 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterTemplate
+metadata:
+  name: ${CLUSTER_NAME}-azure-cluster
+  namespace: default
+spec:
+  template:
+    spec:
+      subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+      identityRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterIdentity
+        name: ${CLUSTER_IDENTITY_NAME}
+      location: ${AZURE_LOCATION}
+      networkSpec:
+        subnets:
+        - name: control-plane-subnet
+          role: control-plane
+        - name: node-subnet
+          natGateway:
+            name: node-natgateway
+          role: node
