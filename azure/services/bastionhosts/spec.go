@@ -30,12 +30,14 @@ import (
 
 // AzureBastionSpec defines the specification for azure bastion feature.
 type AzureBastionSpec struct {
-	Name          string
-	ResourceGroup string
-	Location      string
-	ClusterName   string
-	SubnetID      string
-	PublicIPID    string
+	Name            string
+	ResourceGroup   string
+	Location        string
+	ClusterName     string
+	SubnetID        string
+	PublicIPID      string
+	Sku             infrav1.BastionHostSkuName
+	EnableTunneling bool
 }
 
 // AzureBastionSpecInput defines the required inputs to construct an azure bastion spec.
@@ -81,8 +83,12 @@ func (s *AzureBastionSpec) Parameters(ctx context.Context, existing interface{})
 			Name:        pointer.String(s.Name),
 			Role:        pointer.String("Bastion"),
 		})),
+		Sku: &network.Sku{
+			Name: network.BastionHostSkuName(s.Sku),
+		},
 		BastionHostPropertiesFormat: &network.BastionHostPropertiesFormat{
-			DNSName: pointer.String(fmt.Sprintf("%s-bastion", strings.ToLower(s.Name))),
+			EnableTunneling: pointer.Bool(s.EnableTunneling),
+			DNSName:         pointer.String(fmt.Sprintf("%s-bastion", strings.ToLower(s.Name))),
 			IPConfigurations: &[]network.BastionHostIPConfiguration{
 				{
 					Name: pointer.String(bastionHostIPConfigName),

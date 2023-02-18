@@ -1318,6 +1318,11 @@ spec:
                     description: AzureBastion specifies how the Azure Bastion cloud
                       component should be configured.
                     properties:
+                      enableTunneling:
+                        default: false
+                        description: EnableTunneling enables the native client support
+                          feature for the Azure Bastion Host. Defaults to false.
+                        type: boolean
                       name:
                         type: string
                       publicIP:
@@ -1349,6 +1354,15 @@ spec:
                         required:
                         - name
                         type: object
+                      sku:
+                        default: Basic
+                        description: BastionHostSkuName configures the tier of the
+                          Azure Bastion Host. Can be either Basic or Standard. Defaults
+                          to Basic.
+                        enum:
+                        - Basic
+                        - Standard
+                        type: string
                       subnet:
                         description: SubnetSpec configures an Azure subnet.
                         properties:

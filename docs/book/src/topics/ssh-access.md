@@ -107,6 +107,8 @@ spec:
         securityGroup: {} // No security group is assigned by default. You can choose to have one created and assigned by defining it. 
       publicIP:
         "name": "..." // The name of the Public IP, defaults to '<cluster name>-azure-bastion-pip'.
+      sku: "..." // The SKU/tier of the Azure Bastion resource. The options are `Standard` and `Basic`. The default value is `Basic`.
+      enableTunneling: "..." // Whether or not to enable tunneling/native client support. The default value is `false`.
 ```
 
 If you specify a security group to be associated with the Azure Bastion subnet, it needs to have some networking rules defined or

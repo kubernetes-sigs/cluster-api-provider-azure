@@ -96,6 +96,10 @@ func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
 	allErrs = append(allErrs, validateCloudProviderConfigOverrides(c.Spec.CloudProviderConfigOverrides, oldCloudProviderConfigOverrides,
 		field.NewPath("spec").Child("cloudProviderConfigOverrides"))...)
 
+	if err := validateBastionSpec(c.Spec.BastionSpec, field.NewPath("spec").Child("azureBastion").Child("bastionSpec")); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	return allErrs
 }
 
@@ -115,6 +119,15 @@ func (c *AzureCluster) validateClusterName() field.ErrorList {
 		return nil
 	}
 	return allErrs
+}
+
+// validateBastionSpec validates a BastionSpec.
+func validateBastionSpec(bastionSpec BastionSpec, fldPath *field.Path) *field.Error {
+	if bastionSpec.AzureBastion != nil && bastionSpec.AzureBastion.Sku != StandardBastionHostSku && bastionSpec.AzureBastion.EnableTunneling {
+		return field.Invalid(fldPath.Child("sku"), bastionSpec.AzureBastion.Sku,
+			"sku must be Standard if tunneling is enabled")
+	}
+	return nil
 }
 
 // validateNetworkSpec validates a NetworkSpec.

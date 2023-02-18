@@ -31,9 +31,11 @@ spec:
     jobName: ${JOB_NAME}
   bastionSpec:
     azureBastion:
+      enableTunneling: true
       name: ${CLUSTER_NAME}-azure-bastion
       publicIP:
         name: ${CLUSTER_NAME}-azure-bastion-pip
+      sku: Standard
       subnet:
         cidrBlocks:
         - ${AZURE_BASTION_SUBNET_CIDR}
