@@ -19,6 +19,8 @@ package converters
 import (
 	"encoding/base64"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -51,4 +53,34 @@ func FutureToSDK(future infrav1.Future) (azureautorest.FutureAPI, error) {
 		return nil, errors.Wrap(err, "failed to unmarshal future data")
 	}
 	return &genericFuture, nil
+}
+
+// PollerToFuture converts an SDK poller to an infrav1.Future.
+func PollerToFuture[T any](poller *runtime.Poller[T], futureType, service, resourceName, rgName string) (*infrav1.Future, error) {
+	token, err := poller.ResumeToken()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get resume token")
+	}
+	return &infrav1.Future{
+		Type:          futureType,
+		ResourceGroup: rgName,
+		ServiceName:   service,
+		Name:          resourceName,
+		Data:          base64.URLEncoding.EncodeToString([]byte(token)),
+	}, nil
+}
+
+// FutureToPoller converts an infrav1.Future to an SDK poller.
+func FutureToPoller[T any](future infrav1.Future) (*runtime.Poller[T], error) {
+	token, err := base64.URLEncoding.DecodeString(future.Data)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to base64-decode poller resume token")
+	}
+	pl := runtime.NewPipeline("", "", runtime.PipelineOptions{}, &policy.ClientOptions{})
+	opts := runtime.NewPollerFromResumeTokenOptions[T]{}
+	poller, err := runtime.NewPollerFromResumeToken(string(token), pl, &opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create poller from resume token")
+	}
+	return poller, nil
 }
