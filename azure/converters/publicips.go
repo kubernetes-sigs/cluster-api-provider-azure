@@ -43,12 +43,12 @@ func IPTagsToSDKv2(ipTags []infrav1.IPTag) []*armnetwork.IPTag {
 	if len(ipTags) == 0 {
 		return nil
 	}
-	skdIPTags := make([]*armnetwork.IPTag, len(ipTags))
+	sdkIPTags := make([]*armnetwork.IPTag, len(ipTags))
 	for i, ipTag := range ipTags {
-		skdIPTags[i] = &armnetwork.IPTag{
+		sdkIPTags[i] = &armnetwork.IPTag{
 			IPTagType: pointer.String(ipTag.Type),
 			Tag:       pointer.String(ipTag.Tag),
 		}
 	}
-	return skdIPTags
+	return sdkIPTags
 }
