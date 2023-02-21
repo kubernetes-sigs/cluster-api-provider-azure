@@ -72,18 +72,14 @@ func (amp *AzureMachinePool) SetIdentityDefaults(subscriptionID string) {
 		return
 	}
 	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
-		if amp.Spec.RoleAssignmentName == "" {
-			amp.Spec.RoleAssignmentName = string(uuid.NewUUID())
-		}
 		if amp.Spec.SystemAssignedIdentityRole == nil {
 			amp.Spec.SystemAssignedIdentityRole = &infrav1.SystemAssignedIdentityRole{}
 		}
-		if amp.Spec.SystemAssignedIdentityRole.Name == "" {
+		if amp.Spec.RoleAssignmentName != "" {
+			amp.Spec.SystemAssignedIdentityRole.Name = amp.Spec.RoleAssignmentName
+			amp.Spec.RoleAssignmentName = ""
+		} else if amp.Spec.SystemAssignedIdentityRole.Name == "" {
 			amp.Spec.SystemAssignedIdentityRole.Name = string(uuid.NewUUID())
-			if amp.Spec.RoleAssignmentName != "" {
-				amp.Spec.SystemAssignedIdentityRole.Name = amp.Spec.RoleAssignmentName
-				amp.Spec.RoleAssignmentName = ""
-			}
 		}
 		if amp.Spec.SystemAssignedIdentityRole.Scope == "" {
 			// Default scope to the subscription.
