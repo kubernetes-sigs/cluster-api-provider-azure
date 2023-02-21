@@ -21,7 +21,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
@@ -50,60 +51,60 @@ var (
 		FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
 	}
 
-	fakePublicIPWithDNS = network.PublicIPAddress{
+	fakePublicIPWithDNS = armnetwork.PublicIPAddress{
 		Name:     pointer.String("my-publicip"),
-		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		SKU:      &armnetwork.PublicIPAddressSKU{Name: to.Ptr(armnetwork.PublicIPAddressSKUNameStandard)},
 		Location: pointer.String("centralIndia"),
 		Tags: map[string]*string{
 			"Name": pointer.String("my-publicip"),
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
 			"foo": pointer.String("bar"),
 		},
-		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			PublicIPAddressVersion:   network.IPVersionIPv4,
-			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-			DNSSettings: &network.PublicIPAddressDNSSettings{
+		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+			PublicIPAddressVersion:   to.Ptr(armnetwork.IPVersionIPv4),
+			PublicIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodStatic),
+			DNSSettings: &armnetwork.PublicIPAddressDNSSettings{
 				DomainNameLabel: pointer.String("fakedns"),
 				Fqdn:            pointer.String("fakedns.mydomain.io"),
 			},
 		},
-		Zones: &[]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+		Zones: []*string{pointer.String("failure-domain-id-1"), pointer.String("failure-domain-id-2"), pointer.String("failure-domain-id-3")},
 	}
 
-	fakePublicIPWithoutDNS = network.PublicIPAddress{
+	fakePublicIPWithoutDNS = armnetwork.PublicIPAddress{
 		Name:     pointer.String("my-publicip-2"),
-		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		SKU:      &armnetwork.PublicIPAddressSKU{Name: to.Ptr(armnetwork.PublicIPAddressSKUNameStandard)},
 		Location: pointer.String("centralIndia"),
 		Tags: map[string]*string{
 			"Name": pointer.String("my-publicip-2"),
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
 			"foo": pointer.String("bar"),
 		},
-		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			PublicIPAddressVersion:   network.IPVersionIPv4,
-			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
+		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+			PublicIPAddressVersion:   to.Ptr(armnetwork.IPVersionIPv4),
+			PublicIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodStatic),
 		},
-		Zones: &[]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+		Zones: []*string{pointer.String("failure-domain-id-1"), pointer.String("failure-domain-id-2"), pointer.String("failure-domain-id-3")},
 	}
 
-	fakePublicIPIpv6 = network.PublicIPAddress{
+	fakePublicIPIpv6 = armnetwork.PublicIPAddress{
 		Name:     pointer.String("my-publicip-ipv6"),
-		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		SKU:      &armnetwork.PublicIPAddressSKU{Name: to.Ptr(armnetwork.PublicIPAddressSKUNameStandard)},
 		Location: pointer.String("centralIndia"),
 		Tags: map[string]*string{
 			"Name": pointer.String("my-publicip-ipv6"),
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
 			"foo": pointer.String("bar"),
 		},
-		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			PublicIPAddressVersion:   network.IPVersionIPv6,
-			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-			DNSSettings: &network.PublicIPAddressDNSSettings{
+		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+			PublicIPAddressVersion:   to.Ptr(armnetwork.IPVersionIPv6),
+			PublicIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodStatic),
+			DNSSettings: &armnetwork.PublicIPAddressDNSSettings{
 				DomainNameLabel: pointer.String("fakename"),
 				Fqdn:            pointer.String("fakename.mydomain.io"),
 			},
 		},
-		Zones: &[]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+		Zones: []*string{pointer.String("failure-domain-id-1"), pointer.String("failure-domain-id-2"), pointer.String("failure-domain-id-3")},
 	}
 )
 

@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -63,6 +64,50 @@ func TestIPTagsToSDK(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IPTagsToSDK(tt.ipTags); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IPTagsToSDK() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIPTagsToSDKv2(t *testing.T) {
+	tests := []struct {
+		name   string
+		ipTags []infrav1.IPTag
+		want   []*armnetwork.IPTag
+	}{
+		{
+			name:   "empty",
+			ipTags: []infrav1.IPTag{},
+			want:   nil,
+		},
+		{
+			name: "list of tags",
+			ipTags: []infrav1.IPTag{
+				{
+					Type: "tag",
+					Tag:  "value",
+				},
+				{
+					Type: "internal",
+					Tag:  "foo",
+				},
+			},
+			want: []*armnetwork.IPTag{
+				{
+					IPTagType: pointer.String("tag"),
+					Tag:       pointer.String("value"),
+				},
+				{
+					IPTagType: pointer.String("internal"),
+					Tag:       pointer.String("foo"),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IPTagsToSDKv2(tt.ipTags); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("IPTagsToSDK() = %v, want %v", got, tt.want)
 			}
 		})
