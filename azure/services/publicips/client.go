@@ -131,11 +131,11 @@ func (ac *AzureClient) IsDone(ctx context.Context, poller interface{}) (isDone b
 	defer done()
 
 	switch t := poller.(type) {
-	case runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse]:
-		c, _ := poller.(runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse])
+	case *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse]:
+		c, _ := poller.(*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse])
 		return c.Done(), nil
-	case runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse]:
-		d, _ := poller.(runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse])
+	case *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse]:
+		d, _ := poller.(*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse])
 		return d.Done(), nil
 	default:
 		return false, errors.Errorf("unexpected poller type %T", t)
@@ -148,11 +148,11 @@ func (ac *AzureClient) Result(ctx context.Context, poller interface{}) (result i
 	defer done()
 
 	switch t := poller.(type) {
-	case runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse]:
-		c, _ := poller.(runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse])
+	case *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse]:
+		c, _ := poller.(*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse])
 		return c.Result(ctx)
-	case runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse]:
-		d, _ := poller.(runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse])
+	case *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse]:
+		d, _ := poller.(*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse])
 		return d.Result(ctx)
 	default:
 		return false, errors.Errorf("unknown poller type %T", t)
