@@ -973,6 +973,16 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 			chartRequested, err := helmLoader.Load(cp)
 			g.Expect(err).NotTo(HaveOccurred())
 			release, err := i.RunWithContext(ctx, chartRequested, vals)
+			if err != nil {
+				Logf("Failed to install release %s, attempting to cleanup so we can retry", releaseName)
+				// Best effort attempt to delete the failed release so we can retry.
+				_, delErr := helmAction.NewUninstall(actionConfig).Run(releaseName)
+				if delErr != nil {
+					Logf("Failed to delete release %s", releaseName)
+				} else {
+					Logf("Deleted failed release %s", releaseName)
+				}
+			}
 			g.Expect(err).NotTo(HaveOccurred())
 			Logf(release.Info.Description)
 		}, helmInstallTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
