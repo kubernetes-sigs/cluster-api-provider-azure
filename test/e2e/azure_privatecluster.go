@@ -103,8 +103,8 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 	By("Ensure public API server is stable before creating private cluster")
 	Consistently(func() error {
-		kubeSystem := &corev1.Namespace{}
-		return publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: "kube-system"}, kubeSystem)
+		ns := &corev1.Namespace{}
+		return publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
 	}, "5s", "100ms").Should(BeNil(), "Failed to assert public API server stability")
 
 	// **************
