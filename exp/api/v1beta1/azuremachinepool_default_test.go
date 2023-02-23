@@ -75,6 +75,10 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 			Scope:        fakeScope,
 		},
 	}}}
+	deprecatedRoleAssignmentNameTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity:           infrav1.VMIdentitySystemAssigned,
+		RoleAssignmentName: existingRoleAssignmentName,
+	}}}
 	emptyTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
 		Identity:                   infrav1.VMIdentitySystemAssigned,
 		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{},
@@ -89,6 +93,10 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 	systemAssignedIdentityRoleExistTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
 	g.Expect(systemAssignedIdentityRoleExistTest.machinePool.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fakeScope))
 	g.Expect(systemAssignedIdentityRoleExistTest.machinePool.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fakeRoleDefinitionID))
+
+	deprecatedRoleAssignmentNameTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(deprecatedRoleAssignmentNameTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
+	g.Expect(deprecatedRoleAssignmentNameTest.machinePool.Spec.RoleAssignmentName).To(BeEmpty())
 
 	emptyTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
 	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))

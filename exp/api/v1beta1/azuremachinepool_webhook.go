@@ -208,7 +208,7 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) 
 // ValidateSystemAssignedIdentityRole validates the scope and roleDefinitionID for the system-assigned identity.
 func (amp *AzureMachinePool) ValidateSystemAssignedIdentityRole() error {
 	var allErrs field.ErrorList
-	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole.Name != "" {
+	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole != nil && amp.Spec.SystemAssignedIdentityRole.Name != "" {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole"), amp.Spec.SystemAssignedIdentityRole.Name, "cannot set both roleAssignmentName and systemAssignedIdentityRole.name"))
 	}
 	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {

@@ -79,7 +79,10 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 			DefinitionID: fakeRoleDefinitionID,
 		},
 	}}}
-
+	deprecatedRoleAssignmentNameTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		Identity:           VMIdentitySystemAssigned,
+		RoleAssignmentName: existingRoleAssignmentName,
+	}}}
 	emptyTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
 		Identity:                   VMIdentitySystemAssigned,
 		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{},
@@ -94,6 +97,10 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 	systemAssignedIdentityRoleExistTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
 	g.Expect(systemAssignedIdentityRoleExistTest.machine.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fakeScope))
 	g.Expect(systemAssignedIdentityRoleExistTest.machine.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fakeRoleDefinitionID))
+
+	deprecatedRoleAssignmentNameTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(deprecatedRoleAssignmentNameTest.machine.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
+	g.Expect(deprecatedRoleAssignmentNameTest.machine.Spec.RoleAssignmentName).To(BeEmpty())
 
 	emptyTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
 	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
