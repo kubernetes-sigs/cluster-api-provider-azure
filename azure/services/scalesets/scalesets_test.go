@@ -800,6 +800,27 @@ func TestReconcileVMSS(t *testing.T) {
 				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
 			},
 		},
+		{
+			name:          "should not panic when DiagnosticsProfile is nil",
+			expectedError: "",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				spec := newDefaultVMSSSpec()
+				spec.DiagnosticsProfile = nil
+				s.ScaleSetSpec().Return(spec).AnyTimes()
+
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = nil
+
+				instances := newDefaultInstances()
+
+				setupDefaultVMSSInProgressOperationDoneExpectations(s, m, vmss, instances)
+				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PutFuture)
+				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PatchFuture)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.Location().AnyTimes().Return("test-location")
+				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
+			},
+		},
 	}
 
 	for _, tc := range testcases {
