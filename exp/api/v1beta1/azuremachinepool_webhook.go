@@ -17,12 +17,14 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -35,24 +37,40 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// SetupWebhookWithManager sets up and registers the webhook with the manager.
-func (amp *AzureMachinePool) SetupWebhookWithManager(mgr ctrl.Manager) error {
+// SetupAzureMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
+func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
+	ampw := &azureMachinePoolWebhook{Client: mgr.GetClient()}
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(amp).
+		For(&AzureMachinePool{}).
+		WithDefaulter(ampw).
+		WithValidator(ampw).
 		Complete()
 }
 
 // +kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=create;update,versions=v1beta1,name=default.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
+// azureMachinePoolWebhook implements a validating and defaulting webhook for AzureMachinePool.
+type azureMachinePoolWebhook struct {
+	Client client.Client
+}
+
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (amp *AzureMachinePool) Default(client client.Client) {
-	amp.SetDefaults(client)
+func (ampw *azureMachinePoolWebhook) Default(ctx context.Context, obj runtime.Object) error {
+	amp, ok := obj.(*AzureMachinePool)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureMachinePool")
+	}
+	return amp.SetDefaults(ampw.Client)
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (amp *AzureMachinePool) ValidateCreate(client client.Client) error {
+func (ampw *azureMachinePoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+	amp, ok := obj.(*AzureMachinePool)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureMachinePool")
+	}
 	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
@@ -61,16 +79,20 @@ func (amp *AzureMachinePool) ValidateCreate(client client.Client) error {
 			"can be set only if the MachinePool feature flag is enabled",
 		)
 	}
-	return amp.Validate(nil, client)
+	return amp.Validate(nil, ampw.Client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (amp *AzureMachinePool) ValidateUpdate(old runtime.Object, client client.Client) error {
-	return amp.Validate(old, client)
+func (ampw *azureMachinePoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+	amp, ok := newObj.(*AzureMachinePool)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureMachinePool")
+	}
+	return amp.Validate(oldObj, ampw.Client)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (amp *AzureMachinePool) ValidateDelete(client.Client) error {
+func (ampw *azureMachinePoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
 	return nil
 }
 

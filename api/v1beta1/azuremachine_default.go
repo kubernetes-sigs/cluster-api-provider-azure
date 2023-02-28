@@ -25,10 +25,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -200,20 +200,21 @@ func GetSubscriptionID(cli client.Client, clusterName string, namespace string, 
 }
 
 // SetDefaults sets to the defaults for the AzureMachineSpec.
-func (m *AzureMachine) SetDefaults(client client.Client) {
+func (m *AzureMachine) SetDefaults(client client.Client) error {
+	var errs []error
 	if err := m.Spec.SetDefaultSSHPublicKey(); err != nil {
-		ctrl.Log.WithName("SetDefault").Error(err, "failed to set default SSH public key")
+		errs = append(errs, errors.Wrap(err, "failed to set default SSH public key"))
 	}
 
 	// Fetch the Cluster.
 	clusterName, ok := m.Labels[clusterv1.ClusterLabelName]
 	if !ok {
-		ctrl.Log.WithName("SetDefault").Error(errors.Errorf("failed to fetch owner ClusterName for AzureMachine %s/%s", m.Namespace, m.Name), "failed to fetch ClusterName")
+		errs = append(errs, errors.Errorf("failed to fetch ClusterName for AzureMachine %s/%s", m.Namespace, m.Name))
 	}
 
 	subscriptionID, err := GetSubscriptionID(client, clusterName, m.Namespace, 5)
 	if err != nil {
-		ctrl.Log.WithName("SetDefault").Error(err, "failed to fetch subscription ID for AzureMachine %s/%s", m.Namespace, m.Name)
+		errs = append(errs, errors.Wrapf(err, "failed to fetch subscription ID for AzureMachine %s/%s", m.Namespace, m.Name))
 	}
 
 	m.Spec.SetDefaultCachingType()
@@ -222,4 +223,6 @@ func (m *AzureMachine) SetDefaults(client client.Client) {
 	m.Spec.SetSpotEvictionPolicyDefaults()
 	m.Spec.SetDiagnosticsDefaults()
 	m.Spec.SetNetworkInterfacesDefaults()
+
+	return kerrors.NewAggregate(errs)
 }

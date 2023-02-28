@@ -48,7 +48,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 	clusterv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -512,31 +511,25 @@ func registerWebhooks(mgr manager.Manager) {
 		os.Exit(1)
 	}
 
-	hookServer := mgr.GetWebhookServer()
-	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool", webhookutils.NewMutatingWebhook(
-		&infrav1exp.AzureMachinePool{}, mgr.GetClient(),
-	))
-	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool", webhookutils.NewValidatingWebhook(
-		&infrav1exp.AzureMachinePool{}, mgr.GetClient(),
-	))
-	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachine", webhookutils.NewMutatingWebhook(
-		&infrav1.AzureMachine{}, mgr.GetClient(),
-	))
-	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachine", webhookutils.NewValidatingWebhook(
-		&infrav1.AzureMachine{}, mgr.GetClient(),
-	))
-	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhookutils.NewMutatingWebhook(
-		&infrav1.AzureManagedMachinePool{}, mgr.GetClient(),
-	))
-	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool", webhookutils.NewValidatingWebhook(
-		&infrav1.AzureManagedMachinePool{}, mgr.GetClient(),
-	))
-	hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhookutils.NewMutatingWebhook(
-		&infrav1.AzureManagedControlPlane{}, mgr.GetClient(),
-	))
-	hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane", webhookutils.NewValidatingWebhook(
-		&infrav1.AzureManagedControlPlane{}, mgr.GetClient(),
-	))
+	if err := infrav1exp.SetupAzureMachinePoolWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
+		os.Exit(1)
+	}
+
+	if err := infrav1.SetupAzureMachineWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
+		os.Exit(1)
+	}
+
+	if err := infrav1.SetupAzureManagedMachinePoolWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedMachinePool")
+		os.Exit(1)
+	}
+
+	if err := infrav1.SetupAzureManagedControlPlaneWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlane")
+		os.Exit(1)
+	}
 
 	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to create ready check")

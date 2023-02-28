@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -42,7 +43,9 @@ func TestDefaultingWebhook(t *testing.T) {
 			Version:           "1.17.5",
 		},
 	}
-	amcp.Default(nil)
+	mcpw := &azureManagedControlPlaneWebhook{}
+	err := mcpw.Default(context.Background(), amcp)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal("azure"))
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal("Standard"))
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
@@ -66,7 +69,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
 	amcp.Spec.SKU.Tier = PaidManagedControlPlaneTier
 
-	amcp.Default(nil)
+	err = mcpw.Default(context.Background(), amcp)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal(netPlug))
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal(lbSKU))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal(netPol))
@@ -549,10 +553,11 @@ func TestValidatingWebhook(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			mcpw := &azureManagedControlPlaneWebhook{}
 			if tt.expectErr {
-				g.Expect(tt.amcp.ValidateCreate(nil)).NotTo(Succeed())
+				g.Expect(mcpw.ValidateCreate(context.Background(), &tt.amcp)).NotTo(Succeed())
 			} else {
-				g.Expect(tt.amcp.ValidateCreate(nil)).To(Succeed())
+				g.Expect(mcpw.ValidateCreate(context.Background(), &tt.amcp)).To(Succeed())
 			}
 		})
 	}
@@ -672,7 +677,8 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amcp.ValidateCreate(nil)
+			mcpw := &azureManagedControlPlaneWebhook{}
+			err := mcpw.ValidateCreate(context.Background(), tc.amcp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 				if tc.errorLen > 0 {
@@ -707,7 +713,8 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
-			err := tc.amcp.ValidateCreate(nil)
+			mcpw := &azureManagedControlPlaneWebhook{}
+			err := mcpw.ValidateCreate(context.Background(), tc.amcp)
 			g.Expect(err).To(HaveOccurred())
 		})
 	}
@@ -1322,7 +1329,8 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amcp.ValidateUpdate(tc.oldAMCP, nil)
+			mcpw := &azureManagedControlPlaneWebhook{}
+			err := mcpw.ValidateUpdate(context.Background(), tc.oldAMCP, tc.amcp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
