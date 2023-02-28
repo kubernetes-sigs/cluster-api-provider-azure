@@ -223,6 +223,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName, infrav1.PutFuture)
 				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName, infrav1.PatchFuture)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
 			},
 		},
 		{
@@ -238,6 +239,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName, infrav1.PutFuture)
 				s.DeleteLongRunningOperationState(defaultSpec.Name, serviceName, infrav1.PatchFuture)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
 			},
 		},
 		{
@@ -582,6 +584,7 @@ func TestReconcileVMSS(t *testing.T) {
 				m.GetResultIfDone(gomockinternal.AContext(), patchFuture).Return(compute.VirtualMachineScaleSet{}, azure.NewOperationNotDoneError(patchFuture))
 				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(clone, nil)
 				m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil)
+				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
 			},
 		},
 		{
@@ -741,6 +744,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PatchFuture)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 				s.Location().AnyTimes().Return("test-location")
+				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
 			},
 		},
 		{
@@ -767,6 +771,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PatchFuture)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 				s.Location().AnyTimes().Return("test-location")
+				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
 			},
 		},
 		{
@@ -792,6 +797,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.DeleteLongRunningOperationState(spec.Name, serviceName, infrav1.PatchFuture)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 				s.Location().AnyTimes().Return("test-location")
+				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
 			},
 		},
 	}
