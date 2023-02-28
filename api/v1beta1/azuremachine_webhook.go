@@ -17,20 +17,41 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+// SetupAzureMachineWebhookWithManager sets up and registers the webhook with the manager.
+func SetupAzureMachineWebhookWithManager(mgr ctrl.Manager) error {
+	mw := &azureMachineWebhook{Client: mgr.GetClient()}
+	return ctrl.NewWebhookManagedBy(mgr).
+		For(&AzureMachine{}).
+		WithDefaulter(mw).
+		WithValidator(mw).
+		Complete()
+}
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachine,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachines,versions=v1beta1,name=validation.azuremachine.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachine,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachines,versions=v1beta1,name=default.azuremachine.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
+// azureMachineWebhook implements a validating and defaulting webhook for AzureMachines.
+type azureMachineWebhook struct {
+	Client client.Client
+}
+
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureMachine) ValidateCreate(client client.Client) error {
+func (mw *azureMachineWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+	m, ok := obj.(*AzureMachine)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureMachine resource")
+	}
 	spec := m.Spec
 
 	allErrs := ValidateAzureMachineSpec(spec)
@@ -52,9 +73,16 @@ func (m *AzureMachine) ValidateCreate(client client.Client) error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object, client client.Client) error {
+func (mw *azureMachineWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
 	var allErrs field.ErrorList
-	old := oldRaw.(*AzureMachine)
+	old, ok := oldObj.(*AzureMachine)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureMachine resource")
+	}
+	m, ok := newObj.(*AzureMachine)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureMachine resource")
+	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "Image"),
@@ -181,11 +209,15 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object, client client.Clien
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureMachine) ValidateDelete(client client.Client) error {
+func (mw *azureMachineWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
 	return nil
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (m *AzureMachine) Default(client client.Client) {
-	m.SetDefaults(client)
+func (mw *azureMachineWebhook) Default(ctx context.Context, obj runtime.Object) error {
+	m, ok := obj.(*AzureMachine)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureMachine resource")
+	}
+	return m.SetDefaults(mw.Client)
 }

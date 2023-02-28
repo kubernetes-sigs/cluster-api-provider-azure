@@ -26,7 +26,9 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -472,6 +474,11 @@ func createMachineWithUserAssignedIdentities(identitiesList []UserAssignedIdenti
 
 func hardcodedAzureMachineWithSSHKey(sshPublicKey string) *AzureMachine {
 	return &AzureMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				clusterv1.ClusterLabelName: "test-cluster",
+			},
+		},
 		Spec: AzureMachineSpec{
 			SSHPublicKey: sshPublicKey,
 			OSDisk:       generateValidOSDisk(),

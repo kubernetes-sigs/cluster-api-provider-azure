@@ -49,17 +49,29 @@ var (
 	rScanInterval                    = regexp.MustCompile(`^(\d+)s$`)
 )
 
-// SetupWebhookWithManager sets up and registers the webhook with the manager.
-func (m *AzureManagedControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) error {
+// SetupAzureManagedControlPlaneWebhookWithManager sets up and registers the webhook with the manager.
+func SetupAzureManagedControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
+	mw := &azureManagedControlPlaneWebhook{Client: mgr.GetClient()}
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(m).
+		For(&AzureManagedControlPlane{}).
+		WithDefaulter(mw).
+		WithValidator(mw).
 		Complete()
 }
 
 // +kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,verbs=create;update,versions=v1beta1,name=default.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
+// azureManagedControlPlaneWebhook implements a validating and defaulting webhook for AzureManagedControlPlane.
+type azureManagedControlPlaneWebhook struct {
+	Client client.Client
+}
+
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (m *AzureManagedControlPlane) Default(_ client.Client) {
+func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runtime.Object) error {
+	m, ok := obj.(*AzureManagedControlPlane)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
+	}
 	if m.Spec.NetworkPlugin == nil {
 		networkPlugin := "azure"
 		m.Spec.NetworkPlugin = &networkPlugin
@@ -83,12 +95,18 @@ func (m *AzureManagedControlPlane) Default(_ client.Client) {
 	m.setDefaultSubnet()
 	m.setDefaultSku()
 	m.setDefaultAutoScalerProfile()
+
+	return nil
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1beta1,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureManagedControlPlane) ValidateCreate(client client.Client) error {
+func (mw *azureManagedControlPlaneWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+	m, ok := obj.(*AzureManagedControlPlane)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
+	}
 	// NOTE: AzureManagedControlPlane relies upon MachinePools, which is behind a feature gate flag.
 	// The webhook must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
@@ -111,13 +129,20 @@ func (m *AzureManagedControlPlane) ValidateCreate(client client.Client) error {
 		)
 	}
 
-	return m.Validate(client)
+	return m.Validate(mw.Client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client client.Client) error {
+func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
 	var allErrs field.ErrorList
-	old := oldRaw.(*AzureManagedControlPlane)
+	old, ok := oldObj.(*AzureManagedControlPlane)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
+	}
+	m, ok := newObj.(*AzureManagedControlPlane)
+	if !ok {
+		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
+	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "SubscriptionID"),
@@ -244,14 +269,14 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object, client 
 	}
 
 	if len(allErrs) == 0 {
-		return m.Validate(client)
+		return m.Validate(mw.Client)
 	}
 
 	return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), m.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (m *AzureManagedControlPlane) ValidateDelete(_ client.Client) error {
+func (mw *azureManagedControlPlaneWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
 	return nil
 }
 
