@@ -117,7 +117,6 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 	}
 	wg.Wait()
 
-	/* TODO: uncomment with scale down fix for flexible mode
 	for _, mp := range machinepools {
 		goalReplicas := pointer.Int32Deref(mp.Spec.Replicas, 0) - 1
 		Byf("Scaling machine pool %s in from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
@@ -135,7 +134,6 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 		}(mp)
 	}
 	wg.Wait()
-	*/
 
 	By("verifying that workload nodes are schedulable")
 	clientset := workloadClusterProxy.GetClientSet()
