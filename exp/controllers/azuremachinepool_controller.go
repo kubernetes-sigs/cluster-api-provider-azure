@@ -34,14 +34,17 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
@@ -113,6 +116,12 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 			&source.Kind{Type: &infrav1.AzureCluster{}},
 			handler.EnqueueRequestsFromMapFunc(azureClusterMapper),
 		).
+		// watch for changes in KubeadmConfig to sync bootstrap token
+		Watches(
+			&source.Kind{Type: &kubeadmv1.KubeadmConfig{}},
+			handler.EnqueueRequestsFromMapFunc(KubeadmConfigToInfrastructureMapFunc(ctx, ampr.Client, log)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		Build(r)
 	if err != nil {
 		return errors.Wrap(err, "error creating controller")
@@ -147,6 +156,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=kubeadmconfigs;kubeadmconfigs/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines/status,verbs=get
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch;update;patch

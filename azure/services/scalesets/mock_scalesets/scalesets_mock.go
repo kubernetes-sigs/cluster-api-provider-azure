@@ -250,6 +250,35 @@ func (mr *MockScaleSetScopeMockRecorder) GetVMImage(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVMImage", reflect.TypeOf((*MockScaleSetScope)(nil).GetVMImage), arg0)
 }
 
+// HasBootstrapDataChanges mocks base method.
+func (m *MockScaleSetScope) HasBootstrapDataChanges(arg0 context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasBootstrapDataChanges", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasBootstrapDataChanges indicates an expected call of HasBootstrapDataChanges.
+func (mr *MockScaleSetScopeMockRecorder) HasBootstrapDataChanges(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasBootstrapDataChanges", reflect.TypeOf((*MockScaleSetScope)(nil).HasBootstrapDataChanges), arg0)
+}
+
+// HasReplicasExternallyManaged mocks base method.
+func (m *MockScaleSetScope) HasReplicasExternallyManaged(arg0 context.Context) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasReplicasExternallyManaged", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// HasReplicasExternallyManaged indicates an expected call of HasReplicasExternallyManaged.
+func (mr *MockScaleSetScopeMockRecorder) HasReplicasExternallyManaged(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasReplicasExternallyManaged", reflect.TypeOf((*MockScaleSetScope)(nil).HasReplicasExternallyManaged), arg0)
+}
+
 // HashKey mocks base method.
 func (m *MockScaleSetScope) HashKey() string {
 	m.ctrl.T.Helper()
