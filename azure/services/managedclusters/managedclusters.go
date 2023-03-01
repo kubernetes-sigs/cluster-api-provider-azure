@@ -369,10 +369,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			existingMC.NetworkProfile.LoadBalancerProfile.EffectiveOutboundIPs = nil
 		}
 
-		// Avoid changing agent pool profiles through AMCP and just use the existing agent pool profiles
-		// AgentPool changes are managed through AMMP
-		managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
-
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
