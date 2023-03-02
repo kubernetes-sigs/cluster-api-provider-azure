@@ -47,7 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Test suite constants for e2e config variables
@@ -227,7 +227,7 @@ func redactLogs() {
 }
 
 func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string) *rest.Config {
-	cluster := crclient.ObjectKey{
+	cluster := client.ObjectKey{
 		Namespace: namespace,
 		Name:      clusterName,
 	}
@@ -255,13 +255,24 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 		Namespace: input.ConfigCluster.Namespace,
 	})
 	kubeadmControlPlane := &kubeadmv1.KubeadmControlPlane{}
-	key := crclient.ObjectKey{
+	key := client.ObjectKey{
 		Namespace: cluster.Spec.ControlPlaneRef.Namespace,
 		Name:      cluster.Spec.ControlPlaneRef.Name,
 	}
-	Eventually(func() error {
-		return getter.Get(ctx, key, kubeadmControlPlane)
-	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+
+	By("Ensuring KubeadmControlPlane is initialized")
+	Eventually(func(g Gomega) {
+		g.Expect(getter.Get(ctx, key, kubeadmControlPlane)).To(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+		g.Expect(kubeadmControlPlane.Status.Initialized).To(BeTrue(), "KubeadmControlPlane is not yet initialized")
+	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "KubeadmControlPlane object %s/%s was not initialized in time", cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+
+	By("Ensuring API Server is reachable before applying Helm charts")
+	Eventually(func(g Gomega) {
+		ns := &corev1.Namespace{}
+		clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+		g.Expect(clusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)).To(Succeed(), "Failed to get kube-system namespace")
+	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "API Server was not reachable in time")
+
 	_, hasWindows := cluster.Labels["cni-windows"]
 	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] == "external" {
 		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
