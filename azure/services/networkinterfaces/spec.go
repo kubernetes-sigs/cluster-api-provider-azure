@@ -34,6 +34,7 @@ type NICSpec struct {
 	Name                      string
 	ResourceGroup             string
 	Location                  string
+	ExtendedLocation          *infrav1.ExtendedLocationSpec
 	SubscriptionID            string
 	MachineName               string
 	SubnetName                string
@@ -201,7 +202,8 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 	}
 
 	return network.Interface{
-		Location: pointer.String(s.Location),
+		Location:         pointer.String(s.Location),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			EnableAcceleratedNetworking: s.AcceleratedNetworking,
 			IPConfigurations:            &ipConfigurations,

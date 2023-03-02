@@ -55,6 +55,8 @@ const (
 	AddonsPath                      = "ADDONS_PATH"
 	RedactLogScriptPath             = "REDACT_LOG_SCRIPT"
 	AzureLocation                   = "AZURE_LOCATION"
+	AzureExtendedLocationType       = "AZURE_EXTENDEDLOCATION_TYPE"
+	AzureExtendedLocationName       = "AZURE_EXTENDEDLOCATION_NAME"
 	AzureResourceGroup              = "AZURE_RESOURCE_GROUP"
 	AzureVNetName                   = "AZURE_VNET_NAME"
 	AzureCustomVNetName             = "AZURE_CUSTOM_VNET_NAME"
@@ -150,13 +152,6 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		redactLogs()
 	}()
 
-	if input.Cluster == nil {
-		By("Unable to dump workload cluster logs as the cluster is nil")
-	} else if !input.SkipLogCollection {
-		Byf("Dumping logs from the %q workload cluster", input.Cluster.Name)
-		input.ClusterProxy.CollectWorkloadClusterLogs(ctx, input.Cluster.Namespace, input.Cluster.Name, filepath.Join(input.ArtifactFolder, "clusters", input.Cluster.Name))
-	}
-
 	Logf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
 	// Dump all Cluster API related resources to artifacts before deleting them.
 	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
@@ -164,6 +159,13 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		Namespace: input.Namespace.Name,
 		LogPath:   filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
 	})
+
+	if input.Cluster == nil {
+		By("Unable to dump workload cluster logs as the cluster is nil")
+	} else if !input.SkipLogCollection {
+		Byf("Dumping logs from the %q workload cluster", input.Cluster.Name)
+		input.ClusterProxy.CollectWorkloadClusterLogs(ctx, input.Cluster.Namespace, input.Cluster.Name, filepath.Join(input.ArtifactFolder, "clusters", input.Cluster.Name))
+	}
 
 	if input.SkipCleanup {
 		return

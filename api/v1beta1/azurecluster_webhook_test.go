@@ -94,6 +94,18 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			}(),
 			wantErr: true,
 		},
+		{
+			name: "azurecluster with ExtendedLocation and false EdgeZone feature flag",
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.ExtendedLocation = &ExtendedLocationSpec{
+					Name: "rr4",
+					Type: "EdgeZone",
+				}
+				return cluster
+			}(),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

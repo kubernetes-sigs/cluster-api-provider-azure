@@ -866,4 +866,49 @@ var _ = Describe("Workload cluster creation", func() {
 			By("PASSED!")
 		})
 	})
+
+	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
+	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
+	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
+	// You can also override the default SKU `Standard_DS2_v2` and `Standard_DS4_v2` storage by setting
+	// the `AZURE_EDGEZONE_CONTROL_PLANE_MACHINE_TYPE` and `AZURE_EDGEZONE_NODE_MACHINE_TYPE` environment variables.
+	Context("Creating clusters on public MEC [OPTIONAL]", func() {
+		It("with 1 control plane nodes and 1 worker node", func() {
+			By("using user-assigned identity")
+			clusterName = getClusterName(clusterNamePrefix, "edgezone")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("edgezone"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Verifying extendedLocation property in Azure VMs is corresponding to extendedLocation property in edgezone yaml file", func() {
+				AzureEdgeZoneClusterSpec(ctx, func() AzureEdgeZoneClusterSpecInput {
+					return AzureEdgeZoneClusterSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						E2EConfig:             e2eConfig,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
 })

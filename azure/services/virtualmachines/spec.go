@@ -36,6 +36,7 @@ type VMSpec struct {
 	Name                   string
 	ResourceGroup          string
 	Location               string
+	ExtendedLocation       *infrav1.ExtendedLocationSpec
 	ClusterName            string
 	Role                   string
 	NICIDs                 []string
@@ -114,8 +115,9 @@ func (s *VMSpec) Parameters(ctx context.Context, existing interface{}) (params i
 	}
 
 	return compute.VirtualMachine{
-		Plan:     converters.ImageToPlan(s.Image),
-		Location: pointer.String(s.Location),
+		Plan:             converters.ImageToPlan(s.Image),
+		Location:         pointer.String(s.Location),
+		ExtendedLocation: converters.ExtendedLocationToComputeSDK(s.ExtendedLocation),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,

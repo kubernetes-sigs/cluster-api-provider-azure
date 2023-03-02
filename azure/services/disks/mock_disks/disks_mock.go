@@ -205,6 +205,48 @@ func (mr *MockDiskScopeMockRecorder) DiskSpecs() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiskSpecs", reflect.TypeOf((*MockDiskScope)(nil).DiskSpecs))
 }
 
+// ExtendedLocation mocks base method.
+func (m *MockDiskScope) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocation")
+	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	return ret0
+}
+
+// ExtendedLocation indicates an expected call of ExtendedLocation.
+func (mr *MockDiskScopeMockRecorder) ExtendedLocation() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocation", reflect.TypeOf((*MockDiskScope)(nil).ExtendedLocation))
+}
+
+// ExtendedLocationName mocks base method.
+func (m *MockDiskScope) ExtendedLocationName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocationName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ExtendedLocationName indicates an expected call of ExtendedLocationName.
+func (mr *MockDiskScopeMockRecorder) ExtendedLocationName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocationName", reflect.TypeOf((*MockDiskScope)(nil).ExtendedLocationName))
+}
+
+// ExtendedLocationType mocks base method.
+func (m *MockDiskScope) ExtendedLocationType() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtendedLocationType")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ExtendedLocationType indicates an expected call of ExtendedLocationType.
+func (mr *MockDiskScopeMockRecorder) ExtendedLocationType() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocationType", reflect.TypeOf((*MockDiskScope)(nil).ExtendedLocationType))
+}
+
 // FailureDomains mocks base method.
 func (m *MockDiskScope) FailureDomains() []string {
 	m.ctrl.T.Helper()

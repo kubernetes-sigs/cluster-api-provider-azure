@@ -29,15 +29,16 @@ import (
 
 // PublicIPSpec defines the specification for a Public IP.
 type PublicIPSpec struct {
-	Name           string
-	ResourceGroup  string
-	ClusterName    string
-	DNSName        string
-	IsIPv6         bool
-	Location       string
-	FailureDomains []string
-	AdditionalTags infrav1.Tags
-	IPTags         []infrav1.IPTag
+	Name             string
+	ResourceGroup    string
+	ClusterName      string
+	DNSName          string
+	IsIPv6           bool
+	Location         string
+	ExtendedLocation *infrav1.ExtendedLocationSpec
+	FailureDomains   []string
+	AdditionalTags   infrav1.Tags
+	IPTags           []infrav1.IPTag
 }
 
 // ResourceName returns the name of the public IP.
@@ -86,9 +87,10 @@ func (s *PublicIPSpec) Parameters(ctx context.Context, existing interface{}) (pa
 			Name:        pointer.String(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
-		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Name:     pointer.String(s.Name),
-		Location: pointer.String(s.Location),
+		Sku:              &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		Name:             pointer.String(s.Name),
+		Location:         pointer.String(s.Location),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   addressVersion,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,

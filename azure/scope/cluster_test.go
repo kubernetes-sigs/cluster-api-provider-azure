@@ -2955,3 +2955,159 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 		})
 	}
 }
+
+func TestExtendedLocationName(t *testing.T) {
+	tests := []struct {
+		name             string
+		clusterName      string
+		extendedLocation infrav1.ExtendedLocationSpec
+	}{
+		{
+			name:        "Empty extendedLocatioName",
+			clusterName: "my-cluster",
+			extendedLocation: infrav1.ExtendedLocationSpec{
+				Name: "",
+				Type: "",
+			},
+		},
+		{
+			name:        "Non empty extendedLocationName",
+			clusterName: "my-cluster",
+			extendedLocation: infrav1.ExtendedLocationSpec{
+				Name: "ex-loc-name",
+				Type: "ex-loc-type",
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := runtime.NewScheme()
+			_ = infrav1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
+
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tc.clusterName,
+					Namespace: "default",
+				},
+			}
+
+			azureCluster := &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: tc.clusterName,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "cluster.x-k8s.io/v1beta1",
+							Kind:       "Cluster",
+							Name:       "my-cluster",
+						},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						ExtendedLocation: &infrav1.ExtendedLocationSpec{
+							Name: tc.extendedLocation.Name,
+							Type: tc.extendedLocation.Type,
+						},
+					},
+				},
+			}
+
+			initObjects := []runtime.Object{cluster, azureCluster}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster:      cluster,
+				AzureCluster: azureCluster,
+				Client:       fakeClient,
+			})
+
+			g.Expect(err).NotTo(HaveOccurred())
+			got := clusterScope.ExtendedLocationName()
+			g.Expect(tc.extendedLocation.Name).Should(Equal(got))
+		})
+	}
+}
+
+func TestExtendedLocationType(t *testing.T) {
+	tests := []struct {
+		name             string
+		clusterName      string
+		extendedLocation infrav1.ExtendedLocationSpec
+	}{
+		{
+			name:        "Empty extendedLocatioType",
+			clusterName: "my-cluster",
+			extendedLocation: infrav1.ExtendedLocationSpec{
+				Name: "",
+				Type: "",
+			},
+		},
+		{
+			name:        "Non empty extendedLocationType",
+			clusterName: "my-cluster",
+			extendedLocation: infrav1.ExtendedLocationSpec{
+				Name: "ex-loc-name",
+				Type: "ex-loc-type",
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := runtime.NewScheme()
+			_ = infrav1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
+
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tc.clusterName,
+					Namespace: "default",
+				},
+			}
+
+			azureCluster := &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: tc.clusterName,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "cluster.x-k8s.io/v1beta1",
+							Kind:       "Cluster",
+							Name:       "my-cluster",
+						},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						ExtendedLocation: &infrav1.ExtendedLocationSpec{
+							Name: tc.extendedLocation.Name,
+							Type: tc.extendedLocation.Type,
+						},
+					},
+				},
+			}
+
+			initObjects := []runtime.Object{cluster, azureCluster}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster:      cluster,
+				AzureCluster: azureCluster,
+				Client:       fakeClient,
+			})
+
+			g.Expect(err).NotTo(HaveOccurred())
+			got := clusterScope.ExtendedLocationType()
+			g.Expect(tc.extendedLocation.Type).Should(Equal(got))
+		})
+	}
+}
