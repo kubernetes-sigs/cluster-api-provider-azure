@@ -175,6 +175,8 @@ LDFLAGS := $(shell hack/version.sh)
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
 
+export KIND_CLUSTER_NAME ?= capz
+
 ## --------------------------------------
 ## Binaries
 ## --------------------------------------
@@ -282,7 +284,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.3/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAPZ
-	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
+	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=$(KIND_CLUSTER_NAME)
 	$(KUSTOMIZE) build config/default | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Wait for CAPI deployments
@@ -305,7 +307,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until $(KUBECTL) get clusters -A; do sleep 3; done"
 	timeout --foreground 300 bash -c "until $(KUBECTL) get azureclusters -A; do sleep 3; done"
 	timeout --foreground 300 bash -c "until $(KUBECTL) get kubeadmcontrolplanes -A; do sleep 3; done"
-	@echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-capz"'
+	@echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-$(KIND_CLUSTER_NAME)"'
 
 .PHONY: create-workload-cluster
 create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
@@ -720,7 +722,7 @@ delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "ca
 
 .PHONY: kind-reset
 kind-reset: ## Destroys the "capz" and "capz-e2e" kind clusters.
-	$(KIND) delete cluster --name=capz || true
+	$(KIND) delete cluster --name=$(KIND_CLUSTER_NAME) || true
 	$(KIND) delete cluster --name=capz-e2e || true
 
 ## --------------------------------------

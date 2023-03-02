@@ -29,6 +29,8 @@ HELM="${REPO_ROOT}/hack/tools/bin/helm"
 KIND="${REPO_ROOT}/hack/tools/bin/kind"
 KUSTOMIZE="${REPO_ROOT}/hack/tools/bin/kustomize"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${HELM##*/}" "${KIND##*/}" "${KUSTOMIZE##*/}"
+KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
+export KIND_CLUSTER_NAME
 # export the variables so they are available in bash -c wait_for_nodes below
 export KUBECTL
 export HELM
@@ -129,6 +131,10 @@ select_cluster_template() {
 
 create_cluster() {
     "${REPO_ROOT}/hack/create-dev-cluster.sh"
+    if [ ! -f "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" ]; then
+        echo "Unable to find kubeconfig for kind mgmt cluster ${KIND_CLUSTER_NAME}"
+        exit 1
+    fi
 }
 
 # get_cidrs derives the CIDR from the Cluster's '.spec.clusterNetwork.pods.cidrBlocks' metadata
@@ -279,20 +285,12 @@ install_addons() {
 
 copy_secret() {
     # point at the management cluster
-    unset KUBECONFIG
-    "${KUBECTL}" get secret "${CLUSTER_NAME}-control-plane-azure-json" -o jsonpath='{.data.control-plane-azure\.json}' | base64 --decode >azure_json
+    "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get secret "${CLUSTER_NAME}-control-plane-azure-json" -o jsonpath='{.data.control-plane-azure\.json}' | base64 --decode >azure_json
 
-    # set KUBECONFIG back to the workload cluster
-    export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
+    # create the secret on the workload cluster
     "${KUBECTL}" create secret generic "${CONFIG_SECRET_NAME}" -n kube-system \
         --from-file=cloud-config=azure_json
     rm azure_json
-}
-
-# cleanup all resources we use
-cleanup() {
-    timeout 1800 "${KUBECTL}" delete cluster "${CLUSTER_NAME}" || true
-    make kind-reset || true
 }
 
 on_exit() {
@@ -305,9 +303,10 @@ on_exit() {
     unset KUBECONFIG
     go run -tags e2e "${REPO_ROOT}"/test/logger.go --name "${CLUSTER_NAME}" --namespace default
     "${REPO_ROOT}/hack/log/redact.sh" || true
-    # cleanup
-    if [[ -z "${SKIP_CLEANUP:-}" ]]; then
-        cleanup
+    # cleanup all resources we use
+    if [[ ! "${SKIP_CLEANUP:-}" == "true" ]]; then
+        timeout 1800 "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" delete cluster "${CLUSTER_NAME}" || echo "Unable to delete cluster ${CLUSTER_NAME}"
+        make --directory="${REPO_ROOT}" kind-reset || true
     fi
 }
 
