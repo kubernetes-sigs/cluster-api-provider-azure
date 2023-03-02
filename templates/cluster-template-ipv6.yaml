@@ -62,28 +62,16 @@ spec:
       apiServer:
         extraArgs:
           bind-address: '::'
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
-        extraVolumes:
-        - hostPath: /etc/kubernetes/azure.json
-          mountPath: /etc/kubernetes/azure.json
-          name: cloud-config
-          readOnly: true
+          cloud-provider: external
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "true"
           bind-address: '::'
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
           cluster-cidr: 2001:1234:5678:9a40::/58
           cluster-name: ${CLUSTER_NAME}
           configure-cloud-routes: "true"
-        extraVolumes:
-        - hostPath: /etc/kubernetes/azure.json
-          mountPath: /etc/kubernetes/azure.json
-          name: cloud-config
-          readOnly: true
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -124,10 +112,8 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
           cluster-dns: fd00::10
-          node-ip: '::'
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       controlPlane:
@@ -137,10 +123,8 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
           cluster-dns: fd00::10
-          node-ip: '::'
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -265,10 +249,8 @@ spec:
         nodeRegistration:
           kubeletExtraArgs:
             azure-container-registry-config: /etc/kubernetes/azure.json
-            cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: azure
+            cloud-provider: external
             cluster-dns: '[fd00::10]'
-            node-ip: '::'
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf

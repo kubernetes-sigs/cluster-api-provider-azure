@@ -6,8 +6,6 @@ resources:
 
 patchesStrategicMerge:
   - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
-  - ../../test/ci/prow-intree-cloud-provider/patches/intree-cp.yaml # TODO: enable CCM for ipv6, see https://github.com/kubernetes-sigs/cloud-provider-azure/issues/3401.
-  - ../../test/ci/prow-intree-cloud-provider/patches/intree-md-0.yaml # TODO: enable CCM for ipv6, see https://github.com/kubernetes-sigs/cloud-provider-azure/issues/3401.
   - patches/ipv6.yaml
   - patches/kubeadm-controlplane.yaml
   - patches/controlplane-azuremachinetemplate.yaml
