@@ -47,8 +47,8 @@ require (
 	k8s.io/kubectl v0.25.2
 	k8s.io/utils v0.0.0-20220823124924-e9cbc92d1a73
 	sigs.k8s.io/cloud-provider-azure v1.25.5
-	sigs.k8s.io/cluster-api v1.3.3
-	sigs.k8s.io/cluster-api/test v1.3.3
+	sigs.k8s.io/cluster-api v1.3.5
+	sigs.k8s.io/cluster-api/test v1.3.5
 	sigs.k8s.io/controller-runtime v0.13.1
 	sigs.k8s.io/kind v0.17.0
 )
@@ -80,7 +80,7 @@ require (
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/containerd/containerd v1.6.18 // indirect
 	github.com/coredns/caddy v1.1.0 // indirect
-	github.com/coredns/corefile-migration v1.0.18 // indirect
+	github.com/coredns/corefile-migration v1.0.20 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
@@ -223,4 +223,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.3.3
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.3.5
