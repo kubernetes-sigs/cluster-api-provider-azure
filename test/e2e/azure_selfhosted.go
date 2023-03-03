@@ -153,12 +153,12 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		// More specifically, we were observing the test failing to get objects from the API server during move, so we
 		// are now testing the API servers are stable before starting move.
 		Consistently(func() error {
-			kubeSystem := &corev1.Namespace{}
-			return input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: "kube-system"}, kubeSystem)
+			ns := &corev1.Namespace{}
+			return input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
 		}, "5s", "100ms").Should(BeNil(), "Failed to assert bootstrap API server stability")
 		Consistently(func() error {
-			kubeSystem := &corev1.Namespace{}
-			return selfHostedClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: "kube-system"}, kubeSystem)
+			ns := &corev1.Namespace{}
+			return selfHostedClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
 		}, "5s", "100ms").Should(BeNil(), "Failed to assert self-hosted API server stability")
 
 		By("Moving the cluster to self hosted")
@@ -205,12 +205,12 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 			// More specifically, we were observing the test failing to get objects from the API server during move, so we
 			// are now testing the API servers are stable before starting move.
 			Consistently(func() error {
-				kubeSystem := &corev1.Namespace{}
-				return input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: "kube-system"}, kubeSystem)
+				ns := &corev1.Namespace{}
+				return input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
 			}, "5s", "100ms").Should(BeNil(), "Failed to assert bootstrap API server stability")
 			Consistently(func() error {
-				kubeSystem := &corev1.Namespace{}
-				return selfHostedClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: "kube-system"}, kubeSystem)
+				ns := &corev1.Namespace{}
+				return selfHostedClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
 			}, "5s", "100ms").Should(BeNil(), "Failed to assert self-hosted API server stability")
 
 			By("Moving the cluster back to bootstrap")
