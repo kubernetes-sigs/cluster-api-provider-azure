@@ -73,11 +73,27 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 		defer GinkgoRecover()
 		defer wg.Done()
 
+		nonAdditionalTagKeys := map[string]struct{}{}
+		managedcluster, err := managedclustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name)
+		Expect(err).NotTo(HaveOccurred())
+		for k := range managedcluster.Tags {
+			if _, exists := infraControlPlane.Spec.AdditionalTags[k]; !exists {
+				nonAdditionalTagKeys[k] = struct{}{}
+			}
+		}
+
 		var expectedTags infrav1.Tags
 		checkTags := func(g Gomega) {
 			managedcluster, err := managedclustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name)
 			g.Expect(err).NotTo(HaveOccurred())
 			actualTags := converters.MapToTags(managedcluster.Tags)
+			// Ignore tags not originally specified in spec.additionalTags
+			for k := range nonAdditionalTagKeys {
+				delete(actualTags, k)
+			}
+			if len(actualTags) == 0 {
+				actualTags = nil
+			}
 			if expectedTags == nil {
 				g.Expect(actualTags).To(BeNil())
 			} else {
@@ -141,11 +157,27 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 				Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 			}, ammp)).To(Succeed())
 
+			nonAdditionalTagKeys := map[string]struct{}{}
+			agentpool, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name)
+			Expect(err).NotTo(HaveOccurred())
+			for k := range agentpool.Tags {
+				if _, exists := infraControlPlane.Spec.AdditionalTags[k]; !exists {
+					nonAdditionalTagKeys[k] = struct{}{}
+				}
+			}
+
 			var expectedTags infrav1.Tags
 			checkTags := func(g Gomega) {
 				agentpool, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name)
 				g.Expect(err).NotTo(HaveOccurred())
 				actualTags := converters.MapToTags(agentpool.Tags)
+				// Ignore tags not originally specified in spec.additionalTags
+				for k := range nonAdditionalTagKeys {
+					delete(actualTags, k)
+				}
+				if len(actualTags) == 0 {
+					actualTags = nil
+				}
 				if expectedTags == nil {
 					g.Expect(actualTags).To(BeNil())
 				} else {

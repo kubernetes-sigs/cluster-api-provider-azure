@@ -37,7 +37,7 @@ const serviceName = "managedcluster"
 type ManagedClusterScope interface {
 	azure.Authorizer
 	azure.AsyncStatusUpdater
-	ManagedClusterSpec(context.Context) azure.ResourceSpecGetter
+	ManagedClusterSpec() azure.ResourceSpecGetter
 	SetControlPlaneEndpoint(clusterv1.APIEndpoint)
 	MakeEmptyKubeConfigSecret() corev1.Secret
 	GetKubeConfigData() []byte
@@ -74,7 +74,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	managedClusterSpec := s.Scope.ManagedClusterSpec(ctx)
+	managedClusterSpec := s.Scope.ManagedClusterSpec()
 	if managedClusterSpec == nil {
 		return nil
 	}
@@ -112,7 +112,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	managedClusterSpec := s.Scope.ManagedClusterSpec(ctx)
+	managedClusterSpec := s.Scope.ManagedClusterSpec()
 	if managedClusterSpec == nil {
 		return nil
 	}

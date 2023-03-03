@@ -88,7 +88,7 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			managedCluster := s.ManagedClusterSpec(context.TODO())
+			managedCluster := s.ManagedClusterSpec()
 			result := managedCluster.(*managedclusters.ManagedClusterSpec).OutboundType == nil
 			g.Expect(result).To(Equal(c.Expected))
 		})
@@ -326,7 +326,7 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 			c.Input.Client = fakeClient
 			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
 			g.Expect(err).To(Succeed())
-			managedCluster := s.ManagedClusterSpec(context.TODO())
+			managedCluster := s.ManagedClusterSpec()
 			g.Expect(managedCluster.(*managedclusters.ManagedClusterSpec).AddonProfiles).To(Equal(c.Expected))
 		})
 	}

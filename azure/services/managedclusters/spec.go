@@ -44,6 +44,9 @@ type ManagedClusterSpec struct {
 	// NodeResourceGroup is the name of the Azure resource group containing IaaS VMs.
 	NodeResourceGroup string
 
+	// ClusterName is the name of the owning Cluster API Cluster resource.
+	ClusterName string
+
 	// VnetSubnetID is the Azure Resource ID for the subnet which should contain nodes.
 	VnetSubnetID string
 
@@ -270,7 +273,13 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			Type: containerservice.ResourceIdentityTypeSystemAssigned,
 		},
 		Location: &s.Location,
-		Tags:     *azure.StringMapPtr(s.Tags),
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			ClusterName: s.ClusterName,
+			Name:        pointer.String(s.Name),
+			Role:        pointer.String(infrav1.CommonRole),
+			Additional:  s.Tags,
+		})),
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 			NodeResourceGroup: &s.NodeResourceGroup,
 			EnableRBAC:        pointer.Bool(true),
@@ -409,12 +418,6 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 		// Avoid changing agent pool profiles through AMCP and just use the existing agent pool profiles
 		// AgentPool changes are managed through AMMP.
 		managedCluster.AgentPoolProfiles = existingMC.AgentPoolProfiles
-
-		// Do not trigger an update because of nil/empty discrepancies between the two sets of tags.
-		if len(existingMC.Tags) == 0 && len(managedCluster.Tags) == 0 {
-			existingMC.Tags = nil
-			managedCluster.Tags = nil
-		}
 
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff == "" {
@@ -563,11 +566,9 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 
 	clusterNormalized := &containerservice.ManagedCluster{
 		ManagedClusterProperties: propertiesNormalized,
-		Tags:                     managedCluster.Tags,
 	}
 	existingMCClusterNormalized := &containerservice.ManagedCluster{
 		ManagedClusterProperties: existingMCPropertiesNormalized,
-		Tags:                     existingMC.Tags,
 	}
 
 	if managedCluster.Sku != nil {
