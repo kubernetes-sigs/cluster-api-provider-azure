@@ -401,7 +401,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	}
 
 	// Validate DiagnosticProfile spec
-	if spec.DiagnosticsProfile.Boot != nil {
+	if spec.DiagnosticsProfile != nil && spec.DiagnosticsProfile.Boot != nil {
 		if spec.DiagnosticsProfile.Boot.StorageAccountType == infrav1.UserManagedDiagnosticsStorage {
 			if spec.DiagnosticsProfile.Boot.UserManaged == nil {
 				return azure.WithTerminalError(fmt.Errorf("userManaged must be specified when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage))
