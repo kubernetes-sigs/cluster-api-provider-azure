@@ -55,6 +55,13 @@ setup() {
         source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
         echo "Will use the ${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG} cloud-controller-manager image for external cloud-provider-cluster"
         echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG} cloud-node-manager image for external cloud-provider-azure cluster"
+
+        export CCM_IMG_ARGS=(--set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}"
+        --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}"
+        --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}"
+        --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}"
+        --set-string cloudControllerManager.imageTag="${IMAGE_TAG}"
+        --set-string cloudNodeManager.imageTag="${IMAGE_TAG}")
     fi
 
     if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
@@ -115,11 +122,6 @@ select_cluster_template() {
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow.yaml"
     fi
 
-    if [[ -n "${TEST_CCM:-}" ]]; then
-        # replace 'prow' with 'prow-external-cloud-provider' in the template name if testing out-of-tree
-        export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-external-cloud-provider}"
-    fi
-
     if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
         if [[ "${CLUSTER_TEMPLATE}" =~ "prow" ]]; then
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-machine-pool}"
@@ -145,6 +147,18 @@ get_cidrs() {
     if [[ "${CIDR_LENGTH}" == "2" ]]; then
         CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}')
         export CIDR1
+    fi
+}
+
+# get_cloud_provider determines if the Cluster is using an intree or external cloud-provider from the KubeadmConfigSpec.
+# any retryable operation in this function must return a non-zero exit code on failure so that we can
+# retry it using a `until get_cloud_provider; do sleep 5; done` pattern;
+# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
+get_cloud_provider() {
+    CLOUD_PROVIDER=$("${KUBECTL}" get kubeadmcontrolplane -l cluster.x-k8s.io/cluster-name="${CLUSTER_NAME}" -o=jsonpath='{.items[0].spec.kubeadmConfigSpec.clusterConfiguration.controllerManager.extraArgs.cloud-provider}')
+    if [[ "${CLOUD_PROVIDER:-}" = "azure" ]]; then
+        IN_TREE="true"
+        export IN_TREE
     fi
 }
 
@@ -205,18 +219,12 @@ install_cloud_provider_azure() {
     echo "Installing cloud-provider-azure components via helm"
     "${HELM}" upgrade cloud-provider-azure --install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure \
         --set infra.clusterName="${CLUSTER_NAME}" \
-        --set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}" \
-        --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}" \
-        --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}" \
-        --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}" \
-        --set-string cloudControllerManager.imageTag="${IMAGE_TAG}" \
-        --set-string cloudNodeManager.imageTag="${IMAGE_TAG}" \
         --set cloudControllerManager.replicas="${CCM_COUNT}" \
         --set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}"  \
         --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
         --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
         --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}" \
-        --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}"
+        --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}" "${CCM_IMG_ARGS[@]}"
 }
 
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
@@ -265,7 +273,10 @@ install_addons() {
         sleep 5
     done
     # install cloud-provider-azure components, if using out-of-tree
-    if [[ -n "${TEST_CCM:-}" ]]; then
+    until get_cloud_provider; do
+        sleep 5
+    done
+    if [[ -z "${IN_TREE:-}" ]]; then
         until install_cloud_provider_azure; do
             sleep 5
         done

@@ -27,8 +27,7 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
           criSocket: npipe:////./pipe/containerd-containerd
           kubeletExtraArgs:
-            cloud-provider: azure
-            cloud-config: 'c:/k/azure.json'
+            cloud-provider: external
             azure-container-registry-config: 'c:/k/azure.json'
             feature-gates: "WindowsHostProcessContainers=true"
             v: "2"

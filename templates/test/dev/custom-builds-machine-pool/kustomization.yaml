@@ -1,6 +1,6 @@
 namespace: default
 resources:
-  - ../../../test/ci/prow-machine-pool
+  - ../../../test/ci/prow-intree-cloud-provider-machine-pool
 patchesStrategicMerge:
   - ../patches/control-plane-custom-builds.yaml
   - patches/custom-builds.yaml

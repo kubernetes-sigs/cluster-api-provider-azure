@@ -36,8 +36,7 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
-            cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: azure
+            cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
 ---
 # MachineDeployment object

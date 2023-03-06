@@ -47,9 +47,8 @@ spec:
         nodeRegistration:
           name: '{{ ds.meta_data["local_hostname"] }}'
           kubeletExtraArgs:
-            cloud-provider: azure
-            cloud-config: /etc/kubernetes/azure.json
             azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-provider: external
       files:
       - contentFrom:
           secret:

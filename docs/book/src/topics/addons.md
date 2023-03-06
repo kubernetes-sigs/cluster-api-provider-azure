@@ -149,9 +149,9 @@ kubectl apply -f kube-flannel.yml
 
 # External Cloud Provider
 
-To deploy a cluster using [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), create a cluster configuration with the [external cloud provider template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-external-cloud-provider.yaml).
+The "external" or "out-of-tree" cloud provider for Azure is the recommended  cloud provider for CAPZ clusters. The "in-tree" cloud provider has been deprecated since v1.20 and only bug fixes are allowed in its Kubernetes repository directory.
 
-After the cluster has provisioned, install the `cloud-provider-azure` components using the official helm chart:
+Below are instructions to install [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure) components on a self-managed cluster using the official helm chart. For more information see the official [`cloud-provider-azure` helm chart documentation](https://github.com/kubernetes-sigs/cloud-provider-azure/tree/master/helm/cloud-provider-azure).
 
 Grab the CIDR ranges from your cluster by running this kubectl statement against the management cluster:
 
@@ -180,7 +180,7 @@ kube-system   cloud-node-manager-mfsdg                                          
 kube-system   cloud-node-manager-qrz74                                            1/1     Running   0          24s
 ```
 
-For more information see the official [`cloud-provider-azure` helm chart documentation](https://github.com/kubernetes-sigs/cloud-provider-azure/tree/master/helm/cloud-provider-azure).
+To know more about configuring cloud-provider-azure, see [Configuring the Kubernetes Cloud Provider for Azure](./cloud-provider-config.md).
 
 ## Storage Drivers
 

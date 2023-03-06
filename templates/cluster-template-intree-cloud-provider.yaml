@@ -1,9 +1,6 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    ccm: intree
-    csi: intree
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -26,10 +23,6 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  additionalTags:
-    buildProvenance: ${BUILD_PROVENANCE}
-    creationTimestamp: ${TIMESTAMP}
-    jobName: ${JOB_NAME}
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
@@ -60,7 +53,6 @@ spec:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
-          feature-gates: MixedProtocolLBService=true
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -73,8 +65,8 @@ spec:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
           cluster-name: ${CLUSTER_NAME}
-          feature-gates: CSIMigrationAzureDisk=false
-          v: "4"
+          external-cloud-volume-plugin: azure
+          feature-gates: CSIMigrationAzureDisk=true
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -116,7 +108,7 @@ spec:
           azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
-          feature-gates: CSIMigrationAzureDisk=false
+          feature-gates: CSIMigrationAzureDisk=true
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
@@ -124,7 +116,7 @@ spec:
           azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
-          feature-gates: CSIMigrationAzureDisk=false
+          feature-gates: CSIMigrationAzureDisk=true
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -151,13 +143,10 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
-      identity: UserAssigned
       osDisk:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -192,13 +181,10 @@ metadata:
 spec:
   template:
     spec:
-      identity: UserAssigned
       osDisk:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -223,7 +209,7 @@ spec:
             azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-config: /etc/kubernetes/azure.json
             cloud-provider: azure
-            feature-gates: CSIMigrationAzureDisk=false
+            feature-gates: CSIMigrationAzureDisk=true
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands: []
 ---

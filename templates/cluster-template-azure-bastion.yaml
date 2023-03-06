@@ -53,25 +53,13 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
-        extraVolumes:
-        - hostPath: /etc/kubernetes/azure.json
-          mountPath: /etc/kubernetes/azure.json
-          name: cloud-config
-          readOnly: true
+          cloud-provider: external
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
-        extraVolumes:
-        - hostPath: /etc/kubernetes/azure.json
-          mountPath: /etc/kubernetes/azure.json
-          name: cloud-config
-          readOnly: true
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -106,15 +94,13 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -205,8 +191,7 @@ spec:
         nodeRegistration:
           kubeletExtraArgs:
             azure-container-registry-config: /etc/kubernetes/azure.json
-            cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: azure
+            cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands: []
 ---

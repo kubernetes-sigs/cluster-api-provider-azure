@@ -12,6 +12,8 @@ patchesStrategicMerge:
   - patches/vnet-peerings.yaml
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
+  - ../prow-intree-cloud-provider/patches/intree-cp.yaml # TODO: remove once CAPI supports Helm addons
+  - ../prow-intree-cloud-provider/patches/intree-md-0.yaml # TODO: remove once CAPI supports Helm addons
 patches:
   - path: patches/user-assigned.yaml
     target:
