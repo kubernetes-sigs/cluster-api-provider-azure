@@ -260,6 +260,38 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
+			name:          "should start creating vmss with custom subnet when specified",
+			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				spec := newDefaultVMSSSpec()
+				spec.Size = "VM_SIZE_AN"
+				spec.NetworkInterfaces = []infrav1.NetworkInterface{
+					{
+						SubnetName:       "somesubnet",
+						PrivateIPConfigs: 1, // defaulter sets this to one
+					},
+				}
+				s.ScaleSetSpec().Return(spec).AnyTimes()
+				setupDefaultVMSSStartCreatingExpectations(s, m)
+				vmss := newDefaultVMSS("VM_SIZE_AN")
+				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
+				(*netConfigs)[0].Name = pointer.String("my-vmss-0")
+				(*netConfigs)[0].EnableIPForwarding = pointer.Bool(true)
+				(*netConfigs)[0].EnableAcceleratedNetworking = pointer.Bool(true)
+				nic1IPConfigs := (*netConfigs)[0].IPConfigurations
+				(*nic1IPConfigs)[0].Name = pointer.String("private-ipConfig-0")
+				(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
+				(*nic1IPConfigs)[0].Subnet = &compute.APIEntityReference{
+					ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/somesubnet"),
+				}
+				(*netConfigs)[0].EnableAcceleratedNetworking = pointer.Bool(true)
+				(*netConfigs)[0].Primary = pointer.Bool(true)
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
+					Return(putFuture, nil)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE_AN"), putFuture)
+			},
+		},
+		{
 			name:          "should start creating vmss with custom networking when specified",
 			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
@@ -290,7 +322,7 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
 				(*netConfigs)[0].Name = pointer.String("my-vmss-0")
-				(*netConfigs)[0].EnableIPForwarding = nil
+				(*netConfigs)[0].EnableIPForwarding = pointer.Bool(true)
 				nic1IPConfigs := (*netConfigs)[0].IPConfigurations
 				(*nic1IPConfigs)[0].Name = pointer.String("private-ipConfig-0")
 				(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
@@ -322,6 +354,7 @@ func TestReconcileVMSS(t *testing.T) {
 					VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
 						EnableAcceleratedNetworking: pointer.Bool(true),
 						IPConfigurations:            &vmssIPConfigs,
+						EnableIPForwarding:          pointer.Bool(true),
 					},
 				})
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
