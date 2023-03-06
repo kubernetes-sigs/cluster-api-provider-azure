@@ -564,11 +564,14 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 			nicConfig := compute.VirtualMachineScaleSetNetworkConfiguration{}
 			nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties = &compute.VirtualMachineScaleSetNetworkConfigurationProperties{}
 			nicConfig.Name = pointer.String(vmssSpec.Name + "-" + strconv.Itoa(i))
-			if pointer.BoolDeref(n.AcceleratedNetworking, false) {
-				nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = pointer.Bool(true)
+			nicConfig.EnableIPForwarding = pointer.Bool(true)
+
+			if n.AcceleratedNetworking == nil {
+				nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = vmssSpec.AcceleratedNetworking
 			} else {
-				nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = pointer.Bool(false)
+				nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = n.AcceleratedNetworking
 			}
+
 			if n.PrivateIPConfigs == 0 {
 				nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.IPConfigurations = &[]compute.VirtualMachineScaleSetIPConfiguration{
 					{
