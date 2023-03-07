@@ -943,7 +943,7 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(ctx context.Context, c client.
 		// Return early if the GroupKind doesn't match what we expect.
 		controlPlaneGK := ref.GroupVersionKind().GroupKind()
 		if gk != controlPlaneGK {
-			log.Info("gk does not match", "gk", gk, "controlPlaneGK", controlPlaneGK)
+			// MachinePool does not correlate to a AzureManagedControlPlane, nothing to do
 			return nil
 		}
 
