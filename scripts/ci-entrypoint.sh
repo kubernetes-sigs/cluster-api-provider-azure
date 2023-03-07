@@ -50,7 +50,7 @@ setup() {
     # setup REGISTRY for custom images.
     : "${REGISTRY:?Environment variable empty or not defined.}"
     "${REPO_ROOT}/hack/ensure-acr-login.sh"
-    if [[ -n "${TEST_CCM:-}" ]]; then
+    if [[ "$(capz::util::should_build_ccm)" == "true" ]]; then
         # shellcheck source=scripts/ci-build-azure-ccm.sh
         source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
         echo "Will use the ${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG} cloud-controller-manager image for external cloud-provider-cluster"
