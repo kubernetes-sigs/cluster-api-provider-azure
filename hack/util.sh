@@ -42,10 +42,16 @@ capz::util::should_build_kubernetes() {
 }
 
 capz::util::should_build_ccm() {
+    # TEST_CCM is an environment variable set by a prow job to indicate that the CCM should be built and tested.
     if [[ -n "${TEST_CCM:-}" ]]; then
         echo "true" && return
     fi
+    # If conformance is being tested with CI artifacts, CCM should be built.
     if [[ "${E2E_ARGS:-}" == "-kubetest.use-ci-artifacts" ]]; then
+        echo "true" && return
+    fi
+    # If the Kubernetes version contains "latest", CCM should be built.
+    if [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]]; then
         echo "true" && return
     fi
     echo "false"
