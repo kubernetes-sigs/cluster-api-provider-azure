@@ -25,6 +25,7 @@ make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}"
 
 # desired cluster name; default is "kind"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
+export KIND_CLUSTER_NAME
 
 if [[ "$("${KIND}" get clusters)" =~ .*"${KIND_CLUSTER_NAME}".* ]]; then
   echo "cluster already exists, moving on"
@@ -54,9 +55,11 @@ EOF
 # (the network may already be connected)
 docker network connect "kind" "${reg_name}" || true
 
+"${KIND}" get kubeconfig -n "${KIND_CLUSTER_NAME}" > "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig"
+
 # Document the local registry
 # https://github.com/kubernetes/enhancements/tree/master/keps/sig-cluster-lifecycle/generic/1755-communicating-a-local-registry
-cat <<EOF | kubectl apply -f -
+cat <<EOF | "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -68,4 +71,4 @@ data:
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
 
-"${KUBECTL}" wait node "${KIND_CLUSTER_NAME}-control-plane" --for=condition=ready --timeout=90s
+"${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" wait node "${KIND_CLUSTER_NAME}-control-plane" --for=condition=ready --timeout=90s
