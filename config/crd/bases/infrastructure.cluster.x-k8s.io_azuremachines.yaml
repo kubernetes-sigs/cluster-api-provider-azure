@@ -1492,6 +1492,9 @@ spec:
                     x-kubernetes-int-or-string: true
                 type: object
               sshPublicKey:
+                description: SSHPublicKey is the SSH public key string, base64-encoded
+                  to add to a Virtual Machine. Linux only. Refer to documentation
+                  on how to set up SSH access on Windows instances.
                 type: string
               subnetName:
                 description: 'Deprecated: SubnetName should be set in the networkInterfaces
@@ -1573,7 +1576,6 @@ spec:
                 type: string
             required:
             - osDisk
-            - sshPublicKey
             - vmSize
             type: object
           status:

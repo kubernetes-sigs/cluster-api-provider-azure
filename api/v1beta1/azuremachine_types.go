@@ -81,6 +81,9 @@ type AzureMachineSpec struct {
 	// +optional
 	DataDisks []DataDisk `json:"dataDisks,omitempty"`
 
+	// SSHPublicKey is the SSH public key string, base64-encoded to add to a Virtual Machine. Linux only.
+	// Refer to documentation on how to set up SSH access on Windows instances.
+	// +optional
 	SSHPublicKey string `json:"sshPublicKey"`
 
 	// AdditionalTags is an optional set of tags to add to an instance, in addition to the ones added by default by the
