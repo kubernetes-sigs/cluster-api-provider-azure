@@ -89,15 +89,6 @@ var (
 		},
 	}
 
-	unmanagedTags = resources.TagsResource{
-		Properties: &resources.Tags{
-			Tags: map[string]*string{
-				"foo":       pointer.String("bar"),
-				"something": pointer.String("else"),
-			},
-		},
-	}
-
 	notDoneError  = azure.NewOperationNotDoneError(&infrav1.Future{Type: "resourceType", ResourceGroup: resourceGroup, Name: "resourceName"})
 	errFake       = errors.New("this is an error")
 	notFoundError = autorest.DetailedError{StatusCode: 404}

@@ -1,5 +1,5 @@
-//go:build tools
-// +build tools
+//go:build capztools
+// +build capztools
 
 /*
 Copyright 2020 The Kubernetes Authors.
