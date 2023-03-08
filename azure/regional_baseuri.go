@@ -24,7 +24,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-type aliasAuth = Authorizer
+// aliasAuth helps to embed the interface Authorize since the Authorizer interface also defines an Authorizer method and
+// the compiler gets confused without a type alias (or renaming the method Authorizer).
+type aliasAuth Authorizer
 
 // baseURIAdapter wraps an azure.Authorizer and adds a region to the BaseURI. This is useful if you need to make direct
 // calls to a specific Azure region. One possible case is to avoid replication delay when listing resources within a
