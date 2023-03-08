@@ -62,7 +62,9 @@ type (
 		// +optional
 		DataDisks []infrav1.DataDisk `json:"dataDisks,omitempty"`
 
-		// SSHPublicKey is the SSH public key string base64 encoded to add to a Virtual Machine
+		// SSHPublicKey is the SSH public key string, base64-encoded to add to a Virtual Machine. Linux only.
+		// Refer to documentation on how to set up SSH access on Windows instances.
+		// +optional
 		SSHPublicKey string `json:"sshPublicKey"`
 
 		// Deprecated: AcceleratedNetworking should be set in the networkInterfaces field.
