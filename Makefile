@@ -654,6 +654,7 @@ go-test: $(SETUP_ENVTEST) ## Run go tests.
 test-cover: TEST_ARGS+= -coverprofile coverage.out
 test-cover: test ## Run tests with code coverage and generate reports.
 	go tool cover -func=coverage.out -o coverage.txt
+	./hack/codecov-ignore.sh
 	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: test-e2e-run
