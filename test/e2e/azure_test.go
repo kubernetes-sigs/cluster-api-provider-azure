@@ -522,7 +522,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
-			By("Verifying machinepool can scale out", func() {
+			By("Verifying machinepool can scale out and in", func() {
 				AzureMachinePoolsSpec(ctx, func() AzureMachinePoolsSpecInput {
 					return AzureMachinePoolsSpecInput{
 						Cluster:               result.Cluster,
