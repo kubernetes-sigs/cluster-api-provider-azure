@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 
@@ -30,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -249,22 +248,15 @@ func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() e
 	return func() error {
 		// Only Flexible orchestration mode requires validation.
 		if amp.Spec.OrchestrationMode == infrav1.OrchestrationModeType(compute.OrchestrationModeFlexible) {
-			// Find the owner MachinePool
-			ownerMachinePool := &expv1.MachinePool{}
-			key := client.ObjectKey{
-				Namespace: amp.Namespace,
-				Name:      amp.Name,
+			parent, err := azure.FindParentMachinePoolWithRetry(amp.Name, c, 5)
+			if err != nil {
+				return errors.Wrap(err, "failed to find parent MachinePool")
 			}
-			ctx := context.Background()
-			if err := c.Get(ctx, key, ownerMachinePool); err != nil {
-				return errors.Wrap(err, "failed to get owner MachinePool")
-			}
-
 			// Kubernetes must be >= 1.26.0 for cloud-provider-azure Helm chart support.
-			if ownerMachinePool.Spec.Template.Spec.Version == nil {
+			if parent.Spec.Template.Spec.Version == nil {
 				return errors.New("could not find Kubernetes version in MachinePool")
 			}
-			k8sVersion, err := semver.ParseTolerant(*ownerMachinePool.Spec.Template.Spec.Version)
+			k8sVersion, err := semver.ParseTolerant(*parent.Spec.Template.Spec.Version)
 			if err != nil {
 				return errors.Wrap(err, "failed to parse Kubernetes version")
 			}
