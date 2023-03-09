@@ -147,13 +147,16 @@ Here is a reference PR that applied the required test job changes following the 
 
 ### Update Netlify branch (skip for patch releases)
 
-Go to [the Netlify branches and deploy contexts in site settings](https://app.netlify.com/sites/kubernetes-sigs-cluster-api-provider-azure/settings/deploys#branches-and-deploy-contexts) and click "edit settings". Update the "Production branch" to the new release branch and click "Save". The, go to the [Netlify site deploys](https://app.netlify.com/sites/kubernetes-sigs-cluster-api-provider-azure/deploys) and trigger a new deploy.
+Go to [the Netlify branches and deploy contexts in site settings](https://app.netlify.com/sites/kubernetes-sigs-cluster-api-provider-azure/settings/deploys#branches-and-deploy-contexts) and click "edit settings". Update the "Production branch" to the new release branch and click "Save". Then, go to the [Netlify site deploys](https://app.netlify.com/sites/kubernetes-sigs-cluster-api-provider-azure/deploys) and trigger a new deploy: Click on the "Trigger deploy" dropdown list and select "Deploy site".
 
 ![Netlify settings screenshot](images/netlify_deploys.png)
 
 Note: this step requires access to the Netlify site. If you don't have access, please ask a maintainer to update the branch.
 
 ### Communication
+
+1. Announce the release in Kubernetes Slack on the #cluster-api-azure channel.
+2. Send an announcement email to `kubernetes-sig-azure@googlegroups.com` and `kubernetes-sig-cluster-lifecycle@googlegroups.com` with the subject `[ANNOUNCE] cluster-api-provider-azure <version> has been released`
 
 #### Roadmap
 
@@ -163,15 +166,6 @@ Consider whether anything should be updated in the [roadmap document](../roadmap
 3. Have any updates to the roadmap document occurred in the past 6 months?  If not, it should be updated in some form.
 
 If any changes need to be made, it should not block the release itself.
-
-#### Patch Releases
-
-1. Announce the release in Kubernetes Slack on the #cluster-api-azure channel.
-
-#### Minor/Major Releases
-
-1. Follow the communications process for [pre-releases](#pre-releases)
-2. An announcement email is sent to `kubernetes-sig-azure@googlegroups.com` and `kubernetes-sig-cluster-lifecycle@googlegroups.com` with the subject `[ANNOUNCE] cluster-api-provider-azure <version> has been released`
 
 [release-announcement]: #communication
 [semver]: https://semver.org/#semantic-versioning-200
