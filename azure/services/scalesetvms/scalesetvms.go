@@ -155,7 +155,7 @@ func (s *Service) deleteVMSSFlexVM(ctx context.Context, resourceID string) error
 	resourceGroup := parsed.ResourceGroup
 	resourceName := strings.TrimPrefix(s.Scope.ProviderID(), azure.ProviderIDPrefix)
 	resourceNameSplits := strings.Split(resourceName, "/")
-	resourceName = resourceNameSplits[len(resourceNameSplits)-3] + "_" + resourceNameSplits[len(resourceNameSplits)-1]
+	resourceName = resourceNameSplits[len(resourceNameSplits)-1]
 
 	log.V(4).Info("entering delete")
 	future := s.Scope.GetLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture)
