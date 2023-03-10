@@ -28,6 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	helmVals "helm.sh/helm/v3/pkg/cli/values"
 	k8snet "k8s.io/utils/net"
+	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
@@ -54,6 +55,40 @@ func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTe
 
 	// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
 	CopyConfigMap(ctx, input, workloadClusterClient, kubeadmConfigMapName, kubesystem, CalicoSystemNamespace)
+
+	By("Waiting for Ready tigera-operator deployment pods")
+	for _, d := range []string{"tigera-operator"} {
+		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, calicoOperatorNamespace, specName)
+		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
+	}
+
+	By("Waiting for Ready calico-system deployment pods")
+	for _, d := range []string{"calico-kube-controllers", "calico-typha"} {
+		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, CalicoSystemNamespace, specName)
+		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
+	}
+	By("Waiting for Ready calico-apiserver deployment pods")
+	for _, d := range []string{"calico-apiserver"} {
+		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, CalicoAPIServerNamespace, specName)
+		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
+	}
+}
+
+func InstallOnlyCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) framework.ClusterProxy {
+	By("Installing Calico CNI via helm")
+	values := getCalicoValues(cidrBlocks)
+	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+	InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values)
+	workloadClusterClient := clusterProxy.GetClient()
+
+	// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
+	CopyConfigMap(ctx, input, workloadClusterClient, kubeadmConfigMapName, kubesystem, CalicoSystemNamespace)
+
+	return clusterProxy
+}
+
+func WaitCalicoReady(ctx context.Context, clusterProxy framework.ClusterProxy) {
+	specName := "calico-install"
 
 	By("Waiting for Ready tigera-operator deployment pods")
 	for _, d := range []string{"tigera-operator"} {
