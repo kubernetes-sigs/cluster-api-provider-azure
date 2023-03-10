@@ -147,11 +147,11 @@ create_cluster() {
 # and any statement must be idempotent so that subsequent retry attempts can make forward progress.
 get_cidrs() {
     # Get cluster CIDRs from Cluster object
-    CIDR0=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
+    CIDR0=$(${KUBECTL} --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
     export CIDR0
-    CIDR_LENGTH=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks}' | jq '. | length')
+    CIDR_LENGTH=$(${KUBECTL} --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks}' | jq '. | length')
     if [[ "${CIDR_LENGTH}" == "2" ]]; then
-        CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}')
+        CIDR1=$(${KUBECTL} get cluster --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}')
         export CIDR1
     fi
 }
@@ -161,7 +161,7 @@ get_cidrs() {
 # retry it using a `until get_cloud_provider; do sleep 5; done` pattern;
 # and any statement must be idempotent so that subsequent retry attempts can make forward progress.
 get_cloud_provider() {
-    CLOUD_PROVIDER=$("${KUBECTL}" get kubeadmcontrolplane -l cluster.x-k8s.io/cluster-name="${CLUSTER_NAME}" -o=jsonpath='{.items[0].spec.kubeadmConfigSpec.clusterConfiguration.controllerManager.extraArgs.cloud-provider}')
+    CLOUD_PROVIDER=$("${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get kubeadmcontrolplane -l cluster.x-k8s.io/cluster-name="${CLUSTER_NAME}" -o=jsonpath='{.items[0].spec.kubeadmConfigSpec.clusterConfiguration.controllerManager.extraArgs.cloud-provider}')
     if [[ "${CLOUD_PROVIDER:-}" = "azure" ]]; then
         IN_TREE="true"
         export IN_TREE
