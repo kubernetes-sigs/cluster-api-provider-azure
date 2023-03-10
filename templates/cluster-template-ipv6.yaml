@@ -128,6 +128,7 @@ spec:
           cloud-provider: azure
           cluster-dns: fd00::10
           node-ip: '::'
+          v: "4"
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       controlPlane:
@@ -141,6 +142,7 @@ spec:
           cloud-provider: azure
           cluster-dns: fd00::10
           node-ip: '::'
+          v: "4"
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -269,6 +271,7 @@ spec:
             cloud-provider: azure
             cluster-dns: '[fd00::10]'
             node-ip: '::'
+            v: "4"
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
