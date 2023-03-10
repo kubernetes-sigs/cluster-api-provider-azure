@@ -5,9 +5,16 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
 spec:
   kubeadmConfigSpec:
-    # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
     diskSetup:
-      filesystems: []
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+        overwrite: false
+      # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
       partitions: []
     format: ignition
     ignition:
@@ -27,15 +34,6 @@ spec:
             - device: /dev/disk/azure/scsi1/lun0
               partitions:
               - number: 1
-            filesystems:
-            - name: etcd_disk
-              mount:
-                device: /dev/disk/azure/scsi1/lun0
-                format: ext4
-                label: etcd_disk
-                options:
-                - -E
-                - lazy_itable_init=1,lazy_journal_init=1
     initConfiguration:
       nodeRegistration:
         name: '@@HOSTNAME@@'
