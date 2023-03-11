@@ -54,7 +54,7 @@ func GetWindowsImage(testImage WindowsTestImages, version OSVersion) string {
 	httpd := WindowsImage{
 		BaseImage: "registry.k8s.io/e2e-test-images/httpd",
 		Tags: map[OSVersion]string{
-			LTSC2019: "2.4.39-alpine",
+			LTSC2019: "2.4.39-4",
 		},
 	}
 
