@@ -21,8 +21,8 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jongio/azidext/go/azidext v0.4.0
-	github.com/onsi/ginkgo/v2 v2.8.4
-	github.com/onsi/gomega v1.27.1
+	github.com/onsi/ginkgo/v2 v2.9.0
+	github.com/onsi/gomega v1.27.3
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.5
 	github.com/prometheus/client_golang v1.14.0
@@ -113,7 +113,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/cel-go v0.12.5 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
