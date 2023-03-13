@@ -102,15 +102,16 @@ setup() {
     export CCM_COUNT="${CCM_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
     export EXP_CLUSTER_RESOURCE_SET="true"
-
     # this requires k8s 1.22+
+    if [[ -n "${K8S_FEATURE_GATES:-}" ]]; then
+        export K8S_FEATURE_GATES="${K8S_FEATURE_GATES:-},WindowsHostProcessContainers=true"
+    else
+        export K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
+    fi
+
+    # TODO figure out a better way to account for expected Windows node count
     if [[ -n "${TEST_WINDOWS:-}" ]]; then
         export WINDOWS_WORKER_MACHINE_COUNT="${WINDOWS_WORKER_MACHINE_COUNT:-2}"
-        if [[ -n "${K8S_FEATURE_GATES:-}" ]]; then
-            export K8S_FEATURE_GATES="${K8S_FEATURE_GATES:-},WindowsHostProcessContainers=true"
-        else
-            export K8S_FEATURE_GATES="WindowsHostProcessContainers=true"
-        fi
     fi
 }
 
