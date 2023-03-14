@@ -324,7 +324,7 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 			log.V(4).Info("deleting AzureMachinePoolMachine because it no longer exists in the VMSS", "providerID", key)
 			delete(existingMachinesByProviderID, key)
 			if err := m.client.Delete(ctx, &machine); err != nil {
-				return errors.Wrap(err, "failed deleting AzureMachinePoolMachine to reduce replica count")
+				return errors.Wrap(err, "failed deleting AzureMachinePoolMachine no longer existing in Azure")
 			}
 		}
 	}
@@ -340,6 +340,12 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 		futures.Has(m.AzureMachinePool, m.Name(), ScalesetsServiceName, infrav1.DeleteFuture) {
 		log.V(4).Info("exiting early due an in-progress long running operation on the ScaleSet")
 		// exit early to be less greedy about delete
+		return nil
+	}
+
+	// when replicas are externally managed, we do not want to scale down manually since that is handled by the external scaler.
+	if m.HasReplicasExternallyManaged(ctx) {
+		log.V(4).Info("exiting early due to replicas externally managed")
 		return nil
 	}
 
