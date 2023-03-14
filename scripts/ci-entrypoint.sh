@@ -179,9 +179,7 @@ install_calico() {
     # to be able to run in the calico-system namespace.
     "${KUBECTL}" create namespace calico-system --dry-run=client -o yaml | kubectl apply -f -
     if ! "${KUBECTL}" get configmap kubeadm-config --namespace=calico-system; then
-        "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml > kubeadm-config-kube-system
-        sed 's/namespace: kube-system/namespace: calico-system/' kubeadm-config-kube-system | "${KUBECTL}" apply -f -
-        rm kubeadm-config-kube-system
+        "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | "${KUBECTL}" apply -f -
     fi
     # install Calico CNI
     echo "Installing Calico CNI via helm"
