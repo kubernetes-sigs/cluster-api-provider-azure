@@ -166,7 +166,7 @@ def observability():
     k8s_resource(
         workload = "prometheus-operator",
         new_name = "metrics: prometheus-operator",
-        port_forwards = [port_forward(9090, name = "View metrics")],
+        port_forwards = [port_forward(local_port = 9090, container_port = 9090, name = "View metrics")],
         extra_pod_selectors = [{"app": "prometheus"}],
         labels = ["observability"],
     )
