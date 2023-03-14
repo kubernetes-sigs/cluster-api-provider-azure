@@ -289,7 +289,7 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 	ctx := context.Background()
 
 	// Fetch the Cluster.
-	clusterName, ok := m.Labels[clusterv1.ClusterLabelName]
+	clusterName, ok := m.Labels[clusterv1.ClusterNameLabel]
 	if !ok {
 		return nil
 	}
@@ -314,7 +314,7 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 
 	opt1 := client.InNamespace(m.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
-		clusterv1.ClusterLabelName: clusterName,
+		clusterv1.ClusterNameLabel: clusterName,
 		LabelAgentPoolMode:         string(NodePoolModeSystem),
 	})
 

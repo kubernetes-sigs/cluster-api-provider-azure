@@ -596,7 +596,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 			Name: "should only count machines with matching cluster name label",
 			Setup: func(cb *fake.ClientBuilder) {
 				machines := getReadyAzureMachinePoolMachines(3)
-				machines[0].Labels[clusterv1.ClusterLabelName] = "not_correct"
+				machines[0].Labels[clusterv1.ClusterNameLabel] = "not_correct"
 				for _, machine := range machines {
 					obj := machine
 					cb.WithObjects(&obj)
@@ -1111,7 +1111,7 @@ func getReadyAzureMachinePoolMachines(count int32) []infrav1exp.AzureMachinePool
 					},
 				},
 				Labels: map[string]string{
-					clusterv1.ClusterLabelName:      "cluster1",
+					clusterv1.ClusterNameLabel:      "cluster1",
 					infrav1exp.MachinePoolNameLabel: "amp1",
 				},
 			},

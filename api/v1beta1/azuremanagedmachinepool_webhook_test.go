@@ -1118,7 +1118,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						FailSwapOn: pointer.BoolPtr(true),
+						FailSwapOn: pointer.Bool(true),
 					},
 					LinuxOSConfig: &LinuxOSConfig{
 						SwapFileSizeMB: pointer.Int32(1500),
@@ -1203,7 +1203,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterLabelName],
+					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
 				},
@@ -1218,7 +1218,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterLabelName],
+					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
 				},
@@ -1233,7 +1233,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      systemMachinePool.GetLabels()[clusterv1.ClusterLabelName],
+					Name:      systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace: systemMachinePool.Namespace,
 				},
 			},
@@ -1244,7 +1244,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterLabelName],
+					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
 				},
@@ -1284,7 +1284,7 @@ func getManagedMachinePoolWithSystemMode() *AzureManagedMachinePool {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "test-cluster",
+				clusterv1.ClusterNameLabel: "test-cluster",
 				LabelAgentPoolMode:         string(NodePoolModeSystem),
 			},
 		},

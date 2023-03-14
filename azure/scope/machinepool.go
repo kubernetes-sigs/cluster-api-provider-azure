@@ -269,7 +269,7 @@ func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav
 	defer done()
 
 	labels := map[string]string{
-		clusterv1.ClusterLabelName:      m.ClusterName(),
+		clusterv1.ClusterNameLabel:      m.ClusterName(),
 		infrav1exp.MachinePoolNameLabel: m.AzureMachinePool.Name,
 	}
 	ampml := &infrav1exp.AzureMachinePoolMachineList{}
@@ -290,7 +290,7 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 	}
 
 	labels := map[string]string{
-		clusterv1.ClusterLabelName:      m.ClusterName(),
+		clusterv1.ClusterNameLabel:      m.ClusterName(),
 		infrav1exp.MachinePoolNameLabel: m.AzureMachinePool.Name,
 	}
 	ampml := &infrav1exp.AzureMachinePoolMachineList{}
@@ -398,7 +398,7 @@ func (m *MachinePoolScope) createMachine(ctx context.Context, machine azure.VMSS
 			},
 			Labels: map[string]string{
 				m.ClusterName():                 string(infrav1.ResourceLifecycleOwned),
-				clusterv1.ClusterLabelName:      m.ClusterName(),
+				clusterv1.ClusterNameLabel:      m.ClusterName(),
 				infrav1exp.MachinePoolNameLabel: m.AzureMachinePool.Name,
 			},
 		},

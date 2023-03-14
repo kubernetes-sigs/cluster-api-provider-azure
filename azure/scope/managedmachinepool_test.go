@@ -866,7 +866,7 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 			Name:      name,
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "cluster1",
+				clusterv1.ClusterNameLabel: "cluster1",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -941,7 +941,7 @@ func getMachinePool(name string) *expv1.MachinePool {
 			Name:      name,
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "cluster1",
+				clusterv1.ClusterNameLabel: "cluster1",
 			},
 		},
 		Spec: expv1.MachinePoolSpec{

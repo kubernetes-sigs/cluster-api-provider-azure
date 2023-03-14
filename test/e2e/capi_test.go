@@ -71,7 +71,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				Name:      IdentitySecretName,
 				Namespace: identityNamespace.Name,
 				Labels: map[string]string{
-					clusterctlv1.ClusterctlMoveHierarchyLabelName: "true",
+					clusterctlv1.ClusterctlMoveHierarchyLabel: "true",
 				},
 			},
 			Type: corev1.SecretTypeOpaque,
@@ -149,16 +149,13 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	}
 
 	Context("Should successfully remediate unhealthy machines with MachineHealthCheck", func() {
-		capi_e2e.MachineRemediationSpec(context.TODO(), func() capi_e2e.MachineRemediationSpecInput {
-			return capi_e2e.MachineRemediationSpecInput{
+		capi_e2e.KCPRemediationSpec(context.TODO(), func() capi_e2e.KCPRemediationSpecInput {
+			return capi_e2e.KCPRemediationSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
 				BootstrapClusterProxy: bootstrapClusterProxy,
 				ArtifactFolder:        artifactFolder,
 				SkipCleanup:           skipCleanup,
-				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				},
 			}
 		})
 	})
@@ -301,7 +298,7 @@ func getPreInitFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
 				Name:      IdentitySecretName,
 				Namespace: "default",
 				Labels: map[string]string{
-					clusterctlv1.ClusterctlMoveHierarchyLabelName: "true",
+					clusterctlv1.ClusterctlMoveHierarchyLabel: "true",
 				},
 			},
 			Type: corev1.SecretTypeOpaque,
