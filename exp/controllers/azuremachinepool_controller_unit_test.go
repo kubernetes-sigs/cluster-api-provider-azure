@@ -88,7 +88,7 @@ func newMachinePool(clusterName, poolName string) *expv1.MachinePool {
 	return &expv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: clusterName,
+				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      poolName,
 			Namespace: "default",
@@ -103,7 +103,7 @@ func newAzureMachinePool(clusterName, poolName string) *infrav1exp.AzureMachineP
 	return &infrav1exp.AzureMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: clusterName,
+				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      poolName,
 			Namespace: "default",

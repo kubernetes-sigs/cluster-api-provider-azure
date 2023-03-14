@@ -76,7 +76,7 @@ func AzureMachinePoolDrainSpec(ctx context.Context, inputGetter func() AzureMach
 		bootstrapClusterProxy = input.BootstrapClusterProxy
 		workloadClusterProxy  = input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 		clientset             = workloadClusterProxy.GetClientSet()
-		labels                = map[string]string{clusterv1.ClusterLabelName: workloadClusterProxy.GetName()}
+		labels                = map[string]string{clusterv1.ClusterNameLabel: workloadClusterProxy.GetName()}
 	)
 
 	Expect(workloadClusterProxy).NotTo(BeNil())
@@ -191,7 +191,7 @@ func labelNodesWithMachinePoolName(ctx context.Context, workloadClient client.Cl
 
 func getAzureMachinePoolMachines(ctx context.Context, mgmtClusterProxy, workloadClusterProxy framework.ClusterProxy, amp infrav1exp.AzureMachinePool) ([]infrav1exp.AzureMachinePoolMachine, error) {
 	labels := map[string]string{
-		clusterv1.ClusterLabelName:      workloadClusterProxy.GetName(),
+		clusterv1.ClusterNameLabel:      workloadClusterProxy.GetName(),
 		infrav1exp.MachinePoolNameLabel: amp.Name,
 	}
 	ampml := &infrav1exp.AzureMachinePoolMachineList{}

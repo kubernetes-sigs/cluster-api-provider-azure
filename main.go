@@ -16,6 +16,7 @@ limitations under the License.
 
 package main
 
+//nolint:staticcheck // v1alpha4 is deprecated as of CAPI v1.4.0
 import (
 	"context"
 	"flag"

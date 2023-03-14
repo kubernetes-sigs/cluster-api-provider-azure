@@ -360,7 +360,7 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabelName: "",
+							clusterv1.MachineControlPlaneLabel: "",
 						},
 					},
 				},
@@ -1091,7 +1091,7 @@ func TestMachineScope_IsControlPlane(t *testing.T) {
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabelName: "",
+							clusterv1.MachineControlPlaneLabel: "",
 						},
 					},
 				},
@@ -1137,7 +1137,7 @@ func TestMachineScope_Role(t *testing.T) {
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabelName: "",
+							clusterv1.MachineControlPlaneLabel: "",
 						},
 					},
 				},
@@ -1205,7 +1205,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabelName: "",
+							clusterv1.MachineControlPlaneLabel: "",
 						},
 					},
 				},
@@ -1230,7 +1230,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineDeploymentLabelName: "foo-machine-deployment",
+							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
 						},
 					},
 				},
@@ -1255,7 +1255,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineSetLabelName: "foo-machine-set",
+							clusterv1.MachineSetNameLabel: "foo-machine-set",
 						},
 					},
 				},
@@ -1280,8 +1280,8 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineDeploymentLabelName: "foo-machine-deployment",
-							clusterv1.MachineSetLabelName:        "foo-machine-set",
+							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+							clusterv1.MachineSetNameLabel:        "foo-machine-set",
 						},
 					},
 				},
@@ -1736,7 +1736,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							// clusterv1.MachineControlPlaneLabelName: "true",
+							// clusterv1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -1840,7 +1840,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							// clusterv1.MachineControlPlaneLabelName: "true",
+							// clusterv1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -1956,7 +1956,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							// clusterv1.MachineControlPlaneLabelName: "true",
+							// clusterv1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2061,7 +2061,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							// clusterv1.MachineControlPlaneLabelName: "true",
+							// clusterv1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2171,7 +2171,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabelName: "true",
+							clusterv1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2278,7 +2278,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabelName: "true",
+							clusterv1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2386,7 +2386,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabelName: "true",
+							clusterv1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},

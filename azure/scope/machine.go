@@ -504,12 +504,12 @@ func (m *MachineScope) AvailabilitySet() (string, bool) {
 	}
 
 	// get machine deployment name from labels for machines that maybe part of a machine deployment.
-	if mdName, ok := m.Machine.Labels[clusterv1.MachineDeploymentLabelName]; ok {
+	if mdName, ok := m.Machine.Labels[clusterv1.MachineDeploymentNameLabel]; ok {
 		return azure.GenerateAvailabilitySetName(m.ClusterName(), mdName), true
 	}
 
 	// if machine deployment name label is not available, use machine set name.
-	if msName, ok := m.Machine.Labels[clusterv1.MachineSetLabelName]; ok {
+	if msName, ok := m.Machine.Labels[clusterv1.MachineSetNameLabel]; ok {
 		return azure.GenerateAvailabilitySetName(m.ClusterName(), msName), true
 	}
 

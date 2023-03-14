@@ -547,12 +547,12 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can't update SubnetName with error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("my-subnet"),
+					SubnetName: pointer.String("my-subnet"),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("my-subnet-1"),
+					SubnetName: pointer.String("my-subnet-1"),
 				},
 			},
 			wantErr: true,
@@ -561,7 +561,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can update SubnetName if subnetName is empty",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("my-subnet"),
+					SubnetName: pointer.String("my-subnet"),
 				},
 			},
 			old: &AzureManagedMachinePool{
@@ -575,12 +575,12 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can't update SubnetName without error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("my-subnet"),
+					SubnetName: pointer.String("my-subnet"),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("my-subnet"),
+					SubnetName: pointer.String("my-subnet"),
 				},
 			},
 			wantErr: false,
@@ -650,7 +650,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("1+subnet"),
+					SubnetName: pointer.String("1+subnet"),
 				},
 			},
 			wantErr:  true,
@@ -660,7 +660,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("1"),
+					SubnetName: pointer.String("1"),
 				},
 			},
 			wantErr:  true,
@@ -670,7 +670,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("-a_b-c"),
+					SubnetName: pointer.String("-a_b-c"),
 				},
 			},
 			wantErr:  true,
@@ -680,7 +680,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("E-a_b-c"),
+					SubnetName: pointer.String("E-a_b-c"),
 				},
 			},
 			wantErr:  true,
@@ -690,7 +690,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("-_-_"),
+					SubnetName: pointer.String("-_-_"),
 				},
 			},
 			wantErr:  true,
@@ -700,7 +700,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("abc@#$"),
+					SubnetName: pointer.String("abc@#$"),
 				},
 			},
 			wantErr:  true,
@@ -710,7 +710,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname with character length 81",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb8"),
+					SubnetName: pointer.String("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb8"),
 				},
 			},
 			wantErr:  true,
@@ -720,7 +720,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid subnetname with character length 80",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb"),
+					SubnetName: pointer.String("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb"),
 				},
 			},
 			wantErr: false,
@@ -729,7 +729,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("1abc"),
+					SubnetName: pointer.String("1abc"),
 				},
 			},
 			wantErr: false,
@@ -738,7 +738,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("1-a-b-c"),
+					SubnetName: pointer.String("1-a-b-c"),
 				},
 			},
 			wantErr: false,
@@ -747,7 +747,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: pointer.StringPtr("my-subnet"),
+					SubnetName: pointer.String("my-subnet"),
 				},
 			},
 			wantErr: false,
@@ -1118,7 +1118,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						FailSwapOn: pointer.BoolPtr(true),
+						FailSwapOn: pointer.Bool(true),
 					},
 					LinuxOSConfig: &LinuxOSConfig{
 						SwapFileSizeMB: pointer.Int32(1500),
@@ -1203,7 +1203,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterLabelName],
+					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
 				},
@@ -1218,7 +1218,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterLabelName],
+					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
 				},
@@ -1233,7 +1233,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      systemMachinePool.GetLabels()[clusterv1.ClusterLabelName],
+					Name:      systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace: systemMachinePool.Namespace,
 				},
 			},
@@ -1244,7 +1244,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterLabelName],
+					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
 				},
@@ -1284,7 +1284,7 @@ func getManagedMachinePoolWithSystemMode() *AzureManagedMachinePool {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "test-cluster",
+				clusterv1.ClusterNameLabel: "test-cluster",
 				LabelAgentPoolMode:         string(NodePoolModeSystem),
 			},
 		},

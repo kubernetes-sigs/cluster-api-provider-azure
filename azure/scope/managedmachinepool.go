@@ -146,7 +146,7 @@ func (s *ManagedMachinePoolScope) AgentPoolSpec() azure.ResourceSpecGetter {
 
 func getAgentPoolSubnet(controlPlane *infrav1.AzureManagedControlPlane, infraMachinePool *infrav1.AzureManagedMachinePool) *string {
 	if infraMachinePool.Spec.SubnetName == nil {
-		return pointer.StringPtr(controlPlane.Spec.VirtualNetwork.Subnet.Name)
+		return pointer.String(controlPlane.Spec.VirtualNetwork.Subnet.Name)
 	}
 	return infraMachinePool.Spec.SubnetName
 }

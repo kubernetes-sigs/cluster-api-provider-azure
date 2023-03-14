@@ -79,8 +79,9 @@ func collectManagementClusterLogs(bootstrapClusterProxy *e2e.AzureClusterProxy, 
 		Lister: bootstrapClusterProxy.GetClient(),
 	})
 	for _, deployment := range controllersDeployments {
-		framework.WatchDeploymentLogs(context.TODO(), framework.WatchDeploymentLogsInput{
+		framework.WatchDeploymentLogsByName(context.TODO(), framework.WatchDeploymentLogsByNameInput{
 			GetLister:  bootstrapClusterProxy.GetClient(),
+			Cache:      bootstrapClusterProxy.GetCache(context.TODO()),
 			ClientSet:  bootstrapClusterProxy.GetClientSet(),
 			Deployment: deployment,
 			LogPath:    managementClusterLogPath,
