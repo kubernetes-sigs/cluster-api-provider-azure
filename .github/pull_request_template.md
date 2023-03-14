@@ -1,4 +1,4 @@
- <!-- If this is your first PR, welcome! Please make sure you read the [contributing guidelines](../CONTRIBUTING.md). -->
+ <!-- If this is your first PR, welcome! Please make sure you read the [contributing guidelines](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/CONTRIBUTING.md). -->
 
  <!-- Please label this pull request according to what type of issue you are addressing (see ../CONTRIBUTING.md) -->
 **What type of PR is this?**
