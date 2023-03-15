@@ -23,7 +23,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -148,7 +150,8 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.machine.ValidateCreate(nil)
+			mw := &azureMachineWebhook{}
+			err := mw.ValidateCreate(context.Background(), tc.machine)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -696,7 +699,8 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.newMachine.ValidateUpdate(tc.oldMachine, nil)
+			mw := &azureMachineWebhook{}
+			err := mw.ValidateUpdate(context.Background(), tc.oldMachine, tc.newMachine)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -728,20 +732,33 @@ func TestAzureMachine_Default(t *testing.T) {
 	existingPublicKey := validSSHPublicKey
 	publicKeyExistTest := test{machine: createMachineWithSSHPublicKey(existingPublicKey)}
 	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey("")}
+	testObjectMeta := metav1.ObjectMeta{
+		Labels: map[string]string{
+			clusterv1.ClusterLabelName: "test-cluster",
+		},
+	}
 
-	publicKeyExistTest.machine.Default(mockClient)
+	mw := &azureMachineWebhook{
+		Client: mockClient,
+	}
+
+	err := mw.Default(context.Background(), publicKeyExistTest.machine)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyExistTest.machine.Spec.SSHPublicKey).To(Equal(existingPublicKey))
 
-	publicKeyNotExistTest.machine.Default(mockClient)
+	err = mw.Default(context.Background(), publicKeyNotExistTest.machine)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
 
-	cacheTypeNotSpecifiedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: ""}}}}
-	cacheTypeNotSpecifiedTest.machine.Default(mockClient)
+	cacheTypeNotSpecifiedTest := test{machine: &AzureMachine{ObjectMeta: testObjectMeta, Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: ""}}}}
+	err = mw.Default(context.Background(), cacheTypeNotSpecifiedTest.machine)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cacheTypeNotSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal("None"))
 
 	for _, possibleCachingType := range compute.PossibleCachingTypesValues() {
-		cacheTypeSpecifiedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
-		cacheTypeSpecifiedTest.machine.Default(mockClient)
+		cacheTypeSpecifiedTest := test{machine: &AzureMachine{ObjectMeta: testObjectMeta, Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
+		err = mw.Default(context.Background(), cacheTypeSpecifiedTest.machine)
+		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(cacheTypeSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal(string(possibleCachingType)))
 	}
 }

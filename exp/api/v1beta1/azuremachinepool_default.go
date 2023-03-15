@@ -20,34 +20,38 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // SetDefaults sets the default values for an AzureMachinePool.
-func (amp *AzureMachinePool) SetDefaults(client client.Client) {
+func (amp *AzureMachinePool) SetDefaults(client client.Client) error {
+	var errs []error
 	if err := amp.SetDefaultSSHPublicKey(); err != nil {
-		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "SetDefaultSshPublicKey failed")
+		errs = append(errs, errors.Wrap(err, "failed to set default SSH public key"))
 	}
 
 	machinePool, err := azureutil.FindParentMachinePoolWithRetry(amp.Name, client, 5)
 	if err != nil {
-		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "findParentMachinePool failed")
+		errs = append(errs, errors.Wrap(err, "failed to find parent machine pool"))
 	}
 
 	subscriptionID, err := infrav1.GetSubscriptionID(client, machinePool.Spec.ClusterName, machinePool.Namespace, 5)
 	if err != nil {
-		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "getSubscriptionID failed")
+		errs = append(errs, errors.Wrap(err, "failed to get subscription ID"))
 	}
 
 	amp.SetIdentityDefaults(subscriptionID)
 	amp.SetDiagnosticsDefaults()
 	amp.SetNetworkInterfacesDefaults()
+
+	return kerrors.NewAggregate(errs)
 }
 
 // SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachinePool.

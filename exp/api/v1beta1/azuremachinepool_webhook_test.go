@@ -241,7 +241,10 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	for _, tc := range tests {
 		client := mockClient{Version: tc.version, ReturnError: tc.ownerNotFound}
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amp.ValidateCreate(client)
+			ampw := &azureMachinePoolWebhook{
+				Client: client,
+			}
+			err := ampw.ValidateCreate(context.Background(), tc.amp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -371,7 +374,8 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amp.ValidateUpdate(tc.oldAMP, nil)
+			ampw := &azureMachinePoolWebhook{}
+			err := ampw.ValidateUpdate(context.Background(), tc.oldAMP, tc.amp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -440,22 +444,31 @@ func TestAzureMachinePool_Default(t *testing.T) {
 		},
 	}}
 
-	roleAssignmentExistTest.amp.Default(mockClient)
+	ampw := &azureMachinePoolWebhook{
+		Client: mockClient,
+	}
+
+	err := ampw.Default(context.Background(), roleAssignmentExistTest.amp)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(roleAssignmentExistTest.amp.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
 
-	publicKeyExistTest.amp.Default(mockClient)
+	err = ampw.Default(context.Background(), publicKeyExistTest.amp)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyExistTest.amp.Spec.Template.SSHPublicKey).To(Equal(existingPublicKey))
 
-	publicKeyNotExistTest.amp.Default(mockClient)
+	err = ampw.Default(context.Background(), publicKeyNotExistTest.amp)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
 
-	systemAssignedIdentityRoleExistTest.amp.Default(mockClient)
+	err = ampw.Default(context.Background(), systemAssignedIdentityRoleExistTest.amp)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(systemAssignedIdentityRoleExistTest.amp.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal("testroledefinitionid"))
 	g.Expect(systemAssignedIdentityRoleExistTest.amp.Spec.SystemAssignedIdentityRole.Scope).To(Equal("testscope"))
 
-	emptyTest.amp.Default(mockClient)
+	err = ampw.Default(context.Background(), emptyTest.amp)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
-	_, err := guuid.Parse(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name)
+	_, err = guuid.Parse(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name)
 	g.Expect(err).To(Not(HaveOccurred()))
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole).To(Not(BeNil()))
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
@@ -635,7 +648,8 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
-			err := tc.amp.ValidateCreate(nil)
+			ampw := &azureMachinePoolWebhook{}
+			err := ampw.ValidateCreate(context.Background(), tc.amp)
 			g.Expect(err).To(HaveOccurred())
 		})
 	}
