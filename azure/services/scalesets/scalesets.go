@@ -281,7 +281,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	// If the VMSS is managed by an external autoscaler, we should patch the VMSS if customData has changed.
 	shouldPatchCustomData := false
 	if s.Scope.HasReplicasExternallyManaged(ctx) {
-		shouldPatchCustomData, err := s.Scope.HasBootstrapDataChanges(ctx)
+		shouldPatchCustomData, err = s.Scope.HasBootstrapDataChanges(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to calculate custom data hash")
 		}
