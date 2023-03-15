@@ -6,6 +6,7 @@ about: Propose larger efforts, breaking changes, or new features
 
 > ⚠️ Cluster API Azure maintainers can ask to turn an issue-proposal into a [CAEP](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/YYYYMMDD-template.md) when necessary. This is to be expected for large changes that impact multiple components, breaking changes, or new large features.
 
+<!-- Repeat "1." so list items auto-increment when they are rendered. This is acceptable as this is a GitHub issue template, so this document is not intended to be read outside of GitHub. -->
 ***Goals***
 1. Goal 1
 1. Goal 2
