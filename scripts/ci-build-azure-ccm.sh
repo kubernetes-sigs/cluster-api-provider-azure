@@ -38,12 +38,18 @@ export CNM_IMAGE_NAME=azure-cloud-node-manager
 export WINDOWS_IMAGE_VERSION=1809
 declare -a IMAGES=("${CCM_IMAGE_NAME}" "${CNM_IMAGE_NAME}")
 
+
 setup() {
-    AZURE_CLOUD_PROVIDER_ROOT="$(go env GOPATH)/src/sigs.k8s.io/cloud-provider-azure"
-    export AZURE_CLOUD_PROVIDER_ROOT
+    AZURE_CLOUD_PROVIDER_ROOT="${AZURE_CLOUD_PROVIDER_ROOT:-""}"
+    if [[ -z "${AZURE_CLOUD_PROVIDER_ROOT}" ]]; then
+        AZURE_CLOUD_PROVIDER_ROOT="$(go env GOPATH)/src/sigs.k8s.io/cloud-provider-azure"
+        export AZURE_CLOUD_PROVIDER_ROOT
+    fi
+
     # the azure-cloud-provider repo expects IMAGE_REGISTRY.
     export IMAGE_REGISTRY=${REGISTRY}
     pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && IMAGE_TAG=$(git rev-parse --short=7 HEAD) && export IMAGE_TAG && popd
+    echo "Image registry is ${REGISTRY}"
     echo "Image Tag is ${IMAGE_TAG}"
 
     if [[ -n "${WINDOWS_SERVER_VERSION:-}" ]]; then
