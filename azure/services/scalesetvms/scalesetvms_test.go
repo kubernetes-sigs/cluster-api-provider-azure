@@ -150,6 +150,7 @@ func TestService_Reconcile(t *testing.T) {
 			scopeMock.EXPECT().SubscriptionID().Return("subID").AnyTimes()
 			scopeMock.EXPECT().BaseURI().Return("https://localhost/").AnyTimes()
 			scopeMock.EXPECT().Authorizer().Return(nil).AnyTimes()
+			scopeMock.EXPECT().OrchestrationMode().Return(infrav1.UniformOrchestrationMode).AnyTimes()
 
 			service := NewService(scopeMock)
 			service.Client = clientMock
@@ -268,6 +269,7 @@ func TestService_Delete(t *testing.T) {
 			scopeMock.EXPECT().SubscriptionID().Return("subID").AnyTimes()
 			scopeMock.EXPECT().BaseURI().Return("https://localhost/").AnyTimes()
 			scopeMock.EXPECT().Authorizer().Return(nil).AnyTimes()
+			scopeMock.EXPECT().OrchestrationMode().Return(infrav1.UniformOrchestrationMode).AnyTimes()
 
 			service := NewService(scopeMock)
 			service.Client = clientMock

@@ -50,6 +50,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 		vmss.Instances = make([]azure.VMSSVM, len(sdkinstances))
 		for i, vm := range sdkinstances {
 			vmss.Instances[i] = *SDKToVMSSVM(vm)
+			vmss.Instances[i].OrchestrationMode = infrav1.OrchestrationModeType(sdkvmss.OrchestrationMode)
 		}
 	}
 
@@ -64,7 +65,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 }
 
 // SDKVMToVMSSVM converts an Azure SDK VM to a VMSS VM.
-func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine) *azure.VMSSVM {
+func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine, mode infrav1.OrchestrationModeType) *azure.VMSSVM {
 	instance := azure.VMSSVM{
 		ID: to.String(sdkInstance.ID),
 	}
@@ -91,6 +92,8 @@ func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine) *azure.VMSSVM {
 		// An instance should have only 1 zone, so use the first item of the slice.
 		instance.AvailabilityZone = to.StringSlice(sdkInstance.Zones)[0]
 	}
+
+	instance.OrchestrationMode = mode
 
 	return &instance
 }
