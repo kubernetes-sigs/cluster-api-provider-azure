@@ -61,13 +61,8 @@ main() {
     if [[ "$(can_reuse_artifacts)" =~ "false" ]]; then
         echo "Build Linux Azure amd64 cloud controller manager"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
-        if [[ -n "${TEST_WINDOWS:-}" ]]; then
-            echo "Building Linux amd64 and Windows ${WINDOWS_IMAGE_VERSION} amd64 cloud node managers"
+        echo "Building Linux amd64 and Windows ${WINDOWS_IMAGE_VERSION} amd64 cloud node managers"
             make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64 manifest-node-manager-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64
-        else
-            echo "Building Linux amd64 cloud node manager"
-            make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-push-name-amd64
-        fi
     fi
 }
 
@@ -79,13 +74,11 @@ can_reuse_artifacts() {
         fi
     done
 
-    if [[ -n "${TEST_WINDOWS:-}" ]]; then
-        FULL_VERSION=$(docker manifest inspect mcr.microsoft.com/windows/nanoserver:${WINDOWS_IMAGE_VERSION} | jq -r '.manifests[0].platform["os.version"]')
-        if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG}" | grep -q "\"os.version\": \"${FULL_VERSION}\""; then
-            echo "false" && return
-        fi
+    FULL_VERSION=$(docker manifest inspect mcr.microsoft.com/windows/nanoserver:${WINDOWS_IMAGE_VERSION} | jq -r '.manifests[0].platform["os.version"]')
+    if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG}" | grep -q "\"os.version\": \"${FULL_VERSION}\""; then
+        echo "false" && return
     fi
-    
+
     echo "true"
 }
 
