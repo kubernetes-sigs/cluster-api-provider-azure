@@ -22,6 +22,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -716,7 +718,17 @@ type mockDefaultClient struct {
 }
 
 func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-	obj.(*AzureCluster).Spec.SubscriptionID = m.SubscriptionID
+	switch obj := obj.(type) {
+	case *AzureCluster:
+		obj.Spec.SubscriptionID = m.SubscriptionID
+	case *clusterv1.Cluster:
+		obj.Spec.InfrastructureRef = &corev1.ObjectReference{
+			Kind: "AzureCluster",
+			Name: "test-cluster",
+		}
+	default:
+		return errors.New("invalid object type")
+	}
 	return nil
 }
 
