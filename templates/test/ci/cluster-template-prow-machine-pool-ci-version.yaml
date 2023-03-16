@@ -420,6 +420,7 @@ kind: AzureMachinePool
 metadata:
   annotations:
     runtime: containerd
+    windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
   name: ${CLUSTER_NAME}-mp-win
   namespace: default
 spec:
@@ -432,7 +433,7 @@ spec:
         sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
         version: latest
     osDisk:
-      diskSizeGB: 30
+      diskSizeGB: 128
       managedDisk:
         storageAccountType: Premium_LRS
       osType: Windows
@@ -491,7 +492,7 @@ spec:
         cloud-config: c:/k/azure.json
         cloud-provider: azure
         feature-gates: WindowsHostProcessContainers=true
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1
+        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START
