@@ -64,7 +64,14 @@ spec:
           extraArgs:
             quota-backend-bytes: "8589934592"
     diskSetup:
-      filesystems: []
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+        overwrite: false
       partitions: []
     files:
     - contentFrom:
@@ -92,15 +99,6 @@ spec:
             - device: /dev/disk/azure/scsi1/lun0
               partitions:
               - number: 1
-            filesystems:
-            - name: etcd_disk
-              mount:
-                device: /dev/disk/azure/scsi1/lun0
-                format: ext4
-                label: etcd_disk
-                options:
-                - -E
-                - lazy_itable_init=1,lazy_journal_init=1
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
