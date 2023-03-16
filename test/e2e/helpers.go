@@ -652,7 +652,7 @@ func latestCIVersion(label string) (string, error) {
 
 // resolveKubetestRepoListPath will set the correct repo list for Windows:
 // - if WIN_REPO_URL is set use the custom file downloaded via makefile
-// - if CI version is "latest" do not set repo list since they are not needed K8s v1.25+
+// - if CI version is "latest" do not set repo list since they are not needed K8s v1.24+
 // - if CI version is  "latest-1.xx" will compare values and use correct repoList
 // - if standard version will compare values and use correct repoList
 // - if unable to determine version falls back to using latest
@@ -671,18 +671,18 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 		return "", err
 	}
 
-	v125, err := semver.Make("1.25.0-alpha.0.0")
+	v124, err := semver.Make("1.24.0-alpha.0.0")
 	if err != nil {
 		return "", err
 	}
 
-	if currentVersion.GT(v125) {
+	if currentVersion.GT(v124) {
 		return "", nil
 	}
 
 	// - prior to K8s v1.21 repo-list-k8sprow.yaml should be used
 	//   since all test images need to come from k8sprow.azurecr.io
-	// - starting with K8s v1.25 repo lists repo list is not needed
+	// - starting with K8s v1.24 repo lists repo list is not needed
 	// - use repo-list.yaml for everything in between which has only
 	//   some images in k8sprow.azurecr.io
 
