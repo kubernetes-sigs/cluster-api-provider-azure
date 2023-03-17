@@ -265,6 +265,11 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 	if s.SKU != "" {
 		sku = &s.SKU
 	}
+	tags := converters.TagsToMap(s.AdditionalTags)
+	if tags == nil {
+		// Make sure we send a non-nil, empty map if AdditionalTags are nil as this tells AKS to delete any existing tags.
+		tags = make(map[string]*string, 0)
+	}
 	var vnetSubnetID *string
 	if s.VnetSubnetID != "" {
 		vnetSubnetID = &s.VnetSubnetID
@@ -352,7 +357,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			VnetSubnetID:         vnetSubnetID,
 			EnableNodePublicIP:   s.EnableNodePublicIP,
 			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
-			Tags:                 converters.TagsToMap(s.AdditionalTags),
+			Tags:                 tags,
 			LinuxOSConfig:        linuxOSConfig,
 		},
 	}
