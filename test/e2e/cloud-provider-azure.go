@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	cloudProviderAzureHelmRepoURL     = "https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo"
+	cloudProviderAzureHelmRepoURL     = "https://raw.githubusercontent.com/CecileRobertMichon/cloud-provider-azure/win-ccm-kube/helm/repo"
 	cloudProviderAzureChartName       = "cloud-provider-azure"
 	cloudProviderAzureHelmReleaseName = "cloud-provider-azure-oot"
 	azureDiskCSIDriverHelmRepoURL     = "https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts"
