@@ -25,7 +25,6 @@ import (
 )
 
 func TestStringSlice(t *testing.T) {
-	g := NewWithT(t)
 	cases := []struct {
 		Name     string
 		Arg      *[]string
@@ -44,6 +43,7 @@ func TestStringSlice(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
+			g := NewWithT(t)
 			actual := StringSlice(tc.Arg)
 			g.Expect(tc.Expected).To(Equal(actual))
 		})
@@ -54,17 +54,17 @@ func TestStringMapPtr(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Arg      map[string]string
-		Expected *map[string]*string
+		Expected map[string]*string
 	}{
 		{
-			Name:     "Should return a pointer to an empty map if the map is nil",
+			Name:     "Should return nil if the map is nil",
 			Arg:      nil,
-			Expected: &map[string]*string{},
+			Expected: nil,
 		},
 		{
-			Name:     "Should return a pointer to a given string map",
+			Name:     "Should convert to a map[string]*string",
 			Arg:      map[string]string{"foo": "baz", "bar": "qux"},
-			Expected: &map[string]*string{"foo": pointer.String("baz"), "bar": pointer.String("qux")},
+			Expected: map[string]*string{"foo": pointer.String("baz"), "bar": pointer.String("qux")},
 		},
 	}
 	for _, tc := range cases {
