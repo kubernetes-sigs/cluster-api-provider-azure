@@ -26,13 +26,14 @@ metadata:
   name: "${CLUSTER_NAME}-mp-win"
   annotations:
     runtime: containerd
+    windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
 spec:
   location: ${AZURE_LOCATION}
   template:
     vmSize: ${AZURE_NODE_MACHINE_TYPE}
     osDisk:
       osType: "Windows"
-      diskSizeGB: 30
+      diskSizeGB: 128
       managedDisk:
         storageAccountType: "Premium_LRS"
     sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
@@ -59,7 +60,7 @@ spec:
       kubeletExtraArgs:
         azure-container-registry-config: 'c:/k/azure.json'
         cloud-provider: external
-        pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:3.4.1"
+        pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:3.9"
         feature-gates: "WindowsHostProcessContainers=true"
   files:
   - contentFrom:

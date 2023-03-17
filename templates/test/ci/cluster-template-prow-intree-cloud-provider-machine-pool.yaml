@@ -274,13 +274,14 @@ kind: AzureMachinePool
 metadata:
   annotations:
     runtime: containerd
+    windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
   name: ${CLUSTER_NAME}-mp-win
   namespace: default
 spec:
   location: ${AZURE_LOCATION}
   template:
     osDisk:
-      diskSizeGB: 30
+      diskSizeGB: 128
       managedDisk:
         storageAccountType: Premium_LRS
       osType: Windows
