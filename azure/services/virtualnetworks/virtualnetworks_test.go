@@ -43,14 +43,6 @@ var (
 		ClusterName:    "test-cluster",
 		AdditionalTags: map[string]string{"foo": "bar"},
 	}
-	managedVnet = network.VirtualNetwork{
-		ID:   pointer.String("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
-		Name: pointer.String("test-vnet"),
-		Tags: map[string]*string{
-			"foo": pointer.String("bar"),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
-		},
-	}
 
 	managedTags = resources.TagsResource{
 		Properties: &resources.Tags{
