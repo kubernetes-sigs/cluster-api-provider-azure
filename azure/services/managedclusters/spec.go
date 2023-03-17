@@ -347,7 +347,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			Enabled: &item.Enabled,
 		}
 		if item.Config != nil {
-			addonProfile.Config = *azure.StringMapPtr(item.Config)
+			addonProfile.Config = azure.StringMapPtr(item.Config)
 		}
 		managedCluster.AddonProfiles[item.Name] = addonProfile
 	}

@@ -352,7 +352,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			VnetSubnetID:         vnetSubnetID,
 			EnableNodePublicIP:   s.EnableNodePublicIP,
 			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
-			Tags:                 *azure.StringMapPtr(s.AdditionalTags),
+			Tags:                 azure.StringMapPtr(s.AdditionalTags),
 			LinuxOSConfig:        linuxOSConfig,
 		},
 	}

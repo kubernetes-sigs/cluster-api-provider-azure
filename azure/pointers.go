@@ -27,11 +27,14 @@ func StringSlice(s *[]string) []string {
 	return nil
 }
 
-// StringMapPtr returns a pointer to a given string map, or a pointer to an empty map if the map is nil.
-func StringMapPtr(m map[string]string) *map[string]*string { //nolint:gocritic
+// StringMapPtr converts a map[string]string into a map[string]*string. It returns nil if the map is nil.
+func StringMapPtr(m map[string]string) map[string]*string {
+	if m == nil {
+		return nil
+	}
 	msp := make(map[string]*string, len(m))
 	for k, v := range m {
 		msp[k] = pointer.String(v)
 	}
-	return &msp
+	return msp
 }
