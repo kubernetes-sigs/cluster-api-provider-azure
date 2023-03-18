@@ -101,14 +101,35 @@ When creating a cluster with `Machinepool` if the Machine Pool name is longer th
 
 ### VM password and access
 The VM password is [random generated](https://cloudbase-init.readthedocs.io/en/latest/plugins.html#setting-password-main)
-by Cloudbase-init during provisioning of the VM. For Access to the VM you can use ssh which will be configured with SSH
-public key you provided during deployment.
+by Cloudbase-init during provisioning of the VM. For Access to the VM you can use ssh, which can be configured with a
+public key you provide during deployment.
+It's required to specify the SSH key using the `users` property in the Kubeadm config template. Specifying the `sshPublicKey` on `AzureMachine` / `AzureMachinePool` resources only works with Linux instances.
+
+For example like this:
+```yaml
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: test1-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      ...
+      users:
+      - name: username
+        groups: Administrators
+        sshAuthorizedKeys:
+        - "ssh-rsa AAAA..."
+```
 
 To SSH:
 
 ```
 ssh -t -i .sshkey -o 'ProxyCommand ssh -i .sshkey -W %h:%p capi@<api-server-ip>' capi@<windows-ip>
 ```
+
+Refer to [SSH Access for nodes](ssh-access.md) for more instructions on how to connect using SSH.
 
 > There is also a [CAPZ kubectl plugin](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/hack/debugging/Readme.md) that automates the ssh connection using the Management cluster
 
