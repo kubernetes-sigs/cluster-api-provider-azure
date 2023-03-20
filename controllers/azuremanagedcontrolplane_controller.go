@@ -270,6 +270,16 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 	log.Info("Reconciling AzureManagedControlPlane delete")
 
 	if err := newAzureManagedControlPlaneReconciler(scope).Delete(ctx); err != nil {
+		// Handle transient errors
+		var reconcileError azure.ReconcileError
+		if errors.As(err, &reconcileError) && reconcileError.IsTransient() {
+			if azure.IsOperationNotDoneError(reconcileError) {
+				log.V(2).Info(fmt.Sprintf("AzureManagedControlPlane delete not done: %s", reconcileError.Error()))
+			} else {
+				log.V(2).Info("transient failure to delete AzureManagedControlPlane, retrying")
+			}
+			return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
+		}
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedControlPlane %s/%s", scope.ControlPlane.Namespace, scope.ControlPlane.Name)
 	}
 
