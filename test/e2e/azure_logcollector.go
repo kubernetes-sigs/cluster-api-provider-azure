@@ -28,8 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -402,7 +402,7 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 	}
 
 	resourceID := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
-	resource, err := azureautorest.ParseResourceID(resourceID)
+	resource, err := arm.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}
@@ -418,7 +418,7 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 		return errors.Wrap(err, "failed to get authorizer")
 	}
 
-	bootDiagnostics, err := vmClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroup, resource.ResourceName, nil)
+	bootDiagnostics, err := vmClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroupName, resource.Name, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
@@ -432,12 +432,12 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 	v := strings.Split(resourceID, "/")
 	instanceID := v[len(v)-1]
 	resourceID = strings.TrimSuffix(resourceID, "/virtualMachines/"+instanceID)
-	resource, err := azureautorest.ParseResourceID(resourceID)
+	resource, err := arm.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}
 
-	Logf("Collecting boot logs for VMSS instance %s of scale set %s\n", instanceID, resource.ResourceName)
+	Logf("Collecting boot logs for VMSS instance %s of scale set %s\n", instanceID, resource.Name)
 
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
@@ -450,7 +450,7 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 		return errors.Wrap(err, "failed to get authorizer")
 	}
 
-	bootDiagnostics, err := vmssClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroup, resource.ResourceName, instanceID, nil)
+	bootDiagnostics, err := vmssClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroupName, resource.Name, instanceID, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}

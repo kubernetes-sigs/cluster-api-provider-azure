@@ -19,8 +19,8 @@ package natgateways
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -97,11 +97,11 @@ func hasPublicIP(natGateway network.NatGateway, publicIPName string) bool {
 	}
 
 	for _, publicIP := range *natGateway.PublicIPAddresses {
-		resource, err := azureautorest.ParseResourceID(*publicIP.ID)
+		resource, err := arm.ParseResourceID(*publicIP.ID)
 		if err != nil {
 			continue
 		}
-		if resource.ResourceName == publicIPName {
+		if resource.Name == publicIPName {
 			return true
 		}
 	}

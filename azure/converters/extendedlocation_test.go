@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -39,7 +39,7 @@ func TestExtendedLocationToNetworkSDK(t *testing.T) {
 				Type: "Edge",
 			},
 			want: &network.ExtendedLocation{
-				Name: to.StringPtr("value"),
+				Name: pointer.String("value"),
 				Type: network.ExtendedLocationTypes("Edge"),
 			},
 		},
@@ -71,7 +71,7 @@ func TestExtendedLocationToComputeSDK(t *testing.T) {
 				Type: "Edge",
 			},
 			want: &compute.ExtendedLocation{
-				Name: to.StringPtr("value"),
+				Name: pointer.String("value"),
 				Type: compute.ExtendedLocationTypes("Edge"),
 			},
 		},
