@@ -108,6 +108,8 @@ providers:
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-upgrades.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool.yaml"
         targetName: "cluster-template-machine-pool.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool-win.yaml"
+        targetName: "cluster-template-machine-pool-win.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ipv6.yaml"
         targetName: "cluster-template-ipv6.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-nvidia-gpu.yaml"

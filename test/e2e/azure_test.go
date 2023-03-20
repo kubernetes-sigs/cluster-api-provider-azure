@@ -369,7 +369,7 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	Context("Creating a VMSS cluster [REQUIRED]", func() {
-		It("with a single control plane node and an AzureMachinePool with 2 Linux and 2 Windows worker nodes", func() {
+		It("with a single control plane node and an AzureMachinePool with 2 Windows worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "vmss")
 
 			// Opt into using windows with prow template
@@ -378,7 +378,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor("machine-pool"),
+				withFlavor("machine-pool-win"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(1),
@@ -399,27 +399,6 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
-
-			By("Verifying expected VM extensions are present on the node", func() {
-				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
-					return AzureVMExtensionsSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
-			})
-
-			By("Creating an accessible load balancer", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
 
 			By("Creating an accessible load balancer for windows", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {

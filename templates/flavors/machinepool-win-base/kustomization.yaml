@@ -1,0 +1,7 @@
+namespace: default
+resources:
+  - ../base
+  - ../../azure-cluster-identity
+
+patchesStrategicMerge:
+  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
