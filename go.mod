@@ -3,7 +3,7 @@ module sigs.k8s.io/cluster-api-provider-azure
 go 1.19
 
 require (
-	github.com/Azure/aad-pod-identity v1.8.14
+	github.com/Azure/aad-pod-identity v1.8.15
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
@@ -57,7 +57,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.2.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.21 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.5 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/mocks v0.4.2 // indirect
