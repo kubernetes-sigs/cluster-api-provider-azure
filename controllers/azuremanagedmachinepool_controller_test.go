@@ -65,6 +65,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 				fakeVirtualMachineScaleSetVM := fakeVirtualMachineScaleSetVM()
 
 				reconciler.Reconcile(gomock2.AContext()).Return(nil)
+				agentpools.SetSubnetName()
 				agentpools.AgentPoolSpec().Return(&fakeAgentPoolSpec)
 				agentpools.NodeResourceGroup().Return("fake-rg")
 				agentpools.SetAgentPoolProviderIDList(providerIDs)

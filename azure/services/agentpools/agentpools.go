@@ -46,6 +46,7 @@ type AgentPoolScope interface {
 	SetCAPIMachinePoolReplicas(replicas *int32)
 	SetCAPIMachinePoolAnnotation(key, value string)
 	RemoveCAPIMachinePoolAnnotation(key string)
+	SetSubnetName()
 }
 
 // Service provides operations on Azure resources.

@@ -535,6 +535,48 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Can't update SubnetName with error",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("my-subnet"),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("my-subnet-1"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Can update SubnetName if subnetName is empty",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("my-subnet"),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Can't update SubnetName without error",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("my-subnet"),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("my-subnet"),
+				},
+			},
+			wantErr: false,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
@@ -592,6 +634,112 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			},
 			wantErr:  true,
 			errorLen: 1,
+		},
+		{
+			name: "invalid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("1+subnet"),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "invalid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("1"),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "invalid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("-a_b-c"),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "invalid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("E-a_b-c"),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "invalid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("-_-_"),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "invalid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("abc@#$"),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "invalid subnetname with character length 81",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb8"),
+				},
+			},
+			wantErr:  true,
+			errorLen: 1,
+		},
+		{
+			name: "valid subnetname with character length 80",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb"),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("1abc"),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("1-a-b-c"),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid subnetname",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					SubnetName: pointer.StringPtr("my-subnet"),
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "too few MaxPods",
