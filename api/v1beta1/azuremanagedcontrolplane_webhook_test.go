@@ -27,7 +27,17 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+type mockAzureManagedControlPlaneWebhookClient struct {
+	client.Client
+}
+
+func (m mockAzureManagedControlPlaneWebhookClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	obj.(*clusterv1.Cluster).Spec.Paused = false
+	return nil
+}
 
 func TestDefaultingWebhook(t *testing.T) {
 	g := NewWithT(t)
@@ -553,7 +563,10 @@ func TestValidatingWebhook(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mcpw := &azureManagedControlPlaneWebhook{}
+			mockClient := mockAzureManagedControlPlaneWebhookClient{}
+			mcpw := &azureManagedControlPlaneWebhook{
+				Client: mockClient,
+			}
 			if tt.expectErr {
 				g.Expect(mcpw.ValidateCreate(context.Background(), &tt.amcp)).NotTo(Succeed())
 			} else {
@@ -677,7 +690,10 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mcpw := &azureManagedControlPlaneWebhook{}
+			mockClient := mockAzureManagedControlPlaneWebhookClient{}
+			mcpw := &azureManagedControlPlaneWebhook{
+				Client: mockClient,
+			}
 			err := mcpw.ValidateCreate(context.Background(), tc.amcp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -713,7 +729,10 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
-			mcpw := &azureManagedControlPlaneWebhook{}
+			mockClient := mockAzureManagedControlPlaneWebhookClient{}
+			mcpw := &azureManagedControlPlaneWebhook{
+				Client: mockClient,
+			}
 			err := mcpw.ValidateCreate(context.Background(), tc.amcp)
 			g.Expect(err).To(HaveOccurred())
 		})

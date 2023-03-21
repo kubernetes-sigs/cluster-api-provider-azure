@@ -116,17 +116,29 @@ func (mw *azureManagedControlPlaneWebhook) ValidateCreate(ctx context.Context, o
 		)
 	}
 
-	if m.Spec.ControlPlaneEndpoint.Host != "" {
-		return field.Forbidden(
-			field.NewPath("Spec", "ControlPlaneEndpoint", "Host"),
-			controlPlaneEndpointErrorMessage,
-		)
+	ownerCluster := &clusterv1.Cluster{}
+	key := client.ObjectKey{
+		Namespace: m.Namespace,
+		Name:      m.Name,
 	}
-	if m.Spec.ControlPlaneEndpoint.Port != 0 {
-		return field.Forbidden(
-			field.NewPath("Spec", "ControlPlaneEndpoint", "Port"),
-			controlPlaneEndpointErrorMessage,
-		)
+
+	if err := mw.Client.Get(ctx, key, ownerCluster); err != nil {
+		return err
+	}
+
+	if !ownerCluster.Spec.Paused {
+		if m.Spec.ControlPlaneEndpoint.Host != "" {
+			return field.Forbidden(
+				field.NewPath("Spec", "ControlPlaneEndpoint", "Host"),
+				controlPlaneEndpointErrorMessage,
+			)
+		}
+		if m.Spec.ControlPlaneEndpoint.Port != 0 {
+			return field.Forbidden(
+				field.NewPath("Spec", "ControlPlaneEndpoint", "Port"),
+				controlPlaneEndpointErrorMessage,
+			)
+		}
 	}
 
 	return m.Validate(mw.Client)
