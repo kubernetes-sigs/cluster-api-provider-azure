@@ -29,6 +29,8 @@ source "${REPO_ROOT}/hack/ensure-azcli.sh"
 source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
+# shellcheck source=hack/util.sh
+source "${REPO_ROOT}/hack/util.sh"
 
 : "${AZURE_STORAGE_ACCOUNT:?Environment variable empty or not defined.}"
 : "${AZURE_STORAGE_KEY:?Environment variable empty or not defined.}"
