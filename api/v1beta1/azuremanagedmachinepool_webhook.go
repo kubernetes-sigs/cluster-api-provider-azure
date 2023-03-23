@@ -81,7 +81,7 @@ func (mw *azureManagedMachinePoolWebhook) Default(ctx context.Context, obj runti
 	return nil
 }
 
-//+kubebuilder:webhook:verbs=update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,versions=v1beta1,name=validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+//+kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,versions=v1beta1,name=validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (mw *azureManagedMachinePoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
@@ -347,13 +347,12 @@ func (m *AzureManagedMachinePool) validateOSType() error {
 }
 
 func (m *AzureManagedMachinePool) validateName() error {
-	if m.Spec.OSType != nil && *m.Spec.OSType == WindowsOS {
-		if len(m.Name) > 6 {
-			return field.Invalid(
-				field.NewPath("Name"),
-				m.Name,
-				"Windows agent pool name can not be longer than 6 characters.")
-		}
+	if m.Spec.OSType != nil && *m.Spec.OSType == WindowsOS &&
+		m.Spec.Name != nil && len(*m.Spec.Name) > 6 {
+		return field.Invalid(
+			field.NewPath("Spec", "Name"),
+			m.Spec.Name,
+			"Windows agent pool name can not be longer than 6 characters.")
 	}
 
 	return nil
