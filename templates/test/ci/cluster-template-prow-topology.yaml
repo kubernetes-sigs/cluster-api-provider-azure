@@ -140,99 +140,341 @@ data:
             name: kube-proxy
       updateStrategy:
         type: RollingUpdate
-  windows-cni: "# strictAffinity required for windows\napiVersion: crd.projectcalico.org/v1\nkind:
-    IPAMConfig\nmetadata:\n  name: default\nspec:\n  autoAllocateBlocks: true\n  strictAffinity:
-    true\n---\nkind: ConfigMap\napiVersion: v1\nmetadata:\n  name: calico-static-rules\n
-    \ namespace: calico-system\n  labels:\n    tier: node\n    app: calico\ndata:\n
-    \ static-rules.json: |\n    {\n      \"Provider\": \"azure\",\n      \"Version\":
-    \"0.1\",\n      \"Rules\": [\n        {\n          \"Name\": \"EndpointPolicy\",\n
-    \         \"Rule\": {\n              \"Id\": \"wireserver\",\n              \"Type\":
-    \"ACL\",\n              \"Protocol\": 6,\n              \"Action\": \"Block\",\n
-    \             \"Direction\": \"Out\",\n              \"RemoteAddresses\": \"168.63.129.16/32\",\n
-    \             \"RemotePorts\": \"80\",\n              \"Priority\": 200,\n              \"RuleType\":
-    \"Switch\"\n            }\n          }\n      ]\n    } \n---\nkind: ConfigMap\napiVersion:
-    v1\nmetadata:\n  name: calico-config-windows\n  namespace: calico-system\n  labels:\n
-    \   tier: node\n    app: calico\ndata:\n  veth_mtu: \"1350\"\n  \n  cni_network_config:
-    |\n    {\n      \"name\": \"Calico\",\n      \"cniVersion\": \"0.3.1\",\n      \"plugins\":
-    [\n        {\n          \"windows_use_single_network\": true,\n          \"type\":
-    \"calico\",\n          \"mode\": \"vxlan\",\n          \"nodename\": \"__KUBERNETES_NODE_NAME__\",\n
-    \         \"nodename_file_optional\": true,\n          \"log_file_path\": \"c:/cni.log\",\n
-    \         \"log_level\": \"debug\",\n\n          \"vxlan_mac_prefix\": \"0E-2A\",\n
-    \         \"vxlan_vni\": 4096,\n          \"mtu\": __CNI_MTU__,\n          \"policy\":
-    {\n            \"type\": \"k8s\"\n          },\n\n          \"log_level\": \"info\",\n\n
-    \         \"capabilities\": {\"dns\": true},\n          \"DNS\":  {\n            \"Search\":
-    \ [\n              \"svc.cluster.local\"\n            ]\n          },\n\n          \"datastore_type\":
-    \"kubernetes\",\n\n          \"kubernetes\": {\n            \"kubeconfig\": \"__KUBECONFIG_FILEPATH__\"\n
-    \         },\n\n          \"ipam\": {\n            \"type\": \"calico-ipam\",\n
-    \           \"subnet\": \"usePodCidr\"\n          },\n\n          \"policies\":
-    \ [\n            {\n              \"Name\":  \"EndpointPolicy\",\n              \"Value\":
-    \ {\n                \"Type\":  \"OutBoundNAT\",\n                \"ExceptionList\":
-    \ [\n                  \"__K8S_SERVICE_CIDR__\"\n                ]\n              }\n
-    \           },\n            {\n              \"Name\":  \"EndpointPolicy\",\n
-    \             \"Value\":  {\n                \"Type\":  \"SDNROUTE\",\n                \"DestinationPrefix\":
-    \ \"__K8S_SERVICE_CIDR__\",\n                \"NeedEncap\":  true\n              }\n
-    \           }\n          ]\n        }\n      ]\n\n    }\n---\napiVersion: apps/v1\nkind:
-    DaemonSet\nmetadata:\n  name: calico-node-windows\n  labels:\n    tier: node\n
-    \   app: calico\n  namespace: calico-system\nspec:\n  selector:\n    matchLabels:\n
-    \     app: calico\n  template:\n    metadata:\n      labels:\n        tier: node\n
-    \       app: calico\n    spec:\n      affinity:\n        nodeAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n
-    \           nodeSelectorTerms:\n              - matchExpressions:\n                  -
-    key: kubernetes.io/os\n                    operator: In\n                    values:\n
-    \                     - windows\n                  - key: kubernetes.io/arch\n
-    \                   operator: In\n                    values:\n                      -
-    amd64\n      securityContext:\n        windowsOptions:\n          hostProcess:
-    true\n          runAsUserName: \"NT AUTHORITY\\\\system\"\n      hostNetwork:
-    true\n      serviceAccountName: calico-node\n      tolerations:\n      - operator:
-    Exists\n        effect: NoSchedule\n        # Mark the pod as a critical add-on
-    for rescheduling.\n      - key: CriticalAddonsOnly\n        operator: Exists\n
-    \     - effect: NoExecute\n        operator: Exists\n      initContainers:\n        #
-    This container installs the CNI binaries\n        # and CNI network config file
-    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.24.5-hostprocess\n
-    \         args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1\"]\n
-    \         imagePullPolicy: Always\n          env:\n            # Name of the CNI
-    config file to create.\n            - name: CNI_CONF_NAME\n              value:
-    \"10-calico.conflist\"\n            # The CNI network config to install on each
-    node.\n            - name: CNI_NETWORK_CONFIG\n              valueFrom:\n                configMapKeyRef:\n
-    \                 name: calico-config-windows\n                  key: cni_network_config\n
-    \           # Set the hostname based on the k8s node name.\n            - name:
-    KUBERNETES_NODE_NAME\n              valueFrom:\n                fieldRef:\n                  fieldPath:
-    spec.nodeName\n            # CNI MTU Config variable\n            - name: CNI_MTU\n
-    \             valueFrom:\n                configMapKeyRef:\n                  name:
-    calico-config-windows\n                  key: veth_mtu\n            # Prevents
-    the container from sleeping forever.\n            - name: SLEEP\n              value:
-    \"false\"\n            - name: K8S_SERVICE_CIDR\n              value: \"10.96.0.0/12\"\n
-    \         volumeMounts:\n            - mountPath: /host/opt/cni/bin\n              name:
-    cni-bin-dir\n            - mountPath: /host/etc/cni/net.d\n              name:
-    cni-net-dir\n            - name: kubeadm-config\n              mountPath: /etc/kubeadm-config/\n
-    \         securityContext:\n            windowsOptions:\n              hostProcess:
-    true\n              runAsUserName: \"NT AUTHORITY\\\\system\"\n      containers:\n
-    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.24.5-hostprocess\n
-    \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1\"]\n
-    \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        imagePullPolicy:
-    Always\n        volumeMounts:\n        - name: calico-config-windows\n          mountPath:
-    /etc/kube-calico-windows/\n        env:\n        - name: POD_NAME\n          valueFrom:\n
-    \           fieldRef:\n              apiVersion: v1\n              fieldPath:
-    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
-    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
-    name: CNI_IPAM_TYPE\n          value: \"calico-ipam\"\n        - name: CALICO_NETWORKING_BACKEND\n
-    \         value: \"vxlan\"\n        - name: KUBECONFIG\n          value: \"C:/etc/cni/net.d/calico-kubeconfig\"\n
-    \       - name: VXLAN_VNI\n          value: \"4096\"\n      - name: calico-node-felix\n
-    \       image: sigwindowstools/calico-node:v3.24.5-hostprocess\n        args:
-    [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1\"]\n        imagePullPolicy:
-    Always\n        workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        volumeMounts:\n
-    \       - name: calico-config-windows\n          mountPath: /etc/kube-calico-windows/\n
-    \       - name: calico-static-rules\n          mountPath: /calico/static-rules.json\n
-    \         subPath: static-rules.json\n        env:\n        - name: POD_NAME\n
-    \         valueFrom:\n            fieldRef:\n              apiVersion: v1\n              fieldPath:
-    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
-    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
-    name: VXLAN_VNI\n          value: \"4096\"\n        - name: KUBECONFIG\n          value:
-    \"C:/etc/cni/net.d/calico-kubeconfig\"\n      volumes:\n      - name: calico-config-windows\n
-    \       configMap:\n          name: calico-config-windows\n      - name: calico-static-rules\n
-    \       configMap:\n          name: calico-static-rules\n      # Used to install
-    CNI.\n      - name: cni-bin-dir\n        hostPath:\n          path: /opt/cni/bin\n
-    \     - name: cni-net-dir\n        hostPath:\n          path: /etc/cni/net.d\n
-    \     - name: kubeadm-config\n        configMap:\n          name: kubeadm-config\n"
+  windows-cni: |
+    # strictAffinity required for windows
+    apiVersion: crd.projectcalico.org/v1
+    kind: IPAMConfig
+    metadata:
+      name: default
+    spec:
+      autoAllocateBlocks: true
+      strictAffinity: true
+    ---
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: calico-static-rules
+      namespace: calico-system
+      labels:
+        tier: node
+        app: calico
+    data:
+      static-rules.json: |
+        {
+          "Provider": "azure",
+          "Version": "0.1",
+          "Rules": [
+            {
+              "Name": "EndpointPolicy",
+              "Rule": {
+                  "Id": "wireserver",
+                  "Type": "ACL",
+                  "Protocol": 6,
+                  "Action": "Block",
+                  "Direction": "Out",
+                  "RemoteAddresses": "168.63.129.16/32",
+                  "RemotePorts": "80",
+                  "Priority": 200,
+                  "RuleType": "Switch"
+                }
+              }
+          ]
+        }
+    ---
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: calico-config-windows
+      namespace: calico-system
+      labels:
+        tier: node
+        app: calico
+    data:
+      veth_mtu: "1350"
+
+      cni_network_config: |
+        {
+          "name": "Calico",
+          "cniVersion": "0.3.1",
+          "plugins": [
+            {
+              "windows_use_single_network": true,
+              "type": "calico",
+              "mode": "vxlan",
+              "nodename": "__KUBERNETES_NODE_NAME__",
+              "nodename_file_optional": true,
+              "log_file_path": "c:/cni.log",
+              "log_level": "debug",
+
+              "vxlan_mac_prefix": "0E-2A",
+              "vxlan_vni": 4096,
+              "mtu": __CNI_MTU__,
+              "policy": {
+                "type": "k8s"
+              },
+
+              "log_level": "info",
+
+              "capabilities": {"dns": true},
+              "DNS":  {
+                "Search":  [
+                  "svc.cluster.local"
+                ]
+              },
+
+              "datastore_type": "kubernetes",
+
+              "kubernetes": {
+                "kubeconfig": "__KUBECONFIG_FILEPATH__"
+              },
+
+              "ipam": {
+                "type": "calico-ipam",
+                "subnet": "usePodCidr"
+              },
+
+              "policies":  [
+                {
+                  "Name":  "EndpointPolicy",
+                  "Value":  {
+                    "Type":  "OutBoundNAT",
+                    "ExceptionList":  [
+                      "__K8S_SERVICE_CIDR__"
+                    ]
+                  }
+                },
+                {
+                  "Name":  "EndpointPolicy",
+                  "Value":  {
+                    "Type":  "SDNROUTE",
+                    "DestinationPrefix":  "__K8S_SERVICE_CIDR__",
+                    "NeedEncap":  true
+                  }
+                }
+              ]
+            }
+          ]
+
+        }
+    ---
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: calico-node-windows
+      labels:
+        tier: node
+        app: calico
+      namespace: calico-system
+    spec:
+      selector:
+        matchLabels:
+          app: calico
+      template:
+        metadata:
+          labels:
+            tier: node
+            app: calico
+        spec:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/os
+                        operator: In
+                        values:
+                          - windows
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                          - amd64
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\system"
+          hostNetwork: true
+          serviceAccountName: calico-node
+          tolerations:
+          - operator: Exists
+            effect: NoSchedule
+            # Mark the pod as a critical add-on for rescheduling.
+          - key: CriticalAddonsOnly
+            operator: Exists
+          - effect: NoExecute
+            operator: Exists
+          initContainers:
+            # This container installs the CNI binaries
+            # and CNI network config file on each node.
+            - name: install-cni
+              image: sigwindowstools/calico-install:v3.24.5-hostprocess
+              args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1"]
+              imagePullPolicy: Always
+              env:
+                # Name of the CNI config file to create.
+                - name: CNI_CONF_NAME
+                  value: "10-calico.conflist"
+                # The CNI network config to install on each node.
+                - name: CNI_NETWORK_CONFIG
+                  valueFrom:
+                    configMapKeyRef:
+                      name: calico-config-windows
+                      key: cni_network_config
+                # Set the hostname based on the k8s node name.
+                - name: KUBERNETES_NODE_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.nodeName
+                # CNI MTU Config variable
+                - name: CNI_MTU
+                  valueFrom:
+                    configMapKeyRef:
+                      name: calico-config-windows
+                      key: veth_mtu
+                # Prevents the container from sleeping forever.
+                - name: SLEEP
+                  value: "false"
+                - name: K8S_SERVICE_CIDR
+                  value: "10.96.0.0/12"
+              volumeMounts:
+                - mountPath: /host/opt/cni/bin
+                  name: cni-bin-dir
+                - mountPath: /host/etc/cni/net.d
+                  name: cni-net-dir
+                - name: kubeadm-config
+                  mountPath: /etc/kubeadm-config/
+              securityContext:
+                windowsOptions:
+                  hostProcess: true
+                  runAsUserName: "NT AUTHORITY\\system"
+          containers:
+          - name: calico-node-startup
+            image: sigwindowstools/calico-node:v3.24.5-hostprocess
+            args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1"]
+            workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/"
+            imagePullPolicy: Always
+            volumeMounts:
+            - name: calico-config-windows
+              mountPath: /etc/kube-calico-windows/
+            env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: CNI_IPAM_TYPE
+              value: "calico-ipam"
+            - name: CALICO_NETWORKING_BACKEND
+              value: "vxlan"
+            - name: KUBECONFIG
+              value: "C:/etc/cni/net.d/calico-kubeconfig"
+            - name: VXLAN_VNI
+              value: "4096"
+          - name: calico-node-felix
+            image: sigwindowstools/calico-node:v3.24.5-hostprocess
+            args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1"]
+            imagePullPolicy: Always
+            workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/"
+            volumeMounts:
+            - name: calico-config-windows
+              mountPath: /etc/kube-calico-windows/
+            - name: calico-static-rules
+              mountPath: /calico/static-rules.json
+              subPath: static-rules.json
+            env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: VXLAN_VNI
+              value: "4096"
+            - name: KUBECONFIG
+              value: "C:/etc/cni/net.d/calico-kubeconfig"
+          volumes:
+          - name: calico-config-windows
+            configMap:
+              name: calico-config-windows
+          - name: calico-static-rules
+            configMap:
+              name: calico-static-rules
+          # Used to install CNI.
+          - name: cni-bin-dir
+            hostPath:
+              path: /opt/cni/bin
+          - name: cni-net-dir
+            hostPath:
+              path: /etc/cni/net.d
+          - name: kubeadm-config
+            configMap:
+              name: kubeadm-config
+    ---
+    apiVersion: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    metadata:
+      name: ipamconfigs.crd.projectcalico.org
+    spec:
+      group: crd.projectcalico.org
+      names:
+        kind: IPAMConfig
+        listKind: IPAMConfigList
+        plural: ipamconfigs
+        singular: ipamconfig
+      preserveUnknownFields: false
+      scope: Cluster
+      versions:
+      - name: v1
+        schema:
+          openAPIV3Schema:
+            properties:
+              apiVersion:
+                description: 'APIVersion defines the versioned schema of this representation
+                  of an object. Servers should convert recognized schemas to the latest
+                  internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                type: string
+              kind:
+                description: 'Kind is a string value representing the REST resource this
+                  object represents. Servers may infer this from the endpoint the client
+                  submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                type: string
+              metadata:
+                type: object
+              spec:
+                description: IPAMConfigSpec contains the specification for an IPAMConfig
+                  resource.
+                properties:
+                  autoAllocateBlocks:
+                    type: boolean
+                  maxBlocksPerHost:
+                    description: MaxBlocksPerHost, if non-zero, is the max number of blocks
+                      that can be affine to each host.
+                    maximum: 2147483647
+                    minimum: 0
+                    type: integer
+                  strictAffinity:
+                    type: boolean
+                required:
+                - autoAllocateBlocks
+                - strictAffinity
+                type: object
+            type: object
+        served: true
+        storage: true
+    status:
+      acceptedNames:
+        kind: ""
+        plural: ""
+      conditions: []
+      storedVersions: []
 kind: ConfigMap
 metadata:
   annotations:
