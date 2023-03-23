@@ -651,10 +651,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 		{
 			name: "Windows clusters with more than 6char names are not allowed",
 			ammp: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "pool0-name-too-long",
-				},
 				Spec: AzureManagedMachinePoolSpec{
+					Name:   pointer.String("pool0-name-too-long"),
 					Mode:   "User",
 					OSType: pointer.String(WindowsOS),
 				},
