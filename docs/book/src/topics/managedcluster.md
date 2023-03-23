@@ -106,7 +106,7 @@ spec:
   clusterNetwork:
     services:
       cidrBlocks:
-      - 192.168.0.0/16
+      - 172.16.0.0/12
   controlPlaneRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedControlPlane
@@ -262,7 +262,7 @@ spec:
   clusterNetwork:
     services:
       cidrBlocks:
-      - 192.168.0.0/16
+      - 172.16.0.0/12
   controlPlaneRef:
     apiVersion: exp.infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedControlPlane

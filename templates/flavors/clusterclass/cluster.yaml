@@ -10,7 +10,7 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+      - 172.16.0.0/12
   topology:
     class: ${CLUSTER_CLASS_NAME}
     version: ${KUBERNETES_VERSION}

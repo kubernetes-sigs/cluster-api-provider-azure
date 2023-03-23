@@ -9,7 +9,7 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-        - 192.168.0.0/16
+        - 172.16.0.0/12
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
     kind: KubeadmControlPlane
@@ -2625,7 +2625,7 @@ data:
     The default IPv4 pool to create on startup if none exists. Pod IPs will be\n            #
     chosen from this range. Changing this value after installation will have\n            #
     no effect. This should fall within `--cluster-cidr`.\n            # - name: CALICO_IPV4POOL_CIDR\n
-    \           #   value: \"192.168.0.0/16\"\n            # Disable file logging
+    \           #   value: \"172.16.0.0/12\"\n            # Disable file logging
     so `kubectl logs` works.\n            - name: CALICO_DISABLE_FILE_LOGGING\n              value:
     \"true\"\n            # Set Felix endpoint to host default action to ACCEPT.\n
     \           - name: FELIX_DEFAULTENDPOINTTOHOSTACTION\n              value: \"ACCEPT\"\n

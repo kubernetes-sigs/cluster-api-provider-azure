@@ -114,7 +114,7 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+      - 172.16.0.0/12
 ```
 
 Download the file at `https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml` and modify the `kube-flannel-cfg` ConfigMap.
@@ -134,7 +134,7 @@ metadata:
 data:
   net-conf.json: |
     {
-      "Network": "192.168.0.0/16",
+      "Network": "172.16.0.0/12",
       "Backend": {
         "Type": "vxlan"
       }
