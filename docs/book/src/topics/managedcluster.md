@@ -193,6 +193,7 @@ spec:
   osDiskSizeGB: 40
   sku: Standard_D2s_v4
 ```
+Please note that we don't declare a configuration for the apiserver endpoint. This configuration data will be populated automatically based on the data returned from AKS API during cluster create as `.spec.controlPlaneEndpoint.Host` and `.spec.controlPlaneEndpoint.Port` in both the `AzureManagedCluster` and `AzureManagedControlPlane` resources. Any user-provided data will be ignored and overwritten by data returned from the AKS API.
 
 The main features for configuration are:
 
@@ -717,7 +718,8 @@ Following is the list of immutable fields for managed clusters:
 
 | CRD                       | jsonPath                     | Comment                   |
 |---------------------------|------------------------------|---------------------------|
-| AzureManagedControlPlane  | .name                        |                           |
+| AzureManagedCluster       | .spec.controlPlaneEndpoint   | populated by the AKS API during cluster create |
+| AzureManagedControlPlane  | .spec.controlPlaneEndpoint   | populated by the AKS API during cluster create |
 | AzureManagedControlPlane  | .spec.subscriptionID         |                           |
 | AzureManagedControlPlane  | .spec.resourceGroupName      |                           |
 | AzureManagedControlPlane  | .spec.nodeResourceGroupName  |                           |

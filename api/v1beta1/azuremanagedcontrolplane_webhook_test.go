@@ -635,7 +635,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			errorLen: 1,
 		},
 		{
-			name: "can't set Spec.ControlPlaneEndpoint.Host during create",
+			name: "can set Spec.ControlPlaneEndpoint.Host during create (clusterctl move scenario)",
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					ControlPlaneEndpoint: clusterv1.APIEndpoint{
@@ -652,10 +652,10 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name: "can't set Spec.ControlPlaneEndpoint.Port during create",
+			name: "can set Spec.ControlPlaneEndpoint.Port during create (clusterctl move scenario)",
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					ControlPlaneEndpoint: clusterv1.APIEndpoint{
@@ -672,7 +672,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tc := range tests {
@@ -1230,81 +1230,6 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: false,
-		},
-		{
-			name: "AzureManagedControlPlane ControlPlaneEndpoint.Port is immutable",
-			oldAMCP: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
-						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
-						Port: 443,
-					},
-				},
-			},
-			amcp: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
-						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
-						Port: 444,
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "AzureManagedControlPlane ControlPlaneEndpoint.Host is immutable",
-			oldAMCP: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
-						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
-						Port: 443,
-					},
-				},
-			},
-			amcp: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
-						Host: "this-is-not-allowed",
-						Port: 443,
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "ControlPlaneEndpoint update from zero values are allowed",
-			oldAMCP: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{},
-				},
-			},
-			amcp: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
-						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
-						Port: 443,
-					},
-				},
-			},
-			wantErr: true,
 		},
 		{
 			name: "OutboundType update",
