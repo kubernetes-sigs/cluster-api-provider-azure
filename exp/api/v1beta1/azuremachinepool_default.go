@@ -40,7 +40,12 @@ func (amp *AzureMachinePool) SetDefaults(client client.Client) {
 		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "findParentMachinePool failed")
 	}
 
-	subscriptionID, err := infrav1.GetSubscriptionID(client, machinePool.Spec.ClusterName, machinePool.Namespace, 5)
+	ownerAzureClusterName, ownerAzureClusterNamespace, err := infrav1.GetOwnerAzureClusterNameAndNamespace(client, machinePool.Spec.ClusterName, machinePool.Namespace, 5)
+	if err != nil {
+		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "failed to get owner cluster")
+	}
+
+	subscriptionID, err := infrav1.GetSubscriptionID(client, ownerAzureClusterName, ownerAzureClusterNamespace, 5)
 	if err != nil {
 		ctrl.Log.WithName("AzureMachinePoolLogger").Error(err, "getSubscriptionID failed")
 	}
