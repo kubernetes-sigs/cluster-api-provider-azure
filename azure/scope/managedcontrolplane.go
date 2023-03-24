@@ -578,12 +578,8 @@ func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.ResourceSpecG
 
 // SetControlPlaneEndpoint sets a control plane endpoint.
 func (s *ManagedControlPlaneScope) SetControlPlaneEndpoint(endpoint clusterv1.APIEndpoint) {
-	if s.ControlPlane.Spec.ControlPlaneEndpoint.Host == "" {
-		s.ControlPlane.Spec.ControlPlaneEndpoint.Host = endpoint.Host
-	}
-	if s.ControlPlane.Spec.ControlPlaneEndpoint.Port == 0 {
-		s.ControlPlane.Spec.ControlPlaneEndpoint.Port = endpoint.Port
-	}
+	s.ControlPlane.Spec.ControlPlaneEndpoint.Host = endpoint.Host
+	s.ControlPlane.Spec.ControlPlaneEndpoint.Port = endpoint.Port
 }
 
 // MakeEmptyKubeConfigSecret creates an empty secret object that is used for storing kubeconfig secret data.

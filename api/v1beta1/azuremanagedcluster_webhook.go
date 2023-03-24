@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
-	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -52,18 +51,6 @@ func (r *AzureManagedCluster) ValidateCreate() error {
 			"can be set only if the Cluster API 'MachinePool' feature flag is enabled",
 		)
 	}
-	if r.Spec.ControlPlaneEndpoint.Host != "" {
-		return field.Forbidden(
-			field.NewPath("Spec", "ControlPlaneEndpoint", "Host"),
-			controlPlaneEndpointErrorMessage,
-		)
-	}
-	if r.Spec.ControlPlaneEndpoint.Port != 0 {
-		return field.Forbidden(
-			field.NewPath("Spec", "ControlPlaneEndpoint", "Port"),
-			controlPlaneEndpointErrorMessage,
-		)
-	}
 	return nil
 }
 
@@ -81,24 +68,6 @@ func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) error {
 				field.NewPath("metadata", "annotations"),
 				r.ObjectMeta.Annotations,
 				fmt.Sprintf("annotations with '%s' prefix are immutable", CustomHeaderPrefix)))
-	}
-
-	if old.Spec.ControlPlaneEndpoint.Host != "" {
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("Spec", "ControlPlaneEndpoint", "Host"),
-			old.Spec.ControlPlaneEndpoint.Host,
-			r.Spec.ControlPlaneEndpoint.Host); err != nil {
-			allErrs = append(allErrs, err)
-		}
-	}
-
-	if old.Spec.ControlPlaneEndpoint.Port != 0 {
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("Spec", "ControlPlaneEndpoint", "Port"),
-			old.Spec.ControlPlaneEndpoint.Port,
-			r.Spec.ControlPlaneEndpoint.Port); err != nil {
-			allErrs = append(allErrs, err)
-		}
 	}
 
 	if len(allErrs) != 0 {

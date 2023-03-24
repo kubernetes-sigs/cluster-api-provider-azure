@@ -122,13 +122,12 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "ControlPlaneEndpoint.Port is immutable",
+			name: "ControlPlaneEndpoint.Port update (AKS API-derived update scenario)",
 			oldAMC: &AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: AzureManagedClusterSpec{
 					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
-						Port: 443,
 					},
 				},
 			},
@@ -137,40 +136,20 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 				Spec: AzureManagedClusterSpec{
 					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
-						Port: 444,
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "ControlPlaneEndpoint.Host is immutable",
-			oldAMC: &AzureManagedCluster{
-				ObjectMeta: metav1.ObjectMeta{},
-				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
-						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
 						Port: 443,
 					},
 				},
 			},
-			amc: &AzureManagedCluster{
-				ObjectMeta: metav1.ObjectMeta{},
-				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
-						Host: "this-is-not-allowed",
-						Port: 443,
-					},
-				},
-			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name: "ControlPlaneEndpoint update from zero values are allowed",
+			name: "ControlPlaneEndpoint.Host update (AKS API-derived update scenario)",
 			oldAMC: &AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{},
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Port: 443,
+					},
 				},
 			},
 			amc: &AzureManagedCluster{
@@ -211,7 +190,7 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "can't set Spec.ControlPlaneEndpoint.Host during create",
+			name: "can set Spec.ControlPlaneEndpoint.Host during create (clusterctl move scenario)",
 			amc: &AzureManagedCluster{
 				Spec: AzureManagedClusterSpec{
 					ControlPlaneEndpoint: clusterv1.APIEndpoint{
@@ -219,10 +198,10 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name: "can't set Spec.ControlPlaneEndpoint.Port during create",
+			name: "can set Spec.ControlPlaneEndpoint.Port during create (clusterctl move scenario)",
 			amc: &AzureManagedCluster{
 				Spec: AzureManagedClusterSpec{
 					ControlPlaneEndpoint: clusterv1.APIEndpoint{
@@ -230,7 +209,7 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tc := range tests {
