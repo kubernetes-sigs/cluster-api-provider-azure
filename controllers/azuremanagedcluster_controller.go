@@ -161,14 +161,7 @@ func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	// Infrastructure must be ready before control plane. We should also enqueue
 	// requests from control plane to infra cluster to keep control plane endpoint accurate.
 	aksCluster.Status.Ready = true
-	// We only expect to set the apiserver endpoint values once;
-	// if we attempted to update existing ControlPlaneEndpoint values, they would be rejected via webhook enforcement.
-	if aksCluster.Spec.ControlPlaneEndpoint.Host == "" {
-		aksCluster.Spec.ControlPlaneEndpoint.Host = controlPlane.Spec.ControlPlaneEndpoint.Host
-	}
-	if aksCluster.Spec.ControlPlaneEndpoint.Port == 0 {
-		aksCluster.Spec.ControlPlaneEndpoint.Port = controlPlane.Spec.ControlPlaneEndpoint.Port
-	}
+	aksCluster.Spec.ControlPlaneEndpoint = controlPlane.Spec.ControlPlaneEndpoint
 
 	if err := patchhelper.Patch(ctx, aksCluster); err != nil {
 		return reconcile.Result{}, err
