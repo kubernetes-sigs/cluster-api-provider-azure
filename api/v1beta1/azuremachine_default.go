@@ -174,21 +174,20 @@ func (s *AzureMachineSpec) SetNetworkInterfacesDefaults() {
 	}
 }
 
-// GetSubscriptionID returns the subscription ID for the given cluster name and namespace.
-func GetSubscriptionID(cli client.Client, clusterName string, namespace string, maxAttempts int) (string, error) {
+// GetOwnerAzureClusterNameAndNamespace returns the owner azure cluster's name and namespace for the given cluster name and namespace.
+func GetOwnerAzureClusterNameAndNamespace(cli client.Client, clusterName string, namespace string, maxAttempts int) (azureClusterName string, azureClusterNamespace string, err error) {
 	ctx := context.Background()
 
-	ownerCluster := &AzureCluster{}
+	ownerCluster := &clusterv1.Cluster{}
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      clusterName,
 	}
 
 	for i := 1; ; i++ {
-		err := cli.Get(ctx, key, ownerCluster)
-		if err != nil {
+		if err := cli.Get(ctx, key, ownerCluster); err != nil {
 			if i > maxAttempts {
-				return "", errors.Wrapf(err, "failed to find owner cluster for %s/%s", namespace, clusterName)
+				return "", "", errors.Wrapf(err, "failed to find owner cluster for %s/%s", namespace, clusterName)
 			}
 			time.Sleep(1 * time.Second)
 			continue
@@ -196,7 +195,30 @@ func GetSubscriptionID(cli client.Client, clusterName string, namespace string, 
 		break
 	}
 
-	return ownerCluster.Spec.SubscriptionID, nil
+	return ownerCluster.Spec.InfrastructureRef.Name, ownerCluster.Spec.InfrastructureRef.Namespace, nil
+}
+
+// GetSubscriptionID returns the subscription ID for the AzureCluster given the cluster name and namespace.
+func GetSubscriptionID(cli client.Client, ownerAzureClusterName string, ownerAzureClusterNamespace string, maxAttempts int) (string, error) {
+	ctx := context.Background()
+
+	ownerAzureCluster := &AzureCluster{}
+	key := client.ObjectKey{
+		Namespace: ownerAzureClusterNamespace,
+		Name:      ownerAzureClusterName,
+	}
+	for i := 1; ; i++ {
+		if err := cli.Get(ctx, key, ownerAzureCluster); err != nil {
+			if i >= maxAttempts {
+				return "", errors.Wrapf(err, "failed to find AzureCluster for owner cluster %s/%s", ownerAzureClusterNamespace, ownerAzureClusterName)
+			}
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		break
+	}
+
+	return ownerAzureCluster.Spec.SubscriptionID, nil
 }
 
 // SetDefaults sets to the defaults for the AzureMachineSpec.
@@ -211,7 +233,12 @@ func (m *AzureMachine) SetDefaults(client client.Client) {
 		ctrl.Log.WithName("SetDefault").Error(errors.Errorf("failed to fetch owner ClusterName for AzureMachine %s/%s", m.Namespace, m.Name), "failed to fetch ClusterName")
 	}
 
-	subscriptionID, err := GetSubscriptionID(client, clusterName, m.Namespace, 5)
+	ownerAzureClusterName, ownerAzureClusterNamespace, err := GetOwnerAzureClusterNameAndNamespace(client, clusterName, m.Namespace, 5)
+	if err != nil {
+		ctrl.Log.WithName("SetDefault").Error(err, "failed to fetch owner cluster for AzureMachine %s/%s", m.Namespace, m.Name)
+	}
+
+	subscriptionID, err := GetSubscriptionID(client, ownerAzureClusterName, ownerAzureClusterNamespace, 5)
 	if err != nil {
 		ctrl.Log.WithName("SetDefault").Error(err, "failed to fetch subscription ID for AzureMachine %s/%s", m.Namespace, m.Name)
 	}
