@@ -332,6 +332,7 @@ webhooks:
     apiVersions:
     - v1beta1
     operations:
+    - CREATE
     - UPDATE
     resources:
     - azuremanagedclusters
@@ -374,6 +375,7 @@ webhooks:
     apiVersions:
     - v1beta1
     operations:
+    - CREATE
     - UPDATE
     - DELETE
     resources:
