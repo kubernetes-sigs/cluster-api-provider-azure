@@ -26,6 +26,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -401,39 +402,101 @@ func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 	}
 }
 
+func TestAzureMachineSpec_GetOwnerCluster(t *testing.T) {
+	tests := []struct {
+		name            string
+		maxAttempts     int
+		wantedName      string
+		wantedNamespace string
+		wantErr         bool
+	}{
+		{
+			name:            "ownerCluster is returned",
+			maxAttempts:     1,
+			wantedName:      "test-cluster",
+			wantedNamespace: "default",
+			wantErr:         false,
+		},
+		{
+			name:            "ownerCluster is returned after 2 attempts",
+			maxAttempts:     2,
+			wantedName:      "test-cluster",
+			wantedNamespace: "default",
+			wantErr:         false,
+		},
+		{
+			name:            "ownerCluster is not returned after 5 attempts",
+			maxAttempts:     5,
+			wantedName:      "test-cluster",
+			wantedNamespace: "default",
+			wantErr:         true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			client := mockClient{ReturnError: tc.wantErr}
+			name, namespace, err := GetOwnerAzureClusterNameAndNamespace(client, "test-cluster", "default", tc.maxAttempts)
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(name).To(Equal(tc.wantedName))
+				g.Expect(namespace).To(Equal(tc.wantedNamespace))
+			}
+		})
+	}
+}
+
 func TestAzureMachineSpec_GetSubscriptionID(t *testing.T) {
 	g := NewWithT(t)
 
 	tests := []struct {
-		name        string
-		maxAttempts int
-		want        string
-		wantErr     bool
+		name                       string
+		maxAttempts                int
+		ownerAzureClusterName      string
+		ownerAzureClusterNamespace string
+		want                       string
+		wantErr                    bool
 	}{
 		{
-			name:        "subscription ID is returned",
-			maxAttempts: 1,
-			want:        "test-subscription-id",
-			wantErr:     false,
+			name:                  "empty owner cluster name returns error",
+			maxAttempts:           1,
+			ownerAzureClusterName: "",
+			want:                  "test-subscription-id",
+			wantErr:               true,
 		},
 		{
-			name:        "subscription ID is returned after 2 attempts",
-			maxAttempts: 2,
-			want:        "test-subscription-id",
-			wantErr:     false,
+			name:                       "subscription ID is returned",
+			maxAttempts:                1,
+			ownerAzureClusterName:      "test-cluster",
+			ownerAzureClusterNamespace: "default",
+			want:                       "test-subscription-id",
+			wantErr:                    false,
 		},
 		{
-			name:        "subscription ID is not returned after 5 attempts",
-			maxAttempts: 5,
-			want:        "",
-			wantErr:     true,
+			name:                       "subscription ID is returned after 2 attempts",
+			maxAttempts:                2,
+			ownerAzureClusterName:      "test-cluster",
+			ownerAzureClusterNamespace: "default",
+			want:                       "test-subscription-id",
+			wantErr:                    false,
+		},
+		{
+			name:                       "subscription ID is not returned after 5 attempts",
+			maxAttempts:                5,
+			ownerAzureClusterName:      "test-cluster",
+			ownerAzureClusterNamespace: "default",
+			want:                       "",
+			wantErr:                    true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			client := mockClient{ReturnError: tc.wantErr}
-			result, err := GetSubscriptionID(client, "test-cluster", "default", tc.maxAttempts)
+			result, err := GetSubscriptionID(client, tc.ownerAzureClusterName, tc.ownerAzureClusterNamespace, tc.maxAttempts)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -453,9 +516,19 @@ func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Ob
 	if m.ReturnError {
 		return errors.New("AzureCluster not found: failed to find owner cluster for test-cluster")
 	}
-	ac := &AzureCluster{}
-	ac.Spec.SubscriptionID = "test-subscription-id"
-	obj.(*AzureCluster).Spec.SubscriptionID = ac.Spec.SubscriptionID
+	// Check if we're calling Get on an AzureCluster or a Cluster
+	switch obj := obj.(type) {
+	case *AzureCluster:
+		obj.Spec.SubscriptionID = "test-subscription-id"
+	case *clusterv1.Cluster:
+		obj.Spec.InfrastructureRef = &corev1.ObjectReference{
+			Kind:      "AzureCluster",
+			Name:      "test-cluster",
+			Namespace: "default",
+		}
+	default:
+		return errors.New("unexpected object type")
+	}
 
 	return nil
 }

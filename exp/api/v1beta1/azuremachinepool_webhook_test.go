@@ -264,7 +264,17 @@ type mockDefaultClient struct {
 }
 
 func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-	obj.(*infrav1.AzureCluster).Spec.SubscriptionID = m.SubscriptionID
+	switch obj := obj.(type) {
+	case *infrav1.AzureCluster:
+		obj.Spec.SubscriptionID = m.SubscriptionID
+	case *clusterv1.Cluster:
+		obj.Spec.InfrastructureRef = &corev1.ObjectReference{
+			Kind: "AzureCluster",
+			Name: "test-cluster",
+		}
+	default:
+		return errors.New("invalid object type")
+	}
 	return nil
 }
 
