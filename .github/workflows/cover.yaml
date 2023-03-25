@@ -2,6 +2,7 @@
 
 name: codecov
 on:
+  pull_request:
   push:
     branches:
     - main
