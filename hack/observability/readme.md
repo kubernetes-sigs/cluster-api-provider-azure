@@ -1,5 +1,7 @@
 # Observability
 
+THIS IS A BOGUS CHANGE
+
 During development of CAPZ, it's become clear log messages can only tell part of the debugging
 story. As the code becomes more complex, we need better tools to help us understand what is
 happening in the controller.
