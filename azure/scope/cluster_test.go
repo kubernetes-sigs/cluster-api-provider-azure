@@ -2006,7 +2006,7 @@ func TestOutboundLBName(t *testing.T) {
 			clusterName: "my-cluster",
 			name:        "public cluster node outbound lb",
 			role:        "node",
-			expected:    "my-cluster",
+			expected:    "",
 		},
 		{
 			clusterName: "my-cluster",

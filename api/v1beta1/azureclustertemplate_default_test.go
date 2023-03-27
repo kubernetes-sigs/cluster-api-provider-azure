@@ -540,7 +540,7 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 		outputTemplate  *AzureClusterTemplate
 	}{
 		{
-			name: "default lb for public clusters",
+			name: "default no lb for public clusters",
 			clusterTemplate: &AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
@@ -580,6 +580,135 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 									{
 										SubnetClassSpec: SubnetClassSpec{
 											Role: SubnetControlPlane,
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role: SubnetNode,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default lb when IPv6 enabled",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								APIServerLB: LoadBalancerClassSpec{Type: Public},
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role: SubnetControlPlane,
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2001:beea::1/64"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								APIServerLB: LoadBalancerClassSpec{Type: Public},
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role: SubnetControlPlane,
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2001:beea::1/64"},
+										},
+									},
+								},
+								NodeOutboundLB: &LoadBalancerClassSpec{
+									SKU:                  SKUStandard,
+									Type:                 Public,
+									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "IPv6 enabled on 1 of 2 node subnets",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								APIServerLB: LoadBalancerClassSpec{Type: Public},
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role: SubnetControlPlane,
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2001:beea::1/64"},
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role: SubnetNode,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								APIServerLB: LoadBalancerClassSpec{Type: Public},
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role: SubnetControlPlane,
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2001:beea::1/64"},
 										},
 									},
 									{
@@ -600,7 +729,7 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "NAT gateway enabled - no LB",
+			name: "multiple subnets specified with IPv6 enabled",
 			clusterTemplate: &AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
@@ -618,10 +747,14 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 									},
 									{
 										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2001:beea::1/64"},
 										},
-										NatGateway: NatGatewayClassSpec{
-											Name: "node-natgateway",
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2002:beeb::1/64"},
 										},
 									},
 								},
@@ -647,81 +780,14 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 									},
 									{
 										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
-										},
-										NatGateway: NatGatewayClassSpec{
-											Name: "node-natgateway",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "NAT gateway enabled on 1 of 2 node subnets",
-			clusterTemplate: &AzureClusterTemplate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster-template",
-				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{Type: Public},
-								Subnets: SubnetTemplatesSpec{
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetControlPlane,
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2001:beea::1/64"},
 										},
 									},
 									{
 										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
-										},
-										NatGateway: NatGatewayClassSpec{
-											Name: "node-natgateway",
-										},
-									},
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			outputTemplate: &AzureClusterTemplate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster-template",
-				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{Type: Public},
-								Subnets: SubnetTemplatesSpec{
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetControlPlane,
-										},
-									},
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
-										},
-										NatGateway: NatGatewayClassSpec{
-											Name: "node-natgateway",
-										},
-									},
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2002:beeb::1/64"},
 										},
 									},
 								},
@@ -737,7 +803,7 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple node subnets, NAT gateway not enabled in any of them",
+			name: "multiple node subnets, Ipv6 not enabled in any of them",
 			clusterTemplate: &AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
@@ -792,88 +858,6 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 									{
 										SubnetClassSpec: SubnetClassSpec{
 											Role: SubnetNode,
-										},
-									},
-								},
-								NodeOutboundLB: &LoadBalancerClassSpec{
-									SKU:                  SKUStandard,
-									Type:                 Public,
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "multiple node subnets, NAT gateway enabled in all of them",
-			clusterTemplate: &AzureClusterTemplate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster-template",
-				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{Type: Public},
-								Subnets: SubnetTemplatesSpec{
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetControlPlane,
-										},
-									},
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
-										},
-										NatGateway: NatGatewayClassSpec{
-											Name: "node-natgateway",
-										},
-									},
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
-										},
-										NatGateway: NatGatewayClassSpec{
-											Name: "node-natgateway-2",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			outputTemplate: &AzureClusterTemplate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster-template",
-				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{Type: Public},
-								Subnets: SubnetTemplatesSpec{
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetControlPlane,
-										},
-									},
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
-										},
-										NatGateway: NatGatewayClassSpec{
-											Name: "node-natgateway",
-										},
-									},
-									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role: SubnetNode,
-										},
-										NatGateway: NatGatewayClassSpec{
-											Name: "node-natgateway-2",
 										},
 									},
 								},

@@ -55,15 +55,15 @@ func (c *AzureClusterTemplate) validateClusterTemplateSpec() field.ErrorList {
 		field.NewPath("spec").Child("template").Child("spec").Child("networkSpec").Child("apiServerLB"),
 	)...)
 
-	var oneSubnetWithoutNatGateway bool
+	var needOutboundLB bool
 	networkSpec := c.Spec.Template.Spec.NetworkSpec
 	for _, subnet := range networkSpec.Subnets {
-		if subnet.Role == SubnetNode && !subnet.IsNatGatewayEnabled() {
-			oneSubnetWithoutNatGateway = true
+		if subnet.Role == SubnetNode && subnet.IsIPv6Enabled() {
+			needOutboundLB = true
 			break
 		}
 	}
-	if oneSubnetWithoutNatGateway {
+	if needOutboundLB {
 		allErrs = append(allErrs, c.validateNodeOutboundLB()...)
 	}
 

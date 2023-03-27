@@ -23,7 +23,7 @@
     - [Machine Pools (VMSS)](./topics/machinepools.md)
     - [Managed Clusters (AKS)](./topics/managedcluster.md)
     - [Multitenancy](./topics/multitenancy.md)
-    - [Node Outbound Load Balancer](./topics/node-outbound-lb.md)
+    - [Node Outbound Connection](./topics/node-outbound-connection.md)
     - [OS Disk](./topics/os-disk.md)
     - [Spot Virtual Machines](./topics/spot-vms.md)
     - [SSH Access to nodes](./topics/ssh-access.md)

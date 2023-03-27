@@ -124,7 +124,13 @@ func (c *AzureCluster) setSubnetDefaults() {
 		if subnet.RouteTable.Name == "" {
 			subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 		}
-		if subnet.IsNatGatewayEnabled() {
+
+		if !subnet.IsIPv6Enabled() {
+			// NAT gateway supports the use of IPv4 public IP addresses for outbound connectivity.
+			// So default use the NAT gateway for outbound traffic in IPv4 cluster instead of loadbalancer.
+			if subnet.NatGateway.Name == "" {
+				subnet.NatGateway.Name = withIndex(generateNatGatewayName(c.ObjectMeta.Name), nodeSubnetCounter)
+			}
 			if subnet.NatGateway.NatGatewayIP.Name == "" {
 				subnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, subnet.Name)
 			}
@@ -145,6 +151,11 @@ func (c *AzureCluster) setSubnetDefaults() {
 			},
 			RouteTable: RouteTable{
 				Name: generateNodeRouteTableName(c.ObjectMeta.Name),
+			},
+			NatGateway: NatGateway{
+				NatGatewayClassSpec: NatGatewayClassSpec{
+					Name: generateNatGatewayName(c.ObjectMeta.Name),
+				},
 			},
 		}
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
@@ -208,7 +219,7 @@ func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 
 		var needsOutboundLB bool
 		for _, subnet := range c.Spec.NetworkSpec.Subnets {
-			if subnet.Role == SubnetNode && !subnet.IsNatGatewayEnabled() {
+			if subnet.Role == SubnetNode && subnet.IsIPv6Enabled() {
 				needsOutboundLB = true
 				break
 			}
@@ -434,6 +445,11 @@ func generateNodeOutboundIPName(clusterName string) string {
 // generateControlPlaneOutboundIPName generates a public IP name, based on the cluster name.
 func generateControlPlaneOutboundIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-controlplane-outbound", clusterName)
+}
+
+// generateNatGatewayName generates a NAT gateway name.
+func generateNatGatewayName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "node-natgw")
 }
 
 // generateNatGatewayIPName generates a NAT gateway IP name.
