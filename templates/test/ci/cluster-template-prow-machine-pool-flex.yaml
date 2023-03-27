@@ -302,7 +302,6 @@ spec:
       kubeletExtraArgs:
         azure-container-registry-config: c:/k/azure.json
         cloud-provider: external
-        feature-gates: WindowsHostProcessContainers=true
         pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:

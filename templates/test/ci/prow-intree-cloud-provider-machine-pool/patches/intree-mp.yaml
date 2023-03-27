@@ -20,7 +20,6 @@ spec:
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
-        feature-gates: WindowsHostProcessContainers=true
         pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1
         azure-container-registry-config: c:/k/azure.json
         cloud-config: c:/k/azure.json
