@@ -458,6 +458,9 @@ type AzureManagedMachinePoolSpec struct {
 	// LinuxOSConfig specifies the custom Linux OS settings and configurations.
 	// +optional
 	LinuxOSConfig *LinuxOSConfig `json:"linuxOSConfig,omitempty"`
+	// SubnetName specifies the Subnet where the MachinePool will be placed
+	// +optional
+	SubnetName *string `json:"subnetName,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.

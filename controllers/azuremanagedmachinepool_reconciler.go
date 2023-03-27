@@ -95,6 +95,8 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedMachinePoolService.Reconcile")
 	defer done()
 
+	s.scope.SetSubnetName()
+
 	log.Info("reconciling managed machine pool")
 	agentPoolName := s.scope.AgentPoolSpec().ResourceName()
 

@@ -55,6 +55,7 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error {
 	if restored.Spec.KubeletConfig != nil {
 		dst.Spec.KubeletConfig = restored.Spec.KubeletConfig
 	}
+	dst.Spec.SubnetName = restored.Spec.SubnetName
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
 	dst.Status.Conditions = restored.Status.Conditions

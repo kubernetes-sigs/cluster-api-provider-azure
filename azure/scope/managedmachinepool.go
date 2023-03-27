@@ -134,9 +134,21 @@ func (s *ManagedMachinePoolScope) Name() string {
 	return s.InfraMachinePool.Name
 }
 
+// SetSubnetName updates AzureManagedMachinePool.SubnetName if AzureManagedMachinePool.SubnetName is empty with s.ControlPlane.Spec.VirtualNetwork.Subnet.Name.
+func (s *ManagedMachinePoolScope) SetSubnetName() {
+	s.InfraMachinePool.Spec.SubnetName = getAgentPoolSubnet(s.ControlPlane, s.InfraMachinePool)
+}
+
 // AgentPoolSpec returns an azure.ResourceSpecGetter for currently reconciled AzureManagedMachinePool.
 func (s *ManagedMachinePoolScope) AgentPoolSpec() azure.ResourceSpecGetter {
 	return buildAgentPoolSpec(s.ControlPlane, s.MachinePool, s.InfraMachinePool, s.AgentPoolAnnotations())
+}
+
+func getAgentPoolSubnet(controlPlane *infrav1.AzureManagedControlPlane, infraMachinePool *infrav1.AzureManagedMachinePool) *string {
+	if infraMachinePool.Spec.SubnetName == nil {
+		return pointer.StringPtr(controlPlane.Spec.VirtualNetwork.Subnet.Name)
+	}
+	return infraMachinePool.Spec.SubnetName
 }
 
 func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
@@ -166,7 +178,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 			managedControlPlane.Spec.SubscriptionID,
 			managedControlPlane.Spec.VirtualNetwork.ResourceGroup,
 			managedControlPlane.Spec.VirtualNetwork.Name,
-			managedControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			pointer.StringDeref(getAgentPoolSubnet(managedControlPlane, managedMachinePool), ""),
 		),
 		Mode:                 managedMachinePool.Spec.Mode,
 		MaxPods:              managedMachinePool.Spec.MaxPods,

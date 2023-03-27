@@ -635,6 +635,10 @@ spec:
               sku:
                 description: SKU is the size of the VMs in the node pool.
                 type: string
+              subnetName:
+                description: SubnetName specifies the Subnet where the MachinePool
+                  will be placed
+                type: string
               taints:
                 description: Taints specifies the taints for nodes present in this
                   agent pool.

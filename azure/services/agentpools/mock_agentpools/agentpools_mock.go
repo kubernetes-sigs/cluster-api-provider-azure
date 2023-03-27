@@ -443,6 +443,18 @@ func (mr *MockAgentPoolScopeMockRecorder) SetLongRunningOperationState(arg0 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockAgentPoolScope)(nil).SetLongRunningOperationState), arg0)
 }
 
+// SetSubnetName mocks base method.
+func (m *MockAgentPoolScope) SetSubnetName() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSubnetName")
+}
+
+// SetSubnetName indicates an expected call of SetSubnetName.
+func (mr *MockAgentPoolScopeMockRecorder) SetSubnetName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnetName", reflect.TypeOf((*MockAgentPoolScope)(nil).SetSubnetName))
+}
+
 // SubscriptionID mocks base method.
 func (m *MockAgentPoolScope) SubscriptionID() string {
 	m.ctrl.T.Helper()

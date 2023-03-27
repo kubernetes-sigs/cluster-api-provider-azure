@@ -623,6 +623,148 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 	}
 }
 
+func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = expv1.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
+	cases := []struct {
+		Name     string
+		Input    ManagedMachinePoolScopeParams
+		Expected azure.ResourceSpecGetter
+	}{
+		{
+			Name: "Without Vnet and SubnetName",
+			Input: ManagedMachinePoolScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					},
+				},
+				ManagedMachinePool: ManagedMachinePool{
+					MachinePool:      getMachinePool("pool0"),
+					InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+				},
+			},
+			Expected: &agentpools.AgentPoolSpec{
+				Name:         "pool0",
+				SKU:          "Standard_D2s_v3",
+				Replicas:     1,
+				Mode:         "System",
+				Cluster:      "cluster1",
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+				Headers:      map[string]string{},
+			},
+		},
+		{
+			Name: "With Vnet and Without SubnetName",
+			Input: ManagedMachinePoolScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+							Name: "my-vnet",
+							Subnet: infrav1.ManagedControlPlaneSubnet{
+								Name: "my-vnet-subnet",
+							},
+							ResourceGroup: "my-resource-group",
+						},
+					},
+				},
+				ManagedMachinePool: ManagedMachinePool{
+					MachinePool:      getMachinePool("pool1"),
+					InfraMachinePool: getAzureMachinePool("pool1", infrav1.NodePoolModeUser),
+				},
+			},
+			Expected: &agentpools.AgentPoolSpec{
+				Name:         "pool1",
+				SKU:          "Standard_D2s_v3",
+				Mode:         "User",
+				Cluster:      "cluster1",
+				Replicas:     1,
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-vnet-subnet",
+				Headers:      map[string]string{},
+			},
+		},
+		{
+			Name: "With Vnet and With SubnetName",
+			Input: ManagedMachinePoolScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+							Name: "my-vnet",
+							Subnet: infrav1.ManagedControlPlaneSubnet{
+								Name: "my-vnet-subnet",
+							},
+							ResourceGroup: "my-resource-group",
+						},
+					},
+				},
+				ManagedMachinePool: ManagedMachinePool{
+					MachinePool:      getMachinePool("pool1"),
+					InfraMachinePool: getAzureMachinePoolWithSubnetName("pool1", pointer.StringPtr("my-subnet")),
+				},
+			},
+			Expected: &agentpools.AgentPoolSpec{
+				Name:         "pool1",
+				SKU:          "Standard_D2s_v3",
+				Mode:         "User",
+				Cluster:      "cluster1",
+				Replicas:     1,
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet",
+				Headers:      map[string]string{},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			g := NewWithT(t)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
+			c.Input.Client = fakeClient
+			s, err := NewManagedMachinePoolScope(context.TODO(), c.Input)
+			g.Expect(err).To(Succeed())
+			s.SetSubnetName()
+			agentPool := s.AgentPoolSpec()
+			if !reflect.DeepEqual(c.Expected, agentPool) {
+				t.Errorf("Got difference between expected result and result:\n%s", cmp.Diff(c.Expected, agentPool))
+			}
+		})
+	}
+}
+
 func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
@@ -760,6 +902,12 @@ func getAzureMachinePoolWithMaxPods(name string, maxPods int32) *infrav1.AzureMa
 func getAzureMachinePoolWithTaints(name string, taints infrav1.Taints) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.Taints = taints
+	return managedPool
+}
+
+func getAzureMachinePoolWithSubnetName(name string, subnetName *string) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
+	managedPool.Spec.SubnetName = subnetName
 	return managedPool
 }
 
