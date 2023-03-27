@@ -6,6 +6,7 @@ helm_cmd = "./hack/tools/bin/helm"
 kind_cmd = "./hack/tools/bin/kind"
 tools_bin = "./hack/tools/bin"
 
+# THIS IS A BOGUS CHANGE
 #Add tools to path
 os.putenv("PATH", os.getenv("PATH") + ":" + tools_bin)
 

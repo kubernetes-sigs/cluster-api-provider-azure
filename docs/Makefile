@@ -17,6 +17,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SOURCES := $(shell find ${ROOT_DIR} -name \*.plantuml)
 DIAGRAMS := $(SOURCES:%.plantuml=%.png)
 
+# THIS IS A BOGUS CHANGE
 # Hosts running SELinux need :z added to volume mounts
 SELINUX_ENABLED := $(shell cat /sys/fs/selinux/enforce 2> /dev/null || echo 0)
 
