@@ -26,12 +26,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/msi/mgmt/2018-11-30/msi"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -421,14 +421,14 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 }
 
 func getAPIVersion(resourceID string) (string, error) {
-	parsed, err := azureautorest.ParseResourceID(resourceID)
+	parsed, err := arm.ParseResourceID(resourceID)
 	if err != nil {
 		return "", errors.Wrap(err, fmt.Sprintf("unable to parse resource ID %q", resourceID))
 	}
 
 	switch parsed.Provider {
 	case "Microsoft.Network":
-		if parsed.ResourceType == "privateDnsZones" {
+		if parsed.ResourceType.String() == "privateDnsZones" {
 			return getAPIVersionFromUserAgent(privatedns.UserAgent()), nil
 		}
 		return getAPIVersionFromUserAgent(network.UserAgent()), nil
@@ -455,10 +455,10 @@ func getClientIDforMSI(resourceID string) string {
 	msiClient := msi.NewUserAssignedIdentitiesClient(subscriptionID)
 	msiClient.Authorizer = authorizer
 
-	parsed, err := azureautorest.ParseResourceID(resourceID)
+	parsed, err := arm.ParseResourceID(resourceID)
 	Expect(err).NotTo(HaveOccurred())
 
-	id, err := msiClient.Get(context.TODO(), parsed.ResourceGroup, parsed.ResourceName)
+	id, err := msiClient.Get(context.TODO(), parsed.ResourceGroupName, parsed.Name)
 	Expect(err).NotTo(HaveOccurred())
 
 	return id.ClientID.String()

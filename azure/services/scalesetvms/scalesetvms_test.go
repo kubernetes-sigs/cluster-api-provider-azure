@@ -293,7 +293,7 @@ func TestService_Delete(t *testing.T) {
 				s.OrchestrationMode().Return(infrav1.FlexibleOrchestrationMode)
 				v.GetByID(gomock2.AContext(), "foo").Return(compute.VirtualMachine{}, nil)
 			},
-			Err: errors.Wrap(fmt.Errorf("parsing failed for %s. Invalid resource Id format", "foo"), fmt.Sprintf("failed to parse resource id %q", "foo")),
+			Err: errors.Wrap(fmt.Errorf("invalid resource ID: resource id '%s' must start with '/'", "foo"), fmt.Sprintf("failed to parse resource id %q", "foo")),
 		},
 	}
 

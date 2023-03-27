@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -147,11 +147,11 @@ func (s *Service) deleteVMSSFlexVM(ctx context.Context, resourceID string) error
 		}
 	}()
 
-	parsed, err := azureautorest.ParseResourceID(resourceID)
+	parsed, err := arm.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to parse resource id %q", resourceID))
 	}
-	resourceGroup, resourceName := parsed.ResourceGroup, parsed.ResourceName
+	resourceGroup, resourceName := parsed.ResourceGroupName, parsed.Name
 
 	log.V(4).Info("entering delete")
 	future := s.Scope.GetLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture)

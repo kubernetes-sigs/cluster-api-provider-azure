@@ -21,7 +21,6 @@ import (
 	"net/http"
 
 	"github.com/Azure/go-autorest/autorest"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
@@ -31,6 +30,8 @@ const (
 	DefaultUserName = "capi"
 	// DefaultAKSUserName is the default username for a created AKS VM.
 	DefaultAKSUserName = "azureuser"
+	// PublicCloudName is the name of the Azure public cloud.
+	PublicCloudName = "AzurePublicCloud"
 )
 
 const (
@@ -300,7 +301,7 @@ func ManagedClusterID(subscriptionID, resourceGroup, managedClusterName string) 
 // Its role is to detect and report Kubernetes bootstrap failure or success.
 func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *ExtensionSpec {
 	// currently, the bootstrap extension is only available in AzurePublicCloud.
-	if osType == LinuxOS && cloud == azureautorest.PublicCloud.Name {
+	if osType == LinuxOS && cloud == PublicCloudName {
 		// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
 		return &ExtensionSpec{
 			Name:      BootstrappingExtensionLinux,
@@ -311,7 +312,7 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *Ex
 				"commandToExecute": LinuxBootstrapExtensionCommand,
 			},
 		}
-	} else if osType == WindowsOS && cloud == azureautorest.PublicCloud.Name {
+	} else if osType == WindowsOS && cloud == PublicCloudName {
 		// This command for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between reties.
 		// If the file is not present after the retries are exhausted the extension fails with return code '-2' - ERROR_FILE_NOT_FOUND.
 		return &ExtensionSpec{

@@ -106,6 +106,9 @@ linters-settings:
       # Azure
       - pkg: github.com/Azure/go-autorest/autorest/azure
         alias: azureautorest
+      # Deprecated
+      - pkg: github.com/Azure/go-autorest/autorest/to
+        alias: deprecated-use-k8s.io-utils-pointer
   gocritic:
     enabled-tags:
       - "experimental"
