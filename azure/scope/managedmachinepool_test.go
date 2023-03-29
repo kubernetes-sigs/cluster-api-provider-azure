@@ -733,7 +733,7 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool1"),
-					InfraMachinePool: getAzureMachinePoolWithSubnetName("pool1", pointer.StringPtr("my-subnet")),
+					InfraMachinePool: getAzureMachinePoolWithSubnetName("pool1", pointer.String("my-subnet")),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
