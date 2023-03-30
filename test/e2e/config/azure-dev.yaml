@@ -32,6 +32,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
+      - old: "image: registry.k8s.io/cluster-api/cluster-api-controller:v1.4.0"
+        new: "image: gcr.io/kakaraparthy-devel/cluster-api-controller:v1.4.0"
 
 
   - name: kubeadm
