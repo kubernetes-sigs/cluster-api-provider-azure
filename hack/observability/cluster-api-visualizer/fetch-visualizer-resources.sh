@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CHART_RELEASE=${CHART_RELEASE:-1.1.0}
+CHART_RELEASE=${CHART_RELEASE:-1.1.1}
 VISUALIZER_ROOT=$(dirname "${BASH_SOURCE[0]}")
 CHART_ROOT=$VISUALIZER_ROOT/chart
 
