@@ -3,7 +3,7 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.4.0
+  - name: gcr.io/kakaraparthy-devel/cluster-api-controller:v1.4.0
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.4.0
     loadBehavior: tryLoad
