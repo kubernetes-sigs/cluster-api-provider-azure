@@ -140,6 +140,7 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.Resourc
 	log.V(2).Info(fmt.Sprintf("%sing resource", logMessageVerbPrefix), "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	result, sdkFuture, err := s.Creator.CreateOrUpdateAsync(ctx, spec, parameters)
 	errWrapped := errors.Wrapf(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, rgName, resourceName, serviceName))
+
 	if sdkFuture != nil {
 		future, err := converters.SDKToFuture(sdkFuture, infrav1.PutFuture, serviceName, resourceName, rgName)
 		if err != nil {
@@ -148,6 +149,11 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.Resourc
 		s.Scope.SetLongRunningOperationState(future)
 		return nil, azure.WithTransientError(azure.NewOperationNotDoneError(future), getRequeueAfterFromFuture(sdkFuture))
 	} else if err != nil {
+		// If it is an intermittent failure with context deadline exceeded or canceled as the reconciler could not complete
+		// in the max amount of time, mark it as a transient error and return.
+		if azure.IsContextDeadlineExceededOrCanceledError(ctx.Err()) {
+			return nil, azure.WithTransientError(errWrapped, getRetryAfterFromError(err))
+		}
 		return nil, errWrapped
 	}
 
@@ -174,6 +180,7 @@ func (s *Service) DeleteResource(ctx context.Context, spec azure.ResourceSpecGet
 	// No long running operation is active, so delete the resource.
 	log.V(2).Info("deleting resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	sdkFuture, err := s.Deleter.DeleteAsync(ctx, spec)
+
 	if sdkFuture != nil {
 		future, err := converters.SDKToFuture(sdkFuture, infrav1.DeleteFuture, serviceName, resourceName, rgName)
 		if err != nil {
@@ -185,6 +192,11 @@ func (s *Service) DeleteResource(ctx context.Context, spec azure.ResourceSpecGet
 		if azure.ResourceNotFound(err) {
 			// already deleted
 			return nil
+		}
+		// If it is an intermittent failure with context deadline exceeded or canceled as the reconciler could not complete
+		// in the max amount of time, mark it as a transient error and return.
+		if azure.IsContextDeadlineExceededOrCanceledError(ctx.Err()) {
+			return azure.WithTransientError(err, getRetryAfterFromError(err))
 		}
 		return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	}

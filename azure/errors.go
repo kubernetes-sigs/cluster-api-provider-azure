@@ -17,6 +17,7 @@ limitations under the License.
 package azure
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -152,4 +153,13 @@ func IsOperationNotDoneError(target error) bool {
 		return IsOperationNotDoneError(reconcileErr.error)
 	}
 	return errors.As(target, &OperationNotDoneError{})
+}
+
+// IsContextDeadlineExceededOrCanceledError checks if it's a context deadline
+// exceeded or canceled error.
+func IsContextDeadlineExceededOrCanceledError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)
 }
