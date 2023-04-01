@@ -318,7 +318,6 @@ spec:
         cloud-config: /etc/kubernetes/azure.json
         cloud-provider: azure
         cluster-dns: '[fd00::10]'
-        node-ip: '::'
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
