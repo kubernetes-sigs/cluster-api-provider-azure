@@ -213,8 +213,12 @@ clean-temporary: ## Remove all temporary files and folders.
 	rm -f *.kubeconfig
 
 .PHONY: clean-release
-clean-release: ## Remove the release folder.
+clean-release: clean-release-git ## Remove the release folder.
 	rm -rf $(RELEASE_DIR)
+
+.PHONY: clean-release-git
+clean-release-git: ## Restores the git files usually modified during a release
+	git restore ./*manager_image_patch.yaml ./*manager_pull_policy.yaml
 
 APIDIFF_OLD_COMMIT ?= $(shell git rev-parse origin/main)
 
@@ -703,6 +707,14 @@ ifneq ($(WIN_REPO_URL), )
 	curl --retry $(CURL_RETRIES) $(WIN_REPO_URL) -o $(KUBETEST_REPO_LIST_PATH)/custom-repo-list.yaml
 endif
 	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_WINDOWS_CONF_PATH) -kubetest.repo-list-path=$(KUBETEST_REPO_LIST_PATH) $(E2E_ARGS)"
+
+## --------------------------------------
+## Security Scanning
+## --------------------------------------
+
+.PHONY: verify-container-images
+verify-container-images: ## Verify container images
+	./hack/verify-container-images.sh
 
 ## --------------------------------------
 ## Tilt / Kind
