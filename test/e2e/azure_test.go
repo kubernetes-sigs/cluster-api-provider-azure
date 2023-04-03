@@ -207,7 +207,7 @@ var _ = Describe("Workload cluster creation", func() {
 		fmt.Fprintf(GinkgoWriter, "INFO: skipping test requires pushing container images to external repository")
 	}
 
-	Context("Creating a highly available cluster [REQUIRED]", func() {
+	Context("Creating a highly available cluster [OPTIONAL]", func() {
 		It("With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "ha")
 
@@ -313,7 +313,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating a ipv6 control-plane cluster [REQUIRED]", func() {
+	Context("Creating a ipv6 control-plane cluster [OPTIONAL]", func() {
 		It("With ipv6 worker node", func() {
 			clusterName = getClusterName(clusterNamePrefix, "ipv6")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
