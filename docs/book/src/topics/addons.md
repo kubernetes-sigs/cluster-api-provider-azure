@@ -168,6 +168,13 @@ Then install the Helm chart on the workload cluster:
 helm install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME} --set "cloudControllerManager.clusterCIDR=${CCM_CIDR_BLOCK}"
 ```
 
+- **Note**: 
+  When working with **Flatcar machines**, append `--set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates` to the `cloud-provider-azure` _helm_ command. The helm command to install cloud provider azure for Flatcar-flavored workload cluster will be:
+
+    ```bash
+    helm install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME} --set "cloudControllerManager.clusterCIDR=${CCM_CIDR_BLOCK}" --set-string "cloudControllerManager.caCertDir=/usr/share/ca-certificates"
+    ```
+
 The Helm chart will pick the right version of `cloud-controller-manager` and `cloud-node-manager` to work with the version of Kubernetes your cluster is running.
 
 After running `helm install`, you should eventually see a set of pods like these in a `Running` state:
