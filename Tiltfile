@@ -376,6 +376,9 @@ def deploy_worker_templates(template, substitutions):
     flavor_cmd += "; " + helm_cmd + " repo add projectcalico https://docs.tigera.io/calico/charts; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install calico projectcalico/tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
     if "intree-cloud-provider" not in flavor_name:
         flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
+        if "flatcar" in flavor_name:  # append caCetDir location to the cloud-provider-azure helm install command for flatcar flavor
+            flavor_cmd += " --set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates"
+
     local_resource(
         name = flavor_name,
         cmd = flavor_cmd,
