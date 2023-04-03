@@ -39,3 +39,6 @@ If you would like customize your images please refer to the documentation on bui
 ## Trying it out
 
 To create a cluster using Flatcar Container Linux, use `flatcar` cluster flavor.
+
+- Note: When working with **Flatcar machines**, append `--set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates` to the `cloud-provider-azure` _helm_ command. Refer ["External Cloud Provider's Note for flatcar-flavored machine"](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/764aa1e8bd02d150dff90ff6bc7f8daa2b38810f/docs/book/src/topics/addons.md#external-cloud-provider)
+  - However, no changes are needed when using tilt to bring up flatcar-flavored workload clusters.
