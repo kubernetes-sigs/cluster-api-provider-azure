@@ -25,6 +25,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +48,6 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		ctx               = context.TODO()
 		identityNamespace *corev1.Namespace
 		specTimes         = map[string]time.Time{}
-		err               error
 	)
 	BeforeEach(func() {
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
@@ -56,7 +56,14 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", rgName))).To(Succeed())
 
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersionUpgradeFrom))
-		Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
+
+		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersionUpgradeFrom))
+		v, err := semver.ParseTolerant(e2eConfig.GetVariable(capi_e2e.KubernetesVersionUpgradeFrom))
+		Expect(err).NotTo(HaveOccurred())
+		// Opt into Windows for versions greater than or equal to 1.23
+		if v.GTE(semver.MustParse("1.23.0")) {
+			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
+		}
 
 		clientset := bootstrapClusterProxy.GetClientSet()
 		Expect(clientset).NotTo(BeNil())
