@@ -65,8 +65,8 @@ func AzureEdgeZoneClusterSpec(ctx context.Context, inputGetter func() AzureEdgeZ
 	By("Retrieving all machines from the machine template spec")
 	machineList := &infrav1.AzureMachineList{}
 	// list all of the requested objects within the cluster namespace with the cluster name label
-	Logf("Listing machines in namespace %s with label %s=%s", input.Namespace.Name, clusterv1.ClusterLabelName, workloadClusterProxy.GetName())
-	err := mgmtClient.List(ctx, machineList, client.InNamespace(input.Namespace.Name), client.MatchingLabels{clusterv1.ClusterLabelName: workloadClusterProxy.GetName()})
+	Logf("Listing machines in namespace %s with label %s=%s", input.Namespace.Name, clusterv1.ClusterNameLabel, workloadClusterProxy.GetName())
+	err := mgmtClient.List(ctx, machineList, client.InNamespace(input.Namespace.Name), client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterProxy.GetName()})
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Getting extendedLocation Name and Type from environment variables or e2e config file")

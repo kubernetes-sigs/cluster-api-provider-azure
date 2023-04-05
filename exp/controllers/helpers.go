@@ -80,7 +80,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 		machineList := &expv1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
 			log.V(4).Info(fmt.Sprintf("unable to list machine pools in cluster %s", clusterName))
 			return nil
 		}
@@ -194,7 +194,7 @@ func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, c client.Client, l
 			return nil
 		}
 
-		labels := map[string]string{clusterv1.ClusterLabelName: cluster.Name}
+		labels := map[string]string{clusterv1.ClusterNameLabel: cluster.Name}
 		ampl := &infrav1exp.AzureMachinePoolList{}
 		if err := c.List(ctx, ampl, client.InNamespace(ac.Namespace), client.MatchingLabels(labels)); err != nil {
 			logWithValues.Error(err, "failed to list AzureMachinePools")
@@ -230,7 +230,7 @@ func AzureMachinePoolToAzureMachinePoolMachines(ctx context.Context, c client.Cl
 		logWithValues := log.WithValues("AzureMachinePool", amp.Name, "Namespace", amp.Namespace)
 
 		labels := map[string]string{
-			clusterv1.ClusterLabelName:      amp.Labels[clusterv1.ClusterLabelName],
+			clusterv1.ClusterNameLabel:      amp.Labels[clusterv1.ClusterNameLabel],
 			infrav1exp.MachinePoolNameLabel: amp.Name,
 		}
 		ampml := &infrav1exp.AzureMachinePoolMachineList{}

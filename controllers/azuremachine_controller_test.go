@@ -80,7 +80,7 @@ func TestConditions(t *testing.T) {
 			machine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						clusterv1.ClusterLabelName: "my-cluster",
+						clusterv1.ClusterNameLabel: "my-cluster",
 					},
 					Name: "my-machine",
 				},
@@ -112,7 +112,7 @@ func TestConditions(t *testing.T) {
 			machine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						clusterv1.ClusterLabelName: "my-cluster",
+						clusterv1.ClusterNameLabel: "my-cluster",
 					},
 					Name: "my-machine",
 				},

@@ -154,7 +154,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		log = log.WithValues("azureidentitybinding", b.Name)
 
 		binding := b
-		clusterName := binding.ObjectMeta.Labels[clusterv1.ClusterLabelName]
+		clusterName := binding.ObjectMeta.Labels[clusterv1.ClusterNameLabel]
 		clusterNamespace := binding.ObjectMeta.Labels[infrav1.ClusterLabelNamespace]
 
 		key := client.ObjectKey{Name: clusterName, Namespace: clusterNamespace}

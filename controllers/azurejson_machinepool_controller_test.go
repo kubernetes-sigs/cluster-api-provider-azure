@@ -87,7 +87,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-machine-pool",
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "my-cluster",
+				clusterv1.ClusterNameLabel: "my-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{

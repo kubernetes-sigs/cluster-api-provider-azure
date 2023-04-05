@@ -549,7 +549,7 @@ func hardcodedAzureMachineWithSSHKey(sshPublicKey string) *AzureMachine {
 	return &AzureMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "test-cluster",
+				clusterv1.ClusterNameLabel: "test-cluster",
 			},
 		},
 		Spec: AzureMachineSpec{

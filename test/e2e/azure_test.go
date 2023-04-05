@@ -84,7 +84,7 @@ var _ = Describe("Workload cluster creation", func() {
 				Name:      "cluster-identity-secret",
 				Namespace: defaultNamespace,
 				Labels: map[string]string{
-					clusterctlv1.ClusterctlMoveHierarchyLabelName: "true",
+					clusterctlv1.ClusterctlMoveHierarchyLabel: "true",
 				},
 			},
 			Type: corev1.SecretTypeOpaque,

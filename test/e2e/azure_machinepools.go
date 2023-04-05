@@ -69,7 +69,7 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 	var (
 		bootstrapClusterProxy = input.BootstrapClusterProxy
 		workloadClusterProxy  = bootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
-		clusterLabels         = map[string]string{clusterv1.ClusterLabelName: workloadClusterProxy.GetName()}
+		clusterLabels         = map[string]string{clusterv1.ClusterNameLabel: workloadClusterProxy.GetName()}
 	)
 
 	Expect(workloadClusterProxy).NotTo(BeNil())

@@ -52,7 +52,7 @@ func TestUnclonedMachinesPredicate(t *testing.T) {
 		"uncloned control plane node should return true": {
 			expected: true,
 			labels: map[string]string{
-				clusterv1.MachineControlPlaneLabelName: "",
+				clusterv1.MachineControlPlaneLabel: "",
 			},
 			annotations: nil,
 		},
@@ -137,7 +137,7 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-machine",
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "my-cluster",
+				clusterv1.ClusterNameLabel: "my-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{

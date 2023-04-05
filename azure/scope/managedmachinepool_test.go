@@ -733,7 +733,7 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool1"),
-					InfraMachinePool: getAzureMachinePoolWithSubnetName("pool1", pointer.StringPtr("my-subnet")),
+					InfraMachinePool: getAzureMachinePoolWithSubnetName("pool1", pointer.String("my-subnet")),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -866,7 +866,7 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 			Name:      name,
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "cluster1",
+				clusterv1.ClusterNameLabel: "cluster1",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -941,7 +941,7 @@ func getMachinePool(name string) *expv1.MachinePool {
 			Name:      name,
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "cluster1",
+				clusterv1.ClusterNameLabel: "cluster1",
 			},
 		},
 		Spec: expv1.MachinePoolSpec{

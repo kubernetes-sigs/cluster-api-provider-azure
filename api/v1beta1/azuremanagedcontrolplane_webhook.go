@@ -373,7 +373,7 @@ func (m *AzureManagedControlPlane) validateManagedClusterNetwork(cli client.Clie
 	ctx := context.Background()
 
 	// Fetch the Cluster.
-	clusterName, ok := m.Labels[clusterv1.ClusterLabelName]
+	clusterName, ok := m.Labels[clusterv1.ClusterNameLabel]
 	if !ok {
 		return nil
 	}
