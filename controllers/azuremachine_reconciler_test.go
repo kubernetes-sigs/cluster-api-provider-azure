@@ -93,7 +93,7 @@ func TestAzureMachineServiceReconcile(t *testing.T) {
 				skuCache: resourceskus.NewStaticCache([]compute.ResourceSku{}, ""),
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -160,7 +160,7 @@ func TestAzureMachineServiceDelete(t *testing.T) {
 				skuCache: resourceskus.NewStaticCache([]compute.ResourceSku{}, ""),
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

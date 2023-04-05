@@ -40,8 +40,10 @@ type azureMachineService struct {
 	scope *scope.MachineScope
 	// services is the list of services to be reconciled.
 	// The order of the services is important as it determines the order in which the services are reconciled.
-	services []azure.ServiceReconciler
-	skuCache *resourceskus.Cache
+	services  []azure.ServiceReconciler
+	skuCache  *resourceskus.Cache
+	Reconcile func(context.Context) error
+	Delete    func(context.Context) error
 }
 
 // newAzureMachineService populates all the services based on input scope.
@@ -50,8 +52,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
-
-	return &azureMachineService{
+	ams := &azureMachineService{
 		scope: machineScope,
 		services: []azure.ServiceReconciler{
 			publicips.New(machineScope),
@@ -65,11 +66,15 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 			tags.New(machineScope),
 		},
 		skuCache: cache,
-	}, nil
+	}
+	ams.Reconcile = ams.reconcile
+	ams.Delete = ams.delete
+
+	return ams, nil
 }
 
-// Reconcile reconciles all the services in a predetermined order.
-func (s *azureMachineService) Reconcile(ctx context.Context) error {
+// reconcile reconciles all the services in a predetermined order.
+func (s *azureMachineService) reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.Reconcile")
 	defer done()
 
@@ -89,8 +94,8 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 	return nil
 }
 
-// Delete deletes all the services in a predetermined order.
-func (s *azureMachineService) Delete(ctx context.Context) error {
+// delete deletes all the services in a predetermined order.
+func (s *azureMachineService) delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.Delete")
 	defer done()
 
