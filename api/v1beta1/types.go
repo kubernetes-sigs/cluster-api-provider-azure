@@ -124,6 +124,41 @@ type VnetPeeringClassSpec struct {
 
 	// RemoteVnetName defines name of the remote virtual network.
 	RemoteVnetName string `json:"remoteVnetName"`
+
+	// ForwardPeeringProperties specifies VnetPeeringProperties for peering from the cluster's virtual network to the
+	// remote virtual network.
+	// +optional
+	ForwardPeeringProperties VnetPeeringProperties `json:"forwardPeeringProperties,omitempty"`
+
+	// ReversePeeringProperties specifies VnetPeeringProperties for peering from the remote virtual network to the
+	// cluster's virtual network.
+	// +optional
+	ReversePeeringProperties VnetPeeringProperties `json:"reversePeeringProperties,omitempty"`
+}
+
+// VnetPeeringProperties specifies virtual network peering properties.
+type VnetPeeringProperties struct {
+	// AllowForwardedTraffic specifies whether the forwarded traffic from the VMs in the local virtual network will be
+	// allowed/disallowed in remote virtual network.
+	// +optional
+	AllowForwardedTraffic *bool `json:"allowForwardedTraffic,omitempty"`
+
+	// AllowGatewayTransit specifies if gateway links can be used in remote virtual networking to link to this virtual
+	// network.
+	// +optional
+	AllowGatewayTransit *bool `json:"allowGatewayTransit,omitempty"`
+
+	// AllowVirtualNetworkAccess specifies whether the VMs in the local virtual network space would be able to access
+	// the VMs in remote virtual network space.
+	// +optional
+	AllowVirtualNetworkAccess *bool `json:"allowVirtualNetworkAccess,omitempty"`
+
+	// UseRemoteGateways specifies if remote gateways can be used on this virtual network.
+	// If the flag is set to true, and allowGatewayTransit on remote peering is also set to true, the virtual network
+	// will use the gateways of the remote virtual network for transit. Only one peering can have this flag set to true.
+	// This flag cannot be set if virtual network already has a gateway.
+	// +optional
+	UseRemoteGateways *bool `json:"useRemoteGateways,omitempty"`
 }
 
 // VnetPeerings is a slice of VnetPeering.
