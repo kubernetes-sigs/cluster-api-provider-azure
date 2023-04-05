@@ -20,6 +20,7 @@ limitations under the License.
 package pod
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -58,7 +59,7 @@ func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod corev1
 		return err
 	}
 	Eventually(func(g Gomega) {
-		err = exec.Stream(remotecommand.StreamOptions{
+		err = exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
 		})

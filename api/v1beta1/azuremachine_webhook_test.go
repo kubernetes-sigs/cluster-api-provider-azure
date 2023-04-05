@@ -761,7 +761,7 @@ func TestAzureMachine_Default(t *testing.T) {
 	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey("")}
 	testObjectMeta := metav1.ObjectMeta{
 		Labels: map[string]string{
-			clusterv1.ClusterLabelName: "test-cluster",
+			clusterv1.ClusterNameLabel: "test-cluster",
 		},
 	}
 

@@ -68,8 +68,8 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 	By("Retrieving all machines from the machine template spec")
 	machineList := &infrav1.AzureMachineList{}
 	// list all of the requested objects within the cluster namespace with the cluster name label
-	Logf("Listing machines in namespace %s with label %s=%s", input.Namespace.Name, clusterv1.ClusterLabelName, workloadClusterProxy.GetName())
-	err := mgmtClient.List(ctx, machineList, client.InNamespace(input.Namespace.Name), client.MatchingLabels{clusterv1.ClusterLabelName: workloadClusterProxy.GetName()})
+	Logf("Listing machines in namespace %s with label %s=%s", input.Namespace.Name, clusterv1.ClusterNameLabel, workloadClusterProxy.GetName())
+	err := mgmtClient.List(ctx, machineList, client.InNamespace(input.Namespace.Name), client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterProxy.GetName()})
 	Expect(err).NotTo(HaveOccurred())
 
 	// get subscription id
@@ -123,8 +123,8 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 	By("Retrieving all machine pools from the machine template spec")
 	machinePoolList := &infrav1exp.AzureMachinePoolList{}
 	// list all of the requested objects within the cluster namespace with the cluster name label
-	Logf("Listing machine pools in namespace %s with label %s=%s", input.Namespace.Name, clusterv1.ClusterLabelName, workloadClusterProxy.GetName())
-	err = mgmtClient.List(ctx, machinePoolList, client.InNamespace(input.Namespace.Name), client.MatchingLabels{clusterv1.ClusterLabelName: workloadClusterProxy.GetName()})
+	Logf("Listing machine pools in namespace %s with label %s=%s", input.Namespace.Name, clusterv1.ClusterNameLabel, workloadClusterProxy.GetName())
+	err = mgmtClient.List(ctx, machinePoolList, client.InNamespace(input.Namespace.Name), client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterProxy.GetName()})
 	Expect(err).NotTo(HaveOccurred())
 
 	if len(machinePoolList.Items) > 0 {

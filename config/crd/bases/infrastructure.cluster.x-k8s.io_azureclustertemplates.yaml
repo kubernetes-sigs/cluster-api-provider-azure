@@ -787,6 +787,44 @@ spec:
                                   description: VnetPeeringClassSpec specifies a virtual
                                     network peering class.
                                   properties:
+                                    forwardPeeringProperties:
+                                      description: ForwardPeeringProperties specifies
+                                        VnetPeeringProperties for peering from the
+                                        cluster's virtual network to the remote virtual
+                                        network.
+                                      properties:
+                                        allowForwardedTraffic:
+                                          description: AllowForwardedTraffic specifies
+                                            whether the forwarded traffic from the
+                                            VMs in the local virtual network will
+                                            be allowed/disallowed in remote virtual
+                                            network.
+                                          type: boolean
+                                        allowGatewayTransit:
+                                          description: AllowGatewayTransit specifies
+                                            if gateway links can be used in remote
+                                            virtual networking to link to this virtual
+                                            network.
+                                          type: boolean
+                                        allowVirtualNetworkAccess:
+                                          description: AllowVirtualNetworkAccess specifies
+                                            whether the VMs in the local virtual network
+                                            space would be able to access the VMs
+                                            in remote virtual network space.
+                                          type: boolean
+                                        useRemoteGateways:
+                                          description: UseRemoteGateways specifies
+                                            if remote gateways can be used on this
+                                            virtual network. If the flag is set to
+                                            true, and allowGatewayTransit on remote
+                                            peering is also set to true, the virtual
+                                            network will use the gateways of the remote
+                                            virtual network for transit. Only one
+                                            peering can have this flag set to true.
+                                            This flag cannot be set if virtual network
+                                            already has a gateway.
+                                          type: boolean
+                                      type: object
                                     remoteVnetName:
                                       description: RemoteVnetName defines name of
                                         the remote virtual network.
@@ -795,6 +833,44 @@ spec:
                                       description: ResourceGroup is the resource group
                                         name of the remote virtual network.
                                       type: string
+                                    reversePeeringProperties:
+                                      description: ReversePeeringProperties specifies
+                                        VnetPeeringProperties for peering from the
+                                        remote virtual network to the cluster's virtual
+                                        network.
+                                      properties:
+                                        allowForwardedTraffic:
+                                          description: AllowForwardedTraffic specifies
+                                            whether the forwarded traffic from the
+                                            VMs in the local virtual network will
+                                            be allowed/disallowed in remote virtual
+                                            network.
+                                          type: boolean
+                                        allowGatewayTransit:
+                                          description: AllowGatewayTransit specifies
+                                            if gateway links can be used in remote
+                                            virtual networking to link to this virtual
+                                            network.
+                                          type: boolean
+                                        allowVirtualNetworkAccess:
+                                          description: AllowVirtualNetworkAccess specifies
+                                            whether the VMs in the local virtual network
+                                            space would be able to access the VMs
+                                            in remote virtual network space.
+                                          type: boolean
+                                        useRemoteGateways:
+                                          description: UseRemoteGateways specifies
+                                            if remote gateways can be used on this
+                                            virtual network. If the flag is set to
+                                            true, and allowGatewayTransit on remote
+                                            peering is also set to true, the virtual
+                                            network will use the gateways of the remote
+                                            virtual network for transit. Only one
+                                            peering can have this flag set to true.
+                                            This flag cannot be set if virtual network
+                                            already has a gateway.
+                                          type: boolean
+                                      type: object
                                   required:
                                   - remoteVnetName
                                   type: object

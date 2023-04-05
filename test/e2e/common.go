@@ -319,8 +319,8 @@ func createApplyClusterTemplateInput(specName string, changes ...func(*clusterct
 			Namespace:                "default",
 			ClusterName:              "cluster",
 			KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
-			ControlPlaneMachineCount: pointer.Int64Ptr(1),
-			WorkerMachineCount:       pointer.Int64Ptr(1),
+			ControlPlaneMachineCount: pointer.Int64(1),
+			WorkerMachineCount:       pointer.Int64(1),
 		},
 		WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 		WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -365,13 +365,13 @@ func withKubernetesVersion(version string) func(*clusterctl.ApplyClusterTemplate
 
 func withControlPlaneMachineCount(count int64) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
 	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
-		input.ConfigCluster.ControlPlaneMachineCount = pointer.Int64Ptr(count)
+		input.ConfigCluster.ControlPlaneMachineCount = pointer.Int64(count)
 	}
 }
 
 func withWorkerMachineCount(count int64) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
 	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
-		input.ConfigCluster.WorkerMachineCount = pointer.Int64Ptr(count)
+		input.ConfigCluster.WorkerMachineCount = pointer.Int64(count)
 	}
 }
 

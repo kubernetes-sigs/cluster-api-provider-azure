@@ -2,6 +2,11 @@ run:
   deadline: 10m
   skip-files:
   - 'zz_generated\.(\w*)\.go$'
+  skip-dirs:
+  - 'api/v1alpha3'
+  - 'api/v1alpha4'
+  - 'exp/api/v1alpha3'
+  - 'exp/api/v1alpha4'
   build-tags:
     - e2e
 linters:

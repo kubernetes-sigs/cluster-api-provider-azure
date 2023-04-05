@@ -27,12 +27,16 @@ import (
 
 // VnetPeeringSpec defines the specification for a virtual network peering.
 type VnetPeeringSpec struct {
-	SourceResourceGroup string
-	SourceVnetName      string
-	RemoteResourceGroup string
-	RemoteVnetName      string
-	PeeringName         string
-	SubscriptionID      string
+	SourceResourceGroup       string
+	SourceVnetName            string
+	RemoteResourceGroup       string
+	RemoteVnetName            string
+	PeeringName               string
+	SubscriptionID            string
+	AllowForwardedTraffic     *bool
+	AllowGatewayTransit       *bool
+	AllowVirtualNetworkAccess *bool
+	UseRemoteGateways         *bool
 }
 
 // ResourceName returns the name of the virtual network peering.
@@ -64,6 +68,10 @@ func (s *VnetPeeringSpec) Parameters(ctx context.Context, existing interface{}) 
 		RemoteVirtualNetwork: &network.SubResource{
 			ID: pointer.String(vnetID),
 		},
+		AllowForwardedTraffic:     s.AllowForwardedTraffic,
+		AllowGatewayTransit:       s.AllowGatewayTransit,
+		AllowVirtualNetworkAccess: s.AllowVirtualNetworkAccess,
+		UseRemoteGateways:         s.UseRemoteGateways,
 	}
 	return network.VirtualNetworkPeering{
 		Name:                                  pointer.String(s.PeeringName),

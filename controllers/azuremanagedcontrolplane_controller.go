@@ -155,7 +155,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	// Fetch all the ManagedMachinePools owned by this Cluster.
 	opt1 := client.InNamespace(azureControlPlane.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
-		clusterv1.ClusterLabelName: cluster.Name,
+		clusterv1.ClusterNameLabel: cluster.Name,
 	})
 
 	ammpList := &infrav1.AzureManagedMachinePoolList{}
