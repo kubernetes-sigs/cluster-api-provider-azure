@@ -698,6 +698,21 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "validtest: azuremachine.spec.networkInterfaces[0].subnetName is overwritten when empty",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SubnetName:        "subnet1",
+					NetworkInterfaces: []NetworkInterface{{SubnetName: ""}},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					NetworkInterfaces: []NetworkInterface{{SubnetName: "subnet1"}},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
