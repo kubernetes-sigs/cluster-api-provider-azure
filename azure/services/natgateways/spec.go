@@ -20,7 +20,8 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -57,9 +58,9 @@ func (s *NatGatewaySpec) OwnerResourceName() string {
 // Parameters returns the parameters for the NAT gateway.
 func (s *NatGatewaySpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
-		existingNatGateway, ok := existing.(network.NatGateway)
+		existingNatGateway, ok := existing.(armnetwork.NatGateway)
 		if !ok {
-			return nil, errors.Errorf("%T is not a network.NatGateway", existing)
+			return nil, errors.Errorf("%T is not a armnetwork.NatGateway", existing)
 		}
 
 		if hasPublicIP(existingNatGateway, s.NatGatewayIP.Name) {
@@ -68,12 +69,12 @@ func (s *NatGatewaySpec) Parameters(ctx context.Context, existing interface{}) (
 		}
 	}
 
-	natGatewayToCreate := network.NatGateway{
+	natGatewayToCreate := armnetwork.NatGateway{
 		Name:     pointer.String(s.Name),
 		Location: pointer.String(s.Location),
-		Sku:      &network.NatGatewaySku{Name: network.NatGatewaySkuNameStandard},
-		NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{
-			PublicIPAddresses: &[]network.SubResource{
+		SKU:      &armnetwork.NatGatewaySKU{Name: to.Ptr(armnetwork.NatGatewaySKUNameStandard)},
+		Properties: &armnetwork.NatGatewayPropertiesFormat{
+			PublicIPAddresses: []*armnetwork.SubResource{
 				{
 					ID: pointer.String(azure.PublicIPID(s.SubscriptionID, s.ResourceGroupName(), s.NatGatewayIP.Name)),
 				},
@@ -90,13 +91,8 @@ func (s *NatGatewaySpec) Parameters(ctx context.Context, existing interface{}) (
 	return natGatewayToCreate, nil
 }
 
-func hasPublicIP(natGateway network.NatGateway, publicIPName string) bool {
-	// We must have a non-nil, non-"empty" PublicIPAddresses
-	if !(natGateway.PublicIPAddresses != nil && len(*natGateway.PublicIPAddresses) > 0) {
-		return false
-	}
-
-	for _, publicIP := range *natGateway.PublicIPAddresses {
+func hasPublicIP(natGateway armnetwork.NatGateway, publicIPName string) bool {
+	for _, publicIP := range natGateway.Properties.PublicIPAddresses {
 		resource, err := arm.ParseResourceID(*publicIP.ID)
 		if err != nil {
 			continue
@@ -105,5 +101,6 @@ func hasPublicIP(natGateway network.NatGateway, publicIPName string) bool {
 			return true
 		}
 	}
+
 	return false
 }
