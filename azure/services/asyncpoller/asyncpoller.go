@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -206,24 +206,22 @@ func getRetryAfterFromError(err error) time.Duration {
 	// TODO: need to refactor autorest out of this codebase entirely.
 	// In case we aren't able to introspect Retry-After from the error type, we'll return this default
 	ret := reconciler.DefaultReconcilerRequeue
-	var detailedError autorest.DetailedError
-	// if we have a strongly typed autorest.DetailedError then we can introspect the HTTP response data
-	if errors.As(err, &detailedError) {
-		if detailedError.Response != nil {
-			// If we have Retry-After HTTP header data for any reason, prefer it
-			if retryAfter := detailedError.Response.Header.Get("Retry-After"); retryAfter != "" {
-				// This handles the case where Retry-After data is in the form of units of seconds
-				if rai, err := strconv.Atoi(retryAfter); err == nil {
-					ret = time.Duration(rai) * time.Second
-					// This handles the case where Retry-After data is in the form of absolute time
-				} else if t, err := time.Parse(time.RFC1123, retryAfter); err == nil {
-					ret = time.Until(t)
-				}
-				// If we didn't find Retry-After HTTP header data but the response type is 429,
-				// we'll have to come up with our sane default.
-			} else if detailedError.Response.StatusCode == http.StatusTooManyRequests {
-				ret = reconciler.DefaultHTTP429RetryAfter
+	var responseError azcore.ResponseError
+	// if we have a strongly typed azcore.ResponseError then we can introspect the HTTP response data
+	if errors.As(err, &responseError) && responseError.RawResponse != nil {
+		// If we have Retry-After HTTP header data for any reason, prefer it
+		if retryAfter := responseError.RawResponse.Header.Get("Retry-After"); retryAfter != "" {
+			// This handles the case where Retry-After data is in the form of units of seconds
+			if rai, err := strconv.Atoi(retryAfter); err == nil {
+				ret = time.Duration(rai) * time.Second
+				// This handles the case where Retry-After data is in the form of absolute time
+			} else if t, err := time.Parse(time.RFC1123, retryAfter); err == nil {
+				ret = time.Until(t)
 			}
+			// If we didn't find Retry-After HTTP header data but the response type is 429,
+			// we'll have to come up with our sane default.
+		} else if responseError.RawResponse.StatusCode == http.StatusTooManyRequests {
+			ret = reconciler.DefaultHTTP429RetryAfter
 		}
 	}
 	return ret
