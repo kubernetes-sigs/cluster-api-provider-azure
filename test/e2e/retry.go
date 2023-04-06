@@ -20,6 +20,7 @@ limitations under the License.
 package e2e
 
 import (
+	"errors"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,18 +36,27 @@ const (
 
 // retryWithTimeout retries a function that returns an error until a timeout is reached
 func retryWithTimeout(interval, timeout time.Duration, fn func() error) error {
+	result := make(chan error, 1)
 	var pollError error
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		pollError = nil
-		err := fn()
-		if err != nil {
-			pollError = err
-			return false, nil //nolint:nilerr // We don't want to return err here
+	go func() {
+		result <- wait.PollImmediateInfinite(interval, func() (bool, error) {
+			pollError = nil
+			err := fn()
+			if err != nil {
+				pollError = err
+				return false, nil //nolint:nilerr // We don't want to return err here
+			}
+			return true, nil
+		})
+	}()
+
+	select {
+	case <-time.After(timeout):
+		return errors.New("timed out waiting for function")
+	case result := <-result:
+		if pollError != nil {
+			return pollError
 		}
-		return true, nil
-	})
-	if pollError != nil {
-		return pollError
+		return result
 	}
-	return err
 }
