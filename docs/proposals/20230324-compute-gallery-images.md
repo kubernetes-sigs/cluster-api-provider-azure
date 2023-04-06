@@ -99,8 +99,7 @@ Image hosting will now be directly from a replicated Azure Compute Gallery, rath
 
 ### Risks and Mitigations
 
-- We have hit hard-coded limits with the Marketplace before. Will this be a problem with Compute Galleries?
-- Specifically, how many Galleries, Image definitions, and Image versions can we have in a single subscription?
+- We have hit hard-coded limits with the Marketplace before. Will this be a problem with Compute Galleries? Specifically, how many Galleries, Image definitions, and Image versions can we have in a single subscription? See https://learn.microsoft.com/azure/virtual-machines/azure-compute-gallery#limits
 - Is it faster to download a Marketplace image or a Compute Gallery image? Is the difference significant?
 - While no one should be relying on the current reference images, it's possible a user may expect Marketplace publishing to continue apace.
 
