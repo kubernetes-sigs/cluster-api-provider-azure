@@ -45,7 +45,10 @@ func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clus
 	specName := "cloud-provider-azure-install"
 	By("Installing cloud-provider-azure components via helm")
 	options := &helmVals.Options{
-		Values:       []string{fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName)},
+		Values: []string{
+			fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName),
+			"cloudControllerManager.logVerbosity=4",
+		},
 		StringValues: []string{fmt.Sprintf("cloudControllerManager.clusterCIDR=%s", strings.Join(cidrBlocks, `\,`))},
 	}
 	// If testing a CI version of Kubernetes, use CCM and CNM images built from source.
