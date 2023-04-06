@@ -46,6 +46,11 @@ const (
 )
 
 const (
+	// DefaultImageGalleryID is the default Azure Compute Gallery identifier.
+	DefaultImageGalleryID = "cluster-api"
+)
+
+const (
 	// LinuxOS is Linux OS value for OSDisk.OSType.
 	LinuxOS = "Linux"
 	// WindowsOS is Windows OS value for OSDisk.OSType.
