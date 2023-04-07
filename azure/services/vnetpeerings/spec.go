@@ -19,7 +19,7 @@ package vnetpeerings
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -57,15 +57,15 @@ func (s *VnetPeeringSpec) OwnerResourceName() string {
 // Parameters returns the parameters for the virtual network peering.
 func (s *VnetPeeringSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
-		if _, ok := existing.(network.VirtualNetworkPeering); !ok {
-			return nil, errors.Errorf("%T is not a network.VnetPeering", existing)
+		if _, ok := existing.(armnetwork.VirtualNetworkPeering); !ok {
+			return nil, errors.Errorf("%T is not an armnetwork.VnetPeering", existing)
 		}
 		// virtual network peering already exists
 		return nil, nil
 	}
 	vnetID := azure.VNetID(s.SubscriptionID, s.RemoteResourceGroup, s.RemoteVnetName)
-	peeringProperties := network.VirtualNetworkPeeringPropertiesFormat{
-		RemoteVirtualNetwork: &network.SubResource{
+	peeringProperties := armnetwork.VirtualNetworkPeeringPropertiesFormat{
+		RemoteVirtualNetwork: &armnetwork.SubResource{
 			ID: pointer.String(vnetID),
 		},
 		AllowForwardedTraffic:     s.AllowForwardedTraffic,
@@ -73,8 +73,8 @@ func (s *VnetPeeringSpec) Parameters(ctx context.Context, existing interface{}) 
 		AllowVirtualNetworkAccess: s.AllowVirtualNetworkAccess,
 		UseRemoteGateways:         s.UseRemoteGateways,
 	}
-	return network.VirtualNetworkPeering{
-		Name:                                  pointer.String(s.PeeringName),
-		VirtualNetworkPeeringPropertiesFormat: &peeringProperties,
+	return armnetwork.VirtualNetworkPeering{
+		Name:       pointer.String(s.PeeringName),
+		Properties: &peeringProperties,
 	}, nil
 }

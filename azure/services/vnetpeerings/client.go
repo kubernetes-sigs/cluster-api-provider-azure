@@ -18,13 +18,12 @@ package vnetpeerings
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -32,43 +31,63 @@ import (
 
 // AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
-	peerings network.VirtualNetworkPeeringsClient
+	peerings armnetwork.VirtualNetworkPeeringsClient
 }
 
-// NewClient creates a new virtual network peerings client from subscription ID.
+// NewClient creates an AzureClient from an Authorizer.
 func NewClient(auth azure.Authorizer) *AzureClient {
-	c := newPeeringsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
+	c, err := newPeeringsClient(auth.SubscriptionID())
+	if err != nil {
+		panic(err) // TODO: Handle this properly!
+	}
 	return &AzureClient{c}
 }
 
 // newPeeringsClient creates a new virtual network peerings client from subscription ID.
-func newPeeringsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.VirtualNetworkPeeringsClient {
-	peeringsClient := network.NewVirtualNetworkPeeringsClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&peeringsClient.Client, authorizer)
-	return peeringsClient
+func newPeeringsClient(subscriptionID string) (armnetwork.VirtualNetworkPeeringsClient, error) {
+	credential, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return armnetwork.VirtualNetworkPeeringsClient{}, errors.Wrap(err, "failed to create credential")
+	}
+	client, err := armnetwork.NewVirtualNetworkPeeringsClient(subscriptionID, credential, &arm.ClientOptions{})
+	if err != nil {
+		return armnetwork.VirtualNetworkPeeringsClient{}, errors.Wrap(err, "cannot create new virtual network peerings client")
+	}
+	return *client, nil
 }
 
-// Get gets the specified virtual network peering by the peering name, virtual network, and resource group.
+// Get returns a virtual network peering by the specified resource group, virtual network, and peering name.
 func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.AzureClient.Get")
 	defer done()
 
-	return ac.peerings.Get(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName())
+	opts := &armnetwork.VirtualNetworkPeeringsClientGetOptions{}
+	resp, err := ac.peerings.Get(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), opts)
+	if err != nil {
+		return nil, err
+	}
+	return resp.VirtualNetworkPeering, nil
 }
 
 // CreateOrUpdateAsync creates or updates a virtual network peering asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.AzureClient.CreateOrUpdateAsync")
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.VirtualNetworkPeeringsClientCreateOrUpdateResponse], err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.AzureClient.CreateOrUpdateAsync")
 	defer done()
 
-	peering, ok := parameters.(network.VirtualNetworkPeering)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a network.VirtualNetworkPeering", parameters)
+	var peering armnetwork.VirtualNetworkPeering
+	if parameters != nil {
+		p, ok := parameters.(armnetwork.VirtualNetworkPeering)
+		if !ok {
+			return nil, nil, errors.Errorf("%T is not an armnetwork.VirtualNetworkPeering", parameters)
+		}
+		peering = p
 	}
 
-	createFuture, err := ac.peerings.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), peering, network.SyncRemoteAddressSpaceTrue)
+	opts := &armnetwork.VirtualNetworkPeeringsClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
+	log.Info("CreateOrUpdateAsync: sending request", "resumeToken", resumeToken)
+	poller, err = ac.peerings.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), peering, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -76,26 +95,27 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = createFuture.WaitForCompletionRef(ctx, ac.peerings.Client)
+	result, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{})
 	if err != nil {
-		// if an error occurs, return the future.
+		// if an error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return nil, &createFuture, err
+		return nil, poller, err
 	}
 
-	result, err = createFuture.Result(ac.peerings)
-	// if the operation completed, return a nil future
+	// if the operation completed, return a nil poller
 	return result, nil, err
 }
 
 // DeleteAsync deletes a virtual network peering asynchronously. DeleteAsync sends a DELETE
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.AzureClient.Delete")
+func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armnetwork.VirtualNetworkPeeringsClientDeleteResponse], err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.AzureClient.Delete")
 	defer done()
 
-	deleteFuture, err := ac.peerings.Delete(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName())
+	opts := &armnetwork.VirtualNetworkPeeringsClientBeginDeleteOptions{ResumeToken: resumeToken}
+	log.Info("DeleteAsync: sending request", "resumeToken", resumeToken)
+	poller, err = ac.peerings.BeginDelete(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -103,54 +123,47 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = deleteFuture.WaitForCompletionRef(ctx, ac.peerings.Client)
+	_, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{})
 	if err != nil {
-		// if an error occurs, return the future.
+		// if an error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return &deleteFuture, err
+		return poller, err
 	}
-	_, err = deleteFuture.Result(ac.peerings)
-	// if the operation completed, return a nil future.
+
+	// if the operation completed, return a nil poller.
 	return nil, err
 }
 
 // IsDone returns true if the long-running operation has completed.
-func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.AzureClient.IsDone")
+func (ac *AzureClient) IsDone(ctx context.Context, poller interface{}) (isDone bool, err error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.AzureClient.IsDone")
 	defer done()
 
-	return future.DoneWithContext(ctx, ac.peerings)
+	switch t := poller.(type) {
+	case *runtime.Poller[armnetwork.VirtualNetworkPeeringsClientCreateOrUpdateResponse]:
+		c, _ := poller.(*runtime.Poller[armnetwork.VirtualNetworkPeeringsClientCreateOrUpdateResponse])
+		return c.Done(), nil
+	case *runtime.Poller[armnetwork.VirtualNetworkPeeringsClientDeleteResponse]:
+		d, _ := poller.(*runtime.Poller[armnetwork.VirtualNetworkPeeringsClientDeleteResponse])
+		return d.Done(), nil
+	default:
+		return false, errors.Errorf("unexpected poller type %T", t)
+	}
 }
 
 // Result fetches the result of a long-running operation future.
-func (ac *AzureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
+func (ac *AzureClient) Result(ctx context.Context, poller interface{}) (result interface{}, err error) {
 	_, _, done := tele.StartSpanWithLogger(ctx, "vnetpeerings.AzureClient.Result")
 	defer done()
 
-	if future == nil {
-		return nil, errors.Errorf("cannot get result from nil future")
-	}
-
-	switch futureType {
-	case infrav1.PutFuture:
-		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
-		// Unfortunately the FutureAPI can't be casted directly to VirtualNetworkPeeringsCreateOrUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
-		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
-		var createFuture *network.VirtualNetworkPeeringsCreateOrUpdateFuture
-		jsonData, err := future.MarshalJSON()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal future")
-		}
-		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal future data")
-		}
-		return createFuture.Result(ac.peerings)
-
-	case infrav1.DeleteFuture:
-		// Delete does not return a result virtual network peering
-		return nil, nil
-
+	switch t := poller.(type) {
+	case *runtime.Poller[armnetwork.VirtualNetworkPeeringsClientCreateOrUpdateResponse]:
+		c, _ := poller.(*runtime.Poller[armnetwork.VirtualNetworkPeeringsClientCreateOrUpdateResponse])
+		return c.Result(ctx)
+	case *runtime.Poller[armnetwork.VirtualNetworkPeeringsClientDeleteResponse]:
+		d, _ := poller.(*runtime.Poller[armnetwork.VirtualNetworkPeeringsClientDeleteResponse])
+		return d.Result(ctx)
 	default:
-		return nil, errors.Errorf("unknown future type %q", futureType)
+		return false, errors.Errorf("unexpected poller type %T", t)
 	}
 }

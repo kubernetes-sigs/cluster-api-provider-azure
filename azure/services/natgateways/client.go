@@ -51,7 +51,7 @@ func newNatGatewaysClient(subscriptionID string) (armnetwork.NatGatewaysClient, 
 	}
 	client, err := armnetwork.NewNatGatewaysClient(subscriptionID, credential, &arm.ClientOptions{})
 	if err != nil {
-		return armnetwork.NatGatewaysClient{}, errors.Wrap(err, "cannot create new Resource SKUs client")
+		return armnetwork.NatGatewaysClient{}, errors.Wrap(err, "cannot create new NAT gateways client")
 	}
 	return *client, nil
 }
