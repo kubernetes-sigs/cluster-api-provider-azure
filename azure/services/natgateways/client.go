@@ -61,22 +61,31 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.Get")
 	defer done()
 
-	return ac.natgateways.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), &armnetwork.NatGatewaysClientGetOptions{})
+	resp, err := ac.natgateways.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), &armnetwork.NatGatewaysClientGetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return resp.NatGateway, nil
 }
 
 // CreateOrUpdateAsync creates or updates a Nat Gateway asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.NatGatewaysClientCreateOrUpdateResponse], err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.CreateOrUpdateAsync")
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.NatGatewaysClientCreateOrUpdateResponse], err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.CreateOrUpdateAsync")
 	defer done()
 
-	natGateway, ok := parameters.(armnetwork.NatGateway)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a armnetwork.NatGateway", parameters)
+	var natGateway armnetwork.NatGateway
+	if parameters != nil {
+		ngw, ok := parameters.(armnetwork.NatGateway)
+		if !ok {
+			return nil, nil, errors.Errorf("%T is not an armnetwork.NatGateway", parameters)
+		}
+		natGateway = ngw
 	}
 
-	opts := &armnetwork.NatGatewaysClientBeginCreateOrUpdateOptions{}
+	opts := &armnetwork.NatGatewaysClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
+	log.Info("CreateOrUpdateAsync: sending request", "resumeToken", resumeToken)
 	poller, err = ac.natgateways.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), natGateway, opts)
 	if err != nil {
 		return nil, nil, err
@@ -99,11 +108,13 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 // DeleteAsync deletes a Nat Gateway asynchronously. DeleteAsync sends a DELETE
 // request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (poller *runtime.Poller[armnetwork.NatGatewaysClientDeleteResponse], err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.DeleteAsync")
+func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armnetwork.NatGatewaysClientDeleteResponse], err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.DeleteAsync")
 	defer done()
 
-	poller, err = ac.natgateways.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), &armnetwork.NatGatewaysClientBeginDeleteOptions{})
+	opts := &armnetwork.NatGatewaysClientBeginDeleteOptions{ResumeToken: resumeToken}
+	log.Info("DeleteAsync: sending request", "resumeToken", resumeToken)
+	poller, err = ac.natgateways.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
 	if err != nil {
 		return nil, err
 	}
