@@ -51,13 +51,13 @@ type TagsGetter interface {
 type Creator[T any] interface {
 	FutureHandler
 	Getter
-	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, poller *runtime.Poller[T], err error)
+	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[T], err error)
 }
 
 // Deleter is a client that can delete a resource asynchronously.
 type Deleter[T any] interface {
 	FutureHandler
-	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (poller *runtime.Poller[T], err error)
+	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[T], err error)
 }
 
 // Reconciler is a generic interface used to perform asynchronous reconciliation of Azure resources.

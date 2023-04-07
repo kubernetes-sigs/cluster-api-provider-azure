@@ -49,54 +49,6 @@ func New[C, D any](scope FutureScope, createClient Creator[C], deleteClient Dele
 	}
 }
 
-// processOngoingOperation is a helper function that will process an ongoing operation to check if it is done.
-// If it is not done, it will return a transient error.
-func processOngoingOperation[T any](ctx context.Context, scope FutureScope, client FutureHandler, resourceName string, serviceName string, futureType string) (result interface{}, err error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "asyncpoller.processOngoingOperation")
-	defer done()
-
-	future := scope.GetLongRunningOperationState(resourceName, serviceName, futureType)
-	if future == nil {
-		log.V(2).Info("no long-running operation found", "service", serviceName, "resource", resourceName)
-		return nil, nil
-	}
-	poller, err := converters.FutureToPoller[T](*future)
-	if err != nil {
-		// Reset the future data to avoid getting stuck in a bad loop.
-		// In theory, this should never happen, but if for some reason the future that is already stored in Status isn't properly formatted
-		// and we don't reset it we would be stuck in an infinite loop trying to parse it.
-		scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
-		return nil, errors.Wrap(err, "could not decode future data, resetting long-running operation state")
-	}
-
-	isDone, err := client.IsDone(ctx, poller)
-	// Assume that if isDone is true, then we successfully checked that the
-	// operation was complete even if err is non-nil. Assume the error in that
-	// case is unrelated and will be captured in Result below.
-	if !isDone {
-		if err != nil {
-			return nil, errors.Wrap(err, "failed checking if the operation was complete")
-		}
-
-		// Operation is still in progress, update conditions and requeue.
-		log.V(2).Info("long-running operation is still ongoing", "service", serviceName, "resource", resourceName)
-		return nil, azure.WithTransientError(azure.NewOperationNotDoneError(future), getRequeueAfterFromPoller(poller))
-	}
-	if err != nil {
-		log.V(2).Error(err, "error checking long-running operation status after it finished")
-	}
-
-	// Once the operation is done, we can delete the long-running operation state.
-	// If the operation failed, this will allow it to be retried during the next reconciliation.
-	// If the resource is not found, we also reset the long-running operation state so we can attempt to create it again.
-	// This can happen if the resource was deleted by another process before we could get the result.
-	scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
-
-	// Resource has been created/deleted/updated.
-	log.V(2).Info("long-running operation has completed", "service", serviceName, "resource", resourceName)
-	return client.Result(ctx, &poller)
-}
-
 // CreateOrUpdateResource implements the logic for creating a new, or updating an existing, resource Asynchronously.
 func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (result interface{}, err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "asyncpoller.Service.CreateOrUpdateResource")
@@ -107,9 +59,14 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 	futureType := infrav1.PutFuture
 
 	// Check if there is an ongoing long-running operation.
-	future := s.Scope.GetLongRunningOperationState(resourceName, serviceName, futureType)
-	if future != nil {
-		return processOngoingOperation[C](ctx, s.Scope, s.Creator, resourceName, serviceName, futureType)
+	resumeToken := ""
+	if future := s.Scope.GetLongRunningOperationState(resourceName, serviceName, futureType); future != nil {
+		t, err := converters.FutureToResumeToken(*future)
+		if err != nil {
+			s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
+			return "", errors.Wrap(err, "could not decode future data, resetting long-running operation state")
+		}
+		resumeToken = t
 	}
 
 	// Get the resource if it already exists, and use it to construct the desired resource parameters.
@@ -138,7 +95,7 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 		logMessageVerbPrefix = "updat"
 	}
 	log.V(2).Info(fmt.Sprintf("%sing resource", logMessageVerbPrefix), "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
-	result, poller, err := s.Creator.CreateOrUpdateAsync(ctx, spec, parameters)
+	result, poller, err := s.Creator.CreateOrUpdateAsync(ctx, spec, resumeToken, parameters)
 	errWrapped := errors.Wrapf(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, rgName, resourceName, serviceName))
 	if poller != nil {
 		future, err := converters.PollerToFuture(poller, infrav1.PutFuture, serviceName, resourceName, rgName)
@@ -150,6 +107,9 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 	} else if err != nil {
 		return nil, errWrapped
 	}
+
+	// Once the operation is done, we can delete the long-running operation state.
+	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
 
 	log.V(2).Info(fmt.Sprintf("successfully %sed resource", logMessageVerbPrefix), "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return result, nil
@@ -165,15 +125,19 @@ func (s *Service[C, D]) DeleteResource(ctx context.Context, spec azure.ResourceS
 	futureType := infrav1.DeleteFuture
 
 	// Check if there is an ongoing long-running operation.
-	future := s.Scope.GetLongRunningOperationState(resourceName, serviceName, futureType)
-	if future != nil {
-		_, err := processOngoingOperation[D](ctx, s.Scope, s.Deleter, resourceName, serviceName, futureType)
-		return err
+	resumeToken := ""
+	if future := s.Scope.GetLongRunningOperationState(resourceName, serviceName, futureType); future != nil {
+		t, err := converters.FutureToResumeToken(*future)
+		if err != nil {
+			s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
+			return errors.Wrap(err, "could not decode future data, resetting long-running operation state")
+		}
+		resumeToken = t
 	}
 
-	// No long-running operation is active, so delete the resource.
+	// Delete the resource.
 	log.V(2).Info("deleting resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
-	poller, err := s.Deleter.DeleteAsync(ctx, spec)
+	poller, err := s.Deleter.DeleteAsync(ctx, spec, resumeToken)
 	if poller != nil {
 		future, err := converters.PollerToFuture(poller, infrav1.DeleteFuture, serviceName, resourceName, rgName)
 		if err != nil {
@@ -181,13 +145,12 @@ func (s *Service[C, D]) DeleteResource(ctx context.Context, spec azure.ResourceS
 		}
 		s.Scope.SetLongRunningOperationState(future)
 		return azure.WithTransientError(azure.NewOperationNotDoneError(future), getRequeueAfterFromPoller(poller))
-	} else if err != nil {
-		if azure.ResourceNotFound(err) {
-			// already deleted
-			return nil
-		}
+	} else if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	}
+
+	// Once the operation is done, delete the long-running operation state.
+	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
 
 	log.V(2).Info("successfully deleted resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return nil

@@ -19,7 +19,6 @@ package converters
 import (
 	"encoding/base64"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
@@ -70,17 +69,11 @@ func PollerToFuture[T any](poller *runtime.Poller[T], futureType, service, resou
 	}, nil
 }
 
-// FutureToPoller converts an infrav1.Future to an SDK poller.
-func FutureToPoller[T any](future infrav1.Future) (*runtime.Poller[T], error) {
+// FutureToResumeToken converts an infrav1.Future to an Azure SDK resume token.
+func FutureToResumeToken(future infrav1.Future) (string, error) {
 	token, err := base64.URLEncoding.DecodeString(future.Data)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to base64-decode poller resume token")
+		return "", errors.Wrap(err, "failed to base64-decode future data")
 	}
-	pl := runtime.NewPipeline("", "", runtime.PipelineOptions{}, &policy.ClientOptions{})
-	opts := runtime.NewPollerFromResumeTokenOptions[T]{}
-	poller, err := runtime.NewPollerFromResumeToken(string(token), pl, &opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create poller from resume token")
-	}
-	return poller, nil
+	return string(token), nil
 }
