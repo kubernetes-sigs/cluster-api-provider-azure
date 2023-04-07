@@ -169,7 +169,7 @@ func getRetryAfterFromError(err error) time.Duration {
 	// TODO: need to refactor autorest out of this codebase entirely.
 	// In case we aren't able to introspect Retry-After from the error type, we'll return this default
 	ret := reconciler.DefaultReconcilerRequeue
-	var responseError azcore.ResponseError
+	var responseError *azcore.ResponseError
 	// if we have a strongly typed azcore.ResponseError then we can introspect the HTTP response data
 	if errors.As(err, &responseError) && responseError.RawResponse != nil {
 		// If we have Retry-After HTTP header data for any reason, prefer it
