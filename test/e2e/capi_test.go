@@ -148,14 +148,18 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	}
 
-	Context("Should successfully remediate unhealthy machines with MachineHealthCheck", func() {
-		capi_e2e.KCPRemediationSpec(context.TODO(), func() capi_e2e.KCPRemediationSpecInput {
-			return capi_e2e.KCPRemediationSpecInput{
+	// TODO: Add test using KCPRemediationSpec
+	Context("Should successfully remediate unhealthy worker machines with MachineHealthCheck", func() {
+		capi_e2e.MachineDeploymentRemediationSpec(context.TODO(), func() capi_e2e.MachineDeploymentRemediationSpecInput {
+			return capi_e2e.MachineDeploymentRemediationSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
 				BootstrapClusterProxy: bootstrapClusterProxy,
 				ArtifactFolder:        artifactFolder,
 				SkipCleanup:           skipCleanup,
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				},
 			}
 		})
 	})
