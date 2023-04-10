@@ -20,6 +20,11 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"reflect"
+	"runtime"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,18 +40,40 @@ const (
 
 // retryWithTimeout retries a function that returns an error until a timeout is reached
 func retryWithTimeout(interval, timeout time.Duration, fn func() error) error {
-	var pollError error
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		pollError = nil
-		err := fn()
-		if err != nil {
-			pollError = err
-			return false, nil //nolint:nilerr // We don't want to return err here
-		}
-		return true, nil
-	})
-	if pollError != nil {
-		return pollError
+	var pollError, returnError error
+	result := make(chan error)
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
+
+	go func(ctx context.Context) {
+		result <- wait.PollImmediateWithContext(ctx, interval, timeout, func(ctx context.Context) (bool, error) {
+			if ctx.Err() != nil {
+				return false, ctx.Err()
+			}
+			err := fn() // TODO: mitigate function leaking; fn() can run in the background
+			if err != nil {
+				pollError = err
+				return false, nil //nolint:nilerr // do not error yet to retry
+			}
+			return true, nil
+		})
+	}(ctx)
+
+	select {
+	case <-ctx.Done(): // as soon as context Timesout
+		funcName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
+		errStr := fmt.Sprintf("timed out waiting for %s to complete", funcName)
+		returnError = errors.New(errStr)
+	case myResult := <-result: // result gets filled when fn() returns nil error or context times out. But context time out is caught in above case.
+		returnError = myResult
 	}
-	return err
+
+	if returnError != nil {
+		if pollError != nil {
+			returnError = errors.New(pollError.Error() + " : " + returnError.Error())
+		}
+	}
+
+	return returnError
 }
