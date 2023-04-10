@@ -31,6 +31,7 @@ import (
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -540,6 +541,16 @@ func (s *MachinePoolMachineScope) hasLatestModelApplied(ctx context.Context) (bo
 	// this should never happen as GetVMImage should only return nil when err != nil. Just in case.
 	if image == nil {
 		return false, errors.New("machinepoolscope image must not be nil")
+	}
+
+	// check if image.ID is actually a compute gallery image
+	if s.instance.Image.ComputeGallery != nil && image.ID != nil {
+		newImage := converters.IDImageRefToImage(*image.ID)
+
+		// this means the ID was a compute gallery image ID
+		if newImage.ComputeGallery != nil {
+			return reflect.DeepEqual(s.instance.Image, newImage), nil
+		}
 	}
 
 	// if the images match, then the VM is of the same model
