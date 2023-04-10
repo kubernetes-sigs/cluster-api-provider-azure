@@ -181,8 +181,7 @@ func Test_SDKToVMSSVM(t *testing.T) {
 				ID:   "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
 				Name: "instance-000001",
 				Image: infrav1.Image{
-					ID:          pointer.String("imageID"),
-					Marketplace: &infrav1.AzureMarketplaceImage{},
+					ID: pointer.String("imageID"),
 				},
 				State: "Creating",
 			},
@@ -223,20 +222,18 @@ func Test_SDKImageToImage(t *testing.T) {
 		Image        infrav1.Image
 	}{
 		{
-			Name: "minimal image",
+			Name: "id image",
 			SDKImageRef: &compute.ImageReference{
 				ID: pointer.String("imageID"),
 			},
 			IsThirdParty: false,
 			Image: infrav1.Image{
-				ID:          pointer.String("imageID"),
-				Marketplace: &infrav1.AzureMarketplaceImage{},
+				ID: pointer.String("imageID"),
 			},
 		},
 		{
 			Name: "marketplace image",
 			SDKImageRef: &compute.ImageReference{
-				ID:        pointer.String("imageID"),
 				Publisher: pointer.String("publisher"),
 				Offer:     pointer.String("offer"),
 				Sku:       pointer.String("sku"),
@@ -244,7 +241,6 @@ func Test_SDKImageToImage(t *testing.T) {
 			},
 			IsThirdParty: true,
 			Image: infrav1.Image{
-				ID: pointer.String("imageID"),
 				Marketplace: &infrav1.AzureMarketplaceImage{
 					ImagePlan: infrav1.ImagePlan{
 						Publisher: "publisher",
@@ -255,6 +251,65 @@ func Test_SDKImageToImage(t *testing.T) {
 					ThirdPartyImage: true,
 				},
 			},
+		},
+		{
+			Name: "shared gallery image",
+			SDKImageRef: &compute.ImageReference{
+				SharedGalleryImageID: pointer.String("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+			},
+			Image: infrav1.Image{
+				SharedGallery: &infrav1.AzureSharedGalleryImage{
+					SubscriptionID: "subscription",
+					ResourceGroup:  "rg",
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "version",
+				},
+			},
+		},
+		{
+			Name: "community gallery image",
+			SDKImageRef: &compute.ImageReference{
+				CommunityGalleryImageID: pointer.String("/CommunityGalleries/gallery/Images/image/Versions/version"),
+			},
+			Image: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery: "gallery",
+					Name:    "image",
+					Version: "version",
+				},
+			},
+		},
+		{
+			Name: "compute gallery image",
+			SDKImageRef: &compute.ImageReference{
+				ID: pointer.String("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+			},
+			Image: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "version",
+					SubscriptionID: pointer.String("subscription"),
+					ResourceGroup:  pointer.String("rg"),
+				},
+			},
+		},
+		{
+			Name: "compute gallery image not formatted as expected",
+			SDKImageRef: &compute.ImageReference{
+				ID: pointer.String("/compute/gallery/not/formatted/as/expected"),
+			},
+			Image: infrav1.Image{
+				ID: pointer.String("/compute/gallery/not/formatted/as/expected"),
+			},
+		},
+		{
+			Name: "community gallery image not formatted as expected",
+			SDKImageRef: &compute.ImageReference{
+				CommunityGalleryImageID: pointer.String("/community/gallery/not/formatted/as/expected"),
+			},
+			Image: infrav1.Image{},
 		},
 	}
 
@@ -319,8 +374,7 @@ func Test_SDKVMToVMSSVM(t *testing.T) {
 			Expected: &azure.VMSSVM{
 				ID: "vmID3",
 				Image: infrav1.Image{
-					ID:          pointer.String("imageID"),
-					Marketplace: &infrav1.AzureMarketplaceImage{},
+					ID: pointer.String("imageID"),
 				},
 				Name:  "vmwithstorage",
 				State: "Creating",
