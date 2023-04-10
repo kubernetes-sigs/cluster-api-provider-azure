@@ -64,7 +64,6 @@ spec:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
-          feature-gates: ${K8S_FEATURE_GATES:-""}
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json

@@ -61,7 +61,6 @@ spec:
       apiServer:
         extraArgs:
           cloud-provider: external
-          feature-gates: ${K8S_FEATURE_GATES:-""}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
