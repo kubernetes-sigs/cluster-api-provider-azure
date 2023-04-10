@@ -90,6 +90,9 @@ linters-settings:
       # Azure
       - pkg: github.com/Azure/go-autorest/autorest/azure
         alias: azureautorest
+      # ASO
+      - pkg: github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601
+        alias: asoresourcesv1
       # Deprecated
       - pkg: github.com/Azure/go-autorest/autorest/to
         alias: deprecated-use-k8s.io-utils-pointer
