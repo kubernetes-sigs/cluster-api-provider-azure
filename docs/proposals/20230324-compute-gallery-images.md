@@ -74,6 +74,18 @@ In the [CAPZ book](https://capz.sigs.k8s.io/topics/custom-images.html), the proj
 
 The current image publishing pipeline should be phased out in favor of a similar pipeline that publishes to Compute Gallery. CAPZ code should be changed to prefer provisioning with the reference images in Compute Gallery.
 
+The scheme for naming the Gallery objects is this:
+
+| Object | Example Name | Description |
+| --- | --- | --- |
+| Gallery | CAPZ_Gallery | The gallery contains VM images, definitions, and versions. |
+| VM image definition | ubuntu-2204 | The image definition contains one or more image versions. |
+| VM image version | 1.26.3+2023-04-10-14-26 | The image version contains an image source (VHD). |
+
+**TODO**: "1.26.3+2023-04-10-14-26" is valid semver, but will compute gallery accept it? See https://learn.microsoft.com/azure/virtual-machines/shared-image-galleries?tabs=azure-cli#image-versions
+
+Two galleries are involved: a staging gallery and a production gallery. The staging gallery is used to test the publishing process before making the images generally available. The production gallery is used to publish the images that CAPZ uses by default. Only the production gallery is a public community gallery.
+
 ### User Stories
 
 #### Story 1 - User updates CAPZ to new version that uses Compute Gallery
