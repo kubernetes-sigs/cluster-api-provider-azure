@@ -165,14 +165,14 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 
 	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 
-	var oneSubnetWithoutNatGateway bool
+	var needOutboundLB bool
 	for _, subnet := range networkSpec.Subnets {
-		if subnet.Role == SubnetNode && !subnet.IsNatGatewayEnabled() {
-			oneSubnetWithoutNatGateway = true
+		if subnet.Role == SubnetNode && subnet.IsIPv6Enabled() {
+			needOutboundLB = true
 			break
 		}
 	}
-	if oneSubnetWithoutNatGateway {
+	if needOutboundLB {
 		allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, fldPath.Child("nodeOutboundLB"))...)
 	}
 

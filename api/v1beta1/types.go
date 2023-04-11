@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/utils/net"
 )
 
 const (
@@ -766,6 +767,16 @@ func (n *NetworkSpec) UpdateNodeSubnet(subnet SubnetSpec) {
 // IsNatGatewayEnabled returns whether or not a NAT gateway is enabled on the subnet.
 func (s SubnetSpec) IsNatGatewayEnabled() bool {
 	return s.NatGateway.Name != ""
+}
+
+// IsIPv6Enabled returns whether or not IPv6 is enabled on the subnet.
+func (s SubnetSpec) IsIPv6Enabled() bool {
+	for _, cidr := range s.CIDRBlocks {
+		if net.IsIPv6CIDRString(cidr) {
+			return true
+		}
+	}
+	return false
 }
 
 // SecurityProfile specifies the Security profile settings for a
