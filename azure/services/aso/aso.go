@@ -77,6 +77,7 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 
 	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
 
+	var adopt bool
 	var existing genruntime.MetaObject
 	if err := s.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -100,6 +101,19 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		var readyErr error
 		if cond := conds[i]; cond.Status != metav1.ConditionTrue {
 			switch {
+			case cond.Reason == conditions.ReasonAzureResourceNotFound.Name &&
+				existing.GetAnnotations()[ReconcilePolicyAnnotation] == ReconcilePolicySkip:
+				// This resource was originally created by CAPZ and a
+				// corresponding Azure resource has been found not to exist, so
+				// CAPZ will tell ASO to adopt the resource by setting its
+				// reconcile policy to "manage". This extra step is necessary to
+				// handle user-managed resources that already exist in Azure and
+				// should not be reconciled by ASO while ensuring they're still
+				// represented in ASO.
+				log.V(2).Info("resource not found in Azure and \"skip\" reconcile-policy set, adopting")
+				// Don't set readyErr so the resource can be adopted with an
+				// update instead of returning early.
+				adopt = true
 			case cond.Reason == conditions.ReasonReconciling.Name:
 				readyErr = azure.NewOperationNotDoneError(&infrav1.Future{
 					Type:          createOrUpdateFutureType,
@@ -141,6 +155,16 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 
 	if existing == nil {
 		labels[infrav1.OwnedByClusterLabelKey] = s.clusterName
+		// Create the ASO resource with "skip" in case a matching resource
+		// already exists in Azure, in which case CAPZ will assume it is managed
+		// by the user and ASO should not actively reconcile changes to the ASO
+		// resource. In the canonical "entirely managed by CAPZ" case, the next
+		// reconciliation will reveal the resource does not already exist in
+		// Azure and the ASO resource will be adopted by changing this
+		// annotation to "manage".
+		annotations[ReconcilePolicyAnnotation] = ReconcilePolicySkip
+	}
+	if adopt {
 		annotations[ReconcilePolicyAnnotation] = ReconcilePolicyManage
 	}
 
