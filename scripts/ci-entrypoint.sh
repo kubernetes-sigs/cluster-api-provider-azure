@@ -144,11 +144,11 @@ create_cluster() {
 # and any statement must be idempotent so that subsequent retry attempts can make forward progress.
 get_cidrs() {
     # Get cluster CIDRs from Cluster object
-    CIDR0=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}')
+    CIDR0=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}') || return 1
     export CIDR0
-    CIDR_LENGTH=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks}' | jq '. | length')
+    CIDR_LENGTH=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks}' | jq '. | length') || return 1
     if [[ "${CIDR_LENGTH}" == "2" ]]; then
-        CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}')
+        CIDR1=$(${KUBECTL} get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}') || return 1
         export CIDR1
     fi
 }
@@ -161,10 +161,12 @@ install_calico() {
     # Copy the kubeadm configmap to the calico-system namespace.
     # This is a workaround needed for the calico-node-windows daemonset
     # to be able to run in the calico-system namespace.
-    "${KUBECTL}" create namespace calico-system --dry-run=client -o yaml | kubectl apply -f -
+    # First, validate that the kubeadm-config configmap has been created.
+    "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml || return 1
+    "${KUBECTL}" create namespace calico-system --dry-run=client -o yaml | kubectl apply -f - || return 1
     if ! "${KUBECTL}" get configmap kubeadm-config --namespace=calico-system; then
-        "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml > kubeadm-config-kube-system
-        sed 's/namespace: kube-system/namespace: calico-system/' kubeadm-config-kube-system | "${KUBECTL}" apply -f -
+        "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml > kubeadm-config-kube-system || return 1
+        sed 's/namespace: kube-system/namespace: calico-system/' kubeadm-config-kube-system | "${KUBECTL}" apply -f - || return 1
         rm kubeadm-config-kube-system
     fi
     # install Calico CNI
@@ -197,7 +199,7 @@ install_cloud_provider_azure() {
         CLOUD_CONFIG=""
         CONFIG_SECRET_NAME="azure-cloud-provider"
         ENABLE_DYNAMIC_RELOADING=true
-        copy_secret
+        copy_secret || return 1
     fi
 
     CCM_CLUSTER_CIDR="${CIDR0}"
@@ -221,7 +223,7 @@ install_cloud_provider_azure() {
         --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
         --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
         --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}" \
-        --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}"
+        --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}" || return 1
 }
 
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
@@ -286,11 +288,11 @@ install_addons() {
 
 copy_secret() {
     # point at the management cluster
-    "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get secret "${CLUSTER_NAME}-control-plane-azure-json" -o jsonpath='{.data.control-plane-azure\.json}' | base64 --decode >azure_json
+    "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get secret "${CLUSTER_NAME}-control-plane-azure-json" -o jsonpath='{.data.control-plane-azure\.json}' | base64 --decode >azure_json || return 1
 
     # create the secret on the workload cluster
     "${KUBECTL}" create secret generic "${CONFIG_SECRET_NAME}" -n kube-system \
-        --from-file=cloud-config=azure_json
+        --from-file=cloud-config=azure_json || return 1
     rm azure_json
 }
 
