@@ -68,3 +68,12 @@ func (s *GroupSpec) Parameters(ctx context.Context, object genruntime.MetaObject
 		},
 	}, nil
 }
+
+// WasManaged implements azure.ASOResourceSpecGetter.
+func (s *GroupSpec) WasManaged(object genruntime.MetaObject) bool {
+	group, ok := object.(*asoresourcesv1.ResourceGroup)
+	if !ok {
+		return false
+	}
+	return infrav1.Tags(group.Status.Tags).HasOwned(s.ClusterName)
+}

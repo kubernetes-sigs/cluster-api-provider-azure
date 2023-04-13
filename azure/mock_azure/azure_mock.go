@@ -1925,3 +1925,17 @@ func (mr *MockASOResourceSpecGetterMockRecorder) ResourceRef() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceRef", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).ResourceRef))
 }
+
+// WasManaged mocks base method.
+func (m *MockASOResourceSpecGetter) WasManaged(arg0 genruntime.MetaObject) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WasManaged", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WasManaged indicates an expected call of WasManaged.
+func (mr *MockASOResourceSpecGetterMockRecorder) WasManaged(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WasManaged", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).WasManaged), arg0)
+}

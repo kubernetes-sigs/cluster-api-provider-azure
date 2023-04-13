@@ -86,3 +86,62 @@ func TestParameters(t *testing.T) {
 		})
 	}
 }
+
+func TestWasManaged(t *testing.T) {
+	clusterName := "cluster"
+
+	tests := []struct {
+		name     string
+		object   genruntime.MetaObject
+		expected bool
+	}{
+		{
+			name: "wrong type",
+			object: struct {
+				genruntime.MetaObject
+			}{},
+			expected: false,
+		},
+		{
+			name:     "no owned label",
+			object:   &asoresourcesv1.ResourceGroup{},
+			expected: false,
+		},
+		{
+			name: "wrong owned label value",
+			object: &asoresourcesv1.ResourceGroup{
+				Status: asoresourcesv1.ResourceGroup_STATUS{
+					Tags: infrav1.Build(infrav1.BuildParams{
+						ClusterName: clusterName,
+						Lifecycle:   infrav1.ResourceLifecycle("not owned"),
+					}),
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "with owned label",
+			object: &asoresourcesv1.ResourceGroup{
+				Status: asoresourcesv1.ResourceGroup_STATUS{
+					Tags: infrav1.Build(infrav1.BuildParams{
+						ClusterName: clusterName,
+						Lifecycle:   infrav1.ResourceLifecycleOwned,
+					}),
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			s := &GroupSpec{
+				ClusterName: clusterName,
+			}
+
+			g.Expect(s.WasManaged(test.object)).To(Equal(test.expected))
+		})
+	}
+}
