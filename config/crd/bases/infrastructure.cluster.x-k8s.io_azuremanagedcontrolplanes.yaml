@@ -244,6 +244,20 @@ spec:
                   DNS service. It must be within the Kubernetes service address range
                   specified in serviceCidr. Immutable.
                 type: string
+              identity:
+                description: Identity configuration used by the AKS control plane.
+                properties:
+                  type:
+                    description: Type - The Identity type to use.
+                    enum:
+                    - SystemAssigned
+                    - UserAssigned
+                    type: string
+                  userAssignedIdentityResourceID:
+                    description: UserAssignedIdentityResourceID - Identity ARM resource
+                      ID when using user-assigned identity.
+                    type: string
+                type: object
               identityRef:
                 description: IdentityRef is a reference to a AzureClusterIdentity
                   to be used when reconciling this cluster
@@ -282,6 +296,10 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
+              kubeletUserAssignedIdentity:
+                description: KubeletUserAssignedIdentity is the user-assigned identity
+                  for kubelet. For authentication with Azure Container Registry.
+                type: string
               loadBalancerProfile:
                 description: LoadBalancerProfile is the profile of the cluster load
                   balancer.

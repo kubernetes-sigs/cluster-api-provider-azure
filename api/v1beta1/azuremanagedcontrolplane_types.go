@@ -48,6 +48,20 @@ const (
 	ManagedControlPlaneOutboundTypeUserDefinedRouting ManagedControlPlaneOutboundType = "userDefinedRouting"
 )
 
+// ManagedControlPlaneIdentityType enumerates the values for managed control plane identity type.
+type ManagedControlPlaneIdentityType string
+
+const (
+	// ManagedControlPlaneIdentityTypeSystemAssigned Use an implicitly created system-assigned managed identity to manage
+	// cluster resources. Components in the control plane such as kube-controller-manager will use the
+	// system-assigned managed identity to manipulate Azure resources.
+	ManagedControlPlaneIdentityTypeSystemAssigned ManagedControlPlaneIdentityType = ManagedControlPlaneIdentityType(VMIdentitySystemAssigned)
+	// ManagedControlPlaneIdentityTypeUserAssigned Use a user-assigned identity to manage cluster resources.
+	// Components in the control plane such as kube-controller-manager will use the specified user-assigned
+	// managed identity to manipulate Azure resources.
+	ManagedControlPlaneIdentityTypeUserAssigned ManagedControlPlaneIdentityType = ManagedControlPlaneIdentityType(VMIdentityUserAssigned)
+)
+
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
@@ -161,6 +175,15 @@ type AzureManagedControlPlaneSpec struct {
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
 	// +optional
 	AzureEnvironment string `json:"azureEnvironment,omitempty"`
+
+	// Identity configuration used by the AKS control plane.
+	// +optional
+	Identity *Identity `json:"identity,omitempty"`
+
+	// KubeletUserAssignedIdentity is the user-assigned identity for kubelet.
+	// For authentication with Azure Container Registry.
+	// +optional
+	KubeletUserAssignedIdentity string `json:"kubeletUserAssignedIdentity,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
@@ -420,6 +443,21 @@ const (
 	// ExpanderRandom ...
 	ExpanderRandom Expander = "random"
 )
+
+// Identity represents the Identity configuration for an AKS control plane.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/use-managed-identity
+type Identity struct {
+	// Type - The Identity type to use.
+	// +kubebuilder:validation:Enum=SystemAssigned;UserAssigned
+	// +optional
+	Type ManagedControlPlaneIdentityType `json:"type,omitempty"`
+
+	// UserAssignedIdentityResourceID - Identity ARM resource ID when using user-assigned identity.
+	// +optional
+	UserAssignedIdentityResourceID string `json:"userAssignedIdentityResourceID,omitempty"`
+}
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedcontrolplanes,scope=Namespaced,categories=cluster-api,shortName=amcp
