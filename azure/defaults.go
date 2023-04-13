@@ -128,11 +128,6 @@ func GenerateFrontendIPConfigName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
 }
 
-// GenerateNatGatewayIPName generates a NAT gateway IP name.
-func GenerateNatGatewayIPName(clusterName, subnetName string) string {
-	return fmt.Sprintf("pip-%s-%s-natgw", clusterName, subnetName)
-}
-
 // GenerateNodeOutboundIPName generates a public IP name, based on the cluster name.
 func GenerateNodeOutboundIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-node-outbound", clusterName)

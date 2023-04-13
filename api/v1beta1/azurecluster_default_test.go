@@ -370,7 +370,7 @@ func TestSubnetDefaults(t *testing.T) {
 										Name: "foo-natgw",
 									},
 									NatGatewayIP: PublicIPSpec{
-										Name: "pip-cluster-test-my-node-subnet-natgw",
+										Name: "pip-foo-natgw",
 									},
 								},
 							},
@@ -434,7 +434,7 @@ func TestSubnetDefaults(t *testing.T) {
 										Name: "cluster-test-node-natgw-1",
 									},
 									NatGatewayIP: PublicIPSpec{
-										Name: "pip-cluster-test-cluster-test-node-subnet-natgw",
+										Name: "pip-cluster-test-node-natgw-1",
 									},
 								},
 							},
@@ -500,7 +500,7 @@ func TestSubnetDefaults(t *testing.T) {
 										Name: "cluster-test-node-natgw-1",
 									},
 									NatGatewayIP: PublicIPSpec{
-										Name: "pip-cluster-test-cluster-test-node-subnet-natgw",
+										Name: "pip-cluster-test-node-natgw-1",
 									},
 								},
 							},
@@ -549,7 +549,7 @@ func TestSubnetDefaults(t *testing.T) {
 										Name: "cluster-test-node-natgw-1",
 									},
 									NatGatewayIP: PublicIPSpec{
-										Name: "pip-cluster-test-my-node-subnet-natgw",
+										Name: "pip-cluster-test-node-natgw-1",
 									},
 								},
 							},
