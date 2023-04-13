@@ -18,6 +18,7 @@ package scope
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -27,6 +28,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
@@ -41,6 +43,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmv1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -61,6 +65,193 @@ func specArrayToString(specs []azure.ResourceSpecGetter) string {
 	sb.WriteString("]")
 
 	return sb.String()
+}
+
+func TestKCPBindPort(t *testing.T) {
+	tests := []struct {
+		name                    string
+		clusterName             string
+		cluster                 clusterv1.Cluster
+		kcp                     kubeadmv1.KubeadmControlPlane
+		expectedErrorHappen     bool
+		expectedErr             error
+		expectKubeAPIServerPort int32
+	}{
+		{
+			name:        "Bootstrap provider is not kubeadm",
+			clusterName: "my-cluster-0",
+			cluster: clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster-0",
+					Namespace: "foo-0",
+				},
+				Spec: clusterv1.ClusterSpec{
+					ControlPlaneRef: &corev1.ObjectReference{
+						Kind:      "MicroK8sControlPlane",
+						Name:      "foo-cp-0",
+						Namespace: "foo-0",
+					},
+				},
+			},
+			expectedErrorHappen:     false,
+			expectedErr:             nil,
+			expectKubeAPIServerPort: 6443,
+		},
+		{
+			name:        "KubeadmControlPlane does not bind local port",
+			clusterName: "my-cluster-1",
+			cluster: clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster-1",
+					Namespace: "foo-1",
+				},
+				Spec: clusterv1.ClusterSpec{
+					ControlPlaneRef: &corev1.ObjectReference{
+						Kind:      "KubeadmControlPlane",
+						Name:      "foo-cp-1",
+						Namespace: "foo-1",
+					},
+				},
+			},
+			kcp: kubeadmv1.KubeadmControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo-cp-1",
+					Namespace: "foo-1",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "KubeadmControlPlane",
+					APIVersion: "kubeadm.k8s.io/v1beta2",
+				},
+			},
+			expectedErrorHappen:     false,
+			expectedErr:             nil,
+			expectKubeAPIServerPort: 6443,
+		},
+		{
+			name:        "KubeadmControlPlane binds local port",
+			clusterName: "my-cluster-2",
+			cluster: clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster-2",
+					Namespace: "foo-2",
+				},
+				Spec: clusterv1.ClusterSpec{
+					ControlPlaneRef: &corev1.ObjectReference{
+						Kind:      "KubeadmControlPlane",
+						Name:      "foo-cp-2",
+						Namespace: "foo-2",
+					},
+				},
+			},
+			kcp: kubeadmv1.KubeadmControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo-cp-2",
+					Namespace: "foo-2",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "KubeadmControlPlane",
+					APIVersion: "kubeadm.k8s.io/v1beta2",
+				},
+				Spec: kubeadmv1.KubeadmControlPlaneSpec{
+					KubeadmConfigSpec: kubeadmbootstrapv1.KubeadmConfigSpec{
+						InitConfiguration: &kubeadmbootstrapv1.InitConfiguration{
+							LocalAPIEndpoint: kubeadmbootstrapv1.APIEndpoint{
+								BindPort: 443,
+							},
+						},
+					},
+				},
+			},
+			expectedErrorHappen:     false,
+			expectedErr:             nil,
+			expectKubeAPIServerPort: 443,
+		},
+		{
+			name:        "Get KubeadmControlPlane fails",
+			clusterName: "my-cluster-3",
+			cluster: clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster-3",
+					Namespace: "foo-3",
+				},
+				Spec: clusterv1.ClusterSpec{
+					ControlPlaneRef: &corev1.ObjectReference{
+						Kind:      "KubeadmControlPlane",
+						Name:      "foo-cp-3",
+						Namespace: "foo-3",
+					},
+				},
+			},
+			kcp: kubeadmv1.KubeadmControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo-cp",
+					Namespace: "foo-3",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "KubeadmControlPlane",
+					APIVersion: "kubeadm.k8s.io/v1beta2",
+				},
+				Spec: kubeadmv1.KubeadmControlPlaneSpec{
+					KubeadmConfigSpec: kubeadmbootstrapv1.KubeadmConfigSpec{
+						InitConfiguration: &kubeadmbootstrapv1.InitConfiguration{
+							LocalAPIEndpoint: kubeadmbootstrapv1.APIEndpoint{
+								BindPort: 443,
+							},
+						},
+					},
+				},
+			},
+			expectedErrorHappen:     true,
+			expectedErr:             errors.New("Failed to get KubeadmControlPlane object"),
+			expectKubeAPIServerPort: 0,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := runtime.NewScheme()
+			_ = infrav1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
+			_ = kubeadmv1.AddToScheme(scheme)
+			azureCluster := infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: tc.clusterName,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "cluster.x-k8s.io/v1beta1",
+							Kind:       "Cluster",
+							Name:       tc.clusterName,
+						},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+					},
+				},
+			}
+
+			initObjects := []runtime.Object{&tc.cluster, &tc.kcp, &azureCluster}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster:      &tc.cluster,
+				AzureCluster: &azureCluster,
+				Client:       fakeClient,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+			got, err := clusterScope.KCPBindPort()
+			if tc.expectedErrorHappen {
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedErr.Error()))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+			g.Expect(tc.expectKubeAPIServerPort).Should(Equal(got))
+		})
+	}
 }
 
 func TestAPIServerHost(t *testing.T) {
@@ -2254,7 +2445,8 @@ func TestBackendPoolName(t *testing.T) {
 				Client:       fakeClient,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
-			got := clusterScope.LBSpecs()
+			got, err := clusterScope.LBSpecs()
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(len(got)).To(Equal(3))
 
 			// API server backend pool name
@@ -2585,7 +2777,7 @@ func TestAPIServerPort(t *testing.T) {
 				Client:       fakeClient,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
-			got := clusterScope.APIServerPort()
+			got := clusterScope.APIServerFrontendPort()
 			g.Expect(tc.expectAPIServerPort).Should(Equal(got))
 		})
 	}
@@ -2678,9 +2870,12 @@ func TestFailureDomains(t *testing.T) {
 
 func TestClusterScope_LBSpecs(t *testing.T) {
 	tests := []struct {
-		name         string
-		azureCluster *infrav1.AzureCluster
-		want         []azure.ResourceSpecGetter
+		name           string
+		azureCluster   *infrav1.AzureCluster
+		clusterNetwork *clusterv1.ClusterNetwork
+		kcp            *kubeadmv1.KubeadmControlPlane
+		localPortExist bool
+		want           []azure.ResourceSpecGetter
 	}{
 		{
 			name: "API Server LB, Control Plane Oubound LB, and Node Outbound LB",
@@ -2776,6 +2971,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					},
 				},
 			},
+			localPortExist: false,
 			want: []azure.ResourceSpecGetter{
 				&loadbalancers.LBSpec{
 					Name:              "api-server-lb",
@@ -2794,12 +2990,13 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							},
 						},
 					},
-					APIServerPort:        6443,
-					Type:                 infrav1.Public,
-					SKU:                  infrav1.SKUStandard,
-					Role:                 infrav1.APIServerRole,
-					BackendPoolName:      "api-server-lb-backend-pool",
-					IdleTimeoutInMinutes: pointer.Int32(30),
+					APIServerFrontendPort: 6443,
+					APIServerBackendPort:  6443,
+					Type:                  infrav1.Public,
+					SKU:                   infrav1.SKUStandard,
+					Role:                  infrav1.APIServerRole,
+					BackendPoolName:       "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes:  pointer.Int32(30),
 					AdditionalTags: infrav1.Tags{
 						"foo": "bar",
 					},
@@ -2901,23 +3098,117 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					},
 				},
 			},
+			localPortExist: false,
 			want: []azure.ResourceSpecGetter{
 				&loadbalancers.LBSpec{
-					Name:                 "api-server-lb",
-					ResourceGroup:        "my-rg",
-					SubscriptionID:       "123",
-					ClusterName:          "my-cluster",
-					Location:             "westus2",
-					VNetName:             "my-vnet",
-					VNetResourceGroup:    "my-rg",
-					SubnetName:           "cp-subnet",
-					APIServerPort:        6443,
-					Type:                 infrav1.Internal,
-					SKU:                  infrav1.SKUStandard,
-					Role:                 infrav1.APIServerRole,
-					BackendPoolName:      "api-server-lb-backend-pool",
-					IdleTimeoutInMinutes: pointer.Int32(30),
-					AdditionalTags:       infrav1.Tags{},
+					Name:                  "api-server-lb",
+					ResourceGroup:         "my-rg",
+					SubscriptionID:        "123",
+					ClusterName:           "my-cluster",
+					Location:              "westus2",
+					VNetName:              "my-vnet",
+					VNetResourceGroup:     "my-rg",
+					SubnetName:            "cp-subnet",
+					APIServerFrontendPort: 6443,
+					APIServerBackendPort:  6443,
+					Type:                  infrav1.Internal,
+					SKU:                   infrav1.SKUStandard,
+					Role:                  infrav1.APIServerRole,
+					BackendPoolName:       "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes:  pointer.Int32(30),
+					AdditionalTags:        infrav1.Tags{},
+				},
+			},
+		},
+		{
+			name: "API Server LB with KubeadmControlPlane binds a specified local port",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster-1",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+						Port: 0,
+					},
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						Location:       "westus2",
+					},
+					ResourceGroup: "my-rg",
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Name:          "my-vnet-1",
+							ResourceGroup: "my-rg",
+						},
+						Subnets: []infrav1.SubnetSpec{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "cp-subnet-1",
+									Role: infrav1.SubnetControlPlane,
+								},
+							},
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "node-subnet-1",
+									Role: infrav1.SubnetNode,
+								},
+							},
+						},
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Name: "api-server-lb-1",
+							BackendPool: infrav1.BackendPool{
+								Name: "api-server-lb-backend-pool-1",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Public,
+								IdleTimeoutInMinutes: pointer.Int32(30),
+								SKU:                  infrav1.SKUStandard,
+							},
+						},
+					},
+				},
+			},
+			clusterNetwork: &clusterv1.ClusterNetwork{
+				APIServerPort: pointer.Int32(8888),
+			},
+			kcp: &kubeadmv1.KubeadmControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo-cp",
+					Namespace: "foo-1",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "KubeadmControlPlane",
+					APIVersion: "kubeadm.k8s.io/v1beta2",
+				},
+				Spec: kubeadmv1.KubeadmControlPlaneSpec{
+					KubeadmConfigSpec: kubeadmbootstrapv1.KubeadmConfigSpec{
+						InitConfiguration: &kubeadmbootstrapv1.InitConfiguration{
+							LocalAPIEndpoint: kubeadmbootstrapv1.APIEndpoint{
+								BindPort: 7777,
+							},
+						},
+					},
+				},
+			},
+			localPortExist: true,
+			want: []azure.ResourceSpecGetter{
+				&loadbalancers.LBSpec{
+					Name:                  "api-server-lb-1",
+					ResourceGroup:         "my-rg",
+					SubscriptionID:        "123",
+					ClusterName:           "my-cluster-1",
+					Location:              "westus2",
+					VNetName:              "my-vnet-1",
+					VNetResourceGroup:     "my-rg",
+					SubnetName:            "cp-subnet-1",
+					APIServerFrontendPort: 8888,
+					APIServerBackendPort:  7777,
+					Type:                  infrav1.Public,
+					SKU:                   infrav1.SKUStandard,
+					Role:                  infrav1.APIServerRole,
+					BackendPoolName:       "api-server-lb-backend-pool-1",
+					IdleTimeoutInMinutes:  pointer.Int32(30),
+					AdditionalTags:        infrav1.Tags{},
 				},
 			},
 		},
@@ -2930,15 +3221,36 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = kubeadmv1.AddToScheme(scheme)
 
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      tc.azureCluster.Name,
-					Namespace: "default",
-				},
+			var initObjects []runtime.Object
+			var cluster *clusterv1.Cluster
+			if tc.localPortExist {
+				cluster = &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      tc.azureCluster.Name,
+						Namespace: tc.azureCluster.Namespace,
+					},
+					Spec: clusterv1.ClusterSpec{
+						ControlPlaneRef: &corev1.ObjectReference{
+							Kind:      "KubeadmControlPlane",
+							Name:      tc.kcp.Name,
+							Namespace: tc.kcp.Namespace,
+						},
+						ClusterNetwork: tc.clusterNetwork,
+					},
+				}
+				initObjects = []runtime.Object{cluster, tc.azureCluster, tc.kcp}
+			} else {
+				cluster = &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      tc.azureCluster.Name,
+						Namespace: "default",
+					},
+				}
+				initObjects = []runtime.Object{cluster, tc.azureCluster}
 			}
 
-			initObjects := []runtime.Object{cluster, tc.azureCluster}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2950,7 +3262,9 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 				Client:       fakeClient,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
-			if got := clusterScope.LBSpecs(); !reflect.DeepEqual(got, tc.want) {
+			got, err := clusterScope.LBSpecs()
+			g.Expect(err).NotTo(HaveOccurred())
+			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("LBSpecs() diff between expected result and actual result (%v): %s", got, cmp.Diff(tc.want, got))
 			}
 		})

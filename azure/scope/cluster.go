@@ -46,6 +46,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmv1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -231,27 +233,33 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 }
 
 // LBSpecs returns the load balancer specs.
-func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
-	specs := []azure.ResourceSpecGetter{
+func (s *ClusterScope) LBSpecs() ([]azure.ResourceSpecGetter, error) {
+	specs := []azure.ResourceSpecGetter{}
+	kcpBindPort, err := s.KCPBindPort()
+	if err != nil {
+		return specs, err
+	}
+	specs = []azure.ResourceSpecGetter{
 		&loadbalancers.LBSpec{
 			// API Server LB
-			Name:                 s.APIServerLB().Name,
-			ResourceGroup:        s.ResourceGroup(),
-			SubscriptionID:       s.SubscriptionID(),
-			ClusterName:          s.ClusterName(),
-			Location:             s.Location(),
-			ExtendedLocation:     s.ExtendedLocation(),
-			VNetName:             s.Vnet().Name,
-			VNetResourceGroup:    s.Vnet().ResourceGroup,
-			SubnetName:           s.ControlPlaneSubnet().Name,
-			FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
-			APIServerPort:        s.APIServerPort(),
-			Type:                 s.APIServerLB().Type,
-			SKU:                  s.APIServerLB().SKU,
-			Role:                 infrav1.APIServerRole,
-			BackendPoolName:      s.APIServerLB().BackendPool.Name,
-			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
-			AdditionalTags:       s.AdditionalTags(),
+			Name:                  s.APIServerLB().Name,
+			ResourceGroup:         s.ResourceGroup(),
+			SubscriptionID:        s.SubscriptionID(),
+			ClusterName:           s.ClusterName(),
+			Location:              s.Location(),
+			ExtendedLocation:      s.ExtendedLocation(),
+			VNetName:              s.Vnet().Name,
+			VNetResourceGroup:     s.Vnet().ResourceGroup,
+			SubnetName:            s.ControlPlaneSubnet().Name,
+			FrontendIPConfigs:     s.APIServerLB().FrontendIPs,
+			APIServerFrontendPort: s.APIServerFrontendPort(),
+			APIServerBackendPort:  kcpBindPort,
+			Type:                  s.APIServerLB().Type,
+			SKU:                   s.APIServerLB().SKU,
+			Role:                  infrav1.APIServerRole,
+			BackendPoolName:       s.APIServerLB().BackendPool.Name,
+			IdleTimeoutInMinutes:  s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:        s.AdditionalTags(),
 		},
 	}
 
@@ -297,7 +305,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 		})
 	}
 
-	return specs
+	return specs, nil
 }
 
 // RouteTableSpecs returns the subnet route tables.
@@ -845,8 +853,29 @@ func (s *ClusterScope) AdditionalTags() infrav1.Tags {
 	return tags
 }
 
-// APIServerPort returns the APIServerPort to use when creating the load balancer.
-func (s *ClusterScope) APIServerPort() int32 {
+// KCPBindPort returns the port that kube-apiserver will listen on for each individual control plane node.
+func (s *ClusterScope) KCPBindPort() (int32, error) {
+	if s.Cluster.Spec.ControlPlaneRef != nil && s.Cluster.Spec.ControlPlaneRef.Kind == "KubeadmControlPlane" {
+		kubeadmControlPlane := &kubeadmv1.KubeadmControlPlane{}
+		key := client.ObjectKey{
+			Namespace: s.Cluster.Spec.ControlPlaneRef.Namespace,
+			Name:      s.Cluster.Spec.ControlPlaneRef.Name,
+		}
+		err := s.Client.Get(context.TODO(), key, kubeadmControlPlane)
+		if err != nil {
+			return 0, errors.Wrap(err, "Failed to get KubeadmControlPlane object")
+		}
+
+		localAPIEndpoint := kubeadmbootstrapv1.APIEndpoint{}
+		if kubeadmControlPlane.Spec.KubeadmConfigSpec.InitConfiguration != nil && kubeadmControlPlane.Spec.KubeadmConfigSpec.InitConfiguration.LocalAPIEndpoint != localAPIEndpoint {
+			return kubeadmControlPlane.Spec.KubeadmConfigSpec.InitConfiguration.LocalAPIEndpoint.BindPort, nil
+		}
+	}
+	return 6443, nil
+}
+
+// APIServerFrontendPort returns the APIServerFrontendPort to use when creating the load balancer.
+func (s *ClusterScope) APIServerFrontendPort() int32 {
 	if s.Cluster.Spec.ClusterNetwork != nil && s.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
 		return *s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
@@ -909,7 +938,7 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				Source:           pointer.String("*"),
 				SourcePorts:      pointer.String("*"),
 				Destination:      pointer.String("*"),
-				DestinationPorts: pointer.String(strconv.Itoa(int(s.APIServerPort()))),
+				DestinationPorts: pointer.String(strconv.Itoa(int(s.APIServerFrontendPort()))),
 			},
 		}
 		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)

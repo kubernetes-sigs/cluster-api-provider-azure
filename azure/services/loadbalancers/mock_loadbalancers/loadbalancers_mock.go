@@ -402,11 +402,12 @@ func (mr *MockLBScopeMockRecorder) IsVnetManaged() *gomock.Call {
 }
 
 // LBSpecs mocks base method.
-func (m *MockLBScope) LBSpecs() []azure.ResourceSpecGetter {
+func (m *MockLBScope) LBSpecs() ([]azure.ResourceSpecGetter, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LBSpecs")
 	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // LBSpecs indicates an expected call of LBSpecs.

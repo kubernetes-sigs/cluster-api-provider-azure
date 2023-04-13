@@ -264,7 +264,7 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
 						DisableOutboundSnat:  pointer.Bool(true),
 						Protocol:             network.TransportProtocolTCP,
-						FrontendPort:         pointer.Int32(6443),
+						FrontendPort:         pointer.Int32(443),
 						BackendPort:          pointer.Int32(6443),
 						IdleTimeoutInMinutes: pointer.Int32(4),
 						EnableFloatingIP:     enableFloatingIP, // Add to verify that LoadBalancingRules aren't overwritten on update
@@ -286,7 +286,7 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 					Name: pointer.String(tcpProbe),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
 						Protocol:          network.ProbeProtocolTCP,
-						Port:              pointer.Int32(6443),
+						Port:              pointer.Int32(443),
 						IntervalInSeconds: pointer.Int32(15),
 						NumberOfProbes:    numProbes, // Add to verify that Probes aren't overwritten on update
 					},
@@ -343,7 +343,7 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
 						DisableOutboundSnat:  pointer.Bool(true),
 						Protocol:             network.TransportProtocolTCP,
-						FrontendPort:         pointer.Int32(6443),
+						FrontendPort:         pointer.Int32(443),
 						BackendPort:          pointer.Int32(6443),
 						IdleTimeoutInMinutes: pointer.Int32(4),
 						EnableFloatingIP:     pointer.Bool(false),
@@ -366,7 +366,7 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 					Name: pointer.String(tcpProbe),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
 						Protocol:          network.ProbeProtocolTCP,
-						Port:              pointer.Int32(6443),
+						Port:              pointer.Int32(443),
 						IntervalInSeconds: pointer.Int32(15),
 						NumberOfProbes:    pointer.Int32(4),
 					},
