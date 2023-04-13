@@ -67,6 +67,20 @@ func (mr *MockGroupScopeMockRecorder) ASOGroupSpec() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ASOGroupSpec", reflect.TypeOf((*MockGroupScope)(nil).ASOGroupSpec))
 }
 
+// ClusterName mocks base method.
+func (m *MockGroupScope) ClusterName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClusterName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockGroupScopeMockRecorder) ClusterName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockGroupScope)(nil).ClusterName))
+}
+
 // DeleteLongRunningOperationState mocks base method.
 func (m *MockGroupScope) DeleteLongRunningOperationState(arg0, arg1, arg2 string) {
 	m.ctrl.T.Helper()

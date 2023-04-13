@@ -30,12 +30,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+const clusterName = "cluster"
 
 type ErroringGetClient struct {
 	client.Client
@@ -74,7 +77,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -90,6 +93,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{},
 		})).To(Succeed())
@@ -108,7 +114,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -137,6 +143,12 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, created)).To(Succeed())
 		g.Expect(created.Name).To(Equal("name"))
 		g.Expect(created.Namespace).To(Equal("namespace"))
+		g.Expect(created.Labels).To(Equal(map[string]string{
+			infrav1.OwnedByClusterLabelKey: clusterName,
+		}))
+		g.Expect(created.Annotations).To(Equal(map[string]string{
+			ReconcilePolicyAnnotation: ReconcilePolicyManage,
+		}))
 		g.Expect(created.Spec).To(Equal(asoresourcesv1.ResourceGroup_Spec{
 			Location: pointer.String("location"),
 		}))
@@ -150,7 +162,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -166,6 +178,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -195,7 +210,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -211,6 +226,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -237,7 +255,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -253,6 +271,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -282,7 +303,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(ErroringGetClient{Client: c, err: errors.New("an error")})
+		s := New(ErroringGetClient{Client: c, err: errors.New("an error")}, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -308,7 +329,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -329,6 +350,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -353,7 +377,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -364,6 +388,50 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).Return(nil, errors.New("parameters error"))
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Conditions: []conditions.Condition{
+					{
+						Type:   conditions.ConditionTypeReady,
+						Status: metav1.ConditionTrue,
+					},
+				},
+			},
+		})).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(err).NotTo(BeNil())
+		g.Expect(err.Error()).To(ContainSubstring("parameters error"))
+	})
+
+	t.Run("skip update for unmanaged resource", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New(c, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
+		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		})
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
@@ -382,9 +450,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})).To(Succeed())
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
-		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
-		g.Expect(err.Error()).To(ContainSubstring("parameters error"))
+		g.Expect(result).NotTo(BeNil())
+		g.Expect(err).To(BeNil())
 	})
 
 	t.Run("resource up to date", func(t *testing.T) {
@@ -395,7 +462,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -414,6 +481,12 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					ReconcilePolicyAnnotation: ReconcilePolicyManage,
+				},
 			},
 			Spec: asoresourcesv1.ResourceGroup_Spec{
 				Location: pointer.String("location"),
@@ -434,7 +507,6 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		g.Expect(result.GetName()).To(Equal("name"))
 		g.Expect(result.GetNamespace()).To(Equal("namespace"))
-		g.Expect(result.GetLabels()).To(BeEmpty()) // label only added on create
 		g.Expect(result.(*asoresourcesv1.ResourceGroup).Spec.Location).To(Equal(pointer.String("location")))
 	})
 
@@ -446,7 +518,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(ErroringPatchClient{Client: c, err: errors.New("an error")})
+		s := New(ErroringPatchClient{Client: c, err: errors.New("an error")}, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -467,6 +539,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -495,7 +570,7 @@ func TestDeleteResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -504,7 +579,7 @@ func TestDeleteResource(t *testing.T) {
 				Name:      "name",
 				Namespace: "namespace",
 			},
-		})
+		}).AnyTimes()
 
 		ctx := context.Background()
 		err := s.DeleteResource(ctx, specMock, "service")
@@ -519,7 +594,7 @@ func TestDeleteResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(c)
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -528,13 +603,16 @@ func TestDeleteResource(t *testing.T) {
 				Name:      "name",
 				Namespace: "namespace",
 			},
-		})
+		}).AnyTimes()
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
 			},
 		})).To(Succeed())
 
@@ -546,7 +624,7 @@ func TestDeleteResource(t *testing.T) {
 		g.Expect(recerr.IsTransient()).To(BeTrue())
 	})
 
-	t.Run("error deleting", func(t *testing.T) {
+	t.Run("skip delete for unmanaged resource", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		sch := runtime.NewScheme()
@@ -554,7 +632,7 @@ func TestDeleteResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New(ErroringDeleteClient{Client: c, err: errors.New("an error")})
+		s := New(c, clusterName)
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
@@ -563,13 +641,78 @@ func TestDeleteResource(t *testing.T) {
 				Name:      "name",
 				Namespace: "namespace",
 			},
-		})
+		}).AnyTimes()
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+			},
+		})).To(Succeed())
+
+		err := s.DeleteResource(ctx, specMock, "service")
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("error checking if resource is managed", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New(ErroringGetClient{Client: c, err: errors.New("a get error")}, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
+		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		}).AnyTimes()
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		})).To(Succeed())
+
+		err := s.DeleteResource(ctx, specMock, "service")
+		g.Expect(err).To(MatchError(ContainSubstring("a get error")))
+	})
+
+	t.Run("error deleting", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New(ErroringDeleteClient{Client: c, err: errors.New("an error")}, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
+		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		}).AnyTimes()
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
 			},
 		})).To(Succeed())
 
