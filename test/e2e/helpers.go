@@ -482,10 +482,22 @@ func getProxiedSSHClient(controlPlaneEndpoint, hostname, port string) (*ssh.Clie
 		return nil, errors.Wrapf(err, "dialing from control plane to target node at %s", hostname)
 	}
 
-	// Establish an authenticated SSH conn over the client -> control plane -> target transport
-	conn, chans, reqs, err := ssh.NewClientConn(c, hostname, config)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting a new SSH client connection")
+	var conn ssh.Conn
+	var chans <-chan ssh.NewChannel
+	var reqs <-chan *ssh.Request
+	var newClientConnErr error
+	Eventually(func(g Gomega) error {
+		for {
+			time.Sleep(1 * time.Hour)
+		}
+		/*// Establish an authenticated SSH conn over the client -> control plane -> target transport
+		conn, chans, reqs, newClientConnErr = ssh.NewClientConn(c, hostname, config)
+		g.Expect(newClientConnErr).To(BeNil())*/
+
+	}, 1*time.Minute, 3*time.Second).Should(Succeed())
+	if newClientConnErr != nil {
+		c.Close()
+		return nil, newClientConnErr
 	}
 	client := ssh.NewClient(conn, chans, reqs)
 	return client, nil
