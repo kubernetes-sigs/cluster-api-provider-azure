@@ -8,10 +8,10 @@ CAPZ interfaces with Azure to create and manage some types of resources using [A
 More context around the decision for CAPZ to pivot towards using ASO can be found in the
 [proposal](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/docs/proposals/20230123-azure-service-operator.md).
 
-## The biggest changes
+## Primary changes
 
 For most users, the introduction of ASO is expected to be fully transparent and backwards compatible. Changes
-that may affect specific use-cases are described below.
+that may affect specific use cases are described below.
 
 ### Installation
 

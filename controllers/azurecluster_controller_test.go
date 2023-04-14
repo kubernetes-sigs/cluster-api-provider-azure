@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +66,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		clusterv1.AddToScheme,
 		infrav1.AddToScheme,
+		asoresourcesv1.AddToScheme,
 	)
 	s := runtime.NewScheme()
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
@@ -76,11 +78,12 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 
 	reconciler := NewAzureClusterReconciler(c, recorder, reconciler.DefaultLoopTimeout, "")
 	name := test.RandomName("paused", 10)
+	namespace := "default"
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "default",
+			Namespace: namespace,
 		},
 		Spec: clusterv1.ClusterSpec{
 			Paused: true,
@@ -91,7 +94,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 	instance := &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "default",
+			Namespace: namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Cluster",
@@ -105,9 +108,18 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				SubscriptionID: "something",
 			},
+			ResourceGroup: name,
 		},
 	}
 	g.Expect(c.Create(ctx, instance)).To(Succeed())
+
+	rg := &asoresourcesv1.ResourceGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	g.Expect(c.Create(ctx, rg)).To(Succeed())
 
 	result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
 		NamespacedName: client.ObjectKey{

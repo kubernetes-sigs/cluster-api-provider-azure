@@ -261,3 +261,23 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - resources.azure.com
+  resources:
+  - resourcegroups
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resources.azure.com
+  resources:
+  - resourcegroups/status
+  verbs:
+  - get
+  - list
+  - watch

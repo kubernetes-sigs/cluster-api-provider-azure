@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
@@ -55,6 +56,10 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
+	var groupsSvc azure.ServiceReconciler = asogroups.New(scope)
+	if scope.UseLegacyGroups {
+		groupsSvc = groups.New(scope)
+	}
 	natGatewaysSvc, err := natgateways.New(scope)
 	if err != nil {
 		return nil, err
@@ -62,7 +67,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	return &azureClusterService{
 		scope: scope,
 		services: []azure.ServiceReconciler{
-			groups.New(scope),
+			groupsSvc,
 			virtualnetworks.New(scope),
 			securitygroups.New(scope),
 			routetables.New(scope),
@@ -125,20 +130,7 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureClusterService.Delete")
 	defer done()
 
-	groupSvc, err := s.getService(groups.ServiceName)
-	if err != nil {
-		return errors.Wrap(err, "failed to get group service")
-	}
-
-	managed, err := groupSvc.IsManaged(ctx)
-	if err != nil {
-		if azure.ResourceNotFound(err) {
-			// If the resource group is not found, there is nothing to delete, return early.
-			return nil
-		}
-		return errors.Wrap(err, "failed to determine if the AzureCluster resource group is managed")
-	}
-	if managed {
+	if !ShouldDeleteIndividualResources(ctx, s.scope) {
 		// If the resource group is managed, delete it.
 		// We need to explicitly delete vnet peerings, as it is not part of the resource group.
 		vnetPeeringsSvc, err := s.getService(vnetpeerings.ServiceName)
@@ -147,6 +139,15 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 		}
 		if err := vnetPeeringsSvc.Delete(ctx); err != nil {
 			return errors.Wrap(err, "failed to delete peerings")
+		}
+
+		groupsServiceName := asogroups.ServiceName
+		if s.scope.UseLegacyGroups {
+			groupsServiceName = groups.ServiceName
+		}
+		groupSvc, err := s.getService(groupsServiceName)
+		if err != nil {
+			return errors.Wrap(err, "failed to get group service")
 		}
 		// Delete the entire resource group directly.
 		if err := groupSvc.Delete(ctx); err != nil {
