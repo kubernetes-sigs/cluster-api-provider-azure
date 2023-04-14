@@ -595,7 +595,7 @@ In Kubernetes, the API server receives requests to perform actions in the cluste
 For more documentation about authorized IP address ranges refer [AKS Doc](https://docs.microsoft.com/en-us/azure/aks/api-server-authorized-ip-ranges) and [AKS REST API Doc](https://docs.microsoft.com/en-us/rest/api/aks/managed-clusters/create-or-update)
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlane
 metadata:
   name: my-cluster-control-plane

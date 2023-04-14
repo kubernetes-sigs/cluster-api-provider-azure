@@ -14,15 +14,15 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v0.4.8 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/core-components.yaml"
+    - name: v1.0.5 # earliest published release in the v1beta1 series; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/core-components.yaml"
       type: "url"
-      contract: v1alpha4
+      contract: v1beta1
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8080
       files:
-        - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+        - sourcePath: "../data/shared/v1beta1/metadata.yaml"
     - name: v1.4.1
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.1/core-components.yaml
       type: url
@@ -37,15 +37,15 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v0.4.8 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/bootstrap-components.yaml"
+    - name: v1.0.5 # earliest published release in the v1beta1 series; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/bootstrap-components.yaml"
       type: "url"
-      contract: v1alpha4
+      contract: v1beta1
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8080
       files:
-        - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+        - sourcePath: "../data/shared/v1beta1/metadata.yaml"
     - name: v1.4.1
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.1/bootstrap-components.yaml
       type: url
@@ -59,15 +59,15 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v0.4.8 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/control-plane-components.yaml"
+    - name: v1.0.5 # earliest published release in the v1beta1 series; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/control-plane-components.yaml"
       type: "url"
-      contract: v1alpha4
+      contract: v1beta1
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8080
       files:
-        - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+        - sourcePath: "../data/shared/v1beta1/metadata.yaml"
     - name: v1.4.1
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.1/control-plane-components.yaml
       type: url
@@ -81,13 +81,13 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-    - name: v0.5.3 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v0.5.3/infrastructure-components.yaml
+    - name: v1.0.2 # earliest published release in the v1beta1 series; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.0.2/infrastructure-components.yaml
       type: url
-      contract: v1alpha4
+      contract: v1beta1
       files:
-      - sourcePath: "../data/shared/v1alpha4_provider/metadata.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-prow.yaml"
+      - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.0.2/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
@@ -172,9 +172,9 @@ variables:
   CI_VERSION: ""
   # NOTE: INIT_WITH_BINARY and INIT_WITH_KUBERNETES_VERSION are only used by the clusterctl upgrade test to initialize
   # the management cluster to be upgraded.
-  INIT_WITH_BINARY: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.8/clusterctl-{OS}-{ARCH}"
-  INIT_WITH_PROVIDERS_CONTRACT: "v1alpha4"
-  INIT_WITH_KUBERNETES_VERSION: "v1.22.9"
+  INIT_WITH_BINARY: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/clusterctl-{OS}-{ARCH}"
+  INIT_WITH_PROVIDERS_CONTRACT: "v1beta1"
+  INIT_WITH_KUBERNETES_VERSION: "v1.23.13"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   SECURITY_SCAN_FAIL_THRESHOLD: "${SECURITY_SCAN_FAIL_THRESHOLD:-100}"
