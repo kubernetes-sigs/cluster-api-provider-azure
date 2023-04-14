@@ -132,7 +132,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 				subnet.NatGateway.Name = withIndex(generateNatGatewayName(c.ObjectMeta.Name), nodeSubnetCounter)
 			}
 			if subnet.NatGateway.NatGatewayIP.Name == "" {
-				subnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, subnet.Name)
+				subnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(subnet.NatGateway.Name)
 			}
 		}
 
@@ -453,8 +453,8 @@ func generateNatGatewayName(clusterName string) string {
 }
 
 // generateNatGatewayIPName generates a NAT gateway IP name.
-func generateNatGatewayIPName(clusterName, subnetName string) string {
-	return fmt.Sprintf("pip-%s-%s-natgw", clusterName, subnetName)
+func generateNatGatewayIPName(natGatewayName string) string {
+	return fmt.Sprintf("pip-%s", natGatewayName)
 }
 
 // withIndex appends the index as suffix to a generated name.
