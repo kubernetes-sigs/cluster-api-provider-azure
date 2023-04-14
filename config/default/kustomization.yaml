@@ -1,2 +1,5 @@
 resources:
   - ../capz
+
+components:
+  - ../aso

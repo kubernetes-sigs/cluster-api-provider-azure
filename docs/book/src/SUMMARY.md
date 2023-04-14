@@ -8,6 +8,7 @@
     - [AAD Integration](./topics/aad-integration.md)
     - [Addons](./topics/addons.md)
     - [API Server Endpoint](./topics/api-server-endpoint.md)
+    - [Azure Service Operator](./topics/aso.md)
     - [Cloud Provider Config](./topics/cloud-provider-config.md)
     - [Control Plane Outbound Load Balancer](./topics/control-plane-outbound-lb.md)
     - [Custom Images](./topics/custom-images.md)
