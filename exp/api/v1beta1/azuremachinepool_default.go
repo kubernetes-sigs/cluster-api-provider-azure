@@ -76,25 +76,26 @@ func (amp *AzureMachinePool) SetDefaultSSHPublicKey() error {
 func (amp *AzureMachinePool) SetIdentityDefaults(subscriptionID string) {
 	// Ensure the deprecated fields and new fields are not populated simultaneously
 	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole != nil && amp.Spec.SystemAssignedIdentityRole.Name != "" {
-		// Both the deprecated and the new fields are both set, return without changes
-		// and reject the request in the validating webhook which runs later.
-		return
+		// Both the deprecated and the new fields are both set,  clear the deprecated field and continue
+		amp.Spec.RoleAssignmentName = ""
 	}
 	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
 		if amp.Spec.SystemAssignedIdentityRole == nil {
 			amp.Spec.SystemAssignedIdentityRole = &infrav1.SystemAssignedIdentityRole{}
 		}
 		if amp.Spec.RoleAssignmentName != "" {
+			// Move the existing value from the deprecated RoleAssignmentName field.
 			amp.Spec.SystemAssignedIdentityRole.Name = amp.Spec.RoleAssignmentName
 			amp.Spec.RoleAssignmentName = ""
 		} else if amp.Spec.SystemAssignedIdentityRole.Name == "" {
+			// Default role name to a generated UUID.
 			amp.Spec.SystemAssignedIdentityRole.Name = string(uuid.NewUUID())
 		}
-		if amp.Spec.SystemAssignedIdentityRole.Scope == "" {
+		if amp.Spec.SystemAssignedIdentityRole.Scope == "" && subscriptionID != "" {
 			// Default scope to the subscription.
 			amp.Spec.SystemAssignedIdentityRole.Scope = fmt.Sprintf("/subscriptions/%s/", subscriptionID)
 		}
-		if amp.Spec.SystemAssignedIdentityRole.DefinitionID == "" {
+		if amp.Spec.SystemAssignedIdentityRole.DefinitionID == "" && subscriptionID != "" {
 			// Default role definition ID to Contributor role.
 			amp.Spec.SystemAssignedIdentityRole.DefinitionID = fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", subscriptionID, infrav1.ContributorRoleID)
 		}
@@ -105,7 +106,7 @@ func (amp *AzureMachinePool) SetIdentityDefaults(subscriptionID string) {
 func (amp *AzureMachinePool) SetSpotEvictionPolicyDefaults() {
 	if amp.Spec.Template.SpotVMOptions != nil && amp.Spec.Template.SpotVMOptions.EvictionPolicy == nil {
 		defaultPolicy := infrav1.SpotEvictionPolicyDeallocate
-		if amp.Spec.Template.OSDisk.DiffDiskSettings != nil && amp.Spec.Template.OSDisk.DiffDiskSettings.Option == "Local" {
+		if amp.Spec.Template.OSDisk != nil && amp.Spec.Template.OSDisk.DiffDiskSettings != nil && amp.Spec.Template.OSDisk.DiffDiskSettings.Option == "Local" {
 			defaultPolicy = infrav1.SpotEvictionPolicyDelete
 		}
 		amp.Spec.Template.SpotVMOptions.EvictionPolicy = &defaultPolicy
@@ -123,9 +124,10 @@ func (amp *AzureMachinePool) SetDiagnosticsDefaults() {
 			Boot: bootDefault,
 		}
 	}
-
-	if amp.Spec.Template.Diagnostics.Boot == nil {
-		amp.Spec.Template.Diagnostics.Boot = bootDefault
+	else {
+		if amp.Spec.Template.Diagnostics.Boot == nil {
+			amp.Spec.Template.Diagnostics.Boot = bootDefault
+		}
 	}
 }
 
