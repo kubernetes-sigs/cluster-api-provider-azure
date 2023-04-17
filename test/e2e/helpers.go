@@ -464,26 +464,35 @@ func isAzureMachinePoolWindows(amp *infrav1exp.AzureMachinePool) bool {
 
 // getProxiedSSHClient creates a SSH client object that connects to a target node
 // proxied through a control plane node.
-func getProxiedSSHClient(controlPlaneEndpoint, hostname, port string) (*ssh.Client, error) {
+func getProxiedSSHClient(controlPlaneEndpoint, hostname, port string, ioTimeout time.Duration) (*ssh.Client, error) {
 	config, err := newSSHConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	// Init a client connection to a control plane node via the public load balancer
-	lbClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", controlPlaneEndpoint, port), config)
+	c, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", controlPlaneEndpoint, port), config.Timeout)
 	if err != nil {
 		return nil, errors.Wrapf(err, "dialing public load balancer at %s", controlPlaneEndpoint)
 	}
+	err = c.SetDeadline(time.Now().Add(ioTimeout))
+	if err != nil {
+		return nil, errors.Wrapf(err, "setting timeout for connection to public load balancer at %s", controlPlaneEndpoint)
+	}
+	conn, chans, reqs, err := ssh.NewClientConn(c, fmt.Sprintf("%s:%s", controlPlaneEndpoint, port), config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "connecting to public load balancer at %s", controlPlaneEndpoint)
+	}
+	lbClient := ssh.NewClient(conn, chans, reqs)
 
 	// Init a connection from the control plane to the target node
-	c, err := lbClient.Dial("tcp", fmt.Sprintf("%s:%s", hostname, port))
+	c, err = lbClient.Dial("tcp", fmt.Sprintf("%s:%s", hostname, port))
 	if err != nil {
 		return nil, errors.Wrapf(err, "dialing from control plane to target node at %s", hostname)
 	}
 
 	// Establish an authenticated SSH conn over the client -> control plane -> target transport
-	conn, chans, reqs, err := ssh.NewClientConn(c, hostname, config)
+	conn, chans, reqs, err = ssh.NewClientConn(c, hostname, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting a new SSH client connection")
 	}
@@ -493,9 +502,9 @@ func getProxiedSSHClient(controlPlaneEndpoint, hostname, port string) (*ssh.Clie
 
 // execOnHost runs the specified command directly on a node's host, using a SSH connection
 // proxied through a control plane host and copies the output to a file.
-func execOnHost(controlPlaneEndpoint, hostname, port string, f io.StringWriter, command string,
+func execOnHost(controlPlaneEndpoint, hostname, port string, ioTimeout time.Duration, f io.StringWriter, command string,
 	args ...string) error {
-	client, err := getProxiedSSHClient(controlPlaneEndpoint, hostname, port)
+	client, err := getProxiedSSHClient(controlPlaneEndpoint, hostname, port, ioTimeout)
 	if err != nil {
 		return err
 	}
@@ -524,10 +533,10 @@ func execOnHost(controlPlaneEndpoint, hostname, port string, f io.StringWriter, 
 
 // sftpCopyFile copies a file from a node to the specified destination, using a SSH connection
 // proxied through a control plane node.
-func sftpCopyFile(controlPlaneEndpoint, hostname, port, sourcePath, destPath string) error {
+func sftpCopyFile(controlPlaneEndpoint, hostname, port string, ioTimeout time.Duration, sourcePath, destPath string) error {
 	Logf("Attempting to copy file %s on node %s to %s", sourcePath, hostname, destPath)
 
-	client, err := getProxiedSSHClient(controlPlaneEndpoint, hostname, port)
+	client, err := getProxiedSSHClient(controlPlaneEndpoint, hostname, port, ioTimeout)
 	if err != nil {
 		return err
 	}
