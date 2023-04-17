@@ -1,0 +1,34 @@
+@startuml
+title Figure 1. Reconciling Azure resources through ASO
+
+[*] --> GetExisting
+GetExisting : GET the ASO resource if it exists
+SetReconcilePolicySkip : set the ASO reconcile policy annotation
+GetExisting --> SetReconcilePolicySkip : resource does not exist
+SetReconcilePolicySkip --> CreateOrUpdate
+
+state asoresourceready <<choice>>
+state asoresourcenotfound <<choice>>
+state asoresourceskip <<choice>>
+
+state capzownedtag <<choice>>
+
+GetExisting --> asoresourceready : ASO resource exists
+asoresourceready --> capzownedtag : ASO resource is ready
+capzownedtag --> SetReconcilePolicyManage : Azure resource has\nCAPZ "owned" tag
+capzownedtag --> CreateOrUpdate : Azure resource has no\nCAPZ "owned" tag
+asoresourceready --> asoresourcenotfound : ASO resource is not Ready
+asoresourcenotfound --> UpdateStatus : non-"not found" Azure error
+asoresourcenotfound --> asoresourceskip : Azure resource doesn't exist
+asoresourceskip --> UpdateStatus : reconcile-policy is "manage"
+SetReconcilePolicyManage : set the ASO reconcile policy annotation
+asoresourceskip --> SetReconcilePolicyManage : reconcile-policy is "skip"
+SetReconcilePolicyManage --> CreateOrUpdate
+
+CreateOrUpdate : PUT the resource to ASO
+CreateOrUpdate --> UpdateStatus
+UpdateStatus : update the resource spec and status
+UpdateStatus : update the object conditions
+UpdateStatus --> [*]
+
+@enduml

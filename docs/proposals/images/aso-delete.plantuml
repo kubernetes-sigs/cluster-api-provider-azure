@@ -1,0 +1,15 @@
+@startuml
+title Figure 2. Deleting Azure resources through ASO
+
+state deleteerr <<choice>>
+state resourcenotfound <<choice>>
+
+[*]    --> Delete
+Delete : DELETE the resource from ASO
+Delete --> deleteerr
+deleteerr --> [*] : delete started\nsuccessfully, requeue
+deleteerr --> resourcenotfound : an error occurred
+resourcenotfound --> [*] : resource doesn't\nexist, delete done
+resourcenotfound --> [*] : a different error\noccurred, requeue
+
+@enduml
