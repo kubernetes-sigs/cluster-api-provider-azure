@@ -53,9 +53,10 @@ func TestSecurityRuleToSDK(t *testing.T) {
 					DestinationPortRange:     pointer.String("22"),
 					Access:                   network.SecurityRuleAccessAllow,
 					Priority:                 pointer.Int32(100),
+					Protocol:                 network.SecurityRuleProtocolTCP,
+				        Direction:                network.SecurityRuleDirectionInbound,
 				},
-				Protocol:  network.SecurityRuleProtocolTCP,
-				Direction: network.SecurityRuleDirectionInbound,
+				
 			},
 		},
 		{
@@ -69,9 +70,10 @@ func TestSecurityRuleToSDK(t *testing.T) {
 				Name: pointer.String("test-rule"),
 				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
 					Access: network.SecurityRuleAccessAllow,
+					Protocol:  network.SecurityRuleProtocolAsterisk,
+				        Direction: network.SecurityRuleDirectionInbound,
 				},
-				Protocol:  network.SecurityRuleProtocolAsterisk,
-				Direction: network.SecurityRuleDirectionInbound,
+				
 			},
 		},
 		{
