@@ -298,7 +298,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	if !isFlex {
 		updated = infraVMSS.HasEnoughLatestModelOrNotMixedModel()
 	}
-	if maxSurge > 0 && (hasModelChanges || !updated) {
+	if maxSurge > 0 && (hasModelChanges || !updated) && !s.Scope.HasReplicasExternallyManaged(ctx) {
 		// surge capacity with the intention of lowering during instance reconciliation
 		surge := spec.Capacity + int64(maxSurge)
 		log.V(4).Info("surging...", "surge", surge, "hasModelChanges", hasModelChanges, "updated", updated)

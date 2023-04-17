@@ -617,7 +617,7 @@ func TestReconcileVMSS(t *testing.T) {
 				m.GetResultIfDone(gomockinternal.AContext(), patchFuture).Return(compute.VirtualMachineScaleSet{}, azure.NewOperationNotDoneError(patchFuture))
 				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(clone, nil)
 				m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil)
-				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Return(false)
+				s.HasReplicasExternallyManaged(gomockinternal.AContext()).Times(2).Return(false)
 			},
 		},
 		{
