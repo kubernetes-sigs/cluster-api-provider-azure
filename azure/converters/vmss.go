@@ -17,11 +17,20 @@ limitations under the License.
 package converters
 
 import (
+	"regexp"
+
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"k8s.io/utils/pointer"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+)
+
+const (
+	// RegExpStrCommunityGalleryID is a regexp string used for matching community gallery IDs and capturing specific values.
+	RegExpStrCommunityGalleryID = `/CommunityGalleries/(?P<gallery>.*)/Images/(?P<name>.*)/Versions/(?P<version>.*)`
+	// RegExpStrComputeGalleryID is a regexp string used for matching compute gallery IDs and capturing specific values.
+	RegExpStrComputeGalleryID = `/subscriptions/(?P<subID>.*)/resourceGroups/(?P<rg>.*)/providers/Microsoft.Compute/galleries/(?P<gallery>.*)/images/(?P<name>.*)/versions/(?P<version>.*)`
 )
 
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.
@@ -149,8 +158,53 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 
 // SDKImageToImage converts a SDK image reference to infrav1.Image.
 func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool) infrav1.Image {
+	if sdkImageRef.ID != nil {
+		return IDImageRefToImage(*sdkImageRef.ID)
+	}
+	// community gallery image
+	if sdkImageRef.CommunityGalleryImageID != nil {
+		return cgImageRefToImage(*sdkImageRef.CommunityGalleryImageID)
+	}
+	// shared gallery image
+	if sdkImageRef.SharedGalleryImageID != nil {
+		return sgImageRefToImage(*sdkImageRef.SharedGalleryImageID)
+	}
+	// marketplace image
+	return mpImageRefToImage(sdkImageRef, isThirdPartyImage)
+}
+
+// GetOrchestrationMode returns the compute.OrchestrationMode for the given infrav1.OrchestrationModeType.
+func GetOrchestrationMode(modeType infrav1.OrchestrationModeType) compute.OrchestrationMode {
+	if modeType == infrav1.FlexibleOrchestrationMode {
+		return compute.OrchestrationModeFlexible
+	}
+	return compute.OrchestrationModeUniform
+}
+
+// IDImageRefToImage converts an ID to a infrav1.Image with ComputerGallery set or ID, depending on the structure of the ID.
+func IDImageRefToImage(id string) infrav1.Image {
+	// compute gallery image
+	if ok, params := getParams(RegExpStrComputeGalleryID, id); ok {
+		return infrav1.Image{
+			ComputeGallery: &infrav1.AzureComputeGalleryImage{
+				Gallery:        params["gallery"],
+				Name:           params["name"],
+				Version:        params["version"],
+				SubscriptionID: pointer.String(params["subID"]),
+				ResourceGroup:  pointer.String(params["rg"]),
+			},
+		}
+	}
+
+	// specific image
 	return infrav1.Image{
-		ID: sdkImageRef.ID,
+		ID: &id,
+	}
+}
+
+// mpImageRefToImage converts a marketplace gallery ImageReference to an infrav1.Image.
+func mpImageRefToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool) infrav1.Image {
+	return infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			ImagePlan: infrav1.ImagePlan{
 				Publisher: pointer.StringDeref(sdkImageRef.Publisher, ""),
@@ -163,10 +217,49 @@ func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool
 	}
 }
 
-// GetOrchestrationMode returns the compute.OrchestrationMode for the given infrav1.OrchestrationModeType.
-func GetOrchestrationMode(modeType infrav1.OrchestrationModeType) compute.OrchestrationMode {
-	if modeType == infrav1.FlexibleOrchestrationMode {
-		return compute.OrchestrationModeFlexible
+// cgImageRefToImage converts a community gallery ImageReference to an infrav1.Image.
+func cgImageRefToImage(id string) infrav1.Image {
+	if ok, params := getParams(RegExpStrCommunityGalleryID, id); ok {
+		return infrav1.Image{
+			ComputeGallery: &infrav1.AzureComputeGalleryImage{
+				Gallery: params["gallery"],
+				Name:    params["name"],
+				Version: params["version"],
+			},
+		}
 	}
-	return compute.OrchestrationModeUniform
+	return infrav1.Image{}
+}
+
+// sgImageRefToImage converts a shared gallery ImageReference to an infrav1.Image.
+func sgImageRefToImage(id string) infrav1.Image {
+	if ok, params := getParams(RegExpStrComputeGalleryID, id); ok {
+		return infrav1.Image{
+			SharedGallery: &infrav1.AzureSharedGalleryImage{
+				SubscriptionID: params["subID"],
+				ResourceGroup:  params["rg"],
+				Gallery:        params["gallery"],
+				Name:           params["name"],
+				Version:        params["version"],
+			},
+		}
+	}
+	return infrav1.Image{}
+}
+
+func getParams(regStr, str string) (matched bool, params map[string]string) {
+	re := regexp.MustCompile(regStr)
+	match := re.FindAllStringSubmatch(str, -1)
+
+	if len(match) == 1 {
+		params = make(map[string]string)
+		for i, name := range re.SubexpNames() {
+			if i > 0 && i <= len(match[0]) {
+				params[name] = match[0][i]
+			}
+		}
+		matched = true
+	}
+
+	return matched, params
 }
