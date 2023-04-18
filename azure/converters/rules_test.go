@@ -54,9 +54,8 @@ func TestSecurityRuleToSDK(t *testing.T) {
 					Access:                   network.SecurityRuleAccessAllow,
 					Priority:                 pointer.Int32(100),
 					Protocol:                 network.SecurityRuleProtocolTCP,
-				        Direction:                network.SecurityRuleDirectionInbound,
+					Direction:                network.SecurityRuleDirectionInbound,
 				},
-				
 			},
 		},
 		{
@@ -69,11 +68,10 @@ func TestSecurityRuleToSDK(t *testing.T) {
 			expected: network.SecurityRule{
 				Name: pointer.String("test-rule"),
 				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-					Access: network.SecurityRuleAccessAllow,
+					Access:    network.SecurityRuleAccessAllow,
 					Protocol:  network.SecurityRuleProtocolAsterisk,
-				        Direction: network.SecurityRuleDirectionInbound,
+					Direction: network.SecurityRuleDirectionInbound,
 				},
-				
 			},
 		},
 		{
@@ -103,4 +101,3 @@ func TestSecurityRuleToSDK(t *testing.T) {
 		})
 	}
 }
-
