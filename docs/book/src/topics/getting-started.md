@@ -11,6 +11,7 @@
     - `Microsoft.ContainerService`
     - `Microsoft.ManagedIdentity`
     - `Microsoft.Authorization`
+    - `Microsoft.ResourceHealth` (if the `EXP_AKS_RESOURCE_HEALTH` feature flag is enabled)
 - Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
 - A [supported version](https://github.com/kubernetes-sigs/cluster-api-provider-azure#compatibility) of `clusterctl`
 
