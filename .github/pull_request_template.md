@@ -22,8 +22,9 @@ Add one of the following kinds:
 Fixes #
 
 **Special notes for your reviewer**:
+<!-- Refer to https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/docs/book/src/developers/releasing.md#release-support for more information about which changes are eligible for backport -->
 
-_Please confirm that if this PR changes any image versions, then that's the sole change this PR makes._
+- [ ] cherry-pick candidate
 
 **TODOs**:
 <!-- Put an "X" character inside the brackets of each completed task. Some may be optional depending on the PR. -->
