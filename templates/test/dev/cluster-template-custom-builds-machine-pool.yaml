@@ -60,26 +60,14 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
-        extraVolumes:
-        - hostPath: /etc/kubernetes/azure.json
-          mountPath: /etc/kubernetes/azure.json
-          name: cloud-config
-          readOnly: true
+          cloud-provider: external
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
           v: "4"
-        extraVolumes:
-        - hostPath: /etc/kubernetes/azure.json
-          mountPath: /etc/kubernetes/azure.json
-          name: cloud-config
-          readOnly: true
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -147,11 +135,11 @@ spec:
         rm /tmp/yq_linux_amd64.tar.gz
 
         export KUBECONFIG=/etc/kubernetes/admin.conf
-        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${IMAGE_TAG}"
+        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${KUBE_IMAGE_TAG}"
         systemctl stop kubelet
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
         systemctl restart kubelet
       owner: root:root
       path: /tmp/replace-k8s-components.sh
@@ -167,15 +155,13 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: azure
+          cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -315,8 +301,7 @@ spec:
     nodeRegistration:
       kubeletExtraArgs:
         azure-container-registry-config: /etc/kubernetes/azure.json
-        cloud-config: /etc/kubernetes/azure.json
-        cloud-provider: azure
+        cloud-provider: external
       name: '{{ ds.meta_data["local_hostname"] }}'
   preKubeadmCommands:
   - bash -c /tmp/replace-k8s-binaries.sh
@@ -400,9 +385,8 @@ spec:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         azure-container-registry-config: c:/k/azure.json
-        cloud-config: c:/k/azure.json
-        cloud-provider: azure
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1
+        cloud-provider: external
+        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START
