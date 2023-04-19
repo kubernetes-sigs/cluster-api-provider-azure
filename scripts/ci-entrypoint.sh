@@ -58,7 +58,7 @@ setup() {
         echo "Will use the ${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG} cloud-controller-manager image for external cloud-provider-cluster"
         echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG} cloud-node-manager image for external cloud-provider-azure cluster"
 
-        export CCM_IMG_ARGS=(--set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}"
+        CCM_IMG_ARGS=(--set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}"
         --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}"
         --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}"
         --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}"
