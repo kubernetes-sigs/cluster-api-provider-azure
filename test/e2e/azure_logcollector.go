@@ -144,7 +144,7 @@ func collectLogsFromNode(cluster *clusterv1.Cluster, hostname string, isWindows 
 					return err
 				}
 				defer f.Close()
-				return execOnHost(controlPlaneEndpoint, hostname, sshPort, f, command, args...)
+				return execOnHost(controlPlaneEndpoint, hostname, sshPort, collectLogTimeout, f, command, args...)
 			})
 		}
 	}
@@ -156,7 +156,7 @@ func collectLogsFromNode(cluster *clusterv1.Cluster, hostname string, isWindows 
 		errors = append(errors, kinderrors.AggregateConcurrent(windowsK8sLogs(execToPathFn)))
 		errors = append(errors, kinderrors.AggregateConcurrent(windowsNetworkLogs(execToPathFn)))
 		errors = append(errors, kinderrors.AggregateConcurrent(windowsCrashDumpLogs(execToPathFn)))
-		errors = append(errors, sftpCopyFile(controlPlaneEndpoint, hostname, sshPort, "/c:/crashdumps.tar", filepath.Join(outputPath, "crashdumps.tar")))
+		errors = append(errors, sftpCopyFile(controlPlaneEndpoint, hostname, sshPort, collectLogTimeout, "/c:/crashdumps.tar", filepath.Join(outputPath, "crashdumps.tar")))
 
 		return kinderrors.NewAggregate(errors)
 	}
