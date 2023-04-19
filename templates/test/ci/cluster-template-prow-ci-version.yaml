@@ -154,6 +154,7 @@ spec:
               $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
             done
           fi
+          systemctl restart kubelet
         fi
         echo "* checking binary versions"
         echo "ctr version: " $(ctr version)
@@ -339,6 +340,7 @@ spec:
                 $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
               done
             fi
+            systemctl restart kubelet
           fi
           echo "* checking binary versions"
           echo "ctr version: " $(ctr version)
