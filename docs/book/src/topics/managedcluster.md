@@ -50,6 +50,7 @@ export the following variables in your current shell.
 export AZURE_SUBSCRIPTION_ID="$(cat sp.json | jq -r .subscriptionId | tr -d '\n')"
 export AZURE_CLIENT_SECRET="$(cat sp.json | jq -r .clientSecret | tr -d '\n')"
 export AZURE_CLIENT_ID="$(cat sp.json | jq -r .clientId | tr -d '\n')"
+export AZURE_TENANT_ID="$(cat sp.json | jq -r .tenantId | tr -d '\n')"
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
 export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
