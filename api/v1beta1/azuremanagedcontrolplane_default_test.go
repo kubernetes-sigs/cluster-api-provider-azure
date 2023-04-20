@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 )
 
 func TestAzureManagedControlPlane_SetDefaultSSHPublicKey(t *testing.T) {
@@ -52,4 +53,37 @@ func hardcodedAzureManagedControlPlaneWithSSHKey(sshPublicKey string) *AzureMana
 			SSHPublicKey: sshPublicKey,
 		},
 	}
+}
+
+func TestSetDefaultAutoScalerProfile(t *testing.T) {
+	m := &AzureManagedControlPlane{
+		Spec: AzureManagedControlPlaneSpec{
+			AutoScalerProfile: &AutoScalerProfile{},
+		},
+	}
+
+	// Test when all fields are nil
+	m.setDefaultAutoScalerProfile()
+
+	g := NewWithT(t)
+
+	// Verify that the default values are set
+	g.Expect(m.Spec.AutoScalerProfile).NotTo(BeNil())
+	g.Expect(m.Spec.AutoScalerProfile.BalanceSimilarNodeGroups).To(Equal((*BalanceSimilarNodeGroups)(pointer.String(string(BalanceSimilarNodeGroupsFalse)))))
+	g.Expect(m.Spec.AutoScalerProfile.Expander).To(Equal((*Expander)(pointer.String(string(ExpanderRandom)))))
+	g.Expect(m.Spec.AutoScalerProfile.MaxEmptyBulkDelete).To(Equal(pointer.String("10")))
+	g.Expect(m.Spec.AutoScalerProfile.MaxGracefulTerminationSec).To(Equal(pointer.String("600")))
+	g.Expect(m.Spec.AutoScalerProfile.MaxNodeProvisionTime).To(Equal(pointer.String("15m")))
+	g.Expect(m.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage).To(Equal(pointer.String("45")))
+	g.Expect(m.Spec.AutoScalerProfile.NewPodScaleUpDelay).To(Equal(pointer.String("0s")))
+	g.Expect(m.Spec.AutoScalerProfile.OkTotalUnreadyCount).To(Equal(pointer.String("3")))
+	g.Expect(m.Spec.AutoScalerProfile.ScanInterval).To(Equal(pointer.String("10s")))
+	g.Expect(m.Spec.AutoScalerProfile.ScaleDownDelayAfterAdd).To(Equal(pointer.String("10m")))
+	g.Expect(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete).To(Equal(m.Spec.AutoScalerProfile.ScanInterval))
+	g.Expect(m.Spec.AutoScalerProfile.ScaleDownDelayAfterFailure).To(Equal(pointer.String("3m")))
+	g.Expect(m.Spec.AutoScalerProfile.ScaleDownUnneededTime).To(Equal(pointer.String("10m")))
+	g.Expect(m.Spec.AutoScalerProfile.ScaleDownUnreadyTime).To(Equal(pointer.String("20m")))
+	g.Expect(m.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold).To(Equal(pointer.String("0.5")))
+	g.Expect(m.Spec.AutoScalerProfile.SkipNodesWithLocalStorage).To(Equal((*SkipNodesWithLocalStorage)(pointer.String(string(SkipNodesWithLocalStorageFalse)))))
+	g.Expect(m.Spec.AutoScalerProfile.SkipNodesWithSystemPods).To(Equal((*SkipNodesWithSystemPods)(pointer.String(string(SkipNodesWithSystemPodsTrue)))))
 }
