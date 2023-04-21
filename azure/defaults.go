@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/go-autorest/autorest"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
@@ -32,6 +35,10 @@ const (
 	DefaultAKSUserName = "azureuser"
 	// PublicCloudName is the name of the Azure public cloud.
 	PublicCloudName = "AzurePublicCloud"
+	// ChinaCloudName is the name of the Azure China cloud.
+	ChinaCloudName = "AzureChinaCloud"
+	// USGovernmentCloudName is the name of the Azure US Government cloud.
+	USGovernmentCloudName = "AzureUSGovernmentCloud"
 )
 
 const (
@@ -327,6 +334,53 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *Ex
 // UserAgent specifies a string to append to the agent identifier.
 func UserAgent() string {
 	return fmt.Sprintf("cluster-api-provider-azure/%s", version.Get().String())
+}
+
+// ARMClientOptions returns default ARM client options for CAPZ SDK v2 requests.
+func ARMClientOptions(azureEnvironment string) (*arm.ClientOptions, error) {
+	opts := &arm.ClientOptions{}
+
+	switch azureEnvironment {
+	case PublicCloudName:
+		opts.Cloud = cloud.AzurePublic
+	case ChinaCloudName:
+		opts.Cloud = cloud.AzureChina
+	case USGovernmentCloudName:
+		opts.Cloud = cloud.AzureGovernment
+	case "":
+		// No cloud name provided, so leave at defaults.
+	default:
+		return nil, fmt.Errorf("invalid cloud name %q", azureEnvironment)
+	}
+	opts.PerCallPolicies = []policy.Policy{
+		correlationIDPolicy{},
+		userAgentPolicy{},
+	}
+	opts.Retry.MaxRetries = -1 // Less than zero means one try and no retries.
+
+	return opts, nil
+}
+
+// correlationIDPolicy adds the "x-ms-correlation-request-id" header to requests.
+// It implements the policy.Policy interface.
+type correlationIDPolicy struct{}
+
+// Do adds the "x-ms-correlation-request-id" header if a request has a correlation ID in its context.
+func (p correlationIDPolicy) Do(req *policy.Request) (*http.Response, error) {
+	if corrID, ok := tele.CorrIDFromCtx(req.Raw().Context()); ok {
+		req.Raw().Header.Set(string(tele.CorrIDKeyVal), string(corrID))
+	}
+	return req.Next()
+}
+
+// userAgentPolicy extends the "User-Agent" header on requests.
+// It implements the policy.Policy interface.
+type userAgentPolicy struct{}
+
+// Do extends the "User-Agent" header of a request by appending CAPZ's user agent.
+func (p userAgentPolicy) Do(req *policy.Request) (*http.Response, error) {
+	req.Raw().Header.Set("User-Agent", req.Raw().UserAgent()+" "+UserAgent())
+	return req.Next()
 }
 
 // SetAutoRestClientDefaults set authorizer and user agent for autorest client.
