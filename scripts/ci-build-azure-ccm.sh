@@ -36,15 +36,22 @@ export CCM_IMAGE_NAME=azure-cloud-controller-manager
 export CNM_IMAGE_NAME=azure-cloud-node-manager
 # cloud node manager windows image version
 export WINDOWS_IMAGE_VERSION=1809
-declare -a IMAGES=("${CCM_IMAGE_NAME}" "${CNM_IMAGE_NAME}")
 
 setup() {
-    AZURE_CLOUD_PROVIDER_ROOT="$(go env GOPATH)/src/sigs.k8s.io/cloud-provider-azure"
-    export AZURE_CLOUD_PROVIDER_ROOT
+    AZURE_CLOUD_PROVIDER_ROOT="${AZURE_CLOUD_PROVIDER_ROOT:-""}"
+    if [[ -z "${AZURE_CLOUD_PROVIDER_ROOT}" ]]; then
+        AZURE_CLOUD_PROVIDER_ROOT="$(go env GOPATH)/src/sigs.k8s.io/cloud-provider-azure"
+        export AZURE_CLOUD_PROVIDER_ROOT
+    fi
+
     # the azure-cloud-provider repo expects IMAGE_REGISTRY.
     export IMAGE_REGISTRY=${REGISTRY}
-    pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && IMAGE_TAG=$(git rev-parse --short=7 HEAD) && export IMAGE_TAG && popd
-    echo "Image Tag is ${IMAGE_TAG}"
+    pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && TAG=$(git rev-parse --short=7 HEAD) &&
+      IMAGE_TAG_CCM="${IMAGE_TAG_CCM:-${TAG}}" && IMAGE_TAG_CNM="${IMAGE_TAG_CNM:-${TAG}}" &&
+      export IMAGE_TAG_CCM && export IMAGE_TAG_CNM && popd
+    echo "Image registry is ${REGISTRY}"
+    echo "Image Tag CCM is ${IMAGE_TAG_CCM}"
+    echo "Image Tag CNM is ${IMAGE_TAG_CNM}"
 
     if [[ -n "${WINDOWS_SERVER_VERSION:-}" ]]; then
         if [[ "${WINDOWS_SERVER_VERSION}" == "windows-2019" ]]; then
@@ -59,23 +66,23 @@ setup() {
 
 main() {
     if [[ "$(can_reuse_artifacts)" =~ "false" ]]; then
-        echo "Build Linux Azure amd64 cloud controller manager"
+        echo "Building Linux Azure amd64 cloud controller manager"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
         echo "Building Linux amd64 and Windows ${WINDOWS_IMAGE_VERSION} amd64 cloud node managers"
-            make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64 manifest-node-manager-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64
+        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64 manifest-node-manager-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64
     fi
 }
 
 # can_reuse_artifacts returns true if there exists CCM artifacts built from a PR that we can reuse
 can_reuse_artifacts() {
-    for IMAGE_NAME in "${IMAGES[@]}"; do
-        if ! docker pull "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"; then
+    declare -a IMAGES=("${CCM_IMAGE_NAME}:${IMAGE_TAG_CCM}" "${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}")
+    for IMAGE in "${IMAGES[@]}"; do
+        if ! docker pull "${REGISTRY}/${IMAGE}"; then
             echo "false" && return
         fi
     done
 
-    FULL_VERSION=$(docker manifest inspect mcr.microsoft.com/windows/nanoserver:${WINDOWS_IMAGE_VERSION} | jq -r '.manifests[0].platform["os.version"]')
-    if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG}" | grep -q "\"os.version\": \"${FULL_VERSION}\""; then
+    if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os.version\": \"${WINDOWS_IMAGE_VERSION}\""; then
         echo "false" && return
     fi
 
