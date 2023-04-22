@@ -84,6 +84,18 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{},
 	}}}
 
+	bothRoleAssignmentNamesPopulatedTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity:           infrav1.VMIdentitySystemAssigned,
+		RoleAssignmentName: existingRoleAssignmentName,
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			Name: existingRoleAssignmentName,
+		},
+	}}}
+
+	bothRoleAssignmentNamesPopulatedTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(bothRoleAssignmentNamesPopulatedTest.machinePool.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
+	g.Expect(bothRoleAssignmentNamesPopulatedTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
+
 	roleAssignmentExistTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
 	g.Expect(roleAssignmentExistTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
 
@@ -112,6 +124,10 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 
 	type test struct {
 		machinePool *AzureMachinePool
+	}
+
+	bootDiagnosticsDefault := &infrav1.BootDiagnostics{
+		StorageAccountType: infrav1.ManagedDiagnosticsStorage,
 	}
 
 	managedStorageDiagnostics := test{machinePool: &AzureMachinePool{
@@ -161,6 +177,18 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 		},
 	}}
 
+	// Test that when no diagnostics are specified, the defaults are set correctly
+	nilBootDiagnostics := test{machinePool: &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				Diagnostics: &infrav1.Diagnostics{},
+			},
+		},
+	}}
+
+	nilBootDiagnostics.machinePool.SetDiagnosticsDefaults()
+	g.Expect(nilBootDiagnostics.machinePool.Spec.Template.Diagnostics.Boot).To(Equal(bootDiagnosticsDefault))
+
 	managedStorageDiagnostics.machinePool.SetDiagnosticsDefaults()
 	g.Expect(managedStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
 
@@ -172,6 +200,45 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 
 	nilDiagnostics.machinePool.SetDiagnosticsDefaults()
 	g.Expect(nilDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
+}
+
+func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		machinePool *AzureMachinePool
+	}
+
+	// test to Ensure the the default policy is set to Deallocate if EvictionPolicy is nil
+	defaultEvictionPolicy := infrav1.SpotEvictionPolicyDeallocate
+	nilDiffDiskSettingsPolicy := test{machinePool: &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				SpotVMOptions: &infrav1.SpotVMOptions{
+					EvictionPolicy: nil,
+				},
+			},
+		},
+	}}
+	nilDiffDiskSettingsPolicy.machinePool.SetSpotEvictionPolicyDefaults()
+	g.Expect(nilDiffDiskSettingsPolicy.machinePool.Spec.Template.SpotVMOptions.EvictionPolicy).To(Equal(&defaultEvictionPolicy))
+
+	// test to Ensure the the default policy is set to Delete if diffDiskSettings option is set to "Local"
+	expectedEvictionPolicy := infrav1.SpotEvictionPolicyDelete
+	diffDiskSettingsPolicy := test{machinePool: &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				SpotVMOptions: &infrav1.SpotVMOptions{},
+				OSDisk: infrav1.OSDisk{
+					DiffDiskSettings: &infrav1.DiffDiskSettings{
+						Option: "Local",
+					},
+				},
+			},
+		},
+	}}
+	diffDiskSettingsPolicy.machinePool.SetSpotEvictionPolicyDefaults()
+	g.Expect(diffDiskSettingsPolicy.machinePool.Spec.Template.SpotVMOptions.EvictionPolicy).To(Equal(&expectedEvictionPolicy))
 }
 
 func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
