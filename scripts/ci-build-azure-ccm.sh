@@ -46,8 +46,8 @@ setup() {
 
     # the azure-cloud-provider repo expects IMAGE_REGISTRY.
     export IMAGE_REGISTRY=${REGISTRY}
-    pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && TAG=$(git rev-parse --short=7 HEAD) &&
-      IMAGE_TAG_CCM="${IMAGE_TAG_CCM:-${TAG}}" && IMAGE_TAG_CNM="${IMAGE_TAG_CNM:-${TAG}}" &&
+    pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && IMAGE_TAG=$(git rev-parse --short=7 HEAD) &&
+      IMAGE_TAG_CCM="${IMAGE_TAG_CCM:-${IMAGE_TAG}}" && IMAGE_TAG_CNM="${IMAGE_TAG_CNM:-${IMAGE_TAG}}" &&
       export IMAGE_TAG_CCM && export IMAGE_TAG_CNM && popd
     echo "Image registry is ${REGISTRY}"
     echo "Image Tag CCM is ${IMAGE_TAG_CCM}"
