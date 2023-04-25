@@ -1,6 +1,6 @@
 namespace: default
 resources:
-  - ../../../test/ci/prow-intree-cloud-provider
+  - ../../../test/ci/prow
   - ../../../addons/metrics-server/metrics-server-resource-set.yaml
 patchesStrategicMerge:
   - patches/machine-deployment-pr-version.yaml
