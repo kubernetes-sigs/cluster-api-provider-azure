@@ -11,5 +11,5 @@ spec:
         marketplace:
           publisher: cncf-upstream
           offer: capi
-          sku: ubuntu-1804-gen1
+          sku: ubuntu-2204-gen1
           version: "latest"
