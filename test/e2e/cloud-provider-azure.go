@@ -49,7 +49,7 @@ func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clus
 		StringValues: []string{fmt.Sprintf("cloudControllerManager.clusterCIDR=%s", strings.Join(cidrBlocks, `\,`))},
 	}
 	// If testing a CI version of Kubernetes, use CCM and CNM images built from source.
-	if useCIArtifacts {
+	if useCIArtifacts || usePRArtifacts {
 		options.Values = append(options.Values, fmt.Sprintf("cloudControllerManager.imageName=%s", os.Getenv("CCM_IMAGE_NAME")))
 		options.Values = append(options.Values, fmt.Sprintf("cloudNodeManager.imageName=%s", os.Getenv("CNM_IMAGE_NAME")))
 		options.Values = append(options.Values, fmt.Sprintf("cloudControllerManager.imageRepository=%s", os.Getenv("IMAGE_REGISTRY")))

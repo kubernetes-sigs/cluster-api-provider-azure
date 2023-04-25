@@ -60,11 +60,11 @@ spec:
         rm /tmp/yq_linux_amd64.tar.gz
 
         export KUBECONFIG=/etc/kubernetes/admin.conf
-        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${IMAGE_TAG}"
+        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${KUBE_IMAGE_TAG}"
         systemctl stop kubelet
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
         systemctl restart kubelet
     - path: /etc/kubernetes/azure.json
       owner: "root:root"
