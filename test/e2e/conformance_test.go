@@ -148,14 +148,8 @@ var _ = Describe("Conformance Tests", func() {
 			// The templates use WORKER_MACHINE_COUNT for linux machines for backwards compatibility so clear it
 			linuxWorkerMachineCount = 0
 
-			// Can only enable HostProcessContainers Feature gate in versions that know about it.
-			v122 := semver.MustParse("1.22.0")
-			v, err := semver.ParseTolerant(kubernetesVersion)
-			Expect(err).NotTo(HaveOccurred())
-			if v.GTE(v122) {
-				// Opt into using WindowsHostProcessContainers
-				Expect(os.Setenv("K8S_FEATURE_GATES", "WindowsHostProcessContainers=true,HPAContainerMetrics=true")).To(Succeed())
-			}
+			// Windows e2e tests require HPAContainerMetrics featuregate
+			Expect(os.Setenv("K8S_FEATURE_GATES", "HPAContainerMetrics=true")).To(Succeed())
 		}
 
 		controlPlaneMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT"), 10, 64)

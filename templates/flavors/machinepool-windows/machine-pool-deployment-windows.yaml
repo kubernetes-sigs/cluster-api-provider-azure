@@ -61,7 +61,6 @@ spec:
         azure-container-registry-config: 'c:/k/azure.json'
         cloud-provider: external
         pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:3.9"
-        feature-gates: "WindowsHostProcessContainers=true"
   files:
   - contentFrom:
       secret:
