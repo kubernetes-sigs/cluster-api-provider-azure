@@ -16,7 +16,6 @@ patchesStrategicMerge:
   - ../patches/controller-manager.yaml
   - ../patches/machine-deployment-worker-counts.yaml
   - ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
-  - ../../../flavors/base-windows-containerd/kubeadm-control-plane.yaml
   - ../patches/azuremachinetemplate-vmextension.yaml
   - ../patches/windows-containerd-patch.yaml
   - ../patches/windows-containerd-labels.yaml
