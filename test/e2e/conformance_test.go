@@ -147,9 +147,6 @@ var _ = Describe("Conformance Tests", func() {
 			// Conformance for windows doesn't require any linux worker machines.
 			// The templates use WORKER_MACHINE_COUNT for linux machines for backwards compatibility so clear it
 			linuxWorkerMachineCount = 0
-
-			// Windows e2e tests require HPAContainerMetrics featuregate
-			Expect(os.Setenv("K8S_FEATURE_GATES", "HPAContainerMetrics=true")).To(Succeed())
 		}
 
 		controlPlaneMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT"), 10, 64)

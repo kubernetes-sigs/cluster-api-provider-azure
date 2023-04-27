@@ -7,7 +7,7 @@ resources:
 patchesStrategicMerge:
   - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
-  - ../patches/windows-containerd-patch.yaml
+  - ../patches/windows-feature-gates.yaml
   - ../patches/windows-containerd-labels.yaml
   - ../patches/machine-deployment-worker-counts.yaml
   - patches/machine-deployment-ci-version.yaml
