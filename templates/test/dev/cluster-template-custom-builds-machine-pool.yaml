@@ -355,6 +355,12 @@ metadata:
 spec:
   location: ${AZURE_LOCATION}
   template:
+    image:
+      marketplace:
+        offer: capi-windows
+        publisher: cncf-upstream
+        sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
+        version: latest
     osDisk:
       diskSizeGB: 128
       managedDisk:
@@ -380,6 +386,34 @@ spec:
   - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
     path: C:/defender-exclude-calico.ps1
     permissions: "0744"
+  - content: |
+      $ErrorActionPreference = 'Stop'
+
+      Stop-Service kubelet -Force
+
+      $$KUBE_GIT_VERSION="${KUBE_GIT_VERSION}"
+      if($$KUBE_GIT_VERSION -ne "")
+      {
+        $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+        foreach ( $$binary in $$binaries )
+        {
+          echo "downloading binary: $$ci_url/$$binary.exe"
+          curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+        }
+      }
+
+      # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
+      # that is applied at at this stage (windows-kubeproxy-ci.yaml)
+      ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
+      ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
+
+      kubeadm.exe version -o=short
+      kubectl.exe version --client=true --short=true
+      kubelet.exe --version
+      kube-proxy.exe --version
+    path: C:/replace-pr-binaries.ps1
+    permissions: "0744"
   joinConfiguration:
     nodeRegistration:
       criSocket: npipe:////./pipe/containerd-containerd
@@ -393,6 +427,7 @@ spec:
   - powershell C:/defender-exclude-calico.ps1
   preKubeadmCommands:
   - powershell c:/create-external-network.ps1
+  - powershell C:/replace-pr-binaries.ps1
   users:
   - groups: Administrators
     name: capi
@@ -443,6 +478,14 @@ spec:
 ---
 apiVersion: v1
 data:
+  kube-proxy-patch: |-
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: windows-kubeproxy-ci
+      namespace: kube-system
+    data:
+      KUBEPROXY_PATH: "c:/k/kube-proxy.exe"
   proxy: |
     apiVersion: apps/v1
     kind: DaemonSet
