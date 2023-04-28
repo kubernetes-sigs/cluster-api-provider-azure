@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -27,4 +28,12 @@ import (
 type Reconciler interface {
 	CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter, serviceName string) (result genruntime.MetaObject, err error)
 	DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter, serviceName string) (err error)
+}
+
+// TagsGetterSetter represents an object that supports tags.
+type TagsGetterSetter interface {
+	GetAdditionalTags() infrav1.Tags
+	GetDesiredTags(resource genruntime.MetaObject) infrav1.Tags
+	GetActualTags(resource genruntime.MetaObject) infrav1.Tags
+	SetTags(resource genruntime.MetaObject, tags infrav1.Tags)
 }

@@ -33,6 +33,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -674,6 +675,127 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(result).To(BeNil())
 		g.Expect(err).NotTo(BeNil())
 		g.Expect(err.Error()).To(ContainSubstring("failed to update resource"))
+	})
+
+	t.Run("with tags success", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New(c, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := struct {
+			*mock_azure.MockASOResourceSpecGetter
+			*mock_aso.MockTagsGetterSetter
+		}{
+			MockASOResourceSpecGetter: mock_azure.NewMockASOResourceSpecGetter(mockCtrl),
+			MockTagsGetterSetter:      mock_aso.NewMockTagsGetterSetter(mockCtrl),
+		}
+		specMock.MockASOResourceSpecGetter.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		})
+		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
+			return nil, nil
+		})
+		specMock.MockASOResourceSpecGetter.EXPECT().WasManaged(gomock.Any()).Return(false)
+
+		specMock.MockTagsGetterSetter.EXPECT().GetActualTags(gomock.Any()).Return(nil)
+		specMock.MockTagsGetterSetter.EXPECT().GetAdditionalTags().Return(nil)
+		specMock.MockTagsGetterSetter.EXPECT().GetDesiredTags(gomock.Any()).Return(nil)
+		specMock.MockTagsGetterSetter.EXPECT().SetTags(gomock.Any(), gomock.Any())
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					ReconcilePolicyAnnotation: ReconcilePolicyManage,
+				},
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Conditions: []conditions.Condition{
+					{
+						Type:   conditions.ConditionTypeReady,
+						Status: metav1.ConditionTrue,
+					},
+				},
+			},
+		})).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue())
+
+		updated := &asoresourcesv1.ResourceGroup{}
+		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+		g.Expect(updated.Annotations).To(HaveKey(tagsLastAppliedAnnotation))
+	})
+
+	t.Run("with tags failure", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New(c, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := struct {
+			*mock_azure.MockASOResourceSpecGetter
+			*mock_aso.MockTagsGetterSetter
+		}{
+			MockASOResourceSpecGetter: mock_azure.NewMockASOResourceSpecGetter(mockCtrl),
+			MockTagsGetterSetter:      mock_aso.NewMockTagsGetterSetter(mockCtrl),
+		}
+		specMock.MockASOResourceSpecGetter.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		})
+		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
+			return nil, nil
+		})
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					ReconcilePolicyAnnotation: ReconcilePolicyManage,
+					tagsLastAppliedAnnotation: "{",
+				},
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Conditions: []conditions.Condition{
+					{
+						Type:   conditions.ConditionTypeReady,
+						Status: metav1.ConditionTrue,
+					},
+				},
+			},
+		})).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(err.Error()).To(ContainSubstring("failed to reconcile tags"))
 	})
 }
 

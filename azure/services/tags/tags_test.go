@@ -434,7 +434,7 @@ func TestTagsChanged(t *testing.T) {
 		test := test
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			changed, createdOrUpdated, deleted, newAnnotation := tagsChanged(test.lastAppliedTags, test.desiredTags, test.currentTags)
+			changed, createdOrUpdated, deleted, newAnnotation := TagsChanged(test.lastAppliedTags, test.desiredTags, test.currentTags)
 			g.Expect(changed).To(Equal(test.expectedResult))
 			g.Expect(createdOrUpdated).To(Equal(test.expectedCreatedOrUpdated))
 			g.Expect(deleted).To(Equal(test.expectedDeleted))
