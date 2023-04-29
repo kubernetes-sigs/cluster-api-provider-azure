@@ -868,3 +868,51 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureMachine_ValidateDiagnostics(t *testing.T) {
+	g := NewWithT(t)
+	testCases := []struct {
+		name           string
+		diagnostics    *Diagnostics
+		expectedErrors field.ErrorList
+	}{
+		{
+			name: "Valid diagnostics",
+			diagnostics: &Diagnostics{
+				Boot: &BootDiagnostics{StorageAccountType: UserManagedDiagnosticsStorage},
+			},
+			expectedErrors: nil,
+		},
+		{
+			name:           "Missing userManaged",
+			diagnostics:    &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: UserManagedDiagnosticsStorage, UserManaged: nil}},
+			expectedErrors: field.ErrorList{field.Required(field.NewPath("diagnostics").Child("Boot").Child("UserManaged"), "userManaged must be specified when storageAccountType is 'UserManagedDiagnosticsStorage'")},
+		},
+		{
+			name:           "Missing StorageAccountURI",
+			diagnostics:    &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: UserManagedDiagnosticsStorage, UserManaged: &UserManagedBootDiagnostics{StorageAccountURI: ""}}},
+			expectedErrors: field.ErrorList{field.Required(field.NewPath("diagnostics").Child("Boot").Child("UserManaged").Child("StorageAccountURI"), "StorageAccountURI cannot be empty when storageAccountType is 'UserManagedDiagnosticsStorage'")},
+		},
+		{
+			name:           "Invalid StorageAccountURI",
+			diagnostics:    &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage, UserManaged: &UserManagedBootDiagnostics{StorageAccountURI: "some-uri"}}},
+			expectedErrors: field.ErrorList{field.Invalid(field.NewPath("diagnostics").Child("Boot").Child("UserManaged").Child("StorageAccountURI"), "some-uri", "StorageAccountURI cannot be set when storageAccountType is 'ManagedDiagnosticsStorage'")},
+		},
+		{
+			name:           "Invalid StorageAccountURI for DisabledDiagnosticsStorage",
+			diagnostics:    &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: DisabledDiagnosticsStorage, UserManaged: &UserManagedBootDiagnostics{StorageAccountURI: "some-uri"}}},
+			expectedErrors: field.ErrorList{field.Invalid(field.NewPath("diagnostics").Child("Boot").Child("UserManaged").Child("StorageAccountURI"), "some-uri", "StorageAccountURI cannot be set when storageAccountType is 'DisabledDiagnosticsStorage'")},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualErrors := ValidateDiagnostics(tc.diagnostics, field.NewPath("diagnostics"))
+			g.Expect(len(actualErrors)).To(Equal(len(tc.expectedErrors)))
+
+			for i, err := range actualErrors {
+				g.Expect(err.Error()).To(Equal(tc.expectedErrors[i].Error()))
+			}
+		})
+	}
+}
