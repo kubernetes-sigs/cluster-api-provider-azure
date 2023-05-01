@@ -41,13 +41,16 @@ import (
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
-	AzureMachinePoolDrainSpecName   = "azure-mp-drain"
-	waitforResourceOperationTimeout = 30 * time.Second
+	AzureMachinePoolDrainSpecName        = "azure-mp-drain"
+	waitforResourceOperationTimeout      = 30 * time.Second
+	azureMachinePoolMachineTestFinalizer = "azuremachinepoolmachine.infrastructure.cluster.x-k8s.io/test"
 )
 
 // AzureMachinePoolDrainSpecInput is the input for AzureMachinePoolDrainSpec.
@@ -145,10 +148,16 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 	Expect(err).NotTo(HaveOccurred())
 	labelNodesWithMachinePoolName(ctx, workloadClusterProxy.GetClient(), amp.Name, ampmls)
 
+	By("adding the AzureMachinePoolMachine finalizer to the machine pool machines")
+	for i := range ampmls {
+		controllerutil.AddFinalizer(&ampmls[i], azureMachinePoolMachineTestFinalizer)
+	}
+
 	By(fmt.Sprintf("deploying a publicly exposed HTTP service with pod anti-affinity on machine pool: %s/%s", amp.Namespace, amp.Name))
 	_, _, _, cleanup := deployHTTPService(ctx, clientset, isWindows, customizers...)
 	defer cleanup()
 
+	var decreasedReplicas int32
 	By(fmt.Sprintf("decreasing the replica count by 1 on the machine pool: %s/%s", amp.Namespace, amp.Name))
 	Eventually(func() error {
 		helper, err := patch.NewHelper(owningMachinePool, mgmtClusterProxy.GetClient())
@@ -157,13 +166,39 @@ func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, worklo
 			return err
 		}
 
-		decreasedReplicas := *owningMachinePool.Spec.Replicas - int32(1)
+		decreasedReplicas = *owningMachinePool.Spec.Replicas - int32(1)
 		owningMachinePool.Spec.Replicas = &decreasedReplicas
 		return helper.Patch(ctx, owningMachinePool)
 	}, 3*time.Minute, 3*time.Second).Should(Succeed())
 
-	// TODO setup a watcher to validate expected 2nd order drain outcomes
-	// https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2159
+	By(fmt.Sprintf("checking for a machine to start draining for machine pool: %s/%s", amp.Namespace, amp.Name))
+	Eventually(func() error {
+		ampmls, err := getAzureMachinePoolMachines(ctx, mgmtClusterProxy, workloadClusterProxy, amp)
+		if err != nil {
+			LogWarning(errors.Wrap(err, "failed to list the azure machine pool machines").Error())
+			return err
+		}
+
+		for i := range ampmls {
+			if conditions.IsTrue(&ampmls[i], clusterv1.DrainingSucceededCondition) {
+				controllerutil.RemoveFinalizer(&ampmls[i], azureMachinePoolMachineTestFinalizer)
+				return nil // started draining the node prior to delete
+			}
+		}
+
+		return errors.New("no machine has started to drain")
+	}, 10*time.Minute, 3*time.Second).Should(Succeed())
+
+	By(fmt.Sprintf("waiting for the machine pool to scale down to %d replicas: %s/%s", decreasedReplicas, amp.Namespace, amp.Name))
+	Eventually(func() (int32, error) {
+		mp, err := getOwnerMachinePool(ctx, mgmtClusterProxy.GetClient(), amp.ObjectMeta)
+		if err != nil {
+			LogWarning(err.Error())
+			return 0, err
+		}
+
+		return int32(len(mp.Spec.ProviderIDList)), nil
+	}, 10*time.Minute, 3*time.Second).Should(Equal(decreasedReplicas))
 }
 
 func labelNodesWithMachinePoolName(ctx context.Context, workloadClient client.Client, mpName string, ampms []infrav1exp.AzureMachinePoolMachine) {
