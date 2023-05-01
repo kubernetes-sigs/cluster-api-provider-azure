@@ -118,7 +118,8 @@ RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com
 
 tilt_dockerfile_header = """
 FROM gcr.io/distroless/base:debug as tilt
-WORKDIR /
+WORKDIR /tilt
+RUN ["/busybox/chmod", "0777", "."]
 COPY --from=tilt-helper /process.txt .
 COPY --from=tilt-helper /start.sh .
 COPY --from=tilt-helper /restart.sh .
@@ -219,7 +220,7 @@ def capz():
         tilt_dockerfile_header,
     ])
 
-    entrypoint = ["sh", "/start.sh", "/manager"]
+    entrypoint = ["sh", "/tilt/start.sh", "/tilt/manager"]
     extra_args = settings.get("extra_args")
     if extra_args:
         entrypoint.extend(extra_args)
@@ -234,8 +235,8 @@ def capz():
         entrypoint = entrypoint,
         only = "manager",
         live_update = [
-            sync(".tiltbuild/manager", "/manager"),
-            run("sh /restart.sh"),
+            sync(".tiltbuild/manager", "/tilt/manager"),
+            run("sh /tilt/restart.sh"),
         ],
         ignore = ["templates"],
     )
