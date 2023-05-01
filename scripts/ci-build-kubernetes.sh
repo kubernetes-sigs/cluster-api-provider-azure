@@ -81,7 +81,7 @@ setup() {
 }
 
 main() {
-    if [[ "$(az storage container exists --name "${JOB_NAME}" --query exists)" == "false" ]]; then
+    if [[ "$(az storage container exists --name "${JOB_NAME}" --query exists --output tsv)" == "false" ]]; then
         echo "Creating ${JOB_NAME} storage container"
         az storage container create --name "${JOB_NAME}" > /dev/null
         az storage container set-permission --name "${JOB_NAME}" --public-access container > /dev/null
@@ -139,14 +139,14 @@ can_reuse_artifacts() {
     done
 
     for BINARY in "${BINARIES[@]}"; do
-        if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists)" == "false" ]]; then
+        if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists --output tsv)" == "false" ]]; then
             echo "false" && return
         fi
     done
 
     if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
         for BINARY in "${WINDOWS_BINARIES[@]}"; do
-            if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists)" == "false" ]]; then
+            if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists --output tsv)" == "false" ]]; then
                 echo "false" && return
             fi
         done
