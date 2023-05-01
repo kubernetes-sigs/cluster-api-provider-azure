@@ -138,6 +138,14 @@ type AzureManagedControlPlaneSpec struct {
 	// AutoscalerProfile is the parameters to be applied to the cluster-autoscaler when enabled
 	// +optional
 	AutoScalerProfile *AutoScalerProfile `json:"autoscalerProfile,omitempty"`
+
+	// AzureEnvironment is the name of the AzureCloud to be used.
+	// The default value that would be used by most users is "AzurePublicCloud", other values are:
+	// - ChinaCloud: "AzureChinaCloud"
+	// - PublicCloud: "AzurePublicCloud"
+	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	// +optional
+	AzureEnvironment string `json:"azureEnvironment,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.

@@ -16,7 +16,9 @@ limitations under the License.
 
 package v1beta1
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	corev1 "k8s.io/api/core/v1"
+)
 
 // AzureClusterClassSpec defines the AzureCluster properties that may be shared across several Azure clusters.
 type AzureClusterClassSpec struct {
