@@ -61,6 +61,9 @@ setup() {
     export KUBE_GIT_VERSION
     echo "using KUBE_GIT_VERSION=${KUBE_GIT_VERSION}"
 
+    # allow both TEST_WINDOWS and WINDOWS for backwards compatibility.
+    export TEST_WINDOWS="${TEST_WINDOWS:-${WINDOWS:-}}"
+
     # get the latest ci version for a particular release so that kubeadm is
     # able to pull existing images before being replaced by custom images
     major="$(echo "${KUBE_GIT_VERSION}" | ${GREP_BINARY} -Po "(?<=v)[0-9]+")"
@@ -113,7 +116,7 @@ main() {
             az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
         done
 
-        if [[ "${WINDOWS:-}" == "true" ]]; then
+        if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
             echo "Building Kubernetes Windows binaries"
 
             for BINARY in "${WINDOWS_BINARIES[@]}"; do
@@ -141,7 +144,7 @@ can_reuse_artifacts() {
         fi
     done
 
-    if [[ "${WINDOWS:-}" == "true" ]]; then
+    if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
         for BINARY in "${WINDOWS_BINARIES[@]}"; do
             if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists)" == "false" ]]; then
                 echo "false" && return
