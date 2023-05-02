@@ -32,6 +32,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -294,10 +295,10 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 // CheckTestBeforeCleanup checks to see if the current running Ginkgo test failed, and prints
 // a status message regarding cleanup.
 func CheckTestBeforeCleanup() {
-	if CurrentGinkgoTestDescription().Failed {
+	if CurrentSpecReport().State.Is(types.SpecStateFailureStates) {
 		Logf("FAILED!")
 	}
-	Logf("Cleaning up after \"%s\" spec", CurrentGinkgoTestDescription().FullTestText)
+	Logf("Cleaning up after \"%s\" spec", CurrentSpecReport().FullText())
 }
 
 func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {
