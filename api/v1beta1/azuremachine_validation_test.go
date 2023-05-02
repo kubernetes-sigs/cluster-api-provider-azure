@@ -908,8 +908,10 @@ func TestAzureMachine_ValidateDiagnostics(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			actualErrors := ValidateDiagnostics(tc.diagnostics, field.NewPath("diagnostics"))
-			g.Expect(len(actualErrors)).To(Equal(len(tc.expectedErrors)))
-
+			g.Expect(actualErrors).To(Equal(tc.expectedErrors))
+			if tc.diagnostics == nil || tc.diagnostics.Boot == nil {
+				t.Error("diagnostics/ diagnostics.Boot should not be nil")
+			}
 			for i, err := range actualErrors {
 				g.Expect(err.Error()).To(Equal(tc.expectedErrors[i].Error()))
 			}
