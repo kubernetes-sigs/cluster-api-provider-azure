@@ -35,8 +35,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
-	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
@@ -61,8 +59,6 @@ func init() {
 	utilruntime.Must(expv1.AddToScheme(scheme))
 	utilruntime.Must(infrav1.AddToScheme(scheme))
 	utilruntime.Must(infrav1exp.AddToScheme(scheme))
-	utilruntime.Must(infrav1alpha3.AddToScheme(scheme))
-	utilruntime.Must(infrav1alpha4.AddToScheme(scheme))
 
 	// Get the root of the current file to use in CRD paths.
 	_, filename, _, _ := goruntime.Caller(0) //nolint:dogsled // Ignore "declaration has 3 blank identifiers" check.

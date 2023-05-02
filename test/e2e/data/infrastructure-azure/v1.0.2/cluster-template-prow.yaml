@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
@@ -9,17 +9,17 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-        - 192.168.0.0/16
+      - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
     name: ${CLUSTER_NAME}-control-plane
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -30,24 +30,24 @@ spec:
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
   identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
     subnets:
-      - name: control-plane-subnet
-        role: control-plane
-      - name: node-subnet
-        natGateway:
-          name: node-natgateway
-        role: node
+    - name: control-plane-subnet
+      role: control-plane
+    - name: node-subnet
+      natGateway:
+        name: node-natgateway
+      role: node
     vnet:
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -59,11 +59,12 @@ spec:
         extraArgs:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
+          feature-gates: ${K8S_FEATURE_GATES:-""}
         extraVolumes:
-          - hostPath: /etc/kubernetes/azure.json
-            mountPath: /etc/kubernetes/azure.json
-            name: cloud-config
-            readOnly: true
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
@@ -73,10 +74,10 @@ spec:
           cluster-name: ${CLUSTER_NAME}
           v: "4"
         extraVolumes:
-          - hostPath: /etc/kubernetes/azure.json
-            mountPath: /etc/kubernetes/azure.json
-            name: cloud-config
-            readOnly: true
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -84,29 +85,29 @@ spec:
             quota-backend-bytes: "8589934592"
     diskSetup:
       filesystems:
-        - device: /dev/disk/azure/scsi1/lun0
-          extraOpts:
-            - -E
-            - lazy_itable_init=1,lazy_journal_init=1
-          filesystem: ext4
-          label: etcd_disk
-        - device: ephemeral0.1
-          filesystem: ext4
-          label: ephemeral0
-          replaceFS: ntfs
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
       partitions:
-        - device: /dev/disk/azure/scsi1/lun0
-          layout: true
-          overwrite: false
-          tableType: gpt
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
     files:
-      - contentFrom:
-          secret:
-            key: control-plane-azure.json
-            name: ${CLUSTER_NAME}-control-plane-azure-json
-        owner: root:root
-        path: /etc/kubernetes/azure.json
-        permissions: "0644"
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -122,19 +123,19 @@ spec:
           cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
-      - - LABEL=etcd_disk
-        - /var/lib/etcddisk
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
     postKubeadmCommands: []
     preKubeadmCommands: []
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -143,16 +144,16 @@ spec:
   template:
     spec:
       dataDisks:
-        - diskSizeGB: 256
-          lun: 0
-          nameSuffix: etcddisk
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
       osDisk:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -168,17 +169,17 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: KubeadmConfigTemplate
           name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -192,7 +193,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -201,13 +202,13 @@ spec:
   template:
     spec:
       files:
-        - contentFrom:
-            secret:
-              key: worker-node-azure.json
-              name: ${CLUSTER_NAME}-md-0-azure-json
-          owner: root:root
-          path: /etc/kubernetes/azure.json
-          permissions: "0644"
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
@@ -217,7 +218,92 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands: []
 ---
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-win
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
+  selector: {}
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-win
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-win
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  annotations:
+    runtime: containerd
+  name: ${CLUSTER_NAME}-md-win
+  namespace: default
+spec:
+  template:
+    spec:
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Windows
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-win
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-win-azure-json
+        owner: root:root
+        path: c:/k/azure.json
+        permissions: "0644"
+      - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+        path: C:/defender-exclude-calico.ps1
+        permissions: "0744"
+      - content: |
+          # /tmp is assumed created and required for upstream e2e tests to pass
+          New-Item -ItemType Directory -Force -Path C:\tmp\
+        path: C:/create-temp-folder.ps1
+        permissions: "0744"
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: npipe:////./pipe/containerd-containerd
+          kubeletExtraArgs:
+            azure-container-registry-config: c:/k/azure.json
+            cloud-config: c:/k/azure.json
+            cloud-provider: azure
+            feature-gates: WindowsHostProcessContainers=true
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - nssm set kubelet start SERVICE_AUTO_START
+      - powershell C:/defender-exclude-calico.ps1
+      preKubeadmCommands:
+      - powershell C:/create-temp-folder.ps1
+      users:
+      - groups: Administrators
+        name: capi
+        sshAuthorizedKeys:
+        - ${AZURE_SSH_PUBLIC_KEY:=""}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineHealthCheck
 metadata:
   name: ${CLUSTER_NAME}-mhc-0
@@ -229,11 +315,11 @@ spec:
     matchLabels:
       nodepool: pool1
   unhealthyConditions:
-    - status: "True"
-      timeout: 30s
-      type: E2ENodeUnhealthy
+  - status: "True"
+    timeout: 30s
+    type: E2ENodeUnhealthy
 ---
-apiVersion: addons.cluster.x-k8s.io/v1alpha4
+apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
 metadata:
   name: ${CLUSTER_NAME}-calico
@@ -243,11 +329,11 @@ spec:
     matchLabels:
       cni: ${CLUSTER_NAME}-calico
   resources:
-    - kind: ConfigMap
-      name: cni-${CLUSTER_NAME}-calico
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-calico
   strategy: ApplyOnce
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
 metadata:
   labels:
@@ -265,6 +351,26 @@ spec:
 ---
 apiVersion: v1
 data:
+  proxy: "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  labels:\n    k8s-app:
+    kube-proxy\n  name: kube-proxy-windows\n  namespace: kube-system\nspec:\n  selector:\n
+    \   matchLabels:\n      k8s-app: kube-proxy-windows\n  template:\n    metadata:\n
+    \     labels:\n        k8s-app: kube-proxy-windows\n    spec:\n      serviceAccountName:
+    kube-proxy\n      securityContext:\n        windowsOptions:\n          hostProcess:
+    true\n          runAsUserName: \"NT AUTHORITY\\\\system\"\n      hostNetwork:
+    true\n      containers:\n      - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess\n
+    \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1\"]\n
+    \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/\"\n        name:
+    kube-proxy\n        env:\n        - name: NODE_NAME\n          valueFrom:\n            fieldRef:\n
+    \             apiVersion: v1\n              fieldPath: spec.nodeName\n        -
+    name: POD_IP\n          valueFrom:\n            fieldRef:\n              fieldPath:
+    status.podIP\n        - name: KUBEPROXY_PATH\n          valueFrom:\n            configMapKeyRef:\n
+    \             name: windows-kubeproxy-ci\n              key: KUBEPROXY_PATH\n
+    \             optional: true\n        volumeMounts:\n        - mountPath: /var/lib/kube-proxy\n
+    \         name: kube-proxy\n      nodeSelector:\n        kubernetes.io/os: windows\n
+    \     tolerations:\n      - key: CriticalAddonsOnly\n        operator: Exists\n
+    \     - operator: Exists\n      volumes:\n      - configMap:\n          name:
+    kube-proxy\n          item:     \n        name: kube-proxy\n  updateStrategy:\n
+    \   type: RollingUpdate\n"
   resources: "---\n# Source: calico/templates/calico-config.yaml\n# This ConfigMap
     is used to configure a self-hosted Calico installation.\nkind: ConfigMap\napiVersion:
     v1\nmetadata:\n  name: calico-config\n  namespace: kube-system\ndata:\n  # Typha
@@ -2699,6 +2805,99 @@ data:
     calico-kube-controllers\nspec:\n  maxUnavailable: 1\n  selector:\n    matchLabels:\n
     \     k8s-app: calico-kube-controllers\n---\n# Source: calico/templates/calico-etcd-secrets.yaml\n\n---\n#
     Source: calico/templates/calico-typha.yaml\n\n---\n# Source: calico/templates/configure-canal.yaml\n"
+  windows-cni: "# strictAffinity required for windows\napiVersion: crd.projectcalico.org/v1\nkind:
+    IPAMConfig\nmetadata:\n  name: default\nspec:\n  autoAllocateBlocks: true\n  strictAffinity:
+    true\n---\nkind: ConfigMap\napiVersion: v1\nmetadata:\n  name: calico-static-rules\n
+    \ namespace: kube-system\n  labels:\n    tier: node\n    app: calico\ndata:\n
+    \ static-rules.json: |\n    {\n      \"Provider\": \"azure\",\n      \"Version\":
+    \"0.1\",\n      \"Rules\": [\n        {\n          \"Name\": \"EndpointPolicy\",\n
+    \         \"Rule\": {\n              \"Id\": \"wireserver\",\n              \"Type\":
+    \"ACL\",\n              \"Protocol\": 6,\n              \"Action\": \"Block\",\n
+    \             \"Direction\": \"Out\",\n              \"RemoteAddresses\": \"168.63.129.16/32\",\n
+    \             \"RemotePorts\": \"80\",\n              \"Priority\": 200,\n              \"RuleType\":
+    \"Switch\"\n            }\n          }\n      ]\n    } \n---\nkind: ConfigMap\napiVersion:
+    v1\nmetadata:\n  name: calico-config-windows\n  namespace: kube-system\n  labels:\n
+    \   tier: node\n    app: calico\ndata:\n  veth_mtu: \"1350\"\n  \n  cni_network_config:
+    |\n    {\n      \"name\": \"Calico\",\n      \"cniVersion\": \"0.3.1\",\n      \"plugins\":
+    [\n        {\n          \"windows_use_single_network\": true,\n          \"type\":
+    \"calico\",\n          \"mode\": \"vxlan\",\n          \"nodename\": \"__KUBERNETES_NODE_NAME__\",\n
+    \         \"nodename_file_optional\": true,\n          \"log_file_path\": \"c:/cni.log\",\n
+    \         \"log_level\": \"debug\",\n\n          \"vxlan_mac_prefix\": \"0E-2A\",\n
+    \         \"vxlan_vni\": 4096,\n          \"mtu\": __CNI_MTU__,\n          \"policy\":
+    {\n            \"type\": \"k8s\"\n          },\n\n          \"log_level\": \"info\",\n\n
+    \         \"capabilities\": {\"dns\": true},\n          \"DNS\":  {\n            \"Search\":
+    \ [\n              \"svc.cluster.local\"\n            ]\n          },\n\n          \"datastore_type\":
+    \"kubernetes\",\n\n          \"kubernetes\": {\n            \"kubeconfig\": \"__KUBECONFIG_FILEPATH__\"\n
+    \         },\n\n          \"ipam\": {\n            \"type\": \"calico-ipam\",\n
+    \           \"subnet\": \"usePodCidr\"\n          },\n\n          \"policies\":
+    \ [\n            {\n              \"Name\":  \"EndpointPolicy\",\n              \"Value\":
+    \ {\n                \"Type\":  \"OutBoundNAT\",\n                \"ExceptionList\":
+    \ [\n                  \"__K8S_SERVICE_CIDR__\"\n                ]\n              }\n
+    \           },\n            {\n              \"Name\":  \"EndpointPolicy\",\n
+    \             \"Value\":  {\n                \"Type\":  \"SDNROUTE\",\n                \"DestinationPrefix\":
+    \ \"__K8S_SERVICE_CIDR__\",\n                \"NeedEncap\":  true\n              }\n
+    \           }\n          ]\n        }\n      ]\n\n    }\n---\napiVersion: apps/v1\nkind:
+    DaemonSet\nmetadata:\n  name: calico-node-windows\n  labels:\n    tier: node\n
+    \   app: calico\n  namespace: kube-system\nspec:\n  selector:\n    matchLabels:\n
+    \     app: calico\n  template:\n    metadata:\n      labels:\n        tier: node\n
+    \       app: calico\n    spec:\n      affinity:\n        nodeAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n
+    \           nodeSelectorTerms:\n              - matchExpressions:\n                  -
+    key: kubernetes.io/os\n                    operator: In\n                    values:\n
+    \                     - windows\n                  - key: kubernetes.io/arch\n
+    \                   operator: In\n                    values:\n                      -
+    amd64\n      securityContext:\n        windowsOptions:\n          hostProcess:
+    true\n          runAsUserName: \"NT AUTHORITY\\\\system\"\n      hostNetwork:
+    true\n      serviceAccountName: calico-node\n      tolerations:\n      - operator:
+    Exists\n        effect: NoSchedule\n        # Mark the pod as a critical add-on
+    for rescheduling.\n      - key: CriticalAddonsOnly\n        operator: Exists\n
+    \     - effect: NoExecute\n        operator: Exists\n      initContainers:\n        #
+    This container installs the CNI binaries\n        # and CNI network config file
+    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.20.0-hostprocess\n
+    \         args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1\"]\n
+    \         imagePullPolicy: Always\n          env:\n            # Name of the CNI
+    config file to create.\n            - name: CNI_CONF_NAME\n              value:
+    \"10-calico.conflist\"\n            # The CNI network config to install on each
+    node.\n            - name: CNI_NETWORK_CONFIG\n              valueFrom:\n                configMapKeyRef:\n
+    \                 name: calico-config-windows\n                  key: cni_network_config\n
+    \           # Set the hostname based on the k8s node name.\n            - name:
+    KUBERNETES_NODE_NAME\n              valueFrom:\n                fieldRef:\n                  fieldPath:
+    spec.nodeName\n            # CNI MTU Config variable\n            - name: CNI_MTU\n
+    \             valueFrom:\n                configMapKeyRef:\n                  name:
+    calico-config-windows\n                  key: veth_mtu\n            # Prevents
+    the container from sleeping forever.\n            - name: SLEEP\n              value:
+    \"false\"\n            - name: K8S_SERVICE_CIDR\n              value: \"10.96.0.0/12\"\n
+    \         volumeMounts:\n            - mountPath: /host/opt/cni/bin\n              name:
+    cni-bin-dir\n            - mountPath: /host/etc/cni/net.d\n              name:
+    cni-net-dir\n            - name: kubeadm-config\n              mountPath: /etc/kubeadm-config/\n
+    \         securityContext:\n            windowsOptions:\n              hostProcess:
+    true\n              runAsUserName: \"NT AUTHORITY\\\\system\"\n      containers:\n
+    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.20.0-hostprocess\n
+    \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1\"]\n
+    \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        imagePullPolicy:
+    Always\n        volumeMounts:\n        - name: calico-config-windows\n          mountPath:
+    /etc/kube-calico-windows/\n        env:\n        - name: POD_NAME\n          valueFrom:\n
+    \           fieldRef:\n              apiVersion: v1\n              fieldPath:
+    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
+    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
+    name: CNI_IPAM_TYPE\n          value: \"calico-ipam\"\n        - name: CALICO_NETWORKING_BACKEND\n
+    \         value: \"vxlan\"\n        - name: KUBECONFIG\n          value: \"C:/etc/cni/net.d/calico-kubeconfig\"\n
+    \       - name: VXLAN_VNI\n          value: \"4096\"\n      - name: calico-node-felix\n
+    \       image: sigwindowstools/calico-node:v3.20.0-hostprocess\n        args:
+    [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1\"]\n        imagePullPolicy:
+    Always\n        workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        volumeMounts:\n
+    \       - name: calico-config-windows\n          mountPath: /etc/kube-calico-windows/\n
+    \       - name: calico-static-rules\n          mountPath: /calico/static-rules.json\n
+    \         subPath: static-rules.json\n        env:\n        - name: POD_NAME\n
+    \         valueFrom:\n            fieldRef:\n              apiVersion: v1\n              fieldPath:
+    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
+    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
+    name: VXLAN_VNI\n          value: \"4096\"\n        - name: KUBECONFIG\n          value:
+    \"C:/etc/cni/net.d/calico-kubeconfig\"\n      volumes:\n      - name: calico-config-windows\n
+    \       configMap:\n          name: calico-config-windows\n      - name: calico-static-rules\n
+    \       configMap:\n          name: calico-static-rules\n      # Used to install
+    CNI.\n      - name: cni-bin-dir\n        hostPath:\n          path: /opt/cni/bin\n
+    \     - name: cni-net-dir\n        hostPath:\n          path: /etc/cni/net.d\n
+    \     - name: kubeadm-config\n        configMap:\n          name: kubeadm-config\n"
 kind: ConfigMap
 metadata:
   annotations:
