@@ -29,23 +29,24 @@ import (
 
 // LBSpec defines the specification for a Load Balancer.
 type LBSpec struct {
-	Name                 string
-	ResourceGroup        string
-	SubscriptionID       string
-	ClusterName          string
-	Location             string
-	ExtendedLocation     *infrav1.ExtendedLocationSpec
-	Role                 string
-	Type                 infrav1.LBType
-	SKU                  infrav1.SKU
-	VNetName             string
-	VNetResourceGroup    string
-	SubnetName           string
-	BackendPoolName      string
-	FrontendIPConfigs    []infrav1.FrontendIP
-	APIServerPort        int32
-	IdleTimeoutInMinutes *int32
-	AdditionalTags       map[string]string
+	Name                  string
+	ResourceGroup         string
+	SubscriptionID        string
+	ClusterName           string
+	Location              string
+	ExtendedLocation      *infrav1.ExtendedLocationSpec
+	Role                  string
+	Type                  infrav1.LBType
+	SKU                   infrav1.SKU
+	VNetName              string
+	VNetResourceGroup     string
+	SubnetName            string
+	BackendPoolName       string
+	FrontendIPConfigs     []infrav1.FrontendIP
+	APIServerFrontendPort int32
+	APIServerBackendPort  int32
+	IdleTimeoutInMinutes  *int32
+	AdditionalTags        map[string]string
 }
 
 // ResourceName returns the name of the load balancer.
@@ -226,8 +227,8 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []network.SubResource) []n
 				LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
 					DisableOutboundSnat:     pointer.Bool(true),
 					Protocol:                network.TransportProtocolTCP,
-					FrontendPort:            pointer.Int32(lbSpec.APIServerPort),
-					BackendPort:             pointer.Int32(lbSpec.APIServerPort),
+					FrontendPort:            pointer.Int32(lbSpec.APIServerFrontendPort),
+					BackendPort:             pointer.Int32(lbSpec.APIServerBackendPort),
 					IdleTimeoutInMinutes:    lbSpec.IdleTimeoutInMinutes,
 					EnableFloatingIP:        pointer.Bool(false),
 					LoadDistribution:        network.LoadDistributionDefault,
@@ -260,7 +261,7 @@ func getProbes(lbSpec LBSpec) []network.Probe {
 				Name: pointer.String(tcpProbe),
 				ProbePropertiesFormat: &network.ProbePropertiesFormat{
 					Protocol:          network.ProbeProtocolTCP,
-					Port:              pointer.Int32(lbSpec.APIServerPort),
+					Port:              pointer.Int32(lbSpec.APIServerFrontendPort),
 					IntervalInSeconds: pointer.Int32(15),
 					NumberOfProbes:    pointer.Int32(4),
 				},

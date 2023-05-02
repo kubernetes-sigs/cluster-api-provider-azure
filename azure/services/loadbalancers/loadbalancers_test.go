@@ -18,6 +18,7 @@ package loadbalancers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -54,7 +55,8 @@ var (
 				},
 			},
 		},
-		APIServerPort: 6443,
+		APIServerFrontendPort: 443,
+		APIServerBackendPort:  6443,
 	}
 
 	fakeInternalAPILBSpec = LBSpec{
@@ -77,7 +79,8 @@ var (
 				},
 			},
 		},
-		APIServerPort: 6443,
+		APIServerFrontendPort: 443,
+		APIServerBackendPort:  6443,
 	}
 
 	fakeNodeOutboundLBSpec = LBSpec{
@@ -114,14 +117,21 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			name:          "noop if no LBSpecs are found",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{}, nil)
+			},
+		},
+		{
+			name:          "return LBSpecs fails",
+			expectedError: "Failed to get KubeadmControlPlane object",
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{}, errors.New("Failed to get KubeadmControlPlane object"))
 			},
 		},
 		{
 			name:          "fail to create a public LB",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec}, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, internalError)
 			},
@@ -130,7 +140,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			name:          "create public apiserver LB",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec}, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
@@ -139,7 +149,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			name:          "create internal apiserver LB",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakeInternalAPILBSpec})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakeInternalAPILBSpec}, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
@@ -148,7 +158,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			name:          "create node outbound LB",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakeNodeOutboundLBSpec})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakeNodeOutboundLBSpec}, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
@@ -157,7 +167,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			name:          "create multiple LBs",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec, &fakeInternalAPILBSpec, &fakeNodeOutboundLBSpec})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec, &fakeInternalAPILBSpec, &fakeNodeOutboundLBSpec}, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil, nil)
@@ -205,14 +215,21 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			name:          "noop if no LBSpecs are found",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{}, nil)
+			},
+		},
+		{
+			name:          "return LBSpecs fails",
+			expectedError: "Failed to get KubeadmControlPlane object",
+			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{}, errors.New("Failed to get KubeadmControlPlane object"))
 			},
 		},
 		{
 			name:          "delete a load balancer",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec}, nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.LoadBalancersReadyCondition, serviceName, nil)
 			},
@@ -221,7 +238,7 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			name:          "delete multiple load balancers",
 			expectedError: "",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec, &fakeInternalAPILBSpec, &fakeNodeOutboundLBSpec})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec, &fakeInternalAPILBSpec, &fakeNodeOutboundLBSpec}, nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakeInternalAPILBSpec, serviceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakeNodeOutboundLBSpec, serviceName).Return(nil)
@@ -232,7 +249,7 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			name:          "load balancer deletion fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec})
+				s.LBSpecs().Return([]azure.ResourceSpecGetter{&fakePublicAPILBSpec}, nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePublicAPILBSpec, serviceName).Return(internalError)
 				s.UpdateDeleteStatus(infrav1.LoadBalancersReadyCondition, serviceName, internalError)
 			},

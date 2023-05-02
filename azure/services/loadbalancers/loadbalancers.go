@@ -37,7 +37,7 @@ const (
 type LBScope interface {
 	azure.ClusterScoper
 	azure.AsyncStatusUpdater
-	LBSpecs() []azure.ResourceSpecGetter
+	LBSpecs() ([]azure.ResourceSpecGetter, error)
 }
 
 // Service provides operations on Azure resources.
@@ -68,7 +68,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	specs := s.Scope.LBSpecs()
+	specs, err := s.Scope.LBSpecs()
+	if err != nil {
+		return err
+	}
 	if len(specs) == 0 {
 		return nil
 	}
@@ -97,7 +100,10 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	specs := s.Scope.LBSpecs()
+	specs, err := s.Scope.LBSpecs()
+	if err != nil {
+		return err
+	}
 	if len(specs) == 0 {
 		return nil
 	}
