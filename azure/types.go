@@ -68,6 +68,7 @@ type ScaleSetSpec struct {
 	FailureDomains               []string
 	VMExtensions                 []infrav1.VMExtension
 	NetworkInterfaces            []infrav1.NetworkInterface
+	IPv6Enabled                  bool
 	OrchestrationMode            infrav1.OrchestrationModeType
 }
 

@@ -616,14 +616,24 @@ func (s *Service) getVirtualMachineScaleSetNetworkConfiguration(vmssSpec azure.S
 				},
 			}
 
-			ipconfig.Subnet = &compute.APIEntityReference{
-				ID: pointer.String(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
-			}
 			if j == 0 {
 				// Always use the first IPConfig as the Primary
 				ipconfig.Primary = pointer.Bool(true)
 			}
 			ipconfigs = append(ipconfigs, ipconfig)
+		}
+		if vmssSpec.IPv6Enabled {
+			ipv6Config := compute.VirtualMachineScaleSetIPConfiguration{
+				Name: pointer.String("ipConfigv6"),
+				VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+					PrivateIPAddressVersion: compute.IPVersionIPv6,
+					Primary:                 pointer.Bool(false),
+					Subnet: &compute.APIEntityReference{
+						ID: pointer.String(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
+					},
+				},
+			}
+			ipconfigs = append(ipconfigs, ipv6Config)
 		}
 		if i == 0 {
 			ipconfigs[0].LoadBalancerBackendAddressPools = &backendAddressPools
