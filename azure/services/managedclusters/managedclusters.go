@@ -123,6 +123,10 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 
 	if existingMC.AddonProfiles != nil {
 		for k, v := range existingMC.AddonProfiles {
+			// If existing addon profile is disabled and the desired addon profile is nil or doesn't specify, skip it.
+			if !*v.Enabled && (propertiesNormalized.AddonProfiles == nil || propertiesNormalized.AddonProfiles[k] == nil) {
+				continue
+			}
 			if existingMCPropertiesNormalized.AddonProfiles == nil {
 				existingMCPropertiesNormalized.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
 			}
@@ -167,7 +171,7 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 		existingMCClusterNormalized.Sku = existingMC.Sku
 	}
 
-	diff := cmp.Diff(clusterNormalized, existingMCClusterNormalized)
+	diff := cmp.Diff(existingMCClusterNormalized, clusterNormalized)
 	return diff
 }
 
@@ -371,7 +375,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
-			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
+			klog.V(2).Infof("Cluster %s: update required (+new -old):\n%s", s.Scope.ClusterName(), diff)
 			result, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
 			if err != nil {
 				return fmt.Errorf("failed to update managed cluster, %w", err)
