@@ -85,6 +85,7 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to get availability zones")
 	}
 
+	s.scope.AzureCluster.SetBackendPoolNameDefault()
 	s.scope.SetDNSName()
 	s.scope.SetControlPlaneSecurityRules()
 
