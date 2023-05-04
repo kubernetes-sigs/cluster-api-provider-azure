@@ -299,3 +299,215 @@ func TestEnsureStringSlicesAreEquivalent(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateZeroTransitionPtr(t *testing.T) {
+	testPath := field.NewPath("Spec", "Foo")
+
+	tests := []struct {
+		name           string
+		input1         *bool
+		input2         *bool
+		expectedOutput *field.Error
+	}{
+		{
+			name:   "nil",
+			input1: nil,
+			input2: nil,
+		},
+		{
+			name:   "no change",
+			input1: pointer.Bool(true),
+			input2: pointer.Bool(true),
+		},
+		{
+			name:   "can unset",
+			input1: pointer.Bool(true),
+			input2: nil,
+		},
+		{
+			name:           "can't set from empty",
+			input1:         nil,
+			input2:         pointer.Bool(true),
+			expectedOutput: field.Invalid(testPath, nil, setMessage),
+		},
+		{
+			name:           "can't change",
+			input1:         pointer.Bool(true),
+			input2:         pointer.Bool(false),
+			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			err := ValidateZeroTransition(testPath, tc.input1, tc.input2)
+			if tc.expectedOutput != nil {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Detail).To(Equal(tc.expectedOutput.Detail))
+				g.Expect(err.Type).To(Equal(tc.expectedOutput.Type))
+				g.Expect(err.Field).To(Equal(tc.expectedOutput.Field))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestValidateZeroTransitionString(t *testing.T) {
+	testPath := field.NewPath("Spec", "Foo")
+
+	tests := []struct {
+		name           string
+		input1         string
+		input2         string
+		expectedOutput *field.Error
+	}{
+		{
+			name:   "empty string",
+			input1: "",
+			input2: "",
+		},
+		{
+			name:   "no change",
+			input1: "foo",
+			input2: "foo",
+		},
+		{
+			name:   "can unset",
+			input1: "foo",
+			input2: "",
+		},
+		{
+			name:           "can't set from empty",
+			input1:         "",
+			input2:         "foo",
+			expectedOutput: field.Invalid(testPath, nil, setMessage),
+		},
+		{
+			name:           "can't change",
+			input1:         "foo",
+			input2:         "bar",
+			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			err := ValidateZeroTransition(testPath, tc.input1, tc.input2)
+			if tc.expectedOutput != nil {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Detail).To(Equal(tc.expectedOutput.Detail))
+				g.Expect(err.Type).To(Equal(tc.expectedOutput.Type))
+				g.Expect(err.Field).To(Equal(tc.expectedOutput.Field))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestValidateZeroTransitionStringPtr(t *testing.T) {
+	testPath := field.NewPath("Spec", "Foo")
+
+	tests := []struct {
+		name           string
+		input1         *string
+		input2         *string
+		expectedOutput *field.Error
+	}{
+		{
+			name:   "nil",
+			input1: nil,
+			input2: nil,
+		},
+		{
+			name:   "no change",
+			input1: pointer.String("foo"),
+			input2: pointer.String("foo"),
+		},
+		{
+			name:   "can unset",
+			input1: pointer.String("foo"),
+			input2: nil,
+		},
+		{
+			name:           "can't set from empty",
+			input1:         nil,
+			input2:         pointer.String("foo"),
+			expectedOutput: field.Invalid(testPath, nil, setMessage),
+		},
+		{
+			name:           "can't change",
+			input1:         pointer.String("foo"),
+			input2:         pointer.String("bar"),
+			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			err := ValidateZeroTransition(testPath, tc.input1, tc.input2)
+			if tc.expectedOutput != nil {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Detail).To(Equal(tc.expectedOutput.Detail))
+				g.Expect(err.Type).To(Equal(tc.expectedOutput.Type))
+				g.Expect(err.Field).To(Equal(tc.expectedOutput.Field))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestValidateZeroTransitionInt32(t *testing.T) {
+	testPath := field.NewPath("Spec", "Foo")
+
+	tests := []struct {
+		name           string
+		input1         int32
+		input2         int32
+		expectedOutput *field.Error
+	}{
+		{
+			name:   "unset",
+			input1: 0,
+			input2: 0,
+		},
+		{
+			name:   "no change",
+			input1: 5,
+			input2: 5,
+		},
+		{
+			name:   "can unset",
+			input1: 5,
+			input2: 0,
+		},
+		{
+			name:           "can't set from empty",
+			input1:         0,
+			input2:         5,
+			expectedOutput: field.Invalid(testPath, nil, setMessage),
+		},
+		{
+			name:           "can't change",
+			input1:         5,
+			input2:         6,
+			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			err := ValidateZeroTransition(testPath, tc.input1, tc.input2)
+			if tc.expectedOutput != nil {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Detail).To(Equal(tc.expectedOutput.Detail))
+				g.Expect(err.Type).To(Equal(tc.expectedOutput.Type))
+				g.Expect(err.Field).To(Equal(tc.expectedOutput.Field))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
