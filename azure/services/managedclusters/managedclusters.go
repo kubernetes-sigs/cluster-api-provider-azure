@@ -109,33 +109,34 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 		}
 	}
 
-	if managedCluster.AddonProfiles != nil {
-		for k, v := range managedCluster.AddonProfiles {
-			if propertiesNormalized.AddonProfiles == nil {
-				propertiesNormalized.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
-			}
-			propertiesNormalized.AddonProfiles[k] = &containerservice.ManagedClusterAddonProfile{
-				Enabled: v.Enabled,
-				Config:  v.Config,
-			}
-		}
-	}
-
-	if existingMC.AddonProfiles != nil {
-		for k, v := range existingMC.AddonProfiles {
-			// If existing addon profile is disabled and the desired addon profile is nil or doesn't specify, skip it.
-			if !*v.Enabled && (propertiesNormalized.AddonProfiles == nil || propertiesNormalized.AddonProfiles[k] == nil) {
-				continue
-			}
-			if existingMCPropertiesNormalized.AddonProfiles == nil {
-				existingMCPropertiesNormalized.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
-			}
-			existingMCPropertiesNormalized.AddonProfiles[k] = &containerservice.ManagedClusterAddonProfile{
-				Enabled: v.Enabled,
-				Config:  v.Config,
-			}
-		}
-	}
+	// TODO: Enable this after we start specifying addon profiles through DKC controller.
+	//if managedCluster.AddonProfiles != nil {
+	//	for k, v := range managedCluster.AddonProfiles {
+	//		if propertiesNormalized.AddonProfiles == nil {
+	//			propertiesNormalized.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
+	//		}
+	//		propertiesNormalized.AddonProfiles[k] = &containerservice.ManagedClusterAddonProfile{
+	//			Enabled: v.Enabled,
+	//			Config:  v.Config,
+	//		}
+	//	}
+	//}
+	//
+	//if existingMC.AddonProfiles != nil {
+	//	for k, v := range existingMC.AddonProfiles {
+	//		// If existing addon profile is disabled and the desired addon profile is nil or doesn't specify, skip it.
+	//		if !*v.Enabled && (propertiesNormalized.AddonProfiles == nil || propertiesNormalized.AddonProfiles[k] == nil) {
+	//			continue
+	//		}
+	//		if existingMCPropertiesNormalized.AddonProfiles == nil {
+	//			existingMCPropertiesNormalized.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
+	//		}
+	//		existingMCPropertiesNormalized.AddonProfiles[k] = &containerservice.ManagedClusterAddonProfile{
+	//			Enabled: v.Enabled,
+	//			Config:  v.Config,
+	//		}
+	//	}
+	//}
 
 	if managedCluster.NetworkProfile != nil {
 		propertiesNormalized.NetworkProfile.LoadBalancerProfile = managedCluster.NetworkProfile.LoadBalancerProfile
