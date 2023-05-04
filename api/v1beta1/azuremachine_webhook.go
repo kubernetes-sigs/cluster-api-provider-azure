@@ -124,7 +124,10 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 		allErrs = append(allErrs, err)
 	}
 
-	if err := webhookutils.ValidateImmutable(
+	// Spec.AcceleratedNetworking can only be reset to nil and no other changes apart from that
+	// is accepted if the field is set.
+	// Ref issue #3518
+	if err := webhookutils.ValidateZeroTransition(
 		field.NewPath("Spec", "AcceleratedNetworking"),
 		old.Spec.AcceleratedNetworking,
 		m.Spec.AcceleratedNetworking); err != nil {
