@@ -535,6 +535,34 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "validTest: azuremachine.spec.AcceleratedNetworking transition(from true) to nil is acceptable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: pointer.Bool(true),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "validTest: azuremachine.spec.AcceleratedNetworking transition(from false) to nil is acceptable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: pointer.Bool(false),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "invalidTest: azuremachine.spec.SpotVMOptions is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
