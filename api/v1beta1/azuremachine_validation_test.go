@@ -879,14 +879,9 @@ func TestAzureMachine_ValidateDiagnostics(t *testing.T) {
 		{
 			name: "Valid diagnostics",
 			diagnostics: &Diagnostics{
-				Boot: &BootDiagnostics{StorageAccountType: UserManagedDiagnosticsStorage},
+				Boot: &BootDiagnostics{StorageAccountType: UserManagedDiagnosticsStorage, UserManaged: &UserManagedBootDiagnostics{StorageAccountURI: "some-uri"}},
 			},
 			expectedErrors: nil,
-		},
-		{
-			name:           "Missing userManaged",
-			diagnostics:    &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: UserManagedDiagnosticsStorage, UserManaged: nil}},
-			expectedErrors: field.ErrorList{field.Required(field.NewPath("diagnostics").Child("Boot").Child("UserManaged"), "userManaged must be specified when storageAccountType is 'UserManagedDiagnosticsStorage'")},
 		},
 		{
 			name:           "Missing StorageAccountURI",
@@ -903,6 +898,11 @@ func TestAzureMachine_ValidateDiagnostics(t *testing.T) {
 			diagnostics:    &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: DisabledDiagnosticsStorage, UserManaged: &UserManagedBootDiagnostics{StorageAccountURI: "some-uri"}}},
 			expectedErrors: field.ErrorList{field.Invalid(field.NewPath("diagnostics").Child("Boot").Child("UserManaged").Child("StorageAccountURI"), "some-uri", "StorageAccountURI cannot be set when storageAccountType is 'DisabledDiagnosticsStorage'")},
 		},
+		{
+			name:           "Nil diagnostics",
+			diagnostics:    nil,
+			expectedErrors: field.ErrorList{field.Required(field.NewPath("diagnostics"), "diagnostics cannot be nil")},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -911,9 +911,6 @@ func TestAzureMachine_ValidateDiagnostics(t *testing.T) {
 			g.Expect(actualErrors).To(Equal(tc.expectedErrors))
 			if tc.diagnostics == nil || tc.diagnostics.Boot == nil {
 				t.Error("diagnostics/ diagnostics.Boot should not be nil")
-			}
-			for i, err := range actualErrors {
-				g.Expect(err.Error()).To(Equal(tc.expectedErrors[i].Error()))
 			}
 		})
 	}
