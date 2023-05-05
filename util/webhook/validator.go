@@ -169,6 +169,16 @@ func ValidateImmutable(path *field.Path, oldVal, newVal any) *field.Error {
 	return nil
 }
 
+// ValidateZeroTransition validates equality across two values, with only exception to allow
+// the value to transition of a zero value.
+func ValidateZeroTransition(path *field.Path, oldVal, newVal any) *field.Error {
+	if reflect.ValueOf(newVal).IsZero() {
+		// unsetting the field is allowed
+		return nil
+	}
+	return ValidateImmutable(path, oldVal, newVal)
+}
+
 // EnsureStringSlicesAreEquivalent returns if two string slices have equal lengths,
 // and that they have the exact same items; it does not enforce strict ordering of items.
 func EnsureStringSlicesAreEquivalent(a []string, b []string) bool {
