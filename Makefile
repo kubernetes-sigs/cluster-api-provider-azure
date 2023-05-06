@@ -661,7 +661,6 @@ test-e2e: ## Run "docker-build" and "docker-push" rules then run e2e tests.
 create-bootstrap-cluster:
 	KIND_CLUSTER_NAME=capz-e2e && ./scripts/kind-with-registry.sh
 
-
 .PHONY: test-e2e-skip-push
 test-e2e-skip-push: ## Run "docker-build" rule then run e2e tests.
 	PULL_POLICY=IfNotPresent MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \

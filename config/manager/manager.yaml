@@ -5,7 +5,9 @@ metadata:
   namespace: system
   labels:
     control-plane: capz-controller-manager
+    #ToDo: (@sonasingh46): Remove this label as part of aad pod identity deprecation
     aadpodidbinding: capz-controller-aadpodidentity-selector
+
 spec:
   selector:
     matchLabels:

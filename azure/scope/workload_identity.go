@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,14 +30,14 @@ import (
 
 /*
 
-AZWI (Azure Workload Identity) required deploying AZWI mutating admission webhook
+Azure Workload Identity (AZWI) requires deploying AZWI mutating admission webhook
 for self managed clusters e.g. Kind.
 
 The webhook injects the following environment variables to the pod that
-uses a service account with a annotation `azure.workload.identity/use=true`
+uses a label `azure.workload.identity/use=true`
 |-----------------------------------------------------------------------------------|
 |AZURE_AUTHORITY_HOST       | The Azure Active Directory (AAD) endpoint.            |
-|AZURE_CLIENT_ID            | The application/client ID of the Azure AD             |
+|AZURE_CLIENT_ID            | The client ID of the Azure AD             |
 |                           | application or user-assigned managed identity.        |
 |AZURE_TENANT_ID            | The tenant ID of the Azure subscription.              |
 |AZURE_FEDERATED_TOKEN_FILE | The path of the projected service account token file. |
@@ -50,12 +50,12 @@ which is mounted at path `/var/run/secrets/azure/tokens/azure-identity-token` to
 */
 
 const (
-	// AzureFedratedTokenFileENVKey is the env key for AZURE_FEDERATED_TOKEN_FILE.
-	AzureFedratedTokenFileENVKey = "AZURE_FEDERATED_TOKEN_FILE"
-	// AzureClientIDENVKey is the env key for AZURE_CLIENT_ID.
-	AzureClientIDENVKey = "AZURE_CLIENT_ID"
-	// AzureTenantIDENVKey is the env key for AZURE_TENANT_ID.
-	AzureTenantIDENVKey = "AZURE_TENANT_ID"
+	// AzureFedratedTokenFileEnvKey is the env key for AZURE_FEDERATED_TOKEN_FILE.
+	AzureFedratedTokenFileEnvKey = "AZURE_FEDERATED_TOKEN_FILE"
+	// AzureClientIDEnvKey is the env key for AZURE_CLIENT_ID.
+	AzureClientIDEnvKey = "AZURE_CLIENT_ID"
+	// AzureTenantIDEnvKey is the env key for AZURE_TENANT_ID.
+	AzureTenantIDEnvKey = "AZURE_TENANT_ID"
 )
 
 type workloadIdentityCredential struct {
@@ -67,10 +67,10 @@ type workloadIdentityCredential struct {
 
 // WorkloadIdentityCredentialOptions contains the configurable options for azwi.
 type WorkloadIdentityCredentialOptions struct {
+	azcore.ClientOptions
 	ClientID      string
 	TenantID      string
 	TokenFilePath string
-	azcore.ClientOptions
 }
 
 // NewWorkloadIdentityCredentialOptions returns an empty instance of WorkloadIdentityCredentialOptions.
@@ -92,7 +92,7 @@ func (w *WorkloadIdentityCredentialOptions) WithTenantID(tenantID string) *Workl
 
 // GetProjectedTokenPath return projected token file path from the env variable.
 func GetProjectedTokenPath() (string, error) {
-	tokenPath := os.Getenv(AzureFedratedTokenFileENVKey)
+	tokenPath := os.Getenv(AzureFedratedTokenFileEnvKey)
 	if strings.TrimSpace(tokenPath) == "" {
 		return "", errors.New("projected token path not injected")
 	}
@@ -110,7 +110,7 @@ func (w *WorkloadIdentityCredentialOptions) WithDefaults() (*WorkloadIdentityCre
 
 	// Fallback to using client ID from env variable if not set.
 	if strings.TrimSpace(w.ClientID) == "" {
-		w.ClientID = os.Getenv(AzureClientIDENVKey)
+		w.ClientID = os.Getenv(AzureClientIDEnvKey)
 		if strings.TrimSpace(w.ClientID) == "" {
 			return nil, errors.New("empty client ID")
 		}
@@ -118,7 +118,7 @@ func (w *WorkloadIdentityCredentialOptions) WithDefaults() (*WorkloadIdentityCre
 
 	// // Fallback to using tenant ID from env variable.
 	if strings.TrimSpace(w.TenantID) == "" {
-		w.TenantID = os.Getenv(AzureTenantIDENVKey)
+		w.TenantID = os.Getenv(AzureTenantIDEnvKey)
 		if strings.TrimSpace(w.TenantID) == "" {
 			return nil, errors.New("empty tenant ID")
 		}
