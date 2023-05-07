@@ -103,6 +103,7 @@ subjects:
 apiVersion: v1
 data:
   AZURE_ENVIRONMENT: AzurePublicCloud
+  AZURE_TENANT_ID: b39138ca-3cee-4b4a-a4d6-cd83d9dd62f0
 kind: ConfigMap
 metadata:
   labels:
