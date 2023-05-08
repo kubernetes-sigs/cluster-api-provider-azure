@@ -355,7 +355,7 @@ def deploy_worker_templates(template, substitutions):
 
     yaml = shlex.quote(yaml)
     flavor_name = os.path.basename(flavor)
-    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -; echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
 
     # wait for kubeconfig to be available
     flavor_cmd += "; until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; chmod 600 ./${CLUSTER_NAME}.kubeconfig; until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done"
@@ -364,7 +364,7 @@ def deploy_worker_templates(template, substitutions):
     # This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
     if "windows" in flavor_name:
         flavor_cmd += "; until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done"
-        flavor_cmd += "; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f - && " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -"
+        flavor_cmd += "; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -"
 
     # install calico
     if "ipv6" in flavor_name:
@@ -373,12 +373,12 @@ def deploy_worker_templates(template, substitutions):
         calico_values = "./templates/addons/calico-dual-stack/values.yaml"
     else:
         calico_values = "./templates/addons/calico/values.yaml"
-    flavor_cmd += "; " + helm_cmd + " repo add projectcalico https://docs.tigera.io/calico/charts; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install calico projectcalico/tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
+    flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
     if "intree-cloud-provider" not in flavor_name:
         flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
     local_resource(
         name = flavor_name,
-        cmd = flavor_cmd,
+        cmd = ["sh", "-ec", flavor_cmd],
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL,
         labels = ["flavors"],
