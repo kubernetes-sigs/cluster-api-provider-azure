@@ -231,6 +231,20 @@ func (mr *MockNSGScopeMockRecorder) TenantID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockNSGScope)(nil).TenantID))
 }
 
+// UpdateAnnotationJSON mocks base method.
+func (m *MockNSGScope) UpdateAnnotationJSON(arg0 string, arg1 map[string]interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAnnotationJSON", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAnnotationJSON indicates an expected call of UpdateAnnotationJSON.
+func (mr *MockNSGScopeMockRecorder) UpdateAnnotationJSON(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAnnotationJSON", reflect.TypeOf((*MockNSGScope)(nil).UpdateAnnotationJSON), arg0, arg1)
+}
+
 // UpdateDeleteStatus mocks base method.
 func (m *MockNSGScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
