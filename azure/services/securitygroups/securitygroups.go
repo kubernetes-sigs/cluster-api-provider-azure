@@ -35,6 +35,7 @@ type NSGScope interface {
 	azure.AsyncStatusUpdater
 	NSGSpecs() []azure.ResourceSpecGetter
 	IsVnetManaged() bool
+	UpdateAnnotationJSON(string, map[string]interface{}) error
 }
 
 // Service provides operations on Azure resources.
@@ -80,15 +81,32 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	var resErr error
 
+	newAnnotation := make(map[string]interface{})
+
 	// We go through the list of security groups to reconcile each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
-	for _, nsgSpec := range specs {
+	for _, resourceSpec := range specs {
+		nsgSpec := resourceSpec.(*NSGSpec)
+		currentAnnotation := make(map[string]string)
+
 		if _, err := s.CreateOrUpdateResource(ctx, nsgSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resErr == nil {
 				resErr = err
 			}
 		}
+
+		for _, rule := range nsgSpec.SecurityRules {
+			currentAnnotation[rule.Name] = rule.Description
+		}
+
+		if len(currentAnnotation) > 0 {
+			newAnnotation[nsgSpec.Name] = currentAnnotation
+		}
+	}
+
+	if err := s.Scope.UpdateAnnotationJSON(azure.SecurityRuleLastAppliedAnnotation, newAnnotation); err != nil {
+		return err
 	}
 
 	s.Scope.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, resErr)
