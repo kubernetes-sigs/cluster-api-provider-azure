@@ -35,6 +35,12 @@ const (
 	// for annotation formatting rules.
 	ManagedClusterTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-managedcluster"
 
+	// SecurityRuleLastAppliedAnnotation is the key for the Azure Cluster
+	// object annotation which tracks the security rules for security groups.
+	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+	// for annotation formatting rules.
+	SecurityRuleLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-security-rules"
+
 	// CustomDataHashAnnotation is the key for the machine object annotation
 	// which tracks the hash of the custom data.
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
