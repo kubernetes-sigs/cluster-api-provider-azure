@@ -649,20 +649,24 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditio
 	if err != nil {
 		return err
 	}
+
 	if !scope.IsClusterNamespaceAllowed(ctx, c, identity.Spec.AllowedNamespaces, namespace) {
 		conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
 		return errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 	}
-	identityHelper, err := patch.NewHelper(identity, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to init patch helper")
+
+	// Remove deprecated finalizer if it exists, Register the finalizer immediately to avoid orphaning Azure resources on delete.
+	if controllerutil.RemoveFinalizer(identity, deprecatedClusterIdentityFinalizer(finalizerPrefix, namespace, name)) ||
+		controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name)) {
+		// finalizers are added/removed then patch the object
+		identityHelper, err := patch.NewHelper(identity, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to init patch helper")
+		}
+		return identityHelper.Patch(ctx, identity)
 	}
-	// Remove deprecated finalizer if it exists.
-	controllerutil.RemoveFinalizer(identity, deprecatedClusterIdentityFinalizer(finalizerPrefix, namespace, name))
-	// If the AzureClusterIdentity doesn't have our finalizer, add it.
-	controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name))
-	// Register the finalizer immediately to avoid orphaning Azure resources on delete.
-	return identityHelper.Patch(ctx, identity)
+
+	return nil
 }
 
 // RemoveClusterIdentityFinalizer removes the finalizer on an AzureClusterIdentity.

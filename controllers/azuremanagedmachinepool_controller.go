@@ -244,10 +244,11 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 	log.Info("Reconciling AzureManagedMachinePool")
 
 	// If the AzureManagedMachinePool doesn't have our finalizer, add it.
-	controllerutil.AddFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
-	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	if err := scope.PatchObject(ctx); err != nil {
-		return reconcile.Result{}, err
+	if controllerutil.AddFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer) {
+		// Register the finalizer immediately to avoid orphaning Azure resources on delete
+		if err := scope.PatchObject(ctx); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	svc, err := ammpr.createAzureManagedMachinePoolService(scope)

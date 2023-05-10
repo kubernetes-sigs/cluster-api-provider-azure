@@ -275,10 +275,11 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	}
 
 	// If the AzureMachine doesn't have our finalizer, add it.
-	controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer)
-	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	if err := machinePoolScope.PatchObject(ctx); err != nil {
-		return reconcile.Result{}, err
+	if controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer) {
+		// Register the finalizer immediately to avoid orphaning Azure resources on delete
+		if err := machinePoolScope.PatchObject(ctx); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	if !clusterScope.Cluster.Status.InfrastructureReady {
