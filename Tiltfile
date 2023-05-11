@@ -1,5 +1,5 @@
 # -*- mode: Python -*-
-
+# buildifier: disable=module-docstring
 envsubst_cmd = "./hack/tools/bin/envsubst"
 kubectl_cmd = "./hack/tools/bin/kubectl"
 helm_cmd = "./hack/tools/bin/helm"
@@ -21,8 +21,8 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v1.4.2",
     "cert_manager_version": "v1.11.1",
-    "kubernetes_version": "v1.24.6",
-    "aks_kubernetes_version": "v1.24.6",
+    "kubernetes_version": "v1.25.6",
+    "aks_kubernetes_version": "v1.25.6",
     "flatcar_version": "3374.2.1",
 }
 
@@ -47,25 +47,27 @@ if "default_registry" in settings:
     default_registry(settings.get("default_registry"))
 
 # deploy CAPI
+# buildifier: disable=function-docstring
 def deploy_capi():
     version = settings.get("capi_version")
     capi_uri = "https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version)
     cmd = "curl --retry 3 -sSL {} | {} | {} apply -f -".format(capi_uri, envsubst_cmd, kubectl_cmd)
-    local(cmd, quiet = True)
+    local(cmd, quiet = True)  # TODO: create a non-verbose mode where all the logs run in quiet = false. And quite=true is called a verbose mode.
     if settings.get("extra_args"):
         extra_args = settings.get("extra_args")
         if extra_args.get("core"):
             core_extra_args = extra_args.get("core")
             if core_extra_args:
                 for namespace in ["capi-system", "capi-webhook-system"]:
-                    patch_args_with_extra_args(namespace, "capi-controller-manager", core_extra_args)
+                    patch_args_with_extra_args(namespace, "capi-controller-manager", core_extra_args)  # TODO: is this block outdated and to be removed. capi-webhook-system doesnt even exist. Need to check.
         if extra_args.get("kubeadm-bootstrap"):
             kb_extra_args = extra_args.get("kubeadm-bootstrap")
             if kb_extra_args:
                 patch_args_with_extra_args("capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", kb_extra_args)
 
+# buildifier: disable=function-docstring
 def patch_args_with_extra_args(namespace, name, extra_args):
-    args_str = str(local("{} get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[1].args}}".format(kubectl_cmd, name, namespace)))
+    args_str = str(local("{} get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[1].args}}".format(kubectl_cmd, name, namespace)))  # TODO: what is the container at index-1 in capi-kubeadm-bootstrap-controller-manager and capi-controller-manager ?
     args_to_add = [arg for arg in extra_args if arg not in args_str]
     if args_to_add:
         args = args_str[1:-1].split()
@@ -84,6 +86,7 @@ def include_user_tilt_files():
     for f in user_tiltfiles:
         include(f)
 
+# buildifier: disable=function-docstring
 def append_arg_for_container_in_deployment(yaml_stream, name, namespace, contains_image_name, args):
     for item in yaml_stream:
         if item["kind"] == "Deployment" and item.get("metadata").get("name") == name and item.get("metadata").get("namespace") == namespace:
@@ -96,6 +99,7 @@ def fixup_yaml_empty_arrays(yaml_str):
     yaml_str = yaml_str.replace("conditions: null", "conditions: []")
     return yaml_str.replace("storedVersions: null", "storedVersions: []")
 
+# buildifier: disable=function-docstring
 def validate_auth():
     substitutions = settings.get("kustomize_substitutions", {})
     os.environ.update(substitutions)
@@ -126,7 +130,7 @@ COPY --from=tilt-helper /restart.sh .
 COPY manager .
 """
 
-# Install the OpenTelemetry helm chart
+# buildifier: disable=function-docstring
 def observability():
     instrumentation_key = os.getenv("AZURE_INSTRUMENTATION_KEY", "")
     if instrumentation_key == "":
@@ -186,12 +190,13 @@ def observability():
     k8s_resource(workload = "capz-nmi", labels = ["cluster-api"])
 
 # Build CAPZ and add feature gates
+# buildifier: disable=function-docstring
 def capz():
     # Apply the kustomized yaml for this provider
     yaml = str(kustomizesub("./hack/observability"))  # build an observable kind deployment by default
 
     # add extra_args if they are defined
-    if settings.get("extra_args"):
+    if settings.get("extra_args"):  #TODO: verify if this is still valid today..
         azure_extra_args = settings.get("extra_args").get("azure")
         if azure_extra_args:
             yaml_dict = decode_yaml_stream(yaml)
@@ -221,7 +226,7 @@ def capz():
     ])
 
     entrypoint = ["sh", "/tilt/start.sh", "/tilt/manager"]
-    extra_args = settings.get("extra_args")
+    extra_args = settings.get("extra_args")  # TODO: rename this to tilt_extra_args or maybe append .get("tilt_extra_args") to .get("extra_args") ?
     if extra_args:
         entrypoint.extend(extra_args)
 
@@ -243,25 +248,27 @@ def capz():
 
     k8s_yaml(blob(yaml))
 
+# buildifier: disable=function-docstring
 def create_identity_secret():
     #create secret for identity password
     local(kubectl_cmd + " delete secret cluster-identity-secret --ignore-not-found=true")
 
     os.putenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret")
-    os.putenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", "default")
-    os.putenv("CLUSTER_IDENTITY_NAME", "cluster-identity")
+    os.putenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", "default")  # TODO: this doesn't seem to be used in this tiltfile anywhere, shall we remove it?
+    os.putenv("CLUSTER_IDENTITY_NAME", "cluster-identity")  # TODO: this doesn't seem to be used in this tiltfile anywhere, shall we remove it?
 
     os.putenv("AZURE_CLIENT_SECRET_B64", base64_encode(os.environ.get("AZURE_CLIENT_SECRET")))
     local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -", quiet = True, echo_off = True)
     os.unsetenv("AZURE_CLIENT_SECRET_B64")
 
+# buildifier: disable=function-docstring
 def create_crs():
     # create config maps
     local(kubectl_cmd + " delete configmaps csi-proxy-addon --ignore-not-found=true")
     local(kubectl_cmd + " create configmap csi-proxy-addon --from-file=templates/addons/windows/csi-proxy/csi-proxy.yaml")
 
     # need to set version for kube-proxy on windows.
-    os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))
+    os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))  # TODO: why are we not unsetting the KUBERNETES_VERSION after using it ?
     local(kubectl_cmd + " create configmap calico-windows-addon --from-file=templates/addons/windows/calico/ --dry-run=client -o yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -")
 
     # set up crs
@@ -269,6 +276,7 @@ def create_crs():
     local(kubectl_cmd + " apply -f templates/addons/windows/csi-proxy/csi-proxy-resource-set.yaml")
 
 # create flavor resources from cluster-template files in the templates directory
+# buildifier: disable=function-docstring
 def flavors():
     substitutions = settings.get("kustomize_substitutions", {})
 
@@ -280,7 +288,7 @@ def flavors():
         os.environ.update({az_key_b64_name: substitutions.get(az_key_b64_name)})
         os.environ.update({az_key_name: base64_decode(substitutions.get(az_key_b64_name))})
     else:
-        print("{} was not specified in tilt-settings.json, attempting to load {}".format(az_key_b64_name, default_key_path))
+        warn("{} was not specified in tilt-settings.json, attempting to load {}".format(az_key_b64_name, default_key_path))
         os.environ.update({az_key_b64_name: base64_encode_file(default_key_path)})
         os.environ.update({az_key_name: read_file_from_path(default_key_path)})
 
@@ -298,6 +306,7 @@ def flavors():
         labels = ["flavors"],
     )
 
+# buildifier: disable=function-docstring
 def deploy_worker_templates(template, substitutions):
     # validate template exists
     if not os.path.exists(template):
@@ -314,7 +323,7 @@ def deploy_worker_templates(template, substitutions):
         value = substitutions[substitution]
         yaml = yaml.replace("${" + substitution + "}", value)
 
-    # if metadata defined for worker-templates in tilt_settings
+    # if metadata defined for worker-templates in tilt_settings # TODO: check if this logicla block is still being used
     if "worker-templates" in settings:
         # first priority replacements defined per template
         if "flavors" in settings.get("worker-templates", {}):
@@ -333,14 +342,14 @@ def deploy_worker_templates(template, substitutions):
     # programmatically define any remaining vars
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     substitutions = {
-        "AZURE_LOCATION": "eastus",
+        "AZURE_LOCATION": os.getenv("AZURE_LOCATION", "eastus"),
         "AZURE_VNET_NAME": "${CLUSTER_NAME}-vnet",
         "AZURE_RESOURCE_GROUP": "${CLUSTER_NAME}-rg",
-        "CONTROL_PLANE_MACHINE_COUNT": "1",
-        "KUBERNETES_VERSION": settings.get("kubernetes_version"),
-        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_B2s",
-        "WORKER_MACHINE_COUNT": "2",
-        "AZURE_NODE_MACHINE_TYPE": "Standard_B2s",
+        "CONTROL_PLANE_MACHINE_COUNT": os.getenv("CONTROL_PLANE_MACHINE_COUNT", "1"),
+        "KUBERNETES_VERSION": os.getenv("KUBERNETES_VERSION", settings.get("kubernetes_version")),
+        "AZURE_CONTROL_PLANE_MACHINE_TYPE": os.getenv("AZURE_CONTROL_PLANE_MACHINE_TYPE", "Standard_B2s"),
+        "WORKER_MACHINE_COUNT": os.getenv("WORKER_MACHINE_COUNT", "2"),
+        "AZURE_NODE_MACHINE_TYPE": os.getenv("AZURE_NODE_MACHINE_TYPE", "Standard_B2s"),
         "FLATCAR_VERSION": settings.get("flatcar_version"),
         "CLUSTER_CLASS_NAME": "default",
     }
@@ -355,16 +364,21 @@ def deploy_worker_templates(template, substitutions):
 
     yaml = shlex.quote(yaml)
     flavor_name = os.path.basename(flavor)
-    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -; echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
 
-    # wait for kubeconfig to be available
-    flavor_cmd += "; until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; chmod 600 ./${CLUSTER_NAME}.kubeconfig; until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done"
+    generate_flavors = "RANDOM=$(bash -c 'echo $RANDOM'); export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; "  # TODO: can run generate-flavors just once?
+    copy_flavor_to_tiltbuild_dir = "echo " + yaml + "> ./.tiltbuild/" + flavor + "; "
+    apply_flavor = "cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -; "
+    echo_wait_for_cluster = "echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\"; "
+    save_workload_cluster_kubeconfig = "until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; chmod 600 ./${CLUSTER_NAME}.kubeconfig; "
+    wait_for_workload_cluster_nodes = "until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done; "
+
+    flavor_cmd = generate_flavors + copy_flavor_to_tiltbuild_dir + apply_flavor + echo_wait_for_cluster + save_workload_cluster_kubeconfig + wait_for_workload_cluster_nodes
 
     # copy the kubeadm configmap to the calico-system namespace.
     # This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
     if "windows" in flavor_name:
-        flavor_cmd += "; until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done"
-        flavor_cmd += "; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -"
+        flavor_cmd += "until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done; "
+        flavor_cmd += kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; "
 
     # install calico
     if "ipv6" in flavor_name:
@@ -373,9 +387,15 @@ def deploy_worker_templates(template, substitutions):
         calico_values = "./templates/addons/calico-dual-stack/values.yaml"
     else:
         calico_values = "./templates/addons/calico/values.yaml"
-    flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
-    if "intree-cloud-provider" not in flavor_name:
-        flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
+
+    # do not install calico for aks
+    if "aks" not in flavor_name:
+        flavor_cmd += helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace; "
+
+    # skip installing cloud-provider-azure for flavors: intree-cloud-provider or aks
+    if ("intree-cloud-provider" not in flavor_name) and ("aks" not in flavor_name):
+        flavor_cmd += helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}; "
+
     local_resource(
         name = flavor_name,
         cmd = ["sh", "-ec", flavor_cmd],
@@ -418,6 +438,9 @@ validate_auth()
 
 include_user_tilt_files()
 
+# load(ext://cert_manager) is loading the "cert_manager" extention from Tilt community and runs deploy_cert_manager().
+# Refer https://github.com/tilt-dev/tilt-extensions for more extensions.
+# buildifier: disable=load-on-top
 load("ext://cert_manager", "deploy_cert_manager")
 
 if settings.get("deploy_cert_manager"):
