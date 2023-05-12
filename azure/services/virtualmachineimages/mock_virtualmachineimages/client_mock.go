@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -52,10 +52,10 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // List mocks base method.
-func (m *MockClient) List(ctx context.Context, location, publisher, offer, sku string) (compute.ListVirtualMachineImageResource, error) {
+func (m *MockClient) List(ctx context.Context, location, publisher, offer, sku string) (armcompute.VirtualMachineImagesClientListResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, location, publisher, offer, sku)
-	ret0, _ := ret[0].(compute.ListVirtualMachineImageResource)
+	ret0, _ := ret[0].(armcompute.VirtualMachineImagesClientListResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
