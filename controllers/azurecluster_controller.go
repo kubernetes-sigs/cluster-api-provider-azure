@@ -204,10 +204,11 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 	azureCluster := clusterScope.AzureCluster
 
 	// If the AzureCluster doesn't have our finalizer, add it.
-	controllerutil.AddFinalizer(azureCluster, infrav1.ClusterFinalizer)
-	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	if err := clusterScope.PatchObject(ctx); err != nil {
-		return reconcile.Result{}, err
+	if controllerutil.AddFinalizer(azureCluster, infrav1.ClusterFinalizer) {
+		// Register the finalizer immediately to avoid orphaning Azure resources on delete
+		if err := clusterScope.PatchObject(ctx); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	acs, err := acr.createAzureClusterService(clusterScope)
