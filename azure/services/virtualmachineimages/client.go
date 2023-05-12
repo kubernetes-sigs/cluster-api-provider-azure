@@ -47,9 +47,9 @@ func NewClient(auth azure.Authorizer) (*AzureClient, error) {
 	return &AzureClient{c}, nil
 }
 
-// newVirtualMachineImagesClient creates a new VM images client from subscription ID and base URI.
+// newVirtualMachineImagesClient creates a new VM images client from subscription ID and Azure cloud environment name.
 func newVirtualMachineImagesClient(subscriptionID, azureEnvironment string) (armcompute.VirtualMachineImagesClient, error) {
-	credential, err := azidentity.NewDefaultAzureCredential(nil)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create default Azure credential")
 	}
@@ -57,11 +57,11 @@ func newVirtualMachineImagesClient(subscriptionID, azureEnvironment string) (arm
 	if err != nil {
 		return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create ARM client options")
 	}
-	computeClientFactory, err := armcompute.NewClientFactory(subscriptionID, credential, opts)
+	factory, err := armcompute.NewClientFactory(subscriptionID, cred, opts)
 	if err != nil {
 		return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create ARM compute client factory")
 	}
-	return *computeClientFactory.NewVirtualMachineImagesClient(), nil
+	return *factory.NewVirtualMachineImagesClient(), nil
 }
 
 // List returns a VM image list response.
