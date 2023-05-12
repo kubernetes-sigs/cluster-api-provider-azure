@@ -28,7 +28,7 @@ executing clusterctl.
 # Kubernetes values
 export CLUSTER_NAME="my-cluster"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.24.6"
+export KUBERNETES_VERSION="v1.25.6"
 
 # Azure values
 export AZURE_LOCATION="southcentralus"
