@@ -52,6 +52,10 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
+	vmextensionsSvc, err := vmextensions.New(machineScope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create vmextensions service")
+	}
 	ams := &azureMachineService{
 		scope: machineScope,
 		services: []azure.ServiceReconciler{
@@ -62,7 +66,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 			disks.New(machineScope),
 			virtualmachines.New(machineScope),
 			roleassignments.New(machineScope),
-			vmextensions.New(machineScope),
+			vmextensionsSvc,
 			tags.New(machineScope),
 		},
 		skuCache: cache,

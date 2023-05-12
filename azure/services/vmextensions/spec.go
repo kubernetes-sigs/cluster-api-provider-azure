@@ -19,7 +19,7 @@ package vmextensions
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -50,17 +50,17 @@ func (s *VMExtensionSpec) OwnerResourceName() string {
 // Parameters returns the parameters for the VM extension.
 func (s *VMExtensionSpec) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
 	if existing != nil {
-		_, ok := existing.(compute.VirtualMachineExtension)
+		_, ok := existing.(armcompute.VirtualMachineExtension)
 		if !ok {
-			return nil, errors.Errorf("%T is not a compute.VirtualMachineExtension", existing)
+			return nil, errors.Errorf("%T is not an armcompute.VirtualMachineExtension", existing)
 		}
 
 		// VM extension already exists, nothing to update.
 		return nil, nil
 	}
 
-	return compute.VirtualMachineExtension{
-		VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
+	return armcompute.VirtualMachineExtension{
+		Properties: &armcompute.VirtualMachineExtensionProperties{
 			Publisher:          pointer.String(s.Publisher),
 			Type:               pointer.String(s.Name),
 			TypeHandlerVersion: pointer.String(s.Version),

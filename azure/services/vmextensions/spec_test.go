@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -40,8 +40,8 @@ var (
 		"my-location",
 	}
 
-	fakeVMExtensionParams = compute.VirtualMachineExtension{
-		VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
+	fakeVMExtensionParams = armcompute.VirtualMachineExtension{
+		Properties: &armcompute.VirtualMachineExtensionProperties{
 			Publisher:          pointer.String("my-publisher"),
 			Type:               pointer.String("my-vm-extension"),
 			TypeHandlerVersion: pointer.String("1.0"),
