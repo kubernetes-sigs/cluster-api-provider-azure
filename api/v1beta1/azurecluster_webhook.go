@@ -168,7 +168,7 @@ func (c *AzureCluster) validateSubnetUpdate(old *AzureCluster) field.ErrorList {
 						c.Spec.NetworkSpec.Subnets[i].RouteTable.Name, "field is immutable"),
 				)
 			}
-			if subnet.NatGateway.Name != oldSubnet.NatGateway.Name {
+			if (subnet.NatGateway.Name != oldSubnet.NatGateway.Name) && (oldSubnet.NatGateway.Name != "") {
 				allErrs = append(allErrs,
 					field.Invalid(field.NewPath("spec", "networkSpec", "subnets").Index(oldSubnetIndex[subnet.Name]).Child("NatGateway").Child("Name"),
 						c.Spec.NetworkSpec.Subnets[i].NatGateway.Name, "field is immutable"),
