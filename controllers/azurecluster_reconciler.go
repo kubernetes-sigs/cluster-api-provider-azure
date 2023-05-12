@@ -55,6 +55,10 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
+	natgatewaysSvc, err := natgateways.New(scope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create natgateways service")
+	}
 	return &azureClusterService{
 		scope: scope,
 		services: []azure.ServiceReconciler{
@@ -63,7 +67,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			securitygroups.New(scope),
 			routetables.New(scope),
 			publicips.New(scope),
-			natgateways.New(scope),
+			natgatewaysSvc,
 			subnets.New(scope),
 			vnetpeerings.New(scope),
 			loadbalancers.New(scope),

@@ -18,13 +18,11 @@ package natgateways
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -32,20 +30,33 @@ import (
 
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
-	natgateways network.NatGatewaysClient
+	natgateways armnetwork.NatGatewaysClient
 }
 
-// newClient creates a new VM client from subscription ID.
-func newClient(auth azure.Authorizer) *azureClient {
-	c := netNatGatewaysClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &azureClient{c}
+// newClient creates a new azureClient from an Authorizer.
+func newClient(auth azure.Authorizer) (*azureClient, error) {
+	c, err := newNatGatewaysClient(auth.SubscriptionID(), auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create new NAT gateways client")
+	}
+	return &azureClient{c}, nil
 }
 
-// netNatGatewaysClient creates a new nat gateways client from subscription ID.
-func netNatGatewaysClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.NatGatewaysClient {
-	natGatewaysClient := network.NewNatGatewaysClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&natGatewaysClient.Client, authorizer)
-	return natGatewaysClient
+// newNatGatewaysClient creates a new NAT gateways client from subscription ID and Azure cloud environment name.
+func newNatGatewaysClient(subscriptionID, azureEnvironment string) (armnetwork.NatGatewaysClient, error) {
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return armnetwork.NatGatewaysClient{}, errors.Wrap(err, "failed to create default Azure credential")
+	}
+	opts, err := azure.ARMClientOptions(azureEnvironment)
+	if err != nil {
+		return armnetwork.NatGatewaysClient{}, errors.Wrap(err, "failed to create ARM client options")
+	}
+	factory, err := armnetwork.NewClientFactory(subscriptionID, cred, opts)
+	if err != nil {
+		return armnetwork.NatGatewaysClient{}, errors.Wrap(err, "failed to create ARM network client factory")
+	}
+	return *factory.NewNatGatewaysClient(), nil
 }
 
 // Get gets the specified nat gateway.
@@ -53,22 +64,32 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.Get")
 	defer done()
 
-	return ac.natgateways.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+	resp, err := ac.natgateways.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), &armnetwork.NatGatewaysClientGetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return resp.NatGateway, nil
 }
 
 // CreateOrUpdateAsync creates or updates a Nat Gateway asynchronously.
-// It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// It sends a PUT request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.CreateOrUpdateAsync")
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.NatGatewaysClientCreateOrUpdateResponse], err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.CreateOrUpdateAsync")
 	defer done()
 
-	natGateway, ok := parameters.(network.NatGateway)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a network.NatGateway", parameters)
+	var natGateway armnetwork.NatGateway
+	if parameters != nil {
+		ngw, ok := parameters.(armnetwork.NatGateway)
+		if !ok {
+			return nil, nil, errors.Errorf("%T is not an armnetwork.NatGateway", parameters)
+		}
+		natGateway = ngw
 	}
 
-	createFuture, err := ac.natgateways.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), natGateway)
+	opts := &armnetwork.NatGatewaysClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
+	log.V(4).Info("sending request", "resumeToken", resumeToken)
+	poller, err = ac.natgateways.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), natGateway, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -76,26 +97,27 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = createFuture.WaitForCompletionRef(ctx, ac.natgateways.Client)
+	result, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{})
 	if err != nil {
-		// if an error occurs, return the future.
+		// if an error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return nil, &createFuture, err
+		return nil, poller, err
 	}
 
-	result, err = createFuture.Result(ac.natgateways)
-	// if the operation completed, return a nil future
+	// if the operation completed, return a nil poller
 	return result, nil, err
 }
 
 // DeleteAsync deletes a Nat Gateway asynchronously. DeleteAsync sends a DELETE
-// request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.DeleteAsync")
+func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armnetwork.NatGatewaysClientDeleteResponse], err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.DeleteAsync")
 	defer done()
 
-	deleteFuture, err := ac.natgateways.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
+	opts := &armnetwork.NatGatewaysClientBeginDeleteOptions{ResumeToken: resumeToken}
+	log.V(4).Info("sending request", "resumeToken", resumeToken)
+	poller, err = ac.natgateways.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -103,54 +125,47 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = deleteFuture.WaitForCompletionRef(ctx, ac.natgateways.Client)
+	_, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{})
 	if err != nil {
-		// if an error occurs, return the future.
+		// if an error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return &deleteFuture, err
+		return poller, err
 	}
-	_, err = deleteFuture.Result(ac.natgateways)
-	// if the operation completed, return a nil future.
+
+	// if the operation completed, return a nil poller.
 	return nil, err
 }
 
 // IsDone returns true if the long-running operation has completed.
-func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.IsDone")
+func (ac *azureClient) IsDone(ctx context.Context, poller interface{}) (isDone bool, err error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.IsDone")
 	defer done()
 
-	return future.DoneWithContext(ctx, ac.natgateways)
+	switch t := poller.(type) {
+	case *runtime.Poller[armnetwork.NatGatewaysClientCreateOrUpdateResponse]:
+		c, _ := poller.(*runtime.Poller[armnetwork.NatGatewaysClientCreateOrUpdateResponse])
+		return c.Done(), nil
+	case *runtime.Poller[armnetwork.NatGatewaysClientDeleteResponse]:
+		d, _ := poller.(*runtime.Poller[armnetwork.NatGatewaysClientDeleteResponse])
+		return d.Done(), nil
+	default:
+		return false, errors.Errorf("unexpected poller type %T", t)
+	}
 }
 
 // Result fetches the result of a long-running operation future.
-func (ac *azureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
+func (ac *azureClient) Result(ctx context.Context, poller interface{}) (result interface{}, err error) {
 	_, _, done := tele.StartSpanWithLogger(ctx, "natgateways.azureClient.Result")
 	defer done()
 
-	if future == nil {
-		return nil, errors.Errorf("cannot get result from nil future")
-	}
-
-	switch futureType {
-	case infrav1.PutFuture:
-		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
-		// Unfortunately the FutureAPI can't be casted directly to NatGatewaysCreateOrUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
-		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
-		var createFuture *network.NatGatewaysCreateOrUpdateFuture
-		jsonData, err := future.MarshalJSON()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal future")
-		}
-		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal future data")
-		}
-		return createFuture.Result(ac.natgateways)
-
-	case infrav1.DeleteFuture:
-		// Delete does not return a result NAT gateway
-		return nil, nil
-
+	switch t := poller.(type) {
+	case *runtime.Poller[armnetwork.NatGatewaysClientCreateOrUpdateResponse]:
+		c, _ := poller.(*runtime.Poller[armnetwork.NatGatewaysClientCreateOrUpdateResponse])
+		return c.Result(ctx)
+	case *runtime.Poller[armnetwork.NatGatewaysClientDeleteResponse]:
+		d, _ := poller.(*runtime.Poller[armnetwork.NatGatewaysClientDeleteResponse])
+		return d.Result(ctx)
 	default:
-		return nil, errors.Errorf("unknown future type %q", futureType)
+		return false, errors.Errorf("unexpected poller type %T", t)
 	}
 }
