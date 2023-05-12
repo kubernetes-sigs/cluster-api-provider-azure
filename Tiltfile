@@ -21,8 +21,8 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v1.4.2",
     "cert_manager_version": "v1.11.1",
-    "kubernetes_version": "v1.24.6",
-    "aks_kubernetes_version": "v1.24.6",
+    "kubernetes_version": "v1.25.6",
+    "aks_kubernetes_version": "v1.25.6",
     "flatcar_version": "3374.2.1",
 }
 
@@ -366,16 +366,8 @@ def deploy_worker_templates(template, substitutions):
         flavor_cmd += "; until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done"
         flavor_cmd += "; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -"
 
-    # install calico
-    if "ipv6" in flavor_name:
-        calico_values = "./templates/addons/calico-ipv6/values.yaml"
-    elif "dual-stack" in flavor_name:
-        calico_values = "./templates/addons/calico-dual-stack/values.yaml"
-    else:
-        calico_values = "./templates/addons/calico/values.yaml"
-    flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
-    if "intree-cloud-provider" not in flavor_name:
-        flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
+    flavor_cmd += get_addons(flavor_name)
+
     local_resource(
         name = flavor_name,
         cmd = ["sh", "-ec", flavor_cmd],
@@ -384,6 +376,26 @@ def deploy_worker_templates(template, substitutions):
         labels = ["flavors"],
         allow_parallel = True,
     )
+
+def get_addons(flavor_name):
+    # do not install calico and out of tree cloud provider for aks workload cluster
+    if "aks" in flavor_name:
+        return ""
+
+    # install calico
+    if "ipv6" in flavor_name:
+        calico_values = "./templates/addons/calico-ipv6/values.yaml"
+    elif "dual-stack" in flavor_name:
+        calico_values = "./templates/addons/calico-dual-stack/values.yaml"
+    else:
+        calico_values = "./templates/addons/calico/values.yaml"
+
+    addon_cmd = "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
+
+    if "intree-cloud-provider" not in flavor_name:
+        addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
+
+    return addon_cmd
 
 def base64_encode(to_encode):
     encode_blob = local("echo '{}' | tr -d '\n' | base64 | tr -d '\n'".format(to_encode), quiet = True, echo_off = True)
