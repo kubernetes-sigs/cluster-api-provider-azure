@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
@@ -147,6 +148,12 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 			WithTenantID(p.Identity.Spec.TenantID).
 			WithClientID(p.Identity.Spec.ClientID).
 			WithDefaults()
+		// ToDo: Remove the env var setting before merging. Just for testing
+		// Ref: https://kubernetes.slack.com/archives/CEX9HENG7/p1683983584649619
+		os.Setenv(AzureTenantIDEnvKey, p.Identity.Spec.TenantID)
+		os.Setenv(AzureClientIDEnvKey, p.Identity.Spec.ClientID)
+		//----------------------------------------------------------------------
+
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to setup azwi options for identity %s", p.Identity.Name)
 		}
