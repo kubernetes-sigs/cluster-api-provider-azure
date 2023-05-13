@@ -472,10 +472,13 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
+      identity: UserAssigned
       osDisk:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ""
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: replace_me
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1

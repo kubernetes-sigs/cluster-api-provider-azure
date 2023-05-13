@@ -32,6 +32,9 @@ spec:
       maxSurge: 25%
       maxUnavailable: 1
       deletePolicy: Oldest
+  identity: UserAssigned
+  userAssignedIdentities:
+  - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
   template:
     vmSize: ${AZURE_NODE_MACHINE_TYPE}
     osDisk:
