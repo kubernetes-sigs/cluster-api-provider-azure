@@ -1,8 +1,6 @@
 - op: replace
   path: /spec/type
   value: UserAssignedMSI
-- op: remove
-  path: /spec/clientSecret
 - op: add
   path: /spec/resourceID
   value: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
