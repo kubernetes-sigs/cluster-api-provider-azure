@@ -103,7 +103,10 @@ subjects:
 apiVersion: v1
 data:
   AZURE_ENVIRONMENT: AzurePublicCloud
-  AZURE_TENANT_ID: b39138ca-3cee-4b4a-a4d6-cd83d9dd62f0
+  # CAPZ uses tenant ID from AzureClusterIdentity object and this is injected as env
+  # as a fallback only. AZWI webhook currently does not allow this as  an optional
+  # field and hence passing a dummy value.
+  AZURE_TENANT_ID: 00000000-0000-0000-0000-000000000000
 kind: ConfigMap
 metadata:
   labels:
