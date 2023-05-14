@@ -58,9 +58,25 @@ func (c *AzureClusterTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureClusterTemplate)
 	if !reflect.DeepEqual(c.Spec.Template.Spec, old.Spec.Template.Spec) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("AzureClusterTemplate", "spec", "template", "spec"), c, AzureClusterTemplateImmutableMsg),
-		)
+		// The equality failure could be because of default mismatch after default use NATGayeway for outbound traffic.
+		// the new object `c` will have run through the default webhooks but the old object `old` would not have so.
+		// This means the old object will have default NodeOutboundLB, but the new one will not have default NodeOutboundLB.
+		// This will result in object inequality. To workaround this, we set the old object defaults here so that the old object also gets
+		// the new defaults.
+
+		// We need to set the NodeOutboundLB if there has an existing one
+		if old.Spec.Template.Spec.NetworkSpec.NodeOutboundLB != nil {
+			old.Spec.Template.Spec.NetworkSpec.NodeOutboundLB = c.Spec.Template.Spec.NetworkSpec.NodeOutboundLB
+			old.Default()
+			c.Default()
+		}
+
+		// if it's still not equal, return error.
+		if !reflect.DeepEqual(c.Spec.Template.Spec, old.Spec.Template.Spec) {
+			allErrs = append(allErrs,
+				field.Invalid(field.NewPath("AzureClusterTemplate", "spec", "template", "spec"), c, AzureClusterTemplateImmutableMsg),
+			)
+		}
 	}
 
 	if len(allErrs) == 0 {

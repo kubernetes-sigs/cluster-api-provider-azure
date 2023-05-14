@@ -20,43 +20,95 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 )
 
 func TestValidateUpdate(t *testing.T) {
-	oldClusterTemplate := &AzureClusterTemplate{
-		Spec: AzureClusterTemplateSpec{
-			Template: AzureClusterTemplateResource{
-				Spec: AzureClusterTemplateResourceSpec{
-					NetworkSpec: NetworkTemplateSpec{
-						Vnet: VnetTemplateSpec{
-							VnetClassSpec: VnetClassSpec{
-								CIDRBlocks: []string{"10.0.0.0/16"},
+	tests := []struct {
+		name               string
+		oldClusterTemplate *AzureClusterTemplate
+		newClusterTemplate *AzureClusterTemplate
+		wantErr            bool
+	}{
+		{
+			name: "AzureClusterTemplate is immutable",
+			oldClusterTemplate: &AzureClusterTemplate{
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Vnet: VnetTemplateSpec{
+									VnetClassSpec: VnetClassSpec{
+										CIDRBlocks: []string{"10.0.0.0/16"},
+									},
+								},
 							},
 						},
 					},
 				},
 			},
+			newClusterTemplate: &AzureClusterTemplate{
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Vnet: VnetTemplateSpec{
+									VnetClassSpec: VnetClassSpec{
+										CIDRBlocks: []string{"11.0.0.0/16"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
-	}
-
-	newClusterTemplate := &AzureClusterTemplate{
-		Spec: AzureClusterTemplateSpec{
-			Template: AzureClusterTemplateResource{
-				Spec: AzureClusterTemplateResourceSpec{
-					NetworkSpec: NetworkTemplateSpec{
-						Vnet: VnetTemplateSpec{
-							VnetClassSpec: VnetClassSpec{
-								CIDRBlocks: []string{"11.0.0.0/16"},
+		{
+			name: "NodeOutboundLB will be updated per the new one",
+			oldClusterTemplate: &AzureClusterTemplate{
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								NodeOutboundLB: &LoadBalancerClassSpec{
+									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									SKU:                  SKUStandard,
+									Type:                 Public,
+								},
 							},
 						},
 					},
 				},
 			},
+			newClusterTemplate: &AzureClusterTemplate{
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Vnet: VnetTemplateSpec{},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
 		},
 	}
 
 	t.Run("template is immutable", func(t *testing.T) {
 		g := NewWithT(t)
-		g.Expect(newClusterTemplate.ValidateUpdate(oldClusterTemplate)).NotTo(Succeed())
+		for _, act := range tests {
+			act := act
+			t.Run(act.name, func(t *testing.T) {
+				err := act.newClusterTemplate.ValidateUpdate(act.oldClusterTemplate)
+				if act.wantErr {
+					g.Expect(err).To(HaveOccurred())
+				} else {
+					g.Expect(err).NotTo(HaveOccurred())
+				}
+			})
+		}
+
 	})
 }
