@@ -275,6 +275,11 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	# Create kind management cluster.
 	$(MAKE) kind-create
 
+	# Deploy AZWI webhook
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/Azure/azure-workload-identity/releases/download/v1.1.0/azure-wi-webhook.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
+	# Wait for AZWI webhook deployment
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n azure-workload-identity-system deployment -l azure-workload-identity.io/system=true
+
 	# Install cert manager and wait for availability
 	./hack/install-cert-manager.sh
 
