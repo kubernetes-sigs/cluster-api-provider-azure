@@ -36,6 +36,7 @@ import (
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
+	addonsv1alpha1 "sigs.k8s.io/cluster-api-addon-provider-helm/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -68,6 +69,7 @@ func init() {
 	_ = infrav1exp.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = expv1.AddToScheme(scheme)
+	_ = addonsv1alpha1.AddToScheme(scheme)
 	_ = kubeadmv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 

@@ -76,4 +76,10 @@ var (
 
 	// usePRArtifacts specifies whether or not to use the build from a PR of the Kubernetes repository
 	usePRArtifacts bool
+
+	// cloudProviderAzurePath specifies the path to the cloud-provider-azure HelmChartProxy
+	cloudProviderAzurePath string
+
+	// cloudProviderAzureCIPath specifies the path to the cloud-provider-azure HelmChartProxy with CI artifacts enabled
+	cloudProviderAzureCIPath string
 )

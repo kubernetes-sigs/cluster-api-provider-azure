@@ -275,12 +275,8 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "API Server was not reachable in time")
 
 	_, hasWindows := cluster.Labels["cni-windows"]
-	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] != "azure" {
-		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
-		InstallCalicoAndCloudProviderAzureHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
-	} else {
-		InstallCalicoHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
-	}
+	InstallCalicoHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
+
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	v, err := semver.ParseTolerant(input.ConfigCluster.KubernetesVersion)
 	Expect(err).NotTo(HaveOccurred())

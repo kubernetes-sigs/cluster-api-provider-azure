@@ -13,6 +13,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/go-logr/logr v1.2.4
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
@@ -47,8 +48,9 @@ require (
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	sigs.k8s.io/cloud-provider-azure v1.26.7
 	sigs.k8s.io/cluster-api v1.4.2
+	sigs.k8s.io/cluster-api-addon-provider-helm v0.1.0-alpha.5
 	sigs.k8s.io/cluster-api/test v1.4.2
-	sigs.k8s.io/controller-runtime v0.14.5
+	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/kind v0.18.0
 )
 
@@ -92,7 +94,6 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
@@ -225,4 +226,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.2
+replace sigs.k8s.io/cluster-api => github.com/Jont828/cluster-api v0.4.3-0.20230412015901-405900d8bb69
+
+replace sigs.k8s.io/cluster-api/test => github.com/Jont828/cluster-api/test v0.4.3-0.20230412015901-405900d8bb69

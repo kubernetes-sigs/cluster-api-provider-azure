@@ -164,6 +164,9 @@ GINKGO_ARGS ?=
 ARTIFACTS ?= $(ROOT_DIR)/_artifacts
 E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
+E2E_CLOUD_PROVIDER_AZURE_PATH ?= $(ROOT_DIR)/templates/caaph/cloud-provider-azure.yaml
+E2E_CLOUD_PROVIDER_AZURE_CI_PATH ?= $(ROOT_DIR)/templates/caaph/cloud-provider-azure-ci.yaml
+
 SKIP_CLEANUP ?= false
 SKIP_LOG_COLLECTION ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
@@ -649,6 +652,8 @@ test-e2e-run: generate-e2e-templates install-tools ## Run e2e tests.
     $(GINKGO) -v --trace --timeout=4h --tags=e2e --focus="$(GINKGO_FOCUS)" --skip="$(GINKGO_SKIP)" --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) --output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) ./test/e2e -- \
     	-e2e.artifacts-folder="$(ARTIFACTS)" \
     	-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
+		-e2e.cloud-provider-azure="$(E2E_CLOUD_PROVIDER_AZURE_PATH)" \
+		-e2e.cloud-provider-azure-ci="$(E2E_CLOUD_PROVIDER_AZURE_CI_PATH)" \
     	-e2e.skip-log-collection="$(SKIP_LOG_COLLECTION)" \
     	-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS)
 

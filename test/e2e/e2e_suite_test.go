@@ -39,6 +39,8 @@ import (
 
 func init() {
 	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
+	flag.StringVar(&cloudProviderAzurePath, "e2e.cloud-provider-azure", "", "path to the cloud-provider-azure HelmChartProxy")
+	flag.StringVar(&cloudProviderAzureCIPath, "e2e.cloud-provider-azure-ci", "", "path to the cloud-provider-azure HelmChartProxy with CI artifacts")
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.BoolVar(&useCIArtifacts, "kubetest.use-ci-artifacts", false, "use the latest build from the main branch of the Kubernetes repository. Set KUBERNETES_VERSION environment variable to latest-1.xx to use the build from 1.xx release branch.")
 	flag.BoolVar(&usePRArtifacts, "kubetest.use-pr-artifacts", false, "use the build from a PR of the Kubernetes repository")
@@ -73,6 +75,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	By("Initializing the bootstrap cluster")
 	initBootstrapCluster(bootstrapClusterProxy, e2eConfig, clusterctlConfigPath, artifactFolder)
+
+	// TODO: set this helm stuff up
 
 	// encode the e2e config into the byte array.
 	var configBuf bytes.Buffer
