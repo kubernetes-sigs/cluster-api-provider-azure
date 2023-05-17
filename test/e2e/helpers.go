@@ -936,7 +936,7 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 }
 
 // InstallHelmChart takes a helm repo URL, a chart name, and release name, and installs a helm release onto the E2E workload cluster.
-func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, repoURL, chartName, releaseName string, options *helmVals.Options) {
+func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, repoURL, chartName, releaseName string, options *helmVals.Options, version string) {
 	kubeConfigPath := clusterProxy.GetKubeconfigPath()
 	settings := helmCli.New()
 	settings.KubeConfig = kubeConfigPath
@@ -968,6 +968,7 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 		}
 		i.ReleaseName = releaseName
 		i.Namespace = namespace
+		i.Version = version
 		i.CreateNamespace = true
 		Eventually(func(g Gomega) {
 			cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
