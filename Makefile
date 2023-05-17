@@ -170,7 +170,7 @@ E2E_CALICO_PATH ?= $(ROOT_DIR)/templates/caaph/calico.yaml
 E2E_CALICO_IPV6_PATH ?= $(ROOT_DIR)/templates/caaph/calico-ipv6.yaml
 E2E_CALICO_DUAL_STACK_PATH ?= $(ROOT_DIR)/templates/caaph/calico-dual-stack.yaml
 E2E_CALICO_DUAL_STACK_PATH ?= $(ROOT_DIR)/templates/caaph/calico-dual-stack.yaml
-E2E_AZUREDISK_CSI_DRIVER_PATH ?= $(ROOT_DIR)/templates/caaph/azure-disk-csi-driver.yaml
+E2E_AZUREDISK_CSI_DRIVER_PATH ?= $(ROOT_DIR)/templates/caaph/azuredisk-csi-driver.yaml
 
 SKIP_CLEANUP ?= false
 SKIP_LOG_COLLECTION ?= false
