@@ -281,7 +281,7 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 	v, err := semver.ParseTolerant(input.ConfigCluster.KubernetesVersion)
 	Expect(err).NotTo(HaveOccurred())
 	if v.GTE(semver.MustParse("1.23.0")) {
-		InstallAzureDiskCSIDriverHelmChart(ctx, input, hasWindows)
+		EnsureAzureDiskCSIDriverHelmChart(ctx, input, hasWindows)
 	} else {
 		Logf("Skipping Azure Disk CSI Driver installation for Kubernetes version %s", input.ConfigCluster.KubernetesVersion)
 	}

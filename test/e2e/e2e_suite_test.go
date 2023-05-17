@@ -44,6 +44,7 @@ func init() {
 	flag.StringVar(&calicoPath, "e2e.calico", "", "path to the calico HelmChartProxy")
 	flag.StringVar(&calicoIPv6Path, "e2e.calico-ipv6", "", "path to the calico HelmChartProxy with IPv6")
 	flag.StringVar(&calicoDualStackPath, "e2e.calico-dual-stack", "", "path to the calico HelmChartProxy with dual stack")
+	flag.StringVar(&azureDiskCSIDriverPath, "e2e.azuredisk-csi-driver", "", "path to the azure disk CSI driver HelmChartProxy")
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.BoolVar(&useCIArtifacts, "kubetest.use-ci-artifacts", false, "use the latest build from the main branch of the Kubernetes repository. Set KUBERNETES_VERSION environment variable to latest-1.xx to use the build from 1.xx release branch.")
 	flag.BoolVar(&usePRArtifacts, "kubetest.use-pr-artifacts", false, "use the build from a PR of the Kubernetes repository")

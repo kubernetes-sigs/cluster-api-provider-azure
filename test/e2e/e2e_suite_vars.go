@@ -91,4 +91,7 @@ var (
 
 	// calicoDualStackPath specifies the path to the calico HelmChartProxy with dual stack
 	calicoDualStackPath string
+
+	// azureDiskCSIDriverPath specifies the path to the azure disk CSI driver HelmChartProxy
+	azureDiskCSIDriverPath string
 )

@@ -23,7 +23,6 @@ import (
 	"context"
 
 	. "github.com/onsi/ginkgo/v2"
-	helmVals "helm.sh/helm/v3/pkg/cli/values"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
@@ -33,19 +32,13 @@ const (
 	azureDiskCSIDriverHelmReleaseName = "azuredisk-csi-driver-oot"
 )
 
-// InstallAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
-func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, hasWindows bool) {
+// EnsureAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
+func EnsureAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, hasWindows bool) {
 	specName := "azuredisk-csi-drivers-install"
-	By("Installing azure-disk CSI driver components via helm")
-	options := &helmVals.Options{
-		Values: []string{"controller.replicas=1", "controller.runOnControlPlane=true"},
-	}
+	By("Waiting for azure-disk CSI driver components via CAAPH")
+
 	// TODO: make this always true once HostProcessContainers are on for all supported k8s versions.
-	if hasWindows {
-		options.Values = append(options.Values, "windows.useHostProcessContainers=true")
-	}
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
-	InstallHelmChart(ctx, clusterProxy, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options)
 	By("Waiting for Ready csi-azuredisk-controller deployment pods")
 	for _, d := range []string{"csi-azuredisk-controller"} {
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, kubesystem, specName)

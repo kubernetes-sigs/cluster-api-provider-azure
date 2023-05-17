@@ -169,6 +169,8 @@ E2E_CLOUD_PROVIDER_AZURE_CI_PATH ?= $(ROOT_DIR)/templates/caaph/cloud-provider-a
 E2E_CALICO_PATH ?= $(ROOT_DIR)/templates/caaph/calico.yaml
 E2E_CALICO_IPV6_PATH ?= $(ROOT_DIR)/templates/caaph/calico-ipv6.yaml
 E2E_CALICO_DUAL_STACK_PATH ?= $(ROOT_DIR)/templates/caaph/calico-dual-stack.yaml
+E2E_CALICO_DUAL_STACK_PATH ?= $(ROOT_DIR)/templates/caaph/calico-dual-stack.yaml
+E2E_AZUREDISK_CSI_DRIVER_PATH ?= $(ROOT_DIR)/templates/caaph/azure-disk-csi-driver.yaml
 
 SKIP_CLEANUP ?= false
 SKIP_LOG_COLLECTION ?= false
@@ -660,6 +662,7 @@ test-e2e-run: generate-e2e-templates install-tools ## Run e2e tests.
 		-e2e.calico="$(E2E_CALICO_PATH)" \
 		-e2e.calico-ipv6="$(E2E_CALICO_IPV6_PATH)" \
 		-e2e.calico-dual-stack="$(E2E_CALICO_DUAL_STACK_PATH)" \
+		-e2e.azuredisk-csi-driver="$(E2E_AZUREDISK_CSI_DRIVER_PATH)" \
     	-e2e.skip-log-collection="$(SKIP_LOG_COLLECTION)" \
     	-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS)
 
