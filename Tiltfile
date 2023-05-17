@@ -390,7 +390,7 @@ def get_addons(flavor_name):
     else:
         calico_values = "./templates/addons/calico/values.yaml"
 
-    addon_cmd = "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
+    addon_cmd = "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts --version ${CALICO_VERSION} calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
 
     if "intree-cloud-provider" not in flavor_name:
         addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"

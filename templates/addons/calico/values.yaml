@@ -8,12 +8,9 @@ installation:
     - cidr: 192.168.0.0/16
       encapsulation: VXLAN
   registry: mcr.microsoft.com/oss
-  tag: v3.25.1
 # Image and registry configuration for the tigera/operator pod.
 tigeraOperator:
   image: tigera/operator
-  tag: v1.29.3
   registry: mcr.microsoft.com/oss
 calicoctl:
   image: mcr.microsoft.com/oss/calico/ctl
-  tag: v3.25.1

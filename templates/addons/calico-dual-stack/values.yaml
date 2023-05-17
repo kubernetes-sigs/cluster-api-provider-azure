@@ -18,12 +18,9 @@ installation:
       natOutgoing: Enabled
       nodeSelector: all()
   registry: mcr.microsoft.com/oss
-  tag: v3.25.1
 # Image and registry configuration for the tigera/operator pod.
 tigeraOperator:
   image: tigera/operator
   registry: mcr.microsoft.com/oss
-  tag: v1.29.3
 calicoctl:
   image: mcr.microsoft.com/oss/calico/ctl
-  tag: v3.25.1

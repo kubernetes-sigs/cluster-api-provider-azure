@@ -178,7 +178,8 @@ install_calico() {
         "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | "${KUBECTL}" apply -f - || return 1
     fi
     # install Calico CNI
-    echo "Installing Calico CNI via helm"
+    CALICO_VERSION=$(make get-calico-version)
+    echo "Installing Calico CNI ${CALICO_VERSION} via helm"
     if [[ "${CIDR0:-}" =~ .*:.* ]]; then
         echo "Cluster CIDR is IPv6"
         CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico-ipv6/values.yaml"
@@ -192,7 +193,7 @@ install_calico() {
         CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico/values.yaml"
         CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
     fi
-    "${HELM}" upgrade calico --install --repo https://docs.tigera.io/calico/charts tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace calico-system || return 1
+    "${HELM}" upgrade calico --install --repo https://docs.tigera.io/calico/charts --version "${CALICO_VERSION}" tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace calico-system || return 1
 }
 
 # install_cloud_provider_azure installs OOT cloud-provider-azure componentry onto the Cluster.
