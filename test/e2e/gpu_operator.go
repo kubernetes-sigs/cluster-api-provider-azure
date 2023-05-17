@@ -64,5 +64,5 @@ func InstallGPUOperator(ctx context.Context, inputGetter func() GPUOperatorSpecI
 func InstallNvidiaGPUOperatorChart(ctx context.Context, clusterProxy framework.ClusterProxy) {
 	By("Installing nvidia/gpu-operator via helm")
 	values := &helmVals.Options{}
-	InstallHelmChart(ctx, clusterProxy, nvidiaGPUOperatorNamespace, nvidiaHelmChartRepoURL, nvidiaGPUOperatorHelmChartName, nvidiaGPUOperatorHelmReleaseName, values)
+	InstallHelmChart(ctx, clusterProxy, nvidiaGPUOperatorNamespace, nvidiaHelmChartRepoURL, nvidiaGPUOperatorHelmChartName, nvidiaGPUOperatorHelmReleaseName, values, "")
 }
