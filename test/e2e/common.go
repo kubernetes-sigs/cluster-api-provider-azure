@@ -275,7 +275,7 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "API Server was not reachable in time")
 
 	_, hasWindows := cluster.Labels["cni-windows"]
-	InstallCalicoHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
+	EnsureCalicoHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	v, err := semver.ParseTolerant(input.ConfigCluster.KubernetesVersion)

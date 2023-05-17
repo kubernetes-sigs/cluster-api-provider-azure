@@ -82,4 +82,13 @@ var (
 
 	// cloudProviderAzureCIPath specifies the path to the cloud-provider-azure HelmChartProxy with CI artifacts enabled
 	cloudProviderAzureCIPath string
+
+	// calicoPath specifies the path to the calico HelmChartProxy
+	calicoPath string
+
+	// calicoIPv6Path specifies the path to the calico HelmChartProxy with IPv6
+	calicoIPv6Path string
+
+	// calicoDualStackPath specifies the path to the calico HelmChartProxy with dual stack
+	calicoDualStackPath string
 )

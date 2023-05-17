@@ -5,6 +5,7 @@ metadata:
   name: ${CLUSTER_NAME}
   labels:
     installCloudProviderAzureChart: "true"
+    cni: calico
 spec:
   clusterNetwork:
     pods:

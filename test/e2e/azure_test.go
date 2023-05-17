@@ -91,6 +91,10 @@ var _ = Describe("Workload cluster creation", func() {
 		}
 		createHelmChartProxyFromFilePath(bootstrapClient, path, namespace.Name)
 
+		createHelmChartProxyFromFilePath(bootstrapClient, calicoPath, namespace.Name)
+		createHelmChartProxyFromFilePath(bootstrapClient, calicoIPv6Path, namespace.Name)
+		createHelmChartProxyFromFilePath(bootstrapClient, calicoDualStackPath, namespace.Name)
+
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
 		spClientSecret := os.Getenv(AzureClientSecret)

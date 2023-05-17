@@ -41,15 +41,13 @@ const (
 	kubeadmConfigMapName     string = "kubeadm-config"
 )
 
-// InstallCalicoHelmChart installs the official calico helm chart
+// EnsureCalicoHelmChart installs the official calico helm chart
 // and validates that expected pods exist and are Ready.
-func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
+func EnsureCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	specName := "calico-install"
 
-	By("Installing Calico via Helm")
-	values := getCalicoValues(cidrBlocks)
+	By("Waiting for Calico to be installed via CAAPH")
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
-	InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values)
 	workloadClusterClient := clusterProxy.GetClient()
 
 	// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.

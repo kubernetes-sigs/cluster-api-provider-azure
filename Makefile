@@ -166,6 +166,9 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 E2E_CLOUD_PROVIDER_AZURE_PATH ?= $(ROOT_DIR)/templates/caaph/cloud-provider-azure.yaml
 E2E_CLOUD_PROVIDER_AZURE_CI_PATH ?= $(ROOT_DIR)/templates/caaph/cloud-provider-azure-ci.yaml
+E2E_CALICO_PATH ?= $(ROOT_DIR)/templates/caaph/calico.yaml
+E2E_CALICO_IPV6_PATH ?= $(ROOT_DIR)/templates/caaph/calico-ipv6.yaml
+E2E_CALICO_DUAL_STACK_PATH ?= $(ROOT_DIR)/templates/caaph/calico-dual-stack.yaml
 
 SKIP_CLEANUP ?= false
 SKIP_LOG_COLLECTION ?= false
@@ -654,6 +657,9 @@ test-e2e-run: generate-e2e-templates install-tools ## Run e2e tests.
     	-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
 		-e2e.cloud-provider-azure="$(E2E_CLOUD_PROVIDER_AZURE_PATH)" \
 		-e2e.cloud-provider-azure-ci="$(E2E_CLOUD_PROVIDER_AZURE_CI_PATH)" \
+		-e2e.calico="$(E2E_CALICO_PATH)" \
+		-e2e.calico-ipv6="$(E2E_CALICO_IPV6_PATH)" \
+		-e2e.calico-dual-stack="$(E2E_CALICO_DUAL_STACK_PATH)" \
     	-e2e.skip-log-collection="$(SKIP_LOG_COLLECTION)" \
     	-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS)
 
