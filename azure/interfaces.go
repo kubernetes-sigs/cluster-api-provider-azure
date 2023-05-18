@@ -19,6 +19,7 @@ package azure
 import (
 	"context"
 
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/Azure/go-autorest/autorest"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -126,4 +127,14 @@ type ResourceSpecGetterWithHeaders interface {
 	ResourceSpecGetter
 	// CustomHeaders returns the headers that should be added to Azure API calls.
 	CustomHeaders() map[string]string
+}
+
+// ASOResourceSpecGetter is an interface for getting all the required information to create/update/delete an Azure resource.
+type ASOResourceSpecGetter interface {
+	// ResourceRef returns a concrete, named (and namespaced if applicable) ASO
+	// resource type to facilitate a strongly-typed GET.
+	ResourceRef() genruntime.MetaObject
+	// Parameters returns a modified object if it points to a non-nil resource.
+	// Otherwise it returns a new value or nil if no updates are needed.
+	Parameters(ctx context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error)
 }

@@ -24,6 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -1871,4 +1872,56 @@ func (m *MockResourceSpecGetterWithHeaders) ResourceName() string {
 func (mr *MockResourceSpecGetterWithHeadersMockRecorder) ResourceName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceName", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).ResourceName))
+}
+
+// MockASOResourceSpecGetter is a mock of ASOResourceSpecGetter interface.
+type MockASOResourceSpecGetter struct {
+	ctrl     *gomock.Controller
+	recorder *MockASOResourceSpecGetterMockRecorder
+}
+
+// MockASOResourceSpecGetterMockRecorder is the mock recorder for MockASOResourceSpecGetter.
+type MockASOResourceSpecGetterMockRecorder struct {
+	mock *MockASOResourceSpecGetter
+}
+
+// NewMockASOResourceSpecGetter creates a new mock instance.
+func NewMockASOResourceSpecGetter(ctrl *gomock.Controller) *MockASOResourceSpecGetter {
+	mock := &MockASOResourceSpecGetter{ctrl: ctrl}
+	mock.recorder = &MockASOResourceSpecGetterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockASOResourceSpecGetter) EXPECT() *MockASOResourceSpecGetterMockRecorder {
+	return m.recorder
+}
+
+// Parameters mocks base method.
+func (m *MockASOResourceSpecGetter) Parameters(ctx context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Parameters", ctx, object)
+	ret0, _ := ret[0].(genruntime.MetaObject)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Parameters indicates an expected call of Parameters.
+func (mr *MockASOResourceSpecGetterMockRecorder) Parameters(ctx, object interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).Parameters), ctx, object)
+}
+
+// ResourceRef mocks base method.
+func (m *MockASOResourceSpecGetter) ResourceRef() genruntime.MetaObject {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResourceRef")
+	ret0, _ := ret[0].(genruntime.MetaObject)
+	return ret0
+}
+
+// ResourceRef indicates an expected call of ResourceRef.
+func (mr *MockASOResourceSpecGetterMockRecorder) ResourceRef() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceRef", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).ResourceRef))
 }
