@@ -19,9 +19,10 @@ package managedclusters
 import (
 	"context"
 	"net/http"
+	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/preview/containerservice/mgmt/2022-03-02-preview/containerservice"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
@@ -63,6 +64,7 @@ func TestReconcile(t *testing.T) {
 					Name:              "my-managedcluster",
 					ResourceGroupName: "my-rg",
 				}, nil)
+				s.UpdatePatchStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, gomock.Any()).Times(1)
 				s.SetControlPlaneEndpoint(gomock.Any()).Times(1)
 				s.SetKubeConfigData(gomock.Any()).Times(1)
 			},
@@ -82,6 +84,7 @@ func TestReconcile(t *testing.T) {
 					Name:              "my-managedcluster",
 					ResourceGroupName: "my-rg",
 				}, nil)
+				s.UpdatePatchStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, gomock.Any()).Times(1)
 			},
 		},
 	}
@@ -146,6 +149,7 @@ func TestReconcile(t *testing.T) {
 						OSDiskSizeGB: 0,
 					},
 				}, nil)
+				s.UpdatePutStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, gomock.Any()).Times(1)
 				s.SetControlPlaneEndpoint(gomock.Eq(clusterv1.APIEndpoint{
 					Host: "my-managedcluster-fqdn",
 					Port: 443,
@@ -174,6 +178,7 @@ func TestReconcile(t *testing.T) {
 						OSDiskSizeGB: 0,
 					},
 				}, nil)
+				s.UpdatePutStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -209,6 +214,7 @@ func TestReconcile(t *testing.T) {
 						OSDiskSizeGB: 0,
 					},
 				}, nil)
+				s.UpdatePatchStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, gomock.Any()).Times(1)
 				s.SetControlPlaneEndpoint(gomock.Eq(clusterv1.APIEndpoint{
 					Host: "my-managedcluster-fqdn",
 					Port: 443,
@@ -245,6 +251,7 @@ func TestReconcile(t *testing.T) {
 						OSDiskSizeGB: 0,
 					},
 				}, nil)
+				s.UpdatePatchStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, gomock.Any()).Times(1)
 				s.SetControlPlaneEndpoint(gomock.Eq(clusterv1.APIEndpoint{
 					Host: "my-managedcluster-fqdn",
 					Port: 443,

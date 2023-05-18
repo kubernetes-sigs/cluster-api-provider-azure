@@ -50,6 +50,7 @@ var (
 // ManagedClusterScope defines the scope interface for a managed cluster.
 type ManagedClusterScope interface {
 	azure.ClusterDescriber
+	azure.AsyncStatusUpdater
 	ManagedClusterAnnotations() map[string]string
 	ManagedClusterSpec() (azure.ManagedClusterSpec, error)
 	GetAllAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
@@ -203,6 +204,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
 	// Transient or other failure not due to 404
 	if err != nil && !azure.ResourceNotFound(err) {
+		s.Scope.UpdatePutStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, err)
 		return azure.WithTransientError(errors.Wrap(err, "failed to fetch existing managed cluster"), 20*time.Second)
 	}
 
@@ -353,6 +355,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	result := existingMC
 	if isCreate {
 		result, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
+		s.Scope.UpdatePutStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, err)
 		if err != nil {
 			return fmt.Errorf("failed to create managed cluster, %w", err)
 		}
@@ -361,7 +364,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if ps != string(infrav1alpha4.Canceled) && ps != string(infrav1alpha4.Failed) && ps != string(infrav1alpha4.Succeeded) {
 			msg := fmt.Sprintf("Unable to update existing managed cluster in non terminal state. Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
 			klog.V(2).Infof(msg)
-			return azure.WithTransientError(errors.New(msg), 20*time.Second)
+			retErr := azure.WithTransientError(errors.New(msg), 20*time.Second)
+			s.Scope.UpdatePatchStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, retErr)
+			return retErr
 		}
 
 		// Normalize the LoadBalancerProfile so the diff below doesn't get thrown off by AKS added properties.
@@ -378,9 +383,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if diff != "" {
 			klog.V(2).Infof("Cluster %s: update required (+new -old):\n%s", s.Scope.ClusterName(), diff)
 			result, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster, customHeaders)
+			s.Scope.UpdatePatchStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, err)
 			if err != nil {
 				return fmt.Errorf("failed to update managed cluster, %w", err)
 			}
+		} else {
+			klog.V(2).Infof("Cluster %s: no update required", s.Scope.ClusterName())
+			// Update ManagedClusterRunning condition to true.
+			s.Scope.UpdatePatchStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, nil)
 		}
 	}
 
@@ -441,6 +451,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	klog.V(2).Infof("Deleting managed cluster  %s ", s.Scope.ClusterName())
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), s.Scope.ClusterName())
+	s.Scope.UpdateDeleteStatus(infrav1alpha4.ManagedClusterRunningCondition, serviceName, err)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted

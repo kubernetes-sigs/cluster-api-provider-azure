@@ -23,13 +23,13 @@ package mock_managedclusters
 import (
 	context "context"
 	reflect "reflect"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	scope "sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -182,6 +182,18 @@ func (mr *MockManagedClusterScopeMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockManagedClusterScope)(nil).ClusterName))
 }
 
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockManagedClusterScope) DeleteLongRunningOperationState(arg0, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockManagedClusterScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockManagedClusterScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+}
+
 // FailureDomains mocks base method.
 func (m *MockManagedClusterScope) FailureDomains() []string {
 	m.ctrl.T.Helper()
@@ -223,6 +235,34 @@ func (m *MockManagedClusterScope) GetKubeConfigData() []byte {
 func (mr *MockManagedClusterScopeMockRecorder) GetKubeConfigData() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKubeConfigData", reflect.TypeOf((*MockManagedClusterScope)(nil).GetKubeConfigData))
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockManagedClusterScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret0, _ := ret[0].(*v1beta1.Future)
+	return ret0
+}
+
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockManagedClusterScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockManagedClusterScope)(nil).GetLongRunningOperationState), arg0, arg1)
+}
+
+// GetManagedControlPlaneCredentialsProvider mocks base method.
+func (m *MockManagedClusterScope) GetManagedControlPlaneCredentialsProvider() *scope.ManagedControlPlaneCredentialsProvider {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedControlPlaneCredentialsProvider")
+	ret0, _ := ret[0].(*scope.ManagedControlPlaneCredentialsProvider)
+	return ret0
+}
+
+// GetManagedControlPlaneCredentialsProvider indicates an expected call of GetManagedControlPlaneCredentialsProvider.
+func (mr *MockManagedClusterScopeMockRecorder) GetManagedControlPlaneCredentialsProvider() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedControlPlaneCredentialsProvider", reflect.TypeOf((*MockManagedClusterScope)(nil).GetManagedControlPlaneCredentialsProvider))
 }
 
 // HashKey mocks base method.
@@ -334,6 +374,18 @@ func (mr *MockManagedClusterScopeMockRecorder) SetKubeConfigData(arg0 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetKubeConfigData", reflect.TypeOf((*MockManagedClusterScope)(nil).SetKubeConfigData), arg0)
 }
 
+// SetLongRunningOperationState mocks base method.
+func (m *MockManagedClusterScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockManagedClusterScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockManagedClusterScope)(nil).SetLongRunningOperationState), arg0)
+}
+
 // SubscriptionID mocks base method.
 func (m *MockManagedClusterScope) SubscriptionID() string {
 	m.ctrl.T.Helper()
@@ -362,16 +414,38 @@ func (mr *MockManagedClusterScopeMockRecorder) TenantID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockManagedClusterScope)(nil).TenantID))
 }
 
-// GetManagedControlPlaneCredentialsProvider mocks base method.
-func (m *MockManagedClusterScope) GetManagedControlPlaneCredentialsProvider() *scope.ManagedControlPlaneCredentialsProvider {
+// UpdateDeleteStatus mocks base method.
+func (m *MockManagedClusterScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetManagedControlPlaneCredentialsProvider")
-	ret0, _ := ret[0].(*scope.ManagedControlPlaneCredentialsProvider)
-	return ret0
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
 
-// GetManagedControlPlaneCredentialsProvider indicates an expected call of GetManagedControlPlaneCredentialsProvider.
-func (mr *MockManagedClusterScopeMockRecorder) GetManagedControlPlaneCredentialsProvider() *gomock.Call {
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockManagedClusterScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedControlPlaneCredentialsProvider", reflect.TypeOf((*MockManagedClusterScope)(nil).GetManagedControlPlaneCredentialsProvider))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockManagedClusterScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockManagedClusterScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockManagedClusterScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockManagedClusterScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockManagedClusterScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockManagedClusterScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockManagedClusterScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
