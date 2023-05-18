@@ -2802,6 +2802,115 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Node Machine with a custom network interface name and resource group",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1beta1",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+											Name: "subnet1",
+										},
+									},
+								},
+								APIServerLB: infrav1.LoadBalancerSpec{
+									Name: "api-lb",
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						NetworkInterfaces: []infrav1.NetworkInterface{
+							{
+								Name:                  pointer.String("custom-name-nic"),
+								ResourceGroup:         pointer.String("custom-rg"),
+								SubnetName:            "subnet1",
+								AcceleratedNetworking: pointer.Bool(true),
+								PrivateIPConfigs:      1,
+							},
+						},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "machine",
+						Labels: map[string]string{},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
+					Name:                      "custom-name-nic",
+					ResourceGroup:             "custom-rg",
+					Location:                  "westus",
+					SubscriptionID:            "123",
+					MachineName:               "machine-name",
+					SubnetName:                "subnet1",
+					IPConfigs:                 []networkinterfaces.IPConfig{{}},
+					VNetName:                  "vnet1",
+					VNetResourceGroup:         "rg1",
+					PublicLBName:              "outbound-lb",
+					PublicLBAddressPoolName:   "outbound-lb-outboundBackendPool",
+					PublicLBNATRuleName:       "",
+					InternalLBName:            "",
+					InternalLBAddressPoolName: "",
+					PublicIPName:              "",
+					AcceleratedNetworking:     pointer.Bool(true),
+					IPv6Enabled:               false,
+					EnableIPForwarding:        false,
+					SKU:                       nil,
+					ClusterName:               "cluster",
+					AdditionalTags: map[string]string{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

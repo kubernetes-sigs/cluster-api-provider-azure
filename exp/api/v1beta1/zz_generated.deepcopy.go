@@ -301,7 +301,7 @@ func (in *AzureMachinePoolMachineTemplate) DeepCopyInto(out *AzureMachinePoolMac
 	}
 	if in.NetworkInterfaces != nil {
 		in, out := &in.NetworkInterfaces, &out.NetworkInterfaces
-		*out = make([]apiv1beta1.NetworkInterface, len(*in))
+		*out = make([]apiv1beta1.MachinePoolNetworkInterface, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

@@ -262,7 +262,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 				Spec: AzureMachinePoolSpec{
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName: "",
-						NetworkInterfaces: []infrav1.NetworkInterface{
+						NetworkInterfaces: []infrav1.MachinePoolNetworkInterface{
 							{
 								SubnetName:       "test-subnet",
 								PrivateIPConfigs: 1,
@@ -287,7 +287,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName:            "",
 						AcceleratedNetworking: nil,
-						NetworkInterfaces: []infrav1.NetworkInterface{
+						NetworkInterfaces: []infrav1.MachinePoolNetworkInterface{
 							{
 								SubnetName:            "test-subnet",
 								PrivateIPConfigs:      1,
@@ -304,7 +304,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 				Spec: AzureMachinePoolSpec{
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName: "test-subnet",
-						NetworkInterfaces: []infrav1.NetworkInterface{{
+						NetworkInterfaces: []infrav1.MachinePoolNetworkInterface{{
 							SubnetName: "test-subnet",
 						}},
 					},
@@ -315,7 +315,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName:            "test-subnet",
 						AcceleratedNetworking: nil,
-						NetworkInterfaces: []infrav1.NetworkInterface{
+						NetworkInterfaces: []infrav1.MachinePoolNetworkInterface{
 							{
 								SubnetName: "test-subnet",
 							},

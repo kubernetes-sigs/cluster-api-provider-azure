@@ -139,7 +139,7 @@ func (amp *AzureMachinePool) SetNetworkInterfacesDefaults() {
 	}
 
 	if len(amp.Spec.Template.NetworkInterfaces) == 0 {
-		amp.Spec.Template.NetworkInterfaces = []infrav1.NetworkInterface{
+		amp.Spec.Template.NetworkInterfaces = []infrav1.MachinePoolNetworkInterface{
 			{
 				SubnetName:            amp.Spec.Template.SubnetName,
 				AcceleratedNetworking: amp.Spec.Template.AcceleratedNetworking,

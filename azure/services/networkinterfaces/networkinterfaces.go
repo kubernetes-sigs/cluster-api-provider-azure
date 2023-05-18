@@ -19,10 +19,13 @@ package networkinterfaces
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -40,15 +43,18 @@ type NICScope interface {
 type Service struct {
 	Scope NICScope
 	async.Reconciler
+	async.TagsGetter
 	resourceSKUCache *resourceskus.Cache
 }
 
 // New creates a new service.
 func New(scope NICScope, skuCache *resourceskus.Cache) *Service {
 	Client := NewClient(scope)
+	tagsClient := tags.NewClient(scope)
 	return &Service{
 		Scope:            scope,
 		Reconciler:       async.New(scope, Client, Client),
+		TagsGetter:       tagsClient,
 		resourceSKUCache: skuCache,
 	}
 }
@@ -89,7 +95,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the network interface with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.Delete")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
@@ -105,6 +111,12 @@ func (s *Service) Delete(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
 	var result error
 	for _, nicSpec := range specs {
+		if managed, err := s.isManaged(ctx, nicSpec); err == nil && !managed {
+			log.V(4).Info("Skipping network interface deletion in custom network interface mode")
+			continue
+		} else if err != nil {
+			return errors.Wrap(err, "failed to check if network interface is managed")
+		}
 		if err := s.DeleteResource(ctx, nicSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {
 				result = err
@@ -116,7 +128,42 @@ func (s *Service) Delete(ctx context.Context) error {
 	return result
 }
 
-// IsManaged returns always returns true as CAPZ does not support BYO network interfaces.
+// isManaged returns true if the network interface has an owned tag with the cluster name as value,
+// meaning that the network interface's lifecycle is managed.
+func (s *Service) isManaged(ctx context.Context, spec azure.ResourceSpecGetter) (bool, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.Service.IsManaged")
+	defer done()
+
+	if spec == nil {
+		return false, errors.New("cannot get network interface to check if it is managed: spec is nil")
+	}
+
+	if s.TagsGetter == nil {
+		return false, errors.New("tagsgetter is nil")
+	}
+	if ctx == nil {
+		return false, errors.New("ctx is nil")
+	}
+
+	scope := azure.NetworkInterfaceID(s.Scope.SubscriptionID(), spec.ResourceGroupName(), spec.ResourceName())
+
+	result, err := s.TagsGetter.GetAtScope(ctx, scope)
+	if err != nil {
+		return false, err
+	}
+
+	tagsMap := make(map[string]*string)
+	if result.Properties != nil && result.Properties.Tags != nil {
+		tagsMap = result.Properties.Tags
+	}
+
+	tags := converters.MapToTags(tagsMap)
+	return tags.HasOwned(s.Scope.ClusterName()), nil
+}
+
+// IsManaged returns true if the network interface has an owned tag with the cluster name as value,
+// meaning that the network interface's lifecycle is managed.
 func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+	// This method is unused, but it is required to satisfy the ServiceReconciler interface
 	return true, nil
 }

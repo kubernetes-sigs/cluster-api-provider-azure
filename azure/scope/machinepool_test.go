@@ -133,7 +133,7 @@ func TestMachinePoolScope_NetworkInterfaces(t *testing.T) {
 					},
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							NetworkInterfaces: []infrav1.NetworkInterface{
+							NetworkInterfaces: []infrav1.MachinePoolNetworkInterface{
 								{
 									SubnetName: "node-subnet",
 								},
@@ -155,7 +155,7 @@ func TestMachinePoolScope_NetworkInterfaces(t *testing.T) {
 					},
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							NetworkInterfaces: []infrav1.NetworkInterface{
+							NetworkInterfaces: []infrav1.MachinePoolNetworkInterface{
 								{
 									SubnetName: "control-plane-subnet",
 								},

@@ -265,7 +265,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
 				spec.Size = "VM_SIZE_AN"
-				spec.NetworkInterfaces = []infrav1.NetworkInterface{
+				spec.NetworkInterfaces = []infrav1.MachinePoolNetworkInterface{
 					{
 						SubnetName:       "somesubnet",
 						PrivateIPConfigs: 1, // defaulter sets this to one
@@ -304,7 +304,7 @@ func TestReconcileVMSS(t *testing.T) {
 						StorageAccountType: "UltraSSD_LRS",
 					},
 				})
-				spec.NetworkInterfaces = []infrav1.NetworkInterface{
+				spec.NetworkInterfaces = []infrav1.MachinePoolNetworkInterface{
 					{
 						SubnetName:            "my-subnet",
 						PrivateIPConfigs:      1,
@@ -1281,7 +1281,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 		AcceleratedNetworking:        nil,
 		TerminateNotificationTimeout: pointer.Int(7),
 		FailureDomains:               []string{"1", "3"},
-		NetworkInterfaces: []infrav1.NetworkInterface{
+		NetworkInterfaces: []infrav1.MachinePoolNetworkInterface{
 			{
 				SubnetName:       "my-subnet",
 				PrivateIPConfigs: 1,

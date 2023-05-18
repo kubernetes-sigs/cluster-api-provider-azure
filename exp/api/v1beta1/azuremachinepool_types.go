@@ -102,7 +102,7 @@ type (
 		// single IPConfig in the subnet specified in the cluster's node subnet field.
 		// The primary interface will be the first networkInterface specified (index 0) in the list.
 		// +optional
-		NetworkInterfaces []infrav1.NetworkInterface `json:"networkInterfaces,omitempty"`
+		NetworkInterfaces []infrav1.MachinePoolNetworkInterface `json:"networkInterfaces,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.

@@ -512,7 +512,8 @@ spec:
                       in the cluster's node subnet field. The primary interface will
                       be the first networkInterface specified (index 0) in the list.
                     items:
-                      description: NetworkInterface defines a network interface.
+                      description: MachinePoolNetworkInterface defines a VMSS network
+                        interface profile.
                       properties:
                         acceleratedNetworking:
                           description: AcceleratedNetworking enables or disables Azure

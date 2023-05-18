@@ -237,9 +237,17 @@ func (m *MachineScope) NICSpecs() []azure.ResourceSpecGetter {
 	isMultiNIC := len(m.AzureMachine.Spec.NetworkInterfaces) > 1
 
 	for i := 0; i < len(m.AzureMachine.Spec.NetworkInterfaces); i++ {
+		nic := m.AzureMachine.Spec.NetworkInterfaces[i]
+		nicName := ""
 		isPrimary := i == 0
-		nicName := azure.GenerateNICName(m.Name(), isMultiNIC, i)
-		nicSpecs = append(nicSpecs, m.BuildNICSpec(nicName, m.AzureMachine.Spec.NetworkInterfaces[i], isPrimary))
+
+		if nic.Name != nil && *nic.Name != "" {
+			nicName = *nic.Name
+		} else {
+			nicName = azure.GenerateNICName(m.Name(), isMultiNIC, i)
+		}
+
+		nicSpecs = append(nicSpecs, m.BuildNICSpec(nicName, nic, isPrimary))
 	}
 	return nicSpecs
 }
@@ -262,6 +270,10 @@ func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infr
 		AdditionalTags:        m.AdditionalTags(),
 		ClusterName:           m.ClusterName(),
 		IPConfigs:             []networkinterfaces.IPConfig{},
+	}
+
+	if infrav1NetworkInterface.ResourceGroup != nil && *infrav1NetworkInterface.ResourceGroup != "" {
+		spec.ResourceGroup = *infrav1NetworkInterface.ResourceGroup
 	}
 
 	if m.cache != nil {

@@ -204,17 +204,17 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with valid legacy network configuration",
-			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1.NetworkInterface{}),
+			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1.MachinePoolNetworkInterface{}),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with invalid legacy network configuration",
-			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1.MachinePoolNetworkInterface{{SubnetName: "testSubnet"}}),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with valid networkinterface configuration",
-			amp:     createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("", []infrav1.MachinePoolNetworkInterface{{SubnetName: "testSubnet"}}),
 			wantErr: false,
 		},
 		{
@@ -365,20 +365,20 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with valid network interface config",
-			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
-			amp:     createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
+			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1.MachinePoolNetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("", []infrav1.MachinePoolNetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with valid network interface config",
-			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
-			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
+			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1.MachinePoolNetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.MachinePoolNetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with valid network interface config",
-			oldAMP:  createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{}),
-			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
+			oldAMP:  createMachinePoolWithNetworkConfig("subnet", []infrav1.MachinePoolNetworkInterface{}),
+			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.MachinePoolNetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: true,
 		},
 	}
@@ -530,7 +530,7 @@ func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, galle
 	}
 }
 
-func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.NetworkInterface) *AzureMachinePool {
+func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.MachinePoolNetworkInterface) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{

@@ -734,6 +734,36 @@ type NetworkInterface struct {
 	// +kubebuilder:validation:nullable
 	// +optional
 	AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
+
+	// Name optionally allows you to override the Azure NetworkInterface name. If left unspecified, CAPZ will
+	// generate a NetworkInterface name based on the VM name.
+	// If specified, the specified networkInterface does not exist, CAPZ will create it when the VM is created and delete it when the VM is deleted.
+	// If you specify an existing Azure NetworkInterface, CAPZ will attach and detach the interface from the VM when the VM is created and deleted,
+	// but CAPZ will not delete the NetworkInterface if the VM is deleted.
+	// +optional
+	Name *string `json:"name,omitempty"`
+
+	// ResourceGroup optionally specifies the resource group for the NetworkInterface resource.
+	// +optional
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+}
+
+// MachinePoolNetworkInterface defines a VMSS network interface profile.
+type MachinePoolNetworkInterface struct {
+	// SubnetName specifies the subnet in which the new network interface will be placed.
+	SubnetName string `json:"subnetName,omitempty"`
+
+	// PrivateIPConfigs specifies the number of private IP addresses to attach to the interface.
+	// Defaults to 1 if not specified.
+	// +optional
+	PrivateIPConfigs int `json:"privateIPConfigs,omitempty"`
+
+	// AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on
+	// whether the requested VMSize supports accelerated networking.
+	// If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
+	// +kubebuilder:validation:nullable
+	// +optional
+	AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
 }
 
 // GetControlPlaneSubnet returns the cluster control plane subnet.

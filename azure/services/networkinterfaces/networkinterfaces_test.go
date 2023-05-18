@@ -22,10 +22,12 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -160,20 +162,37 @@ func TestDeleteNetworkInterface(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, t *mock_async.MockTagsGetterMockRecorder)
 	}{
 		{
 			name:          "noop if no network interface specs are found",
 			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, t *mock_async.MockTagsGetterMockRecorder) {
 				s.NICSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{
 			name:          "successfully delete an existing network interface",
 			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1})
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, t *mock_async.MockTagsGetterMockRecorder) {
+				mockSpecs := []azure.ResourceSpecGetter{&fakeNICSpec1}
+				s.NICSpecs().Return(mockSpecs)
+				s.SubscriptionID().Return(fakeNICSpec1.SubscriptionID)
+				t.GetAtScope(
+					gomockinternal.AContext(),
+					azure.NetworkInterfaceID(
+						fakeNICSpec1.SubscriptionID,
+						fakeNICSpec1.ResourceGroup,
+						fakeNICSpec1.Name,
+					),
+				).Return(resources.TagsResource{
+					Properties: &resources.Tags{
+						Tags: map[string]*string{
+							infrav1.ClusterTagKey("my-cluster"): pointer.String(string(infrav1.ResourceLifecycleOwned)),
+						},
+					},
+				}, nil)
+				s.ClusterName().Return("my-cluster")
 				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
@@ -181,21 +200,89 @@ func TestDeleteNetworkInterface(t *testing.T) {
 		{
 			name:          "successfully delete multiple existing network interfaces",
 			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2})
-				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil)
-				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(nil)
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, t *mock_async.MockTagsGetterMockRecorder) {
+				nicSpecs := []*NICSpec{&fakeNICSpec1, &fakeNICSpec2}
+				mockSpecs := []azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2}
+				s.NICSpecs().Return(mockSpecs)
+				for _, nicSpec := range nicSpecs {
+					s.SubscriptionID().Return(nicSpec.SubscriptionID)
+					t.GetAtScope(
+						gomockinternal.AContext(),
+						azure.NetworkInterfaceID(
+							nicSpec.SubscriptionID,
+							nicSpec.ResourceGroup,
+							nicSpec.Name,
+						),
+					).Return(resources.TagsResource{
+						Properties: &resources.Tags{
+							Tags: map[string]*string{
+								infrav1.ClusterTagKey("my-cluster"): pointer.String(string(infrav1.ResourceLifecycleOwned)),
+							},
+						},
+					}, nil)
+					s.ClusterName().Return("my-cluster")
+					r.DeleteResource(gomockinternal.AContext(), nicSpec, serviceName).Return(nil)
+				}
 				s.UpdateDeleteStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},
 		{
 			name:          "network interface deletion fails",
 			expectedError: internalError.Error(),
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.NICSpecs().Return([]azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2})
-				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec1, serviceName).Return(nil)
-				r.DeleteResource(gomockinternal.AContext(), &fakeNICSpec2, serviceName).Return(internalError)
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, t *mock_async.MockTagsGetterMockRecorder) {
+				nicSpecs := []*NICSpec{&fakeNICSpec1, &fakeNICSpec2}
+				mockSpecs := []azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2}
+				s.NICSpecs().Return(mockSpecs)
+				returnErrors := []error{
+					nil,
+					internalError,
+				}
+				for i, nicSpec := range nicSpecs {
+					s.SubscriptionID().Return(nicSpec.SubscriptionID)
+					t.GetAtScope(
+						gomockinternal.AContext(),
+						azure.NetworkInterfaceID(
+							nicSpec.SubscriptionID,
+							nicSpec.ResourceGroup,
+							nicSpec.Name,
+						),
+					).Return(resources.TagsResource{
+						Properties: &resources.Tags{
+							Tags: map[string]*string{
+								infrav1.ClusterTagKey("my-cluster"): pointer.String(string(infrav1.ResourceLifecycleOwned)),
+							},
+						},
+					}, nil)
+					s.ClusterName().Return("my-cluster")
+					r.DeleteResource(gomockinternal.AContext(), nicSpec, serviceName).Return(returnErrors[i])
+				}
 				s.UpdateDeleteStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, internalError)
+			},
+		},
+		{
+			name:          "preexisting network interface should not be deleted",
+			expectedError: "",
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, t *mock_async.MockTagsGetterMockRecorder) {
+				nicSpecs := []*NICSpec{&fakeNICSpec1, &fakeNICSpec2}
+				mockSpecs := []azure.ResourceSpecGetter{&fakeNICSpec1, &fakeNICSpec2}
+				s.NICSpecs().Return(mockSpecs)
+				for _, nicSpec := range nicSpecs {
+					s.SubscriptionID().Return(nicSpec.SubscriptionID)
+					t.GetAtScope(
+						gomockinternal.AContext(),
+						azure.NetworkInterfaceID(
+							nicSpec.SubscriptionID,
+							nicSpec.ResourceGroup,
+							nicSpec.Name,
+						),
+					).Return(resources.TagsResource{
+						Properties: &resources.Tags{
+							Tags: map[string]*string{},
+						},
+					}, nil)
+					s.ClusterName().Return("my-cluster")
+				}
+				s.UpdateDeleteStatus(infrav1.NetworkInterfaceReadyCondition, serviceName, nil)
 			},
 		},
 	}
@@ -209,12 +296,14 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			defer mockCtrl.Finish()
 			scopeMock := mock_networkinterfaces.NewMockNICScope(mockCtrl)
 			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			tagsMock := mock_async.NewMockTagsGetter(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT(), tagsMock.EXPECT())
 
 			s := &Service{
 				Scope:      scopeMock,
 				Reconciler: asyncMock,
+				TagsGetter: tagsMock,
 			}
 
 			err := s.Delete(context.TODO())

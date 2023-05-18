@@ -67,7 +67,7 @@ type ScaleSetSpec struct {
 	DiagnosticsProfile           *infrav1.Diagnostics
 	FailureDomains               []string
 	VMExtensions                 []infrav1.VMExtension
-	NetworkInterfaces            []infrav1.NetworkInterface
+	NetworkInterfaces            []infrav1.MachinePoolNetworkInterface
 	IPv6Enabled                  bool
 	OrchestrationMode            infrav1.OrchestrationModeType
 }
