@@ -394,6 +394,8 @@ def get_addons(flavor_name):
 
     if "intree-cloud-provider" not in flavor_name:
         addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
+        if "flatcar" in flavor_name:  # append caCetDir location to the cloud-provider-azure helm install command for flatcar flavor
+            addon_cmd += " --set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates"
 
     return addon_cmd
 
