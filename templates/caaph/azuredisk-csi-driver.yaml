@@ -13,6 +13,6 @@ spec:
   valuesTemplate: |
     controller:
       replicas: 1
-        runOnControlPlane: true
+      runOnControlPlane: true
     windows:
       useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
