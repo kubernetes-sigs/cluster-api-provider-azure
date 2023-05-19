@@ -21,13 +21,8 @@ package e2e
 
 import (
 	"context"
-	"fmt"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	helmVals "helm.sh/helm/v3/pkg/cli/values"
-	k8snet "k8s.io/utils/net"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
@@ -69,39 +64,4 @@ func EnsureCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTem
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, CalicoAPIServerNamespace, specName)
 		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 	}
-}
-
-func getCalicoValues(cidrBlocks []string) *helmVals.Options {
-	var ipv6CidrBlock, ipv4CidrBlock string
-	var values *helmVals.Options
-	for _, cidr := range cidrBlocks {
-		if k8snet.IsIPv6CIDRString(cidr) {
-			ipv6CidrBlock = cidr
-		} else {
-			Expect(k8snet.IsIPv4CIDRString(cidr)).To(BeTrue(), "CIDR %s is not a valid IPv4 or IPv6 CIDR", cidr)
-			ipv4CidrBlock = cidr
-		}
-	}
-	addonsPath := e2eConfig.GetVariable(AddonsPath)
-	switch {
-	case ipv6CidrBlock != "" && ipv4CidrBlock != "":
-		By("Configuring calico CNI helm chart for dual-stack configuration")
-		values = &helmVals.Options{
-			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv4CidrBlock), fmt.Sprintf("installation.calicoNetwork.ipPools[1].cidr=%s", ipv6CidrBlock)},
-			ValueFiles:   []string{filepath.Join(addonsPath, "calico-dual-stack", "values.yaml")},
-		}
-	case ipv6CidrBlock != "":
-		By("Configuring calico CNI helm chart for IPv6 configuration")
-		values = &helmVals.Options{
-			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv6CidrBlock)},
-			ValueFiles:   []string{filepath.Join(addonsPath, "calico-ipv6", "values.yaml")},
-		}
-	default:
-		By("Configuring calico CNI helm chart for IPv4 configuration")
-		values = &helmVals.Options{
-			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv4CidrBlock)},
-			ValueFiles:   []string{filepath.Join(addonsPath, "calico", "values.yaml")},
-		}
-	}
-	return values
 }
