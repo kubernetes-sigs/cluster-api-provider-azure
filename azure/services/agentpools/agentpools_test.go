@@ -36,6 +36,7 @@ import (
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiexp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
 )
 
 func TestReconcile(t *testing.T) {
@@ -100,6 +101,14 @@ func TestReconcile(t *testing.T) {
 				defer mockCtrl.Finish()
 
 				agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+				infraMachinePool := &infraexpv1.AzureManagedMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tc.agentpoolSpec.Name,
+					},
+					Spec: infraexpv1.AzureManagedMachinePoolSpec{
+						Name: &tc.agentpoolSpec.Name,
+					},
+				}
 				machinePoolScope := &scope.ManagedControlPlaneScope{
 					ControlPlane: &infraexpv1.AzureManagedControlPlane{
 						ObjectMeta: metav1.ObjectMeta{
@@ -116,15 +125,9 @@ func TestReconcile(t *testing.T) {
 							},
 						},
 					},
-					MachinePool: &capiexp.MachinePool{},
-					InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: tc.agentpoolSpec.Name,
-						},
-						Spec: infraexpv1.AzureManagedMachinePoolSpec{
-							Name: &tc.agentpoolSpec.Name,
-						},
-					},
+					MachinePool:      &capiexp.MachinePool{},
+					InfraMachinePool: infraMachinePool,
+					PatchTarget:      infraMachinePool,
 				}
 
 				tc.expect(agentpoolsMock.EXPECT(), provisioningstate)
@@ -136,9 +139,11 @@ func TestReconcile(t *testing.T) {
 
 				err := s.Reconcile(context.TODO())
 				if tc.expectedError != "" {
+					g.Expect(conditions.IsFalse(machinePoolScope.InfraMachinePool, capi.ReadyCondition)).To(BeTrue())
 					g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 					g.Expect(err.Error()).To(ContainSubstring(provisioningstate))
 				} else {
+					g.Expect(conditions.IsTrue(machinePoolScope.InfraMachinePool, capi.ReadyCondition)).To(BeTrue())
 					g.Expect(err).NotTo(HaveOccurred())
 				}
 			})
@@ -311,6 +316,18 @@ func TestReconcile(t *testing.T) {
 			osDiskSizeGB := tc.agentPoolsSpec.OSDiskSizeGB
 
 			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+			infraMachinePool := &infraexpv1.AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: tc.agentPoolsSpec.Name,
+				},
+				Spec: infraexpv1.AzureManagedMachinePoolSpec{
+					Name:         &tc.agentPoolsSpec.Name,
+					SKU:          tc.agentPoolsSpec.SKU,
+					OSDiskSizeGB: &osDiskSizeGB,
+					MaxPods:      to.Int32Ptr(12),
+					OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
+				},
+			}
 			machinePoolScope := &scope.ManagedControlPlaneScope{
 				ControlPlane: &infraexpv1.AzureManagedControlPlane{
 					ObjectMeta: metav1.ObjectMeta{
@@ -337,18 +354,8 @@ func TestReconcile(t *testing.T) {
 						},
 					},
 				},
-				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: tc.agentPoolsSpec.Name,
-					},
-					Spec: infraexpv1.AzureManagedMachinePoolSpec{
-						Name:         &tc.agentPoolsSpec.Name,
-						SKU:          tc.agentPoolsSpec.SKU,
-						OSDiskSizeGB: &osDiskSizeGB,
-						MaxPods:      to.Int32Ptr(12),
-						OsDiskType:   to.StringPtr(string(containerservice.OSDiskTypeManaged)),
-					},
-				},
+				InfraMachinePool: infraMachinePool,
+				PatchTarget:      infraMachinePool,
 			}
 
 			tc.expect(agentpoolsMock.EXPECT())
@@ -360,9 +367,11 @@ func TestReconcile(t *testing.T) {
 
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
+				g.Expect(conditions.IsFalse(machinePoolScope.InfraMachinePool, capi.ReadyCondition)).To(BeTrue())
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
+				g.Expect(conditions.IsTrue(machinePoolScope.InfraMachinePool, capi.ReadyCondition)).To(BeTrue())
 				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})

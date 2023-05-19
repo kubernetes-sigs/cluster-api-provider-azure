@@ -19,6 +19,7 @@ package agentpools
 import (
 	"context"
 	"fmt"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/containerservice/mgmt/2022-03-02-preview/containerservice"
@@ -36,6 +37,7 @@ const serviceName = "agentpools"
 // ManagedMachinePoolScope defines the scope interface for a managed machine pool.
 type ManagedMachinePoolScope interface {
 	azure.ClusterDescriber
+	azure.AsyncStatusUpdater
 
 	NodeResourceGroup() string
 	AgentPoolAnnotations() map[string]string
@@ -83,6 +85,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
+		s.scope.UpdatePutStatus(clusterv1.ReadyCondition, serviceName, err)
 		return errors.Wrap(err, "failed to get existing agent pool")
 	}
 
@@ -95,6 +98,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	if isCreate := azure.ResourceNotFound(err); isCreate {
 		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name,
 			profile, customHeaders)
+		s.scope.UpdatePutStatus(clusterv1.ReadyCondition, serviceName, err)
 		if err != nil && azure.ResourceNotFound(err) {
 			return azure.WithTransientError(errors.Wrap(err, "agent pool dependent resource does not exist yet"), 20*time.Second)
 		} else if err != nil {
@@ -105,7 +109,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if ps != string(infrav1alpha4.Canceled) && ps != string(infrav1alpha4.Failed) && ps != string(infrav1alpha4.Succeeded) {
 			msg := fmt.Sprintf("Unable to update existing agent pool in non terminal state. Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
 			log.V(2).Info(msg)
-			return azure.WithTransientError(errors.New(msg), 20*time.Second)
+			retErr := azure.WithTransientError(errors.New(msg), 20*time.Second)
+			s.scope.UpdatePatchStatus(clusterv1.ReadyCondition, serviceName, retErr)
+			return retErr
 		}
 
 		// When tags are removed, the change will be ignored if only set to nil.
@@ -152,10 +158,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			log.V(2).Info(fmt.Sprintf("Update required (+new -old):\n%s", diff))
 			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name,
 				profile, customHeaders)
+			s.scope.UpdatePatchStatus(clusterv1.ReadyCondition, serviceName, err)
 			if err != nil {
 				return errors.Wrap(err, "failed to create or update agent pool")
 			}
 		} else {
+			s.scope.UpdatePatchStatus(clusterv1.ReadyCondition, serviceName, nil)
 			log.V(2).Info("Normalized and desired agent pool matched, no update needed")
 		}
 	}
@@ -175,6 +183,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	log.V(2).Info(fmt.Sprintf("deleting agent pool  %s ", agentPoolSpec.Name))
 	err := s.Client.Delete(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
+	s.scope.UpdateDeleteStatus(clusterv1.ReadyCondition, serviceName, err)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
