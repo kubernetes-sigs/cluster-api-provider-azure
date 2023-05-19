@@ -5,7 +5,7 @@ metadata:
 spec:
   clusterSelector:
     matchLabels:
-      installAzureDiskCSIDriverChart: "true"
+      installAzureDiskCSIDriver: "true"
   repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
   chartName: azuredisk-csi-driver
   releaseName: azuredisk-csi-driver-oot

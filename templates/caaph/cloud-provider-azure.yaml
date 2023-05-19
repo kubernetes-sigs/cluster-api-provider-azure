@@ -5,7 +5,7 @@ metadata:
 spec:
   clusterSelector:
     matchLabels:
-      installCloudProviderAzureChart: "true"
+      installCloudProviderAzure: "true"
   repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
   chartName: cloud-provider-azure
   releaseName: cloud-provider-azure

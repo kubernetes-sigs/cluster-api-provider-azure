@@ -5,7 +5,8 @@ metadata:
     cni: calico
     cni-windows: calico
     csi-proxy: enabled
-    installCloudProviderAzureChart: "true"
+    installAzureDiskCSIDriver: "true"
+    installCloudProviderAzure: "true"
     windows: enabled
   name: ${CLUSTER_NAME}
   namespace: default

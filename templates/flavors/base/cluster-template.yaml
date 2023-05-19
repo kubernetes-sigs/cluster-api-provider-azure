@@ -4,7 +4,8 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    installCloudProviderAzureChart: "true"
+    installCloudProviderAzure: "true"
+    installAzureDiskCSIDriver: "true"
     cni: calico
 spec:
   clusterNetwork:
