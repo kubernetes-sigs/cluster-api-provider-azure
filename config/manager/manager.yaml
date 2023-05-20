@@ -5,7 +5,9 @@ metadata:
   namespace: system
   labels:
     control-plane: capz-controller-manager
+    #ToDo: (@sonasingh46): Remove this label as part of aad pod identity deprecation
     aadpodidbinding: capz-controller-aadpodidentity-selector
+
 spec:
   selector:
     matchLabels:
@@ -16,6 +18,7 @@ spec:
       labels:
         control-plane: capz-controller-manager
         aadpodidbinding: capz-controller-aadpodidentity-selector
+        azure.workload.identity/use: "true"
       annotations:
         kubectl.kubernetes.io/default-container: manager
     spec:
@@ -28,6 +31,10 @@ spec:
           image: controller:latest
           imagePullPolicy: Always
           name: manager
+          volumeMounts:
+            - mountPath: /var/run/secrets/azure/tokens
+              name: azure-identity-token
+              readOnly: true
           ports:
             - containerPort: 9440
               name: healthz
@@ -75,3 +82,12 @@ spec:
           key: node-role.kubernetes.io/master
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
+      volumes:
+      - name: azure-identity-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: api://AzureADTokenExchange
+              expirationSeconds: 3600
+              path: azure-identity-token

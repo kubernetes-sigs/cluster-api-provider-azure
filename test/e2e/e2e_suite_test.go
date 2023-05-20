@@ -168,11 +168,18 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool
 
 		kubeconfigPath = clusterProvider.GetKubeconfigPath()
 		Expect(kubeconfigPath).To(BeAnExistingFile(), "Failed to get the kubeconfig file for the bootstrap cluster")
+	} else {
+		// @sonasingh46: Workaround for testing workload identity.
+		// Loading image for already created cluster
+		imagesInput := bootstrap.LoadImagesToKindClusterInput{
+			Name:   "capz-e2e",
+			Images: config.Images,
+		}
+		err := bootstrap.LoadImagesToKindCluster(context.TODO(), imagesInput)
+		Expect(err).To(BeNil(), "Failed to load images to the bootstrap cluster: %s", err)
 	}
-
 	clusterProxy := NewAzureClusterProxy("bootstrap", kubeconfigPath)
 	Expect(clusterProxy).NotTo(BeNil(), "Failed to get a bootstrap cluster proxy")
-
 	return clusterProvider, clusterProxy
 }
 

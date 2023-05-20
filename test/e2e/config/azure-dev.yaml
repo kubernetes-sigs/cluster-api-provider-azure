@@ -122,6 +122,8 @@ providers:
         targetName: "cluster-template-intree-cloud-provider.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool-flex.yaml"
         targetName: "cluster-template-machine-pool-flex.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-workload-identity.yaml"
+        targetName: "cluster-template-workload-identity.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks.yaml"
         targetName: "cluster-template-aks.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"

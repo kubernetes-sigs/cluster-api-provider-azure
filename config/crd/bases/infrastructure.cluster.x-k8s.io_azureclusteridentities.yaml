@@ -150,6 +150,7 @@ spec:
                 - UserAssignedMSI
                 - ManualServicePrincipal
                 - ServicePrincipalCertificate
+                - WorkloadIdentity
                 type: string
             required:
             - clientID
