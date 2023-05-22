@@ -193,6 +193,13 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, err)
 	}
 
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "AzureEnvironment"),
+		old.Spec.AzureEnvironment,
+		m.Spec.AzureEnvironment); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	if old.Spec.AADProfile != nil {
 		if m.Spec.AADProfile == nil {
 			allErrs = append(allErrs,
