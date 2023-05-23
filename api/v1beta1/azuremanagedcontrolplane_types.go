@@ -55,26 +55,32 @@ type AzureManagedControlPlaneSpec struct {
 	Version string `json:"version"`
 
 	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
+	// Immutable.
 	ResourceGroupName string `json:"resourceGroupName"`
 
 	// NodeResourceGroupName is the name of the resource group
 	// containing cluster IaaS resources. Will be populated to default
 	// in webhook.
+	// Immutable.
 	// +optional
 	NodeResourceGroupName string `json:"nodeResourceGroupName,omitempty"`
 
 	// VirtualNetwork describes the vnet for the AKS cluster. Will be created if it does not exist.
+	// Immutable except for `subnet`.
 	// +optional
 	VirtualNetwork ManagedControlPlaneVirtualNetwork `json:"virtualNetwork,omitempty"`
 
 	// SubscriptionID is the GUID of the Azure subscription to hold this cluster.
+	// Immutable.
 	// +optional
 	SubscriptionID string `json:"subscriptionID,omitempty"`
 
 	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
+	// Immutable.
 	Location string `json:"location"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// Immutable, populated by the AKS API at create.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
@@ -84,29 +90,37 @@ type AzureManagedControlPlaneSpec struct {
 	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
+	// Allowed values are "azure", "kubenet".
+	// Immutable.
 	// +kubebuilder:validation:Enum=azure;kubenet
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
+	// Allowed values are "azure", "calico".
+	// Immutable.
 	// +kubebuilder:validation:Enum=azure;calico
 	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
 	// Outbound configuration used by Nodes.
+	// Immutable.
 	// +kubebuilder:validation:Enum=loadBalancer;managedNATGateway;userAssignedNATGateway;userDefinedRouting
 	// +optional
 	OutboundType *ManagedControlPlaneOutboundType `json:"outboundType,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
+	// Immutable.
 	SSHPublicKey string `json:"sshPublicKey"`
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
 	// It must be within the Kubernetes service address range specified in serviceCidr.
+	// Immutable.
 	// +optional
 	DNSServiceIP *string `json:"dnsServiceIP,omitempty"`
 
 	// LoadBalancerSKU is the SKU of the loadBalancer to be provisioned.
+	// Immutable.
 	// +kubebuilder:validation:Enum=Basic;Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
@@ -132,6 +146,7 @@ type AzureManagedControlPlaneSpec struct {
 	LoadBalancerProfile *LoadBalancerProfile `json:"loadBalancerProfile,omitempty"`
 
 	// APIServerAccessProfile is the access profile for AKS API server.
+	// Immutable except for `authorizedIPRanges`.
 	// +optional
 	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
 
@@ -149,6 +164,9 @@ type AzureManagedControlPlaneSpec struct {
 }
 
 // AADProfile - AAD integration managed by AKS.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/managed-aad
 type AADProfile struct {
 	// Managed - Whether to enable managed AAD.
 	// +kubebuilder:validation:Required
@@ -190,12 +208,11 @@ type AKSSku struct {
 }
 
 // LoadBalancerProfile - Profile of the cluster load balancer.
+// At most one of `managedOutboundIPs`, `outboundIPPrefixes`, or `outboundIPs` may be specified.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/load-balancer-standard
 type LoadBalancerProfile struct {
-	// Load balancer profile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs.
-	// By default the AKS cluster automatically creates a public IP in the AKS-managed infrastructure resource group and assigns it to the load balancer outbound pool.
-	// Alternatively, you can assign your own custom public IP or public IP prefix at cluster creation time.
-	// See https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#provide-your-own-outbound-public-ips-or-prefixes
-
 	// ManagedOutboundIPs - Desired managed outbound IPs for the cluster load balancer.
 	// +optional
 	ManagedOutboundIPs *int32 `json:"managedOutboundIPs,omitempty"`
@@ -217,7 +234,10 @@ type LoadBalancerProfile struct {
 	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
 }
 
-// APIServerAccessProfile - access profile for AKS API server.
+// APIServerAccessProfile tunes the accessibility of the cluster's control plane.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/api-server-authorized-ip-ranges
 type APIServerAccessProfile struct {
 	// AuthorizedIPRanges - Authorized IP Ranges to kubernetes API server.
 	// +optional
@@ -238,6 +258,7 @@ type APIServerAccessProfile struct {
 type ManagedControlPlaneVirtualNetwork struct {
 	Name      string `json:"name"`
 	CIDRBlock string `json:"cidrBlock"`
+	// Immutable except for `serviceEndpoints`.
 	// +optional
 	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
 	// ResourceGroup is the name of the Azure resource group for the VNet and Subnet.
@@ -282,7 +303,10 @@ type AzureManagedControlPlaneStatus struct {
 }
 
 // AutoScalerProfile parameters to be applied to the cluster-autoscaler.
-// See the [FAQ](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-parameters-to-ca) for more details about each parameter.
+// See also [AKS doc], [K8s doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/cluster-autoscaler#use-the-cluster-autoscaler-profile
+// [K8s doc]: https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-parameters-to-ca
 type AutoScalerProfile struct {
 	// BalanceSimilarNodeGroups - Valid values are 'true' and 'false'. The default is false.
 	// +kubebuilder:validation:Enum="true";"false"
