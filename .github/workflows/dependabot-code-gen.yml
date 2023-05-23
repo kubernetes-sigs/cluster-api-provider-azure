@@ -17,13 +17,18 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@128a63446a954579617e875aaab7d2978154e969 # v2.4.0
+      with:
+        egress-policy: audit
+
     - name: Set up Go 1.x
-      uses: actions/setup-go@v4.0.1
+      uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
       with:
         go-version: '1.20'
       id: go
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3 # tag=v3.2.0
+      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
     - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # tag=v3.3.1
       name: Restore go cache
       with:
