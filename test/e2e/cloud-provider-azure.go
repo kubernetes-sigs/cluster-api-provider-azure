@@ -26,12 +26,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
-const (
-	azureDiskCSIDriverHelmRepoURL     = "https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts"
-	azureDiskCSIDriverChartName       = "azuredisk-csi-driver"
-	azureDiskCSIDriverHelmReleaseName = "azuredisk-csi-driver-oot"
-)
-
 // EnsureAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
 func EnsureAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, hasWindows bool) {
 	specName := "azuredisk-csi-drivers-install"
