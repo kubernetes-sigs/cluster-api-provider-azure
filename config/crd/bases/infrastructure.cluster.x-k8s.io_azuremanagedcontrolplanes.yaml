@@ -88,7 +88,7 @@ spec:
                 type: array
               apiServerAccessProfile:
                 description: APIServerAccessProfile is the access profile for AKS
-                  API server.
+                  API server. Immutable except for `authorizedIPRanges`.
                 properties:
                   authorizedIPRanges:
                     description: AuthorizedIPRanges - Authorized IP Ranges to kubernetes
@@ -225,7 +225,8 @@ spec:
                 type: string
               controlPlaneEndpoint:
                 description: ControlPlaneEndpoint represents the endpoint used to
-                  communicate with the control plane.
+                  communicate with the control plane. Immutable, populated by the
+                  AKS API at create.
                 properties:
                   host:
                     description: The hostname on which the API server is serving.
@@ -241,7 +242,7 @@ spec:
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
                   DNS service. It must be within the Kubernetes service address range
-                  specified in serviceCidr.
+                  specified in serviceCidr. Immutable.
                 type: string
               identityRef:
                 description: IdentityRef is a reference to a AzureClusterIdentity
@@ -318,23 +319,25 @@ spec:
                 type: object
               loadBalancerSKU:
                 description: LoadBalancerSKU is the SKU of the loadBalancer to be
-                  provisioned.
+                  provisioned. Immutable.
                 enum:
                 - Basic
                 - Standard
                 type: string
               location:
                 description: 'Location is a string matching one of the canonical Azure
-                  region names. Examples: "westus2", "eastus".'
+                  region names. Examples: "westus2", "eastus". Immutable.'
                 type: string
               networkPlugin:
-                description: NetworkPlugin used for building Kubernetes network.
+                description: NetworkPlugin used for building Kubernetes network. Allowed
+                  values are "azure", "kubenet". Immutable.
                 enum:
                 - azure
                 - kubenet
                 type: string
               networkPolicy:
-                description: NetworkPolicy used for building Kubernetes network.
+                description: NetworkPolicy used for building Kubernetes network. Allowed
+                  values are "azure", "calico". Immutable.
                 enum:
                 - azure
                 - calico
@@ -342,10 +345,10 @@ spec:
               nodeResourceGroupName:
                 description: NodeResourceGroupName is the name of the resource group
                   containing cluster IaaS resources. Will be populated to default
-                  in webhook.
+                  in webhook. Immutable.
                 type: string
               outboundType:
-                description: Outbound configuration used by Nodes.
+                description: Outbound configuration used by Nodes. Immutable.
                 enum:
                 - loadBalancer
                 - managedNATGateway
@@ -354,7 +357,7 @@ spec:
                 type: string
               resourceGroupName:
                 description: ResourceGroupName is the name of the Azure resource group
-                  for this AKS Cluster.
+                  for this AKS Cluster. Immutable.
                 type: string
               sku:
                 description: SKU is the SKU of the AKS to be provisioned.
@@ -370,11 +373,11 @@ spec:
                 type: object
               sshPublicKey:
                 description: SSHPublicKey is a string literal containing an ssh public
-                  key base64 encoded.
+                  key base64 encoded. Immutable.
                 type: string
               subscriptionID:
                 description: SubscriptionID is the GUID of the Azure subscription
-                  to hold this cluster.
+                  to hold this cluster. Immutable.
                 type: string
               version:
                 description: Version defines the desired Kubernetes version.
@@ -382,7 +385,7 @@ spec:
                 type: string
               virtualNetwork:
                 description: VirtualNetwork describes the vnet for the AKS cluster.
-                  Will be created if it does not exist.
+                  Will be created if it does not exist. Immutable except for `subnet`.
                 properties:
                   cidrBlock:
                     type: string
@@ -393,8 +396,7 @@ spec:
                       for the VNet and Subnet.
                     type: string
                   subnet:
-                    description: ManagedControlPlaneSubnet describes a subnet for
-                      an AKS cluster.
+                    description: Immutable except for `serviceEndpoints`.
                     properties:
                       cidrBlock:
                         type: string
