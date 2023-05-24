@@ -121,7 +121,7 @@ YQ_VER := v4.14.2
 YQ_BIN := yq
 YQ :=  $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER)
 
-KIND_VER := v0.18.0
+KIND_VER := v0.19.0
 KIND_BIN := kind
 KIND :=  $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
