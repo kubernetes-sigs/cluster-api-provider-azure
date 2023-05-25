@@ -297,7 +297,6 @@ var _ = Describe("Workload cluster creation", func() {
 	Context("Creating a Flatcar cluster [OPTIONAL]", func() {
 		It("With Flatcar control-plane and worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "flatcar")
-
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("flatcar"),
@@ -309,7 +308,27 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
 			), result)
+
+			By("can create and access a load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
 		})
 	})
 
