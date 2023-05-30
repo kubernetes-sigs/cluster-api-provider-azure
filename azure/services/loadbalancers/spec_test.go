@@ -276,17 +276,18 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
 						},
 						Probe: &network.SubResource{
-							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/probes/TCPProbe"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/probes/HTTPSProbe"),
 						},
 					},
 				},
 			},
 			Probes: &[]network.Probe{
 				{
-					Name: pointer.String(tcpProbe),
+					Name: pointer.String(httpsProbe),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
-						Protocol:          network.ProbeProtocolTCP,
+						Protocol:          network.ProbeProtocolHTTPS,
 						Port:              pointer.Int32(6443),
+						RequestPath:       pointer.String(httpsProbeRequestPath),
 						IntervalInSeconds: pointer.Int32(15),
 						NumberOfProbes:    numProbes, // Add to verify that Probes aren't overwritten on update
 					},
@@ -355,7 +356,7 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/backendAddressPools/my-private-lb-backendPool"),
 						},
 						Probe: &network.SubResource{
-							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/probes/TCPProbe"),
+							ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/probes/HTTPSProbe"),
 						},
 					},
 				},
@@ -363,10 +364,11 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 			OutboundRules: &[]network.OutboundRule{},
 			Probes: &[]network.Probe{
 				{
-					Name: pointer.String(tcpProbe),
+					Name: pointer.String(httpsProbe),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
-						Protocol:          network.ProbeProtocolTCP,
+						Protocol:          network.ProbeProtocolHTTPS,
 						Port:              pointer.Int32(6443),
+						RequestPath:       pointer.String(httpsProbeRequestPath),
 						IntervalInSeconds: pointer.Int32(15),
 						NumberOfProbes:    pointer.Int32(4),
 					},

@@ -236,7 +236,7 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []network.SubResource) []n
 						ID: pointer.String(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
 					},
 					Probe: &network.SubResource{
-						ID: pointer.String(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, tcpProbe)),
+						ID: pointer.String(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, httpsProbe)),
 					},
 				},
 			},
@@ -257,10 +257,11 @@ func getProbes(lbSpec LBSpec) []network.Probe {
 	if lbSpec.Role == infrav1.APIServerRole {
 		return []network.Probe{
 			{
-				Name: pointer.String(tcpProbe),
+				Name: pointer.String(httpsProbe),
 				ProbePropertiesFormat: &network.ProbePropertiesFormat{
-					Protocol:          network.ProbeProtocolTCP,
+					Protocol:          network.ProbeProtocolHTTPS,
 					Port:              pointer.Int32(lbSpec.APIServerPort),
+					RequestPath:       pointer.String(httpsProbeRequestPath),
 					IntervalInSeconds: pointer.Int32(15),
 					NumberOfProbes:    pointer.Int32(4),
 				},

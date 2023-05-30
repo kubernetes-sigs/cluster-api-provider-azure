@@ -27,10 +27,11 @@ import (
 )
 
 const (
-	serviceName = "loadbalancers"
-	tcpProbe    = "TCPProbe"
-	lbRuleHTTPS = "LBRuleHTTPS"
-	outboundNAT = "OutboundNATAllProtocols"
+	serviceName           = "loadbalancers"
+	httpsProbe            = "HTTPSProbe"
+	httpsProbeRequestPath = "/readyz"
+	lbRuleHTTPS           = "LBRuleHTTPS"
+	outboundNAT           = "OutboundNATAllProtocols"
 )
 
 // LBScope defines the scope interface for a load balancer service.
