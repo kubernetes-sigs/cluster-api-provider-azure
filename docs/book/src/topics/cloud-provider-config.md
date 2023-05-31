@@ -54,7 +54,7 @@ spec:
 <h1> Warning </h1>
 
 Presently, only rate limit configuration is supported for overrides, and this works only on clusters running Kubernetes versions above `v1.18.0`.
-See [per client rate limiting](https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs/#per-client-rate-limiting) for more info.
+See [per client rate limiting](https://cloud-provider-azure.sigs.k8s.io/install/configs/#per-client-rate-limiting) for more info.
 
 </aside>
 
