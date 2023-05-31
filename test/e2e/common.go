@@ -84,6 +84,7 @@ const (
 	FlatcarVersion                  = "FLATCAR_VERSION"
 	SecurityScanFailThreshold       = "SECURITY_SCAN_FAIL_THRESHOLD"
 	SecurityScanContainer           = "SECURITY_SCAN_CONTAINER"
+	CalicoVersion                   = "CALICO_VERSION"
 	ManagedClustersResourceType     = "managedClusters"
 	capiImagePublisher              = "cncf-upstream"
 	capiOfferName                   = "capi"
