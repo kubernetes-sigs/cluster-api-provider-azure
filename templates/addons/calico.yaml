@@ -4355,7 +4355,7 @@ spec:
           value: node
         - name: DATASTORE_TYPE
           value: kubernetes
-        image: docker.io/calico/kube-controllers:v3.25.0
+        image: docker.io/calico/kube-controllers:v3.25.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -4468,7 +4468,7 @@ spec:
         - configMapRef:
             name: kubernetes-services-endpoint
             optional: true
-        image: docker.io/calico/node:v3.25.0
+        image: docker.io/calico/node:v3.25.1
         imagePullPolicy: IfNotPresent
         lifecycle:
           preStop:
@@ -4540,7 +4540,7 @@ spec:
         - configMapRef:
             name: kubernetes-services-endpoint
             optional: true
-        image: docker.io/calico/cni:v3.25.0
+        image: docker.io/calico/cni:v3.25.1
         imagePullPolicy: IfNotPresent
         name: upgrade-ipam
         securityContext:
@@ -4575,7 +4575,7 @@ spec:
         - configMapRef:
             name: kubernetes-services-endpoint
             optional: true
-        image: docker.io/calico/cni:v3.25.0
+        image: docker.io/calico/cni:v3.25.1
         imagePullPolicy: IfNotPresent
         name: install-cni
         securityContext:
@@ -4589,7 +4589,7 @@ spec:
         - calico-node
         - -init
         - -best-effort
-        image: docker.io/calico/node:v3.25.0
+        image: docker.io/calico/node:v3.25.1
         imagePullPolicy: IfNotPresent
         name: mount-bpffs
         securityContext:

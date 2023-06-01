@@ -495,13 +495,17 @@ generate-addons: fetch-calico-manifests ## Generate metric-server, calico calico
 	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-dual-stack > $(ADDONS_DIR)/calico-dual-stack.yaml
 
 # When updating this, make sure to also update the Windows image version in templates/addons/windows/calico.
-CALICO_VERSION := v3.25.0
+export CALICO_VERSION := v3.25.1
 # Where all downloaded Calico manifests are unpacked and stored.
 CALICO_RELEASES := $(ARTIFACTS)/calico
 # Path to manifests directory in a Calico release archive.
 CALICO_RELEASE_MANIFESTS_DIR := release-$(CALICO_VERSION)/manifests
 # Path where Calico manifests are stored which should be used for addons generation.
 CALICO_MANIFESTS_DIR := $(ARTIFACTS)/calico/$(CALICO_RELEASE_MANIFESTS_DIR)
+
+.PHONY: get-calico-version
+get-calico-version: ## Print the Calico version used for CNI in the repo.
+	@echo $(CALICO_VERSION)
 
 .PHONY: fetch-calico-manifests
 fetch-calico-manifests: $(CALICO_MANIFESTS_DIR) ## Get Calico release manifests and unzip them.
