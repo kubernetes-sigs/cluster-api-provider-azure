@@ -270,6 +270,10 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 			"sentinel-file-dir.txt",
 			"ls", "/run/cluster-api/",
 		),
+		execToPathFn(
+			"cni.log",
+			"cat", "/var/log/calico/cni/cni.log",
+		),
 	}
 }
 
