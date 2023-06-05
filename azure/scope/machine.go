@@ -697,10 +697,7 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 		return m.AzureMachine.Spec.Image, nil
 	}
 
-	svc, err := virtualmachineimages.New(m)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create virtualmachineimages service")
-	}
+	svc := virtualmachineimages.New(m)
 
 	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS {
 		runtime := m.AzureMachine.Annotations["runtime"]

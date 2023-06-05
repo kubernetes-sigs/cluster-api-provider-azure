@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/cache/ttllru"
@@ -39,7 +39,7 @@ type Key struct {
 // Cache stores VM image list resources.
 type Cache struct {
 	client Client
-	data   map[Key]armcompute.VirtualMachineImagesClientListResponse
+	data   map[Key]compute.ListVirtualMachineImageResource
 }
 
 // Cacher allows getting items from and adding them to a cache.
@@ -55,14 +55,10 @@ var (
 )
 
 // newCache instantiates a cache.
-func newCache(auth azure.Authorizer) (*Cache, error) {
-	client, err := NewClient(auth)
-	if err != nil {
-		return nil, err
-	}
+func newCache(auth azure.Authorizer) *Cache {
 	return &Cache{
-		client: client,
-	}, nil
+		client: NewClient(auth),
+	}
 }
 
 // GetCache either creates a new VM images cache or returns the existing one.
@@ -81,10 +77,7 @@ func GetCache(auth azure.Authorizer) (*Cache, error) {
 		return c.(*Cache), nil
 	}
 
-	c, err = newCache(auth)
-	if err != nil {
-		return nil, err
-	}
+	c = newCache(auth)
 	_ = clientCache.Add(key, c)
 	return c.(*Cache), nil
 }
@@ -105,12 +98,12 @@ func (c *Cache) refresh(ctx context.Context, key Key) error {
 }
 
 // Get returns a VM image list resource in a location given a publisher, offer, and sku.
-func (c *Cache) Get(ctx context.Context, location, publisher, offer, sku string) (armcompute.VirtualMachineImagesClientListResponse, error) {
+func (c *Cache) Get(ctx context.Context, location, publisher, offer, sku string) (compute.ListVirtualMachineImageResource, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Cache.Get")
 	defer done()
 
 	if c.data == nil {
-		c.data = make(map[Key]armcompute.VirtualMachineImagesClientListResponse)
+		c.data = make(map[Key]compute.ListVirtualMachineImageResource)
 	}
 
 	key := Key{
@@ -123,7 +116,7 @@ func (c *Cache) Get(ctx context.Context, location, publisher, offer, sku string)
 	if _, ok := c.data[key]; !ok {
 		log.V(4).Info("VM images cache miss", "location", key.location, "publisher", key.publisher, "offer", key.offer, "sku", key.sku)
 		if err := c.refresh(ctx, key); err != nil {
-			return armcompute.VirtualMachineImagesClientListResponse{}, err
+			return compute.ListVirtualMachineImageResource{}, err
 		}
 	} else {
 		log.V(4).Info("VM images cache hit", "location", key.location, "publisher", key.publisher, "offer", key.offer, "sku", key.sku)
