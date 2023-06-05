@@ -626,16 +626,12 @@ func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, erro
 		return m.AzureMachinePool.Spec.Template.Image, nil
 	}
 
+	svc := virtualmachineimages.New(m)
+
 	var (
 		err          error
 		defaultImage *infrav1.Image
 	)
-
-	svc, err := virtualmachineimages.New(m)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create virtualmachineimages service")
-	}
-
 	if m.AzureMachinePool.Spec.Template.OSDisk.OSType == azure.WindowsOS {
 		runtime := m.AzureMachinePool.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachinePool.Annotations["windowsServerVersion"]

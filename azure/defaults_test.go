@@ -24,96 +24,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
-
-func TestARMClientOptions(t *testing.T) {
-	g := NewWithT(t)
-
-	tests := []struct {
-		name          string
-		cloudName     string
-		expectedCloud cloud.Configuration
-		expectError   bool
-	}{
-		{
-			name:          "should return default client options if cloudName is empty",
-			cloudName:     "",
-			expectedCloud: cloud.Configuration{},
-		},
-		{
-			name:          "should return Azure public cloud client options",
-			cloudName:     PublicCloudName,
-			expectedCloud: cloud.AzurePublic,
-		},
-		{
-			name:          "should return Azure China cloud client options",
-			cloudName:     ChinaCloudName,
-			expectedCloud: cloud.AzureChina,
-		},
-		{
-			name:          "should return Azure government cloud client options",
-			cloudName:     USGovernmentCloudName,
-			expectedCloud: cloud.AzureGovernment,
-		},
-		{
-			name:        "should return error if cloudName is unrecognized",
-			cloudName:   "AzureUnrecognizedCloud",
-			expectError: true,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			opts, err := ARMClientOptions(tc.cloudName)
-			if tc.expectError {
-				g.Expect(err).To(HaveOccurred())
-				return
-			}
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(opts.Cloud).To(Equal(tc.expectedCloud))
-			g.Expect(opts.Retry.MaxRetries).To(BeNumerically("==", -1))
-			g.Expect(opts.PerCallPolicies).To(HaveLen(2))
-		})
-	}
-}
-
-func TestPerCallPolicies(t *testing.T) {
-	g := NewWithT(t)
-
-	corrID := "test-1234abcd-5678efgh"
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		g.Expect(r.Header.Get("User-Agent")).To(ContainSubstring("cluster-api-provider-azure/"))
-		g.Expect(r.Header.Get(string(tele.CorrIDKeyVal))).To(Equal(corrID))
-		fmt.Fprintf(w, "Hello, %s", r.Proto)
-	}))
-	defer server.Close()
-
-	opts, err := ARMClientOptions("")
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(opts.PerCallPolicies).To(HaveLen(2))
-	ctx := context.WithValue(context.Background(), tele.CorrIDKeyVal, tele.CorrID(corrID))
-	req, err := runtime.NewRequest(ctx, http.MethodGet, server.URL)
-	g.Expect(err).NotTo(HaveOccurred())
-	pipeline := defaultTestPipeline(opts.PerCallPolicies)
-	resp, err := pipeline.Do(req)
-	g.Expect(err).NotTo(HaveOccurred())
-	defer resp.Body.Close()
-	g.Expect(resp.StatusCode).To(Equal(http.StatusOK))
-}
-
-func defaultTestPipeline(policies []policy.Policy) runtime.Pipeline {
-	return runtime.NewPipeline(
-		"testmodule",
-		"v0.1.0",
-		runtime.PipelineOptions{},
-		&policy.ClientOptions{PerCallPolicies: policies},
-	)
-}
 
 func TestAutoRestClientAppendUserAgent(t *testing.T) {
 	g := NewWithT(t)
