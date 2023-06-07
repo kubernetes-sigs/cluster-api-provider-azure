@@ -21,8 +21,8 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v1.4.4",
     "cert_manager_version": "v1.12.2",
-    "kubernetes_version": "v1.25.6",
-    "aks_kubernetes_version": "v1.25.6",
+    "kubernetes_version": "v1.27.2",
+    "aks_kubernetes_version": "v1.26.3",
     "flatcar_version": "3374.2.1",
 }
 
@@ -382,20 +382,25 @@ def get_addons(flavor_name):
     if "aks" in flavor_name:
         return ""
 
-    # install calico
-    if "ipv6" in flavor_name:
-        calico_values = "./templates/addons/calico-ipv6/values.yaml"
-    elif "dual-stack" in flavor_name:
-        calico_values = "./templates/addons/calico-dual-stack/values.yaml"
-    else:
-        calico_values = "./templates/addons/calico/values.yaml"
-
-    addon_cmd = "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts --version ${CALICO_VERSION} calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
-
+    addon_cmd = ""
     if "intree-cloud-provider" not in flavor_name:
-        addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
+        addon_cmd += "; export CIDRS=$(" + kubectl_cmd + " get cluster ${CLUSTER_NAME} -o jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[*]}')"
+        addon_cmd += "; export CIDR_LIST=$(bash -c 'echo $CIDRS' | tr ' ' ',')"
+        addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME} --set cloudControllerManager.clusterCIDR=${CIDR_LIST}"
         if "flatcar" in flavor_name:  # append caCetDir location to the cloud-provider-azure helm install command for flatcar flavor
             addon_cmd += " --set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates"
+
+    if "azure-cni-v1" in flavor_name:
+        addon_cmd += "; " + kubectl_cmd + " apply -f ./templates/addons/azure-cni-v1.yaml --kubeconfig ./${CLUSTER_NAME}.kubeconfig"
+    else:
+        # install calico
+        if "ipv6" in flavor_name:
+            calico_values = "./templates/addons/calico-ipv6/values.yaml"
+        elif "dual-stack" in flavor_name:
+            calico_values = "./templates/addons/calico-dual-stack/values.yaml"
+        else:
+            calico_values = "./templates/addons/calico/values.yaml"
+        addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts --version ${CALICO_VERSION} calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
 
     return addon_cmd
 
