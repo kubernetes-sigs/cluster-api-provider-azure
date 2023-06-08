@@ -151,6 +151,9 @@ MANIFEST_ROOT ?= config
 CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
 WEBHOOK_ROOT ?= $(MANIFEST_ROOT)/webhook
 RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
+ASO_CRDS_PATH := $(MANIFEST_ROOT)/aso/crds.yaml
+ASO_VERSION := v2.0.0
+ASO_CRDS := resourcegroups.resources.azure.com
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= Always
@@ -432,6 +435,7 @@ generate: ## Generate go related targets, manifests, flavors, e2e-templates and 
 	$(MAKE) generate-flavors
 	$(MAKE) generate-e2e-templates
 	$(MAKE) generate-addons
+	$(MAKE) generate-aso-crds
 
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets.
@@ -477,6 +481,17 @@ generate-addons: fetch-calico-manifests ## Generate metric-server, calico calico
 	$(KUSTOMIZE) build $(ADDONS_DIR)/calico > $(ADDONS_DIR)/calico.yaml
 	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-ipv6 > $(ADDONS_DIR)/calico-ipv6.yaml
 	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-dual-stack > $(ADDONS_DIR)/calico-dual-stack.yaml
+
+.PHONY: generate-aso-crds
+# The yq command filters the list of all ASO CRDs to just the ones specified by ASO_CRDS.
+# The sed command changes '$$' to '$$$$' so once the CRDs get run through
+# envsubst, '$$$$' changes back to '$$' so ASO will not detect a diff and try to
+# update the CRDs for which we don't give it permission.
+generate-aso-crds: $(YQ)
+	curl -fSsL "https://github.com/Azure/azure-service-operator/releases/download/$(ASO_VERSION)/azureserviceoperator_customresourcedefinitions_$(ASO_VERSION).yaml" | \
+		$(YQ) e '. | select($(foreach name,$(ASO_CRDS),.metadata.name == "$(name)" or )false)' - | \
+		sed 's/\$$\$$/$$$$$$$$/g' \
+		> $(ASO_CRDS_PATH)
 
 # When updating this, make sure to also update the Windows image version in templates/addons/windows/calico.
 export CALICO_VERSION := v3.25.1

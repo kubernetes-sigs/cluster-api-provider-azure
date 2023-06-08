@@ -3,7 +3,7 @@ kind: Component
 namespace: capz-system
 resources:
 - https://github.com/Azure/azure-service-operator/releases/download/v2.0.0/azureserviceoperator_v2.0.0.yaml
-- https://github.com/Azure/azure-service-operator/releases/download/v2.0.0/azureserviceoperator_customresourcedefinitions_v2.0.0.yaml
+- crds.yaml
 - credentials.yaml
 
 patches:
