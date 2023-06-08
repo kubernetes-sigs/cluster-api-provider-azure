@@ -24,9 +24,10 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
-// ValidateAzureMachineSpec check for validation errors of azuremachine.spec.
+// ValidateAzureMachineSpec checks an AzureMachineSpec and returns any validation errors.
 func ValidateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
 	var allErrs field.ErrorList
 
@@ -128,9 +129,19 @@ func ValidateSystemAssignedIdentity(identityType VMIdentity, oldIdentity, newIde
 func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdentities []UserAssignedIdentity, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if identityType == VMIdentityUserAssigned && len(userAssignedIdentities) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath, "must be specified for the 'UserAssigned' identity type"))
+	if identityType == VMIdentityUserAssigned {
+		if len(userAssignedIdentities) == 0 {
+			allErrs = append(allErrs, field.Required(fldPath, "must be specified for the 'UserAssigned' identity type"))
+		}
+		for _, identity := range userAssignedIdentities {
+			if identity.ProviderID != "" {
+				if _, err := azureutil.ParseResourceID(identity.ProviderID); err != nil {
+					allErrs = append(allErrs, field.Invalid(fldPath, identity.ProviderID, "must be a valid Azure resource ID"))
+				}
+			}
+		}
 	}
+
 	return allErrs
 }
 

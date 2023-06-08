@@ -124,3 +124,55 @@ func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...cl
 
 	return nil
 }
+
+func TestParseResourceID(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name         string
+		id           string
+		expectedName string
+		errExpected  bool
+	}{
+		{
+			name:         "invalid",
+			id:           "invalid",
+			expectedName: "",
+			errExpected:  true,
+		},
+		{
+			name:         "invalid: must start with slash",
+			id:           "subscriptions/123/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm",
+			expectedName: "",
+			errExpected:  true,
+		},
+		{
+			name:         "invalid: must start with subscriptions or providers",
+			id:           "/prescriptions/123/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm",
+			expectedName: "",
+			errExpected:  true,
+		},
+		{
+			name:         "valid",
+			id:           "/subscriptions/123/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm",
+			expectedName: "vm",
+		},
+		{
+			name:         "valid with provider prefix",
+			id:           "azure:///subscriptions/123/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm",
+			expectedName: "vm",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resourceID, err := ParseResourceID(tt.id)
+			if tt.errExpected {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(resourceID.Name).To(Equal(tt.expectedName))
+			}
+		})
+	}
+}

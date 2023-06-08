@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // ErrUserAssignedIdentitiesNotFound is the error thrown when user assigned identities is not passed with the identity type being UserAssigned.
@@ -84,5 +84,5 @@ func UserAssignedIdentitiesToVMSSSDK(identities []infrav1.UserAssignedIdentity) 
 
 // sanitized removes "azure://" prefix from the given id.
 func sanitized(id string) string {
-	return strings.TrimPrefix(id, azure.ProviderIDPrefix)
+	return strings.TrimPrefix(id, azureutil.ProviderIDPrefix)
 }

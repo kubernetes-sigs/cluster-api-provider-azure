@@ -25,6 +25,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // NatGatewaySpec defines the specification for a NAT gateway.
@@ -96,7 +97,7 @@ func hasPublicIP(natGateway network.NatGateway, publicIPName string) bool {
 	}
 
 	for _, publicIP := range *natGateway.PublicIPAddresses {
-		resource, err := azure.ParseResourceID(*publicIP.ID)
+		resource, err := azureutil.ParseResourceID(*publicIP.ID)
 		if err != nil {
 			continue
 		}

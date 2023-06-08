@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -82,7 +83,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	// Fetch the latest instance or VM data. AzureMachinePoolReconciler handles model mutations.
 	if isFlex {
-		resourceID := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
+		resourceID := strings.TrimPrefix(providerID, azureutil.ProviderIDPrefix)
 		log.V(4).Info("VMSS is flex", "vmssName", vmssName, "providerID", providerID, "resourceID", resourceID)
 		// Using VMSS Flex, so fetch by resource ID.
 		vm, err := s.VMClient.GetByID(ctx, resourceID)
@@ -130,7 +131,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer done()
 
 	if isFlex {
-		return s.deleteVMSSFlexVM(ctx, strings.TrimPrefix(providerID, azure.ProviderIDPrefix))
+		return s.deleteVMSSFlexVM(ctx, strings.TrimPrefix(providerID, azureutil.ProviderIDPrefix))
 	}
 	return s.deleteVMSSUniformInstance(ctx, resourceGroup, vmssName, instanceID, log)
 }
@@ -146,7 +147,7 @@ func (s *Service) deleteVMSSFlexVM(ctx context.Context, resourceID string) error
 		}
 	}()
 
-	parsed, err := azure.ParseResourceID(resourceID)
+	parsed, err := azureutil.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to parse resource id %q", resourceID))
 	}

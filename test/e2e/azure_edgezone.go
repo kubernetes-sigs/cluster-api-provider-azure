@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -85,7 +85,7 @@ func AzureEdgeZoneClusterSpec(ctx context.Context, inputGetter func() AzureEdgeZ
 		vmClient.Authorizer = auth
 
 		// get the resource group name
-		resource, err := azure.ParseResourceID(*machineList.Items[0].Spec.ProviderID)
+		resource, err := azureutil.ParseResourceID(*machineList.Items[0].Spec.ProviderID)
 		Expect(err).NotTo(HaveOccurred())
 
 		vmListResults, err := vmClient.List(ctx, resource.ResourceGroupName, "")

@@ -146,8 +146,11 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "azuremachinepool with user assigned identity",
-			amp:     createMachinePoolWithUserAssignedIdentity([]string{"azure:://id1", "azure:://id2"}),
+			name: "azuremachinepool with user assigned identity",
+			amp: createMachinePoolWithUserAssignedIdentity([]string{
+				"azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				"azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-a6b7d",
+			}),
 			wantErr: false,
 		},
 		{

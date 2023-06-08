@@ -19,9 +19,7 @@ package azure
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/go-autorest/autorest"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
@@ -91,12 +89,6 @@ const (
 	// bootstrapSentinelFile is the file written by bootstrap provider on machines to indicate successful bootstrapping,
 	// as defined by the Cluster API Bootstrap Provider contract (https://cluster-api.sigs.k8s.io/developer/providers/bootstrap.html).
 	bootstrapSentinelFile = "/run/cluster-api/bootstrap-success.complete"
-)
-
-const (
-	// ProviderIDPrefix will be appended to the beginning of Azure resource IDs to form the Kubernetes Provider ID.
-	// NOTE: this format matches the 2 slashes format used in cloud-provider and cluster-autoscaler.
-	ProviderIDPrefix = "azure://"
 )
 
 const (
@@ -362,9 +354,4 @@ func msCorrelationIDSendDecorator(snd autorest.Sender) autorest.Sender {
 		}
 		return snd.Do(r)
 	})
-}
-
-// ParseResourceID parses a string to an *arm.ResourceID, first removing any "azure://" prefix.
-func ParseResourceID(id string) (*arm.ResourceID, error) {
-	return arm.ParseResourceID(strings.TrimPrefix(id, ProviderIDPrefix))
 }

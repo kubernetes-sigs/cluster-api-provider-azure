@@ -400,7 +400,7 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 		return errors.New("AzureMachine provider ID is nil")
 	}
 
-	resource, err := azure.ParseResourceID(*am.Spec.ProviderID)
+	resource, err := azureutil.ParseResourceID(*am.Spec.ProviderID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}
@@ -426,11 +426,11 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 
 // collectVMSSBootLog collects boot logs of the scale set by using azure boot diagnostics.
 func collectVMSSBootLog(ctx context.Context, providerID string, outputPath string) error {
-	resourceID := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
+	resourceID := strings.TrimPrefix(providerID, azureutil.ProviderIDPrefix)
 	v := strings.Split(resourceID, "/")
 	instanceID := v[len(v)-1]
 	resourceID = strings.TrimSuffix(resourceID, "/virtualMachines/"+instanceID)
-	resource, err := azure.ParseResourceID(resourceID)
+	resource, err := azureutil.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}
