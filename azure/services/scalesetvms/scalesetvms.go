@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -147,7 +146,7 @@ func (s *Service) deleteVMSSFlexVM(ctx context.Context, resourceID string) error
 		}
 	}()
 
-	parsed, err := arm.ParseResourceID(resourceID)
+	parsed, err := azure.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to parse resource id %q", resourceID))
 	}
