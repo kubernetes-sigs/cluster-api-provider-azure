@@ -19,7 +19,6 @@ package identities
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/services/msi/mgmt/2018-11-30/msi"
 	"github.com/Azure/go-autorest/autorest"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -63,7 +62,7 @@ func (ac *AzureClient) GetClientID(ctx context.Context, providerID string) (stri
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "identities.GetClientID")
 	defer done()
 
-	parsed, err := arm.ParseResourceID(providerID)
+	parsed, err := azure.ParseResourceID(providerID)
 	if err != nil {
 		return "", err
 	}
