@@ -881,7 +881,7 @@ func createMachineWithOsDiskCacheType(cacheType string) *AzureMachine {
 	return machine
 }
 
-func createMachineWithRoleAssignmentName() *AzureMachine {
+func createMachineWithSystemAssignedIdentityRoleName() *AzureMachine {
 	machine := &AzureMachine{
 		Spec: AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
@@ -897,7 +897,7 @@ func createMachineWithRoleAssignmentName() *AzureMachine {
 	return machine
 }
 
-func createMachineWithoutRoleAssignmentName() *AzureMachine {
+func createMachineWithoutSystemAssignedIdentityRoleName() *AzureMachine {
 	machine := &AzureMachine{
 		Spec: AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
@@ -907,6 +907,27 @@ func createMachineWithoutRoleAssignmentName() *AzureMachine {
 				Scope:        "test-scope",
 				DefinitionID: "test-definition-id",
 			},
+		},
+	}
+	return machine
+}
+
+func createMachineWithoutRoleAssignmentName() *AzureMachine {
+	machine := &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
+		},
+	}
+	return machine
+}
+
+func createMachineWithRoleAssignmentName() *AzureMachine {
+	machine := &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey:       validSSHPublicKey,
+			OSDisk:             validOSDisk,
+			RoleAssignmentName: "test-role-assignment",
 		},
 	}
 	return machine
