@@ -868,3 +868,186 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name            string
+		managedDisk     *ManagedDiskParameters
+		securityProfile *SecurityProfile
+		wantErr         bool
+	}{
+		{
+			name: "valid configuration without confidential compute",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: "",
+				},
+			},
+			securityProfile: nil,
+			wantErr:         false,
+		},
+		{
+			name: "valid configuration without confidential compute and host encryption enabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: "",
+				},
+			},
+			securityProfile: &SecurityProfile{
+				EncryptionAtHost: pointer.Bool(true),
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid configuration with VMGuestStateOnly encryption and secure boot disabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(false),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid configuration with VMGuestStateOnly encryption and secure boot enabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid configuration with VMGuestStateOnly encryption and EncryptionAtHost enabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				EncryptionAtHost: pointer.Bool(true),
+				SecurityType:     SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled: pointer.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid configuration with DiskWithVMGuestState encryption",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					SecureBootEnabled: pointer.Bool(true),
+					VTpmEnabled:       pointer.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid configuration with DiskWithVMGuestState encryption and EncryptionAtHost enabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				EncryptionAtHost: pointer.Bool(true),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid configuration with DiskWithVMGuestState encryption and vTPM disabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(false),
+					SecureBootEnabled: pointer.Bool(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid configuration with DiskWithVMGuestState encryption and secure boot disabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid configuration with DiskWithVMGuestState encryption and SecurityType not set to ConfidentialVM",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(true),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid configuration with VMGuestStateOnly encryption and SecurityType not set to ConfidentialVM",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(true),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateConfidentialCompute(tc.managedDisk, tc.securityProfile, field.NewPath("securityProfile"))
+			if tc.wantErr {
+				g.Expect(err).NotTo(BeEmpty())
+			} else {
+				g.Expect(err).To(BeEmpty())
+			}
+		})
+	}
+}
