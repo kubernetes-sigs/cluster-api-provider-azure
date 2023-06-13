@@ -1,12 +1,50 @@
 # Using Azure CNI V1
 
-This document aims to provide steps to configure your cluster using Azure CNI v1
+This document provides step to use Azure CNI as the CNI solution in your workload cluster.
 
-- [Azure CNI v1](#azure-container-networking-interface-v1)
+## Azure Container Networking Interface v1
+
+While following the [quick start steps in Cluster API book](https://cluster-api.sigs.k8s.io/user/quick-start.html#quick-start), Azure CNI can be used in place of Calico as a container networking interface solution for your workload cluster.
+
+Artifacts required for Azure CNI:
+
+- [azure-cni.yaml](https://raw.githubusercontent.com/Azure/azure-container-networking/v1.5.3/hack/manifests/cni-installer-v1.yaml)
+
+## Update Cluster Configuration
+
+The following resources need to be updated if working off of `capi-quickstart.yaml` (The default flavored cluster manifest generated while following the Cluster API quick start)
+
+- `kind: AzureCluster`
+  - update `spec.networkSpecs.subnets` with the name and role of the subnets you want to use in your workload cluster.
+- `kind: KubeadmControlPlane` of control plane nodes
+  - add `max-pods: "110"` to `spec.kubeadmConfigSpec.initConfiguration.nodeRegistration.kubeletExtraArgs`.
+  - add `max-pods: "110"` to `spec.kubeadmConfigSpec.joinConfiguration.nodeRegistration.kubeletExtraArgs`.
+- `kind: AzureMachineTemplate` of control-plane
+
+  - ```yaml
+      networkInterfaces:
+       - privateIPConfigs: 110 # max private IPs per node. Should not exceed 110.
+         subnetName: control-plane-subnet
+    ```
+
+  - Add the above yaml to `spec.template.spec` of the manifest of the resource.
+- `kind: AzureMachineTemplate` of worker node
+
+  - ```yaml
+      networkInterfaces:
+       - privateIPConfigs: 110 # max private IPs per node. Should not exceed 110.
+         subnetName: node-subnet
+    ```
+
+  - Add the above yaml to `spec.template.spec` of the manifest of the resource.
+- `kind: KubeadmControlPlane` of worker nodes
+  - add `max-pods: "110"` to `spec.template.spec.joinConfiguration.nodeRegistration.kubeletExtraArgs`.
 
 ## Limitations
 
 - We can only configure one subnet per control-plane node. Refer [CAPZ#3506](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/3506)
+
+- We can only configure one Network Interface per worker node. Refer[Azure-container-networking#3611](https://github.com/Azure/azure-container-networking/issues/1945)
 
 ## Azure Container Networking Interface v1
 
