@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 namespace: capz-system
 resources:
-- https://github.com/Azure/azure-service-operator/releases/download/v2.0.0/azureserviceoperator_v2.0.0.yaml
+- https://github.com/Azure/azure-service-operator/releases/download/v2.1.0/azureserviceoperator_v2.1.0.yaml
 - crds.yaml
 - credentials.yaml
 
@@ -16,9 +16,7 @@ patches:
   - patch: |- # CAPZ will manage ASO's CRDs
       - op: test
         path: /spec/template/spec/containers/0/args/4
-        value: --crd-pattern=*
-      - op: remove
-        path: /spec/template/spec/containers/0/args/4
+        value: --crd-pattern=
     target:
       group: apps
       version: v1
