@@ -55,6 +55,18 @@ func (c *AzureClusterTemplate) validateClusterTemplateSpec() field.ErrorList {
 		field.NewPath("spec").Child("template").Child("spec").Child("networkSpec").Child("apiServerLB"),
 	)...)
 
+	allErrs = append(allErrs, c.validateNetworkSpec()...)
+
+	allErrs = append(allErrs, c.validateControlPlaneOutboundLB()...)
+
+	allErrs = append(allErrs, c.validatePrivateDNSZoneName()...)
+
+	return allErrs
+}
+
+func (c *AzureClusterTemplate) validateNetworkSpec() field.ErrorList {
+	var allErrs field.ErrorList
+
 	var needOutboundLB bool
 	networkSpec := c.Spec.Template.Spec.NetworkSpec
 	for _, subnet := range networkSpec.Subnets {
@@ -66,10 +78,6 @@ func (c *AzureClusterTemplate) validateClusterTemplateSpec() field.ErrorList {
 	if needOutboundLB {
 		allErrs = append(allErrs, c.validateNodeOutboundLB()...)
 	}
-
-	allErrs = append(allErrs, c.validateControlPlaneOutboundLB()...)
-
-	allErrs = append(allErrs, c.validatePrivateDNSZoneName()...)
 
 	return allErrs
 }
