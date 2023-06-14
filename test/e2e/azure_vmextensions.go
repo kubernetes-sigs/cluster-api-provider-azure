@@ -21,9 +21,7 @@ package e2e
 
 import (
 	"context"
-	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
@@ -98,8 +96,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 		vmExtensionsClient.Authorizer = auth
 
 		// get the resource group name
-		resourceID := strings.TrimPrefix(*machineList.Items[0].Spec.ProviderID, azure.ProviderIDPrefix)
-		resource, err := arm.ParseResourceID(resourceID)
+		resource, err := azure.ParseResourceID(*machineList.Items[0].Spec.ProviderID)
 		Expect(err).NotTo(HaveOccurred())
 
 		vmListResults, err := vmClient.List(ctx, resource.ResourceGroupName, "")
@@ -146,8 +143,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 		vmssExtensionsClient.Authorizer = auth
 
 		// get the resource group name
-		resourceID := strings.TrimPrefix(machinePoolList.Items[0].Spec.ProviderID, azure.ProviderIDPrefix)
-		resource, err := arm.ParseResourceID(resourceID)
+		resource, err := azure.ParseResourceID(machinePoolList.Items[0].Spec.ProviderID)
 		Expect(err).NotTo(HaveOccurred())
 
 		vmssListResults, err := vmssClient.List(ctx, resource.ResourceGroupName)
