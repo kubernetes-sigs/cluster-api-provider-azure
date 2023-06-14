@@ -822,3 +822,75 @@ func TestValidatePrivateDNSZoneName(t *testing.T) {
 		})
 	}
 }
+func TestValidateNetworkSpec(t *testing.T) {
+	cases := []struct {
+		name            string
+		clusterTemplate *AzureClusterTemplate
+		expectValid     bool
+	}{
+		{
+			name: "subnet with SubnetNode role and enabled IPv6 triggers needOutboundLB and calls validateNodeOutboundLB",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"2001:beea::1/64"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectValid: false,
+		},
+		{
+			name: "subnet with non-SubnetNode role",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       "SomeOtherRole",
+											CIDRBlocks: []string{"10.0.0.0/24"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectValid: true, // No need for outbound LB when not SubnetNode
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			res := tc.clusterTemplate.validateNetworkSpec()
+			if tc.expectValid {
+				g.Expect(res).To(BeNil())
+			} else {
+				g.Expect(res).NotTo(BeNil())
+			}
+		})
+	}
+}
