@@ -98,6 +98,80 @@ func TestMachinePoolScope_Name(t *testing.T) {
 		})
 	}
 }
+
+func TestMachinePoolScope_ProviderID(t *testing.T) {
+	tests := []struct {
+		name             string
+		machinePoolScope MachinePoolScope
+		want             string
+	}{
+		{
+			name: "valid providerID",
+			machinePoolScope: MachinePoolScope{
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						ProviderID: "azure:///subscriptions/1234/resourcegroups/my-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-provider-user-identity",
+					},
+				},
+			},
+			want: "cloud-provider-user-identity",
+		},
+		{
+			name: "valid providerID: VMSS Flex instance",
+			machinePoolScope: MachinePoolScope{
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						ProviderID: "azure:///subscriptions/1234/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-0",
+					},
+				},
+			},
+			want: "machine-0",
+		},
+		{
+			name: "valid providerID: VMSS Uniform instance",
+			machinePoolScope: MachinePoolScope{
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						ProviderID: "azure:///subscriptions/1234/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/my-cluster-mp-0/virtualMachines/0",
+					},
+				},
+			},
+			want: "0",
+		},
+		{
+			name: "invalid providerID: no cloud provider",
+			machinePoolScope: MachinePoolScope{
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						ProviderID: "subscriptions/123/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm",
+					},
+				},
+			},
+			want: "",
+		},
+		{
+			name: "invalid providerID: incomplete URL",
+			machinePoolScope: MachinePoolScope{
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						ProviderID: "azure:///",
+					},
+				},
+			},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.machinePoolScope.ProviderID()
+			if got != tt.want {
+				t.Errorf("MachinePoolScope.ProviderID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMachinePoolScope_NetworkInterfaces(t *testing.T) {
 	tests := []struct {
 		name             string
