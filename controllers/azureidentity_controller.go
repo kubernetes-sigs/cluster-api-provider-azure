@@ -185,7 +185,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
-	// delete bindings and identites no longer used by a cluster
+	// delete bindings and identities no longer used by a cluster
 	for _, bindingToDelete := range bindingsToDelete {
 		binding := bindingToDelete
 		identityName := binding.Spec.AzureIdentity
