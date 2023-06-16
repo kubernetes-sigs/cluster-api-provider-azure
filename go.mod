@@ -21,7 +21,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jongio/azidext/go/azidext v0.4.0
 	github.com/onsi/ginkgo/v2 v2.9.7
-	github.com/onsi/gomega v1.27.8
+	github.com/onsi/gomega v1.27.7
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.5
 	github.com/prometheus/client_golang v1.15.1
