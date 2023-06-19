@@ -84,7 +84,7 @@ func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.Ap
 	}
 	// TODO: make this always true once HostProcessContainers are on for all supported k8s versions.
 	if hasWindows {
-		options.Values = append(options.Values, "windows.useHostProcessContainers=false")
+		options.Values = append(options.Values, "windows.useHostProcessContainers=true")
 	}
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
 	InstallHelmChart(ctx, clusterProxy, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options, "")
