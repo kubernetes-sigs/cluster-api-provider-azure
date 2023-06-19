@@ -420,7 +420,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 }
 
 func getAPIVersion(resourceID string) (string, error) {
-	parsed, err := azure.ParseResourceID(resourceID)
+	parsed, err := azureutil.ParseResourceID(resourceID)
 	if err != nil {
 		return "", errors.Wrap(err, fmt.Sprintf("unable to parse resource ID %q", resourceID))
 	}
@@ -454,7 +454,7 @@ func getClientIDforMSI(resourceID string) string {
 	msiClient := msi.NewUserAssignedIdentitiesClient(subscriptionID)
 	msiClient.Authorizer = authorizer
 
-	parsed, err := azure.ParseResourceID(resourceID)
+	parsed, err := azureutil.ParseResourceID(resourceID)
 	Expect(err).NotTo(HaveOccurred())
 
 	id, err := msiClient.Get(context.TODO(), parsed.ResourceGroupName, parsed.Name)

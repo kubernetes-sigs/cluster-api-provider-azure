@@ -90,8 +90,11 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "azuremachine with list of user-assigned identities",
-			machine: createMachineWithUserAssignedIdentities([]UserAssignedIdentity{{ProviderID: "azure:///123"}, {ProviderID: "azure:///456"}}),
+			name: "azuremachine with list of user-assigned identities",
+			machine: createMachineWithUserAssignedIdentities([]UserAssignedIdentity{
+				{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-12345-control-plane-9d5x5"},
+				{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-12345-control-plane-a1b2c"},
+			}),
 			wantErr: false,
 		},
 		{

@@ -580,6 +580,75 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 	}
 }
 
+func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name       string
+		idType     VMIdentity
+		identities []UserAssignedIdentity
+		wantErr    bool
+	}{
+		{
+			name:       "empty identity list",
+			idType:     VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{},
+			wantErr:    true,
+		},
+		{
+			name:   "invalid: providerID must start with slash",
+			idType: VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{
+				{
+					ProviderID: "subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "invalid: providerID must start with subscriptions or providers",
+			idType: VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{
+				{
+					ProviderID: "azure:///prescriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "valid",
+			idType: VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{
+				{
+					ProviderID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "valid with provider prefix",
+			idType: VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{
+				{
+					ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			errs := ValidateUserAssignedIdentity(tc.idType, tc.identities, field.NewPath("userAssignedIdentities"))
+			if tc.wantErr {
+				g.Expect(errs).NotTo(BeEmpty())
+			} else {
+				g.Expect(errs).To(BeEmpty())
+			}
+		})
+	}
+}
+
 func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 	g := NewWithT(t)
 

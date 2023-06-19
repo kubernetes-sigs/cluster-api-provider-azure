@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -154,7 +155,7 @@ func (m *MachinePoolScope) Name() string {
 
 // ProviderID returns the AzureMachinePool ID by parsing Spec.ProviderID.
 func (m *MachinePoolScope) ProviderID() string {
-	resourceID, err := azure.ParseResourceID(m.AzureMachinePool.Spec.ProviderID)
+	resourceID, err := azureutil.ParseResourceID(m.AzureMachinePool.Spec.ProviderID)
 	if err != nil {
 		return ""
 	}
@@ -376,7 +377,7 @@ func (m *MachinePoolScope) createMachine(ctx context.Context, machine azure.VMSS
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.createMachine")
 	defer done()
 
-	parsed, err := azure.ParseResourceID(machine.ID)
+	parsed, err := azureutil.ParseResourceID(machine.ID)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to parse resource id %q", machine.ID))
 	}
