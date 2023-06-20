@@ -136,6 +136,8 @@ providers:
         targetName: "cluster-template-flatcar.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-edgezone.yaml"
         targetName: "cluster-template-edgezone.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azure-cni-v1.yaml"
+        targetName: "cluster-template-azure-cni-v1.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
@@ -179,6 +181,7 @@ variables:
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   SECURITY_SCAN_FAIL_THRESHOLD: "${SECURITY_SCAN_FAIL_THRESHOLD:-100}"
   SECURITY_SCAN_CONTAINER: "${SECURITY_SCAN_CONTAINER:-quay.io/armosec/kubescape:v2.0.167}"
+  AZURE_CNI_V1_MANIFEST_PATH: "${PWD}/templates/addons/azure-cni-v1.yaml" 
 
 intervals:
   default/wait-controllers: ["3m", "10s"]

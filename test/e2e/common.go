@@ -92,6 +92,7 @@ const (
 	aksClusterNameSuffix            = "aks"
 	flatcarCAPICommunityGallery     = "flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0"
 	defaultNamespace                = "default"
+	AzureCNIv1Manifest              = "AZURE_CNI_V1_MANIFEST_PATH"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -280,7 +281,7 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
 		InstallCalicoAndCloudProviderAzureHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	} else {
-		InstallCalicoHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
+		InstallCNI(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	}
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	v, err := semver.ParseTolerant(input.ConfigCluster.KubernetesVersion)
@@ -327,6 +328,7 @@ func createApplyClusterTemplateInput(specName string, changes ...func(*clusterct
 		WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 		WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 		WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+		CNIManifestPath:              "",
 	}
 	for _, change := range changes {
 		change(&input)
@@ -418,5 +420,11 @@ func withControlPlaneWaiters(waiters clusterctl.ControlPlaneWaiters) func(*clust
 func withPostMachinesProvisioned(postMachinesProvisioned func()) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
 	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
 		input.PostMachinesProvisioned = postMachinesProvisioned
+	}
+}
+
+func withAzureCNIv1Manifest(manifestPath string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.CNIManifestPath = manifestPath
 	}
 }
