@@ -39,7 +39,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -153,13 +152,13 @@ func (m *MachinePoolScope) Name() string {
 	return m.AzureMachinePool.Name
 }
 
-// ProviderID returns the AzureMachinePool ID by parsing Spec.FakeProviderID.
+// ProviderID returns the AzureMachinePool ID by parsing Spec.ProviderID.
 func (m *MachinePoolScope) ProviderID() string {
-	parsed, err := noderefutil.NewProviderID(m.AzureMachinePool.Spec.ProviderID)
+	resourceID, err := azure.ParseResourceID(m.AzureMachinePool.Spec.ProviderID)
 	if err != nil {
 		return ""
 	}
-	return parsed.ID()
+	return resourceID.Name
 }
 
 // SetProviderID sets the AzureMachinePool providerID in spec.

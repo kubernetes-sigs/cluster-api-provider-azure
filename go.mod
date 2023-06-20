@@ -45,8 +45,8 @@ require (
 	k8s.io/kubectl v0.26.1
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	sigs.k8s.io/cloud-provider-azure v1.26.7
-	sigs.k8s.io/cluster-api v1.4.2
-	sigs.k8s.io/cluster-api/test v1.4.2
+	sigs.k8s.io/cluster-api v1.4.3
+	sigs.k8s.io/cluster-api/test v1.4.3
 	sigs.k8s.io/controller-runtime v0.14.5
 	sigs.k8s.io/kind v0.18.0
 )
@@ -85,7 +85,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/cli v20.10.21+incompatible // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v20.10.24+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -224,4 +224,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.2
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.3
