@@ -237,6 +237,14 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			normalizedProfile.Count = existingProfile.Count
 		}
 
+		// We do a just-in-time merge of existent kubernetes.azure.com-prefixed labels
+		// So that we don't unintentionally delete them
+		// See https://github.com/Azure/AKS/issues/3152
+		if normalizedProfile.NodeLabels != nil {
+			nodeLabels = mergeSystemNodeLabels(normalizedProfile.NodeLabels, existingPool.NodeLabels)
+			normalizedProfile.NodeLabels = nodeLabels
+		}
+
 		// Compute a diff to check if we require an update
 		diff := cmp.Diff(normalizedProfile, existingProfile)
 		if diff == "" {
@@ -245,12 +253,6 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			return nil, nil
 		}
 		log.V(4).Info("found a diff between the desired spec and the existing agentpool", "difference", diff)
-		// We do a just-in-time merge of existent kubernetes.azure.com-prefixed labels
-		// So that we don't unintentionally delete them
-		// See https://github.com/Azure/AKS/issues/3152
-		if normalizedProfile.NodeLabels != nil {
-			nodeLabels = mergeSystemNodeLabels(normalizedProfile.NodeLabels, existingPool.NodeLabels)
-		}
 	}
 
 	var availabilityZones *[]string
