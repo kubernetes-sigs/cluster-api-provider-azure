@@ -27,6 +27,8 @@ const (
 	DefaultMappingTimeout = 60 * time.Second
 	// DefaultAzureServiceReconcileTimeout is the default timeout for an Azure service reconcile.
 	DefaultAzureServiceReconcileTimeout = 12 * time.Second
+	// DefaultAKSServiceReconcileTimeout is the default timeout for an AKS service reconcile.
+	DefaultAKSServiceReconcileTimeout = 30 * time.Second
 	// DefaultAzureCallTimeout is the default timeout for an Azure request after which an Azure operation is considered long running.
 	DefaultAzureCallTimeout = 2 * time.Second
 	// DefaultReconcilerRequeue is the default value for the reconcile retry.

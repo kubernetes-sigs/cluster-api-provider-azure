@@ -71,7 +71,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Reconcile")
 	defer done()
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAKSServiceReconcileTimeout)
 	defer cancel()
 
 	managedClusterSpec := s.Scope.ManagedClusterSpec()
