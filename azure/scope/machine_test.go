@@ -1715,6 +1715,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "outbound-lb-outboundBackendPool",
+									},
 								},
 							},
 						},
@@ -1819,6 +1822,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "outbound-lb-outboundBackendPool",
+									},
 								},
 							},
 						},
@@ -2147,6 +2153,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 										Type: infrav1.Internal,
 									},
+									BackendPool: infrav1.BackendPool{
+										Name: "api-lb-backendPool",
+									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
@@ -2254,6 +2263,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								APIServerLB: infrav1.LoadBalancerSpec{
 									Name: "api-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "api-lb-backendPool",
+									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
@@ -2361,6 +2373,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								APIServerLB: infrav1.LoadBalancerSpec{
 									Name: "api-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "api-lb-backendPool",
+									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
@@ -2472,6 +2487,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "outbound-lb-outboundBackendPool",
+									},
 								},
 							},
 						},
@@ -2747,6 +2765,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "outbound-lb-outboundBackendPool",
+									},
 								},
 							},
 						},
