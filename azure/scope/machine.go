@@ -276,13 +276,13 @@ func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infr
 
 		if m.Role() == infrav1.ControlPlane {
 			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.Role())
 			if m.IsAPIServerPrivate() {
 				spec.InternalLBName = m.APIServerLBName()
-				spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+				spec.InternalLBAddressPoolName = m.APIServerLBPoolName()
 			} else {
 				spec.PublicLBNATRuleName = m.Name()
-				spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+				spec.PublicLBAddressPoolName = m.APIServerLBPoolName()
 			}
 		}
 
@@ -292,12 +292,7 @@ func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infr
 		// If the NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
 		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
 			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-		}
-		// If the NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
-		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
-			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.Role())
 		}
 	}
 

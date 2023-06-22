@@ -82,17 +82,17 @@ func (mr *MockNatGatewayScopeMockRecorder) APIServerLBName() *gomock.Call {
 }
 
 // APIServerLBPoolName mocks base method.
-func (m *MockNatGatewayScope) APIServerLBPoolName(arg0 string) string {
+func (m *MockNatGatewayScope) APIServerLBPoolName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
+	ret := m.ctrl.Call(m, "APIServerLBPoolName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
-func (mr *MockNatGatewayScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
+func (mr *MockNatGatewayScopeMockRecorder) APIServerLBPoolName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNatGatewayScope)(nil).APIServerLBPoolName), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNatGatewayScope)(nil).APIServerLBPoolName))
 }
 
 // AdditionalTags mocks base method.
