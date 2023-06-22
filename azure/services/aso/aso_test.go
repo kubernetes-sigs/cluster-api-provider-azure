@@ -147,7 +147,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			infrav1.OwnedByClusterLabelKey: clusterName,
 		}))
 		g.Expect(created.Annotations).To(Equal(map[string]string{
-			ReconcilePolicyAnnotation: ReconcilePolicyManage,
+			ReconcilePolicyAnnotation: ReconcilePolicySkip,
 		}))
 		g.Expect(created.Spec).To(Equal(asoresourcesv1.ResourceGroup_Spec{
 			Location: pointer.String("location"),
@@ -367,6 +367,63 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
 		g.Expect(err).NotTo(BeNil())
+	})
+
+	t.Run("adopt managed resource in not found state", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		clusterName := "cluster"
+		s := New(c, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
+		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		})
+		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
+			return object, nil
+		})
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					ReconcilePolicyAnnotation: ReconcilePolicySkip,
+				},
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Conditions: []conditions.Condition{
+					{
+						Type:   conditions.ConditionTypeReady,
+						Status: metav1.ConditionFalse,
+						Reason: conditions.ReasonAzureResourceNotFound.Name,
+					},
+				},
+			},
+		})).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(err).NotTo(BeNil())
+
+		updated := &asoresourcesv1.ResourceGroup{}
+		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+		g.Expect(updated.Annotations).To(Equal(map[string]string{
+			ReconcilePolicyAnnotation: ReconcilePolicyManage,
+		}))
 	})
 
 	t.Run("Parameters error", func(t *testing.T) {
