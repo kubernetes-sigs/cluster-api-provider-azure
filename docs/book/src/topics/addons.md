@@ -29,7 +29,7 @@ Then install the Helm chart on the workload cluster:
 
 ```bash
 helm repo add projectcalico https://docs.tigera.io/calico/charts && \
-helm install calico projectcalico/tigera-operator --version v3.25.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
+helm install calico projectcalico/tigera-operator --version v3.26.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
 ### For IPv6 Clusters
@@ -44,7 +44,7 @@ Then install the Helm chart on the workload cluster:
 
 ```bash
 helm repo add projectcalico https://docs.tigera.io/calico/charts && \
-helm install calico projectcalico/tigera-operator --version v3.25.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-ipv6/values.yaml  --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
+helm install calico projectcalico/tigera-operator --version v3.26.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-ipv6/values.yaml  --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
 ### For Dual-Stack Clusters
@@ -60,7 +60,7 @@ Then install the Helm chart on the workload cluster:
 
 ```bash
 helm repo add projectcalico https://docs.tigera.io/calico/charts && \
-helm install calico projectcalico/tigera-operator --version v3.25.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-dual-stack/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}","installation.calicoNetwork.ipPools[1].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
+helm install calico projectcalico/tigera-operator --version v3.26.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-dual-stack/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}","installation.calicoNetwork.ipPools[1].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
 <aside class="note">
