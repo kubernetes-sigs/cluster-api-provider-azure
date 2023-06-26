@@ -205,6 +205,7 @@ func labelNodesWithMachinePoolName(ctx context.Context, workloadClient client.Cl
 	for _, ampm := range ampms {
 		n := &corev1.Node{}
 		Eventually(func(g Gomega) {
+			g.Expect(ampm.Status.NodeRef).NotTo(BeNil())
 			err := workloadClient.Get(ctx, client.ObjectKey{
 				Name:      ampm.Status.NodeRef.Name,
 				Namespace: ampm.Status.NodeRef.Namespace,
