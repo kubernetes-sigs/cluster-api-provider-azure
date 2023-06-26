@@ -382,10 +382,13 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 
 	if s.APIServerAccessProfile != nil {
 		managedCluster.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
-			AuthorizedIPRanges:             &s.APIServerAccessProfile.AuthorizedIPRanges,
 			EnablePrivateCluster:           s.APIServerAccessProfile.EnablePrivateCluster,
 			PrivateDNSZone:                 s.APIServerAccessProfile.PrivateDNSZone,
 			EnablePrivateClusterPublicFQDN: s.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+
+		if len(s.APIServerAccessProfile.AuthorizedIPRanges) > 0 {
+			managedCluster.APIServerAccessProfile.AuthorizedIPRanges = &s.APIServerAccessProfile.AuthorizedIPRanges
 		}
 	}
 
