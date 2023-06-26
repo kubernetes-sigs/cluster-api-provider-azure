@@ -469,7 +469,7 @@ var _ = Describe("Workload cluster creation", func() {
 	// ci-e2e.sh and Prow CI skip this test by default, since N-series GPUs are relatively expensive
 	// and may require specific quota limits on the subscription.
 	// To include this test, set `GINKGO_SKIP=""`.
-	// You can override the default SKU `Standard_NV6` and `Standard_LRS` storage by setting
+	// You can override the default SKU `Standard_NV12s_v3` and `Premium_LRS` storage by setting
 	// the `AZURE_GPU_NODE_MACHINE_TYPE` and `AZURE_GPU_NODE_STORAGE_TYPE` environment variables.
 	// See https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/ for pricing.
 	Context("Creating a GPU-enabled cluster [OPTIONAL]", func() {
