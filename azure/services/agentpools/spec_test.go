@@ -261,6 +261,27 @@ func TestParameters(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "difference in system node labels shouldn't trigger update",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) {
+					pool.NodeLabels = map[string]*string{
+						"fake-label": pointer.String("fake-value"),
+					}
+				},
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *containerservice.AgentPool) {
+					pool.NodeLabels = map[string]*string{
+						"fake-label":                            pointer.String("fake-value"),
+						"kubernetes.azure.com/scalesetpriority": pointer.String("spot"),
+					}
+				},
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      nil,
+			expectedError: nil,
+		},
+		{
 			name: "parameters with an existing agent pool and update needed on node taints",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(

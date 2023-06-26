@@ -154,6 +154,29 @@ func TestParameters(t *testing.T) {
 				g.Expect(result).To(BeNil())
 			},
 		},
+		{
+			name:     "no update needed if both clusters have no authorized IP ranges",
+			existing: getExistingClusterWithAPIServerAccessProfile(),
+			spec: &ManagedClusterSpec{
+				Name:          "test-managedcluster",
+				ResourceGroup: "test-rg",
+				Location:      "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "Standard",
+				APIServerAccessProfile: &APIServerAccessProfile{
+					AuthorizedIPRanges: func() []string {
+						var arr []string
+						return arr
+					}(),
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+		},
 	}
 	for _, tc := range testcases {
 		tc := tc
@@ -171,6 +194,14 @@ func TestParameters(t *testing.T) {
 			tc.expect(g, result)
 		})
 	}
+}
+
+func getExistingClusterWithAPIServerAccessProfile() containerservice.ManagedCluster {
+	mc := getExistingCluster()
+	mc.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+		EnablePrivateCluster: pointer.Bool(false),
+	}
+	return mc
 }
 
 func getExistingCluster() containerservice.ManagedCluster {
