@@ -185,10 +185,10 @@ spec:
       osDisk:
         diskSizeGB: 128
         managedDisk:
-          storageAccountType: ${AZURE_GPU_NODE_STORAGE_TYPE:=Standard_LRS}
+          storageAccountType: ${AZURE_GPU_NODE_STORAGE_TYPE:=Premium_LRS}
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      vmSize: ${AZURE_GPU_NODE_MACHINE_TYPE:=Standard_NV6}
+      vmSize: ${AZURE_GPU_NODE_MACHINE_TYPE:=Standard_NV12s_v3}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate

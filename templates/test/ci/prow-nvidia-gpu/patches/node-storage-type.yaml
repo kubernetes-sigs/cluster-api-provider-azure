@@ -1,6 +1,6 @@
 - op: replace
   path: /spec/template/spec/osDisk/managedDisk/storageAccountType
-  value: "${AZURE_GPU_NODE_STORAGE_TYPE:=Standard_LRS}"
+  value: "${AZURE_GPU_NODE_STORAGE_TYPE:=Premium_LRS}"
 - op: replace
   path: /spec/template/spec/vmSize
-  value: "${AZURE_GPU_NODE_MACHINE_TYPE:=Standard_NV6}"
+  value: "${AZURE_GPU_NODE_MACHINE_TYPE:=Standard_NV12s_v3}"
