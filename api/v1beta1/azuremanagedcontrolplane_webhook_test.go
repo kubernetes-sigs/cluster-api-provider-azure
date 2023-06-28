@@ -54,6 +54,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
+	g.Expect(amcp.Spec.Identity.Type).To(Equal(ManagedControlPlaneIdentityTypeSystemAssigned))
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -547,6 +548,56 @@ func TestValidatingWebhook(t *testing.T) {
 				},
 			},
 			expectErr: false,
+		},
+		{
+			name: "Testing valid Identity: SystemAssigned",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					Identity: &Identity{
+						Type: ManagedControlPlaneIdentityTypeSystemAssigned,
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid Identity: UserAssigned",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					Identity: &Identity{
+						Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+						UserAssignedIdentityResourceID: "/resource/id",
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing invalid Identity: SystemAssigned with UserAssigned values",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					Identity: &Identity{
+						Type:                           ManagedControlPlaneIdentityTypeSystemAssigned,
+						UserAssignedIdentityResourceID: "/resource/id",
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid Identity: UserAssigned with missing properties",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.24.1",
+					Identity: &Identity{
+						Type: ManagedControlPlaneIdentityTypeUserAssigned,
+					},
+				},
+			},
+			expectErr: true,
 		},
 	}
 

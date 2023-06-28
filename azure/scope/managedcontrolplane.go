@@ -473,8 +473,10 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 			s.ControlPlane.Spec.VirtualNetwork.Name,
 			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
-		GetAllAgentPools: s.GetAllAgentPoolSpecs,
-		OutboundType:     s.ControlPlane.Spec.OutboundType,
+		GetAllAgentPools:            s.GetAllAgentPoolSpecs,
+		OutboundType:                s.ControlPlane.Spec.OutboundType,
+		Identity:                    s.ControlPlane.Spec.Identity,
+		KubeletUserAssignedIdentity: s.ControlPlane.Spec.KubeletUserAssignedIdentity,
 	}
 
 	if s.ControlPlane.Spec.NetworkPlugin != nil {
