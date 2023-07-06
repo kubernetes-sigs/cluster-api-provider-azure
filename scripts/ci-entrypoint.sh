@@ -304,7 +304,7 @@ copy_secret() {
     rm azure_json
 }
 
-on_exit() {
+capz::ci-entrypoint::on_exit() {
     if [[ -n ${KUBECONFIG:-} ]]; then
         "${KUBECTL}" get nodes -o wide || echo "Unable to get nodes"
         "${KUBECTL}" get pods -A -o wide || echo "Unable to get pods"
@@ -324,7 +324,7 @@ on_exit() {
 # setup all required variables and images
 setup
 
-trap on_exit EXIT
+trap capz::ci-entrypoint::on_exit EXIT
 export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 
 # create cluster
