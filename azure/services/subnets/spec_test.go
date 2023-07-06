@@ -186,3 +186,127 @@ func TestParameters(t *testing.T) {
 		})
 	}
 }
+
+func TestSubnetSpec_shouldUpdate(t *testing.T) {
+	type fields struct {
+		Name              string
+		ResourceGroup     string
+		SubscriptionID    string
+		CIDRs             []string
+		VNetName          string
+		VNetResourceGroup string
+		IsVNetManaged     bool
+		RouteTableName    string
+		SecurityGroupName string
+		Role              infrav1.SubnetRole
+		NatGatewayName    string
+		ServiceEndpoints  infrav1.ServiceEndpoints
+	}
+	type args struct {
+		existingSubnet network.Subnet
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "subnet should not be updated when the VNet is not managed",
+			fields: fields{
+				Name:           "my-subnet",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: "123",
+				IsVNetManaged:  false,
+			},
+			args: args{
+				existingSubnet: network.Subnet{
+					Name: pointer.String("my-subnet"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "subnet should be updated when NAT Gateway gets added",
+			fields: fields{
+				Name:           "my-subnet",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: "123",
+				IsVNetManaged:  true,
+				NatGatewayName: "my-nat-gateway",
+			},
+			args: args{
+				existingSubnet: network.Subnet{
+					Name: pointer.String("my-subnet"),
+					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+						NatGateway: nil,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "subnet should be updated if service endpoints changed",
+			fields: fields{
+				Name:           "my-subnet",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: "123",
+				IsVNetManaged:  true,
+				ServiceEndpoints: infrav1.ServiceEndpoints{
+					{
+						Service: "Microsoft.Storage",
+					},
+				},
+			},
+			args: args{
+				existingSubnet: network.Subnet{
+					Name: pointer.String("my-subnet"),
+					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+						ServiceEndpoints: nil,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "subnet should not be updated if other properties change",
+			fields: fields{
+				Name:           "my-subnet",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: "123",
+				IsVNetManaged:  true,
+				CIDRs:          []string{"10.1.0.0/16"},
+			},
+			args: args{
+				existingSubnet: network.Subnet{
+					Name: pointer.String("my-subnet"),
+					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+						AddressPrefixes: &[]string{"10.1.0.0/8"},
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &SubnetSpec{
+				Name:              tt.fields.Name,
+				ResourceGroup:     tt.fields.ResourceGroup,
+				SubscriptionID:    tt.fields.SubscriptionID,
+				CIDRs:             tt.fields.CIDRs,
+				VNetName:          tt.fields.VNetName,
+				VNetResourceGroup: tt.fields.VNetResourceGroup,
+				IsVNetManaged:     tt.fields.IsVNetManaged,
+				RouteTableName:    tt.fields.RouteTableName,
+				SecurityGroupName: tt.fields.SecurityGroupName,
+				Role:              tt.fields.Role,
+				NatGatewayName:    tt.fields.NatGatewayName,
+				ServiceEndpoints:  tt.fields.ServiceEndpoints,
+			}
+			if got := s.shouldUpdate(tt.args.existingSubnet); got != tt.want {
+				t.Errorf("SubnetSpec.shouldUpdate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

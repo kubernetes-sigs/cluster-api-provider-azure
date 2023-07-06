@@ -724,6 +724,73 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "don't default NAT Gateway if subnet already exists",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: SubnetControlPlane,
+									Name: "cluster-test-controlplane-subnet",
+								},
+								ID: "my-subnet-id",
+							},
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: SubnetNode,
+									Name: "cluster-test-node-subnet",
+								},
+								ID: "my-subnet-id-2",
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role:       SubnetControlPlane,
+									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+									Name:       "cluster-test-controlplane-subnet",
+								},
+								ID:            "my-subnet-id",
+								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{},
+							},
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role:       SubnetNode,
+									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+									Name:       "cluster-test-node-subnet",
+								},
+								ID:            "my-subnet-id-2",
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: NatGateway{
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "",
+									},
+									NatGatewayIP: PublicIPSpec{
+										Name: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {

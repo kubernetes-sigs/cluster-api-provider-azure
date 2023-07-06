@@ -66,27 +66,7 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (para
 			return nil, errors.Errorf("%T is not a network.Subnet", existing)
 		}
 
-		// No modifications for non-managed subnets
-		if !s.IsVNetManaged {
-			return nil, nil
-		}
-
-		var existingServiceEndpoints []network.ServiceEndpointPropertiesFormat
-		if existingSubnet.ServiceEndpoints != nil {
-			for _, se := range *existingSubnet.ServiceEndpoints {
-				existingServiceEndpoints = append(existingServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: se.Service, Locations: se.Locations})
-			}
-		}
-		var newServiceEndpoints []network.ServiceEndpointPropertiesFormat
-		for _, se := range s.ServiceEndpoints {
-			se := se
-			newServiceEndpoints = append(newServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: pointer.String(se.Service), Locations: &se.Locations})
-		}
-
-		// Right now only serviceEndpoints are allowed to be updated. More to come later
-		diff := cmp.Diff(newServiceEndpoints, existingServiceEndpoints)
-		if diff == "" {
-			// up to date, nothing to do
+		if !s.shouldUpdate(existingSubnet) {
 			return nil, nil
 		}
 	}
@@ -134,4 +114,36 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (para
 	return network.Subnet{
 		SubnetPropertiesFormat: &subnetProperties,
 	}, nil
+}
+
+// shouldUpdate returns true if an existing subnet should be updated.
+func (s *SubnetSpec) shouldUpdate(existingSubnet network.Subnet) bool {
+	// No modifications for non-managed subnets
+	if !s.IsVNetManaged {
+		return false
+	}
+
+	// Update the subnet a NAT Gateway was added for backwards compatibility.
+	if s.NatGatewayName != "" && existingSubnet.SubnetPropertiesFormat.NatGateway == nil {
+		return true
+	}
+
+	// Update the subnet if the service endpoints changed.
+	if existingSubnet.ServiceEndpoints != nil || len(s.ServiceEndpoints) > 0 {
+		var existingServiceEndpoints []network.ServiceEndpointPropertiesFormat
+		if existingSubnet.ServiceEndpoints != nil {
+			for _, se := range *existingSubnet.ServiceEndpoints {
+				existingServiceEndpoints = append(existingServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: se.Service, Locations: se.Locations})
+			}
+		}
+		newServiceEndpoints := make([]network.ServiceEndpointPropertiesFormat, len(s.ServiceEndpoints))
+		for _, se := range s.ServiceEndpoints {
+			se := se
+			newServiceEndpoints = append(newServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: pointer.String(se.Service), Locations: &se.Locations})
+		}
+
+		diff := cmp.Diff(newServiceEndpoints, existingServiceEndpoints)
+		return diff != ""
+	}
+	return false
 }
