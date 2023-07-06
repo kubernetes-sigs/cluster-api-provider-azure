@@ -143,7 +143,7 @@ func TestParameters(t *testing.T) {
 				g.Expect(result.(containerservice.ManagedCluster).KubernetesVersion).To(Equal(pointer.String("v1.22.99")))
 				g.Expect(result.(containerservice.ManagedCluster).Identity.Type).To(Equal(containerservice.ResourceIdentityType("UserAssigned")))
 				g.Expect(result.(containerservice.ManagedCluster).Identity.UserAssignedIdentities).To(Equal(map[string]*containerservice.ManagedClusterIdentityUserAssignedIdentitiesValue{"/resource/ID": {}}))
-				g.Expect(result.(containerservice.ManagedCluster).IdentityProfile).To(Equal(map[string]*containerservice.UserAssignedIdentity{"kubeletidentity": {ResourceID: pointer.String("/resource/ID")}}))
+				g.Expect(result.(containerservice.ManagedCluster).IdentityProfile).To(Equal(map[string]*containerservice.UserAssignedIdentity{kubeletIdentityKey: {ResourceID: pointer.String("/resource/ID")}}))
 			},
 		},
 		{
