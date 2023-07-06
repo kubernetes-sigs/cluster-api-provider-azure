@@ -893,7 +893,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 						Name:      "CAPZ.Linux.Bootstrapping",
 						VMName:    "machinepool-name",
 						Publisher: "Microsoft.Azure.ContainerUpstream",
-						Version:   "1.0",
+						Version:   "1.1",
 						ProtectedSettings: map[string]string{
 							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
 						},
@@ -1150,7 +1150,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 						Name:      "CAPZ.Linux.Bootstrapping",
 						VMName:    "machinepool-name",
 						Publisher: "Microsoft.Azure.ContainerUpstream",
-						Version:   "1.0",
+						Version:   "1.1",
 						ProtectedSettings: map[string]string{
 							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
 						},
