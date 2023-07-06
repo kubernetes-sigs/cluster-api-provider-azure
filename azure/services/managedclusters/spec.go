@@ -397,7 +397,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 
 	if s.KubeletUserAssignedIdentity != "" {
 		managedCluster.ManagedClusterProperties.IdentityProfile = map[string]*containerservice.UserAssignedIdentity{
-			"kubeletidentity": {
+			kubeletIdentityKey: {
 				ResourceID: pointer.String(s.KubeletUserAssignedIdentity),
 			},
 		}
@@ -590,16 +590,16 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 
 	if managedCluster.IdentityProfile != nil {
 		propertiesNormalized.IdentityProfile = map[string]*containerservice.UserAssignedIdentity{
-			"kubeletidentity": {
-				ResourceID: managedCluster.IdentityProfile["kubeletidentity"].ResourceID,
+			kubeletIdentityKey: {
+				ResourceID: managedCluster.IdentityProfile[kubeletIdentityKey].ResourceID,
 			},
 		}
 	}
 
 	if existingMC.IdentityProfile != nil {
 		existingMCPropertiesNormalized.IdentityProfile = map[string]*containerservice.UserAssignedIdentity{
-			"kubeletidentity": {
-				ResourceID: existingMC.IdentityProfile["kubeletidentity"].ResourceID,
+			kubeletIdentityKey: {
+				ResourceID: existingMC.IdentityProfile[kubeletIdentityKey].ResourceID,
 			},
 		}
 	}
