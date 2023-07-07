@@ -245,6 +245,18 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
+			By("Verifying security rules are deleted on azure side", func() {
+				AzureSecurityGroupsSpec(ctx, func() AzureSecurityGroupsSpecInput {
+					return AzureSecurityGroupsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						Cluster:               result.Cluster,
+						WaitForUpdate:         e2eConfig.GetIntervals(specName, "wait-nsg-update"),
+					}
+				})
+			})
+
 			By("Validating failure domains", func() {
 				AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
 					return AzureFailureDomainsSpecInput{
