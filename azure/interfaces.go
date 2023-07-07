@@ -63,7 +63,7 @@ type NetworkDescriber interface {
 	ControlPlaneRouteTable() infrav1.RouteTable
 	APIServerLB() *infrav1.LoadBalancerSpec
 	APIServerLBName() string
-	APIServerLBPoolName(string) string
+	APIServerLBPoolName() string
 	IsAPIServerPrivate() bool
 	GetPrivateDNSZoneName() string
 	OutboundLBName(string) string

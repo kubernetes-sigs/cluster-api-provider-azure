@@ -1969,6 +1969,11 @@ func TestAPIServerLBPoolName(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Name: tc.lbName,
+						},
+					},
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 					},
@@ -1986,8 +1991,9 @@ func TestAPIServerLBPoolName(t *testing.T) {
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
 			})
+			clusterScope.AzureCluster.SetBackendPoolNameDefault()
 			g.Expect(err).NotTo(HaveOccurred())
-			got := clusterScope.APIServerLBPoolName(tc.lbName)
+			got := clusterScope.APIServerLBPoolName()
 			g.Expect(tc.expectLBpoolName).Should(Equal(got))
 		})
 	}
@@ -2126,6 +2132,7 @@ func TestOutboundLBName(t *testing.T) {
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
 			})
+			clusterScope.AzureCluster.SetBackendPoolNameDefault()
 			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.OutboundLBName(tc.role)
 			g.Expect(tc.expected).Should(Equal(got))
@@ -2254,6 +2261,7 @@ func TestBackendPoolName(t *testing.T) {
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
 			})
+			clusterScope.AzureCluster.SetBackendPoolNameDefault()
 			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.LBSpecs()
 			g.Expect(len(got)).To(Equal(3))
@@ -2326,7 +2334,15 @@ func TestOutboundPoolName(t *testing.T) {
 				},
 			}
 
+			if tc.loadBalancerName != "" {
+				azureCluster.Spec.NetworkSpec.NodeOutboundLB = &infrav1.LoadBalancerSpec{
+					Name: tc.loadBalancerName,
+				}
+			}
+
 			initObjects := []runtime.Object{cluster, azureCluster}
+			azureCluster.Default()
+
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2337,8 +2353,9 @@ func TestOutboundPoolName(t *testing.T) {
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
 			})
+			clusterScope.AzureCluster.SetBackendPoolNameDefault()
 			g.Expect(err).NotTo(HaveOccurred())
-			got := clusterScope.OutboundPoolName(tc.loadBalancerName)
+			got := clusterScope.OutboundPoolName(infrav1.Node)
 			g.Expect(tc.expectOutboundPoolName).Should(Equal(got))
 		})
 	}

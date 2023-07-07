@@ -712,33 +712,37 @@ func (s *ClusterScope) GetPrivateDNSZoneName() string {
 }
 
 // APIServerLBPoolName returns the API Server LB backend pool name.
-func (s *ClusterScope) APIServerLBPoolName(loadBalancerName string) string {
-	return azure.GenerateBackendAddressPoolName(loadBalancerName)
+func (s *ClusterScope) APIServerLBPoolName() string {
+	return s.APIServerLB().BackendPool.Name
+}
+
+// OutboundLB returns the outbound LB.
+func (s *ClusterScope) outboundLB(role string) *infrav1.LoadBalancerSpec {
+	if role == infrav1.Node {
+		return s.NodeOutboundLB()
+	}
+	if s.IsAPIServerPrivate() {
+		return s.ControlPlaneOutboundLB()
+	}
+	return s.APIServerLB()
 }
 
 // OutboundLBName returns the name of the outbound LB.
 func (s *ClusterScope) OutboundLBName(role string) string {
-	if role == infrav1.Node {
-		if s.NodeOutboundLB() == nil {
-			return ""
-		}
-		return s.NodeOutboundLB().Name
+	lb := s.outboundLB(role)
+	if lb == nil {
+		return ""
 	}
-	if s.IsAPIServerPrivate() {
-		if s.ControlPlaneOutboundLB() == nil {
-			return ""
-		}
-		return s.ControlPlaneOutboundLB().Name
-	}
-	return s.APIServerLBName()
+	return lb.Name
 }
 
 // OutboundPoolName returns the outbound LB backend pool name.
-func (s *ClusterScope) OutboundPoolName(loadBalancerName string) string {
-	if loadBalancerName == "" {
+func (s *ClusterScope) OutboundPoolName(role string) string {
+	lb := s.outboundLB(role)
+	if lb == nil {
 		return ""
 	}
-	return azure.GenerateOutboundBackendAddressPoolName(loadBalancerName)
+	return lb.BackendPool.Name
 }
 
 // ResourceGroup returns the cluster resource group.

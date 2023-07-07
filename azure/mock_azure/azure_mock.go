@@ -349,17 +349,17 @@ func (mr *MockNetworkDescriberMockRecorder) APIServerLBName() *gomock.Call {
 }
 
 // APIServerLBPoolName mocks base method.
-func (m *MockNetworkDescriber) APIServerLBPoolName(arg0 string) string {
+func (m *MockNetworkDescriber) APIServerLBPoolName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
+	ret := m.ctrl.Call(m, "APIServerLBPoolName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
-func (mr *MockNetworkDescriberMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
+func (mr *MockNetworkDescriberMockRecorder) APIServerLBPoolName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBPoolName), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBPoolName))
 }
 
 // ControlPlaneRouteTable mocks base method.
@@ -966,17 +966,17 @@ func (mr *MockClusterScoperMockRecorder) APIServerLBName() *gomock.Call {
 }
 
 // APIServerLBPoolName mocks base method.
-func (m *MockClusterScoper) APIServerLBPoolName(arg0 string) string {
+func (m *MockClusterScoper) APIServerLBPoolName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
+	ret := m.ctrl.Call(m, "APIServerLBPoolName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
-func (mr *MockClusterScoperMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
+func (mr *MockClusterScoperMockRecorder) APIServerLBPoolName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBPoolName), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBPoolName))
 }
 
 // AdditionalTags mocks base method.
