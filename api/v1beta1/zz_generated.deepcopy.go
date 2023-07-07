@@ -1407,6 +1407,16 @@ func (in *AzureManagedMachinePoolSpec) DeepCopyInto(out *AzureManagedMachinePool
 		*out = new(string)
 		**out = **in
 	}
+	if in.ScaleDownMode != nil {
+		in, out := &in.ScaleDownMode, &out.ScaleDownMode
+		*out = new(string)
+		**out = **in
+	}
+	if in.SpotMaxPrice != nil {
+		in, out := &in.SpotMaxPrice, &out.SpotMaxPrice
+		x := (*in).DeepCopy()
+		*out = &x
+	}
 	if in.KubeletConfig != nil {
 		in, out := &in.KubeletConfig, &out.KubeletConfig
 		*out = new(KubeletConfig)

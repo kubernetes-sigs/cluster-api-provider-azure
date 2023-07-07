@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -129,6 +130,12 @@ type AgentPoolSpec struct {
 	// ScaleSetPriority specifies the ScaleSetPriority for the node pool. Allowed values are 'Spot' and 'Regular'
 	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
 
+	// ScaleDownMode affects the cluster autoscaler behavior. Allowed values are 'Deallocate' and 'Delete'
+	ScaleDownMode *string `json:"scaleDownMode,omitempty"`
+
+	// SpotMaxPrice defines max price to pay for spot instance. Allowed values are any decimal value greater than zero or -1 which indicates the willingness to pay any on-demand price.
+	SpotMaxPrice *resource.Quantity `json:"spotMaxPrice,omitempty"`
+
 	// KubeletConfig specifies the kubelet configurations for nodes.
 	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
 
@@ -193,6 +200,8 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 				NodeLabels:          existingPool.NodeLabels,
 				NodeTaints:          existingPool.NodeTaints,
 				Tags:                existingPool.Tags,
+				ScaleDownMode:       existingPool.ScaleDownMode,
+				SpotMaxPrice:        existingPool.SpotMaxPrice,
 				KubeletConfig:       existingPool.KubeletConfig,
 			},
 		}
@@ -207,11 +216,16 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 				MaxCount:            s.MaxCount,
 				NodeLabels:          s.NodeLabels,
 				NodeTaints:          &s.NodeTaints,
+				ScaleDownMode:       containerservice.ScaleDownMode(pointer.StringDeref(s.ScaleDownMode, "")),
 				Tags:                converters.TagsToMap(s.AdditionalTags),
 			},
 		}
 		if len(*normalizedProfile.NodeTaints) == 0 {
 			normalizedProfile.NodeTaints = nil
+		}
+
+		if s.SpotMaxPrice != nil {
+			normalizedProfile.SpotMaxPrice = pointer.Float64(s.SpotMaxPrice.AsApproximateFloat64())
 		}
 
 		if s.KubeletConfig != nil {
@@ -266,6 +280,10 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 	var sku *string
 	if s.SKU != "" {
 		sku = &s.SKU
+	}
+	var spotMaxPrice *float64
+	if s.SpotMaxPrice != nil {
+		spotMaxPrice = pointer.Float64(s.SpotMaxPrice.AsApproximateFloat64())
 	}
 	tags := converters.TagsToMap(s.AdditionalTags)
 	if tags == nil {
@@ -354,6 +372,8 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			OsDiskType:           containerservice.OSDiskType(pointer.StringDeref(s.OsDiskType, "")),
 			OsType:               containerservice.OSType(pointer.StringDeref(s.OSType, "")),
 			ScaleSetPriority:     containerservice.ScaleSetPriority(pointer.StringDeref(s.ScaleSetPriority, "")),
+			ScaleDownMode:        containerservice.ScaleDownMode(pointer.StringDeref(s.ScaleDownMode, "")),
+			SpotMaxPrice:         spotMaxPrice,
 			Type:                 containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VMSize:               sku,
 			VnetSubnetID:         vnetSubnetID,

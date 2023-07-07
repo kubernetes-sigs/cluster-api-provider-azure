@@ -769,6 +769,16 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
+			By("creating a machine pool with spot max price and scale down mode", func() {
+				AKSSpotSpec(ctx, func() AKSSpotSpecInput {
+					return AKSSpotSpecInput{
+						Cluster:           result.Cluster,
+						KubernetesVersion: kubernetesVersion,
+						WaitIntervals:     e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+					}
+				})
+			})
+
 			By("modifying nodepool autoscaling configuration", func() {
 				AKSAutoscaleSpec(ctx, func() AKSAutoscaleSpecInput {
 					return AKSAutoscaleSpecInput{
