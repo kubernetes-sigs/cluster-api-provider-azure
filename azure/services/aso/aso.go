@@ -163,6 +163,8 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		// Azure and the ASO resource will be adopted by changing this
 		// annotation to "manage".
 		annotations[ReconcilePolicyAnnotation] = ReconcilePolicySkip
+	} else {
+		adopt = adopt || spec.WasManaged(existing)
 	}
 	if adopt {
 		annotations[ReconcilePolicyAnnotation] = ReconcilePolicyManage

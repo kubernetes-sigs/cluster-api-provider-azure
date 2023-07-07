@@ -137,4 +137,7 @@ type ASOResourceSpecGetter interface {
 	// Parameters returns a modified object if it points to a non-nil resource.
 	// Otherwise it returns a new value or nil if no updates are needed.
 	Parameters(ctx context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error)
+	// WasManaged returns whether or not the given resource was managed by a
+	// non-ASO-backed CAPZ and should be considered eligible for adoption.
+	WasManaged(genruntime.MetaObject) bool
 }

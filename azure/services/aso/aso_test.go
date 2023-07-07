@@ -344,6 +344,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			group.Spec.Location = pointer.String("location")
 			return group, nil
 		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
@@ -410,6 +411,63 @@ func TestCreateOrUpdateResource(t *testing.T) {
 						Type:   conditions.ConditionTypeReady,
 						Status: metav1.ConditionFalse,
 						Reason: conditions.ReasonAzureResourceNotFound.Name,
+					},
+				},
+			},
+		})).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(err).NotTo(BeNil())
+
+		updated := &asoresourcesv1.ResourceGroup{}
+		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+		g.Expect(updated.Annotations).To(Equal(map[string]string{
+			ReconcilePolicyAnnotation: ReconcilePolicyManage,
+		}))
+	})
+
+	t.Run("adopt previously managed resource", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		clusterName := "cluster"
+		s := New(c, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
+		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		})
+		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
+			return nil, nil
+		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(true)
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					ReconcilePolicyAnnotation: ReconcilePolicySkip,
+				},
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Conditions: []conditions.Condition{
+					{
+						Type:   conditions.ConditionTypeReady,
+						Status: metav1.ConditionTrue,
 					},
 				},
 			},
@@ -532,6 +590,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
 			return nil, nil
 		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
@@ -590,6 +649,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			group.Spec.Location = pointer.String("location")
 			return group, nil
 		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
