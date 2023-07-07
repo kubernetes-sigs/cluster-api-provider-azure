@@ -358,12 +358,13 @@ func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
 	nsgspecs := make([]azure.ResourceSpecGetter, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
 	for i, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		nsgspecs[i] = &securitygroups.NSGSpec{
-			Name:           subnet.SecurityGroup.Name,
-			SecurityRules:  subnet.SecurityGroup.SecurityRules,
-			ResourceGroup:  s.ResourceGroup(),
-			Location:       s.Location(),
-			ClusterName:    s.ClusterName(),
-			AdditionalTags: s.AdditionalTags(),
+			Name:                     subnet.SecurityGroup.Name,
+			SecurityRules:            subnet.SecurityGroup.SecurityRules,
+			ResourceGroup:            s.ResourceGroup(),
+			Location:                 s.Location(),
+			ClusterName:              s.ClusterName(),
+			AdditionalTags:           s.AdditionalTags(),
+			LastAppliedSecurityRules: s.getLastAppliedSecurityRules(subnet.SecurityGroup.Name),
 		}
 	}
 
@@ -1118,4 +1119,19 @@ func (s *ClusterScope) getPrivateEndpoints(subnet infrav1.SubnetSpec) []azure.Re
 	}
 
 	return privateEndpointSpecs
+}
+
+func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]interface{} {
+	// Retrieve the last applied security rules for all NSGs.
+	lastAppliedSecurityRulesAll, err := s.AnnotationJSON(azure.SecurityRuleLastAppliedAnnotation)
+	if err != nil {
+		return map[string]interface{}{}
+	}
+
+	// Retrieve the last applied security rules for this NSG.
+	lastAppliedSecurityRules, ok := lastAppliedSecurityRulesAll[nsgName].(map[string]interface{})
+	if !ok {
+		lastAppliedSecurityRules = map[string]interface{}{}
+	}
+	return lastAppliedSecurityRules
 }
