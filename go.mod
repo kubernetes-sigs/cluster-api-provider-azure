@@ -46,10 +46,10 @@ require (
 	k8s.io/kubectl v0.26.1
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	sigs.k8s.io/cloud-provider-azure v1.26.7
-	sigs.k8s.io/cluster-api v1.4.3
-	sigs.k8s.io/cluster-api/test v1.4.3
+	sigs.k8s.io/cluster-api v1.4.4
+	sigs.k8s.io/cluster-api/test v1.4.4
 	sigs.k8s.io/controller-runtime v0.14.5
-	sigs.k8s.io/kind v0.19.0
+	sigs.k8s.io/kind v0.20.0
 )
 
 require (
@@ -227,4 +227,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.3
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.4
