@@ -376,6 +376,16 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		os.Exit(1)
 	}
 
+	if err := (&controllers.ASOSecretReconciler{
+		Client:           mgr.GetClient(),
+		Recorder:         mgr.GetEventRecorderFor("asosecret-reconciler"),
+		ReconcileTimeout: reconcileTimeout,
+		WatchFilterValue: watchFilterValue,
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ASOSecret")
+		os.Exit(1)
+	}
+
 	// just use CAPI MachinePool feature flag rather than create a new one
 	setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
 	if feature.Gates.Enabled(capifeature.MachinePool) {

@@ -42,7 +42,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const azureSecretKey = "clientSecret"
+// AzureSecretKey is the value for they client secret key.
+const AzureSecretKey = "clientSecret"
 
 // CredentialsProvider defines the behavior for azure identity based credential providers.
 type CredentialsProvider interface {
@@ -220,7 +221,7 @@ func (p *AzureCredentialsProvider) GetClientSecret(ctx context.Context) (string,
 		if err := p.Client.Get(ctx, key, secret); err != nil {
 			return "", errors.Wrap(err, "Unable to fetch ClientSecret")
 		}
-		return string(secret.Data[azureSecretKey]), nil
+		return string(secret.Data[AzureSecretKey]), nil
 	}
 	return "", nil
 }
