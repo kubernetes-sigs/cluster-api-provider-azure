@@ -18,6 +18,7 @@ package managedclusters
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
@@ -69,6 +70,7 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "Standard",
+				SSHPublicKey:    base64.StdEncoding.EncodeToString([]byte("test-ssh-key")),
 				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
 					return []azure.ResourceSpecGetter{
 						&agentpools.AgentPoolSpec{
@@ -161,6 +163,67 @@ func TestParameters(t *testing.T) {
 				// Additional tags are handled by azure/services/tags, so a diff
 				// here shouldn't trigger an update on the managed cluster resource.
 				g.Expect(result).To(BeNil())
+			},
+		},
+		{
+			name:     "set Linux profile if SSH key is set",
+			existing: nil,
+			spec: &ManagedClusterSpec{
+				Name:            "test-managedcluster",
+				ResourceGroup:   "test-rg",
+				Location:        "test-location",
+				Tags:            nil,
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "Standard",
+				SSHPublicKey:    base64.StdEncoding.EncodeToString([]byte("test-ssh-key")),
+				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
+					return []azure.ResourceSpecGetter{
+						&agentpools.AgentPoolSpec{
+							Name:          "test-agentpool-0",
+							Mode:          string(infrav1.NodePoolModeSystem),
+							ResourceGroup: "test-rg",
+							Replicas:      int32(2),
+							AdditionalTags: map[string]string{
+								"test-tag": "test-value",
+							},
+						},
+					}, nil
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
+				g.Expect(result.(containerservice.ManagedCluster).LinuxProfile).To(Not(BeNil()))
+				g.Expect(*(*result.(containerservice.ManagedCluster).LinuxProfile.SSH.PublicKeys)[0].KeyData).To(Equal("test-ssh-key"))
+			},
+		},
+		{
+			name:     "skip Linux profile if SSH key is not set",
+			existing: nil,
+			spec: &ManagedClusterSpec{
+				Name:            "test-managedcluster",
+				ResourceGroup:   "test-rg",
+				Location:        "test-location",
+				Tags:            nil,
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "Standard",
+				SSHPublicKey:    "",
+				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
+					return []azure.ResourceSpecGetter{
+						&agentpools.AgentPoolSpec{
+							Name:          "test-agentpool-0",
+							Mode:          string(infrav1.NodePoolModeSystem),
+							ResourceGroup: "test-rg",
+							Replicas:      int32(2),
+							AdditionalTags: map[string]string{
+								"test-tag": "test-value",
+							},
+						},
+					}, nil
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
+				g.Expect(result.(containerservice.ManagedCluster).LinuxProfile).To(BeNil())
 			},
 		},
 		{
@@ -307,7 +370,7 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 				SSH: &containerservice.SSHConfiguration{
 					PublicKeys: &[]containerservice.SSHPublicKey{
 						{
-							KeyData: pointer.String(""),
+							KeyData: pointer.String("test-ssh-key"),
 						},
 					},
 				},
@@ -316,7 +379,7 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 			NodeResourceGroup:       pointer.String("test-node-rg"),
 			EnableRBAC:              pointer.Bool(true),
 			NetworkProfile: &containerservice.NetworkProfile{
-				LoadBalancerSku: containerservice.LoadBalancerSku("Standard"),
+				LoadBalancerSku: "Standard",
 			},
 		},
 		Identity: &containerservice.ManagedClusterIdentity{

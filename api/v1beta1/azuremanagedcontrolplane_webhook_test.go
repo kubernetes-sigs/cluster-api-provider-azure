@@ -41,6 +41,7 @@ func TestDefaultingWebhook(t *testing.T) {
 			ResourceGroupName: "fooRg",
 			Location:          "fooLocation",
 			Version:           "1.17.5",
+			SSHPublicKey:      pointer.String(""),
 		},
 	}
 	mcpw := &azureManagedControlPlaneWebhook{}
@@ -49,7 +50,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal("azure"))
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal("Standard"))
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
-	g.Expect(amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
+	g.Expect(*amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
@@ -64,7 +65,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.LoadBalancerSKU = &lbSKU
 	amcp.Spec.NetworkPolicy = &netPol
 	amcp.Spec.Version = "9.99.99"
-	amcp.Spec.SSHPublicKey = ""
+	amcp.Spec.SSHPublicKey = nil
 	amcp.Spec.NodeResourceGroupName = "fooNodeRg"
 	amcp.Spec.VirtualNetwork.Name = "fooVnetName"
 	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
@@ -76,7 +77,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal(lbSKU))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal(netPol))
 	g.Expect(amcp.Spec.Version).To(Equal("v9.99.99"))
-	g.Expect(amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
+	g.Expect(amcp.Spec.SSHPublicKey).To(BeNil())
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("fooNodeRg"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
@@ -662,7 +663,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					Name: "microsoft-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
 					DNSServiceIP: pointer.String("192.168.0.0"),
 					Version:      "v1.23.5",
 				},
@@ -677,7 +678,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					Name: "a-windows-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
 					DNSServiceIP: pointer.String("192.168.0.0"),
 					Version:      "v1.23.5",
 				},
@@ -694,7 +695,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					},
 					DNSServiceIP: pointer.String("192.168.0.0"),
 					Version:      "v1.18.0",
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
 					AADProfile: &AADProfile{
 						Managed: true,
 						AdminGroupObjectIDs: []string{
@@ -714,7 +715,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					},
 					DNSServiceIP: pointer.String("192.168.0.0"),
 					Version:      "v1.18.0",
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
 					AADProfile: &AADProfile{
 						Managed: true,
 						AdminGroupObjectIDs: []string{
@@ -774,7 +775,6 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 	g := NewWithT(t)
 	commonSSHKey := generateSSHPublicKey(true)
-
 	tests := []struct {
 		name    string
 		oldAMCP *AzureManagedControlPlane
@@ -882,14 +882,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP: pointer.String("192.168.0.0"),
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
 					Version:      "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP: pointer.String("192.168.0.0"),
-					SSHPublicKey: generateSSHPublicKey(true),
+					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
 					Version:      "v1.18.0",
 				},
 			},
@@ -1319,7 +1319,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 func createAzureManagedControlPlane(serviceIP, version, sshKey string) *AzureManagedControlPlane {
 	return &AzureManagedControlPlane{
 		Spec: AzureManagedControlPlaneSpec{
-			SSHPublicKey: sshKey,
+			SSHPublicKey: &sshKey,
 			DNSServiceIP: pointer.String(serviceIP),
 			Version:      version,
 		},
@@ -1331,7 +1331,7 @@ func getKnownValidAzureManagedControlPlane() *AzureManagedControlPlane {
 		Spec: AzureManagedControlPlaneSpec{
 			DNSServiceIP: pointer.String("192.168.0.0"),
 			Version:      "v1.18.0",
-			SSHPublicKey: generateSSHPublicKey(true),
+			SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
 			AADProfile: &AADProfile{
 				Managed: true,
 				AdminGroupObjectIDs: []string{

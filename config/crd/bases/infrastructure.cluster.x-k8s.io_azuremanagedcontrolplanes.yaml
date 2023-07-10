@@ -391,7 +391,8 @@ spec:
                 type: object
               sshPublicKey:
                 description: SSHPublicKey is a string literal containing an ssh public
-                  key base64 encoded. Immutable.
+                  key base64 encoded. Use empty string to autogenerate new key. Use
+                  null value to not set key. Immutable.
                 type: string
               subscriptionID:
                 description: SubscriptionID is the GUID of the Azure subscription
@@ -532,7 +533,6 @@ spec:
             required:
             - location
             - resourceGroupName
-            - sshPublicKey
             - version
             type: object
           status:
