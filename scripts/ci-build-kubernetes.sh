@@ -152,13 +152,13 @@ can_reuse_artifacts() {
     echo "true"
 }
 
-cleanup() {
+capz::ci-build-kubernetes::cleanup() {
     if [[ -d "${KUBE_ROOT:-}" ]]; then
         make -C "${KUBE_ROOT}" clean || true
     fi
 }
 
-trap cleanup EXIT
+trap capz::ci-build-kubernetes::cleanup EXIT
 
 setup
 main

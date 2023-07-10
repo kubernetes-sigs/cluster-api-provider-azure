@@ -39,7 +39,7 @@ TMP_DIR=$(mktemp -d)
 OUT="${TMP_DIR}/out.log"
 
 # cleanup on exit
-cleanup() {
+capz::verify-starlark::cleanup() {
   ret=0
   if [[ -s "${OUT}" ]]; then
     echo "Found errors:"
@@ -52,7 +52,7 @@ cleanup() {
   rm -rf "${TMP_DIR}"
   exit ${ret}
 }
-trap cleanup EXIT
+trap capz::verify-starlark::cleanup EXIT
 
 BUILDIFIER="${SCRIPT_DIR}/tools/bin/buildifier/${VERSION}/buildifier"
 

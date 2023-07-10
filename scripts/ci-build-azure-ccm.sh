@@ -90,13 +90,14 @@ can_reuse_artifacts() {
     echo "true"
 }
 
-cleanup() {
+capz::ci-build-azure-ccm::cleanup() {
+    echo "cloud-provider-azure cleanup"
     if [[ -d "${AZURE_CLOUD_PROVIDER_ROOT:-}" ]]; then
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" clean || true
     fi
 }
 
-trap cleanup EXIT
+trap capz::ci-build-azure-ccm::cleanup EXIT
 
 setup
 main
