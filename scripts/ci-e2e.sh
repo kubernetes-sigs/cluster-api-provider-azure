@@ -77,11 +77,11 @@ export CALICO_VERSION
 
 capz::util::generate_ssh_key
 
-cleanup() {
+capz::ci-e2e::cleanup() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
 }
 
-trap cleanup EXIT
+trap capz::ci-e2e::cleanup EXIT
 # Image is configured as `${CONTROLLER_IMG}-${ARCH}:${TAG}` where `CONTROLLER_IMG` is defaulted to `${REGISTRY}/${IMAGE_NAME}`.
 if [[ "${BUILD_MANAGER_IMAGE}" == "false" ]]; then
   # Load an existing image, skip docker-build and docker-push.

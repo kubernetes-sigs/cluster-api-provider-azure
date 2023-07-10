@@ -78,11 +78,11 @@ export WINDOWS="${WINDOWS:-false}"
 # Generate SSH key.
 capz::util::generate_ssh_key
 
-cleanup() {
+capz::ci-conformance::cleanup() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
 }
 
-trap cleanup EXIT
+trap capz::ci-conformance::cleanup EXIT
 
 if [[ "${WINDOWS}" == "true" ]]; then
   make test-windows-upstream
