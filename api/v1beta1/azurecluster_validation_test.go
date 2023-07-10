@@ -115,7 +115,7 @@ func TestClusterWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		err := testCase.cluster.validateCluster(nil)
+		_, err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).To(BeNil())
 	})
 }
@@ -142,7 +142,7 @@ func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		err := testCase.cluster.validateCluster(nil)
+		_, err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).NotTo(BeNil())
 	})
 }
@@ -165,7 +165,7 @@ func TestClusterWithoutPreexistingVnetValid(t *testing.T) {
 	testCase.cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
-		err := testCase.cluster.validateCluster(nil)
+		_, err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).To(BeNil())
 	})
 }

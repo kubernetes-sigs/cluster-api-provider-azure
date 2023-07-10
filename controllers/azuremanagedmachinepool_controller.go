@@ -94,12 +94,12 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, ammpr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
-			&source.Kind{Type: &expv1.MachinePool{}},
+			&expv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), log)),
 		).
 		// watch for changes in AzureManagedControlPlanes
 		Watches(
-			&source.Kind{Type: &infrav1.AzureManagedControlPlane{}},
+			&infrav1.AzureManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
 		Build(r)
@@ -107,14 +107,14 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		return errors.Wrap(err, "error creating controller")
 	}
 
-	azureManagedMachinePoolMapper, err := util.ClusterToObjectsMapper(ammpr.Client, &infrav1.AzureManagedMachinePoolList{}, mgr.GetScheme())
+	azureManagedMachinePoolMapper, err := util.ClusterToTypedObjectsMapper(ammpr.Client, &infrav1.AzureManagedMachinePoolList{}, mgr.GetScheme())
 	if err != nil {
 		return errors.Wrap(err, "failed to create mapper for Cluster to AzureManagedMachinePools")
 	}
 
 	// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 	if err = c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
+		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 		ClusterPauseChangeAndInfrastructureReady(log),
 		predicates.ResourceHasFilterLabel(log, ammpr.WatchFilterValue),

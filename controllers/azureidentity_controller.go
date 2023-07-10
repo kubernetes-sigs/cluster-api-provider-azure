@@ -73,7 +73,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 	// Add a watch on infrav1.AzureManagedControlPlane if Cluster API 'MachinePool' feature is enabled.
 	if feature.Gates.Enabled(capifeature.MachinePool) {
 		if err = c.Watch(
-			&source.Kind{Type: &infrav1.AzureManagedControlPlane{}},
+			source.Kind(mgr.GetCache(), &infrav1.AzureManagedControlPlane{}),
 			&handler.EnqueueRequestForObject{},
 			predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),
 		); err != nil {
@@ -83,7 +83,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 
 	// Add a watch on clusterv1.Cluster object for unpause notifications.
 	if err = c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
+		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureCluster"), mgr.GetClient(), &infrav1.AzureCluster{})),
 		predicates.ClusterUnpaused(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),

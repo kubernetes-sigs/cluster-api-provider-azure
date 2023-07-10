@@ -109,7 +109,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.cluster.ValidateCreate()
+			_, err := tc.cluster.ValidateCreate()
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -347,7 +347,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := tc.cluster.ValidateUpdate(tc.oldCluster)
+			_, err := tc.cluster.ValidateUpdate(tc.oldCluster)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

@@ -60,7 +60,7 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 	)
 	defer done()
 
-	azureMachineTemplateMapper, err := util.ClusterToObjectsMapper(r.Client, &infrav1.AzureMachineTemplateList{}, mgr.GetScheme())
+	azureMachineTemplateMapper, err := util.ClusterToTypedObjectsMapper(r.Client, &infrav1.AzureMachineTemplateList{}, mgr.GetScheme())
 	if err != nil {
 		return errors.Wrap(err, "failed to create mapper for Cluster to AzureMachineTemplates")
 	}
@@ -79,7 +79,7 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 	// Add a watch on Clusters to requeue when the infraRef is set. This is needed because the infraRef is not initially
 	// set in Clusters created from a ClusterClass.
 	if err := c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
+		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(azureMachineTemplateMapper),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),

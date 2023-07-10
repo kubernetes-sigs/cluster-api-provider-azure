@@ -95,12 +95,12 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, amr.WatchFilterValue)).
 		// watch for changes in CAPI Machine resources
 		Watches(
-			&source.Kind{Type: &clusterv1.Machine{}},
+			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureMachine"))),
 		).
 		// watch for changes in AzureCluster
 		Watches(
-			&source.Kind{Type: &infrav1.AzureCluster{}},
+			&infrav1.AzureCluster{},
 			handler.EnqueueRequestsFromMapFunc(azureClusterToAzureMachinesMapper),
 		).
 		Build(r)
@@ -108,14 +108,14 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 		return errors.Wrap(err, "error creating controller")
 	}
 
-	azureMachineMapper, err := util.ClusterToObjectsMapper(amr.Client, &infrav1.AzureMachineList{}, mgr.GetScheme())
+	azureMachineMapper, err := util.ClusterToTypedObjectsMapper(amr.Client, &infrav1.AzureMachineList{}, mgr.GetScheme())
 	if err != nil {
 		return errors.Wrap(err, "failed to create mapper for Cluster to AzureMachines")
 	}
 
 	// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 	if err := c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
+		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(azureMachineMapper),
 		ClusterPauseChangeAndInfrastructureReady(log),
 		predicates.ResourceHasFilterLabel(log, amr.WatchFilterValue),

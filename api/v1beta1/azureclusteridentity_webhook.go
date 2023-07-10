@@ -23,6 +23,7 @@ import (
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
@@ -37,12 +38,12 @@ func (c *AzureClusterIdentity) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Validator = &AzureClusterIdentity{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterIdentity) ValidateCreate() error {
+func (c *AzureClusterIdentity) ValidateCreate() (admission.Warnings, error) {
 	return c.validateClusterIdentity()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterIdentity) ValidateUpdate(oldRaw runtime.Object) error {
+func (c *AzureClusterIdentity) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureClusterIdentity)
 	if err := webhookutils.ValidateImmutable(
@@ -54,10 +55,10 @@ func (c *AzureClusterIdentity) ValidateUpdate(oldRaw runtime.Object) error {
 	if len(allErrs) == 0 {
 		return c.validateClusterIdentity()
 	}
-	return apierrors.NewInvalid(GroupVersion.WithKind("AzureClusterIdentity").GroupKind(), c.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureClusterIdentity").GroupKind(), c.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterIdentity) ValidateDelete() error {
-	return nil
+func (c *AzureClusterIdentity) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }

@@ -74,7 +74,7 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, amcr.WatchFilterValue)).
 		// watch AzureManagedControlPlane resources
 		Watches(
-			&source.Kind{Type: &infrav1.AzureManagedControlPlane{}},
+			&infrav1.AzureManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
 		Build(r)
@@ -84,7 +84,7 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 
 	// Add a watch on clusterv1.Cluster object for unpause notifications.
 	if err = c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
+		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureManagedCluster"), mgr.GetClient(), &infrav1.AzureManagedCluster{})),
 		predicates.ClusterUnpaused(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, amcr.WatchFilterValue),

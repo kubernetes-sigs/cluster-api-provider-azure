@@ -30,7 +30,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
@@ -249,12 +248,12 @@ func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string
 // and then installs cloud-provider-azure components via Helm.
 // Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
 // in the flow of a clusterctl.ApplyClusterTemplateAndWait E2E test scenario.
-func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
+func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
 	getter := input.ClusterProxy.GetClient()
 	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
 		Getter:    getter,
-		Name:      input.ConfigCluster.ClusterName,
-		Namespace: input.ConfigCluster.Namespace,
+		Name:      input.ClusterName,
+		Namespace: input.Namespace,
 	})
 	kubeadmControlPlane := &kubeadmv1.KubeadmControlPlane{}
 	key := client.ObjectKey{
@@ -271,7 +270,7 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 	By("Ensuring API Server is reachable before applying Helm charts")
 	Eventually(func(g Gomega) {
 		ns := &corev1.Namespace{}
-		clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+		clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 		g.Expect(clusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)).To(Succeed(), "Failed to get kube-system namespace")
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "API Server was not reachable in time")
 
@@ -283,13 +282,7 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 		InstallCNI(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	}
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
-	v, err := semver.ParseTolerant(input.ConfigCluster.KubernetesVersion)
-	Expect(err).NotTo(HaveOccurred())
-	if v.GTE(semver.MustParse("1.23.0")) {
-		InstallAzureDiskCSIDriverHelmChart(ctx, input, hasWindows)
-	} else {
-		Logf("Skipping Azure Disk CSI Driver installation for Kubernetes version %s", input.ConfigCluster.KubernetesVersion)
-	}
+	InstallAzureDiskCSIDriverHelmChart(ctx, input, hasWindows)
 	result.ControlPlane = controlPlane
 }
 
@@ -302,7 +295,7 @@ func CheckTestBeforeCleanup() {
 	Logf("Cleaning up after \"%s\" spec", CurrentSpecReport().FullText())
 }
 
-func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {
+func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {
 	return framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  input.ClusterProxy.GetClient(),
 		Cluster: result.Cluster,

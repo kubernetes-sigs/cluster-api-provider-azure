@@ -24,6 +24,7 @@ import (
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
@@ -38,16 +39,16 @@ func (ampm *AzureMachinePoolMachine) SetupWebhookWithManager(mgr ctrl.Manager) e
 var _ webhook.Validator = &AzureMachinePoolMachine{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateCreate() error {
-	return nil
+func (ampm *AzureMachinePoolMachine) ValidateCreate() (admission.Warnings, error) {
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateUpdate(old runtime.Object) error {
+func (ampm *AzureMachinePoolMachine) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	// NOTE: AzureMachinePoolMachine is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects new case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
-		return field.Forbidden(
+		return nil, field.Forbidden(
 			field.NewPath("spec"),
 			"can be set only if the MachinePool feature flag is enabled",
 		)
@@ -55,17 +56,17 @@ func (ampm *AzureMachinePoolMachine) ValidateUpdate(old runtime.Object) error {
 
 	oldMachine, ok := old.(*AzureMachinePoolMachine)
 	if !ok {
-		return errors.New("expected and AzureMachinePoolMachine")
+		return nil, errors.New("expected and AzureMachinePoolMachine")
 	}
 
 	if oldMachine.Spec.ProviderID != "" && ampm.Spec.ProviderID != oldMachine.Spec.ProviderID {
-		return errors.New("providerID is immutable")
+		return nil, errors.New("providerID is immutable")
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateDelete() error {
-	return nil
+func (ampm *AzureMachinePoolMachine) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }

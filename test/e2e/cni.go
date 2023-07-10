@@ -43,7 +43,7 @@ const (
 )
 
 // InstallCNI installs the CNI plugin depending on the input.CNIManifestPath
-func InstallCNI(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
+func InstallCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	if input.CNIManifestPath != "" {
 		InstallCNIManifest(ctx, input, cidrBlocks, hasWindows)
 	} else {
@@ -52,9 +52,9 @@ func InstallCNI(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWai
 }
 
 // InstallCNIManifest installs the CNI manifest provided by the user
-func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
+func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	By("Installing a CNI plugin to the workload cluster")
-	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 
 	cniYaml, err := os.ReadFile(input.CNIManifestPath)
 	Expect(err).ShouldNot(HaveOccurred())
@@ -64,12 +64,12 @@ func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyClusterTempla
 
 // InstallCalicoHelmChart installs the official calico helm chart
 // and validates that expected pods exist and are Ready.
-func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
+func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	specName := "calico-install"
 
 	By("Installing Calico CNI via helm")
 	values := getCalicoValues(cidrBlocks)
-	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 	InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values, os.Getenv(CalicoVersion))
 	workloadClusterClient := clusterProxy.GetClient()
 

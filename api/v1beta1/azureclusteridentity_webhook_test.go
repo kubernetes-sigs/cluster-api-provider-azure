@@ -84,7 +84,7 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.clusterIdentity.ValidateCreate()
+			_, err := tc.clusterIdentity.ValidateCreate()
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -165,7 +165,7 @@ func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.clusterIdentity.ValidateUpdate(tc.oldClusterIdentity)
+			_, err := tc.clusterIdentity.ValidateUpdate(tc.oldClusterIdentity)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

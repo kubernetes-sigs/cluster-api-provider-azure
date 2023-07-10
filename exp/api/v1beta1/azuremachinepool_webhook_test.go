@@ -247,7 +247,7 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			ampw := &azureMachinePoolWebhook{
 				Client: client,
 			}
-			err := ampw.ValidateCreate(context.Background(), tc.amp)
+			_, err := ampw.ValidateCreate(context.Background(), tc.amp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -388,7 +388,7 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ampw := &azureMachinePoolWebhook{}
-			err := ampw.ValidateUpdate(context.Background(), tc.oldAMP, tc.amp)
+			_, err := ampw.ValidateUpdate(context.Background(), tc.oldAMP, tc.amp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -662,7 +662,7 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
 			ampw := &azureMachinePoolWebhook{}
-			err := ampw.ValidateCreate(context.Background(), tc.amp)
+			_, err := ampw.ValidateCreate(context.Background(), tc.amp)
 			g.Expect(err).To(HaveOccurred())
 		})
 	}

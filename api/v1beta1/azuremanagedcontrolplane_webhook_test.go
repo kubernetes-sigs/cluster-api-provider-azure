@@ -672,10 +672,11 @@ func TestValidatingWebhook(t *testing.T) {
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}
+			_, err := mcpw.ValidateCreate(context.Background(), &tt.amcp)
 			if tt.expectErr {
-				g.Expect(mcpw.ValidateCreate(context.Background(), &tt.amcp)).NotTo(Succeed())
+				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(mcpw.ValidateCreate(context.Background(), &tt.amcp)).To(Succeed())
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
@@ -805,7 +806,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}
-			err := mcpw.ValidateCreate(context.Background(), tc.amcp)
+			_, err := mcpw.ValidateCreate(context.Background(), tc.amcp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 				if tc.errorLen > 0 {
@@ -844,7 +845,7 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}
-			err := mcpw.ValidateCreate(context.Background(), tc.amcp)
+			_, err := mcpw.ValidateCreate(context.Background(), tc.amcp)
 			g.Expect(err).To(HaveOccurred())
 		})
 	}
@@ -1393,7 +1394,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}
-			err := mcpw.ValidateUpdate(context.Background(), tc.oldAMCP, tc.amcp)
+			_, err := mcpw.ValidateUpdate(context.Background(), tc.oldAMCP, tc.amcp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

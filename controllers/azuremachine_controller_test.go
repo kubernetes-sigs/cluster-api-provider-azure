@@ -123,7 +123,13 @@ func TestAzureMachineReconcile(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...).Build()
+			client := fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithRuntimeObjects(tc.objects...).
+				WithStatusSubresource(
+					&infrav1.AzureMachine{},
+				).
+				Build()
 
 			reconciler := &AzureMachineReconciler{
 				Client:   client,
@@ -361,7 +367,13 @@ func getReconcileInputs(tc TestReconcileInput) (*AzureMachineReconciler, *scope.
 		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(objects...).Build()
+	client := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithRuntimeObjects(objects...).
+		WithStatusSubresource(
+			&infrav1.AzureMachine{},
+		).
+		Build()
 
 	reconciler := &AzureMachineReconciler{
 		Client:                    client,

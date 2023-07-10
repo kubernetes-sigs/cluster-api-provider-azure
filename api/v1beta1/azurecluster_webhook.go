@@ -25,6 +25,7 @@ import (
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
@@ -46,12 +47,12 @@ func (c *AzureCluster) Default() {
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateCreate() error {
+func (c *AzureCluster) ValidateCreate() (admission.Warnings, error) {
 	return c.validateCluster(nil)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
+func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureCluster)
 
@@ -135,7 +136,7 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 		return c.validateCluster(old)
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("AzureCluster").GroupKind(), c.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureCluster").GroupKind(), c.Name, allErrs)
 }
 
 // validateSubnetUpdate validates a ClusterSpec.NetworkSpec.Subnets for immutability.
@@ -187,6 +188,6 @@ func (c *AzureCluster) validateSubnetUpdate(old *AzureCluster) field.ErrorList {
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateDelete() error {
-	return nil
+func (c *AzureCluster) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
