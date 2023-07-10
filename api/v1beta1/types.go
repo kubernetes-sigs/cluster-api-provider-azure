@@ -557,7 +557,7 @@ const (
 )
 
 // IdentityType represents different types of identities.
-// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI;ManualServicePrincipal;ServicePrincipalCertificate
+// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI;ManualServicePrincipal;ServicePrincipalCertificate;WorkloadIdentity
 type IdentityType string
 
 const (
@@ -572,6 +572,9 @@ const (
 
 	// ServicePrincipalCertificate represents a service principal using a certificate as secret.
 	ServicePrincipalCertificate IdentityType = "ServicePrincipalCertificate"
+
+	// WorkloadIdentity represents a WorkloadIdentity.
+	WorkloadIdentity IdentityType = "WorkloadIdentity"
 )
 
 // OSDisk defines the operating system disk for a VM.

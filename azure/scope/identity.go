@@ -142,6 +142,16 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 	var authErr error
 	var cred azcore.TokenCredential
 	switch p.Identity.Spec.Type {
+	case infrav1.WorkloadIdentity:
+		azwiCredOptions, err := NewWorkloadIdentityCredentialOptions().
+			WithTenantID(p.Identity.Spec.TenantID).
+			WithClientID(p.Identity.Spec.ClientID).
+			WithDefaults()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to setup azwi options for identity %s", p.Identity.Name)
+		}
+		cred, authErr = NewWorkloadIdentityCredential(azwiCredOptions)
+
 	case infrav1.ServicePrincipal, infrav1.ServicePrincipalCertificate, infrav1.UserAssignedMSI:
 		if err := createAzureIdentityWithBindings(ctx, p.Identity, resourceManagerEndpoint, activeDirectoryEndpoint, clusterMeta, p.Client); err != nil {
 			return nil, err
