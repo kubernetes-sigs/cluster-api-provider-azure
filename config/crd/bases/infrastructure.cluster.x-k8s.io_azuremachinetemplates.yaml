@@ -479,7 +479,7 @@ spec:
                             properties:
                               option:
                                 description: Option enables ephemeral OS when set
-                                  to "Local" See https://docs.microsoft.com/en-us/azure/virtual-machines/ephemeral-os-disks
+                                  to "Local" See https://learn.microsoft.com/azure/virtual-machines/ephemeral-os-disks
                                   for full details
                                 enum:
                                 - Local
@@ -588,7 +588,7 @@ spec:
                         description: UserAssignedIdentities is a list of standalone
                           Azure identities provided by the user The lifecycle of a
                           user-assigned identity is managed separately from the lifecycle
-                          of the AzureMachine. See https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
+                          of the AzureMachine. See https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
                         items:
                           description: UserAssignedIdentity defines the user-assigned
                             identities provided by the user to be assigned to Azure

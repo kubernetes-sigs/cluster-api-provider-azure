@@ -64,7 +64,7 @@ the underlying infrastructure.
   - MaxUnavailable is the max number of machines that are allowed to be unavailable at any time
   - MaxSurge is the number of machines to surge, add to the current replica count, during an upgrade of the VMSS model 
 - Safely update by cordoning and draining nodes prior to deleting the underlying infrastructure
-- Be able to take advantage of [Azure's Virtual Machine Scale Set Update Instance API](https://docs.microsoft.com/en-us/rest/api/compute/virtualmachinescalesets/updateinstances)
+- Be able to take advantage of [Azure's Virtual Machine Scale Set Update Instance API](https://learn.microsoft.com/rest/api/compute/virtualmachinescalesets/updateinstances)
   to in-place update a VMSS instance rather than delete and recreate the infrastructure, which would result in a much
   quicker upgrade.
 
@@ -72,13 +72,13 @@ the underlying infrastructure.
 - Create a CAPI Machine owner for each AzureMachinePoolMachine
 - Implementing different roll out and scale down strategies
 - Adopting individual Machine instances to be managed by the MachinePool
-- Create or use an on instance agent to cordon and drain in response to Azure Virtual Machine Scale Sets provide [terminate notifications](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-terminate-notification)
+- Create or use an on instance agent to cordon and drain in response to Azure Virtual Machine Scale Sets provide [terminate notifications](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-terminate-notification)
 
 #### Notes About VMSS Terminate Notifications
-Azure Virtual Machine Scale Sets provide [terminate notifications](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-terminate-notification).
+Azure Virtual Machine Scale Sets provide [terminate notifications](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-terminate-notification).
 These terminate notifications would be helpful to inform Kubernetes when a node is going to be deleted. Unfortunately,
 terminate notifications do not provide notifications when an instance is Updated, in this case "Updated" means the
-instance is reimaged to match the updated VMSS model by using the [Update Instance API](https://docs.microsoft.com/en-us/rest/api/compute/virtualmachinescalesets/updateinstances). 
+instance is reimaged to match the updated VMSS model by using the [Update Instance API](https://learn.microsoft.com/rest/api/compute/virtualmachinescalesets/updateinstances). 
 If a VMSS instance were to be reimaged, rather than deleted and recreated the instance will not receive a notification. 
 Due to the design of terminate notifications the CAPZ controller needs to alert Kubernetes when an instance is being 
 Updated. Without some way to inform Kubernetes of the specific instance that is to be updated, the underlying 
@@ -88,9 +88,9 @@ from CAPZ, we are able to safely delete / upgrade machines / nodes.
 In the future, it would be useful to integrate [awesomenix/drainsafe](https://github.com/awesomenix/drainsafe) or 
 something similar to handle scenarios when Azure will delete or migrate a VMSS instance. Two scenarios come to mind.
 
-1. VMSS is configured to use [Spot instances](https://docs.microsoft.com/en-us/azure/virtual-machines/spot-vms) and 
+1. VMSS is configured to use [Spot instances](https://learn.microsoft.com/azure/virtual-machines/spot-vms) and 
    Azure must evict an instance.
-2. Azure must [perform maintenance on an instance](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-maintenance-notifications).    
+2. Azure must [perform maintenance on an instance](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-maintenance-notifications).    
 
 ## Proposal
 

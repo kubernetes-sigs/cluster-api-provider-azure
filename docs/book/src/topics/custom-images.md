@@ -153,7 +153,7 @@ Managed images support only 20 simultaneous deployments, so for most use cases A
 
 ### Using Azure Marketplace
 
-To use an image from [Azure Marketplace][azure-marketplace], populate the `publisher`, `offer`, `sku`, and `version` fields and, if this image is published by a third party publisher, set the `thirdPartyImage` flag to `true` so an image Plan can be generated for it. In the case of a third party image, you must accept the license terms with the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/vm/image/terms?view=azure-cli-latest) before consuming it.
+To use an image from [Azure Marketplace][azure-marketplace], populate the `publisher`, `offer`, `sku`, and `version` fields and, if this image is published by a third party publisher, set the `thirdPartyImage` flag to `true` so an image Plan can be generated for it. In the case of a third party image, you must accept the license terms with the [Azure CLI](https://learn.microsoft.com/cli/azure/vm/image/terms?view=azure-cli-latest) before consuming it.
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -217,18 +217,18 @@ This will make API calls to create Virtual Machines or Virtual Machine Scale Set
 
 In the case of a third party image, you must accept the license terms with the [Azure CLI][azure-cli] before consuming it.
 
-[azure-cli]: https://docs.microsoft.com/en-us/cli/azure/vm/image/terms?view=azure-cli-latest
-[azure-community-gallery]: https://docs.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery#community
-[azure-marketplace]: https://docs.microsoft.com/azure/marketplace/marketplace-publishers-guide
+[azure-cli]: https://learn.microsoft.com/cli/azure/vm/image/terms?view=azure-cli-latest
+[azure-community-gallery]: https://learn.microsoft.com/azure/virtual-machines/azure-compute-gallery#community
+[azure-marketplace]: https://learn.microsoft.com/azure/marketplace/marketplace-publishers-guide
 [azure-capi-images]: https://image-builder.sigs.k8s.io/capi/providers/azure.html
-[azure-compute-gallery]: https://docs.microsoft.com/azure/virtual-machines/linux/shared-image-galleries
+[azure-compute-gallery]: https://learn.microsoft.com/azure/virtual-machines/linux/shared-image-galleries
 [capi-images]: https://image-builder.sigs.k8s.io/capi/capi.html
-[creating-managed-image]: https://docs.microsoft.com/azure/virtual-machines/linux/capture-image
+[creating-managed-image]: https://learn.microsoft.com/azure/virtual-machines/linux/capture-image
 [creating-vm-offer]: https://docs.azure.cn/en-us/articles/azure-marketplace/imagepublishguide#5-azure-
 [image-builder]: https://github.com/kubernetes-sigs/image-builder
 [image-builder-azure]: https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi/packer/azure
 [kubeadm-preflight-checks]: https://github.com/kubernetes/kubeadm/blob/master/docs/design/design_v1.10.md#preflight-checks
-[replication-recommendations]: https://docs.microsoft.com/azure/virtual-machines/linux/shared-image-galleries#scaling
+[replication-recommendations]: https://learn.microsoft.com/azure/virtual-machines/linux/shared-image-galleries#scaling
 [supported-capi]: https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions
 [supported-k8s]: https://kubernetes.io/releases/version-skew-policy/#supported-versions
 [upgrading-clusters]: https://cluster-api.sigs.k8s.io/tasks/upgrading-clusters.html

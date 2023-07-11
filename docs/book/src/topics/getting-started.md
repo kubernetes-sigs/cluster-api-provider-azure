@@ -4,20 +4,21 @@
 
 ### Requirements
 
-- A [Microsoft Azure account](https://azure.microsoft.com/en-us/)
-  - Note: If using a new subscription, make sure to [register](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types) the following resource providers:
+<!-- markdown-link-check-disable-next-line -->
+- A [Microsoft Azure account](https://azure.microsoft.com/)
+  - Note: If using a new subscription, make sure to [register](https://learn.microsoft.com/azure/azure-resource-manager/management/resource-providers-and-types) the following resource providers:
     - `Microsoft.Compute`
     - `Microsoft.Network`
     - `Microsoft.ContainerService`
     - `Microsoft.ManagedIdentity`
     - `Microsoft.Authorization`
     - `Microsoft.ResourceHealth` (if the `EXP_AKS_RESOURCE_HEALTH` feature flag is enabled)
-- Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
+- Install the [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest)
 - A [supported version](https://github.com/kubernetes-sigs/cluster-api-provider-azure#compatibility) of `clusterctl`
 
 ### Setting up your Azure environment
 
-An Azure Service Principal is needed for deploying Azure resources. The below instructions utilize [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
+An Azure Service Principal is needed for deploying Azure resources. The below instructions utilize [environment-based authentication](https://learn.microsoft.com/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
 
   1. Login with the Azure CLI.
 

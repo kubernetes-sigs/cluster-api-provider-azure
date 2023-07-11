@@ -179,7 +179,7 @@ spec:
 
 ## Availability sets when there are no failure domains
 
-Although failure domains provide protection against datacenter failures, not all azure regions support availability zones. In such cases, azure [availability sets](https://docs.microsoft.com/en-us/azure/virtual-machines/manage-availability#configure-multiple-virtual-machines-in-an-availability-set-for-redundancy) can be used to provide redundancy and high availability.
+Although failure domains provide protection against datacenter failures, not all azure regions support availability zones. In such cases, azure [availability sets](https://learn.microsoft.com/azure/virtual-machines/manage-availability#configure-multiple-virtual-machines-in-an-availability-set-for-redundancy) can be used to provide redundancy and high availability.
 
 When cluster api detects that the region has no failure domains, it creates availability sets for different groups of virtual machines. The virtual machines, when created, are assigned an availability set based on the group they belong to.
 

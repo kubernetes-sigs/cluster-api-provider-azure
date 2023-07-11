@@ -370,7 +370,7 @@ const (
 	// Canceled represents an action which was initiated but terminated by the user before completion.
 	Canceled ProvisioningState = "Canceled"
 	// Deleted represents a deleted VM
-	// NOTE: This state is specific to capz, and does not have corresponding mapping in Azure API (https://docs.microsoft.com/en-us/azure/virtual-machines/states-billing#provisioning-states)
+	// NOTE: This state is specific to capz, and does not have corresponding mapping in Azure API (https://learn.microsoft.com/azure/virtual-machines/states-billing#provisioning-states)
 	Deleted ProvisioningState = "Deleted"
 )
 
@@ -628,7 +628,7 @@ type DiskEncryptionSetParameters struct {
 // DiffDiskSettings describe ephemeral disk settings for the os disk.
 type DiffDiskSettings struct {
 	// Option enables ephemeral OS when set to "Local"
-	// See https://docs.microsoft.com/en-us/azure/virtual-machines/ephemeral-os-disks for full details
+	// See https://learn.microsoft.com/azure/virtual-machines/ephemeral-os-disks for full details
 	// +kubebuilder:validation:Enum=Local
 	Option string `json:"option"`
 }
