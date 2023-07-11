@@ -6,13 +6,13 @@ This document describes how to deploy a cluster with Azure [Confidential VM](htt
 
 Before you begin, be aware of the following:
 
-- [VM Size Support](https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview#size-support)
-- [OS Support](https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview#os-support)
-- [Limitations](https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview#limitations)
+- [VM Size Support](https://learn.microsoft.com/azure/confidential-computing/confidential-vm-overview#size-support)
+- [OS Support](https://learn.microsoft.com/azure/confidential-computing/confidential-vm-overview#os-support)
+- [Limitations](https://learn.microsoft.com/azure/confidential-computing/confidential-vm-overview#limitations)
 
 ## Confidential VM Images
 
-One of the limitations of Confidential VMs is that they support specific OS images, as they need to get [successfully attested](https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview#attestation-and-tpm) during boot.
+One of the limitations of Confidential VMs is that they support specific OS images, as they need to get [successfully attested](https://learn.microsoft.com/azure/confidential-computing/confidential-vm-overview#attestation-and-tpm) during boot.
 
 Confidential VM images are not included in the list of `capi` reference images. Before creating a cluster hosted on Azure Confidential VMs, you can create a [custom image](custom-images.md) based on a Confidential VM supported OS image using [image-builder](https://github.com/kubernetes-sigs/image-builder). For example, you can run the following to create such an image based on Ubuntu Server 22.04 LTS for CVMs:
 

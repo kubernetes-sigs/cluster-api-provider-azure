@@ -35,11 +35,11 @@ const (
 	// not using . in the name to avoid issues when the name is part of DNS name.
 	clusterNameRegex = `^[a-z0-9][a-z0-9-]{0,42}[a-z0-9]$`
 	// max length of 44 to allow for cluster name to be used as a prefix for VMs and other resources that
-	// have limitations as outlined here https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules.
+	// have limitations as outlined here https://learn.microsoft.com/azure/azure-resource-manager/management/resource-name-rules.
 	clusterNameMaxLength = 44
-	// obtained from https://docs.microsoft.com/en-us/rest/api/resources/resourcegroups/createorupdate#uri-parameters.
+	// obtained from https://learn.microsoft.com/rest/api/resources/resourcegroups/createorupdate#uri-parameters.
 	resourceGroupRegex = `^[-\w\._\(\)]+$`
-	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules.
+	// described in https://learn.microsoft.com/azure/azure-resource-manager/management/resource-name-rules.
 	subnetRegex       = `^[-\w\._]+$`
 	loadBalancerRegex = `^[-\w\._]+$`
 	// MaxLoadBalancerOutboundIPs is the maximum number of outbound IPs in a Standard LoadBalancer frontend configuration.
@@ -49,14 +49,14 @@ const (
 	// MaxLBIdleTimeoutInMinutes is the maximum number of minutes for the LB idle timeout.
 	MaxLBIdleTimeoutInMinutes = 30
 	// Network security rules should be a number between 100 and 4096.
-	// https://docs.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview#security-rules
+	// https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview#security-rules
 	minRulePriority = 100
 	maxRulePriority = 4096
 	// Must start with 'Microsoft.', then an alpha character, then can include alnum.
 	serviceEndpointServiceRegexPattern = `^Microsoft\.[a-zA-Z]{1,42}[a-zA-Z0-9]{0,42}$`
 	// Must start with an alpha character and then can include alnum OR be only *.
 	serviceEndpointLocationRegexPattern = `^([a-z]{1,42}\d{0,5}|[*])$`
-	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules.
+	// described in https://learn.microsoft.com/azure/azure-resource-manager/management/resource-name-rules.
 	privateEndpointRegex = `^[-\w\._]+$`
 	// resource ID Pattern.
 	resourceIDPattern = `(?i)subscriptions/(.+)/resourceGroups/(.+)/providers/(.+?)/(.+?)/(.+)`

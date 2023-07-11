@@ -5,7 +5,8 @@
 
 ## Overview
 
-Cluster API Provider Azure (CAPZ) has experimental support for deploying clusters on [Azure Public MEC](https://azure.microsoft.com/en-us/solutions/public-multi-access-edge-compute-mec). Before you begin, you need an Azure subscription which has access to Public MEC.
+<!-- markdown-link-check-disable-next-line -->
+Cluster API Provider Azure (CAPZ) has experimental support for deploying clusters on [Azure Public MEC](https://azure.microsoft.com/solutions/public-multi-access-edge-compute-mec). Before you begin, you need an Azure subscription which has access to Public MEC.
 
 To deploy a cluster on Public MEC, provide extended location info through environment variables and use the "edgezone" flavor.
 
