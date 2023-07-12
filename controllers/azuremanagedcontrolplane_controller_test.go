@@ -16,13 +16,22 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestClusterToAzureManagedControlPlane(t *testing.T) {
@@ -76,4 +85,69 @@ func TestClusterToAzureManagedControlPlane(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
+	g := NewWithT(t)
+
+	ctx := context.Background()
+
+	sb := runtime.NewSchemeBuilder(
+		clusterv1.AddToScheme,
+		infrav1.AddToScheme,
+	)
+	s := runtime.NewScheme()
+	g.Expect(sb.AddToScheme(s)).To(Succeed())
+	c := fake.NewClientBuilder().
+		WithScheme(s).
+		Build()
+
+	recorder := record.NewFakeRecorder(1)
+
+	reconciler := &AzureManagedControlPlaneReconciler{
+		Client:           c,
+		Recorder:         recorder,
+		ReconcileTimeout: reconciler.DefaultLoopTimeout,
+		WatchFilterValue: "",
+	}
+	name := test.RandomName("paused", 10)
+
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "default",
+		},
+		Spec: clusterv1.ClusterSpec{
+			Paused: true,
+		},
+	}
+	g.Expect(c.Create(ctx, cluster)).To(Succeed())
+
+	instance := &infrav1.AzureManagedControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind:       "Cluster",
+					APIVersion: clusterv1.GroupVersion.String(),
+					Name:       cluster.Name,
+				},
+			},
+		},
+		Spec: infrav1.AzureManagedControlPlaneSpec{
+			SubscriptionID: "something",
+		},
+	}
+	g.Expect(c.Create(ctx, instance)).To(Succeed())
+
+	result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: instance.Namespace,
+			Name:      instance.Name,
+		},
+	})
+
+	g.Expect(err).To(BeNil())
+	g.Expect(result.RequeueAfter).To(BeZero())
 }

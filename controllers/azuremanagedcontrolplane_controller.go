@@ -79,7 +79,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(azManagedControlPlane).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, amcpr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(log, amcpr.WatchFilterValue)).
 		// watch AzureManagedCluster resources
 		Watches(
 			&source.Kind{Type: &infrav1.AzureManagedCluster{}},
@@ -95,12 +95,12 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 		return errors.Wrap(err, "error creating controller")
 	}
 
-	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
+	// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(amcpr.ClusterToAzureManagedControlPlane),
-		predicates.ClusterUnpausedAndInfrastructureReady(log),
-		predicates.ResourceNotPausedAndHasFilterLabel(log, amcpr.WatchFilterValue),
+		predicates.Any(log, predicates.ClusterCreateInfraReady(log), predicates.ClusterUpdateInfraReady(log), ClusterUpdatePauseChange(log)),
+		predicates.ResourceHasFilterLabel(log, amcpr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
@@ -146,12 +146,6 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(cluster, azureControlPlane) {
-		log.Info("AzureManagedControlPlane or linked Cluster is marked as paused. Won't reconcile")
-		return ctrl.Result{}, nil
-	}
-
 	// Fetch all the ManagedMachinePools owned by this Cluster.
 	opt1 := client.InNamespace(azureControlPlane.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
@@ -177,20 +171,6 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 		}
 	}
 
-	// check if the control plane's namespace is allowed for this identity and update owner references for the identity.
-	if azureControlPlane.Spec.IdentityRef != nil {
-		err := EnsureClusterIdentity(ctx, amcpr.Client, azureControlPlane, azureControlPlane.Spec.IdentityRef, infrav1.ManagedClusterFinalizer)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	} else {
-		warningMessage := ("You're using deprecated functionality: ")
-		warningMessage += ("Using Azure credentials from the manager environment is deprecated and will be removed in future releases. ")
-		warningMessage += ("Please specify an AzureClusterIdentity for the AzureManagedControlPlane instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html ")
-		log.Info(fmt.Sprintf("WARNING, %s", warningMessage))
-		amcpr.Recorder.Eventf(azureControlPlane, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
-	}
-
 	// Create the scope.
 	mcpScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
 		Client:              amcpr.Client,
@@ -208,6 +188,26 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 			reterr = err
 		}
 	}()
+
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(cluster, azureControlPlane) {
+		log.Info("AzureManagedControlPlane or linked Cluster is marked as paused. Won't reconcile normally")
+		return amcpr.reconcilePause(ctx, mcpScope)
+	}
+
+	// check if the control plane's namespace is allowed for this identity and update owner references for the identity.
+	if azureControlPlane.Spec.IdentityRef != nil {
+		err := EnsureClusterIdentity(ctx, amcpr.Client, azureControlPlane, azureControlPlane.Spec.IdentityRef, infrav1.ManagedClusterFinalizer)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	} else {
+		warningMessage := "You're using deprecated functionality: " +
+			"Using Azure credentials from the manager environment is deprecated and will be removed in future releases. " +
+			"Please specify an AzureClusterIdentity for the AzureManagedControlPlane instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html "
+		log.Info(fmt.Sprintf("WARNING, %s", warningMessage))
+		amcpr.Recorder.Eventf(azureControlPlane, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
+	}
 
 	// Handle deleted clusters
 	if !azureControlPlane.DeletionTimestamp.IsZero() {
@@ -259,6 +259,19 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 	scope.ControlPlane.Status.Initialized = true
 
 	log.Info("Successfully reconciled")
+
+	return reconcile.Result{}, nil
+}
+
+func (amcpr *AzureManagedControlPlaneReconciler) reconcilePause(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedControlPlane.reconcilePause")
+	defer done()
+
+	log.Info("Reconciling AzureManagedControlPlane pause")
+
+	if err := newAzureManagedControlPlaneReconciler(scope).Pause(ctx); err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to pause control plane services")
+	}
 
 	return reconcile.Result{}, nil
 }
