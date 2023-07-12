@@ -18,15 +18,20 @@ package controllers
 
 import (
 	"context"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("AzureClusterReconciler", func() {
@@ -51,3 +56,68 @@ var _ = Describe("AzureClusterReconciler", func() {
 		})
 	})
 })
+
+func TestAzureClusterReconcilePaused(t *testing.T) {
+	g := NewWithT(t)
+
+	ctx := context.Background()
+
+	sb := runtime.NewSchemeBuilder(
+		clusterv1.AddToScheme,
+		infrav1.AddToScheme,
+	)
+	s := runtime.NewScheme()
+	g.Expect(sb.AddToScheme(s)).To(Succeed())
+	c := fake.NewClientBuilder().
+		WithScheme(s).
+		Build()
+
+	recorder := record.NewFakeRecorder(1)
+
+	reconciler := NewAzureClusterReconciler(c, recorder, reconciler.DefaultLoopTimeout, "")
+	name := test.RandomName("paused", 10)
+
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "default",
+		},
+		Spec: clusterv1.ClusterSpec{
+			Paused: true,
+		},
+	}
+	g.Expect(c.Create(ctx, cluster)).To(Succeed())
+
+	instance := &infrav1.AzureCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind:       "Cluster",
+					APIVersion: clusterv1.GroupVersion.String(),
+					Name:       cluster.Name,
+					UID:        cluster.UID,
+				},
+			},
+		},
+		Spec: infrav1.AzureClusterSpec{
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				SubscriptionID: "something",
+			},
+		},
+	}
+	g.Expect(c.Create(ctx, instance)).To(Succeed())
+
+	result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: instance.Namespace,
+			Name:      instance.Name,
+		},
+	})
+
+	g.Expect(err).To(BeNil())
+	g.Expect(result.RequeueAfter).To(BeZero())
+
+	g.Eventually(recorder.Events).Should(Receive(Equal("Normal ClusterPaused AzureCluster or linked Cluster is marked as paused. Won't reconcile normally")))
+}

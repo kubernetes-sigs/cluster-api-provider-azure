@@ -85,19 +85,19 @@ func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctr
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, acr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(log, acr.WatchFilterValue)).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(log)).
 		Build(r)
 	if err != nil {
 		return errors.Wrap(err, "error creating controller")
 	}
 
-	// Add a watch on clusterv1.Cluster object for unpause notifications.
+	// Add a watch on clusterv1.Cluster object for pause/unpause notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureCluster"), mgr.GetClient(), &infrav1.AzureCluster{})),
-		predicates.ClusterUnpaused(log),
-		predicates.ResourceNotPausedAndHasFilterLabel(log, acr.WatchFilterValue),
+		ClusterUpdatePauseChange(log),
+		predicates.ResourceHasFilterLabel(log, acr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
@@ -151,23 +151,6 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(cluster, azureCluster) {
-		acr.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "ClusterPaused", "AzureCluster or linked Cluster is marked as paused. Won't reconcile")
-		log.Info("AzureCluster or linked Cluster is marked as paused. Won't reconcile")
-		return ctrl.Result{}, nil
-	}
-
-	if azureCluster.Spec.IdentityRef != nil {
-		err := EnsureClusterIdentity(ctx, acr.Client, azureCluster, azureCluster.Spec.IdentityRef, infrav1.ClusterFinalizer)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	} else {
-		log.Info(fmt.Sprintf("WARNING, %s", deprecatedManagerCredsWarning))
-		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", deprecatedManagerCredsWarning)
-	}
-
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       acr.Client,
@@ -186,6 +169,23 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			reterr = err
 		}
 	}()
+
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(cluster, azureCluster) {
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "ClusterPaused", "AzureCluster or linked Cluster is marked as paused. Won't reconcile normally")
+		log.Info("AzureCluster or linked Cluster is marked as paused. Won't reconcile normally")
+		return acr.reconcilePause(ctx, clusterScope)
+	}
+
+	if azureCluster.Spec.IdentityRef != nil {
+		err := EnsureClusterIdentity(ctx, acr.Client, azureCluster, azureCluster.Spec.IdentityRef, infrav1.ClusterFinalizer)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	} else {
+		log.Info(fmt.Sprintf("WARNING, %s", deprecatedManagerCredsWarning))
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", deprecatedManagerCredsWarning)
+	}
 
 	// Handle deleted clusters
 	if !azureCluster.DeletionTimestamp.IsZero() {
@@ -253,6 +253,24 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	azureCluster.Status.Ready = true
 	conditions.MarkTrue(azureCluster, infrav1.NetworkInfrastructureReadyCondition)
+
+	return reconcile.Result{}, nil
+}
+
+func (acr *AzureClusterReconciler) reconcilePause(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcilePause")
+	defer done()
+
+	log.Info("Reconciling AzureCluster pause")
+
+	acs, err := acr.createAzureClusterService(clusterScope)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create a new azureClusterService")
+	}
+
+	if err := acs.Pause(ctx); err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to pause cluster services")
+	}
 
 	return reconcile.Result{}, nil
 }

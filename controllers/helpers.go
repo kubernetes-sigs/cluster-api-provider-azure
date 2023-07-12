@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -53,7 +54,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -1021,5 +1024,35 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(ctx context.Context, c client.
 
 		// By default, return nothing for a machine pool which is not the default pool for a control plane.
 		return nil
+	}
+}
+
+// ClusterUpdatePauseChange returns a predicate that returns true for an update event when a cluster's
+// Spec.Paused changes between any two distinct values.
+func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			log := logger.WithValues("predicate", "ClusterUpdatePauseChange", "eventType", "update")
+
+			oldCluster, ok := e.ObjectOld.(*clusterv1.Cluster)
+			if !ok {
+				log.V(4).Info("Expected Cluster", "type", fmt.Sprintf("%T", e.ObjectOld))
+				return false
+			}
+			log = log.WithValues("Cluster", klog.KObj(oldCluster))
+
+			newCluster := e.ObjectNew.(*clusterv1.Cluster)
+
+			if oldCluster.Spec.Paused != newCluster.Spec.Paused {
+				log.V(4).Info("Cluster paused status changed, allowing further processing")
+				return true
+			}
+
+			log.V(6).Info("Cluster paused status remained the same, blocking further processing")
+			return false
+		},
+		CreateFunc:  func(e event.CreateEvent) bool { return false },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return false },
+		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
 }

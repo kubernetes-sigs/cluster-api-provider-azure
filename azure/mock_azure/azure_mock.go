@@ -82,6 +82,43 @@ func (mr *MockReconcilerMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), ctx)
 }
 
+// MockPauser is a mock of Pauser interface.
+type MockPauser struct {
+	ctrl     *gomock.Controller
+	recorder *MockPauserMockRecorder
+}
+
+// MockPauserMockRecorder is the mock recorder for MockPauser.
+type MockPauserMockRecorder struct {
+	mock *MockPauser
+}
+
+// NewMockPauser creates a new mock instance.
+func NewMockPauser(ctrl *gomock.Controller) *MockPauser {
+	mock := &MockPauser{ctrl: ctrl}
+	mock.recorder = &MockPauserMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPauser) EXPECT() *MockPauserMockRecorder {
+	return m.recorder
+}
+
+// Pause mocks base method.
+func (m *MockPauser) Pause(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Pause", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Pause indicates an expected call of Pause.
+func (mr *MockPauserMockRecorder) Pause(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pause", reflect.TypeOf((*MockPauser)(nil).Pause), arg0)
+}
+
 // MockServiceReconciler is a mock of ServiceReconciler interface.
 type MockServiceReconciler struct {
 	ctrl     *gomock.Controller
