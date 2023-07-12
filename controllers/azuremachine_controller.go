@@ -247,9 +247,11 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		return reconcile.Result{}, nil
 	}
 
-	// If the AzureMachine doesn't have our finalizer, add it.
-	if controllerutil.AddFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer) {
-		// Register the finalizer immediately to avoid orphaning Azure resources on delete
+	// Register our finalizer immediately to avoid orphaning Azure resources on delete
+	needsPatch := controllerutil.AddFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
+	// Register the block-move annotation immediately to avoid moving un-paused ASO resources
+	needsPatch = AddBlockMoveAnnotation(machineScope.AzureMachine) || needsPatch
+	if needsPatch {
 		if err := machineScope.PatchObject(ctx); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -355,6 +357,7 @@ func (amr *AzureMachineReconciler) reconcilePause(ctx context.Context, machineSc
 	if err := ams.Pause(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to pause azure machine services")
 	}
+	RemoveBlockMoveAnnotation(machineScope.AzureMachine)
 
 	return reconcile.Result{}, nil
 }

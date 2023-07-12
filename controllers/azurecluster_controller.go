@@ -207,9 +207,11 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 	log.Info("Reconciling AzureCluster")
 	azureCluster := clusterScope.AzureCluster
 
-	// If the AzureCluster doesn't have our finalizer, add it.
-	if controllerutil.AddFinalizer(azureCluster, infrav1.ClusterFinalizer) {
-		// Register the finalizer immediately to avoid orphaning Azure resources on delete
+	// Register our finalizer immediately to avoid orphaning Azure resources on delete
+	needsPatch := controllerutil.AddFinalizer(azureCluster, infrav1.ClusterFinalizer)
+	// Register the block-move annotation immediately to avoid moving un-paused ASO resources
+	needsPatch = AddBlockMoveAnnotation(azureCluster) || needsPatch
+	if needsPatch {
 		if err := clusterScope.PatchObject(ctx); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -275,6 +277,7 @@ func (acr *AzureClusterReconciler) reconcilePause(ctx context.Context, clusterSc
 	if err := acs.Pause(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to pause cluster services")
 	}
+	RemoveBlockMoveAnnotation(clusterScope.AzureCluster)
 
 	return reconcile.Result{}, nil
 }

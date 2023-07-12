@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -274,6 +275,9 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Annotations: map[string]string{
+				clusterctlv1.BlockMoveAnnotation: "true",
+			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Cluster",
@@ -311,6 +315,9 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 	g.Expect(result.RequeueAfter).To(BeZero())
 
 	g.Eventually(recorder.Events).Should(Receive(Equal("Normal ClusterPaused AzureCluster or linked Cluster is marked as paused. Won't reconcile normally")))
+
+	g.Expect(c.Get(ctx, client.ObjectKeyFromObject(instance), instance)).To(Succeed())
+	g.Expect(instance.GetAnnotations()).NotTo(HaveKey(clusterctlv1.BlockMoveAnnotation))
 }
 
 func TestAzureClusterReconcileDelete(t *testing.T) {

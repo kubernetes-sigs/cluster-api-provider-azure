@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util"
@@ -1119,4 +1120,30 @@ func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, 
 	}
 
 	return nil, errors.Errorf("unsupported infrastructure type %q, should be AzureCluster or AzureManagedCluster", cluster.Spec.InfrastructureRef.Kind)
+}
+
+// AddBlockMoveAnnotation adds CAPI's block-move annotation and returns whether or not the annotation was added.
+func AddBlockMoveAnnotation(obj metav1.Object) bool {
+	annotations := obj.GetAnnotations()
+
+	if _, exists := annotations[clusterctlv1.BlockMoveAnnotation]; exists {
+		return false
+	}
+
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+
+	// this value doesn't mean anything, only the presence of the annotation matters.
+	annotations[clusterctlv1.BlockMoveAnnotation] = "true"
+	obj.SetAnnotations(annotations)
+
+	return true
+}
+
+// RemoveBlockMoveAnnotation removes CAPI's block-move annotation from the object.
+func RemoveBlockMoveAnnotation(obj metav1.Object) {
+	azClusterAnnotations := obj.GetAnnotations()
+	delete(azClusterAnnotations, clusterctlv1.BlockMoveAnnotation)
+	obj.SetAnnotations(azClusterAnnotations)
 }

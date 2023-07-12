@@ -270,12 +270,12 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 		return reconcile.Result{}, nil
 	}
 
-	// Add the finalizer and the InfrastructureMachineKind if it is not already set, and patch if either changed.
-
+	// Register the finalizer immediately to avoid orphaning Azure resources on delete
 	needsPatch := controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer)
 	needsPatch = machinePoolScope.SetInfrastructureMachineKind() || needsPatch
+	// Register the block-move annotation immediately to avoid moving un-paused ASO resources
+	needsPatch = infracontroller.AddBlockMoveAnnotation(machinePoolScope.AzureMachinePool) || needsPatch
 	if needsPatch {
-		// Register the finalizer immediately to avoid orphaning Azure resources on delete
 		if err := machinePoolScope.PatchObject(ctx); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -368,6 +368,7 @@ func (ampr *AzureMachinePoolReconciler) reconcilePause(ctx context.Context, mach
 	if err := amps.Pause(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachinePool %s/%s", machinePoolScope.AzureMachinePool.Namespace, machinePoolScope.Name())
 	}
+	infracontroller.RemoveBlockMoveAnnotation(machinePoolScope.AzureMachinePool)
 
 	return reconcile.Result{}, nil
 }
