@@ -183,6 +183,7 @@ CLUSTER_TEMPLATE ?= cluster-template.yaml
 MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
 
 export KIND_CLUSTER_NAME ?= capz
+export AZWI ?= true
 
 ## --------------------------------------
 ## Binaries
@@ -669,7 +670,7 @@ test-cover: test ## Run tests with code coverage and generate reports.
 
 .PHONY: kind-create-bootstrap
 kind-create-bootstrap: $(KUBECTL) ## Create capz kind bootstrap cluster.
-	export AZWI=true KIND_CLUSTER_NAME=capz-e2e && ./scripts/kind-with-registry.sh
+	export KIND_CLUSTER_NAME=capz-e2e && ./scripts/kind-with-registry.sh
 
 .PHONY: test-e2e-run
 test-e2e-run: generate-e2e-templates install-tools kind-create-bootstrap ## Run e2e tests.
