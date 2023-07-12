@@ -91,7 +91,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(azManagedMachinePool).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, ammpr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(log, ammpr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &expv1.MachinePool{}},
@@ -112,12 +112,12 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		return errors.Wrap(err, "failed to create mapper for Cluster to AzureManagedMachinePools")
 	}
 
-	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
+	// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
-		predicates.ClusterUnpausedAndInfrastructureReady(log),
-		predicates.ResourceNotPausedAndHasFilterLabel(log, ammpr.WatchFilterValue),
+		ClusterPauseChangeAndInfrastructureReady(log),
+		predicates.ResourceHasFilterLabel(log, ammpr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
@@ -174,12 +174,6 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 
 	log = log.WithValues("ownerCluster", ownerCluster.Name)
 
-	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(ownerCluster, infraPool) {
-		log.Info("AzureManagedMachinePool or linked Cluster is marked as paused. Won't reconcile")
-		return ctrl.Result{}, nil
-	}
-
 	// Fetch the corresponding control plane which has all the interesting data.
 	controlPlane := &infrav1.AzureManagedControlPlane{}
 	controlPlaneName := client.ObjectKey{
@@ -232,6 +226,12 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 			reterr = err
 		}
 	}()
+
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(ownerCluster, infraPool) {
+		log.Info("AzureManagedMachinePool or linked Cluster is marked as paused. Won't reconcile normally")
+		return ammpr.reconcilePause(ctx, mcpScope)
+	}
 
 	// Handle deleted clusters
 	if !infraPool.DeletionTimestamp.IsZero() {
@@ -291,6 +291,24 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	scope.SetAgentPoolReady(true)
+	return reconcile.Result{}, nil
+}
+
+func (ammpr *AzureManagedMachinePoolReconciler) reconcilePause(ctx context.Context, scope *scope.ManagedMachinePoolScope) (reconcile.Result, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePool.reconcilePause")
+	defer done()
+
+	log.Info("Reconciling AzureManagedMachinePool pause")
+
+	svc, err := ammpr.createAzureManagedMachinePoolService(scope)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create an AzureManageMachinePoolService")
+	}
+
+	if err := svc.Pause(ctx); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "error pausing AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
+	}
+
 	return reconcile.Result{}, nil
 }
 

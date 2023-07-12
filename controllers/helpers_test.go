@@ -45,6 +45,7 @@ import (
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -1307,6 +1308,217 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 			f := MachinePoolToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), logr.New(sink))
 			reqs := f(c.MapObjectFactory(g))
 			c.Expect(g, reqs)
+		})
+	}
+}
+
+func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
+	tests := []struct {
+		name   string
+		event  any // an event.(Create|Update)Event
+		expect bool
+	}{
+		{
+			name: "create cluster infra not ready, not paused",
+			event: event.CreateEvent{
+				Object: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: false,
+					},
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: false,
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			name: "create cluster infra ready, not paused",
+			event: event.CreateEvent{
+				Object: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: false,
+					},
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				},
+			},
+			expect: true,
+		},
+		{
+			name: "create cluster infra not ready, paused",
+			event: event.CreateEvent{
+				Object: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: true,
+					},
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: false,
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			name: "create cluster infra ready, paused",
+			event: event.CreateEvent{
+				Object: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: true,
+					},
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				},
+			},
+			expect: true,
+		},
+		{
+			name: "update cluster infra ready true->true",
+			event: event.UpdateEvent{
+				ObjectOld: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				},
+				ObjectNew: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			name: "update cluster infra ready false->true",
+			event: event.UpdateEvent{
+				ObjectOld: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: false,
+					},
+				},
+				ObjectNew: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				},
+			},
+			expect: true,
+		},
+		{
+			name: "update cluster infra ready true->false",
+			event: event.UpdateEvent{
+				ObjectOld: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				},
+				ObjectNew: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: false,
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			name: "update cluster infra ready false->false",
+			event: event.UpdateEvent{
+				ObjectOld: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: false,
+					},
+				},
+				ObjectNew: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: false,
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			name: "update cluster paused false->false",
+			event: event.UpdateEvent{
+				ObjectOld: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: false,
+					},
+				},
+				ObjectNew: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: false,
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			name: "update cluster paused false->true",
+			event: event.UpdateEvent{
+				ObjectOld: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: false,
+					},
+				},
+				ObjectNew: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: true,
+					},
+				},
+			},
+			expect: true,
+		},
+		{
+			name: "update cluster paused true->false",
+			event: event.UpdateEvent{
+				ObjectOld: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: true,
+					},
+				},
+				ObjectNew: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: false,
+					},
+				},
+			},
+			expect: true,
+		},
+		{
+			name: "update cluster paused true->true",
+			event: event.UpdateEvent{
+				ObjectOld: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: true,
+					},
+				},
+				ObjectNew: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: true,
+					},
+				},
+			},
+			expect: false,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			p := ClusterPauseChangeAndInfrastructureReady(logr.New(nil))
+			var actual bool
+			switch e := test.event.(type) {
+			case event.CreateEvent:
+				actual = p.Create(e)
+			case event.UpdateEvent:
+				actual = p.Update(e)
+			default:
+				panic("unimplemented event type")
+			}
+			NewGomegaWithT(t).Expect(actual).To(Equal(test.expect))
 		})
 	}
 }

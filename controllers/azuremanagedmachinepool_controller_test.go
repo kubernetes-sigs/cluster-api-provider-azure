@@ -45,6 +45,11 @@ import (
 )
 
 func TestAzureManagedMachinePoolReconcile(t *testing.T) {
+	type pausingReconciler struct {
+		*mock_azure.MockReconciler
+		*mock_azure.MockPauser
+	}
+
 	os.Setenv(auth.ClientID, "fooClient")
 	os.Setenv(auth.ClientSecret, "fooSecret")
 	os.Setenv(auth.TenantID, "fooTenant")
@@ -52,19 +57,19 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 
 	cases := []struct {
 		name   string
-		Setup  func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder)
+		Setup  func(cb *fake.ClientBuilder, reconciler pausingReconciler, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder)
 		Verify func(g *WithT, result ctrl.Result, err error)
 	}{
 		{
 			name: "Reconcile succeed",
-			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder) {
+			Setup: func(cb *fake.ClientBuilder, reconciler pausingReconciler, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder) {
 				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
 				fakeAgentPoolSpec := fakeAgentPool()
 				providerIDs := []string{"azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myresourcegroupname/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156"}
 				fakeVirtualMachineScaleSet := fakeVirtualMachineScaleSet()
 				fakeVirtualMachineScaleSetVM := fakeVirtualMachineScaleSetVM()
 
-				reconciler.Reconcile(gomock2.AContext()).Return(nil)
+				reconciler.MockReconciler.EXPECT().Reconcile(gomock2.AContext()).Return(nil)
 				agentpools.SetSubnetName()
 				agentpools.AgentPoolSpec().Return(&fakeAgentPoolSpec)
 				agentpools.NodeResourceGroup().Return("fake-rg")
@@ -82,10 +87,24 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			},
 		},
 		{
-			name: "Reconcile delete",
-			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder, _ *mock_agentpools.MockAgentPoolScopeMockRecorder, _ *MockNodeListerMockRecorder) {
+			name: "Reconcile pause",
+			Setup: func(cb *fake.ClientBuilder, reconciler pausingReconciler, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder) {
 				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
-				reconciler.Delete(gomock2.AContext()).Return(nil)
+				cluster.Spec.Paused = true
+
+				reconciler.MockPauser.EXPECT().Pause(gomock2.AContext()).Return(nil)
+
+				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
+			},
+			Verify: func(g *WithT, result ctrl.Result, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+			},
+		},
+		{
+			name: "Reconcile delete",
+			Setup: func(cb *fake.ClientBuilder, reconciler pausingReconciler, _ *mock_agentpools.MockAgentPoolScopeMockRecorder, _ *MockNodeListerMockRecorder) {
+				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
+				reconciler.MockReconciler.EXPECT().Delete(gomock2.AContext()).Return(nil)
 				ammp.DeletionTimestamp = &metav1.Time{
 					Time: time.Now(),
 				}
@@ -103,7 +122,10 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			var (
 				g          = NewWithT(t)
 				mockCtrl   = gomock.NewController(t)
-				reconciler = mock_azure.NewMockReconciler(mockCtrl)
+				reconciler = pausingReconciler{
+					MockReconciler: mock_azure.NewMockReconciler(mockCtrl),
+					MockPauser:     mock_azure.NewMockPauser(mockCtrl),
+				}
 				agentpools = mock_agentpools.NewMockAgentPoolScope(mockCtrl)
 				nodelister = NewMockNodeLister(mockCtrl)
 				scheme     = func() *runtime.Scheme {
@@ -123,7 +145,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			)
 			defer mockCtrl.Finish()
 
-			c.Setup(cb, reconciler.EXPECT(), agentpools.EXPECT(), nodelister.EXPECT())
+			c.Setup(cb, reconciler, agentpools.EXPECT(), nodelister.EXPECT())
 			controller := NewAzureManagedMachinePoolReconciler(cb.Build(), nil, 30*time.Second, "foo")
 			controller.createAzureManagedMachinePoolService = func(_ *scope.ManagedMachinePoolScope) (*azureManagedMachinePoolService, error) {
 				return &azureManagedMachinePoolService{

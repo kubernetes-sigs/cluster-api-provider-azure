@@ -51,6 +51,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -1066,4 +1067,10 @@ func getCertificateFromFile(certificateFilePath string) ([]byte, error) {
 	}
 
 	return os.ReadFile(certificateFilePathTrimmed)
+}
+
+// ClusterPauseChangeAndInfrastructureReady is based on ClusterUnpausedAndInfrastructureReady, but
+// additionally accepts Cluster pause events.
+func ClusterPauseChangeAndInfrastructureReady(log logr.Logger) predicate.Funcs {
+	return predicates.Any(log, predicates.ClusterCreateInfraReady(log), predicates.ClusterUpdateInfraReady(log), ClusterUpdatePauseChange(log))
 }
