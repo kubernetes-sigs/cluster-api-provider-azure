@@ -57,7 +57,7 @@ A possible alternative that works for private clusters as well is described in t
 
 ### Azure Bastion
 
-A possible alternative to the process described above is to use the [`Azure Bastion`](https://azure.microsoft.com/en-us/services/azure-bastion/) feature.
+A possible alternative to the process described above is to use the [`Azure Bastion`](https://learn.microsoft.com/azure/bastion/bastion-overview) feature.
 This approach works the same way for workload clusters using either type of `Load Balancers`.
 
 In order to enable `Azure Bastion` on a CAPZ workload cluster, edit the `AzureCluster` CR and set the `spec/bastionSpec/azureBastion` field.
@@ -78,7 +78,7 @@ spec:
 ```
 
 Once the `Azure Bastion` is deployed, it will be possible to SSH to any of the cluster VMs through the
-`Azure Portal`. Please follow the [official documentation](https://docs.microsoft.com/en-us/azure/bastion/bastion-overview)
+`Azure Portal`. Please follow the [official documentation](https://learn.microsoft.com/azure/bastion/bastion-overview)
 for a deeper explanation on how to do that.
 
 #### Advanced settings
@@ -112,7 +112,7 @@ spec:
 ```
 
 If you specify a security group to be associated with the Azure Bastion subnet, it needs to have some networking rules defined or
-the `Azure Bastion` resource creation will fail. Please refer to [the documentation](https://docs.microsoft.com/en-us/azure/bastion/bastion-nsg) for more details.
+the `Azure Bastion` resource creation will fail. Please refer to [the documentation](https://learn.microsoft.com/azure/bastion/bastion-nsg) for more details.
 
 ## Authentication
 

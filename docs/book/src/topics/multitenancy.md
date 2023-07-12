@@ -101,9 +101,9 @@ This option is only available when the cluster is managed from a Kubernetes clus
 
 #### Prerequisites
 
-1. [Create](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities?pivots=identity-mi-methods-azp#create-a-user-assigned-managed-identity) a user-assigned managed identity in Azure.
-2. [Create a role assignment](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/howto-assign-access-portal#use-azure-rbac-to-assign-a-managed-identity-access-to-another-resource) to give the identity Contributor access to the Azure subscription where the workload cluster will be created.
-3. [Configure] the identity on the management cluster nodes by adding it to each worker node VM. If using AKS as the management cluster see [these instructions](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity).
+1. [Create](https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities?pivots=identity-mi-methods-azp#create-a-user-assigned-managed-identity) a user-assigned managed identity in Azure.
+2. [Create a role assignment](https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/howto-assign-access-portal#use-azure-rbac-to-assign-a-managed-identity-access-to-another-resource) to give the identity Contributor access to the Azure subscription where the workload cluster will be created.
+3. [Configure] the identity on the management cluster nodes by adding it to each worker node VM. If using AKS as the management cluster see [these instructions](https://learn.microsoft.com/azure/aks/use-managed-identity).
 
 #### Creating the AzureClusterIdentity
 

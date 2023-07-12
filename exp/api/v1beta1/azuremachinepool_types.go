@@ -45,7 +45,7 @@ type (
 	// AzureMachinePoolMachineTemplate defines the template for an AzureMachine.
 	AzureMachinePoolMachineTemplate struct {
 		// VMSize is the size of the Virtual Machine to build.
-		// See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes
+		// See https://learn.microsoft.com/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes
 		VMSize string `json:"vmSize"`
 
 		// Image is used to provide details of an image to use during VM creation.
@@ -144,7 +144,7 @@ type (
 		// UserAssignedIdentities is a list of standalone Azure identities provided by the user
 		// The lifecycle of a user-assigned identity is managed separately from the lifecycle of
 		// the AzureMachinePool.
-		// See https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
+		// See https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
 		// +optional
 		UserAssignedIdentities []infrav1.UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
 

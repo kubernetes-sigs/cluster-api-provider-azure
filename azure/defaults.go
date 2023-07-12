@@ -285,7 +285,7 @@ func ManagedClusterID(subscriptionID, resourceGroup, managedClusterName string) 
 
 // GetBootstrappingVMExtension returns the CAPZ Bootstrapping VM extension.
 // The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux for Linux or
-// https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-windows for Windows.
+// https://learn.microsoft.com/azure/virtual-machines/extensions/custom-script-windows for Windows.
 // This extension allows running arbitrary scripts on the VM.
 // Its role is to detect and report Kubernetes bootstrap failure or success.
 func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *ExtensionSpec {

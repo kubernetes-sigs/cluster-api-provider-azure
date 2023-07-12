@@ -580,7 +580,7 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 [gettextwindows]: https://mlocati.github.io/articles/gettext-iconv-windows.html
 [go.mod]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/go.mod
 [kind]: https://sigs.k8s.io/kind
-[azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
+[azure_cli]: https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest
 [manifests]: /docs/manifests.md
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 [kustomizelinux]: https://kubectl.docs.kubernetes.io/installation/kustomize/

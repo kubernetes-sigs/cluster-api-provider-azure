@@ -12,7 +12,7 @@ Azure Machines support optionally specifying a list of data disks to be attached
 
 ### Managed Disk Options
 
-See [Introduction to Azure managed disks](https://docs.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview) for more information.
+See [Introduction to Azure managed disks](https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview) for more information.
  
 ### Disk LUN
  
@@ -20,7 +20,7 @@ See [Introduction to Azure managed disks](https://docs.microsoft.com/en-us/azure
  
  When adding data disks to a Linux VM, you may encounter errors if a disk does not exist at LUN 0. It is therefore recommended to ensure that the first data disk specified is always added at LUN 0.
  
- See [Attaching a disk to a Linux VM on Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk) for more information.
+ See [Attaching a disk to a Linux VM on Azure](https://learn.microsoft.com/azure/virtual-machines/linux/add-disk) for more information.
  
  > IMPORTANT! The `lun` specified in the AzureMachine Spec must match the LUN used to refer to the device in Kubeadm diskSetup. See below for an example.
 
@@ -36,7 +36,7 @@ Provided that the chosen region and zone support Ultra disks, Azure Machine obje
 
 When the chosen StorageAccountType is `UltraSSD_LRS`, caching is not supported for the disk and the corresponding `cachingType` field must be set to `None`. In this configuration, if no value is set, `cachingType` will be defaulted to `None`.
 
-See [Ultra disk](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#ultra-disk) for ultra disk performance and GA scope.
+See [Ultra disk](https://learn.microsoft.com/azure/virtual-machines/disks-types#ultra-disk) for ultra disk performance and GA scope.
 
 ### Ultra disk support for Persistent Volumes
 First, to check all available vm-sizes in a given region which supports availability zone that has the `UltraSSDAvailable` capability supported, execute following using Azure CLI:
@@ -47,9 +47,9 @@ az vm list-skus -l <location> -z -s <VM-size>
 Provided that the chosen region and zone support Ultra disks, Ultra disk based Persistent Volumes can be attached to Pods scheduled on specific Azure Machines, provided that the spec field `.spec.additionalCapabilities.ultraSSDEnabled` on those Machines has been set to `true`.
 NOTE: A misconfiguration or lack this field on the targeted Node's Machine will result in the Pod using the PV be unable to reach the Running Phase.
 
-See [Use ultra disks dynamically with a storage class](https://docs.microsoft.com/en-us/azure/aks/use-ultra-disks#use-ultra-disks-dynamically-with-a-storage-class) for more information on how to configure an Ultra disk based StorageClass and PersistentVolumeClaim.
+See [Use ultra disks dynamically with a storage class](https://learn.microsoft.com/azure/aks/use-ultra-disks#use-ultra-disks-dynamically-with-a-storage-class) for more information on how to configure an Ultra disk based StorageClass and PersistentVolumeClaim.
 
-See [Ultra disk](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#ultra-disk) for ultra disk performance and GA scope.
+See [Ultra disk](https://learn.microsoft.com/azure/virtual-machines/disks-types#ultra-disk) for ultra disk performance and GA scope.
 
 ## Configuring partitions, file systems and mounts 
 

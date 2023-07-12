@@ -4,7 +4,7 @@ This document describes how to configure your clusters' node outbound traffic.
 
 ## IPv4 Clusters
 
-For IPv4 clusters ie. clusters with CIDR type is `IPv4`, CAPZ automatically configures a [NAT gateway](https://docs.microsoft.com/en-us/azure/virtual-network/nat-gateway-resource) for node outbound traffic with the default settings. Default, the cluster is IPv4 type unless you specify the CIDR to be an IPv6 address.
+For IPv4 clusters ie. clusters with CIDR type is `IPv4`, CAPZ automatically configures a [NAT gateway](https://learn.microsoft.com/azure/virtual-network/nat-gateway-resource) for node outbound traffic with the default settings. Default, the cluster is IPv4 type unless you specify the CIDR to be an IPv6 address.
 
 To provide custom settings for a node NAT gateway, you can configure the NAT gateway in the node `subnets` section of cluster configuration by setting the NAT gateway's name. A Public IP will also be created for the NAT gateway once the NAT gateway name is provided.
 
@@ -91,7 +91,7 @@ For public IPv6 clusters ie. clusters with api server load balancer type set to 
 
 To provide custom settings for the node outbound load balancer, use the `nodeOutboundLB` section in cluster configuration.
 
-The `idleTimeoutInMinutes` specifies the number of minutes to keep a TCP connection open for the outbound rule (defaults to 4). See [here](https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-tcp-reset#configurable-tcp-idle-timeout) for more details.
+The `idleTimeoutInMinutes` specifies the number of minutes to keep a TCP connection open for the outbound rule (defaults to 4). See [here](https://learn.microsoft.com/azure/load-balancer/load-balancer-tcp-reset#configurable-tcp-idle-timeout) for more details.
 
 Here is an example of a node outbound load balancer with `frontendIPsCount` set to 3. CAPZ will read this value and create 3 front end ips for this load balancer.
 
@@ -100,7 +100,7 @@ Here is an example of a node outbound load balancer with `frontendIPsCount` set 
 <h1>Note</h1>
 
 You may want more than one outbound IP address if you are running a large cluster that is processing lots of connections.
-See [here](https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections#multifesnat) for more documentation about how adding more outbound IP addresses can increase the number of SNAT ports available for use by the Standard Load Balancer in your cluster.
+See [here](https://learn.microsoft.com/azure/load-balancer/load-balancer-outbound-connections#multifesnat) for more documentation about how adding more outbound IP addresses can increase the number of SNAT ports available for use by the Standard Load Balancer in your cluster.
 
 </aside>
 

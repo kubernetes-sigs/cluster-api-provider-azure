@@ -43,7 +43,7 @@ The Azure provider is able to install and manage the [versions of Kubernetes sup
 
 #### Managed Clusters (AKS)
 
-Managed Clusters (AKS) follow their own [Kubernetes version support policy](https://docs.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli#kubernetes-version-support-policy). Please use the Azure portal or CLI to [find the versions supported in your cluster's location](https://docs.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli#azure-portal-and-cli-versions).
+Managed Clusters (AKS) follow their own [Kubernetes version support policy](https://learn.microsoft.com/azure/aks/supported-kubernetes-versions?tabs=azure-cli#kubernetes-version-support-policy). Please use the Azure portal or CLI to [find the versions supported in your cluster's location](https://learn.microsoft.com/azure/aks/supported-kubernetes-versions?tabs=azure-cli#azure-portal-and-cli-versions).
 
 For more information on Kubernetes version support, see the [Cluster API book](https://cluster-api.sigs.k8s.io/reference/versions.html).
 

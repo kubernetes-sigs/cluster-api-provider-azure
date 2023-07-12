@@ -1,6 +1,6 @@
 # Spot Virtual Machines
 
-[Azure Spot Virtual Machines](https://azure.microsoft.com/en-gb/pricing/spot/) allow users to reduce the costs of their
+[Azure Spot Virtual Machines](https://learn.microsoft.com/azure/virtual-machines/spot-vms) allow users to reduce the costs of their
 compute resources by utilising Azure's spare capacity for a lower price.
 
 With this lower cost, comes the risk of preemption.

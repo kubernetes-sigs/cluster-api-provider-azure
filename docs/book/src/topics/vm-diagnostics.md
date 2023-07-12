@@ -5,7 +5,7 @@ This document describes how configure the VM Diagnostics options in Azure.
 The VM Diagnostics allow you to configure options for troubleshooting the startup of an Azure Virtual Machine.
 You can use this feature to investigate boot failures for custom or platform images.
 
-For more information on this feature, see [here](https://docs.microsoft.com/en-us/azure/virtual-machines/boot-diagnostics#boot-diagnostics-view).
+For more information on this feature, see [here](https://learn.microsoft.com/azure/virtual-machines/boot-diagnostics#boot-diagnostics-view).
 
 ## Configuring Diagnostics
 

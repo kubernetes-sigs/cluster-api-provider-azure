@@ -62,7 +62,7 @@ type AzureMachineSpec struct {
 	// UserAssignedIdentities is a list of standalone Azure identities provided by the user
 	// The lifecycle of a user-assigned identity is managed separately from the lifecycle of
 	// the AzureMachine.
-	// See https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
+	// See https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
 	// +optional
 	UserAssignedIdentities []UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
 
