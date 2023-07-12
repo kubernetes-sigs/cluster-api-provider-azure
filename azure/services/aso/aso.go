@@ -37,6 +37,9 @@ import (
 const (
 	// ReconcilePolicyAnnotation is the annotation key for ASO's reconcile policy mechanism.
 	ReconcilePolicyAnnotation = "serviceoperator.azure.com/reconcile-policy"
+	// PrePauseReconcilePolicyAnnotation is the annotation key for the value of
+	// ReconcilePolicyAnnotation that was set before pausing.
+	PrePauseReconcilePolicyAnnotation = "sigs.k8s.io/cluster-api-provider-azure-pre-pause-reconcile-policy"
 	// ReconcilePolicySkip indicates changes will not be PUT or DELETEd in Azure from ASO.
 	ReconcilePolicySkip = "skip"
 	// ReconcilePolicyManage indicates changes will be PUT and DELETEd in Azure from ASO.
@@ -67,7 +70,7 @@ func New(ctrlClient client.Client, clusterName string) *Service {
 // CreateOrUpdateResource implements the logic for creating a new or updating an
 // existing resource with ASO.
 func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter, serviceName string) (result genruntime.MetaObject, err error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "aso.Service.CreateOrUpdateResource")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.CreateOrUpdateResource")
 	defer done()
 
 	resource := spec.ResourceRef()
@@ -164,6 +167,10 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		annotations = make(map[string]string)
 	}
 
+	if prevReconcilePolicy, ok := annotations[PrePauseReconcilePolicyAnnotation]; ok {
+		annotations[ReconcilePolicyAnnotation] = prevReconcilePolicy
+		delete(annotations, PrePauseReconcilePolicyAnnotation)
+	}
 	if existing == nil {
 		labels[infrav1.OwnedByClusterLabelKey] = s.clusterName
 		// Create the ASO resource with "skip" in case a matching resource
@@ -225,7 +232,7 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.
 func (s *Service) DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter, serviceName string) (err error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "aso.Service.DeleteResource")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.DeleteResource")
 	defer done()
 
 	resource := spec.ResourceRef()
@@ -276,7 +283,7 @@ func deepCopyOrNil(obj genruntime.MetaObject) genruntime.MetaObject {
 // IsManaged returns whether the ASO resource referred to by spec was created by
 // CAPZ and therefore whether CAPZ should manage its lifecycle.
 func IsManaged(ctx context.Context, ctrlClient client.Client, spec azure.ASOResourceSpecGetter, clusterName string) (bool, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "aso.Service.IsManaged")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "services.aso.IsManaged")
 	defer done()
 
 	resource := spec.ResourceRef()
@@ -290,4 +297,47 @@ func IsManaged(ctx context.Context, ctrlClient client.Client, spec azure.ASOReso
 
 func ownedByCluster(labels map[string]string, clusterName string) bool {
 	return labels[infrav1.OwnedByClusterLabelKey] == clusterName
+}
+
+// PauseResource pauses an ASO resource by updating its `reconcile-policy` to `skip`.
+func PauseResource(ctx context.Context, ctrlClient client.Client, spec azure.ASOResourceSpecGetter, clusterName string, serviceName string) error {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.PauseResource")
+	defer done()
+
+	resource := spec.ResourceRef()
+	resourceName := resource.GetName()
+	resourceNamespace := resource.GetNamespace()
+
+	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
+
+	if err := ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
+		return err
+	}
+	if !ownedByCluster(resource.GetLabels(), clusterName) {
+		log.V(4).Info("Skipping pause of unmanaged resource")
+		return nil
+	}
+
+	annotations := resource.GetAnnotations()
+	if _, exists := annotations[PrePauseReconcilePolicyAnnotation]; exists {
+		log.V(4).Info("resource is already paused")
+		return nil
+	}
+
+	log.V(4).Info("Pausing resource")
+
+	var helper *patch.Helper
+	helper, err := patch.NewHelper(resource, ctrlClient)
+	if err != nil {
+		return errors.Errorf("failed to init patch helper: %v", err)
+	}
+
+	if annotations == nil {
+		annotations = make(map[string]string, 2)
+	}
+	annotations[PrePauseReconcilePolicyAnnotation] = annotations[ReconcilePolicyAnnotation]
+	annotations[ReconcilePolicyAnnotation] = ReconcilePolicySkip
+	resource.SetAnnotations(annotations)
+
+	return helper.Patch(ctx, resource)
 }
