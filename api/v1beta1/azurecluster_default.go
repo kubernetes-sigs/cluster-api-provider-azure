@@ -125,9 +125,10 @@ func (c *AzureCluster) setSubnetDefaults() {
 			subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 		}
 
-		if !subnet.IsIPv6Enabled() {
-			// NAT gateway supports the use of IPv4 public IP addresses for outbound connectivity.
-			// So default use the NAT gateway for outbound traffic in IPv4 cluster instead of loadbalancer.
+		// NAT gateway only supports the use of IPv4 public IP addresses for outbound connectivity.
+		// So default use the NAT gateway for outbound traffic in IPv4 cluster instead of loadbalancer.
+		// We assume that if the ID is set, the subnet already exists so we shouldn't add a NAT gateway.
+		if !subnet.IsIPv6Enabled() && subnet.ID == "" {
 			if subnet.NatGateway.Name == "" {
 				subnet.NatGateway.Name = withIndex(generateNatGatewayName(c.ObjectMeta.Name), nodeSubnetCounter)
 			}
