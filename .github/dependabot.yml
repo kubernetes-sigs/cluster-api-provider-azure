@@ -109,3 +109,13 @@ updates:
   # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.6
   open-pull-requests-limit: 0
   target-branch: "release-1.6"
+
+- package-ecosystem: docker
+  directory: /
+  schedule:
+    interval: daily
+
+- package-ecosystem: gomod
+  directory: /hack/tools
+  schedule:
+    interval: daily
