@@ -101,7 +101,7 @@ Change some code!
 
 ### Modules and dependencies
 
-This repositories uses [Go Modules](https://github.com/golang/go/wiki/Modules) to track and vendor dependencies.
+This repository uses [Go Modules](https://github.com/golang/go/wiki/Modules) to track and vendor dependencies.
 
 To pin a new dependency:
 
