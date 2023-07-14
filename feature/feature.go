@@ -50,7 +50,7 @@ const (
 
 	// NodePrototyping is the feature gate for having prototyping mode on
 	// owner: @bennycortese
-	// alpha: v0.1
+	// alpha: v1.11
 	NodePrototyping featuregate.Feature = "NodePrototyping"
 )
 
