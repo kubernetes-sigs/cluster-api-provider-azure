@@ -495,6 +495,14 @@ spec:
                 items:
                   type: string
                 type: array
+              scaleDownMode:
+                default: Delete
+                description: 'ScaleDownMode affects the cluster autoscaler behavior.
+                  Default to Delete. Possible values include: ''Deallocate'', ''Delete'''
+                enum:
+                - Deallocate
+                - Delete
+                type: string
               scaleSetPriority:
                 description: 'ScaleSetPriority specifies the ScaleSetPriority value.
                   Default to Regular. Possible values include: ''Regular'', ''Spot''
@@ -519,6 +527,18 @@ spec:
               sku:
                 description: SKU is the size of the VMs in the node pool. Immutable.
                 type: string
+              spotMaxPrice:
+                anyOf:
+                - type: integer
+                - type: string
+                description: SpotMaxPrice defines max price to pay for spot instance.
+                  Possible values are any decimal value greater than zero or -1. If
+                  you set the max price to be -1, the VM won't be evicted based on
+                  price. The price for the VM will be the current price for spot or
+                  the price for a standard VM, which ever is less, as long as there's
+                  capacity and quota available.
+                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                x-kubernetes-int-or-string: true
               subnetName:
                 description: SubnetName specifies the Subnet where the MachinePool
                   will be placed Immutable.

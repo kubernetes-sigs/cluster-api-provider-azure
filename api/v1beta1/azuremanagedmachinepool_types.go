@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -519,6 +520,18 @@ type AzureManagedMachinePoolSpec struct {
 	// +kubebuilder:validation:Enum=Regular;Spot
 	// +optional
 	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
+
+	// ScaleDownMode affects the cluster autoscaler behavior. Default to Delete. Possible values include: 'Deallocate', 'Delete'
+	// +kubebuilder:validation:Enum=Deallocate;Delete
+	// +kubebuilder:default=Delete
+	// +optional
+	ScaleDownMode *string `json:"scaleDownMode,omitempty"`
+
+	// SpotMaxPrice defines max price to pay for spot instance. Possible values are any decimal value greater than zero or -1.
+	// If you set the max price to be -1, the VM won't be evicted based on price. The price for the VM will be the current price
+	// for spot or the price for a standard VM, which ever is less, as long as there's capacity and quota available.
+	// +optional
+	SpotMaxPrice *resource.Quantity `json:"spotMaxPrice,omitempty"`
 
 	// KubeletConfig specifies the kubelet configurations for nodes.
 	// Immutable.
