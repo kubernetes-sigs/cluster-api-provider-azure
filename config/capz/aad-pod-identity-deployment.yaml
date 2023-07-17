@@ -263,6 +263,7 @@ spec:
         component: nmi
         tier: node
     spec:
+      priorityClassName: system-node-critical
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/master
