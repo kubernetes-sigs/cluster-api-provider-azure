@@ -401,9 +401,9 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 
 	clusterMock := mock_azure.NewMockClusterScoper(mockCtrl)
 	clusterMock.EXPECT().Authorizer().AnyTimes()
-	clusterMock.EXPECT().BaseURI().AnyTimes()
 	clusterMock.EXPECT().Location().AnyTimes()
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
+	clusterMock.EXPECT().CloudEnvironment().AnyTimes()
 	cases := []struct {
 		Name   string
 		Setup  func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool)
