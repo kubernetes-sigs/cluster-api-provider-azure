@@ -2,6 +2,7 @@
 
 version: 2
 updates:
+
 # github-actions
 - directory: "/"
   package-ecosystem: "github-actions"
@@ -18,7 +19,8 @@ updates:
     - "ok-to-test"
     - "kind/cleanup"
     - "release-note-none"
-# Go
+
+# Go - root directory
 - directory: "/"
   package-ecosystem: "gomod"
   open-pull-requests-limit: 5
@@ -47,9 +49,11 @@ updates:
     - "ok-to-test"
     - "kind/cleanup"
     - "release-note-none"
-# Go - release 1.7
-- directory: "/"
+
+# Go - hack/tools directory
+- directory: "/hack/tools"
   package-ecosystem: "gomod"
+  open-pull-requests-limit: 5
   schedule:
     interval: "weekly"
     time: "09:00"
@@ -75,47 +79,20 @@ updates:
     - "ok-to-test"
     - "kind/cleanup"
     - "release-note-none"
-  # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.7
-  open-pull-requests-limit: 0
-  target-branch: "release-1.7"
-# Go - release 1.6
-- directory: "/"
-  package-ecosystem: "gomod"
+
+# Docker
+- package-ecosystem: "docker"
+  directory: "/"
   schedule:
     interval: "weekly"
     time: "09:00"
     # Use America/New_York Standard Time (UTC -05:00)
     timezone: "America/New_York"
+  open-pull-requests-limit: 5
   commit-message:
     prefix: "dependabot"
     include: scope
-  ignore:
-    # Ignore controller-runtime as its upgraded manually.
-    - dependency-name: "sigs.k8s.io/controller-runtime"
-    # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
-    - dependency-name: "k8s.io/*"
-    - dependency-name: "go.etcd.io/*"
-    - dependency-name: "google.golang.org/grpc"
-    # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
-    - dependency-name: "go.opentelemetry.io/contrib/*"
-    - dependency-name: "go.opentelemetry.io/otel/exporters/*"
-    - dependency-name: "go.opentelemetry.io/otel/metric"
-    - dependency-name: "go.opentelemetry.io/otel/sdk*"
-    - dependency-name: "go.opentelemetry.io/otel/trace"
   labels:
     - "ok-to-test"
     - "kind/cleanup"
     - "release-note-none"
-  # open-pull-requests-limit is set to 0 to only allow security updates and block any version updates for release-1.6
-  open-pull-requests-limit: 0
-  target-branch: "release-1.6"
-
-- package-ecosystem: docker
-  directory: /
-  schedule:
-    interval: daily
-
-- package-ecosystem: gomod
-  directory: /hack/tools
-  schedule:
-    interval: daily
