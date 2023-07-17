@@ -62,11 +62,13 @@
    - [install instructions](https://kubectl.docs.kubernetes.io/installation/kustomize/) on Windows + WSL2.
    - [install instructions][kustomizelinux] on Linux.
 6. Install Python 3.x or 2.7.x, if neither is already installed.
-7. Install make.
+7. Install pip
+   - [pip installation instruction](https://pip.pypa.io/en/stable/installation/#installation)
+8. Install make.
    - `brew install make` on MacOS.
    - `sudo apt install make` on Windows + WSL2.
    - `sudo apt install make` on Linux.
-8. Install [timeout][timeout]
+9. Install [timeout][timeout]
    - `brew install coreutils` on macOS.
 9. Install [pre-commit framework](https://pre-commit.com/#installation)
    - `brew install pre-commit` Or `pip install pre-commit`. Installs pre-commit globally.
@@ -462,6 +464,7 @@ If you're interested in submitting PRs to the project, please be sure to run som
 ```bash
 make lint # Runs a suite of quick scripts to check code structure
 make lint-fix # Runs a suite of quick scripts to fix lint errors
+make verify # Runs a suite of verifying binaries
 make test # Runs tests on the Go code
 ```
 
