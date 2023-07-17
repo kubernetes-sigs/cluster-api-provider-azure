@@ -19,6 +19,9 @@ package controllers
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -50,6 +53,30 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 		},
 		skuCache: cache,
 	}, nil
+}
+
+func (s *azureMachinePoolService) Snapshot(subscriptionID string, cred *azidentity.DefaultAzureCredential, snapshotName string, resourceGroup string, location string, ctx context.Context, osDisk *string) error {
+	snapshotFactory, err := armcompute.NewSnapshotsClient(subscriptionID, cred, nil)
+
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create snapshot client")
+	}
+
+	_, err = snapshotFactory.BeginCreateOrUpdate(ctx, resourceGroup, snapshotName, armcompute.Snapshot{ // step 3
+		Location: to.Ptr(location),
+		Properties: &armcompute.SnapshotProperties{
+			CreationData: &armcompute.CreationData{
+				CreateOption: to.Ptr(armcompute.DiskCreateOptionCopy),
+				SourceURI:    osDisk,
+			},
+		},
+	}, nil)
+
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create snapshot")
+	}
+
+	return nil
 }
 
 // Reconcile reconciles all the services in pre determined order.
