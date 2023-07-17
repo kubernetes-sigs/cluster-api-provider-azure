@@ -17,7 +17,6 @@ aliases:
     - vincepri
   cluster-api-azure-maintainers:
     - CecileRobertMichon
-    - devigned
     - jackfrancis
     - mboersma
   cluster-api-azure-reviewers:
