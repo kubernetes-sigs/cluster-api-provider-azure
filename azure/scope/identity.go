@@ -47,10 +47,11 @@ const AzureSecretKey = "clientSecret"
 
 // CredentialsProvider defines the behavior for azure identity based credential providers.
 type CredentialsProvider interface {
-	GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (autorest.Authorizer, error)
+	GetAuthorizer(ctx context.Context, tokenCredential azcore.TokenCredential, tokenAudience string) (autorest.Authorizer, error)
 	GetClientID() string
 	GetClientSecret(ctx context.Context) (string, error)
 	GetTenantID() string
+	GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error)
 }
 
 // AzureCredentialsProvider represents a credential provider with azure cluster identity.
@@ -102,8 +103,13 @@ func NewAzureClusterCredentialsProvider(ctx context.Context, kubeClient client.C
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureCluster metadata.
-func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (autorest.Authorizer, error) {
-	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, p.AzureCluster.ObjectMeta)
+func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, tokenCredential azcore.TokenCredential, tokenAudience string) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, tokenCredential, tokenAudience)
+}
+
+// GetTokenProvider returns an Azure TokenCredential based on the provided azure identity.
+func (p *AzureClusterCredentialsProvider) GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error) {
+	return p.AzureCredentialsProvider.GetTokenCredential(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, p.AzureCluster.ObjectMeta)
 }
 
 // NewManagedControlPlaneCredentialsProvider creates a new ManagedControlPlaneCredentialsProvider from the supplied inputs.
@@ -134,14 +140,20 @@ func NewManagedControlPlaneCredentialsProvider(ctx context.Context, kubeClient c
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureManagedControlPlane metadata.
-func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (autorest.Authorizer, error) {
-	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, p.AzureManagedControlPlane.ObjectMeta)
+func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, tokenCredential azcore.TokenCredential, tokenAudience string) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, tokenCredential, tokenAudience)
 }
 
-// GetAuthorizer returns an Azure authorizer based on the provided azure identity and cluster metadata.
-func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
+// GetTokenProvider returns an Azure TokenCredential based on the provided azure identity.
+func (p *ManagedControlPlaneCredentialsProvider) GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error) {
+	return p.AzureCredentialsProvider.GetTokenCredential(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, p.AzureManagedControlPlane.ObjectMeta)
+}
+
+// GetTokenCredential returns an Azure TokenCredential based on the provided azure identity.
+func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string, clusterMeta metav1.ObjectMeta) (azcore.TokenCredential, error) {
 	var authErr error
 	var cred azcore.TokenCredential
+
 	switch p.Identity.Spec.Type {
 	case infrav1.WorkloadIdentity:
 		azwiCredOptions, err := NewWorkloadIdentityCredentialOptions().
@@ -191,6 +203,12 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 	if authErr != nil {
 		return nil, errors.Errorf("failed to get token from service principal identity: %v", authErr)
 	}
+
+	return cred, nil
+}
+
+// GetAuthorizer returns an Azure authorizer based on the provided azure identity, cluster metadata, and tokenCredential.
+func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, cred azcore.TokenCredential, tokenAudience string) (autorest.Authorizer, error) {
 	// We must use TokenAudience for StackCloud, otherwise we get an
 	// AADSTS500011 error from the API
 	scope := tokenAudience

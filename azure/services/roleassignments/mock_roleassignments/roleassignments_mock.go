@@ -23,6 +23,7 @@ package mock_roleassignments
 import (
 	reflect "reflect"
 
+	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -271,6 +272,20 @@ func (m *MockRoleAssignmentScope) TenantID() string {
 func (mr *MockRoleAssignmentScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockRoleAssignmentScope)(nil).TenantID))
+}
+
+// Token mocks base method.
+func (m *MockRoleAssignmentScope) Token() azcore.TokenCredential {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Token")
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	return ret0
+}
+
+// Token indicates an expected call of Token.
+func (mr *MockRoleAssignmentScopeMockRecorder) Token() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockRoleAssignmentScope)(nil).Token))
 }
 
 // UpdateDeleteStatus mocks base method.

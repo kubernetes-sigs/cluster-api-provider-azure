@@ -23,6 +23,7 @@ package mock_resourcehealth
 import (
 	reflect "reflect"
 
+	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -190,6 +191,20 @@ func (m *MockResourceHealthScope) TenantID() string {
 func (mr *MockResourceHealthScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockResourceHealthScope)(nil).TenantID))
+}
+
+// Token mocks base method.
+func (m *MockResourceHealthScope) Token() azcore.TokenCredential {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Token")
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	return ret0
+}
+
+// Token indicates an expected call of Token.
+func (mr *MockResourceHealthScopeMockRecorder) Token() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockResourceHealthScope)(nil).Token))
 }
 
 // MockAvailabilityStatusFilterer is a mock of AvailabilityStatusFilterer interface.

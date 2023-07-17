@@ -24,6 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
@@ -332,6 +333,20 @@ func (m *MockAuthorizer) TenantID() string {
 func (mr *MockAuthorizerMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockAuthorizer)(nil).TenantID))
+}
+
+// Token mocks base method.
+func (m *MockAuthorizer) Token() azcore.TokenCredential {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Token")
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	return ret0
+}
+
+// Token indicates an expected call of Token.
+func (mr *MockAuthorizerMockRecorder) Token() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockAuthorizer)(nil).Token))
 }
 
 // MockNetworkDescriber is a mock of NetworkDescriber interface.
@@ -852,6 +867,20 @@ func (m *MockClusterDescriber) TenantID() string {
 func (mr *MockClusterDescriberMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockClusterDescriber)(nil).TenantID))
+}
+
+// Token mocks base method.
+func (m *MockClusterDescriber) Token() azcore.TokenCredential {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Token")
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	return ret0
+}
+
+// Token indicates an expected call of Token.
+func (mr *MockClusterDescriberMockRecorder) Token() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockClusterDescriber)(nil).Token))
 }
 
 // MockAsyncStatusUpdater is a mock of AsyncStatusUpdater interface.
@@ -1434,6 +1463,20 @@ func (mr *MockClusterScoperMockRecorder) TenantID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockClusterScoper)(nil).TenantID))
 }
 
+// Token mocks base method.
+func (m *MockClusterScoper) Token() azcore.TokenCredential {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Token")
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	return ret0
+}
+
+// Token indicates an expected call of Token.
+func (mr *MockClusterScoperMockRecorder) Token() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockClusterScoper)(nil).Token))
+}
+
 // Vnet mocks base method.
 func (m *MockClusterScoper) Vnet() *v1beta1.VnetSpec {
 	m.ctrl.T.Helper()
@@ -1735,6 +1778,20 @@ func (m *MockManagedClusterScoper) TenantID() string {
 func (mr *MockManagedClusterScoperMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockManagedClusterScoper)(nil).TenantID))
+}
+
+// Token mocks base method.
+func (m *MockManagedClusterScoper) Token() azcore.TokenCredential {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Token")
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	return ret0
+}
+
+// Token indicates an expected call of Token.
+func (mr *MockManagedClusterScoperMockRecorder) Token() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockManagedClusterScoper)(nil).Token))
 }
 
 // MockResourceSpecGetter is a mock of ResourceSpecGetter interface.

@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -35,6 +36,7 @@ type AzureClients struct {
 	auth.EnvironmentSettings
 
 	Authorizer                 autorest.Authorizer
+	TokenCredential            azcore.TokenCredential
 	ResourceManagerEndpoint    string
 	ResourceManagerVMDNSSuffix string
 }
@@ -63,6 +65,10 @@ func (c *AzureClients) ClientSecret() string {
 // either specified or from the environment.
 func (c *AzureClients) SubscriptionID() string {
 	return c.Values[auth.SubscriptionID]
+}
+
+func (c *AzureClients) Token() azcore.TokenCredential {
+	return c.TokenCredential
 }
 
 // HashKey returns a base64 url encoded sha256 hash for the Auth scope (Azure TenantID + CloudEnv + SubscriptionID +
@@ -133,7 +139,12 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 	}
 	c.Values[auth.ClientSecret] = strings.TrimSuffix(clientSecret, "\n")
 
-	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint, c.Environment.ActiveDirectoryEndpoint, c.Environment.TokenAudience)
+	tokenCredential, err := credentialsProvider.GetTokenCredential(ctx, c.ResourceManagerEndpoint, c.Environment.ActiveDirectoryEndpoint, c.Environment.TokenAudience)
+	if err != nil {
+		return err
+	}
+	c.TokenCredential = tokenCredential
+	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, tokenCredential, c.Environment.TokenAudience)
 	return err
 }
 
