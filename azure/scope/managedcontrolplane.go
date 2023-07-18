@@ -465,7 +465,6 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 		Tags:              s.ControlPlane.Spec.AdditionalTags,
 		Headers:           maps.FilterByKeyPrefix(s.ManagedClusterAnnotations(), infrav1.CustomHeaderPrefix),
 		Version:           strings.TrimPrefix(s.ControlPlane.Spec.Version, "v"),
-		SSHPublicKey:      s.ControlPlane.Spec.SSHPublicKey,
 		DNSServiceIP:      s.ControlPlane.Spec.DNSServiceIP,
 		VnetSubnetID: azure.SubnetID(
 			s.ControlPlane.Spec.SubscriptionID,
@@ -479,6 +478,9 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 		KubeletUserAssignedIdentity: s.ControlPlane.Spec.KubeletUserAssignedIdentity,
 	}
 
+	if s.ControlPlane.Spec.SSHPublicKey != nil {
+		managedClusterSpec.SSHPublicKey = *s.ControlPlane.Spec.SSHPublicKey
+	}
 	if s.ControlPlane.Spec.NetworkPlugin != nil {
 		managedClusterSpec.NetworkPlugin = *s.ControlPlane.Spec.NetworkPlugin
 	}

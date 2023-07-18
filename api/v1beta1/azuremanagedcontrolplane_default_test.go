@@ -36,11 +36,11 @@ func TestAzureManagedControlPlane_SetDefaultSSHPublicKey(t *testing.T) {
 
 	err := publicKeyExistTest.m.setDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
-	g.Expect(publicKeyExistTest.m.Spec.SSHPublicKey).To(Equal(existingPublicKey))
+	g.Expect(*publicKeyExistTest.m.Spec.SSHPublicKey).To(Equal(existingPublicKey))
 
 	err = publicKeyNotExistTest.m.setDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
-	g.Expect(publicKeyNotExistTest.m.Spec.SSHPublicKey).NotTo(BeEmpty())
+	g.Expect(*publicKeyNotExistTest.m.Spec.SSHPublicKey).NotTo(BeEmpty())
 }
 
 func createAzureManagedControlPlaneWithSSHPublicKey(sshPublicKey string) *AzureManagedControlPlane {
@@ -50,7 +50,7 @@ func createAzureManagedControlPlaneWithSSHPublicKey(sshPublicKey string) *AzureM
 func hardcodedAzureManagedControlPlaneWithSSHKey(sshPublicKey string) *AzureManagedControlPlane {
 	return &AzureManagedControlPlane{
 		Spec: AzureManagedControlPlaneSpec{
-			SSHPublicKey: sshPublicKey,
+			SSHPublicKey: &sshPublicKey,
 		},
 	}
 }

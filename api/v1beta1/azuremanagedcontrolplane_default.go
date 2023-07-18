@@ -34,13 +34,13 @@ const (
 
 // setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane.
 func (m *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
-	if sshKeyData := m.Spec.SSHPublicKey; sshKeyData == "" {
+	if sshKey := m.Spec.SSHPublicKey; sshKey != nil && *sshKey == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
 		if err != nil {
 			return err
 		}
 
-		m.Spec.SSHPublicKey = base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
+		m.Spec.SSHPublicKey = pointer.String(base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey)))
 	}
 
 	return nil

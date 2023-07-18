@@ -307,9 +307,8 @@ func (m *AzureManagedControlPlane) validateVersion(_ client.Client) error {
 
 // validateSSHKey validates an SSHKey.
 func (m *AzureManagedControlPlane) validateSSHKey(_ client.Client) error {
-	if m.Spec.SSHPublicKey != "" {
-		sshKey := m.Spec.SSHPublicKey
-		if errs := ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
+	if sshKey := m.Spec.SSHPublicKey; sshKey != nil && *sshKey != "" {
+		if errs := ValidateSSHKey(*sshKey, field.NewPath("sshKey")); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 	}

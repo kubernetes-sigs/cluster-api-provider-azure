@@ -124,8 +124,10 @@ type AzureManagedControlPlaneSpec struct {
 	OutboundType *ManagedControlPlaneOutboundType `json:"outboundType,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
+	// Use empty string to autogenerate new key. Use null value to not set key.
 	// Immutable.
-	SSHPublicKey string `json:"sshPublicKey"`
+	// +optional
+	SSHPublicKey *string `json:"sshPublicKey,omitempty"`
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
 	// It must be within the Kubernetes service address range specified in serviceCidr.
