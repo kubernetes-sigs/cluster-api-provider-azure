@@ -26,6 +26,7 @@ import (
 
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	gomock "github.com/golang/mock/gomock"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -79,4 +80,81 @@ func (m *MockReconciler) DeleteResource(ctx context.Context, spec azure.ASOResou
 func (mr *MockReconcilerMockRecorder) DeleteResource(ctx, spec, serviceName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResource", reflect.TypeOf((*MockReconciler)(nil).DeleteResource), ctx, spec, serviceName)
+}
+
+// MockTagsGetterSetter is a mock of TagsGetterSetter interface.
+type MockTagsGetterSetter struct {
+	ctrl     *gomock.Controller
+	recorder *MockTagsGetterSetterMockRecorder
+}
+
+// MockTagsGetterSetterMockRecorder is the mock recorder for MockTagsGetterSetter.
+type MockTagsGetterSetterMockRecorder struct {
+	mock *MockTagsGetterSetter
+}
+
+// NewMockTagsGetterSetter creates a new mock instance.
+func NewMockTagsGetterSetter(ctrl *gomock.Controller) *MockTagsGetterSetter {
+	mock := &MockTagsGetterSetter{ctrl: ctrl}
+	mock.recorder = &MockTagsGetterSetterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTagsGetterSetter) EXPECT() *MockTagsGetterSetterMockRecorder {
+	return m.recorder
+}
+
+// GetActualTags mocks base method.
+func (m *MockTagsGetterSetter) GetActualTags(resource genruntime.MetaObject) v1beta1.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActualTags", resource)
+	ret0, _ := ret[0].(v1beta1.Tags)
+	return ret0
+}
+
+// GetActualTags indicates an expected call of GetActualTags.
+func (mr *MockTagsGetterSetterMockRecorder) GetActualTags(resource interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActualTags", reflect.TypeOf((*MockTagsGetterSetter)(nil).GetActualTags), resource)
+}
+
+// GetAdditionalTags mocks base method.
+func (m *MockTagsGetterSetter) GetAdditionalTags() v1beta1.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAdditionalTags")
+	ret0, _ := ret[0].(v1beta1.Tags)
+	return ret0
+}
+
+// GetAdditionalTags indicates an expected call of GetAdditionalTags.
+func (mr *MockTagsGetterSetterMockRecorder) GetAdditionalTags() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdditionalTags", reflect.TypeOf((*MockTagsGetterSetter)(nil).GetAdditionalTags))
+}
+
+// GetDesiredTags mocks base method.
+func (m *MockTagsGetterSetter) GetDesiredTags(resource genruntime.MetaObject) v1beta1.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDesiredTags", resource)
+	ret0, _ := ret[0].(v1beta1.Tags)
+	return ret0
+}
+
+// GetDesiredTags indicates an expected call of GetDesiredTags.
+func (mr *MockTagsGetterSetterMockRecorder) GetDesiredTags(resource interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDesiredTags", reflect.TypeOf((*MockTagsGetterSetter)(nil).GetDesiredTags), resource)
+}
+
+// SetTags mocks base method.
+func (m *MockTagsGetterSetter) SetTags(resource genruntime.MetaObject, tags v1beta1.Tags) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTags", resource, tags)
+}
+
+// SetTags indicates an expected call of SetTags.
+func (mr *MockTagsGetterSetterMockRecorder) SetTags(resource, tags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTags", reflect.TypeOf((*MockTagsGetterSetter)(nil).SetTags), resource, tags)
 }

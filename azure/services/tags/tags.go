@@ -89,7 +89,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		changed, createdOrUpdated, deleted, newAnnotation := tagsChanged(lastAppliedTags, tagsSpec.Tags, tags)
+		changed, createdOrUpdated, deleted, newAnnotation := TagsChanged(lastAppliedTags, tagsSpec.Tags, tags)
 		if changed {
 			log.V(2).Info("Updating tags")
 			if len(createdOrUpdated) > 0 {
@@ -137,8 +137,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	return nil
 }
 
-// tagsChanged determines which tags to delete and which to add.
-func tagsChanged(lastAppliedTags map[string]interface{}, desiredTags map[string]string, currentTags map[string]*string) (change bool, createOrUpdates map[string]string, deletes map[string]string, annotation map[string]interface{}) {
+// TagsChanged determines which tags to delete and which to add.
+func TagsChanged(lastAppliedTags map[string]interface{}, desiredTags map[string]string, currentTags map[string]*string) (change bool, createOrUpdates map[string]string, deletes map[string]string, annotation map[string]interface{}) {
 	// Bool tracking if we found any changed state.
 	changed := false
 

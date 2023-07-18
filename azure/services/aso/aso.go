@@ -150,6 +150,12 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 	parameters.SetName(resourceName)
 	parameters.SetNamespace(resourceNamespace)
 
+	if t, ok := spec.(TagsGetterSetter); ok {
+		if err := reconcileTags(t, existing, parameters); err != nil {
+			return nil, errors.Wrap(err, "failed to reconcile tags")
+		}
+	}
+
 	labels := make(map[string]string)
 	annotations := make(map[string]string)
 

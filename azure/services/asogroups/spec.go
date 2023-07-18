@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 )
 
 // GroupSpec defines the specification for a Resource Group.
@@ -76,4 +77,35 @@ func (s *GroupSpec) WasManaged(object genruntime.MetaObject) bool {
 		return false
 	}
 	return infrav1.Tags(group.Status.Tags).HasOwned(s.ClusterName)
+}
+
+var _ aso.TagsGetterSetter = (*GroupSpec)(nil)
+
+// GetAdditionalTags implements aso.TagsGetterSetter.
+func (s *GroupSpec) GetAdditionalTags() infrav1.Tags {
+	return s.AdditionalTags
+}
+
+// GetDesiredTags implements aso.TagsGetterSetter.
+func (s *GroupSpec) GetDesiredTags(resource genruntime.MetaObject) infrav1.Tags {
+	if resource == nil {
+		return nil
+	}
+	return resource.(*asoresourcesv1.ResourceGroup).Spec.Tags
+}
+
+// GetActualTags implements aso.TagsGetterSetter.
+func (s *GroupSpec) GetActualTags(resource genruntime.MetaObject) infrav1.Tags {
+	if resource == nil {
+		return nil
+	}
+	return resource.(*asoresourcesv1.ResourceGroup).Status.Tags
+}
+
+// SetTags implements aso.TagsGetterSetter.
+func (s *GroupSpec) SetTags(resource genruntime.MetaObject, tags infrav1.Tags) {
+	if resource == nil {
+		return
+	}
+	resource.(*asoresourcesv1.ResourceGroup).Spec.Tags = tags
 }
