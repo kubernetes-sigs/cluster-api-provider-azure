@@ -8,7 +8,7 @@ This is achieved using the [aad-pod-identity](https://azure.github.io/aad-pod-id
 
 ### Service Principal With Client Password
 
-Once a new SP Identity is created in Azure, the corresponding values should be used to create an `AzureClusterIdentity` resource:
+Once a new SP Identity is created in Azure, the corresponding values should be used to create an `AzureClusterIdentity` Kubernetes resource. Create an `azure-cluster-identity.yaml` file with the following contents:
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -24,6 +24,11 @@ spec:
   allowedNamespaces: 
     list:
     - <cluster-namespace>
+```
+
+Deploy this resource to your cluster:
+```bash
+kubectl apply -f azure-cluster-identity.yaml
 ```
 
 A Kubernetes Secret should also be created to store the client password:
