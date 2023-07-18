@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -291,6 +292,22 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	if machinePoolScope.MachinePool.Spec.Template.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret reference is not yet available")
 		return reconcile.Result{}, nil
+	}
+
+	var reconcileError azure.ReconcileError
+
+	// Initialize the cache to be used by the AzureMachine services.
+	err := machinePoolScope.InitMachinePoolCache(ctx)
+	if err != nil {
+		if errors.As(err, &reconcileError) && reconcileError.IsTerminal() {
+			ampr.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "SKUNotFound", errors.Wrap(err, "failed to initialize machine cache").Error())
+			log.Error(err, "Failed to initialize machine cache")
+			machinePoolScope.SetFailureReason(capierrors.InvalidConfigurationMachineError)
+			machinePoolScope.SetFailureMessage(err)
+			machinePoolScope.SetNotReady()
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, errors.Wrap(err, "failed to init machine scope cache")
 	}
 
 	ams, err := ampr.createAzureMachinePoolService(machinePoolScope)

@@ -573,6 +573,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
+				},
 			},
 			want: []azure.ResourceSpecGetter{
 				&vmextensions.VMExtensionSpec{
@@ -621,6 +624,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
+				},
 			},
 			want: []azure.ResourceSpecGetter{},
 		},
@@ -654,6 +660,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
 				},
 			},
 			want: []azure.ResourceSpecGetter{
@@ -703,6 +712,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
+				},
 			},
 			want: []azure.ResourceSpecGetter{},
 		},
@@ -737,6 +749,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
+				},
 			},
 			want: []azure.ResourceSpecGetter{},
 		},
@@ -770,6 +785,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
 				},
 			},
 			want: []azure.ResourceSpecGetter{},
@@ -817,6 +835,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
 				},
 			},
 			want: []azure.ResourceSpecGetter{

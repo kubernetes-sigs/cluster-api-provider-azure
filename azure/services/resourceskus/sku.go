@@ -72,6 +72,8 @@ const (
 	TrustedLaunchDisabled = "TrustedLaunchDisabled"
 	// ConfidentialComputingType identifies the capability for confidentical computing.
 	ConfidentialComputingType = "ConfidentialComputingType"
+	// CPUArchitectureType identifies the capability for cpu architecture.
+	CPUArchitectureType = "CpuArchitectureType"
 )
 
 // HasCapability return true for a capability which can be either
