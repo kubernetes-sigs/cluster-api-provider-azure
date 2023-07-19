@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -86,4 +87,18 @@ func (s *azureMachinePoolService) Delete(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (s *azureMachinePoolService) MachinePoolMachineScopeFromAmpm(ampm *infrav1exp.AzureMachinePoolMachine) *scope.MachinePoolMachineScope {
+	myscope, err := scope.NewMachinePoolMachineScope(scope.MachinePoolMachineScopeParams{
+		Client:                  s.scope.GetClient(),
+		MachinePool:             s.scope.MachinePool,
+		AzureMachinePool:        s.scope.AzureMachinePool,
+		AzureMachinePoolMachine: ampm,
+		ClusterScope:            s.scope.ClusterScoper,
+	})
+	if err != nil {
+		return nil
+	}
+	return myscope
 }

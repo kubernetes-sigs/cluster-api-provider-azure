@@ -116,6 +116,11 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 	}, nil
 }
 
+// GetClient returns the client associated with the MachinePoolMachineScope
+func (m *MachinePoolScope) GetClient() client.Client {
+	return m.client
+}
+
 // ScaleSetSpec returns the scale set spec.
 func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 	return azure.ScaleSetSpec{
