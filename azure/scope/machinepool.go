@@ -116,7 +116,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 	}, nil
 }
 
-// GetClient returns the client associated with the MachinePoolMachineScope
+// GetClient returns the client associated with the MachinePoolMachineScope.
 func (m *MachinePoolScope) GetClient() client.Client {
 	return m.client
 }
