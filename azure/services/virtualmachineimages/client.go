@@ -56,7 +56,7 @@ func (ac *AzureClient) List(ctx context.Context, location, publisher, offer, sku
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.AzureClient.List")
 	defer done()
 
-	// See https://docs.microsoft.com/en-us/odata/concepts/queryoptions-overview for how to use these query options.
+	// See https://learn.microsoft.com/odata/concepts/queryoptions-overview for how to use these query options.
 	expand, orderby := "", ""
 	var top *int32
 	return ac.images.List(ctx, location, publisher, offer, sku, expand, top, orderby)

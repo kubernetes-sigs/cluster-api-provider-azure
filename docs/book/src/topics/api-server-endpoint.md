@@ -12,7 +12,7 @@ CAPZ supports two load balancer types, `Public` and `Internal`.
 
 For a more complete "private cluster" template example, you may refer to [this reference template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-private.yaml) that the capz project maintains.
 
-For more information on Azure load balancing, see [Load Balancer documentation](https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-overview).
+For more information on Azure load balancing, see [Load Balancer documentation](https://learn.microsoft.com/azure/load-balancer/load-balancer-overview).
 
 <aside class="note warning">
 
@@ -103,4 +103,4 @@ When you BYO api server IP, CAPZ does not manage its lifecycle, ie. the IP will 
 
 ### Load Balancer SKU
 
-At this time, CAPZ only supports Azure Standard Load Balancers. See [SKU comparison](https://docs.microsoft.com/en-us/azure/load-balancer/skus#skus) for more information on Azure Load Balancers SKUs.
+At this time, CAPZ only supports Azure Standard Load Balancers. See [SKU comparison](https://learn.microsoft.com/azure/load-balancer/skus#skus) for more information on Azure Load Balancers SKUs.

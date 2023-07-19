@@ -37,7 +37,7 @@ If you see an error similar to this:
 "error"="failed to reconcile AzureMachine: failed to create virtual machine: failed to create VM capz-md-0-qkg6m in resource group capz-fkl3tp: compute.VirtualMachinesClient#CreateOrUpdate: Failure sending request: StatusCode=0 -- Original Error: autorest/azure: Service returned an error. Status=\u003cnil\u003e Code=\"OperationNotAllowed\" Message=\"Operation could not be completed as it results in exceeding approved standardDSv3Family Cores quota.
 ```
 
-Follow the [these steps](https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/error-resource-quota). Alternatively, you can specify another Azure location and/or VM size during cluster creation.
+Follow the [these steps](https://learn.microsoft.com/azure/azure-resource-manager/templates/error-resource-quota). Alternatively, you can specify another Azure location and/or VM size during cluster creation.
 
 ### A virtual machine is running but the k8s node did not join the cluster
 
@@ -112,7 +112,7 @@ Cloud-init logs can provide more information on any issues that happened when ru
 
 Located in the virtual machine blade (if [enabled](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/boot-diagnostics) for the VM), the boot diagnostics option is under the Support and Troubleshooting section in the Azure portal.
 
-For more information, see [here](https://docs.microsoft.com/en-us/azure/virtual-machines/boot-diagnostics#boot-diagnostics-view)
+For more information, see [here](https://learn.microsoft.com/azure/virtual-machines/boot-diagnostics#boot-diagnostics-view)
 
 #### Option 2: Using the Azure CLI
 
@@ -120,7 +120,7 @@ For more information, see [here](https://docs.microsoft.com/en-us/azure/virtual-
 az vm boot-diagnostics get-boot-log --name MyVirtualMachine --resource-group MyResourceGroup
 ```
 
-For more information, see [here](https://docs.microsoft.com/en-us/cli/azure/vm/boot-diagnostics?view=azure-cli-latest).
+For more information, see [here](https://learn.microsoft.com/cli/azure/vm/boot-diagnostics?view=azure-cli-latest).
 
 #### Option 3: With SSH
 

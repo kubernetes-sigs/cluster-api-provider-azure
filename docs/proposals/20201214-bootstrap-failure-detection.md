@@ -38,7 +38,7 @@ The status of VM bootstrap operations (cloud-init, kubeadm) is opaque from the p
 
 ### Option 1: Enable VM boot diagnostics
 Azure VM and VMSS support a boot diagnostics feature which streams cloud init logs and boot time output into a storage account. This would allow log collection for some aspects of bootstrapping (at least cloud init logs).
-See https://docs.microsoft.com/azure/virtual-machines/boot-diagnostics and https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/606
+See https://learn.microsoft.com/azure/virtual-machines/boot-diagnostics and https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/606
 
 #### Enable VM Boot Diagnostics Pros:
 - Low effort (this VM feature gets us basic logs for free once we enable it)
@@ -54,7 +54,7 @@ See https://docs.microsoft.com/azure/virtual-machines/boot-diagnostics and https
 
 ### Option 2: Pub/Sub model using Azure Service Bus
 Similar to the "Simple Notification Service & Simple Queue Service" solution for AWS above.
-For more info see https://docs.microsoft.com/en-us/azure/service-bus-messaging/ and https://github.com/Azure/azure-service-bus-go
+For more info see https://learn.microsoft.com/azure/service-bus-messaging/ and https://github.com/Azure/azure-service-bus-go
 
 #### Pub Sub Pros:
 - Extensible, can support lots of client patterns, e.g.:
@@ -68,8 +68,8 @@ For more info see https://docs.microsoft.com/en-us/azure/service-bus-messaging/ 
 
 ### Option 3: Azure Custom Script Extensions
 The Custom Script Extension downloads and executes scripts on Azure virtual machines (and VMSS instances). We could leverage extensions to either 1) run kubeadm init/join commands (ie. move the "runcmd" content from cloud init to   a custom script extension). This is useful because you can control the exit code for VM Extensions which allows for better error reporting than cloud init. The max script size is also 256 KB (vs 64 KB for user data). This does not collect logs, but part of the extension could be to export the logs externally (to a storage account for example). The extension could also be used purely for checking bootstrapping status (ie. cloud init runcmd still runs the init/join) and exporting logs.
-https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-linux
-https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-windows
+https://learn.microsoft.com/azure/virtual-machines/extensions/custom-script-linux
+https://learn.microsoft.com/azure/virtual-machines/extensions/custom-script-windows
 
 #### Custom Script Extension Pros:
 - Generic and flexible for both Linux and Windows, can basically execute any arbitrary code (so long as it’s under the size limits defined above)
@@ -78,7 +78,7 @@ https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script
 - You may only have one Custom Script Extension per VM, so using this interface to implement bootstrap failure detection means we are not able to expose the Custom Script Extension VM feature to users as a “general purpose” script interface
 
 ### Option 4: VM run command
-https://docs.microsoft.com/en-us/azure/virtual-machines/linux/run-command
+https://learn.microsoft.com/azure/virtual-machines/linux/run-command
 This is similar to the above idea of using a custom script extension but instead of deploying an additional VM extension resource, the Run Command feature uses the virtual machine (VM) agent to run shell scripts within an Azure VM. This works without requiring RDP/SSH access to the VM.
 
 #### VM runcmd Pros:

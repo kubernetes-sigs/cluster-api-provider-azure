@@ -6,12 +6,12 @@ This is the identity used by the management cluster to provision infrastructure 
    - [AAD Pod Identity](https://azure.github.io/aad-pod-identity/) using Service Principals and Managed Identities: by default, the identity used by the workload cluster running on Azure is the same Service Principal assigned to the management cluster. If an identity is specified on the Azure Cluster Resource, that identity will be used when creating Azure resources related to that cluster. See [Multi-tenancy](multitenancy.md) page for details.
 
  - Env config (deprecated)
-   - Service Principal: A [service principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals) is an identity in AAD which is described by a TenantID, ClientID, and ClientSecret. The set of these three values will enable the holder to exchange the values for a JWT token to communicate with Azure. The values are normally stored in a file or environment variables.
+   - Service Principal: A [service principal](https://learn.microsoft.com/azure/active-directory/develop/app-objects-and-service-principals) is an identity in AAD which is described by a TenantID, ClientID, and ClientSecret. The set of these three values will enable the holder to exchange the values for a JWT token to communicate with Azure. The values are normally stored in a file or environment variables.
    - Configuration:
       - Scope: Subscription
       - Role: `Contributor` since the controller is responsible for creating resource groups and cluster resources within the group. To create a resource group within a subscription, one must have subscription contributor rights. Note, this role's scope can be reduced to Resource Group Contributor if all resource groups are created prior to cluster creation.
       - If the workload clusters are going to use system-assigned managed identities, then the role here should be `Owner` to be able to create role assignments for system-assigned managed identity.
-More details in [Azure built-in roles documentation](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles).
+More details in [Azure built-in roles documentation](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles).
 
 <aside class="note warning"> 
 

@@ -34,7 +34,7 @@
 ## AzureMachinePool
 Cluster API Provider Azure (CAPZ) has experimental support for `MachinePool` through the infrastructure
 types `AzureMachinePool` and `AzureMachinePoolMachine`. An `AzureMachinePool` corresponds to a
-[Virtual Machine Scale Set](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview) (VMSS),
+[Virtual Machine Scale Set](https://learn.microsoft.com/azure/virtual-machine-scale-sets/overview) (VMSS),
 which provides the cloud provider-specific resource for orchestrating a group of Virtual Machines. The
 `AzureMachinePoolMachine` corresponds to a virtual machine instance within the VMSS.
 
