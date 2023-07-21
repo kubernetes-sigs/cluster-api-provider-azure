@@ -20,6 +20,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -28,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatelinks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
@@ -37,7 +40,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // azureClusterService is the reconciler called by the AzureCluster controller.
@@ -71,6 +73,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			subnets.New(scope),
 			vnetpeerings.New(scope),
 			loadbalancers.New(scope),
+			privatelinks.New(scope),
 			privatedns.New(scope),
 			bastionhosts.New(scope),
 			privateendpoints.New(scope),

@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatelinks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
@@ -394,6 +395,14 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 			Role:              subnet.Role,
 			NatGatewayName:    subnet.NatGateway.Name,
 			ServiceEndpoints:  subnet.ServiceEndpoints,
+		}
+		// Check if subnet is used for the private link NAT IP
+		for _, privateLink := range s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks {
+			for _, ipConfig := range privateLink.NATIPConfigurations {
+				if ipConfig.Subnet == subnetSpec.Name {
+					subnetSpec.UsedForPrivateLinkNATIP = true
+				}
+			}
 		}
 		subnetSpecs = append(subnetSpecs, subnetSpec)
 	}
@@ -1090,6 +1099,38 @@ func (s *ClusterScope) PrivateEndpointSpecs() []azure.ResourceSpecGetter {
 	}
 
 	return privateEndpointSpecs
+}
+
+func (s *ClusterScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
+	// First we get all private links to API server load balancer.
+	// Other load balancers (ControlPlaneOutboundLB and NodeOutboundLB) are outbound, so we cannot create private links
+	// for those.
+	privateLinks := s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks
+	var privateLinksSpecs []azure.ResourceSpecGetter
+
+	for _, privateLink := range privateLinks {
+		privateLinkSpec := privatelinks.PrivateLinkSpec{
+			Name:                      privateLink.Name,
+			ResourceGroup:             s.ResourceGroup(),
+			SubscriptionID:            s.SubscriptionID(),
+			Location:                  s.Location(),
+			VNet:                      s.Vnet().Name,
+			LoadBalancerName:          s.APIServerLBName(),
+			LBFrontendIPConfigNames:   privateLink.LBFrontendIPConfigNames,
+			AllowedSubscriptions:      privateLink.AllowedSubscriptions,
+			AutoApprovedSubscriptions: privateLink.AutoApprovedSubscriptions,
+			EnableProxyProtocol:       privateLink.EnableProxyProtocol,
+			ClusterName:               s.ClusterName(),
+			AdditionalTags:            s.AdditionalTags(),
+		}
+		// Set NAT IP configuration
+		for _, natIpConfiguration := range privateLink.NATIPConfigurations {
+			privateLinkSpec.NATIPConfiguration = append(privateLinkSpec.NATIPConfiguration, privatelinks.NATIPConfiguration(natIpConfiguration))
+		}
+		privateLinksSpecs = append(privateLinksSpecs, &privateLinkSpec)
+	}
+
+	return privateLinksSpecs
 }
 
 func (s *ClusterScope) getPrivateEndpoints(subnet infrav1.SubnetSpec) []azure.ResourceSpecGetter {
