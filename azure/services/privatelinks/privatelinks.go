@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-const serviceName = "privatelinks"
+const ServiceName = "privatelinks"
 
 type PrivateLinkScope interface {
 	azure.ClusterScoper
@@ -33,7 +33,7 @@ func New(scope PrivateLinkScope) *Service {
 
 // Name returns the service name.
 func (s *Service) Name() string {
-	return serviceName
+	return ServiceName
 }
 
 func (s *Service) Reconcile(ctx context.Context) error {
@@ -50,7 +50,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	var resultingErr error
 	for _, privateLinkSpec := range specs {
-		_, err := s.CreateOrUpdateResource(ctx, privateLinkSpec, serviceName)
+		_, err := s.CreateOrUpdateResource(ctx, privateLinkSpec, ServiceName)
 		if err != nil {
 			if !azure.IsOperationNotDoneError(err) || resultingErr == nil {
 				resultingErr = err
@@ -58,7 +58,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
-	s.Scope.UpdatePutStatus(infrav1.PrivateLinksReadyCondition, serviceName, resultingErr)
+	s.Scope.UpdatePutStatus(infrav1.PrivateLinksReadyCondition, ServiceName, resultingErr)
 	return resultingErr
 }
 
@@ -79,13 +79,13 @@ func (s *Service) Delete(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (ie. error creating) -> operationNotDoneError (ie. creating in progress) -> no error (ie. created)
 	var resultingErr error
 	for _, privateLinkSpec := range specs {
-		if err := s.DeleteResource(ctx, privateLinkSpec, serviceName); err != nil {
+		if err := s.DeleteResource(ctx, privateLinkSpec, ServiceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resultingErr == nil {
 				resultingErr = err
 			}
 		}
 	}
-	s.Scope.UpdateDeleteStatus(infrav1.PrivateLinksReadyCondition, serviceName, resultingErr)
+	s.Scope.UpdateDeleteStatus(infrav1.PrivateLinksReadyCondition, ServiceName, resultingErr)
 	return resultingErr
 }
 
