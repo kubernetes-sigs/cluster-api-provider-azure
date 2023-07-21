@@ -910,7 +910,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			err := validateAPIServerLB(test.lb, test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
+			err := validateAPIServerLB(test.lb, test.old, Subnets{}, test.cpCIDRS, field.NewPath("apiServerLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
