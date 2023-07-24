@@ -19,11 +19,11 @@ aliases:
     - CecileRobertMichon
     - jackfrancis
     - mboersma
+    - nojnhuh
   cluster-api-azure-reviewers:
     - Jont828
     - jsturtevant
     - marosset
     - nawazkh
-    - nojnhuh
     - sonasingh46
     - willie-yao
