@@ -217,6 +217,96 @@ This will make API calls to create Virtual Machines or Virtual Machine Scale Set
 
 In the case of a third party image, you must accept the license terms with the [Azure CLI][azure-cli] before consuming it.
 
+## Example: CAPZ with Mariner Linux
+
+To clarify how to use a custom image, let's look at an example of using [Mariner Linux][mariner] with CAPZ.
+
+Mariner is a minimal, open source Linux distribution, optimized for Azure. The [image-builder][image-builder] project has support for building Mariner images.
+
+## Build Mariner with image-builder
+
+Populate an `az-creds.env` file with your Azure credentials:
+
+```
+AZURE_SUBSCRIPTION_ID=xxxxxxx
+AZURE_TENANT_ID=xxxxxxx
+AZURE_CLIENT_ID=xxxxxxxx
+AZURE_CLIENT_SECRET=xxxxxx
+```
+
+Then run image-builder, referencing those credentials as an environment file:
+
+```shell
+docker run -it --rm --env-file azure-creds.env registry.k8s.io/scl-image-builder/cluster-node-image-builder-amd64:v0.1.17 build-azure-sig-mariner-2
+```
+
+The entrypoint to this docker image is `make`. (You can clone the image-builder repository and run `make -C images/capi build-azure-sig-mariner-2` locally if you prefer.)
+
+This makefile target creates an Azure resource group called "cluster-api-images" in `southcentralus` by default. When it finishes, it will contain an Azure Compute Gallery with a Mariner image.
+
+```shell
+# skipping output to show just the end of the build...
+==> azure-arm.sig-mariner-2: Resource group has been deleted.
+==> azure-arm.sig-mariner-2: Running post-processor: manifest
+Build 'azure-arm.sig-mariner-2' finished after 18 minutes 2 seconds.
+
+==> Wait completed after 18 minutes 2 seconds
+
+==> Builds finished. The artifacts of successful builds are:
+--> azure-arm.sig-mariner-2: Azure.ResourceManagement.VMImage:
+
+OSType: Linux
+ManagedImageResourceGroupName: cluster-api-images
+ManagedImageName: capi-mariner-2-1689801407
+ManagedImageId: /subscriptions/xxxxxxx-xxxx-xxx-xxx/resourceGroups/cluster-api-images/providers/Microsoft.Compute/images/capi-mariner-2-1689801407
+ManagedImageLocation: southcentralus
+ManagedImageSharedImageGalleryId: /subscriptions/xxxxxxx-xxxx-xxx-xxx/resourceGroups/cluster-api-images/providers/Microsoft.Compute/galleries/ClusterAPI1689801353abcd/images/capi-mariner-2/versions/0.3.1689801407
+SharedImageGalleryResourceGroup: cluster-api-images
+SharedImageGalleryName: ClusterAPI1689801353abcd
+SharedImageGalleryImageName: capi-mariner-2
+SharedImageGalleryImageVersion: 0.3.1689801407
+SharedImageGalleryReplicatedRegions: southcentralus
+```
+
+## Add the Mariner image to a CAPZ cluster template
+
+Edit your cluster template to add `image` fields to any AzureMachineTemplates:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          resourceGroup: cluster-api-images
+          name: capi-mariner-2
+          subscriptionID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+          gallery: ClusterAPI1689801353abcd
+          version: "0.3.1689801407"
+```
+
+The last four fields are the `SharedImageGalleryImageName`, your Azure subscription ID, the `SharedImageGalleryName`, and the `SharedImageGalleryImageVersion` from the final output of the image-builder command above. Make sure to add this `image` section to both the control plane and worker node AzureMachineTemplates.
+
+## Deploy a Mariner cluster
+
+Since our Compute Gallery image lives in `southcentralus`, our cluster should too. Set `AZURE_LOCATION=southcentralus` in your environment or in your template.
+
+Now you can deploy your CAPZ Mariner cluster as usual with `kubectl apply -f` or other means.
+
+Mariner stores CA certificates in an uncommon location, so we need to tell cloud-provider-azure's Helm chart where. Add this argument to the `helm` command you use to install cloud-provider-azure:
+
+```shell
+--set-string cloudControllerManager.caCertDir=/etc/pki/tls
+```
+
+That's it! You should now have a CAPZ cluster running Mariner Linux.
+
+
 [azure-cli]: https://learn.microsoft.com/cli/azure/vm/image/terms?view=azure-cli-latest
 [azure-community-gallery]: https://learn.microsoft.com/azure/virtual-machines/azure-compute-gallery#community
 [azure-marketplace]: https://learn.microsoft.com/azure/marketplace/marketplace-publishers-guide
@@ -228,6 +318,7 @@ In the case of a third party image, you must accept the license terms with the [
 [image-builder]: https://github.com/kubernetes-sigs/image-builder
 [image-builder-azure]: https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi/packer/azure
 [kubeadm-preflight-checks]: https://github.com/kubernetes/kubeadm/blob/master/docs/design/design_v1.10.md#preflight-checks
+[mariner]: https://microsoft.github.io/CBL-Mariner/docs/
 [replication-recommendations]: https://learn.microsoft.com/azure/virtual-machines/linux/shared-image-galleries#scaling
 [supported-capi]: https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions
 [supported-k8s]: https://kubernetes.io/releases/version-skew-policy/#supported-versions
