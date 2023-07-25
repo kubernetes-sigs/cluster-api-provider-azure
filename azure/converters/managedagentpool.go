@@ -50,6 +50,7 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) 
 		Tags:                 properties.Tags,
 		KubeletDiskType:      properties.KubeletDiskType,
 		LinuxOSConfig:        properties.LinuxOSConfig,
+		EnableFIPS:           properties.EnableFIPS,
 	}
 	if properties.KubeletConfig != nil {
 		agentPool.KubeletConfig = properties.KubeletConfig

@@ -194,6 +194,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 		AdditionalTags:       managedMachinePool.Spec.AdditionalTags,
 		KubeletDiskType:      managedMachinePool.Spec.KubeletDiskType,
 		LinuxOSConfig:        managedMachinePool.Spec.LinuxOSConfig,
+		EnableFIPS:           managedMachinePool.Spec.EnableFIPS,
 	}
 
 	if managedMachinePool.Spec.OSDiskSizeGB != nil {

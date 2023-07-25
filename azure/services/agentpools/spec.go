@@ -147,6 +147,9 @@ type AgentPoolSpec struct {
 
 	// LinuxOSConfig specifies the custom Linux OS settings and configurations
 	LinuxOSConfig *infrav1.LinuxOSConfig
+
+	// EnableFIPS indicates whether FIPS is enabled on the node pool
+	EnableFIPS *bool
 }
 
 // ResourceName returns the name of the agent pool.
@@ -380,6 +383,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			EnableNodePublicIP:   s.EnableNodePublicIP,
 			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
 			Tags:                 tags,
+			EnableFIPS:           s.EnableFIPS,
 			LinuxOSConfig:        linuxOSConfig,
 		},
 	}
