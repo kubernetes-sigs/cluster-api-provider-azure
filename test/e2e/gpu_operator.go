@@ -24,7 +24,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	helmVals "helm.sh/helm/v3/pkg/cli/values"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/cluster-api/test/framework"
 )
@@ -63,6 +62,6 @@ func InstallGPUOperator(ctx context.Context, inputGetter func() GPUOperatorSpecI
 // InstallNvidiaGPUOperatorChart installs the official nvidia/gpu-operator helm chart
 func InstallNvidiaGPUOperatorChart(ctx context.Context, clusterProxy framework.ClusterProxy) {
 	By("Installing nvidia/gpu-operator via helm")
-	values := &helmVals.Options{}
+	values := &HelmOptions{}
 	InstallHelmChart(ctx, clusterProxy, nvidiaGPUOperatorNamespace, nvidiaHelmChartRepoURL, nvidiaGPUOperatorHelmChartName, nvidiaGPUOperatorHelmReleaseName, values, "")
 }
