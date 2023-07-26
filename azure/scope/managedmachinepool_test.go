@@ -108,7 +108,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 				Mode:              "User",
 				Cluster:           "cluster1",
 				Replicas:          1,
-				EnableAutoScaling: pointer.Bool(true),
+				EnableAutoScaling: true,
 				MinCount:          pointer.Int32(2),
 				MaxCount:          pointer.Int32(10),
 				VnetSubnetID:      "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",

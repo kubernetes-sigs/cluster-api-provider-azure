@@ -263,7 +263,7 @@ func fakeAgentPool(changes ...func(*agentpools.AgentPoolSpec)) agentpools.AgentP
 		ResourceGroup:     "fake-rg",
 		Cluster:           "fake-cluster",
 		AvailabilityZones: []string{"fake-zone"},
-		EnableAutoScaling: pointer.Bool(true),
+		EnableAutoScaling: true,
 		EnableUltraSSD:    pointer.Bool(true),
 		KubeletDiskType:   (*infrav1.KubeletDiskType)(pointer.String("fake-kubelet-disk-type")),
 		MaxCount:          pointer.Int32(5),
