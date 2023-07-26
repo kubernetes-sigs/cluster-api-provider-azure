@@ -197,6 +197,18 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return reconcile.Result{}, nil
 	}
 
+	var identity *infrav1.AzureClusterIdentity
+	if azureCluster.Spec.IdentityRef != nil {
+		identity, err = EnsureClusterIdentity(ctx, amr.Client, azureCluster, azureCluster.Spec.IdentityRef, infrav1.ClusterFinalizer)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		fmt.Printf("Got identity: %v\n", identity.Name)
+	} else {
+		log.Info(fmt.Sprintf("WARNING, %s", deprecatedManagerCredsWarning))
+		amr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", deprecatedManagerCredsWarning)
+	}
+
 	// Create the cluster scope
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       amr.Client,
@@ -214,6 +226,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Machine:      machine,
 		AzureMachine: azureMachine,
 		ClusterScope: clusterScope,
+		Identity:     identity,
 	})
 	if err != nil {
 		amr.Recorder.Eventf(azureMachine, corev1.EventTypeWarning, "Error creating the machine scope", err.Error())

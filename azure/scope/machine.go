@@ -57,6 +57,7 @@ type MachineScopeParams struct {
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 	Cache        *MachineCache
+	Identity     *infrav1.AzureClusterIdentity
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -84,6 +85,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		patchHelper:   helper,
 		ClusterScoper: params.ClusterScope,
 		cache:         params.Cache,
+		Identity:      params.Identity,
 	}, nil
 }
 
@@ -96,6 +98,7 @@ type MachineScope struct {
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 	cache        *MachineCache
+	Identity     *infrav1.AzureClusterIdentity
 }
 
 // MachineCache stores common machine information so we don't have to hit the API multiple times within the same reconcile loop.

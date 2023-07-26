@@ -25,6 +25,7 @@ import (
 
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -78,6 +79,20 @@ func (m *MockTagScope) Authorizer() autorest.Authorizer {
 func (mr *MockTagScopeMockRecorder) Authorizer() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockTagScope)(nil).Authorizer))
+}
+
+// AzureClusterIdentity mocks base method.
+func (m *MockTagScope) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockTagScopeMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockTagScope)(nil).AzureClusterIdentity))
 }
 
 // BaseURI mocks base method.

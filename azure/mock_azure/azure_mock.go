@@ -236,6 +236,20 @@ func (mr *MockAuthorizerMockRecorder) Authorizer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockAuthorizer)(nil).Authorizer))
 }
 
+// AzureClusterIdentity mocks base method.
+func (m *MockAuthorizer) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockAuthorizerMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockAuthorizer)(nil).AzureClusterIdentity))
+}
+
 // BaseURI mocks base method.
 func (m *MockAuthorizer) BaseURI() string {
 	m.ctrl.T.Helper()
@@ -642,6 +656,20 @@ func (m *MockClusterDescriber) AvailabilitySetEnabled() bool {
 func (mr *MockClusterDescriberMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockClusterDescriber)(nil).AvailabilitySetEnabled))
+}
+
+// AzureClusterIdentity mocks base method.
+func (m *MockClusterDescriber) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockClusterDescriberMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockClusterDescriber)(nil).AzureClusterIdentity))
 }
 
 // BaseURI mocks base method.
@@ -1056,6 +1084,20 @@ func (m *MockClusterScoper) AvailabilitySetEnabled() bool {
 func (mr *MockClusterScoperMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockClusterScoper)(nil).AvailabilitySetEnabled))
+}
+
+// AzureClusterIdentity mocks base method.
+func (m *MockClusterScoper) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockClusterScoperMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockClusterScoper)(nil).AzureClusterIdentity))
 }
 
 // BaseURI mocks base method.
@@ -1511,6 +1553,20 @@ func (m *MockManagedClusterScoper) AvailabilitySetEnabled() bool {
 func (mr *MockManagedClusterScoperMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockManagedClusterScoper)(nil).AvailabilitySetEnabled))
+}
+
+// AzureClusterIdentity mocks base method.
+func (m *MockManagedClusterScoper) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockManagedClusterScoperMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockManagedClusterScoper)(nil).AzureClusterIdentity))
 }
 
 // BaseURI mocks base method.

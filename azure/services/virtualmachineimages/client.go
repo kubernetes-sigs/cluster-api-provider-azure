@@ -19,8 +19,10 @@ package virtualmachineimages
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -39,7 +41,7 @@ var _ Client = (*AzureClient)(nil)
 
 // NewClient creates an AzureClient from an Authorizer.
 func NewClient(auth azure.Authorizer) (*AzureClient, error) {
-	c, err := newVirtualMachineImagesClient(auth.SubscriptionID(), auth.CloudEnvironment())
+	c, err := newVirtualMachineImagesClient(auth.SubscriptionID(), auth.CloudEnvironment(), auth.AzureClusterIdentity())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create VM images client")
 	}
@@ -47,11 +49,21 @@ func NewClient(auth azure.Authorizer) (*AzureClient, error) {
 }
 
 // newVirtualMachineImagesClient creates a new VM images client from subscription ID and base URI.
-func newVirtualMachineImagesClient(subscriptionID, azureEnvironment string) (armcompute.VirtualMachineImagesClient, error) {
-	credential, err := azure.NewDefaultCredential(nil)
-	if err != nil {
-		return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create default Azure credential")
+func newVirtualMachineImagesClient(subscriptionID, azureEnvironment string, identity *infrav1.AzureClusterIdentity) (armcompute.VirtualMachineImagesClient, error) {
+	var credential azcore.TokenCredential
+	var err error
+	if identity != nil {
+		credential, err = azure.NewAzureClusterIdentityCredential(nil, identity)
+		if err != nil {
+			return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create Azure cluster identity credential")
+		}
+	} else {
+		credential, err = azure.NewDefaultCredential(nil)
+		if err != nil {
+			return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create default Azure credential")
+		}
 	}
+
 	opts, err := azure.ARMClientOptions(azureEnvironment)
 	if err != nil {
 		return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create ARM client options")

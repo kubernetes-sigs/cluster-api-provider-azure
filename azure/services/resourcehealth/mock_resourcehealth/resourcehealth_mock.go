@@ -25,7 +25,8 @@ import (
 
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 	conditions "sigs.k8s.io/cluster-api/util/conditions"
 )
 
@@ -92,6 +93,20 @@ func (m *MockResourceHealthScope) AvailabilityStatusResourceURI() string {
 func (mr *MockResourceHealthScopeMockRecorder) AvailabilityStatusResourceURI() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilityStatusResourceURI", reflect.TypeOf((*MockResourceHealthScope)(nil).AvailabilityStatusResourceURI))
+}
+
+// AzureClusterIdentity mocks base method.
+func (m *MockResourceHealthScope) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockResourceHealthScopeMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockResourceHealthScope)(nil).AzureClusterIdentity))
 }
 
 // BaseURI mocks base method.
@@ -216,10 +231,10 @@ func (m *MockAvailabilityStatusFilterer) EXPECT() *MockAvailabilityStatusFiltere
 }
 
 // AvailabilityStatusFilter mocks base method.
-func (m *MockAvailabilityStatusFilterer) AvailabilityStatusFilter(cond *v1beta1.Condition) *v1beta1.Condition {
+func (m *MockAvailabilityStatusFilterer) AvailabilityStatusFilter(cond *v1beta10.Condition) *v1beta10.Condition {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AvailabilityStatusFilter", cond)
-	ret0, _ := ret[0].(*v1beta1.Condition)
+	ret0, _ := ret[0].(*v1beta10.Condition)
 	return ret0
 }
 

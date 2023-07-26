@@ -137,6 +137,20 @@ func (mr *MockLBScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockLBScope)(nil).AvailabilitySetEnabled))
 }
 
+// AzureClusterIdentity mocks base method.
+func (m *MockLBScope) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockLBScopeMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockLBScope)(nil).AzureClusterIdentity))
+}
+
 // BaseURI mocks base method.
 func (m *MockLBScope) BaseURI() string {
 	m.ctrl.T.Helper()

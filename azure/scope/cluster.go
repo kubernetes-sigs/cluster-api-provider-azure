@@ -907,6 +907,12 @@ func (s *ClusterScope) FailureDomains() []string {
 	return fds
 }
 
+// AzureClusterIdentity is a no-op to implement the authorizer interface.
+func (s *ClusterScope) AzureClusterIdentity() *infrav1.AzureClusterIdentity {
+	// no-op
+	return nil
+}
+
 // SetControlPlaneSecurityRules sets the default security rules of the control plane subnet.
 // Note that this is not done in a webhook as it requires a valid Cluster object to exist to get the API Server port.
 func (s *ClusterScope) SetControlPlaneSecurityRules() {

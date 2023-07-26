@@ -151,6 +151,23 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	log = log.WithValues("cluster", cluster.Name)
 
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(cluster, azureCluster) {
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "ClusterPaused", "AzureCluster or linked Cluster is marked as paused. Won't reconcile")
+		log.Info("AzureCluster or linked Cluster is marked as paused. Won't reconcile")
+		return ctrl.Result{}, nil
+	}
+
+	if azureCluster.Spec.IdentityRef != nil {
+		_, err = EnsureClusterIdentity(ctx, acr.Client, azureCluster, azureCluster.Spec.IdentityRef, infrav1.ClusterFinalizer)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	} else {
+		log.Info(fmt.Sprintf("WARNING, %s", deprecatedManagerCredsWarning))
+		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", deprecatedManagerCredsWarning)
+	}
+
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       acr.Client,
@@ -178,7 +195,7 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if azureCluster.Spec.IdentityRef != nil {
-		err := EnsureClusterIdentity(ctx, acr.Client, azureCluster, azureCluster.Spec.IdentityRef, infrav1.ClusterFinalizer)
+		_, err := EnsureClusterIdentity(ctx, acr.Client, azureCluster, azureCluster.Spec.IdentityRef, infrav1.ClusterFinalizer)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

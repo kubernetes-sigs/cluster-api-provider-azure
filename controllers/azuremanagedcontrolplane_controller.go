@@ -179,7 +179,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 
 	// check if the control plane's namespace is allowed for this identity and update owner references for the identity.
 	if azureControlPlane.Spec.IdentityRef != nil {
-		err := EnsureClusterIdentity(ctx, amcpr.Client, azureControlPlane, azureControlPlane.Spec.IdentityRef, infrav1.ManagedClusterFinalizer)
+		_, err = EnsureClusterIdentity(ctx, amcpr.Client, azureControlPlane, azureControlPlane.Spec.IdentityRef, infrav1.ManagedClusterFinalizer)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

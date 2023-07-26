@@ -454,6 +454,12 @@ func (s *ManagedControlPlaneScope) ManagedClusterAnnotations() map[string]string
 	return s.ControlPlane.Annotations
 }
 
+// AzureClusterIdentity is a no-op to implement the authorizer interface.
+func (s *ManagedControlPlaneScope) AzureClusterIdentity() *infrav1.AzureClusterIdentity {
+	// no-op
+	return nil
+}
+
 // ManagedClusterSpec returns the managed cluster spec.
 func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter {
 	managedClusterSpec := managedclusters.ManagedClusterSpec{

@@ -95,6 +95,20 @@ func (mr *MockDiskScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockDiskScope)(nil).AvailabilitySetEnabled))
 }
 
+// AzureClusterIdentity mocks base method.
+func (m *MockDiskScope) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockDiskScopeMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockDiskScope)(nil).AzureClusterIdentity))
+}
+
 // BaseURI mocks base method.
 func (m *MockDiskScope) BaseURI() string {
 	m.ctrl.T.Helper()

@@ -109,6 +109,20 @@ func (mr *MockInboundNatScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockInboundNatScope)(nil).AvailabilitySetEnabled))
 }
 
+// AzureClusterIdentity mocks base method.
+func (m *MockInboundNatScope) AzureClusterIdentity() *v1beta1.AzureClusterIdentity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AzureClusterIdentity")
+	ret0, _ := ret[0].(*v1beta1.AzureClusterIdentity)
+	return ret0
+}
+
+// AzureClusterIdentity indicates an expected call of AzureClusterIdentity.
+func (mr *MockInboundNatScopeMockRecorder) AzureClusterIdentity() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AzureClusterIdentity", reflect.TypeOf((*MockInboundNatScope)(nil).AzureClusterIdentity))
+}
+
 // BaseURI mocks base method.
 func (m *MockInboundNatScope) BaseURI() string {
 	m.ctrl.T.Helper()
