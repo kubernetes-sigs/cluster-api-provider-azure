@@ -38,7 +38,7 @@ func fakeAgentPool(changes ...func(*AgentPoolSpec)) AgentPoolSpec {
 		ResourceGroup:     "fake-rg",
 		Cluster:           "fake-cluster",
 		AvailabilityZones: []string{"fake-zone"},
-		EnableAutoScaling: pointer.Bool(true),
+		EnableAutoScaling: true,
 		EnableUltraSSD:    pointer.Bool(true),
 		KubeletDiskType:   (*infrav1.KubeletDiskType)(pointer.String("fake-kubelet-disk-type")),
 		MaxCount:          pointer.Int32(5),
@@ -73,7 +73,7 @@ func withReplicas(replicas int32) func(*AgentPoolSpec) {
 
 func withAutoscaling(enabled bool) func(*AgentPoolSpec) {
 	return func(pool *AgentPoolSpec) {
-		pool.EnableAutoScaling = pointer.Bool(enabled)
+		pool.EnableAutoScaling = enabled
 	}
 }
 
