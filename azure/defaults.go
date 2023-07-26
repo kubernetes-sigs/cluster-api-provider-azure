@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/go-autorest/autorest"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
@@ -382,6 +384,54 @@ type userAgentPolicy struct{}
 func (p userAgentPolicy) Do(req *policy.Request) (*http.Response, error) {
 	req.Raw().Header.Set("User-Agent", req.Raw().UserAgent()+" "+UserAgent())
 	return req.Next()
+}
+
+// NewDefaultCredential creates a new credential that uses the following methods, in order of precedence:
+// 1. Workload Identity
+// 2. Managed Identity
+// 3. Environment variables
+// 4. Azure CLI.
+func NewDefaultCredential(clientOptions *azcore.ClientOptions) (*azidentity.ChainedTokenCredential, error) {
+	sources := []azcore.TokenCredential{}
+
+	if clientOptions == nil {
+		clientOptions = &azcore.ClientOptions{}
+	}
+
+	workloadIDOpts := azidentity.WorkloadIdentityCredentialOptions{ClientOptions: *clientOptions}
+	workloadIDCred, err := azidentity.NewWorkloadIdentityCredential(&workloadIDOpts)
+	if err != nil {
+		// TODO: log error
+	} else {
+		sources = append(sources, workloadIDCred)
+	}
+
+	managedIDOpts := azidentity.ManagedIdentityCredentialOptions{ClientOptions: *clientOptions}
+	managedIDCred, err := azidentity.NewManagedIdentityCredential(&managedIDOpts)
+	if err != nil {
+		// TODO: log error
+	} else {
+		sources = append(sources, managedIDCred)
+	}
+
+	environmentOpts := azidentity.EnvironmentCredentialOptions{ClientOptions: *clientOptions}
+	environmentCred, err := azidentity.NewEnvironmentCredential(&environmentOpts)
+	if err != nil {
+		// TODO: log error
+	} else {
+		sources = append(sources, environmentCred)
+	}
+
+	azureCLIOpts := azidentity.AzureCLICredentialOptions{}
+	azureCLICred, err := azidentity.NewAzureCLICredential(&azureCLIOpts)
+	if err != nil {
+		// TODO: log error
+	} else {
+		sources = append(sources, azureCLICred)
+	}
+
+	chainedCredOptions := azidentity.ChainedTokenCredentialOptions{}
+	return azidentity.NewChainedTokenCredential(sources, &chainedCredOptions)
 }
 
 // SetAutoRestClientDefaults set authorizer and user agent for autorest client.
