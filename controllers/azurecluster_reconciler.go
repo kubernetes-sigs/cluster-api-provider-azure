@@ -98,6 +98,24 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// Pause pauses all components making up the cluster.
+func (s *azureClusterService) Pause(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureClusterService.Pause")
+	defer done()
+
+	for _, service := range s.services {
+		pauser, ok := service.(azure.Pauser)
+		if !ok {
+			continue
+		}
+		if err := pauser.Pause(ctx); err != nil {
+			return errors.Wrapf(err, "failed to pause AzureCluster service %s", service.Name())
+		}
+	}
+
+	return nil
+}
+
 // Delete reconciles all the services in a predetermined order.
 func (s *azureClusterService) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureClusterService.Delete")

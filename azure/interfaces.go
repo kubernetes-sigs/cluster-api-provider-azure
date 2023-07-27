@@ -31,6 +31,11 @@ type Reconciler interface {
 	Delete(ctx context.Context) error
 }
 
+// Pauser may be implemented for a ServiceReconciler that requires additional work to stop reconciliation.
+type Pauser interface {
+	Pause(context.Context) error
+}
+
 // ServiceReconciler is an Azure service reconciler which can reconcile an Azure service.
 type ServiceReconciler interface {
 	Name() string
