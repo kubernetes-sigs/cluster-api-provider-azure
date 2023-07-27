@@ -207,7 +207,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 	}
 
 	if managedMachinePool.Spec.Scaling != nil {
-		agentPoolSpec.EnableAutoScaling = pointer.Bool(true)
+		agentPoolSpec.EnableAutoScaling = true
 		agentPoolSpec.MaxCount = managedMachinePool.Spec.Scaling.MaxSize
 		agentPoolSpec.MinCount = managedMachinePool.Spec.Scaling.MinSize
 	}
