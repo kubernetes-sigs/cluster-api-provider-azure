@@ -510,6 +510,11 @@ type AzureManagedMachinePoolSpec struct {
 	// +optional
 	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
 
+	// EnableFIPS allows the ability to use FIPS enabled virtual machines.
+	// Immutable.
+	// +optional
+	EnableFIPS *bool `json:"enableFIPS,omitempty"`
+
 	// NodePublicIPPrefixID specifies the public IP prefix resource ID which VM nodes should use IPs from.
 	// Immutable.
 	// +optional

@@ -62,6 +62,10 @@ spec:
                 description: EnableNodePublicIP controls whether or not nodes in the
                   pool each have a public IP address. Immutable.
                 type: boolean
+              enableFIPS:
+                description: allows the ability to use FIPS enabled virtual machines.
+                  Immutable.
+                type: boolean
               enableUltraSSD:
                 description: EnableUltraSSD enables the storage type UltraSSD_LRS
                   for the agent pool. Immutable.

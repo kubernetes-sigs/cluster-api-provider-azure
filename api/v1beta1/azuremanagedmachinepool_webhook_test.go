@@ -463,6 +463,34 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "Unexpected error, value EnableFIPS is unchanged",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableFIPS: pointer.Bool(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableFIPS: pointer.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "EnableFIPS feature is immutable and currently enabled on this agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableFIPS: pointer.Bool(false),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableFIPS: pointer.Bool(true),
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "NodeTaints are mutable",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{

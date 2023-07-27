@@ -43,6 +43,7 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) 
 		NodeLabels:           properties.NodeLabels,
 		EnableUltraSSD:       properties.EnableUltraSSD,
 		EnableNodePublicIP:   properties.EnableNodePublicIP,
+		EnableFIPS:           properties.EnableFIPS,
 		NodePublicIPPrefixID: properties.NodePublicIPPrefixID,
 		ScaleSetPriority:     properties.ScaleSetPriority,
 		ScaleDownMode:        properties.ScaleDownMode,

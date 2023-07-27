@@ -76,6 +76,7 @@ spec:
   - "1"
   - "2"
   enableNodePublicIP: false
+  enableFIPS: false
   enableUltraSSD: true
   maxPods: 30
   mode: System
@@ -111,6 +112,7 @@ metadata:
   namespace: default
 spec:
   enableNodePublicIP: false
+  enableFIPS: false
   kubeletConfig:
     allowedUnsafeSysctls:
     - net.*

@@ -236,6 +236,12 @@ func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, ol
 		allErrs = append(allErrs, err)
 	}
 	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "EnableFIPS"),
+		old.Spec.EnableFIPS,
+		m.Spec.EnableFIPS); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "NodePublicIPPrefixID"),
 		old.Spec.NodePublicIPPrefixID,
 		m.Spec.NodePublicIPPrefixID); err != nil {
