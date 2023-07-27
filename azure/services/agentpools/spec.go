@@ -101,7 +101,7 @@ type AgentPoolSpec struct {
 	NodeTaints []string `json:"nodeTaints,omitempty"`
 
 	// EnableAutoScaling - Whether to enable auto-scaler
-	EnableAutoScaling *bool `json:"enableAutoScaling,omitempty"`
+	EnableAutoScaling bool `json:"enableAutoScaling,omitempty"`
 
 	// AvailabilityZones represents the Availability zones for nodes in the AgentPool.
 	AvailabilityZones []string
@@ -211,7 +211,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 				Count:               &s.Replicas,
 				OrchestratorVersion: s.Version,
 				Mode:                containerservice.AgentPoolMode(s.Mode),
-				EnableAutoScaling:   s.EnableAutoScaling,
+				EnableAutoScaling:   pointer.Bool(s.EnableAutoScaling),
 				MinCount:            s.MinCount,
 				MaxCount:            s.MaxCount,
 				NodeLabels:          s.NodeLabels,
@@ -247,7 +247,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		// When autoscaling is set, the count of the nodes differ based on the autoscaler and should not depend on the
 		// count present in MachinePool or AzureManagedMachinePool, hence we should not make an update API call based
 		// on difference in count.
-		if pointer.BoolDeref(s.EnableAutoScaling, false) {
+		if s.EnableAutoScaling {
 			normalizedProfile.Count = existingProfile.Count
 		}
 
@@ -357,7 +357,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			AvailabilityZones:    availabilityZones,
 			Count:                &s.Replicas,
-			EnableAutoScaling:    s.EnableAutoScaling,
+			EnableAutoScaling:    pointer.Bool(s.EnableAutoScaling),
 			EnableUltraSSD:       s.EnableUltraSSD,
 			KubeletConfig:        kubeletConfig,
 			KubeletDiskType:      containerservice.KubeletDiskType(pointer.StringDeref((*string)(s.KubeletDiskType), "")),

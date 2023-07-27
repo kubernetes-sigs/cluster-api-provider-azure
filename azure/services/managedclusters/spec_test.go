@@ -348,6 +348,7 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 					Tags: map[string]*string{
 						"test-tag": pointer.String("test-value"),
 					},
+					EnableAutoScaling: pointer.Bool(false),
 				},
 				{
 					Name:                pointer.String("test-agentpool-1"),
@@ -363,6 +364,7 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 					Tags: map[string]*string{
 						"test-tag": pointer.String("test-value"),
 					},
+					EnableAutoScaling: pointer.Bool(false),
 				},
 			},
 			LinuxProfile: &containerservice.LinuxProfile{
