@@ -2,11 +2,31 @@
 
 To enable single controller multi-tenancy, a different Identity can be added to the Azure Cluster that will be used as the Azure Identity when creating Azure resources related to that cluster.
 
-This is achieved using the [aad-pod-identity](https://azure.github.io/aad-pod-identity) library.
+This is achieved using [workload identity](https://azure.github.io/azure-workload-identity). Workload identity is the next iteration of the now deprecated [aad-pod-identity](https://azure.github.io/aad-pod-identity).
 
 ## Identity Types
 
-### Service Principal With Client Password
+### Workload Identity (Recommended)
+
+Follow this [link](./workload-identity.md) for a quick start guide on setting up workload identity.
+
+Once you've set up the management cluster with the workload identity (see link above), the corresponding values should be used to create an `AzureClusterIdentity` resource. Create an `azure-cluster-identity.yaml` file with the following content:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  name: cluster-identity
+spec:
+  type: WorkloadIdentity
+  tenantID: <your-tenant-id>
+  clientID: <your-client-id>
+  allowedNamespaces:
+    list:
+    - <cluster-namespace>
+```
+
+### AAD Pod Identity using Service Principal With Client Password (Deprecated)
 
 Once a new SP Identity is created in Azure, the corresponding values should be used to create an `AzureClusterIdentity` Kubernetes resource. Create an `azure-cluster-identity.yaml` file with the following contents:
 
@@ -49,7 +69,7 @@ data:
   clientSecret: <client-secret-of-SP-identity>
 ```
 
-### Service Principal With Certificate
+### AAD Pod Identity using Service Principal With Certificate (Deprecated)
 
 Once a new SP Identity is created in Azure, the corresponding values should be used to create an `AzureClusterIdentity` resource:
 
@@ -94,7 +114,7 @@ data:
   password: PASSWORD
 ```
 
-### User-Assigned Managed Identity
+### AAD Pod Identity using User-Assigned Managed Identity (Deprecated)
 
 <aside class="note">
 
@@ -125,7 +145,7 @@ spec:
   tenantID: <azure-tenant-id>
   clientID: <client-id-of-user-assigned-identity>
   resourceID: <resource-id-of-user-assigned-identity>
-  allowedNamespaces: 
+  allowedNamespaces:
     list:
     - <cluster-namespace>
 ```
@@ -189,4 +209,4 @@ spec:
     namespace: <namespace-of-identity>
 ```
 
-For more details on how aad-pod-identity works, please check the guide [here](https://azure.github.io/aad-pod-identity/docs/).
+
