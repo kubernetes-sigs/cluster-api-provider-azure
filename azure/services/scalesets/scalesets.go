@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -111,7 +112,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 
 		if fetchedVMSS != nil {
 			// Transform the VMSS resource representation to conform to the cloud-provider-azure representation
-			providerID, err := azprovider.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + fetchedVMSS.ID)
+			providerID, err := azprovider.ConvertResourceGroupNameToLower(azureutil.ProviderIDPrefix + fetchedVMSS.ID)
 			if err != nil {
 				log.Error(err, "failed to parse VMSS ID", "ID", fetchedVMSS.ID)
 			}
@@ -616,14 +617,24 @@ func (s *Service) getVirtualMachineScaleSetNetworkConfiguration(vmssSpec azure.S
 				},
 			}
 
-			ipconfig.Subnet = &compute.APIEntityReference{
-				ID: pointer.String(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
-			}
 			if j == 0 {
 				// Always use the first IPConfig as the Primary
 				ipconfig.Primary = pointer.Bool(true)
 			}
 			ipconfigs = append(ipconfigs, ipconfig)
+		}
+		if vmssSpec.IPv6Enabled {
+			ipv6Config := compute.VirtualMachineScaleSetIPConfiguration{
+				Name: pointer.String("ipConfigv6"),
+				VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+					PrivateIPAddressVersion: compute.IPVersionIPv6,
+					Primary:                 pointer.Bool(false),
+					Subnet: &compute.APIEntityReference{
+						ID: pointer.String(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
+					},
+				},
+			}
+			ipconfigs = append(ipconfigs, ipv6Config)
 		}
 		if i == 0 {
 			ipconfigs[0].LoadBalancerBackendAddressPools = &backendAddressPools

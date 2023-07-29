@@ -33,12 +33,15 @@ import (
 
 const serviceName = "managedcluster"
 
+const kubeletIdentityKey = "kubeletidentity"
+
 // ManagedClusterScope defines the scope interface for a managed cluster.
 type ManagedClusterScope interface {
 	azure.Authorizer
 	azure.AsyncStatusUpdater
 	ManagedClusterSpec() azure.ResourceSpecGetter
 	SetControlPlaneEndpoint(clusterv1.APIEndpoint)
+	SetKubeletIdentity(string)
 	MakeEmptyKubeConfigSecret() corev1.Secret
 	GetKubeConfigData() []byte
 	SetKubeConfigData([]byte)
@@ -71,7 +74,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Reconcile")
 	defer done()
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAKSServiceReconcileTimeout)
 	defer cancel()
 
 	managedClusterSpec := s.Scope.ManagedClusterSpec()
@@ -99,6 +102,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrap(err, "failed to get credentials for managed cluster")
 		}
 		s.Scope.SetKubeConfigData(kubeConfigData)
+
+		// This field gets populated by AKS when not set by the user. Persist AKS's value so for future diffs,
+		// the "before" reflects the correct value.
+		if id := managedCluster.ManagedClusterProperties.IdentityProfile[kubeletIdentityKey]; id != nil && id.ResourceID != nil {
+			s.Scope.SetKubeletIdentity(*id.ResourceID)
+		}
 	}
 	s.Scope.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, resultErr)
 	return resultErr

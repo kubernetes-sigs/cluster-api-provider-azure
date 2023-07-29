@@ -14,11 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3
-sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4
-sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3
-sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4" > codecov-ignore.txt
-
 {
   find api/v1beta1 -regex '.*_conversion\.go' -exec echo sigs.k8s.io/cluster-api-provider-azure/{} \;
   find api/v1beta1 -regex '.*zz_generated.*\.go' -exec echo sigs.k8s.io/cluster-api-provider-azure/{} \;

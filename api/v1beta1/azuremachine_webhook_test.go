@@ -90,8 +90,11 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "azuremachine with list of user-assigned identities",
-			machine: createMachineWithUserAssignedIdentities([]UserAssignedIdentity{{ProviderID: "azure:///123"}, {ProviderID: "azure:///456"}}),
+			name: "azuremachine with list of user-assigned identities",
+			machine: createMachineWithUserAssignedIdentities([]UserAssignedIdentity{
+				{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-12345-control-plane-9d5x5"},
+				{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-12345-control-plane-a1b2c"},
+			}),
 			wantErr: false,
 		},
 		{
@@ -148,6 +151,71 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			name:    "azuremachine with valid network configuration",
 			machine: createMachineWithNetworkConfig("", nil, []NetworkInterface{{SubnetName: "subnet", PrivateIPConfigs: 1}}),
 			wantErr: false,
+		},
+		{
+			name:    "azuremachine without confidential compute properties and encryption at host enabled",
+			machine: createMachineWithConfidentialCompute("", "", true, false, false),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with confidential compute VMGuestStateOnly encryption and encryption at host enabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, true, false, false),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption and encryption at host enabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, true, true, true),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with confidential compute VMGuestStateOnly encryption, vTPM and SecureBoot enabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, false, true, true),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with confidential compute VMGuestStateOnly encryption enabled, vTPM enabled and SecureBoot disabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, false, true, false),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with confidential compute VMGuestStateOnly encryption enabled, vTPM disabled and SecureBoot enabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, false, false, true),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with confidential compute VMGuestStateOnly encryption enabled, vTPM enabled, SecureBoot disabled and SecurityType empty",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, "", false, true, false),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with confidential compute VMGuestStateOnly encryption enabled, vTPM and SecureBoot empty",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, false, false, false),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption, vTPM and SecureBoot enabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, false, true, true),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption enabled, vTPM enabled and SecureBoot disabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, false, true, false),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption enabled, vTPM disabled and SecureBoot enabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, false, false, true),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption enabled, vTPM disabled and SecureBoot disabled",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, false, false, false),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption enabled, vTPM enabled, SecureBoot disabled and SecurityType empty",
+			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, "", false, true, false),
+			wantErr: true,
 		},
 	}
 	for _, tc := range tests {
@@ -537,6 +605,34 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "validTest: azuremachine.spec.AcceleratedNetworking transition(from true) to nil is acceptable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: pointer.Bool(true),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "validTest: azuremachine.spec.AcceleratedNetworking transition(from false) to nil is acceptable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: pointer.Bool(false),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "invalidTest: azuremachine.spec.SpotVMOptions is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
@@ -853,7 +949,7 @@ func createMachineWithOsDiskCacheType(cacheType string) *AzureMachine {
 	return machine
 }
 
-func createMachineWithRoleAssignmentName() *AzureMachine {
+func createMachineWithSystemAssignedIdentityRoleName() *AzureMachine {
 	machine := &AzureMachine{
 		Spec: AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
@@ -869,7 +965,7 @@ func createMachineWithRoleAssignmentName() *AzureMachine {
 	return machine
 }
 
-func createMachineWithoutRoleAssignmentName() *AzureMachine {
+func createMachineWithoutSystemAssignedIdentityRoleName() *AzureMachine {
 	machine := &AzureMachine{
 		Spec: AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
@@ -879,6 +975,27 @@ func createMachineWithoutRoleAssignmentName() *AzureMachine {
 				Scope:        "test-scope",
 				DefinitionID: "test-definition-id",
 			},
+		},
+	}
+	return machine
+}
+
+func createMachineWithoutRoleAssignmentName() *AzureMachine {
+	machine := &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
+		},
+	}
+	return machine
+}
+
+func createMachineWithRoleAssignmentName() *AzureMachine {
+	machine := &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey:       validSSHPublicKey,
+			OSDisk:             validOSDisk,
+			RoleAssignmentName: "test-role-assignment",
 		},
 	}
 	return machine
@@ -904,6 +1021,37 @@ func createMachineWithDiagnostics(diagnosticsType BootDiagnosticsStorageAccountT
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
 			Diagnostics:  diagnostics,
+		},
+	}
+}
+
+func createMachineWithConfidentialCompute(securityEncryptionType SecurityEncryptionType, securityType SecurityTypes, encryptionAtHost, vTpmEnabled, secureBootEnabled bool) *AzureMachine {
+	securityProfile := &SecurityProfile{
+		EncryptionAtHost: &encryptionAtHost,
+		SecurityType:     securityType,
+		UefiSettings: &UefiSettings{
+			VTpmEnabled:       &vTpmEnabled,
+			SecureBootEnabled: &secureBootEnabled,
+		},
+	}
+
+	osDisk := OSDisk{
+		DiskSizeGB: pointer.Int32(30),
+		OSType:     LinuxOS,
+		ManagedDisk: &ManagedDiskParameters{
+			StorageAccountType: "Premium_LRS",
+			SecurityProfile: &VMDiskSecurityProfile{
+				SecurityEncryptionType: securityEncryptionType,
+			},
+		},
+		CachingType: string(compute.PossibleCachingTypesValues()[0]),
+	}
+
+	return &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey:    validSSHPublicKey,
+			OSDisk:          osDisk,
+			SecurityProfile: securityProfile,
 		},
 	}
 }

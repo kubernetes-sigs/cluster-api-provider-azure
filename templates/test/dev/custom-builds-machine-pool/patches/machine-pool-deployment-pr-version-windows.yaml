@@ -1,0 +1,14 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-win
+spec:
+  template:
+    image:
+      # we use the latest image as a workaround there is no published marketplace image for k8s CI versions.
+      # latest binaries and images will get replaced to the desired version by the script above.
+      marketplace:
+        publisher: cncf-upstream
+        offer: capi-windows
+        sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
+        version: latest

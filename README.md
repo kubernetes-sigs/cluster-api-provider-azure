@@ -34,13 +34,7 @@ If you need help with CAPZ, please visit the [#cluster-api-azure][slack] channel
 
 ### Cluster API Versions
 
-This provider's versions are compatible with the following versions of Cluster API:
-
-| | Cluster API `v1alpha3` (`v0.3.x`) | Cluster API `v1alpha4` (`v0.4.x`) | Cluster API `v1beta1` (`v1.0.x`) |
-|---|---|---|---|
-|Azure Provider `v0.4.x` | ✓ |  |  |
-|Azure Provider `v0.5.x` |  | ✓ |  |
-|Azure Provider `v1.0.x` |  |  | ✓ |
+Currently, CAPZ is compatible only with the `v1beta1` version of CAPI (v1.0.x). Support for `v1alpha3` (v0.3.x) and `v1alpha4` (v0.4.x) is deprecated and has been removed.
 
 ### Kubernetes Versions
 
@@ -49,7 +43,7 @@ The Azure provider is able to install and manage the [versions of Kubernetes sup
 
 #### Managed Clusters (AKS)
 
-Managed Clusters (AKS) follow their own [Kubernetes version support policy](https://docs.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli#kubernetes-version-support-policy). Please use the Azure portal or CLI to [find the versions supported in your cluster's location](https://docs.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli#azure-portal-and-cli-versions).
+Managed Clusters (AKS) follow their own [Kubernetes version support policy](https://learn.microsoft.com/azure/aks/supported-kubernetes-versions?tabs=azure-cli#kubernetes-version-support-policy). Please use the Azure portal or CLI to [find the versions supported in your cluster's location](https://learn.microsoft.com/azure/aks/supported-kubernetes-versions?tabs=azure-cli#azure-portal-and-cli-versions).
 
 For more information on Kubernetes version support, see the [Cluster API book](https://cluster-api.sigs.k8s.io/reference/versions.html).
 

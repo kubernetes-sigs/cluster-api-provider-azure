@@ -24,6 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -79,6 +80,43 @@ func (m *MockReconciler) Reconcile(ctx context.Context) error {
 func (mr *MockReconcilerMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), ctx)
+}
+
+// MockPauser is a mock of Pauser interface.
+type MockPauser struct {
+	ctrl     *gomock.Controller
+	recorder *MockPauserMockRecorder
+}
+
+// MockPauserMockRecorder is the mock recorder for MockPauser.
+type MockPauserMockRecorder struct {
+	mock *MockPauser
+}
+
+// NewMockPauser creates a new mock instance.
+func NewMockPauser(ctrl *gomock.Controller) *MockPauser {
+	mock := &MockPauser{ctrl: ctrl}
+	mock.recorder = &MockPauserMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPauser) EXPECT() *MockPauserMockRecorder {
+	return m.recorder
+}
+
+// Pause mocks base method.
+func (m *MockPauser) Pause(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Pause", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Pause indicates an expected call of Pause.
+func (mr *MockPauserMockRecorder) Pause(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pause", reflect.TypeOf((*MockPauser)(nil).Pause), arg0)
 }
 
 // MockServiceReconciler is a mock of ServiceReconciler interface.
@@ -348,17 +386,17 @@ func (mr *MockNetworkDescriberMockRecorder) APIServerLBName() *gomock.Call {
 }
 
 // APIServerLBPoolName mocks base method.
-func (m *MockNetworkDescriber) APIServerLBPoolName(arg0 string) string {
+func (m *MockNetworkDescriber) APIServerLBPoolName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
+	ret := m.ctrl.Call(m, "APIServerLBPoolName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
-func (mr *MockNetworkDescriberMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
+func (mr *MockNetworkDescriberMockRecorder) APIServerLBPoolName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBPoolName), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBPoolName))
 }
 
 // ControlPlaneRouteTable mocks base method.
@@ -965,17 +1003,17 @@ func (mr *MockClusterScoperMockRecorder) APIServerLBName() *gomock.Call {
 }
 
 // APIServerLBPoolName mocks base method.
-func (m *MockClusterScoper) APIServerLBPoolName(arg0 string) string {
+func (m *MockClusterScoper) APIServerLBPoolName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
+	ret := m.ctrl.Call(m, "APIServerLBPoolName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
-func (mr *MockClusterScoperMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
+func (mr *MockClusterScoperMockRecorder) APIServerLBPoolName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBPoolName), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBPoolName))
 }
 
 // AdditionalTags mocks base method.
@@ -1871,4 +1909,70 @@ func (m *MockResourceSpecGetterWithHeaders) ResourceName() string {
 func (mr *MockResourceSpecGetterWithHeadersMockRecorder) ResourceName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceName", reflect.TypeOf((*MockResourceSpecGetterWithHeaders)(nil).ResourceName))
+}
+
+// MockASOResourceSpecGetter is a mock of ASOResourceSpecGetter interface.
+type MockASOResourceSpecGetter struct {
+	ctrl     *gomock.Controller
+	recorder *MockASOResourceSpecGetterMockRecorder
+}
+
+// MockASOResourceSpecGetterMockRecorder is the mock recorder for MockASOResourceSpecGetter.
+type MockASOResourceSpecGetterMockRecorder struct {
+	mock *MockASOResourceSpecGetter
+}
+
+// NewMockASOResourceSpecGetter creates a new mock instance.
+func NewMockASOResourceSpecGetter(ctrl *gomock.Controller) *MockASOResourceSpecGetter {
+	mock := &MockASOResourceSpecGetter{ctrl: ctrl}
+	mock.recorder = &MockASOResourceSpecGetterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockASOResourceSpecGetter) EXPECT() *MockASOResourceSpecGetterMockRecorder {
+	return m.recorder
+}
+
+// Parameters mocks base method.
+func (m *MockASOResourceSpecGetter) Parameters(ctx context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Parameters", ctx, object)
+	ret0, _ := ret[0].(genruntime.MetaObject)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Parameters indicates an expected call of Parameters.
+func (mr *MockASOResourceSpecGetterMockRecorder) Parameters(ctx, object interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).Parameters), ctx, object)
+}
+
+// ResourceRef mocks base method.
+func (m *MockASOResourceSpecGetter) ResourceRef() genruntime.MetaObject {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResourceRef")
+	ret0, _ := ret[0].(genruntime.MetaObject)
+	return ret0
+}
+
+// ResourceRef indicates an expected call of ResourceRef.
+func (mr *MockASOResourceSpecGetterMockRecorder) ResourceRef() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceRef", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).ResourceRef))
+}
+
+// WasManaged mocks base method.
+func (m *MockASOResourceSpecGetter) WasManaged(arg0 genruntime.MetaObject) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WasManaged", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WasManaged indicates an expected call of WasManaged.
+func (mr *MockASOResourceSpecGetterMockRecorder) WasManaged(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WasManaged", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).WasManaged), arg0)
 }

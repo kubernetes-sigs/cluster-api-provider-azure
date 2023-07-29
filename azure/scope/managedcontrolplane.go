@@ -30,6 +30,7 @@ import (
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
@@ -73,7 +74,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 	}
 
 	if params.ControlPlane.Spec.IdentityRef == nil {
-		if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, ""); err != nil {
+		if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment); err != nil {
 			return nil, errors.Wrap(err, "failed to create Azure session")
 		}
 	} else {
@@ -82,7 +83,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 			return nil, errors.Wrap(err, "failed to init credentials provider")
 		}
 
-		if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, "", credentialsProvider); err != nil {
+		if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, credentialsProvider); err != nil {
 			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 		}
 	}
@@ -123,6 +124,11 @@ type ManagedControlPlaneScope struct {
 // ManagedControlPlaneCache stores ManagedControlPlane data locally so we don't have to hit the API multiple times within the same reconcile loop.
 type ManagedControlPlaneCache struct {
 	isVnetManaged *bool
+}
+
+// GetClient returns the controller-runtime client.
+func (s *ManagedControlPlaneScope) GetClient() client.Client {
+	return s.Client
 }
 
 // ResourceGroup returns the managed control plane's resource group.
@@ -245,6 +251,18 @@ func (s *ManagedControlPlaneScope) GroupSpec() azure.ResourceSpecGetter {
 		Location:       s.Location(),
 		ClusterName:    s.ClusterName(),
 		AdditionalTags: s.AdditionalTags(),
+	}
+}
+
+// ASOGroupSpec returns the resource group spec.
+func (s *ManagedControlPlaneScope) ASOGroupSpec() azure.ASOResourceSpecGetter {
+	return &asogroups.GroupSpec{
+		Name:           s.ResourceGroup(),
+		Namespace:      s.Cluster.Namespace,
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
+		Owner:          *metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
 	}
 }
 
@@ -447,7 +465,6 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 		Tags:              s.ControlPlane.Spec.AdditionalTags,
 		Headers:           maps.FilterByKeyPrefix(s.ManagedClusterAnnotations(), infrav1.CustomHeaderPrefix),
 		Version:           strings.TrimPrefix(s.ControlPlane.Spec.Version, "v"),
-		SSHPublicKey:      s.ControlPlane.Spec.SSHPublicKey,
 		DNSServiceIP:      s.ControlPlane.Spec.DNSServiceIP,
 		VnetSubnetID: azure.SubnetID(
 			s.ControlPlane.Spec.SubscriptionID,
@@ -455,10 +472,15 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 			s.ControlPlane.Spec.VirtualNetwork.Name,
 			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
-		GetAllAgentPools: s.GetAllAgentPoolSpecs,
-		OutboundType:     s.ControlPlane.Spec.OutboundType,
+		GetAllAgentPools:            s.GetAllAgentPoolSpecs,
+		OutboundType:                s.ControlPlane.Spec.OutboundType,
+		Identity:                    s.ControlPlane.Spec.Identity,
+		KubeletUserAssignedIdentity: s.ControlPlane.Spec.KubeletUserAssignedIdentity,
 	}
 
+	if s.ControlPlane.Spec.SSHPublicKey != nil {
+		managedClusterSpec.SSHPublicKey = *s.ControlPlane.Spec.SSHPublicKey
+	}
 	if s.ControlPlane.Spec.NetworkPlugin != nil {
 		managedClusterSpec.NetworkPlugin = *s.ControlPlane.Spec.NetworkPlugin
 	}
@@ -603,6 +625,11 @@ func (s *ManagedControlPlaneScope) GetKubeConfigData() []byte {
 // SetKubeConfigData sets kubeconfig data.
 func (s *ManagedControlPlaneScope) SetKubeConfigData(kubeConfigData []byte) {
 	s.kubeConfigData = kubeConfigData
+}
+
+// SetKubeletIdentity sets the ID of the user-assigned identity for kubelet if not already set.
+func (s *ManagedControlPlaneScope) SetKubeletIdentity(id string) {
+	s.ControlPlane.Spec.KubeletUserAssignedIdentity = id
 }
 
 // SetLongRunningOperationState will set the future on the AzureManagedControlPlane status to allow the resource to continue

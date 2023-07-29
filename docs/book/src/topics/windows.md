@@ -107,7 +107,7 @@ It's required to specify the SSH key using the `users` property in the Kubeadm c
 
 For example like this:
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: test1-md-0

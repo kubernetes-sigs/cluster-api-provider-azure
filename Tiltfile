@@ -19,10 +19,10 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v1.4.1",
-    "cert_manager_version": "v1.11.0",
-    "kubernetes_version": "v1.24.6",
-    "aks_kubernetes_version": "v1.24.6",
+    "capi_version": "v1.4.4",
+    "cert_manager_version": "v1.12.2",
+    "kubernetes_version": "v1.27.2",
+    "aks_kubernetes_version": "v1.26.3",
     "flatcar_version": "3374.2.1",
 }
 
@@ -108,16 +108,19 @@ def validate_auth():
 
 tilt_helper_dockerfile_header = """
 # Tilt image
-FROM golang:1.19 as tilt-helper
+FROM golang:1.20 as tilt-helper
 # Support live reloading with Tilt
 RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/restart.sh  && \
     wget --output-document /start.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/start.sh && \
-    chmod +x /start.sh && chmod +x /restart.sh
+    chmod +x /start.sh && chmod +x /restart.sh && \
+    touch /process.txt && chmod 0777 /process.txt `# pre-create PID file to allow even non-root users to run the image`
 """
 
 tilt_dockerfile_header = """
 FROM gcr.io/distroless/base:debug as tilt
-WORKDIR /
+WORKDIR /tilt
+RUN ["/busybox/chmod", "0777", "."]
+COPY --from=tilt-helper /process.txt .
 COPY --from=tilt-helper /start.sh .
 COPY --from=tilt-helper /restart.sh .
 COPY manager .
@@ -217,7 +220,7 @@ def capz():
         tilt_dockerfile_header,
     ])
 
-    entrypoint = ["sh", "/start.sh", "/manager"]
+    entrypoint = ["sh", "/tilt/start.sh", "/tilt/manager"]
     extra_args = settings.get("extra_args")
     if extra_args:
         entrypoint.extend(extra_args)
@@ -232,8 +235,8 @@ def capz():
         entrypoint = entrypoint,
         only = "manager",
         live_update = [
-            sync(".tiltbuild/manager", "/manager"),
-            run("sh /restart.sh"),
+            sync(".tiltbuild/manager", "/tilt/manager"),
+            run("sh /tilt/restart.sh"),
         ],
         ignore = ["templates"],
     )
@@ -352,7 +355,7 @@ def deploy_worker_templates(template, substitutions):
 
     yaml = shlex.quote(yaml)
     flavor_name = os.path.basename(flavor)
-    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -; echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
 
     # wait for kubeconfig to be available
     flavor_cmd += "; until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; chmod 600 ./${CLUSTER_NAME}.kubeconfig; until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done"
@@ -361,26 +364,45 @@ def deploy_worker_templates(template, substitutions):
     # This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
     if "windows" in flavor_name:
         flavor_cmd += "; until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done"
-        flavor_cmd += "; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f - && " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -"
+        flavor_cmd += "; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -"
 
-    # install calico
-    if "ipv6" in flavor_name:
-        calico_values = "./templates/addons/calico-ipv6/values.yaml"
-    elif "dual-stack" in flavor_name:
-        calico_values = "./templates/addons/calico-dual-stack/values.yaml"
-    else:
-        calico_values = "./templates/addons/calico/values.yaml"
-    flavor_cmd += "; " + helm_cmd + " repo add projectcalico https://docs.tigera.io/calico/charts; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install calico projectcalico/tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
-    if "intree-cloud-provider" not in flavor_name:
-        flavor_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME}"
+    flavor_cmd += get_addons(flavor_name)
+
     local_resource(
         name = flavor_name,
-        cmd = flavor_cmd,
+        cmd = ["sh", "-ec", flavor_cmd],
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL,
         labels = ["flavors"],
         allow_parallel = True,
     )
+
+def get_addons(flavor_name):
+    # do not install calico and out of tree cloud provider for aks workload cluster
+    if "aks" in flavor_name:
+        return ""
+
+    addon_cmd = ""
+    if "intree-cloud-provider" not in flavor_name:
+        addon_cmd += "; export CIDRS=$(" + kubectl_cmd + " get cluster ${CLUSTER_NAME} -o jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[*]}')"
+        addon_cmd += "; export CIDR_LIST=$(bash -c 'echo $CIDRS' | tr ' ' ',')"
+        addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME} --set cloudControllerManager.clusterCIDR=${CIDR_LIST}"
+        if "flatcar" in flavor_name:  # append caCetDir location to the cloud-provider-azure helm install command for flatcar flavor
+            addon_cmd += " --set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates"
+
+    if "azure-cni-v1" in flavor_name:
+        addon_cmd += "; " + kubectl_cmd + " apply -f ./templates/addons/azure-cni-v1.yaml --kubeconfig ./${CLUSTER_NAME}.kubeconfig"
+    else:
+        # install calico
+        if "ipv6" in flavor_name:
+            calico_values = "./templates/addons/calico-ipv6/values.yaml"
+        elif "dual-stack" in flavor_name:
+            calico_values = "./templates/addons/calico-dual-stack/values.yaml"
+        else:
+            calico_values = "./templates/addons/calico/values.yaml"
+        addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://docs.tigera.io/calico/charts --version ${CALICO_VERSION} calico tigera-operator -f " + calico_values + " --namespace tigera-operator --create-namespace"
+
+    return addon_cmd
 
 def base64_encode(to_encode):
     encode_blob = local("echo '{}' | tr -d '\n' | base64 | tr -d '\n'".format(to_encode), quiet = True, echo_off = True)

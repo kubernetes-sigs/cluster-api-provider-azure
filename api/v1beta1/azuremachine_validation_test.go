@@ -580,6 +580,75 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 	}
 }
 
+func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name       string
+		idType     VMIdentity
+		identities []UserAssignedIdentity
+		wantErr    bool
+	}{
+		{
+			name:       "empty identity list",
+			idType:     VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{},
+			wantErr:    true,
+		},
+		{
+			name:   "invalid: providerID must start with slash",
+			idType: VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{
+				{
+					ProviderID: "subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "invalid: providerID must start with subscriptions or providers",
+			idType: VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{
+				{
+					ProviderID: "azure:///prescriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "valid",
+			idType: VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{
+				{
+					ProviderID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "valid with provider prefix",
+			idType: VMIdentityUserAssigned,
+			identities: []UserAssignedIdentity{
+				{
+					ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			errs := ValidateUserAssignedIdentity(tc.idType, tc.identities, field.NewPath("userAssignedIdentities"))
+			if tc.wantErr {
+				g.Expect(errs).NotTo(BeEmpty())
+			} else {
+				g.Expect(errs).To(BeEmpty())
+			}
+		})
+	}
+}
+
 func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 	g := NewWithT(t)
 
@@ -911,6 +980,184 @@ func TestAzureMachine_ValidateDiagnostics(t *testing.T) {
 			g.Expect(actualErrors).To(Equal(tc.expectedErrors))
 			if tc.diagnostics == nil || tc.diagnostics.Boot == nil {
 				t.Error("diagnostics/ diagnostics.Boot should not be nil")
+func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name            string
+		managedDisk     *ManagedDiskParameters
+		securityProfile *SecurityProfile
+		wantErr         bool
+	}{
+		{
+			name: "valid configuration without confidential compute",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: "",
+				},
+			},
+			securityProfile: nil,
+			wantErr:         false,
+		},
+		{
+			name: "valid configuration without confidential compute and host encryption enabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: "",
+				},
+			},
+			securityProfile: &SecurityProfile{
+				EncryptionAtHost: pointer.Bool(true),
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid configuration with VMGuestStateOnly encryption and secure boot disabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(false),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid configuration with VMGuestStateOnly encryption and secure boot enabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid configuration with VMGuestStateOnly encryption and EncryptionAtHost enabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				EncryptionAtHost: pointer.Bool(true),
+				SecurityType:     SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled: pointer.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid configuration with DiskWithVMGuestState encryption",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					SecureBootEnabled: pointer.Bool(true),
+					VTpmEnabled:       pointer.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid configuration with DiskWithVMGuestState encryption and EncryptionAtHost enabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				EncryptionAtHost: pointer.Bool(true),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid configuration with DiskWithVMGuestState encryption and vTPM disabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(false),
+					SecureBootEnabled: pointer.Bool(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid configuration with DiskWithVMGuestState encryption and secure boot disabled",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				SecurityType: SecurityTypesConfidentialVM,
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid configuration with DiskWithVMGuestState encryption and SecurityType not set to ConfidentialVM",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(true),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid configuration with VMGuestStateOnly encryption and SecurityType not set to ConfidentialVM",
+			managedDisk: &ManagedDiskParameters{
+				SecurityProfile: &VMDiskSecurityProfile{
+					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+				},
+			},
+			securityProfile: &SecurityProfile{
+				UefiSettings: &UefiSettings{
+					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: pointer.Bool(true),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateConfidentialCompute(tc.managedDisk, tc.securityProfile, field.NewPath("securityProfile"))
+			if tc.wantErr {
+				g.Expect(err).NotTo(BeEmpty())
+			} else {
+				g.Expect(err).To(BeEmpty())
 			}
 		})
 	}

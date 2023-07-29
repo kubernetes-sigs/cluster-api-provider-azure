@@ -72,6 +72,50 @@ var (
 		},
 	}
 
+	validSKUWithTrustedLaunchDisabled = resourceskus.SKU{
+		Name: pointer.String("Standard_D2v3"),
+		Kind: pointer.String(string(resourceskus.VirtualMachines)),
+		Locations: &[]string{
+			"test-location",
+		},
+		Capabilities: &[]compute.ResourceSkuCapabilities{
+			{
+				Name:  pointer.String(resourceskus.VCPUs),
+				Value: pointer.String("2"),
+			},
+			{
+				Name:  pointer.String(resourceskus.MemoryGB),
+				Value: pointer.String("4"),
+			},
+			{
+				Name:  pointer.String(resourceskus.TrustedLaunchDisabled),
+				Value: pointer.String(string(resourceskus.CapabilitySupported)),
+			},
+		},
+	}
+
+	validSKUWithConfidentialComputingType = resourceskus.SKU{
+		Name: pointer.String("Standard_D2v3"),
+		Kind: pointer.String(string(resourceskus.VirtualMachines)),
+		Locations: &[]string{
+			"test-location",
+		},
+		Capabilities: &[]compute.ResourceSkuCapabilities{
+			{
+				Name:  pointer.String(resourceskus.VCPUs),
+				Value: pointer.String("2"),
+			},
+			{
+				Name:  pointer.String(resourceskus.MemoryGB),
+				Value: pointer.String("4"),
+			},
+			{
+				Name:  pointer.String(resourceskus.ConfidentialComputingType),
+				Value: pointer.String(string(resourceskus.CapabilitySupported)),
+			},
+		},
+	}
+
 	validSKUWithEphemeralOS = resourceskus.SKU{
 		Name: pointer.String("Standard_D2v3"),
 		Kind: pointer.String(string(resourceskus.VirtualMachines)),
@@ -418,6 +462,108 @@ func TestParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name: "can create a trusted launch vm",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: infrav1.SecurityTypesTrustedLaunch,
+					UefiSettings: &infrav1.UefiSettings{
+						SecureBootEnabled: pointer.Bool(true),
+						VTpmEnabled:       pointer.Bool(true),
+					},
+				},
+				SKU: validSKU,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
+				g.Expect(*result.(compute.VirtualMachine).SecurityProfile.UefiSettings.SecureBootEnabled).To(BeTrue())
+				g.Expect(*result.(compute.VirtualMachine).SecurityProfile.UefiSettings.VTpmEnabled).To(BeTrue())
+			},
+			expectedError: "",
+		},
+		{
+			name: "can create a confidential vm",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				OSDisk: infrav1.OSDisk{
+					OSType:     "Linux",
+					DiskSizeGB: pointer.Int32(128),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "Premium_LRS",
+						SecurityProfile: &infrav1.VMDiskSecurityProfile{
+							SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
+						},
+					},
+				},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: infrav1.SecurityTypesConfidentialVM,
+					UefiSettings: &infrav1.UefiSettings{
+						SecureBootEnabled: pointer.Bool(false),
+						VTpmEnabled:       pointer.Bool(true),
+					},
+				},
+				SKU: validSKUWithConfidentialComputingType,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
+				g.Expect(result.(compute.VirtualMachine).StorageProfile.OsDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType).To(Equal(compute.SecurityEncryptionTypesVMGuestStateOnly))
+				g.Expect(*result.(compute.VirtualMachine).SecurityProfile.UefiSettings.VTpmEnabled).To(BeTrue())
+			},
+			expectedError: "",
+		},
+		{
+			name: "creating a confidential vm without the SecurityType set to ConfidentialVM fails",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				OSDisk: infrav1.OSDisk{
+					OSType:     "Linux",
+					DiskSizeGB: pointer.Int32(128),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "Premium_LRS",
+						SecurityProfile: &infrav1.VMDiskSecurityProfile{
+							SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
+						},
+					},
+				},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: "",
+					UefiSettings: &infrav1.UefiSettings{
+						SecureBootEnabled: pointer.Bool(false),
+						VTpmEnabled:       pointer.Bool(true),
+					},
+				},
+				SKU: validSKUWithConfidentialComputingType,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: securityType should be set to ConfidentialVM when securityEncryptionType is set. Object will not be requeued",
+		},
+		{
 			name: "creating a vm with encryption at host enabled for unsupported VM type fails",
 			spec: &VMSpec{
 				Name:              "my-vm",
@@ -436,6 +582,231 @@ func TestParameters(t *testing.T) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: encryption at host is not supported for VM type Standard_D2v3. Object will not be requeued",
+		},
+		{
+			name: "creating a trusted launch vm without the SecurityType set to TrustedLaunch fails",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				OSDisk: infrav1.OSDisk{
+					OSType:     "Linux",
+					DiskSizeGB: pointer.Int32(128),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "Premium_LRS",
+					},
+				},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: "",
+					UefiSettings: &infrav1.UefiSettings{
+						SecureBootEnabled: pointer.Bool(false),
+						VTpmEnabled:       pointer.Bool(true),
+					},
+				},
+				SKU: validSKUWithConfidentialComputingType,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: securityType should be set to TrustedLaunch when vTpmEnabled is true. Object will not be requeued",
+		},
+		{
+			name: "creating a trusted launch vm with secure boot enabled on unsupported VM type fails",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: infrav1.SecurityTypesTrustedLaunch,
+					UefiSettings: &infrav1.UefiSettings{
+						SecureBootEnabled: pointer.Bool(true),
+					},
+				},
+				SKU: validSKUWithTrustedLaunchDisabled,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: secure boot is not supported for VM type Standard_D2v3. Object will not be requeued",
+		},
+		{
+			name: "creating a trusted launch vm with vTPM enabled on unsupported VM type fails",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: infrav1.SecurityTypesTrustedLaunch,
+					UefiSettings: &infrav1.UefiSettings{
+						VTpmEnabled: pointer.Bool(true),
+					},
+				},
+				SKU: validSKUWithTrustedLaunchDisabled,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: vTPM is not supported for VM type Standard_D2v3. Object will not be requeued",
+		},
+		{
+			name: "creating a confidential vm with securityTypeEncryption DiskWithVMGuestState and encryption at host enabled fails",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				OSDisk: infrav1.OSDisk{
+					OSType:     "Linux",
+					DiskSizeGB: pointer.Int32(128),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "Premium_LRS",
+						SecurityProfile: &infrav1.VMDiskSecurityProfile{
+							SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
+						},
+					},
+				},
+				SecurityProfile: &infrav1.SecurityProfile{
+					EncryptionAtHost: pointer.Bool(true),
+					SecurityType:     infrav1.SecurityTypesConfidentialVM,
+					UefiSettings: &infrav1.UefiSettings{
+						VTpmEnabled: pointer.Bool(true),
+					},
+				},
+				SKU: validSKUWithConfidentialComputingType,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: encryption at host is not supported when securityEncryptionType is set to DiskWithVMGuestState. Object will not be requeued",
+		},
+		{
+			name: "creating a confidential vm with DiskWithVMGuestState encryption type and secure boot disabled fails",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				OSDisk: infrav1.OSDisk{
+					OSType:     "Linux",
+					DiskSizeGB: pointer.Int32(128),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "Premium_LRS",
+						SecurityProfile: &infrav1.VMDiskSecurityProfile{
+							SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
+						},
+					},
+				},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: infrav1.SecurityTypesConfidentialVM,
+					UefiSettings: &infrav1.UefiSettings{
+						SecureBootEnabled: pointer.Bool(false),
+						VTpmEnabled:       pointer.Bool(true),
+					},
+				},
+				SKU: validSKUWithConfidentialComputingType,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: secureBootEnabled should be true when securityEncryptionType is set to DiskWithVMGuestState. Object will not be requeued",
+		},
+		{
+			name: "creating a confidential vm with vTPM disabled fails",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				OSDisk: infrav1.OSDisk{
+					OSType:     "Linux",
+					DiskSizeGB: pointer.Int32(128),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "Premium_LRS",
+						SecurityProfile: &infrav1.VMDiskSecurityProfile{
+							SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
+						},
+					},
+				},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: infrav1.SecurityTypesConfidentialVM,
+					UefiSettings: &infrav1.UefiSettings{
+						VTpmEnabled: pointer.Bool(false),
+					},
+				},
+				SKU: validSKUWithConfidentialComputingType,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: vTpmEnabled should be true when securityEncryptionType is set. Object will not be requeued",
+		},
+		{
+			name: "creating a confidential vm with unsupported VM type fails",
+			spec: &VMSpec{
+				Name:              "my-vm",
+				Role:              infrav1.Node,
+				NICIDs:            []string{"my-nic"},
+				SSHKeyData:        "fakesshpublickey",
+				Size:              "Standard_D2v3",
+				AvailabilitySetID: "fake-availability-set-id",
+				Zone:              "",
+				Image:             &infrav1.Image{ID: pointer.String("fake-image-id")},
+				OSDisk: infrav1.OSDisk{
+					OSType:     "Linux",
+					DiskSizeGB: pointer.Int32(128),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "Premium_LRS",
+						SecurityProfile: &infrav1.VMDiskSecurityProfile{
+							SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
+						},
+					},
+				},
+				SecurityProfile: &infrav1.SecurityProfile{
+					SecurityType: infrav1.SecurityTypesConfidentialVM,
+					UefiSettings: &infrav1.UefiSettings{
+						VTpmEnabled: pointer.Bool(true),
+					},
+				},
+				SKU: validSKU,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: VM size Standard_D2v3 does not support confidential computing. Select a different VM size or remove the security profile of the OS disk. Object will not be requeued",
 		},
 		{
 			name: "cannot create vm with EphemeralOSDisk if does not support ephemeral os",
@@ -462,7 +833,7 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
 			},
-			expectedError: "reconcile error that cannot be recovered occurred: vm size Standard_D2v3 does not support ephemeral os. select a different vm size or disable ephemeral os. Object will not be requeued",
+			expectedError: "reconcile error that cannot be recovered occurred: VM size Standard_D2v3 does not support ephemeral os. Select a different VM size or disable ephemeral os. Object will not be requeued",
 		},
 		{
 			name: "cannot create vm if vCPU is less than 2",
@@ -479,7 +850,7 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
 			},
-			expectedError: "reconcile error that cannot be recovered occurred: vm size should be bigger or equal to at least 2 vCPUs. Object will not be requeued",
+			expectedError: "reconcile error that cannot be recovered occurred: VM size should be bigger or equal to at least 2 vCPUs. Object will not be requeued",
 		},
 		{
 			name: "cannot create vm if memory is less than 2Gi",
@@ -496,7 +867,7 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
 			},
-			expectedError: "reconcile error that cannot be recovered occurred: vm memory should be bigger or equal to at least 2Gi. Object will not be requeued",
+			expectedError: "reconcile error that cannot be recovered occurred: VM memory should be bigger or equal to at least 2Gi. Object will not be requeued",
 		},
 		{
 			name: "can create a vm with a marketplace image using a plan",
@@ -684,7 +1055,7 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
 			},
-			expectedError: "reconcile error that cannot be recovered occurred: vm size Standard_D2v3 does not support ultra disks in location test-location. select a different vm size or disable ultra disks. Object will not be requeued",
+			expectedError: "reconcile error that cannot be recovered occurred: VM size Standard_D2v3 does not support ultra disks in location test-location. Select a different VM size or disable ultra disks. Object will not be requeued",
 		},
 		{
 			name: "creates a vm with AdditionalCapabilities.UltraSSDEnabled false, if an ultra disk is specified as data disk but AdditionalCapabilities.UltraSSDEnabled is false",

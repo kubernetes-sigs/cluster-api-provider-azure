@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
@@ -31,6 +30,7 @@ import (
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -90,7 +90,7 @@ func (ac *AzureClient) GetByID(ctx context.Context, resourceID string) (compute.
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.GetByID")
 	defer done()
 
-	parsed, err := arm.ParseResourceID(resourceID)
+	parsed, err := azureutil.ParseResourceID(resourceID)
 	if err != nil {
 		return compute.VirtualMachine{}, errors.Wrap(err, fmt.Sprintf("failed parsing the VM resource id %q", resourceID))
 	}

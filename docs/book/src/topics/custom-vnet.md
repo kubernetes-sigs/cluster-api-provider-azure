@@ -176,7 +176,7 @@ spec:
 
 ### Virtual Network service endpoints
 
-Sometimes it's desirable to use [Virtual Network service endpoints](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview) to establish secure and direct connectivity to Azure services from your subnet(s). Service Endpoints are configured on a per-subnet basis. Vnets managed by either `AzureCluster` or `AzureManagedControlPlane` can have `serviceEndpoints` optionally set on each subnet.
+Sometimes it's desirable to use [Virtual Network service endpoints](https://learn.microsoft.com/azure/virtual-network/virtual-network-service-endpoints-overview) to establish secure and direct connectivity to Azure services from your subnet(s). Service Endpoints are configured on a per-subnet basis. Vnets managed by either `AzureCluster` or `AzureManagedControlPlane` can have `serviceEndpoints` optionally set on each subnet.
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

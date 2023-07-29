@@ -15,11 +15,11 @@ By default, Azure will pick the supported storage account type for your AzureMac
 
 Supported values are `Premium_LRS`, `Standard_LRS`, and `StandardSSDLRS`. Note that `UltraSSD_LRS` can only be used with data disks, it cannot be used with OS Disk.
 
-Also, note that not all Azure VM sizes support Premium storage. To learn more about which sizes are premium storage-compatible, see [Sizes for virtual machines in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes). 
+Also, note that not all Azure VM sizes support Premium storage. To learn more about which sizes are premium storage-compatible, see [Sizes for virtual machines in Azure](https://learn.microsoft.com/azure/virtual-machines/sizes). 
 
-See [Azure documentation on disk types](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types) to learn more about the different storage types.
+See [Azure documentation on disk types](https://learn.microsoft.com/azure/virtual-machines/disks-types) to learn more about the different storage types.
 
-See [Introduction to Azure managed disks](https://docs.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview) for more information on managed disks.
+See [Introduction to Azure managed disks](https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview) for more information on managed disks.
 
 If the optional field `diskSizeGB` is not provided, it will default to 30GB.
 
@@ -44,7 +44,7 @@ choose between these two disks (the default behavior is typically most
 desirable). This corresponds to the `placement` property in the Azure
 Compute REST API.
 
-See [the Azure documentation](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ephemeral-os-disks) for full details.
+See [the Azure documentation](https://learn.microsoft.com/azure/virtual-machines/linux/ephemeral-os-disks) for full details.
 
 ## Azure Machine DiffDiskSettings
 

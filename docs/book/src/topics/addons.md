@@ -29,7 +29,7 @@ Then install the Helm chart on the workload cluster:
 
 ```bash
 helm repo add projectcalico https://docs.tigera.io/calico/charts && \
-helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
+helm install calico projectcalico/tigera-operator --version v3.26.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
 ### For IPv6 Clusters
@@ -44,7 +44,7 @@ Then install the Helm chart on the workload cluster:
 
 ```bash
 helm repo add projectcalico https://docs.tigera.io/calico/charts && \
-helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-ipv6/values.yaml  --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
+helm install calico projectcalico/tigera-operator --version v3.26.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-ipv6/values.yaml  --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
 ### For Dual-Stack Clusters
@@ -60,7 +60,7 @@ Then install the Helm chart on the workload cluster:
 
 ```bash
 helm repo add projectcalico https://docs.tigera.io/calico/charts && \
-helm install calico projectcalico/tigera-operator -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-dual-stack/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}","installation.calicoNetwork.ipPools[1].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
+helm install calico projectcalico/tigera-operator --version v3.26.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-dual-stack/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}","installation.calicoNetwork.ipPools[1].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
 <aside class="note">
@@ -147,6 +147,138 @@ Apply kube-flannel.yml
 kubectl apply -f kube-flannel.yml
 ```
 
+## Using Azure CNI V1
+
+While following the [quick start steps in Cluster API book](https://cluster-api.sigs.k8s.io/user/quick-start.html#quick-start), Azure CNI v1 can be used in place of Calico as a [container networking interface solution](https://cluster-api.sigs.k8s.io/user/quick-start.html#deploy-a-cni-solution) for your workload cluster.
+
+Artifacts required for Azure CNI:
+
+- [azure-cni.yaml](https://raw.githubusercontent.com/Azure/azure-container-networking/v1.5.3/hack/manifests/cni-installer-v1.yaml)
+
+### Limitations
+
+- Azure CNI v1 is only supported for Linux nodes. Refer to: [CAPZ#3650](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/3650)
+
+- We can only configure one subnet per control-plane node. Refer to: [CAPZ#3506](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/3506)
+
+- We can only configure one Network Interface per worker node. Refer to: [Azure-container-networking#3611](https://github.com/Azure/azure-container-networking/issues/1945)
+
+### Update Cluster Configuration
+
+The following resources need to be updated when using `capi-quickstart.yaml` (the default cluster manifest generated while following the Cluster API quick start).
+
+- `kind: AzureCluster`
+  - update `spec.networkSpecs.subnets` with the name and role of the subnets you want to use in your workload cluster.
+
+  - ```yaml
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureCluster
+    metadata:
+      name: ${CLUSTER_NAME}
+      namespace: default
+    spec:
+      .
+      .
+      networkSpec:
+        subnets:
+        - name: control-plane-subnet # update this as per your nomenclature
+          role: control-plane
+        - name: node-subnet # update this as per your nomenclature
+          role: node
+      .
+      .
+    ```
+
+- `kind: KubeadmControlPlane` of control plane nodes
+  - add `max-pods: "30"` to `spec.kubeadmConfigSpec.initConfiguration.nodeRegistration.kubeletExtraArgs`.
+  - add `max-pods: "30"` to `spec.kubeadmConfigSpec.joinConfiguration.nodeRegistration.kubeletExtraArgs`.
+
+  - ```yaml
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    metadata:
+      name: ${CLUSTER_NAME}-control-plane
+      namespace: default
+    spec:
+      kubeadmConfigSpec:
+        .
+        .
+        initConfiguration:
+          nodeRegistration:
+            kubeletExtraArgs:
+              max-pods: "30"
+              .
+              .
+        joinConfiguration:
+          nodeRegistration:
+            kubeletExtraArgs:
+              max-pods: "30"
+              .
+              .
+    ```
+
+- `kind: AzureMachineTemplate` of control-plane
+  - Add `networkInterfaces` to controlplane's `AzureMachineTemplate`
+
+  - ```yaml
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureMachineTemplate
+    metadata:
+      name: ${CLUSTER_NAME}-control-plane
+      namespace: default
+    spec:
+      template:
+        spec:
+          .
+          .
+          networkInterfaces:
+          - privateIPConfigs: 30
+            subnetName: control-plane-subnet
+          .
+          .
+    ```
+
+- `kind: AzureMachineTemplate` of worker node
+  - Add `networkInterfaces` to worker node's `AzureMachineTemplate`
+
+  - ```yaml
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureMachineTemplate
+    metadata:
+      name: ${CLUSTER_NAME}-md-0
+      namespace: default
+    spec:
+      template:
+        spec:
+          networkInterfaces:
+          - privateIPConfigs: 30
+            subnetName: node-subnet
+          .
+          .
+    ```
+
+- `kind: KubeadmControlPlane` of worker nodes
+  - add `max-pods: "30"` to `spec.template.spec.joinConfiguration.nodeRegistration.kubeletExtraArgs`.
+
+  - ```yaml
+    apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+    kind: KubeadmConfigTemplate
+    metadata:
+      name: ${CLUSTER_NAME}-md-0
+      namespace: default
+    spec:
+      template:
+        spec:
+          .
+          .
+          joinConfiguration:
+            nodeRegistration:
+              kubeletExtraArgs:
+                max-pods: "30"
+                .
+                .
+    ```
+
 # External Cloud Provider
 
 The "external" or "out-of-tree" cloud provider for Azure is the recommended  cloud provider for CAPZ clusters. The "in-tree" cloud provider has been deprecated since v1.20 and only bug fixes are allowed in its Kubernetes repository directory.
@@ -167,6 +299,13 @@ Then install the Helm chart on the workload cluster:
 ```bash
 helm install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME} --set "cloudControllerManager.clusterCIDR=${CCM_CIDR_BLOCK}"
 ```
+
+- **Note**: 
+  When working with **Flatcar machines**, append `--set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates` to the `cloud-provider-azure` _helm_ command. The helm command to install cloud provider azure for Flatcar-flavored workload cluster will be:
+
+    ```bash
+    helm install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME} --set "cloudControllerManager.clusterCIDR=${CCM_CIDR_BLOCK}" --set-string "cloudControllerManager.caCertDir=/usr/share/ca-certificates"
+    ```
 
 The Helm chart will pick the right version of `cloud-controller-manager` and `cloud-node-manager` to work with the version of Kubernetes your cluster is running.
 

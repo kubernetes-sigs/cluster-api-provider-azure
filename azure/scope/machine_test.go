@@ -58,7 +58,7 @@ func TestMachineScope_Name(t *testing.T) {
 						Name: "machine-with-a-long-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						OSDisk: infrav1.OSDisk{
 							OSType: "Windows",
 						},
@@ -164,7 +164,7 @@ func TestMachineScope_GetVMID(t *testing.T) {
 						Name: "not-this-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 					},
 				},
 			},
@@ -209,21 +209,21 @@ func TestMachineScope_ProviderID(t *testing.T) {
 						Name: "not-this-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 					},
 				},
 			},
-			want: "azure://compute/virtual-machines/machine-name",
+			want: "azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name",
 		},
 		{
-			name: "returns empty if provider ID is invalid",
+			name: "returns empty if provider ID is empty",
 			machineScope: MachineScope{
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("foo"),
+						ProviderID: pointer.String(""),
 					},
 				},
 			},
@@ -1715,6 +1715,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "outbound-lb-outboundBackendPool",
+									},
 								},
 							},
 						},
@@ -1725,7 +1728,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -1819,6 +1822,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "outbound-lb-outboundBackendPool",
+									},
 								},
 							},
 						},
@@ -1829,7 +1835,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -1945,7 +1951,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2049,7 +2055,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2147,6 +2153,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 										Type: infrav1.Internal,
 									},
+									BackendPool: infrav1.BackendPool{
+										Name: "api-lb-backendPool",
+									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
@@ -2160,7 +2169,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2254,6 +2263,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								APIServerLB: infrav1.LoadBalancerSpec{
 									Name: "api-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "api-lb-backendPool",
+									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
@@ -2267,7 +2279,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2361,6 +2373,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								APIServerLB: infrav1.LoadBalancerSpec{
 									Name: "api-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "api-lb-backendPool",
+									},
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
@@ -2374,7 +2389,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2472,6 +2487,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "outbound-lb-outboundBackendPool",
+									},
 								},
 							},
 						},
@@ -2482,7 +2500,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{
 							{
 								SubnetName:            "subnet1",
@@ -2619,7 +2637,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID:       pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID:       pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						AllocatePublicIP: true,
 						NetworkInterfaces: []infrav1.NetworkInterface{
 							{
@@ -2747,6 +2765,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
 									Name: "outbound-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "outbound-lb-outboundBackendPool",
+									},
 								},
 							},
 						},
@@ -2757,7 +2778,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure://compute/virtual-machines/machine-name"),
+						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{
 							{
 								SubnetName:            "subnet1",

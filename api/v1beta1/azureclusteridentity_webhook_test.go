@@ -93,3 +93,84 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name               string
+		oldClusterIdentity *AzureClusterIdentity
+		clusterIdentity    *AzureClusterIdentity
+		wantErr            bool
+	}{
+		{
+			name: "azureclusteridentity with no change",
+			clusterIdentity: &AzureClusterIdentity{
+				Spec: AzureClusterIdentitySpec{
+					Type:     ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			},
+			oldClusterIdentity: &AzureClusterIdentity{
+				Spec: AzureClusterIdentitySpec{
+					Type:     ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with a change in type",
+			clusterIdentity: &AzureClusterIdentity{
+				Spec: AzureClusterIdentitySpec{
+					Type:       ServicePrincipal,
+					ClientID:   fakeClientID,
+					TenantID:   fakeTenantID,
+					ResourceID: fakeResourceID,
+				},
+			},
+			oldClusterIdentity: &AzureClusterIdentity{
+				Spec: AzureClusterIdentitySpec{
+					Type:       WorkloadIdentity,
+					ClientID:   fakeClientID,
+					TenantID:   fakeTenantID,
+					ResourceID: fakeResourceID,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azureclusteridentity with a change in client ID",
+			clusterIdentity: &AzureClusterIdentity{
+				Spec: AzureClusterIdentitySpec{
+					Type:       ServicePrincipal,
+					ClientID:   fakeClientID,
+					TenantID:   fakeTenantID,
+					ResourceID: fakeResourceID,
+				},
+			},
+			oldClusterIdentity: &AzureClusterIdentity{
+				Spec: AzureClusterIdentitySpec{
+					Type:       WorkloadIdentity,
+					ClientID:   "diff-fake-Client-ID",
+					TenantID:   fakeTenantID,
+					ResourceID: fakeResourceID,
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.clusterIdentity.ValidateUpdate(tc.oldClusterIdentity)
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}

@@ -11,7 +11,7 @@ spec:
         marketplace:
           publisher: cncf-upstream
           offer: capi
-          sku: ubuntu-1804-gen1
+          sku: ubuntu-2204-gen1
           version: latest
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -27,7 +27,7 @@ spec:
         marketplace:
           publisher: cncf-upstream
           offer: capi
-          sku: ubuntu-1804-gen1
+          sku: ubuntu-2204-gen1
           version: latest
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1

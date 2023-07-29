@@ -39,10 +39,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -277,13 +277,13 @@ func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infr
 
 		if m.Role() == infrav1.ControlPlane {
 			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.Role())
 			if m.IsAPIServerPrivate() {
 				spec.InternalLBName = m.APIServerLBName()
-				spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+				spec.InternalLBAddressPoolName = m.APIServerLBPoolName()
 			} else {
 				spec.PublicLBNATRuleName = m.Name()
-				spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+				spec.PublicLBAddressPoolName = m.APIServerLBPoolName()
 			}
 		}
 
@@ -293,12 +293,7 @@ func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infr
 		// If the NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
 		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
 			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
-		}
-		// If the NAT gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
-		if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
-			spec.PublicLBName = m.OutboundLBName(m.Role())
-			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
+			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.Role())
 		}
 	}
 
@@ -451,22 +446,18 @@ func (m *MachineScope) Role() string {
 	return infrav1.Node
 }
 
-// GetVMID returns the AzureMachine instance id by parsing Spec.FakeProviderID.
+// GetVMID returns the AzureMachine instance id by parsing the scope's providerID.
 func (m *MachineScope) GetVMID() string {
-	parsed, err := noderefutil.NewProviderID(m.ProviderID())
+	resourceID, err := azureutil.ParseResourceID(m.ProviderID())
 	if err != nil {
 		return ""
 	}
-	return parsed.ID()
+	return resourceID.Name
 }
 
 // ProviderID returns the AzureMachine providerID from the spec.
 func (m *MachineScope) ProviderID() string {
-	parsed, err := noderefutil.NewProviderID(pointer.StringDeref(m.AzureMachine.Spec.ProviderID, ""))
-	if err != nil {
-		return ""
-	}
-	return parsed.String()
+	return pointer.StringDeref(m.AzureMachine.Spec.ProviderID, "")
 }
 
 // AvailabilitySetSpec returns the availability set spec for this machine if available.

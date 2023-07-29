@@ -45,6 +45,8 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) 
 		EnableNodePublicIP:   properties.EnableNodePublicIP,
 		NodePublicIPPrefixID: properties.NodePublicIPPrefixID,
 		ScaleSetPriority:     properties.ScaleSetPriority,
+		ScaleDownMode:        properties.ScaleDownMode,
+		SpotMaxPrice:         properties.SpotMaxPrice,
 		Tags:                 properties.Tags,
 		KubeletDiskType:      properties.KubeletDiskType,
 		LinuxOSConfig:        properties.LinuxOSConfig,

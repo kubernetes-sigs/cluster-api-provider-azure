@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -74,20 +75,26 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 
 // newAzureManagedMachinePoolService populates all the services based on input scope.
 func newAzureManagedMachinePoolService(scope *scope.ManagedMachinePoolScope) (*azureManagedMachinePoolService, error) {
-	var authorizer azure.Authorizer = scope
-	if scope.Location() != "" {
-		regionalAuthorizer, err := azure.WithRegionalBaseURI(scope, scope.Location())
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create a regional authorizer")
-		}
-		authorizer = regionalAuthorizer
+	scaleSetAuthorizer, err := scaleSetAuthorizer(scope)
+	if err != nil {
+		return nil, err
 	}
 
 	return &azureManagedMachinePoolService{
 		scope:         scope,
 		agentPoolsSvc: agentpools.New(scope),
-		scaleSetsSvc:  scalesets.NewClient(authorizer),
+		scaleSetsSvc:  scalesets.NewClient(scaleSetAuthorizer),
 	}, nil
+}
+
+// scaleSetAuthorizer takes a scope and determines if a regional authorizer is needed for scale sets
+// see https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1850 for context on region based authorizer.
+func scaleSetAuthorizer(scope *scope.ManagedMachinePoolScope) (azure.Authorizer, error) {
+	if scope.ControlPlane.Spec.AzureEnvironment == azure.PublicCloudName {
+		return azure.WithRegionalBaseURI(scope, scope.Location()) // public cloud supports regional end points
+	}
+
+	return scope, nil
 }
 
 // Reconcile reconciles all the services in a predetermined order.
@@ -136,7 +143,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	var providerIDs = make([]string, len(instances))
 	for i := 0; i < len(instances); i++ {
 		// Transform the VMSS instance resource representation to conform to the cloud-provider-azure representation
-		providerID, err := azprovider.ConvertResourceGroupNameToLower(azure.ProviderIDPrefix + *instances[i].ID)
+		providerID, err := azprovider.ConvertResourceGroupNameToLower(azureutil.ProviderIDPrefix + *instances[i].ID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse instance ID %s", *instances[i].ID)
 		}

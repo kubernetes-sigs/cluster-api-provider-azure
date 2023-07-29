@@ -94,7 +94,7 @@ func (s *VMSpec) Parameters(ctx context.Context, existing interface{}) (params i
 		return nil, err
 	}
 
-	securityProfile, err := s.generateSecurityProfile()
+	securityProfile, err := s.generateSecurityProfile(storageProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 		return nil, azure.WithTerminalError(errors.Wrap(err, "failed to validate the vCPU capability"))
 	}
 	if !vCPUCapability {
-		return nil, azure.WithTerminalError(errors.New("vm size should be bigger or equal to at least 2 vCPUs"))
+		return nil, azure.WithTerminalError(errors.New("VM size should be bigger or equal to at least 2 vCPUs"))
 	}
 
 	// Checking if the requested VM size has at least 2 Gi of memory
@@ -175,12 +175,12 @@ func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 	}
 
 	if !MemoryCapability {
-		return nil, azure.WithTerminalError(errors.New("vm memory should be bigger or equal to at least 2Gi"))
+		return nil, azure.WithTerminalError(errors.New("VM memory should be bigger or equal to at least 2Gi"))
 	}
 	// enable ephemeral OS
 	if s.OSDisk.DiffDiskSettings != nil {
 		if !s.SKU.HasCapability(resourceskus.EphemeralOSDisk) {
-			return nil, azure.WithTerminalError(fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", s.Size))
+			return nil, azure.WithTerminalError(fmt.Errorf("VM size %s does not support ephemeral os. Select a different VM size or disable ephemeral os", s.Size))
 		}
 
 		storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
@@ -195,6 +195,20 @@ func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 		}
 		if s.OSDisk.ManagedDisk.DiskEncryptionSet != nil {
 			storageProfile.OsDisk.ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: pointer.String(s.OSDisk.ManagedDisk.DiskEncryptionSet.ID)}
+		}
+		if s.OSDisk.ManagedDisk.SecurityProfile != nil {
+			if _, exists := s.SKU.GetCapability(resourceskus.ConfidentialComputingType); !exists {
+				return nil, azure.WithTerminalError(fmt.Errorf("VM size %s does not support confidential computing. Select a different VM size or remove the security profile of the OS disk", s.Size))
+			}
+
+			storageProfile.OsDisk.ManagedDisk.SecurityProfile = &compute.VMDiskSecurityProfile{}
+
+			if s.OSDisk.ManagedDisk.SecurityProfile.DiskEncryptionSet != nil {
+				storageProfile.OsDisk.ManagedDisk.SecurityProfile.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: pointer.String(s.OSDisk.ManagedDisk.SecurityProfile.DiskEncryptionSet.ID)}
+			}
+			if s.OSDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType != "" {
+				storageProfile.OsDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType = compute.SecurityEncryptionTypes(string(s.OSDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType))
+			}
 		}
 	}
 
@@ -219,7 +233,7 @@ func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 
 			// check the support for ultra disks based on location and vm size
 			if disk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) && !s.SKU.HasLocationCapability(resourceskus.UltraSSDAvailable, s.Location, s.Zone) {
-				return nil, azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", s.Size, s.Location))
+				return nil, azure.WithTerminalError(fmt.Errorf("VM size %s does not support ultra disks in location %s. Select a different VM size or disable ultra disks", s.Size, s.Location))
 			}
 		}
 	}
@@ -277,18 +291,89 @@ func (s *VMSpec) generateOSProfile() (*compute.OSProfile, error) {
 	return osProfile, nil
 }
 
-func (s *VMSpec) generateSecurityProfile() (*compute.SecurityProfile, error) {
+func (s *VMSpec) generateSecurityProfile(storageProfile *compute.StorageProfile) (*compute.SecurityProfile, error) {
 	if s.SecurityProfile == nil {
 		return nil, nil
 	}
 
-	if !s.SKU.HasCapability(resourceskus.EncryptionAtHost) {
-		return nil, azure.WithTerminalError(errors.Errorf("encryption at host is not supported for VM type %s", s.Size))
+	securityProfile := &compute.SecurityProfile{}
+
+	if storageProfile.OsDisk.ManagedDisk != nil &&
+		storageProfile.OsDisk.ManagedDisk.SecurityProfile != nil &&
+		storageProfile.OsDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType != "" {
+		if s.SecurityProfile.EncryptionAtHost != nil && *s.SecurityProfile.EncryptionAtHost &&
+			storageProfile.OsDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType == compute.SecurityEncryptionTypesDiskWithVMGuestState {
+			return nil, azure.WithTerminalError(errors.Errorf("encryption at host is not supported when securityEncryptionType is set to %s", compute.SecurityEncryptionTypesDiskWithVMGuestState))
+		}
+
+		if s.SecurityProfile.SecurityType != infrav1.SecurityTypesConfidentialVM {
+			return nil, azure.WithTerminalError(errors.Errorf("securityType should be set to %s when securityEncryptionType is set", infrav1.SecurityTypesConfidentialVM))
+		}
+
+		if s.SecurityProfile.UefiSettings == nil {
+			return nil, azure.WithTerminalError(errors.New("vTpmEnabled should be true when securityEncryptionType is set"))
+		}
+
+		if storageProfile.OsDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType == compute.SecurityEncryptionTypesDiskWithVMGuestState &&
+			!*s.SecurityProfile.UefiSettings.SecureBootEnabled {
+			return nil, azure.WithTerminalError(errors.Errorf("secureBootEnabled should be true when securityEncryptionType is set to %s", compute.SecurityEncryptionTypesDiskWithVMGuestState))
+		}
+
+		if s.SecurityProfile.UefiSettings.VTpmEnabled != nil && !*s.SecurityProfile.UefiSettings.VTpmEnabled {
+			return nil, azure.WithTerminalError(errors.New("vTpmEnabled should be true when securityEncryptionType is set"))
+		}
+
+		securityProfile.SecurityType = compute.SecurityTypesConfidentialVM
+
+		securityProfile.UefiSettings = &compute.UefiSettings{
+			SecureBootEnabled: s.SecurityProfile.UefiSettings.SecureBootEnabled,
+			VTpmEnabled:       s.SecurityProfile.UefiSettings.VTpmEnabled,
+		}
+
+		return securityProfile, nil
 	}
 
-	return &compute.SecurityProfile{
-		EncryptionAtHost: s.SecurityProfile.EncryptionAtHost,
-	}, nil
+	if s.SecurityProfile.EncryptionAtHost != nil {
+		if !s.SKU.HasCapability(resourceskus.EncryptionAtHost) && *s.SecurityProfile.EncryptionAtHost {
+			return nil, azure.WithTerminalError(errors.Errorf("encryption at host is not supported for VM type %s", s.Size))
+		}
+
+		securityProfile.EncryptionAtHost = s.SecurityProfile.EncryptionAtHost
+	}
+
+	hasTrustedLaunchDisabled := s.SKU.HasCapability(resourceskus.TrustedLaunchDisabled)
+
+	if s.SecurityProfile.UefiSettings != nil {
+		securityProfile.UefiSettings = &compute.UefiSettings{}
+
+		if s.SecurityProfile.UefiSettings.SecureBootEnabled != nil && *s.SecurityProfile.UefiSettings.SecureBootEnabled {
+			if hasTrustedLaunchDisabled {
+				return nil, azure.WithTerminalError(errors.Errorf("secure boot is not supported for VM type %s", s.Size))
+			}
+
+			if s.SecurityProfile.SecurityType != infrav1.SecurityTypesTrustedLaunch {
+				return nil, azure.WithTerminalError(errors.Errorf("securityType should be set to %s when secureBootEnabled is true", infrav1.SecurityTypesTrustedLaunch))
+			}
+
+			securityProfile.SecurityType = compute.SecurityTypesTrustedLaunch
+			securityProfile.UefiSettings.SecureBootEnabled = pointer.Bool(true)
+		}
+
+		if s.SecurityProfile.UefiSettings.VTpmEnabled != nil && *s.SecurityProfile.UefiSettings.VTpmEnabled {
+			if hasTrustedLaunchDisabled {
+				return nil, azure.WithTerminalError(errors.Errorf("vTPM is not supported for VM type %s", s.Size))
+			}
+
+			if s.SecurityProfile.SecurityType != infrav1.SecurityTypesTrustedLaunch {
+				return nil, azure.WithTerminalError(errors.Errorf("securityType should be set to %s when vTpmEnabled is true", infrav1.SecurityTypesTrustedLaunch))
+			}
+
+			securityProfile.SecurityType = compute.SecurityTypesTrustedLaunch
+			securityProfile.UefiSettings.VTpmEnabled = pointer.Bool(true)
+		}
+	}
+
+	return securityProfile, nil
 }
 
 func (s *VMSpec) generateNICRefs() *[]compute.NetworkInterfaceReference {

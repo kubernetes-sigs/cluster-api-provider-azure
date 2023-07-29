@@ -46,8 +46,8 @@ setup() {
 
     # the azure-cloud-provider repo expects IMAGE_REGISTRY.
     export IMAGE_REGISTRY=${REGISTRY}
-    pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && TAG=$(git rev-parse --short=7 HEAD) &&
-      IMAGE_TAG_CCM="${IMAGE_TAG_CCM:-${TAG}}" && IMAGE_TAG_CNM="${IMAGE_TAG_CNM:-${TAG}}" &&
+    pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && IMAGE_TAG=$(git rev-parse --short=7 HEAD) &&
+      IMAGE_TAG_CCM="${IMAGE_TAG_CCM:-${IMAGE_TAG}}" && IMAGE_TAG_CNM="${IMAGE_TAG_CNM:-${IMAGE_TAG}}" &&
       export IMAGE_TAG_CCM && export IMAGE_TAG_CNM && popd
     echo "Image registry is ${REGISTRY}"
     echo "Image Tag CCM is ${IMAGE_TAG_CCM}"
@@ -82,20 +82,22 @@ can_reuse_artifacts() {
         fi
     done
 
-    if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os.version\": \"${WINDOWS_IMAGE_VERSION}\""; then
+    FULL_VERSION=$(docker manifest inspect mcr.microsoft.com/windows/nanoserver:${WINDOWS_IMAGE_VERSION} | jq -r '.manifests[0].platform["os.version"]')
+    if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os.version\": \"${FULL_VERSION}\""; then
         echo "false" && return
     fi
 
     echo "true"
 }
 
-cleanup() {
+capz::ci-build-azure-ccm::cleanup() {
+    echo "cloud-provider-azure cleanup"
     if [[ -d "${AZURE_CLOUD_PROVIDER_ROOT:-}" ]]; then
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" clean || true
     fi
 }
 
-trap cleanup EXIT
+trap capz::ci-build-azure-ccm::cleanup EXIT
 
 setup
 main

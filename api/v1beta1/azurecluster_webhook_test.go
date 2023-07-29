@@ -318,6 +318,30 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "natGateway name is immutable",
+			oldCluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.NetworkSpec.Subnets[0].NatGateway.Name = "cluster-test-node-natgw-0"
+				return cluster
+			}(),
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.NetworkSpec.Subnets[0].NatGateway.Name = "cluster-test-node-natgw-1"
+				return cluster
+			}(),
+			wantErr: true,
+		},
+		{
+			name:       "natGateway name can be empty before AzureCluster is updated",
+			oldCluster: createValidCluster(),
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.NetworkSpec.Subnets[0].NatGateway.Name = "cluster-test-node-natgw"
+				return cluster
+			}(),
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		tc := tc

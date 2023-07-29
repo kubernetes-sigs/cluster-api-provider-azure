@@ -46,7 +46,11 @@ capz::util::should_build_ccm() {
     if [[ -n "${TEST_CCM:-}" ]]; then
         echo "true" && return
     fi
-    # If conformance is being tested with CI artifacts, CCM should be built.
+    # If testing a custom Kubernetes version, CCM should be built.
+    if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
+        echo "true" && return
+    fi
+    # If using Kubernetes CI artifacts, CCM should be built.
     if [[ "${E2E_ARGS:-}" == "-kubetest.use-ci-artifacts" ]]; then
         echo "true" && return
     fi

@@ -27,10 +27,12 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/net"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
@@ -132,6 +134,11 @@ func (s *ClusterScope) BaseURI() string {
 // Authorizer returns the Azure client Authorizer.
 func (s *ClusterScope) Authorizer() autorest.Authorizer {
 	return s.AzureClients.Authorizer
+}
+
+// GetClient returns the controller-runtime client.
+func (s *ClusterScope) GetClient() client.Client {
+	return s.Client
 }
 
 // PublicIPSpecs returns the public IP specs.
@@ -351,12 +358,13 @@ func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
 	nsgspecs := make([]azure.ResourceSpecGetter, len(s.AzureCluster.Spec.NetworkSpec.Subnets))
 	for i, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		nsgspecs[i] = &securitygroups.NSGSpec{
-			Name:           subnet.SecurityGroup.Name,
-			SecurityRules:  subnet.SecurityGroup.SecurityRules,
-			ResourceGroup:  s.ResourceGroup(),
-			Location:       s.Location(),
-			ClusterName:    s.ClusterName(),
-			AdditionalTags: s.AdditionalTags(),
+			Name:                     subnet.SecurityGroup.Name,
+			SecurityRules:            subnet.SecurityGroup.SecurityRules,
+			ResourceGroup:            s.ResourceGroup(),
+			Location:                 s.Location(),
+			ClusterName:              s.ClusterName(),
+			AdditionalTags:           s.AdditionalTags(),
+			LastAppliedSecurityRules: s.getLastAppliedSecurityRules(subnet.SecurityGroup.Name),
 		}
 	}
 
@@ -417,6 +425,18 @@ func (s *ClusterScope) GroupSpec() azure.ResourceSpecGetter {
 		Location:       s.Location(),
 		ClusterName:    s.ClusterName(),
 		AdditionalTags: s.AdditionalTags(),
+	}
+}
+
+// ASOGroupSpec returns the resource group spec.
+func (s *ClusterScope) ASOGroupSpec() azure.ASOResourceSpecGetter {
+	return &asogroups.GroupSpec{
+		Name:           s.ResourceGroup(),
+		Namespace:      s.Namespace(),
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
+		Owner:          *metav1.NewControllerRef(s.AzureCluster, infrav1.GroupVersion.WithKind("AzureCluster")),
 	}
 }
 
@@ -692,33 +712,37 @@ func (s *ClusterScope) GetPrivateDNSZoneName() string {
 }
 
 // APIServerLBPoolName returns the API Server LB backend pool name.
-func (s *ClusterScope) APIServerLBPoolName(loadBalancerName string) string {
-	return azure.GenerateBackendAddressPoolName(loadBalancerName)
+func (s *ClusterScope) APIServerLBPoolName() string {
+	return s.APIServerLB().BackendPool.Name
+}
+
+// OutboundLB returns the outbound LB.
+func (s *ClusterScope) outboundLB(role string) *infrav1.LoadBalancerSpec {
+	if role == infrav1.Node {
+		return s.NodeOutboundLB()
+	}
+	if s.IsAPIServerPrivate() {
+		return s.ControlPlaneOutboundLB()
+	}
+	return s.APIServerLB()
 }
 
 // OutboundLBName returns the name of the outbound LB.
 func (s *ClusterScope) OutboundLBName(role string) string {
-	if role == infrav1.Node {
-		if s.NodeOutboundLB() == nil {
-			return ""
-		}
-		return s.NodeOutboundLB().Name
+	lb := s.outboundLB(role)
+	if lb == nil {
+		return ""
 	}
-	if s.IsAPIServerPrivate() {
-		if s.ControlPlaneOutboundLB() == nil {
-			return ""
-		}
-		return s.ControlPlaneOutboundLB().Name
-	}
-	return s.APIServerLBName()
+	return lb.Name
 }
 
 // OutboundPoolName returns the outbound LB backend pool name.
-func (s *ClusterScope) OutboundPoolName(loadBalancerName string) string {
-	if loadBalancerName == "" {
+func (s *ClusterScope) OutboundPoolName(role string) string {
+	lb := s.outboundLB(role)
+	if lb == nil {
 		return ""
 	}
-	return azure.GenerateOutboundBackendAddressPoolName(loadBalancerName)
+	return lb.BackendPool.Name
 }
 
 // ResourceGroup returns the cluster resource group.
@@ -1099,4 +1123,19 @@ func (s *ClusterScope) getPrivateEndpoints(subnet infrav1.SubnetSpec) []azure.Re
 	}
 
 	return privateEndpointSpecs
+}
+
+func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]interface{} {
+	// Retrieve the last applied security rules for all NSGs.
+	lastAppliedSecurityRulesAll, err := s.AnnotationJSON(azure.SecurityRuleLastAppliedAnnotation)
+	if err != nil {
+		return map[string]interface{}{}
+	}
+
+	// Retrieve the last applied security rules for this NSG.
+	lastAppliedSecurityRules, ok := lastAppliedSecurityRulesAll[nsgName].(map[string]interface{})
+	if !ok {
+		lastAppliedSecurityRules = map[string]interface{}{}
+	}
+	return lastAppliedSecurityRules
 }

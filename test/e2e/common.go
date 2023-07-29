@@ -32,6 +32,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -83,6 +84,7 @@ const (
 	FlatcarVersion                  = "FLATCAR_VERSION"
 	SecurityScanFailThreshold       = "SECURITY_SCAN_FAIL_THRESHOLD"
 	SecurityScanContainer           = "SECURITY_SCAN_CONTAINER"
+	CalicoVersion                   = "CALICO_VERSION"
 	ManagedClustersResourceType     = "managedClusters"
 	capiImagePublisher              = "cncf-upstream"
 	capiOfferName                   = "capi"
@@ -90,6 +92,7 @@ const (
 	aksClusterNameSuffix            = "aks"
 	flatcarCAPICommunityGallery     = "flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0"
 	defaultNamespace                = "default"
+	AzureCNIv1Manifest              = "AZURE_CNI_V1_MANIFEST_PATH"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -278,7 +281,7 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
 		InstallCalicoAndCloudProviderAzureHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	} else {
-		InstallCalicoHelmChart(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
+		InstallCNI(ctx, input, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	}
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	v, err := semver.ParseTolerant(input.ConfigCluster.KubernetesVersion)
@@ -294,10 +297,10 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCl
 // CheckTestBeforeCleanup checks to see if the current running Ginkgo test failed, and prints
 // a status message regarding cleanup.
 func CheckTestBeforeCleanup() {
-	if CurrentGinkgoTestDescription().Failed {
+	if CurrentSpecReport().State.Is(types.SpecStateFailureStates) {
 		Logf("FAILED!")
 	}
-	Logf("Cleaning up after \"%s\" spec", CurrentGinkgoTestDescription().FullTestText)
+	Logf("Cleaning up after \"%s\" spec", CurrentSpecReport().FullText())
 }
 
 func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {
@@ -325,6 +328,8 @@ func createApplyClusterTemplateInput(specName string, changes ...func(*clusterct
 		WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 		WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 		WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+		WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+		CNIManifestPath:              "",
 	}
 	for _, change := range changes {
 		change(&input)
@@ -416,5 +421,11 @@ func withControlPlaneWaiters(waiters clusterctl.ControlPlaneWaiters) func(*clust
 func withPostMachinesProvisioned(postMachinesProvisioned func()) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
 	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
 		input.PostMachinesProvisioned = postMachinesProvisioned
+	}
+}
+
+func withAzureCNIv1Manifest(manifestPath string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.CNIManifestPath = manifestPath
 	}
 }

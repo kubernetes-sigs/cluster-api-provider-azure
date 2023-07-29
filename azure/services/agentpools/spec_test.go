@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -37,7 +38,7 @@ func fakeAgentPool(changes ...func(*AgentPoolSpec)) AgentPoolSpec {
 		ResourceGroup:     "fake-rg",
 		Cluster:           "fake-cluster",
 		AvailabilityZones: []string{"fake-zone"},
-		EnableAutoScaling: pointer.Bool(true),
+		EnableAutoScaling: true,
 		EnableUltraSSD:    pointer.Bool(true),
 		KubeletDiskType:   (*infrav1.KubeletDiskType)(pointer.String("fake-kubelet-disk-type")),
 		MaxCount:          pointer.Int32(5),
@@ -72,7 +73,14 @@ func withReplicas(replicas int32) func(*AgentPoolSpec) {
 
 func withAutoscaling(enabled bool) func(*AgentPoolSpec) {
 	return func(pool *AgentPoolSpec) {
-		pool.EnableAutoScaling = pointer.Bool(enabled)
+		pool.EnableAutoScaling = enabled
+	}
+}
+
+func withSpotMaxPrice(spotMaxPrice string) func(*AgentPoolSpec) {
+	quantity := resource.MustParse(spotMaxPrice)
+	return func(pool *AgentPoolSpec) {
+		pool.SpotMaxPrice = &quantity
 	}
 }
 
@@ -111,6 +119,18 @@ func sdkFakeAgentPool(changes ...func(*containerservice.AgentPool)) containerser
 func sdkWithAutoscaling(enableAutoscaling bool) func(*containerservice.AgentPool) {
 	return func(pool *containerservice.AgentPool) {
 		pool.ManagedClusterAgentPoolProfileProperties.EnableAutoScaling = pointer.Bool(enableAutoscaling)
+	}
+}
+
+func sdkWithScaleDownMode(scaleDownMode containerservice.ScaleDownMode) func(*containerservice.AgentPool) {
+	return func(pool *containerservice.AgentPool) {
+		pool.ManagedClusterAgentPoolProfileProperties.ScaleDownMode = scaleDownMode
+	}
+}
+
+func sdkWithSpotMaxPrice(spotMaxPrice float64) func(*containerservice.AgentPool) {
+	return func(pool *containerservice.AgentPool) {
+		pool.ManagedClusterAgentPoolProfileProperties.SpotMaxPrice = &spotMaxPrice
 	}
 }
 
@@ -216,6 +236,39 @@ func TestParameters(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "parameters with an existing agent pool and update needed on scale down mode",
+			spec: fakeAgentPool(),
+			existing: sdkFakeAgentPool(
+				sdkWithScaleDownMode(containerservice.ScaleDownModeDeallocate),
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      sdkFakeAgentPool(),
+			expectedError: nil,
+		},
+		{
+			name: "parameters with an existing agent pool and update needed on spot max price",
+			spec: fakeAgentPool(),
+			existing: sdkFakeAgentPool(
+				sdkWithSpotMaxPrice(123.456),
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      sdkFakeAgentPool(),
+			expectedError: nil,
+		},
+		{
+			name: "parameters with an existing agent pool and update needed on spot max price",
+			spec: fakeAgentPool(
+				withSpotMaxPrice("789.12345"),
+			),
+			existing: sdkFakeAgentPool(
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected: sdkFakeAgentPool(
+				sdkWithSpotMaxPrice(789.12345),
+			),
+			expectedError: nil,
+		},
+		{
 			name: "parameters with an existing agent pool and update needed on max count",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
@@ -258,6 +311,27 @@ func TestParameters(t *testing.T) {
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      sdkFakeAgentPool(),
+			expectedError: nil,
+		},
+		{
+			name: "difference in system node labels shouldn't trigger update",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) {
+					pool.NodeLabels = map[string]*string{
+						"fake-label": pointer.String("fake-value"),
+					}
+				},
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *containerservice.AgentPool) {
+					pool.NodeLabels = map[string]*string{
+						"fake-label":                            pointer.String("fake-value"),
+						"kubernetes.azure.com/scalesetpriority": pointer.String("spot"),
+					}
+				},
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      nil,
 			expectedError: nil,
 		},
 		{

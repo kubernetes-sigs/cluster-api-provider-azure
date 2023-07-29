@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1
 
 # Copyright 2019 The Kubernetes Authors.
 #
@@ -18,7 +18,7 @@
 ARG ARCH
 
 # Build the manager binary
-FROM golang:1.19 as builder
+FROM golang:1.20 as builder
 WORKDIR /workspace
 
 # Run this with docker build --build_arg $(go env GOPROXY) to override the goproxy

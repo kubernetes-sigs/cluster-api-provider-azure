@@ -189,6 +189,8 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 		EnableNodePublicIP:   managedMachinePool.Spec.EnableNodePublicIP,
 		NodePublicIPPrefixID: managedMachinePool.Spec.NodePublicIPPrefixID,
 		ScaleSetPriority:     managedMachinePool.Spec.ScaleSetPriority,
+		ScaleDownMode:        managedMachinePool.Spec.ScaleDownMode,
+		SpotMaxPrice:         managedMachinePool.Spec.SpotMaxPrice,
 		AdditionalTags:       managedMachinePool.Spec.AdditionalTags,
 		KubeletDiskType:      managedMachinePool.Spec.KubeletDiskType,
 		LinuxOSConfig:        managedMachinePool.Spec.LinuxOSConfig,
@@ -207,7 +209,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 	}
 
 	if managedMachinePool.Spec.Scaling != nil {
-		agentPoolSpec.EnableAutoScaling = pointer.Bool(true)
+		agentPoolSpec.EnableAutoScaling = true
 		agentPoolSpec.MaxCount = managedMachinePool.Spec.Scaling.MaxSize
 		agentPoolSpec.MinCount = managedMachinePool.Spec.Scaling.MinSize
 	}

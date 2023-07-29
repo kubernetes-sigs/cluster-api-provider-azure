@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -100,7 +101,7 @@ type AgentPoolSpec struct {
 	NodeTaints []string `json:"nodeTaints,omitempty"`
 
 	// EnableAutoScaling - Whether to enable auto-scaler
-	EnableAutoScaling *bool `json:"enableAutoScaling,omitempty"`
+	EnableAutoScaling bool `json:"enableAutoScaling,omitempty"`
 
 	// AvailabilityZones represents the Availability zones for nodes in the AgentPool.
 	AvailabilityZones []string
@@ -128,6 +129,12 @@ type AgentPoolSpec struct {
 
 	// ScaleSetPriority specifies the ScaleSetPriority for the node pool. Allowed values are 'Spot' and 'Regular'
 	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
+
+	// ScaleDownMode affects the cluster autoscaler behavior. Allowed values are 'Deallocate' and 'Delete'
+	ScaleDownMode *string `json:"scaleDownMode,omitempty"`
+
+	// SpotMaxPrice defines max price to pay for spot instance. Allowed values are any decimal value greater than zero or -1 which indicates the willingness to pay any on-demand price.
+	SpotMaxPrice *resource.Quantity `json:"spotMaxPrice,omitempty"`
 
 	// KubeletConfig specifies the kubelet configurations for nodes.
 	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
@@ -193,6 +200,8 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 				NodeLabels:          existingPool.NodeLabels,
 				NodeTaints:          existingPool.NodeTaints,
 				Tags:                existingPool.Tags,
+				ScaleDownMode:       existingPool.ScaleDownMode,
+				SpotMaxPrice:        existingPool.SpotMaxPrice,
 				KubeletConfig:       existingPool.KubeletConfig,
 			},
 		}
@@ -202,16 +211,21 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 				Count:               &s.Replicas,
 				OrchestratorVersion: s.Version,
 				Mode:                containerservice.AgentPoolMode(s.Mode),
-				EnableAutoScaling:   s.EnableAutoScaling,
+				EnableAutoScaling:   pointer.Bool(s.EnableAutoScaling),
 				MinCount:            s.MinCount,
 				MaxCount:            s.MaxCount,
 				NodeLabels:          s.NodeLabels,
 				NodeTaints:          &s.NodeTaints,
+				ScaleDownMode:       containerservice.ScaleDownMode(pointer.StringDeref(s.ScaleDownMode, "")),
 				Tags:                converters.TagsToMap(s.AdditionalTags),
 			},
 		}
 		if len(*normalizedProfile.NodeTaints) == 0 {
 			normalizedProfile.NodeTaints = nil
+		}
+
+		if s.SpotMaxPrice != nil {
+			normalizedProfile.SpotMaxPrice = pointer.Float64(s.SpotMaxPrice.AsApproximateFloat64())
 		}
 
 		if s.KubeletConfig != nil {
@@ -233,8 +247,16 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		// When autoscaling is set, the count of the nodes differ based on the autoscaler and should not depend on the
 		// count present in MachinePool or AzureManagedMachinePool, hence we should not make an update API call based
 		// on difference in count.
-		if pointer.BoolDeref(s.EnableAutoScaling, false) {
+		if s.EnableAutoScaling {
 			normalizedProfile.Count = existingProfile.Count
+		}
+
+		// We do a just-in-time merge of existent kubernetes.azure.com-prefixed labels
+		// So that we don't unintentionally delete them
+		// See https://github.com/Azure/AKS/issues/3152
+		if normalizedProfile.NodeLabels != nil {
+			nodeLabels = mergeSystemNodeLabels(normalizedProfile.NodeLabels, existingPool.NodeLabels)
+			normalizedProfile.NodeLabels = nodeLabels
 		}
 
 		// Compute a diff to check if we require an update
@@ -245,12 +267,6 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			return nil, nil
 		}
 		log.V(4).Info("found a diff between the desired spec and the existing agentpool", "difference", diff)
-		// We do a just-in-time merge of existent kubernetes.azure.com-prefixed labels
-		// So that we don't unintentionally delete them
-		// See https://github.com/Azure/AKS/issues/3152
-		if normalizedProfile.NodeLabels != nil {
-			nodeLabels = mergeSystemNodeLabels(normalizedProfile.NodeLabels, existingPool.NodeLabels)
-		}
 	}
 
 	var availabilityZones *[]string
@@ -264,6 +280,10 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 	var sku *string
 	if s.SKU != "" {
 		sku = &s.SKU
+	}
+	var spotMaxPrice *float64
+	if s.SpotMaxPrice != nil {
+		spotMaxPrice = pointer.Float64(s.SpotMaxPrice.AsApproximateFloat64())
 	}
 	tags := converters.TagsToMap(s.AdditionalTags)
 	if tags == nil {
@@ -337,7 +357,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			AvailabilityZones:    availabilityZones,
 			Count:                &s.Replicas,
-			EnableAutoScaling:    s.EnableAutoScaling,
+			EnableAutoScaling:    pointer.Bool(s.EnableAutoScaling),
 			EnableUltraSSD:       s.EnableUltraSSD,
 			KubeletConfig:        kubeletConfig,
 			KubeletDiskType:      containerservice.KubeletDiskType(pointer.StringDeref((*string)(s.KubeletDiskType), "")),
@@ -352,6 +372,8 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			OsDiskType:           containerservice.OSDiskType(pointer.StringDeref(s.OsDiskType, "")),
 			OsType:               containerservice.OSType(pointer.StringDeref(s.OSType, "")),
 			ScaleSetPriority:     containerservice.ScaleSetPriority(pointer.StringDeref(s.ScaleSetPriority, "")),
+			ScaleDownMode:        containerservice.ScaleDownMode(pointer.StringDeref(s.ScaleDownMode, "")),
+			SpotMaxPrice:         spotMaxPrice,
 			Type:                 containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VMSize:               sku,
 			VnetSubnetID:         vnetSubnetID,

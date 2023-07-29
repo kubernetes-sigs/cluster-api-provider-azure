@@ -290,8 +290,9 @@ func orderByOldest(machines []infrav1exp.AzureMachinePoolMachine) []infrav1exp.A
 }
 
 func orderRandom(machines []infrav1exp.AzureMachinePoolMachine) []infrav1exp.AzureMachinePoolMachine {
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(machines), func(i, j int) { machines[i], machines[j] = machines[j], machines[i] })
+	//nolint:gosec // We don't need a cryptographically appropriate random number here
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r.Shuffle(len(machines), func(i, j int) { machines[i], machines[j] = machines[j], machines[i] })
 	return machines
 }
 

@@ -92,12 +92,6 @@ const (
 )
 
 const (
-	// ProviderIDPrefix will be appended to the beginning of Azure resource IDs to form the Kubernetes Provider ID.
-	// NOTE: this format matches the 2 slashes format used in cloud-provider and cluster-autoscaler.
-	ProviderIDPrefix = "azure://"
-)
-
-const (
 	// CustomHeaderPrefix is the prefix of annotations that enable additional cluster / node pool features.
 	// Whatever follows the prefix will be passed as a header to cluster/node pool creation/update requests.
 	// E.g. add `"infrastructure.cluster.x-k8s.io/custom-header-UseGPUDedicatedVHD": "true"` annotation to
@@ -291,7 +285,7 @@ func ManagedClusterID(subscriptionID, resourceGroup, managedClusterName string) 
 
 // GetBootstrappingVMExtension returns the CAPZ Bootstrapping VM extension.
 // The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux for Linux or
-// https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-windows for Windows.
+// https://learn.microsoft.com/azure/virtual-machines/extensions/custom-script-windows for Windows.
 // This extension allows running arbitrary scripts on the VM.
 // Its role is to detect and report Kubernetes bootstrap failure or success.
 func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *ExtensionSpec {

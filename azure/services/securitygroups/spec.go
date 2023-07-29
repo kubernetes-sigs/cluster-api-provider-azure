@@ -29,12 +29,13 @@ import (
 
 // NSGSpec defines the specification for a security group.
 type NSGSpec struct {
-	Name           string
-	SecurityRules  infrav1.SecurityRules
-	Location       string
-	ClusterName    string
-	ResourceGroup  string
-	AdditionalTags infrav1.Tags
+	Name                     string
+	SecurityRules            infrav1.SecurityRules
+	Location                 string
+	ClusterName              string
+	ResourceGroup            string
+	AdditionalTags           infrav1.Tags
+	LastAppliedSecurityRules map[string]interface{}
 }
 
 // ResourceName returns the name of the security group.
@@ -55,6 +56,7 @@ func (s *NSGSpec) OwnerResourceName() string {
 // Parameters returns the parameters for the security group.
 func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
 	securityRules := make([]network.SecurityRule, 0)
+	newAnnotation := map[string]string{}
 	var etag *string
 
 	if existing != nil {
@@ -67,14 +69,29 @@ func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interfa
 		etag = existingNSG.Etag
 		// Check if the expected rules are present
 		update := false
-		securityRules = *existingNSG.SecurityRules
+
 		for _, rule := range s.SecurityRules {
 			sdkRule := converters.SecurityRuleToSDK(rule)
-			if !ruleExists(securityRules, sdkRule) {
+			if !ruleExists(*existingNSG.SecurityRules, sdkRule) {
 				update = true
 				securityRules = append(securityRules, sdkRule)
 			}
+			newAnnotation[rule.Name] = rule.Description
 		}
+
+		for _, oldRule := range *existingNSG.SecurityRules {
+			_, tracked := s.LastAppliedSecurityRules[*oldRule.Name]
+			// If rule is owned by CAPZ and applied last, and not found in the new rules, then it has been deleted
+			if _, ok := newAnnotation[*oldRule.Name]; !ok && tracked {
+				// Rule has been deleted
+				update = true
+				continue
+			}
+
+			// Add previous rules that haven't been deleted
+			securityRules = append(securityRules, oldRule)
+		}
+
 		if !update {
 			// Skip update for NSG as the required default rules are present
 			return nil, nil

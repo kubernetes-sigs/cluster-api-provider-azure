@@ -106,6 +106,12 @@ type ManagedClusterSpec struct {
 
 	// AutoScalerProfile is the parameters to be applied to the cluster-autoscaler when enabled.
 	AutoScalerProfile *AutoScalerProfile
+
+	// Identity is the AKS control plane Identity configuration
+	Identity *infrav1.Identity
+
+	// KubeletUserAssignedIdentity is the user-assigned identity for kubelet to authenticate to ACR.
+	KubeletUserAssignedIdentity string
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
@@ -138,7 +144,7 @@ type LoadBalancerProfile struct {
 	// Load balancer profile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs.
 	// By default the AKS cluster automatically creates a public IP in the AKS-managed infrastructure resource group and assigns it to the load balancer outbound pool.
 	// Alternatively, you can assign your own custom public IP or public IP prefix at cluster creation time.
-	// See https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#provide-your-own-outbound-public-ips-or-prefixes
+	// See https://learn.microsoft.com/azure/aks/load-balancer-standard#provide-your-own-outbound-public-ips-or-prefixes
 
 	// ManagedOutboundIPs are the desired managed outbound IPs for the cluster load balancer.
 	ManagedOutboundIPs *int32
@@ -260,14 +266,20 @@ func buildAutoScalerProfile(autoScalerProfile *AutoScalerProfile) *containerserv
 }
 
 // Parameters returns the parameters for the managed clusters.
+//
+//nolint:gocyclo // Function requires a lot of nil checks that raise complexity.
 func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Parameters")
 	defer done()
 
-	decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(s.SSHPublicKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to decode SSHPublicKey")
+	var decodedSSHPublicKey []byte
+	if s.SSHPublicKey != "" {
+		decodedSSHPublicKey, err = base64.StdEncoding.DecodeString(s.SSHPublicKey)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to decode SSHPublicKey")
+		}
 	}
+
 	managedCluster := containerservice.ManagedCluster{
 		Identity: &containerservice.ManagedClusterIdentity{
 			Type: containerservice.ResourceIdentityTypeSystemAssigned,
@@ -285,16 +297,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			EnableRBAC:        pointer.Bool(true),
 			DNSPrefix:         &s.Name,
 			KubernetesVersion: &s.Version,
-			LinuxProfile: &containerservice.LinuxProfile{
-				AdminUsername: pointer.String(azure.DefaultAKSUserName),
-				SSH: &containerservice.SSHConfiguration{
-					PublicKeys: &[]containerservice.SSHPublicKey{
-						{
-							KeyData: pointer.String(string(decodedSSHPublicKey)),
-						},
-					},
-				},
-			},
+
 			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{
 				ClientID: pointer.String("msi"),
 			},
@@ -305,6 +308,19 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 				NetworkPolicy:   containerservice.NetworkPolicy(s.NetworkPolicy),
 			},
 		},
+	}
+
+	if decodedSSHPublicKey != nil {
+		managedCluster.LinuxProfile = &containerservice.LinuxProfile{
+			AdminUsername: pointer.String(azure.DefaultAKSUserName),
+			SSH: &containerservice.SSHConfiguration{
+				PublicKeys: &[]containerservice.SSHPublicKey{
+					{
+						KeyData: pointer.String(string(decodedSSHPublicKey)),
+					},
+				},
+			},
+		}
 	}
 
 	if s.PodCIDR != "" {
@@ -361,31 +377,18 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 	}
 
 	if s.LoadBalancerProfile != nil {
-		managedCluster.NetworkProfile.LoadBalancerProfile = &containerservice.ManagedClusterLoadBalancerProfile{
-			AllocatedOutboundPorts: s.LoadBalancerProfile.AllocatedOutboundPorts,
-			IdleTimeoutInMinutes:   s.LoadBalancerProfile.IdleTimeoutInMinutes,
-		}
-		if s.LoadBalancerProfile.ManagedOutboundIPs != nil {
-			managedCluster.NetworkProfile.LoadBalancerProfile.ManagedOutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileManagedOutboundIPs{Count: s.LoadBalancerProfile.ManagedOutboundIPs}
-		}
-		if len(s.LoadBalancerProfile.OutboundIPPrefixes) > 0 {
-			managedCluster.NetworkProfile.LoadBalancerProfile.OutboundIPPrefixes = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPPrefixes{
-				PublicIPPrefixes: convertToResourceReferences(s.LoadBalancerProfile.OutboundIPPrefixes),
-			}
-		}
-		if len(s.LoadBalancerProfile.OutboundIPs) > 0 {
-			managedCluster.NetworkProfile.LoadBalancerProfile.OutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPs{
-				PublicIPs: convertToResourceReferences(s.LoadBalancerProfile.OutboundIPs),
-			}
-		}
+		managedCluster.NetworkProfile.LoadBalancerProfile = s.GetLoadBalancerProfile()
 	}
 
 	if s.APIServerAccessProfile != nil {
 		managedCluster.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
-			AuthorizedIPRanges:             &s.APIServerAccessProfile.AuthorizedIPRanges,
 			EnablePrivateCluster:           s.APIServerAccessProfile.EnablePrivateCluster,
 			PrivateDNSZone:                 s.APIServerAccessProfile.PrivateDNSZone,
 			EnablePrivateClusterPublicFQDN: s.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+
+		if len(s.APIServerAccessProfile.AuthorizedIPRanges) > 0 {
+			managedCluster.APIServerAccessProfile.AuthorizedIPRanges = &s.APIServerAccessProfile.AuthorizedIPRanges
 		}
 	}
 
@@ -394,6 +397,21 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 	}
 
 	managedCluster.AutoScalerProfile = buildAutoScalerProfile(s.AutoScalerProfile)
+
+	if s.Identity != nil {
+		managedCluster.Identity, err = getIdentity(s.Identity)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Identity is not valid: %s", err)
+		}
+	}
+
+	if s.KubeletUserAssignedIdentity != "" {
+		managedCluster.ManagedClusterProperties.IdentityProfile = map[string]*containerservice.UserAssignedIdentity{
+			kubeletIdentityKey: {
+				ResourceID: pointer.String(s.KubeletUserAssignedIdentity),
+			},
+		}
+	}
 
 	if existing != nil {
 		existingMC, ok := existing.(containerservice.ManagedCluster)
@@ -448,6 +466,29 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 	}
 
 	return managedCluster, nil
+}
+
+// GetLoadBalancerProfile returns a containerservice.ManagedClusterLoadBalancerProfile from the
+// information present in ManagedClusterSpec.LoadBalancerProfile.
+func (s *ManagedClusterSpec) GetLoadBalancerProfile() (loadBalancerProfile *containerservice.ManagedClusterLoadBalancerProfile) {
+	loadBalancerProfile = &containerservice.ManagedClusterLoadBalancerProfile{
+		AllocatedOutboundPorts: s.LoadBalancerProfile.AllocatedOutboundPorts,
+		IdleTimeoutInMinutes:   s.LoadBalancerProfile.IdleTimeoutInMinutes,
+	}
+	if s.LoadBalancerProfile.ManagedOutboundIPs != nil {
+		loadBalancerProfile.ManagedOutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileManagedOutboundIPs{Count: s.LoadBalancerProfile.ManagedOutboundIPs}
+	}
+	if len(s.LoadBalancerProfile.OutboundIPPrefixes) > 0 {
+		loadBalancerProfile.OutboundIPPrefixes = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPPrefixes{
+			PublicIPPrefixes: convertToResourceReferences(s.LoadBalancerProfile.OutboundIPPrefixes),
+		}
+	}
+	if len(s.LoadBalancerProfile.OutboundIPs) > 0 {
+		loadBalancerProfile.OutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPs{
+			PublicIPs: convertToResourceReferences(s.LoadBalancerProfile.OutboundIPs),
+		}
+	}
+	return
 }
 
 func convertToResourceReferences(resources []string) *[]containerservice.ResourceReference {
@@ -557,6 +598,22 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 		}
 	}
 
+	if managedCluster.IdentityProfile != nil {
+		propertiesNormalized.IdentityProfile = map[string]*containerservice.UserAssignedIdentity{
+			kubeletIdentityKey: {
+				ResourceID: managedCluster.IdentityProfile[kubeletIdentityKey].ResourceID,
+			},
+		}
+	}
+
+	if existingMC.IdentityProfile != nil {
+		existingMCPropertiesNormalized.IdentityProfile = map[string]*containerservice.UserAssignedIdentity{
+			kubeletIdentityKey: {
+				ResourceID: existingMC.IdentityProfile[kubeletIdentityKey].ResourceID,
+			},
+		}
+	}
+
 	// Once the AKS autoscaler has been updated it will always return values so we need to
 	// respect those values even though the settings are now not being explicitly set by CAPZ.
 	if existingMC.AutoScalerProfile != nil && managedCluster.AutoScalerProfile == nil {
@@ -571,6 +628,20 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 		ManagedClusterProperties: existingMCPropertiesNormalized,
 	}
 
+	if managedCluster.Identity != nil {
+		clusterNormalized.Identity = &containerservice.ManagedClusterIdentity{
+			Type:                   managedCluster.Identity.Type,
+			UserAssignedIdentities: managedCluster.Identity.UserAssignedIdentities,
+		}
+	}
+
+	if existingMC.Identity != nil {
+		existingMCClusterNormalized.Identity = &containerservice.ManagedClusterIdentity{
+			Type:                   existingMC.Identity.Type,
+			UserAssignedIdentities: existingMC.Identity.UserAssignedIdentities,
+		}
+	}
+
 	if managedCluster.Sku != nil {
 		clusterNormalized.Sku = managedCluster.Sku
 	}
@@ -580,4 +651,24 @@ func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedClus
 
 	diff := cmp.Diff(clusterNormalized, existingMCClusterNormalized)
 	return diff
+}
+
+func getIdentity(identity *infrav1.Identity) (managedClusterIdentity *containerservice.ManagedClusterIdentity, err error) {
+	if identity.Type == "" {
+		return
+	}
+
+	managedClusterIdentity = &containerservice.ManagedClusterIdentity{
+		Type: containerservice.ResourceIdentityType(identity.Type),
+	}
+	if managedClusterIdentity.Type == containerservice.ResourceIdentityTypeUserAssigned {
+		if identity.UserAssignedIdentityResourceID == "" {
+			err = errors.Errorf("Identity is set to \"UserAssigned\" but no UserAssignedIdentityResourceID is present")
+			return
+		}
+		managedClusterIdentity.UserAssignedIdentities = map[string]*containerservice.ManagedClusterIdentityUserAssignedIdentitiesValue{
+			identity.UserAssignedIdentityResourceID: {},
+		}
+	}
+	return
 }

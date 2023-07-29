@@ -46,7 +46,7 @@
 ### Base requirements
 
 1. Install [go][go]
-   - Get the latest patch version for go v1.19.
+   - Get the latest patch version for go v1.20.
 2. Install [jq][jq]
    - `brew install jq` on macOS.
    - `sudo apt install jq` on Windows + WSL2
@@ -62,12 +62,17 @@
    - [install instructions](https://kubectl.docs.kubernetes.io/installation/kustomize/) on Windows + WSL2.
    - [install instructions][kustomizelinux] on Linux.
 6. Install Python 3.x or 2.7.x, if neither is already installed.
-7. Install make.
+7. Install pip
+   - [pip installation instruction](https://pip.pypa.io/en/stable/installation/#installation)
+8. Install make.
    - `brew install make` on MacOS.
    - `sudo apt install make` on Windows + WSL2.
    - `sudo apt install make` on Linux.
-8. Install [timeout][timeout]
+9. Install [timeout][timeout]
    - `brew install coreutils` on macOS.
+9. Install [pre-commit framework](https://pre-commit.com/#installation)
+   - `brew install pre-commit` Or `pip install pre-commit`. Installs pre-commit globally.
+   - run `pre-commit install` at the root of the project to install pre-commit hooks to read `.pre-commit-config.yaml`
 
 When developing on Windows, it is suggested to set up the project on Windows + WSL2 and the file should be checked out on as wsl file system for better results.
 
@@ -101,7 +106,7 @@ Change some code!
 
 ### Modules and dependencies
 
-This repositories uses [Go Modules](https://github.com/golang/go/wiki/Modules) to track and vendor dependencies.
+This repository uses [Go Modules](https://github.com/golang/go/wiki/Modules) to track and vendor dependencies.
 
 To pin a new dependency:
 
@@ -369,7 +374,7 @@ export CONTROL_PLANE_MACHINE_COUNT=3
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_B2s"
 export AZURE_NODE_MACHINE_TYPE="Standard_B2s"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.24.6"
+export KUBERNETES_VERSION="v1.25.6"
 
 # Identity secret.
 export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
@@ -459,6 +464,7 @@ If you're interested in submitting PRs to the project, please be sure to run som
 ```bash
 make lint # Runs a suite of quick scripts to check code structure
 make lint-fix # Runs a suite of quick scripts to fix lint errors
+make verify # Runs a suite of verifying binaries
 make test # Runs tests on the Go code
 ```
 
@@ -580,7 +586,7 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 [gettextwindows]: https://mlocati.github.io/articles/gettext-iconv-windows.html
 [go.mod]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/go.mod
 [kind]: https://sigs.k8s.io/kind
-[azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
+[azure_cli]: https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest
 [manifests]: /docs/manifests.md
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 [kustomizelinux]: https://kubectl.docs.kubernetes.io/installation/kustomize/

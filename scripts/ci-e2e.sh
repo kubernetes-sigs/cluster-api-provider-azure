@@ -71,15 +71,17 @@ export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region
 export AZURE_LOCATION_EDGEZONE="${AZURE_LOCATION_EDGEZONE:-$(capz::util::get_random_region_edgezone)}"
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_B2s"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_B2s"}"
-export KIND_EXPERIMENTAL_DOCKER_NETWORK="bridge"
+CALICO_VERSION=$(make get-calico-version)
+export CALICO_VERSION
+
 
 capz::util::generate_ssh_key
 
-cleanup() {
+capz::ci-e2e::cleanup() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
 }
 
-trap cleanup EXIT
+trap capz::ci-e2e::cleanup EXIT
 # Image is configured as `${CONTROLLER_IMG}-${ARCH}:${TAG}` where `CONTROLLER_IMG` is defaulted to `${REGISTRY}/${IMAGE_NAME}`.
 if [[ "${BUILD_MANAGER_IMAGE}" == "false" ]]; then
   # Load an existing image, skip docker-build and docker-push.

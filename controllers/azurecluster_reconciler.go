@@ -85,12 +85,31 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to get availability zones")
 	}
 
+	s.scope.AzureCluster.SetBackendPoolNameDefault()
 	s.scope.SetDNSName()
 	s.scope.SetControlPlaneSecurityRules()
 
 	for _, service := range s.services {
 		if err := service.Reconcile(ctx); err != nil {
 			return errors.Wrapf(err, "failed to reconcile AzureCluster service %s", service.Name())
+		}
+	}
+
+	return nil
+}
+
+// Pause pauses all components making up the cluster.
+func (s *azureClusterService) Pause(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureClusterService.Pause")
+	defer done()
+
+	for _, service := range s.services {
+		pauser, ok := service.(azure.Pauser)
+		if !ok {
+			continue
+		}
+		if err := pauser.Pause(ctx); err != nil {
+			return errors.Wrapf(err, "failed to pause AzureCluster service %s", service.Name())
 		}
 	}
 

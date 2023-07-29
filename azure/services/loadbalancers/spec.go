@@ -215,7 +215,7 @@ func getOutboundRules(lbSpec LBSpec, frontendIDs []network.SubResource) []networ
 func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []network.SubResource) []network.LoadBalancingRule {
 	if lbSpec.Role == infrav1.APIServerRole {
 		// We disable outbound SNAT explicitly in the HTTPS LB rule and enable TCP and UDP outbound NAT with an outbound rule.
-		// For more information on Standard LB outbound connections see https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections.
+		// For more information on Standard LB outbound connections see https://learn.microsoft.com/azure/load-balancer/load-balancer-outbound-connections.
 		var frontendIPConfig network.SubResource
 		if len(frontendIDs) != 0 {
 			frontendIPConfig = frontendIDs[0]
@@ -236,7 +236,7 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []network.SubResource) []n
 						ID: pointer.String(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
 					},
 					Probe: &network.SubResource{
-						ID: pointer.String(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, tcpProbe)),
+						ID: pointer.String(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, httpsProbe)),
 					},
 				},
 			},
@@ -257,10 +257,11 @@ func getProbes(lbSpec LBSpec) []network.Probe {
 	if lbSpec.Role == infrav1.APIServerRole {
 		return []network.Probe{
 			{
-				Name: pointer.String(tcpProbe),
+				Name: pointer.String(httpsProbe),
 				ProbePropertiesFormat: &network.ProbePropertiesFormat{
-					Protocol:          network.ProbeProtocolTCP,
+					Protocol:          network.ProbeProtocolHTTPS,
 					Port:              pointer.Int32(lbSpec.APIServerPort),
+					RequestPath:       pointer.String(httpsProbeRequestPath),
 					IntervalInSeconds: pointer.Int32(15),
 					NumberOfProbes:    pointer.Int32(4),
 				},

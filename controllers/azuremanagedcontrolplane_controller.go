@@ -98,7 +98,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureManagedControlPlane"), mgr.GetClient(), &infrav1.AzureManagedControlPlane{})),
+		handler.EnqueueRequestsFromMapFunc(amcpr.ClusterToAzureManagedControlPlane),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, amcpr.WatchFilterValue),
 	); err != nil {
@@ -223,14 +223,14 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 
 	log.Info("Reconciling AzureManagedControlPlane")
 
-	// Remove deprecated Cluster finalizer if it exists.
-	controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer)
-	// If the AzureManagedControlPlane doesn't have our finalizer, add it.
-	controllerutil.AddFinalizer(scope.ControlPlane, infrav1.ManagedClusterFinalizer)
-	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	if err := scope.PatchObject(ctx); err != nil {
-		amcpr.Recorder.Eventf(scope.ControlPlane, corev1.EventTypeWarning, "AzureManagedControlPlane unavailable", "failed to patch resource: %s", err)
-		return reconcile.Result{}, err
+	// Remove deprecated Cluster finalizer if it exists, if the AzureManagedControlPlane doesn't have our finalizer, add it.
+	if controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer) ||
+		controllerutil.AddFinalizer(scope.ControlPlane, infrav1.ManagedClusterFinalizer) {
+		// Register the finalizer immediately to avoid orphaning Azure resources on delete
+		if err := scope.PatchObject(ctx); err != nil {
+			amcpr.Recorder.Eventf(scope.ControlPlane, corev1.EventTypeWarning, "AzureManagedControlPlane unavailable", "failed to patch resource: %s", err)
+			return reconcile.Result{}, err
+		}
 	}
 
 	if err := newAzureManagedControlPlaneReconciler(scope).Reconcile(ctx); err != nil {
@@ -294,4 +294,20 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 	}
 
 	return reconcile.Result{}, nil
+}
+
+// ClusterToAzureManagedControlPlane is a handler.ToRequestsFunc to be used to enqueue requests for
+// reconciliation for AzureManagedControlPlane based on updates to a Cluster.
+func (amcpr *AzureManagedControlPlaneReconciler) ClusterToAzureManagedControlPlane(o client.Object) []ctrl.Request {
+	c, ok := o.(*clusterv1.Cluster)
+	if !ok {
+		panic(fmt.Sprintf("Expected a Cluster but got a %T", o))
+	}
+
+	controlPlaneRef := c.Spec.ControlPlaneRef
+	if controlPlaneRef != nil && controlPlaneRef.Kind == "AzureManagedControlPlane" {
+		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
+	}
+
+	return nil
 }

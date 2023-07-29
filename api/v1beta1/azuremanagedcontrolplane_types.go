@@ -48,6 +48,20 @@ const (
 	ManagedControlPlaneOutboundTypeUserDefinedRouting ManagedControlPlaneOutboundType = "userDefinedRouting"
 )
 
+// ManagedControlPlaneIdentityType enumerates the values for managed control plane identity type.
+type ManagedControlPlaneIdentityType string
+
+const (
+	// ManagedControlPlaneIdentityTypeSystemAssigned Use an implicitly created system-assigned managed identity to manage
+	// cluster resources. Components in the control plane such as kube-controller-manager will use the
+	// system-assigned managed identity to manipulate Azure resources.
+	ManagedControlPlaneIdentityTypeSystemAssigned ManagedControlPlaneIdentityType = ManagedControlPlaneIdentityType(VMIdentitySystemAssigned)
+	// ManagedControlPlaneIdentityTypeUserAssigned Use a user-assigned identity to manage cluster resources.
+	// Components in the control plane such as kube-controller-manager will use the specified user-assigned
+	// managed identity to manipulate Azure resources.
+	ManagedControlPlaneIdentityTypeUserAssigned ManagedControlPlaneIdentityType = ManagedControlPlaneIdentityType(VMIdentityUserAssigned)
+)
+
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
@@ -55,26 +69,32 @@ type AzureManagedControlPlaneSpec struct {
 	Version string `json:"version"`
 
 	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
+	// Immutable.
 	ResourceGroupName string `json:"resourceGroupName"`
 
 	// NodeResourceGroupName is the name of the resource group
 	// containing cluster IaaS resources. Will be populated to default
 	// in webhook.
+	// Immutable.
 	// +optional
 	NodeResourceGroupName string `json:"nodeResourceGroupName,omitempty"`
 
 	// VirtualNetwork describes the vnet for the AKS cluster. Will be created if it does not exist.
+	// Immutable except for `subnet`.
 	// +optional
 	VirtualNetwork ManagedControlPlaneVirtualNetwork `json:"virtualNetwork,omitempty"`
 
 	// SubscriptionID is the GUID of the Azure subscription to hold this cluster.
+	// Immutable.
 	// +optional
 	SubscriptionID string `json:"subscriptionID,omitempty"`
 
 	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
+	// Immutable.
 	Location string `json:"location"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// Immutable, populated by the AKS API at create.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
@@ -84,29 +104,39 @@ type AzureManagedControlPlaneSpec struct {
 	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network.
+	// Allowed values are "azure", "kubenet".
+	// Immutable.
 	// +kubebuilder:validation:Enum=azure;kubenet
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
+	// Allowed values are "azure", "calico".
+	// Immutable.
 	// +kubebuilder:validation:Enum=azure;calico
 	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
 	// Outbound configuration used by Nodes.
+	// Immutable.
 	// +kubebuilder:validation:Enum=loadBalancer;managedNATGateway;userAssignedNATGateway;userDefinedRouting
 	// +optional
 	OutboundType *ManagedControlPlaneOutboundType `json:"outboundType,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
-	SSHPublicKey string `json:"sshPublicKey"`
+	// Use empty string to autogenerate new key. Use null value to not set key.
+	// Immutable.
+	// +optional
+	SSHPublicKey *string `json:"sshPublicKey,omitempty"`
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
 	// It must be within the Kubernetes service address range specified in serviceCidr.
+	// Immutable.
 	// +optional
 	DNSServiceIP *string `json:"dnsServiceIP,omitempty"`
 
 	// LoadBalancerSKU is the SKU of the loadBalancer to be provisioned.
+	// Immutable.
 	// +kubebuilder:validation:Enum=Basic;Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
@@ -132,15 +162,36 @@ type AzureManagedControlPlaneSpec struct {
 	LoadBalancerProfile *LoadBalancerProfile `json:"loadBalancerProfile,omitempty"`
 
 	// APIServerAccessProfile is the access profile for AKS API server.
+	// Immutable except for `authorizedIPRanges`.
 	// +optional
 	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
 
 	// AutoscalerProfile is the parameters to be applied to the cluster-autoscaler when enabled
 	// +optional
 	AutoScalerProfile *AutoScalerProfile `json:"autoscalerProfile,omitempty"`
+
+	// AzureEnvironment is the name of the AzureCloud to be used.
+	// The default value that would be used by most users is "AzurePublicCloud", other values are:
+	// - ChinaCloud: "AzureChinaCloud"
+	// - PublicCloud: "AzurePublicCloud"
+	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	// +optional
+	AzureEnvironment string `json:"azureEnvironment,omitempty"`
+
+	// Identity configuration used by the AKS control plane.
+	// +optional
+	Identity *Identity `json:"identity,omitempty"`
+
+	// KubeletUserAssignedIdentity is the user-assigned identity for kubelet.
+	// For authentication with Azure Container Registry.
+	// +optional
+	KubeletUserAssignedIdentity string `json:"kubeletUserAssignedIdentity,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/managed-aad
 type AADProfile struct {
 	// Managed - Whether to enable managed AAD.
 	// +kubebuilder:validation:Required
@@ -182,12 +233,11 @@ type AKSSku struct {
 }
 
 // LoadBalancerProfile - Profile of the cluster load balancer.
+// At most one of `managedOutboundIPs`, `outboundIPPrefixes`, or `outboundIPs` may be specified.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/load-balancer-standard
 type LoadBalancerProfile struct {
-	// Load balancer profile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs.
-	// By default the AKS cluster automatically creates a public IP in the AKS-managed infrastructure resource group and assigns it to the load balancer outbound pool.
-	// Alternatively, you can assign your own custom public IP or public IP prefix at cluster creation time.
-	// See https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#provide-your-own-outbound-public-ips-or-prefixes
-
 	// ManagedOutboundIPs - Desired managed outbound IPs for the cluster load balancer.
 	// +optional
 	ManagedOutboundIPs *int32 `json:"managedOutboundIPs,omitempty"`
@@ -209,7 +259,10 @@ type LoadBalancerProfile struct {
 	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
 }
 
-// APIServerAccessProfile - access profile for AKS API server.
+// APIServerAccessProfile tunes the accessibility of the cluster's control plane.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/api-server-authorized-ip-ranges
 type APIServerAccessProfile struct {
 	// AuthorizedIPRanges - Authorized IP Ranges to kubernetes API server.
 	// +optional
@@ -230,6 +283,7 @@ type APIServerAccessProfile struct {
 type ManagedControlPlaneVirtualNetwork struct {
 	Name      string `json:"name"`
 	CIDRBlock string `json:"cidrBlock"`
+	// Immutable except for `serviceEndpoints`.
 	// +optional
 	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
 	// ResourceGroup is the name of the Azure resource group for the VNet and Subnet.
@@ -274,7 +328,10 @@ type AzureManagedControlPlaneStatus struct {
 }
 
 // AutoScalerProfile parameters to be applied to the cluster-autoscaler.
-// See the [FAQ](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-parameters-to-ca) for more details about each parameter.
+// See also [AKS doc], [K8s doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/cluster-autoscaler#use-the-cluster-autoscaler-profile
+// [K8s doc]: https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-parameters-to-ca
 type AutoScalerProfile struct {
 	// BalanceSimilarNodeGroups - Valid values are 'true' and 'false'. The default is false.
 	// +kubebuilder:validation:Enum="true";"false"
@@ -388,6 +445,21 @@ const (
 	// ExpanderRandom ...
 	ExpanderRandom Expander = "random"
 )
+
+// Identity represents the Identity configuration for an AKS control plane.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/use-managed-identity
+type Identity struct {
+	// Type - The Identity type to use.
+	// +kubebuilder:validation:Enum=SystemAssigned;UserAssigned
+	// +optional
+	Type ManagedControlPlaneIdentityType `json:"type,omitempty"`
+
+	// UserAssignedIdentityResourceID - Identity ARM resource ID when using user-assigned identity.
+	// +optional
+	UserAssignedIdentityResourceID string `json:"userAssignedIdentityResourceID,omitempty"`
+}
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedcontrolplanes,scope=Namespaced,categories=cluster-api,shortName=amcp

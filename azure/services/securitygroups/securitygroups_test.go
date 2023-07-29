@@ -33,42 +33,54 @@ import (
 )
 
 var (
-	fakeNSG = NSGSpec{
+	annotation = azure.SecurityRuleLastAppliedAnnotation
+	fakeNSG    = NSGSpec{
 		Name:        "test-nsg",
 		Location:    "test-location",
 		ClusterName: "my-cluster",
 		SecurityRules: infrav1.SecurityRules{
-			{
-				Name:             "allow_ssh",
-				Description:      "Allow SSH",
-				Priority:         2200,
-				Protocol:         infrav1.SecurityGroupProtocolTCP,
-				Direction:        infrav1.SecurityRuleDirectionInbound,
-				Source:           pointer.String("*"),
-				SourcePorts:      pointer.String("*"),
-				Destination:      pointer.String("*"),
-				DestinationPorts: pointer.String("22"),
-			},
-			{
-				Name:             "other_rule",
-				Description:      "Test Rule",
-				Priority:         500,
-				Protocol:         infrav1.SecurityGroupProtocolTCP,
-				Direction:        infrav1.SecurityRuleDirectionInbound,
-				Source:           pointer.String("*"),
-				SourcePorts:      pointer.String("*"),
-				Destination:      pointer.String("*"),
-				DestinationPorts: pointer.String("80"),
-			},
+			securityRule1,
 		},
 		ResourceGroup: "test-group",
 	}
-	fakeNSG2 = NSGSpec{
+	noRulesNSG = NSGSpec{
 		Name:          "test-nsg-2",
 		Location:      "test-location",
 		ClusterName:   "my-cluster",
 		SecurityRules: infrav1.SecurityRules{},
 		ResourceGroup: "test-group",
+	}
+	multipleRulesNSG = NSGSpec{
+		Name:        "multiple-rules-nsg",
+		Location:    "test-location",
+		ClusterName: "my-cluster",
+		SecurityRules: infrav1.SecurityRules{
+			securityRule1,
+			securityRule2,
+		},
+		ResourceGroup: "test-group",
+	}
+	securityRule1 = infrav1.SecurityRule{
+		Name:             "allow_ssh",
+		Description:      "Allow SSH",
+		Priority:         2200,
+		Protocol:         infrav1.SecurityGroupProtocolTCP,
+		Direction:        infrav1.SecurityRuleDirectionInbound,
+		Source:           pointer.String("*"),
+		SourcePorts:      pointer.String("*"),
+		Destination:      pointer.String("*"),
+		DestinationPorts: pointer.String("22"),
+	}
+	securityRule2 = infrav1.SecurityRule{
+		Name:             "other_rule",
+		Description:      "Test Rule",
+		Priority:         500,
+		Protocol:         infrav1.SecurityGroupProtocolTCP,
+		Direction:        infrav1.SecurityRuleDirectionInbound,
+		Source:           pointer.String("*"),
+		SourcePorts:      pointer.String("*"),
+		Destination:      pointer.String("*"),
+		DestinationPorts: pointer.String("80"),
 	}
 	errFake      = errors.New("this is an error")
 	notDoneError = azure.NewOperationNotDoneError(&infrav1.Future{})
@@ -81,13 +93,36 @@ func TestReconcileSecurityGroups(t *testing.T) {
 		expect        func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
-			name:          "create multiple security groups succeeds, should return no error",
+			name:          "create single security group with single rule succeeds, should return no error",
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG})
+				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}}).Times(1)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, nil)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, nil)
+			},
+		},
+		{
+			name:          "create single security group with multiple rules succeeds, should return no error",
+			expectedError: "",
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.IsVnetManaged().Return(true)
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&multipleRulesNSG})
+				s.UpdateAnnotationJSON(annotation, map[string]interface{}{multipleRulesNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description, securityRule2.Name: securityRule2.Description}}).Times(1)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &multipleRulesNSG, serviceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, nil)
+			},
+		},
+		{
+			name:          "create multiple security groups, should return no error",
+			expectedError: "",
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.IsVnetManaged().Return(true)
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
+				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}}).Times(1)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &noRulesNSG, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, nil)
 			},
 		},
@@ -96,9 +131,10 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			expectedError: errFake.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
+				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}}).Times(1)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, errFake)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &noRulesNSG, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, errFake)
 			},
 		},
@@ -107,9 +143,10 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			expectedError: errFake.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
+				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}}).Times(1)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, errFake)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil, notDoneError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &noRulesNSG, serviceName).Return(nil, notDoneError)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, errFake)
 			},
 		},
@@ -119,6 +156,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG})
+				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil, notDoneError)
 				s.UpdatePutStatus(infrav1.SecurityGroupsReadyCondition, serviceName, notDoneError)
 			},
@@ -171,9 +209,9 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil)
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil)
+				r.DeleteResource(gomockinternal.AContext(), &noRulesNSG, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, nil)
 			},
 		},
@@ -182,9 +220,9 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			expectedError: errFake.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(errFake)
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(nil)
+				r.DeleteResource(gomockinternal.AContext(), &noRulesNSG, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, errFake)
 			},
 		},
@@ -193,9 +231,9 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			expectedError: errFake.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
-				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &fakeNSG2})
+				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(errFake)
-				r.DeleteResource(gomockinternal.AContext(), &fakeNSG2, serviceName).Return(notDoneError)
+				r.DeleteResource(gomockinternal.AContext(), &noRulesNSG, serviceName).Return(notDoneError)
 				s.UpdateDeleteStatus(infrav1.SecurityGroupsReadyCondition, serviceName, errFake)
 			},
 		},

@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // RoleAssignmentSpec defines the specification for a Role Assignment.
@@ -68,6 +69,7 @@ type ScaleSetSpec struct {
 	FailureDomains               []string
 	VMExtensions                 []infrav1.VMExtension
 	NetworkInterfaces            []infrav1.NetworkInterface
+	IPv6Enabled                  bool
 	OrchestrationMode            infrav1.OrchestrationModeType
 }
 
@@ -148,11 +150,11 @@ func (vm VMSSVM) ProviderID() string {
 		splitOnSlash := strings.Split(vm.ID, "/")
 		elems := splitOnSlash[:len(splitOnSlash)-4]
 		elems = append(elems, splitOnSlash[len(splitOnSlash)-2:]...)
-		return ProviderIDPrefix + strings.Join(elems, "/")
+		return azureutil.ProviderIDPrefix + strings.Join(elems, "/")
 	}
 	// ProviderID for Uniform scaleset VMs looks like this:
 	// azure:///subscriptions/<sub_id>/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/my-cluster-mp-0/virtualMachines/0
-	return ProviderIDPrefix + vm.ID
+	return azureutil.ProviderIDPrefix + vm.ID
 }
 
 // HasLatestModelAppliedToAll returns true if all VMSS instance have the latest model applied.

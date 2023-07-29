@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -1560,7 +1561,7 @@ func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockS
 	m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil).AnyTimes()
 	s.MaxSurge().Return(1, nil)
 	s.SetVMSSState(gomock.Any())
-	s.SetProviderID(azure.ProviderIDPrefix + *createdVMSS.ID)
+	s.SetProviderID(azureutil.ProviderIDPrefix + *createdVMSS.ID)
 }
 
 func setupDefaultVMSSStartCreatingExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
@@ -1577,7 +1578,7 @@ func setupCreatingSucceededExpectations(s *mock_scalesets.MockScaleSetScopeMockR
 	m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(vmss, nil)
 	m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(newDefaultInstances(), nil).AnyTimes()
 	s.SetVMSSState(gomock.Any())
-	s.SetProviderID(azure.ProviderIDPrefix + *vmss.ID)
+	s.SetProviderID(azureutil.ProviderIDPrefix + *vmss.ID)
 }
 
 func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
@@ -1641,7 +1642,7 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	setupUpdateVMSSExpectations(s)
-	s.SetProviderID(azure.ProviderIDPrefix + "subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
+	s.SetProviderID(azureutil.ProviderIDPrefix + "subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PutFuture).Return(nil)
 	s.GetLongRunningOperationState(defaultVMSSName, serviceName, infrav1.PatchFuture).Return(nil)
 	s.MaxSurge().Return(1, nil)

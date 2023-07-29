@@ -19,13 +19,13 @@ package natgateways
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // NatGatewaySpec defines the specification for a NAT gateway.
@@ -97,7 +97,7 @@ func hasPublicIP(natGateway network.NatGateway, publicIPName string) bool {
 	}
 
 	for _, publicIP := range *natGateway.PublicIPAddresses {
-		resource, err := arm.ParseResourceID(*publicIP.ID)
+		resource, err := azureutil.ParseResourceID(*publicIP.ID)
 		if err != nil {
 			continue
 		}

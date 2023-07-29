@@ -125,9 +125,10 @@ func (c *AzureCluster) setSubnetDefaults() {
 			subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 		}
 
-		if !subnet.IsIPv6Enabled() {
-			// NAT gateway supports the use of IPv4 public IP addresses for outbound connectivity.
-			// So default use the NAT gateway for outbound traffic in IPv4 cluster instead of loadbalancer.
+		// NAT gateway only supports the use of IPv4 public IP addresses for outbound connectivity.
+		// So default use the NAT gateway for outbound traffic in IPv4 cluster instead of loadbalancer.
+		// We assume that if the ID is set, the subnet already exists so we shouldn't add a NAT gateway.
+		if !subnet.IsIPv6Enabled() && subnet.ID == "" {
 			if subnet.NatGateway.Name == "" {
 				subnet.NatGateway.Name = withIndex(generateNatGatewayName(c.ObjectMeta.Name), nodeSubnetCounter)
 			}
@@ -204,10 +205,7 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 			}
 		}
 	}
-
-	if lb.BackendPool.Name == "" {
-		lb.BackendPool.Name = generateBackendAddressPoolName(lb.Name)
-	}
+	c.SetAPIServerLBBackendPoolNameDefault()
 }
 
 // SetNodeOutboundLBDefaults sets the default values for the NodeOutboundLB.
@@ -247,10 +245,7 @@ func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 	}
 
 	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
-
-	if lb.BackendPool.Name == "" {
-		lb.BackendPool.Name = generateOutboundBackendAddressPoolName(lb.Name)
-	}
+	c.SetNodeOutboundLBBackendPoolNameDefault()
 }
 
 // SetControlPlaneOutboundLBDefaults sets the default values for the control plane's outbound LB.
@@ -269,9 +264,37 @@ func (c *AzureCluster) SetControlPlaneOutboundLBDefaults() {
 		lb.FrontendIPsCount = pointer.Int32(1)
 	}
 	c.setOutboundLBFrontendIPs(lb, generateControlPlaneOutboundIPName)
+	c.SetControlPlaneOutboundLBBackendPoolNameDefault()
+}
 
-	if lb.BackendPool.Name == "" {
-		lb.BackendPool.Name = generateOutboundBackendAddressPoolName(generateControlPlaneOutboundLBName(c.ObjectMeta.Name))
+// SetBackendPoolNameDefault defaults the backend pool name of the LBs.
+func (c *AzureCluster) SetBackendPoolNameDefault() {
+	c.SetAPIServerLBBackendPoolNameDefault()
+	c.SetNodeOutboundLBBackendPoolNameDefault()
+	c.SetControlPlaneOutboundLBBackendPoolNameDefault()
+}
+
+// SetAPIServerLBBackendPoolNameDefault defaults the name of the backend pool for apiserver LB.
+func (c *AzureCluster) SetAPIServerLBBackendPoolNameDefault() {
+	apiServerLB := &c.Spec.NetworkSpec.APIServerLB
+	if apiServerLB.BackendPool.Name == "" {
+		apiServerLB.BackendPool.Name = generateBackendAddressPoolName(apiServerLB.Name)
+	}
+}
+
+// SetNodeOutboundLBBackendPoolNameDefault defaults the name of the backend pool for node outbound LB.
+func (c *AzureCluster) SetNodeOutboundLBBackendPoolNameDefault() {
+	nodeOutboundLB := c.Spec.NetworkSpec.NodeOutboundLB
+	if nodeOutboundLB != nil && nodeOutboundLB.BackendPool.Name == "" {
+		nodeOutboundLB.BackendPool.Name = generateOutboundBackendAddressPoolName(nodeOutboundLB.Name)
+	}
+}
+
+// SetControlPlaneOutboundLBBackendPoolNameDefault defaults the name of the backend pool for control plane outbound LB.
+func (c *AzureCluster) SetControlPlaneOutboundLBBackendPoolNameDefault() {
+	controlPlaneOutboundLB := c.Spec.NetworkSpec.ControlPlaneOutboundLB
+	if controlPlaneOutboundLB != nil && controlPlaneOutboundLB.BackendPool.Name == "" {
+		controlPlaneOutboundLB.BackendPool.Name = generateOutboundBackendAddressPoolName(generateControlPlaneOutboundLBName(c.ObjectMeta.Name))
 	}
 }
 

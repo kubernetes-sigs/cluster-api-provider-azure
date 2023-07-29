@@ -65,6 +65,11 @@ func TestReconcile(t *testing.T) {
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 						Fqdn:              pointer.String("my-managedcluster-fqdn"),
 						ProvisioningState: pointer.String("Succeeded"),
+						IdentityProfile: map[string]*containerservice.UserAssignedIdentity{
+							kubeletIdentityKey: {
+								ResourceID: pointer.String("kubelet-id"),
+							},
+						},
 					},
 				}, nil)
 				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
@@ -73,6 +78,7 @@ func TestReconcile(t *testing.T) {
 				})
 				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
 				s.SetKubeConfigData([]byte("credentials"))
+				s.SetKubeletIdentity("kubelet-id")
 				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
 			},
 		},

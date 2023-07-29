@@ -2,11 +2,6 @@ run:
   deadline: 10m
   skip-files:
   - 'zz_generated\.(\w*)\.go$'
-  skip-dirs:
-  - 'api/v1alpha3'
-  - 'api/v1alpha4'
-  - 'exp/api/v1alpha3'
-  - 'exp/api/v1alpha4'
   build-tags:
     - e2e
 linters:
@@ -79,31 +74,15 @@ linters-settings:
       - pkg: sigs.k8s.io/controller-runtime
         alias: ctrl
       # CAPI
-      - pkg: sigs.k8s.io/cluster-api/api/v1alpha3
-        alias: clusterv1alpha3
-      - pkg: sigs.k8s.io/cluster-api/api/v1alpha4
-        alias: clusterv1alpha4
       - pkg: sigs.k8s.io/cluster-api/api/v1beta1
         alias: clusterv1
       # CAPI exp
-      - pkg: sigs.k8s.io/cluster-api/exp/api/v1alpha3
-        alias: expv1alpha3
-      - pkg: sigs.k8s.io/cluster-api/exp/api/v1alpha4
-        alias: expv1alpha4
       - pkg: sigs.k8s.io/cluster-api/exp/api/v1beta1
         alias: expv1
       # CAPZ
-      - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3
-        alias: infrav1alpha3
-      - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4
-        alias: infrav1alpha4
       - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1beta1
         alias: infrav1
       # CAPZ exp
-      - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3
-        alias: infrav1alpha3exp
-      - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4
-        alias: infrav1alpha4exp
       - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1
         alias: infrav1exp
       - pkg: sigs.k8s.io/cluster-api-provider-azure/util/webhook
@@ -111,6 +90,9 @@ linters-settings:
       # Azure
       - pkg: github.com/Azure/go-autorest/autorest/azure
         alias: azureautorest
+      # ASO
+      - pkg: github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601
+        alias: asoresourcesv1
       # Deprecated
       - pkg: github.com/Azure/go-autorest/autorest/to
         alias: deprecated-use-k8s.io-utils-pointer
@@ -135,11 +117,11 @@ linters-settings:
         arguments:
           - disableStutteringCheck
   staticcheck:
-    go: "1.19"
+    go: "1.20"
   stylecheck:
-    go: "1.19"
+    go: "1.20"
   unused:
-    go: "1.19"
+    go: "1.20"
 
 issues:
   exclude-rules:
@@ -147,8 +129,6 @@ issues:
       text: "use underscores in Go names|receiver name (.+) should be consistent|methods on the same type should have the same receiver name"
     - path: 'mock(\w+)/doc.go$'
       text: "use underscores in package names|don't use an underscore in package name"
-    - path: api/v1alpha3/azureclusteridentity_types.go
-      text: "methods on the same type should have the same receiver name"
     - path: ^test/
       linters:
         - dogsled

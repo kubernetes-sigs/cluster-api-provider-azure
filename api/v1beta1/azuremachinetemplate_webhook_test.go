@@ -102,7 +102,10 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 		{
 			name: "azuremachinetemplate with list of user-assigned identities",
 			machineTemplate: createAzureMachineTemplateFromMachine(
-				createMachineWithUserAssignedIdentities([]UserAssignedIdentity{{ProviderID: "azure:///123"}, {ProviderID: "azure:///456"}}),
+				createMachineWithUserAssignedIdentities([]UserAssignedIdentity{
+					{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-09091-control-plane-f1b2c"},
+					{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-09091-control-plane-9a8b7"},
+				}),
 			),
 			wantErr: false,
 		},
@@ -128,6 +131,16 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:            "azuremachinetemplate with SystemAssignedIdentityRoleName",
+			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithSystemAssignedIdentityRoleName()),
+			wantErr:         true,
+		},
+		{
+			name:            "azuremachinetemplate without SystemAssignedIdentityRoleName",
+			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithoutSystemAssignedIdentityRoleName()),
+			wantErr:         false,
+		},
+		{
 			name:            "azuremachinetemplate with RoleAssignmentName",
 			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithRoleAssignmentName()),
 			wantErr:         true,
@@ -136,6 +149,90 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 			name:            "azuremachinetemplate without RoleAssignmentName",
 			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithoutRoleAssignmentName()),
 			wantErr:         false,
+		},
+		{
+			name: "azuremachinetemplate with network interfaces > 0 and subnet name",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithNetworkConfig(
+					"test-subnet",
+					nil,
+					[]NetworkInterface{
+						{SubnetName: "subnet1", PrivateIPConfigs: 1},
+						{SubnetName: "subnet2", PrivateIPConfigs: 1},
+					},
+				),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with network interfaces > 0 and no subnet name",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithNetworkConfig(
+					"",
+					nil,
+					[]NetworkInterface{
+						{SubnetName: "subnet1", PrivateIPConfigs: 1},
+						{SubnetName: "subnet2", PrivateIPConfigs: 1},
+					},
+				),
+			),
+			wantErr: false,
+		},
+		{
+			name: "azuremachinetemplate with network interfaces > 0 and AcceleratedNetworking not nil",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithNetworkConfig(
+					"",
+					pointer.Bool(true),
+					[]NetworkInterface{
+						{SubnetName: "subnet1", PrivateIPConfigs: 1},
+						{SubnetName: "subnet2", PrivateIPConfigs: 1},
+					},
+				),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with network interfaces > 0 and AcceleratedNetworking nil",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithNetworkConfig(
+					"",
+					nil,
+					[]NetworkInterface{
+						{SubnetName: "subnet1", PrivateIPConfigs: 1},
+						{SubnetName: "subnet2", PrivateIPConfigs: 1},
+					},
+				),
+			),
+			wantErr: false,
+		},
+		{
+			name: "azuremachinetemplate with network interfaces and PrivateIPConfigs < 1",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithNetworkConfig(
+					"",
+					nil,
+					[]NetworkInterface{
+						{SubnetName: "subnet1", PrivateIPConfigs: 0},
+						{SubnetName: "subnet2", PrivateIPConfigs: -1},
+					},
+				),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with network interfaces and PrivateIPConfigs >= 1",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithNetworkConfig(
+					"",
+					nil,
+					[]NetworkInterface{
+						{SubnetName: "subnet1", PrivateIPConfigs: 1},
+						{SubnetName: "subnet2", PrivateIPConfigs: 2},
+					},
+				),
+			),
+			wantErr: false,
 		},
 	}
 

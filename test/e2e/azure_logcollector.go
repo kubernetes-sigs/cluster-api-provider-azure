@@ -28,7 +28,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
@@ -271,6 +270,10 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 			"sentinel-file-dir.txt",
 			"ls", "/run/cluster-api/",
 		),
+		execToPathFn(
+			"cni.log",
+			"cat", "/var/log/calico/cni/cni.log",
+		),
 	}
 }
 
@@ -401,8 +404,7 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 		return errors.New("AzureMachine provider ID is nil")
 	}
 
-	resourceID := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
-	resource, err := arm.ParseResourceID(resourceID)
+	resource, err := azureutil.ParseResourceID(*am.Spec.ProviderID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}
@@ -428,11 +430,11 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 
 // collectVMSSBootLog collects boot logs of the scale set by using azure boot diagnostics.
 func collectVMSSBootLog(ctx context.Context, providerID string, outputPath string) error {
-	resourceID := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
+	resourceID := strings.TrimPrefix(providerID, azureutil.ProviderIDPrefix)
 	v := strings.Split(resourceID, "/")
 	instanceID := v[len(v)-1]
 	resourceID = strings.TrimSuffix(resourceID, "/virtualMachines/"+instanceID)
-	resource, err := arm.ParseResourceID(resourceID)
+	resource, err := azureutil.ParseResourceID(resourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}

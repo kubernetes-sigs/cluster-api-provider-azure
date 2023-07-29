@@ -85,6 +85,12 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 		m.Spec.Version = normalizedVersion
 	}
 
+	if m.Spec.Identity == nil {
+		m.Spec.Identity = &Identity{
+			Type: ManagedControlPlaneIdentityTypeSystemAssigned,
+		}
+	}
+
 	if err := m.setDefaultSSHPublicKey(); err != nil {
 		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "setDefaultSSHPublicKey failed")
 	}
@@ -193,6 +199,13 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, err)
 	}
 
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "AzureEnvironment"),
+		old.Spec.AzureEnvironment,
+		m.Spec.AzureEnvironment); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	if old.Spec.AADProfile != nil {
 		if m.Spec.AADProfile == nil {
 			allErrs = append(allErrs,
@@ -259,6 +272,7 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 		m.validateAPIServerAccessProfile,
 		m.validateManagedClusterNetwork,
 		m.validateAutoScalerProfile,
+		m.validateIdentity,
 	}
 
 	var errs []error
@@ -293,9 +307,8 @@ func (m *AzureManagedControlPlane) validateVersion(_ client.Client) error {
 
 // validateSSHKey validates an SSHKey.
 func (m *AzureManagedControlPlane) validateSSHKey(_ client.Client) error {
-	if m.Spec.SSHPublicKey != "" {
-		sshKey := m.Spec.SSHPublicKey
-		if errs := ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
+	if sshKey := m.Spec.SSHPublicKey; sshKey != nil && *sshKey != "" {
+		if errs := ValidateSSHKey(*sshKey, field.NewPath("sshKey")); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 	}
@@ -668,4 +681,27 @@ func (m *AzureManagedControlPlane) validateIntegerStringGreaterThanZero(input *s
 	}
 
 	return allErrs
+}
+
+// validateIdentity validates an Identity.
+func (m *AzureManagedControlPlane) validateIdentity(_ client.Client) error {
+	var allErrs field.ErrorList
+
+	if m.Spec.Identity != nil {
+		if m.Spec.Identity.Type == ManagedControlPlaneIdentityTypeUserAssigned {
+			if m.Spec.Identity.UserAssignedIdentityResourceID == "" {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "Identity", "UserAssignedIdentityResourceID"), m.Spec.Identity.UserAssignedIdentityResourceID, "cannot be empty if Identity.Type is UserAssigned"))
+			}
+		} else {
+			if m.Spec.Identity.UserAssignedIdentityResourceID != "" {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "Identity", "UserAssignedIdentityResourceID"), m.Spec.Identity.UserAssignedIdentityResourceID, "should be empty if Identity.Type is SystemAssigned"))
+			}
+		}
+	}
+
+	if len(allErrs) > 0 {
+		return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+	}
+
+	return nil
 }

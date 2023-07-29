@@ -126,9 +126,9 @@ func TestParameters(t *testing.T) {
 					Etag:     pointer.String("fake-etag"),
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 						SecurityRules: &[]network.SecurityRule{
+							converters.SecurityRuleToSDK(otherRule),
 							converters.SecurityRuleToSDK(sshRule),
 							converters.SecurityRuleToSDK(customRule),
-							converters.SecurityRuleToSDK(otherRule),
 						},
 					},
 					Tags: map[string]*string{
@@ -136,6 +136,85 @@ func TestParameters(t *testing.T) {
 						"Name": pointer.String("test-nsg"),
 					},
 				}))
+			},
+		},
+		{
+			name: "NSG already exists and a rule is deleted",
+			spec: &NSGSpec{
+				Name:     "test-nsg",
+				Location: "test-location",
+				SecurityRules: infrav1.SecurityRules{
+					sshRule,
+					customRule,
+				},
+				ResourceGroup: "test-group",
+				ClusterName:   "my-cluster",
+				LastAppliedSecurityRules: map[string]interface{}{
+					"allow_ssh":   sshRule,
+					"custom_rule": customRule,
+					"other_rule":  otherRule,
+				},
+			},
+			existing: network.SecurityGroup{
+				Name:     pointer.String("test-nsg"),
+				Location: pointer.String("test-location"),
+				Etag:     pointer.String("fake-etag"),
+				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+					SecurityRules: &[]network.SecurityRule{
+						converters.SecurityRuleToSDK(sshRule),
+						converters.SecurityRuleToSDK(customRule),
+						converters.SecurityRuleToSDK(otherRule),
+					},
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
+				g.Expect(result).To(Equal(network.SecurityGroup{
+					Location: pointer.String("test-location"),
+					Etag:     pointer.String("fake-etag"),
+					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+						SecurityRules: &[]network.SecurityRule{
+							converters.SecurityRuleToSDK(sshRule),
+							converters.SecurityRuleToSDK(customRule),
+						},
+					},
+					Tags: map[string]*string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+						"Name": pointer.String("test-nsg"),
+					},
+				}))
+			},
+		},
+		{
+			name: "NSG already exists and a rule not owned by CAPZ is present",
+			spec: &NSGSpec{
+				Name:     "test-nsg",
+				Location: "test-location",
+				SecurityRules: infrav1.SecurityRules{
+					sshRule,
+					customRule,
+				},
+				ResourceGroup: "test-group",
+				ClusterName:   "my-cluster",
+				LastAppliedSecurityRules: map[string]interface{}{
+					"allow_ssh":   sshRule,
+					"custom_rule": customRule,
+				},
+			},
+			existing: network.SecurityGroup{
+				Name:     pointer.String("test-nsg"),
+				Location: pointer.String("test-location"),
+				Etag:     pointer.String("fake-etag"),
+				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+					SecurityRules: &[]network.SecurityRule{
+						converters.SecurityRuleToSDK(sshRule),
+						converters.SecurityRuleToSDK(customRule),
+						converters.SecurityRuleToSDK(otherRule),
+					},
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
 			},
 		},
 		{

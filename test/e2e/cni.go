@@ -22,6 +22,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -39,7 +40,28 @@ const (
 	calicoHelmReleaseName    string = "projectcalico"
 	calicoHelmChartName      string = "tigera-operator"
 	kubeadmConfigMapName     string = "kubeadm-config"
+	AzureCNIv1               string = "azure-cni-v1"
 )
+
+// InstallCNI installs the CNI plugin depending on the input.CNIManifestPath
+func InstallCNI(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
+	if input.CNIManifestPath != "" {
+		InstallCNIManifest(ctx, input, cidrBlocks, hasWindows)
+	} else {
+		InstallCalicoHelmChart(ctx, input, cidrBlocks, hasWindows)
+	}
+}
+
+// InstallCNIManifest installs the CNI manifest provided by the user
+func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
+	By("Installing a CNI plugin to the workload cluster")
+	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+
+	cniYaml, err := os.ReadFile(input.CNIManifestPath)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	Expect(workloadCluster.Apply(ctx, cniYaml)).To(Succeed())
+}
 
 // InstallCalicoHelmChart installs the official calico helm chart
 // and validates that expected pods exist and are Ready.
@@ -49,7 +71,7 @@ func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTe
 	By("Installing Calico CNI via helm")
 	values := getCalicoValues(cidrBlocks)
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
-	InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values)
+	InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values, os.Getenv(CalicoVersion))
 	workloadClusterClient := clusterProxy.GetClient()
 
 	// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
