@@ -972,6 +972,13 @@ func TestAzureMachine_ValidateDiagnostics(t *testing.T) {
 			diagnostics:    nil,
 			expectedErrors: field.ErrorList{field.Required(field.NewPath("diagnostics"), "diagnostics cannot be nil")},
 		},
+		{
+			name: "Valid Diagnostics with Diagnostics.Boot=nil",
+			diagnostics: &Diagnostics{
+				Boot: nil,
+			},
+			expectedErrors: nil,
+		},
 	}
 
 	for _, tc := range testCases {
