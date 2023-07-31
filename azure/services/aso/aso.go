@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -156,8 +155,14 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		}
 	}
 
-	labels := make(map[string]string)
-	annotations := make(map[string]string)
+	labels := parameters.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	annotations := parameters.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
 
 	if existing == nil {
 		labels[infrav1.OwnedByClusterLabelKey] = s.clusterName
@@ -176,12 +181,14 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		annotations[ReconcilePolicyAnnotation] = ReconcilePolicyManage
 	}
 
-	if len(labels) > 0 {
-		parameters.SetLabels(maps.Merge(parameters.GetLabels(), labels))
+	if len(labels) == 0 {
+		labels = nil
 	}
-	if len(annotations) > 0 {
-		parameters.SetAnnotations(maps.Merge(parameters.GetAnnotations(), annotations))
+	parameters.SetLabels(labels)
+	if len(annotations) == 0 {
+		annotations = nil
 	}
+	parameters.SetAnnotations(annotations)
 
 	diff := cmp.Diff(existing, parameters)
 	if diff == "" {
