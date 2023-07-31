@@ -288,15 +288,22 @@ func ManagedClusterID(subscriptionID, resourceGroup, managedClusterName string) 
 // https://learn.microsoft.com/azure/virtual-machines/extensions/custom-script-windows for Windows.
 // This extension allows running arbitrary scripts on the VM.
 // Its role is to detect and report Kubernetes bootstrap failure or success.
-func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *ExtensionSpec {
+func GetBootstrappingVMExtension(osType string, cloud string, vmName string, cpuArchitectureType string) *ExtensionSpec {
 	// currently, the bootstrap extension is only available in AzurePublicCloud.
 	if osType == LinuxOS && cloud == PublicCloudName {
 		// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
+		// We set the version to 1.1.1 for arm64 machines and 1.0 for x64. This is due to a known issue with newer versions of
+		// Go on Ubuntu 20.04. The issue is being tracked here: https://github.com/golang/go/issues/58550
+		// TODO: Remove this once the issue is fixed, or when Ubuntu 20.04 is no longer supported.
+		extensionVersion := "1.0"
+		if cpuArchitectureType == "arm64" {
+			extensionVersion = "1.1.1"
+		}
 		return &ExtensionSpec{
 			Name:      BootstrappingExtensionLinux,
 			VMName:    vmName,
 			Publisher: "Microsoft.Azure.ContainerUpstream",
-			Version:   "1.0",
+			Version:   extensionVersion,
 			ProtectedSettings: map[string]string{
 				"commandToExecute": LinuxBootstrapExtensionCommand,
 			},

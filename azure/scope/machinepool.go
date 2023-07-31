@@ -32,6 +32,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	machinepool "sigs.k8s.io/cluster-api-provider-azure/azure/scope/strategies/machinepool_deployments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
@@ -61,6 +62,7 @@ type (
 		MachinePool      *expv1.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		ClusterScope     azure.ClusterScoper
+		Caches           *MachinePoolCache
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
@@ -72,6 +74,12 @@ type (
 		patchHelper                *patch.Helper
 		capiMachinePoolPatchHelper *patch.Helper
 		vmssState                  *azure.VMSS
+		cache                      *MachinePoolCache
+	}
+
+	// MachinePoolCache stores common machine pool information so we don't have to hit the API multiple times within the same reconcile loop.
+	MachinePoolCache struct {
+		VMSKU resourceskus.SKU
 	}
 
 	// NodeStatus represents the status of a Kubernetes node.
@@ -114,6 +122,29 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		capiMachinePoolPatchHelper: capiMachinePoolPatchHelper,
 		ClusterScoper:              params.ClusterScope,
 	}, nil
+}
+
+// InitMachinePoolCache sets cached information about the machine pool to be used in the scope.
+func (m *MachinePoolScope) InitMachinePoolCache(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.InitMachinePoolCache")
+	defer done()
+
+	if m.cache == nil {
+		var err error
+		m.cache = &MachinePoolCache{}
+
+		skuCache, err := resourceskus.GetCache(m, m.Location())
+		if err != nil {
+			return err
+		}
+
+		m.cache.VMSKU, err = skuCache.Get(ctx, m.AzureMachinePool.Spec.Template.VMSize, resourceskus.VirtualMachines)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachinePool.Spec.Template.VMSize)
+		}
+	}
+
+	return nil
 }
 
 // ScaleSetSpec returns the scale set spec.
@@ -699,7 +730,8 @@ func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
 		})
 	}
 
-	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name())
+	cpuArchitectureType, _ := m.cache.VMSKU.GetCapability(resourceskus.CPUArchitectureType)
+	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name(), cpuArchitectureType)
 
 	if bootstrapExtensionSpec != nil {
 		extensionSpecs = append(extensionSpecs, &scalesets.VMSSExtensionSpec{

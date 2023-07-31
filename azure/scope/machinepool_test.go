@@ -34,6 +34,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -886,6 +887,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
+				},
 			},
 			want: []azure.ResourceSpecGetter{
 				&scalesets.VMSSExtensionSpec{
@@ -932,6 +936,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
+				},
 			},
 			want: []azure.ResourceSpecGetter{},
 		},
@@ -965,6 +972,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							ResourceGroup: "my-rg",
 						},
 					},
+				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
 				},
 			},
 			want: []azure.ResourceSpecGetter{
@@ -1013,6 +1023,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
+				},
 			},
 			want: []azure.ResourceSpecGetter{},
 		},
@@ -1046,6 +1059,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 						},
 					},
 				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
+				},
 			},
 			want: []azure.ResourceSpecGetter{},
 		},
@@ -1078,6 +1094,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							ResourceGroup: "my-rg",
 						},
 					},
+				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
 				},
 			},
 			want: []azure.ResourceSpecGetter{},
@@ -1127,6 +1146,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							},
 						},
 					},
+				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
 				},
 			},
 			want: []azure.ResourceSpecGetter{

@@ -117,3 +117,70 @@ func TestMSCorrelationIDSendDecorator(t *testing.T) {
 		receivedReq.Header.Get(string(tele.CorrIDKeyVal)),
 	).To(Equal(string(corrID)))
 }
+
+func TestGetBootstrappingVMExtension(t *testing.T) {
+	testCases := []struct {
+		name            string
+		osType          string
+		cloud           string
+		vmName          string
+		cpuArchitecture string
+		expectedVersion string
+		expectNil       bool
+	}{
+		{
+			name:            "Linux OS, Public Cloud, x64 CPU Architecture",
+			osType:          LinuxOS,
+			cloud:           PublicCloudName,
+			vmName:          "test-vm",
+			cpuArchitecture: "x64",
+			expectedVersion: "1.0",
+		},
+		{
+			name:            "Linux OS, Public Cloud, arm64 CPU Architecture",
+			osType:          LinuxOS,
+			cloud:           PublicCloudName,
+			vmName:          "test-vm",
+			cpuArchitecture: "arm64",
+			expectedVersion: "1.1.1",
+		},
+		{
+			name:            "Windows OS, Public Cloud",
+			osType:          WindowsOS,
+			cloud:           PublicCloudName,
+			vmName:          "test-vm",
+			cpuArchitecture: "x64",
+			expectedVersion: "1.0",
+		},
+		{
+			name:            "Invalid OS Type",
+			osType:          "invalid",
+			cloud:           PublicCloudName,
+			vmName:          "test-vm",
+			cpuArchitecture: "x64",
+			expectedVersion: "1.0",
+			expectNil:       true,
+		},
+		{
+			name:            "Invalid Cloud",
+			osType:          LinuxOS,
+			cloud:           "invalid",
+			vmName:          "test-vm",
+			cpuArchitecture: "x64",
+			expectedVersion: "1.0",
+			expectNil:       true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			actualExtension := GetBootstrappingVMExtension(tc.osType, tc.cloud, tc.vmName, tc.cpuArchitecture)
+			if tc.expectNil {
+				g.Expect(actualExtension).To(BeNil())
+			} else {
+				g.Expect(actualExtension.Version).To(Equal(tc.expectedVersion))
+			}
+		})
+	}
+}
