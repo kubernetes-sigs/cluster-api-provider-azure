@@ -404,6 +404,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 	clusterMock.EXPECT().Location().AnyTimes()
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().CloudEnvironment().AnyTimes()
+	clusterMock.EXPECT().AzureClusterIdentity().AnyTimes()
 	cases := []struct {
 		Name   string
 		Setup  func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool)

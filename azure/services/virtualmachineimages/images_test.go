@@ -228,6 +228,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			mockAuth.EXPECT().Authorizer().AnyTimes()
 			mockAuth.EXPECT().SubscriptionID().AnyTimes()
 			mockAuth.EXPECT().CloudEnvironment().AnyTimes()
+			mockAuth.EXPECT().AzureClusterIdentity().AnyTimes()
 			mockClient := mock_virtualmachineimages.NewMockClient(mockCtrl)
 			svc := Service{Client: mockClient, Authorizer: mockAuth}
 
@@ -569,6 +570,7 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			mockAuth.EXPECT().Authorizer().AnyTimes()
 			mockAuth.EXPECT().SubscriptionID().AnyTimes()
 			mockAuth.EXPECT().CloudEnvironment().AnyTimes()
+			mockAuth.EXPECT().AzureClusterIdentity().AnyTimes()
 			mockClient := mock_virtualmachineimages.NewMockClient(mockCtrl)
 			svc := Service{Client: mockClient, Authorizer: mockAuth}
 

@@ -1401,6 +1401,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 	clusterMock.EXPECT().Location().AnyTimes()
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().CloudEnvironment().AnyTimes()
+	clusterMock.EXPECT().AzureClusterIdentity().AnyTimes()
 	svc := virtualmachineimages.Service{Client: mock_virtualmachineimages.NewMockClient(mockCtrl)}
 
 	tests := []struct {
