@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
-	helmVals "helm.sh/helm/v3/pkg/cli/values"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
@@ -44,7 +43,7 @@ const (
 func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	specName := "cloud-provider-azure-install"
 	By("Installing cloud-provider-azure components via helm")
-	options := &helmVals.Options{
+	options := &HelmOptions{
 		Values: []string{
 			fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName),
 			"cloudControllerManager.logVerbosity=4",
@@ -82,7 +81,7 @@ func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clus
 func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, hasWindows bool) {
 	specName := "azuredisk-csi-drivers-install"
 	By("Installing azure-disk CSI driver components via helm")
-	options := &helmVals.Options{
+	options := &HelmOptions{
 		Values: []string{"controller.replicas=1", "controller.runOnControlPlane=true"},
 	}
 	// TODO: make this always true once HostProcessContainers are on for all supported k8s versions.

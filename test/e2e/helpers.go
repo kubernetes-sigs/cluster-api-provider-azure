@@ -43,12 +43,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
-	helmAction "helm.sh/helm/v3/pkg/action"
-	helmLoader "helm.sh/helm/v3/pkg/chart/loader"
-	helmCli "helm.sh/helm/v3/pkg/cli"
-	helmVals "helm.sh/helm/v3/pkg/cli/values"
-	helmGetter "helm.sh/helm/v3/pkg/getter"
-	"helm.sh/helm/v3/pkg/storage/driver"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -933,70 +927,6 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 		return fmt.Sprintf("error copying logs for pod %s: %v", pod.Name, err)
 	}
 	return b.String()
-}
-
-// InstallHelmChart takes a helm repo URL, a chart name, and release name, and installs a helm release onto the E2E workload cluster.
-func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, repoURL, chartName, releaseName string, options *helmVals.Options, version string) {
-	kubeConfigPath := clusterProxy.GetKubeconfigPath()
-	settings := helmCli.New()
-	settings.KubeConfig = kubeConfigPath
-	actionConfig := new(helmAction.Configuration)
-	err := actionConfig.Init(settings.RESTClientGetter(), namespace, "secret", Logf)
-	Expect(err).To(BeNil())
-
-	// If the release does not exist, install it.
-	histClient := helmAction.NewHistory(actionConfig)
-	histClient.Max = 1
-	var releaseExists bool
-	Eventually(func() error {
-		_, err := histClient.Run(releaseName)
-		if errors.Is(err, driver.ErrReleaseNotFound) {
-			releaseExists = false
-			return nil
-		} else if err == nil {
-			releaseExists = true
-		}
-		return err
-	}, helmInstallTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
-	if releaseExists {
-		Logf("Release %s already exists, skipping install", releaseName)
-	} else {
-		Logf("Release %s does not exist, installing it", releaseName)
-		i := helmAction.NewInstall(actionConfig)
-		if repoURL != "" {
-			i.RepoURL = repoURL
-		}
-		i.ReleaseName = releaseName
-		i.Namespace = namespace
-		i.Version = version
-		i.CreateNamespace = true
-		Eventually(func(g Gomega) {
-			cp, err := i.ChartPathOptions.LocateChart(chartName, helmCli.New())
-			g.Expect(err).NotTo(HaveOccurred())
-			p := helmGetter.All(settings)
-			if options == nil {
-				options = &helmVals.Options{}
-			}
-			valueOpts := options
-			vals, err := valueOpts.MergeValues(p)
-			g.Expect(err).NotTo(HaveOccurred())
-			chartRequested, err := helmLoader.Load(cp)
-			g.Expect(err).NotTo(HaveOccurred())
-			release, err := i.RunWithContext(ctx, chartRequested, vals)
-			if err != nil {
-				Logf("Failed to install release %s, attempting to cleanup so we can retry", releaseName)
-				// Best effort attempt to delete the failed release so we can retry.
-				_, delErr := helmAction.NewUninstall(actionConfig).Run(releaseName)
-				if delErr != nil {
-					Logf("Failed to delete release %s", releaseName)
-				} else {
-					Logf("Deleted failed release %s", releaseName)
-				}
-			}
-			g.Expect(err).NotTo(HaveOccurred())
-			Logf(release.Info.Description)
-		}, helmInstallTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
-	}
 }
 
 func CopyConfigMap(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cl client.Client, cmName, fromNamespace, toNamespace string) {
