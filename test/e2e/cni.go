@@ -27,7 +27,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	helmVals "helm.sh/helm/v3/pkg/cli/values"
 	k8snet "k8s.io/utils/net"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
@@ -95,9 +94,9 @@ func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyClusterTe
 	}
 }
 
-func getCalicoValues(cidrBlocks []string) *helmVals.Options {
+func getCalicoValues(cidrBlocks []string) *HelmOptions {
 	var ipv6CidrBlock, ipv4CidrBlock string
-	var values *helmVals.Options
+	var values *HelmOptions
 	for _, cidr := range cidrBlocks {
 		if k8snet.IsIPv6CIDRString(cidr) {
 			ipv6CidrBlock = cidr
@@ -110,19 +109,19 @@ func getCalicoValues(cidrBlocks []string) *helmVals.Options {
 	switch {
 	case ipv6CidrBlock != "" && ipv4CidrBlock != "":
 		By("Configuring calico CNI helm chart for dual-stack configuration")
-		values = &helmVals.Options{
+		values = &HelmOptions{
 			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv4CidrBlock), fmt.Sprintf("installation.calicoNetwork.ipPools[1].cidr=%s", ipv6CidrBlock)},
 			ValueFiles:   []string{filepath.Join(addonsPath, "calico-dual-stack", "values.yaml")},
 		}
 	case ipv6CidrBlock != "":
 		By("Configuring calico CNI helm chart for IPv6 configuration")
-		values = &helmVals.Options{
+		values = &HelmOptions{
 			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv6CidrBlock)},
 			ValueFiles:   []string{filepath.Join(addonsPath, "calico-ipv6", "values.yaml")},
 		}
 	default:
 		By("Configuring calico CNI helm chart for IPv4 configuration")
-		values = &helmVals.Options{
+		values = &HelmOptions{
 			StringValues: []string{fmt.Sprintf("installation.calicoNetwork.ipPools[0].cidr=%s", ipv4CidrBlock)},
 			ValueFiles:   []string{filepath.Join(addonsPath, "calico", "values.yaml")},
 		}
