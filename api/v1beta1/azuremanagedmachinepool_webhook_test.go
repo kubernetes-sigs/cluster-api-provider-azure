@@ -585,6 +585,20 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Cannot update enableFIPS",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableFIPS: pointer.Bool(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					EnableFIPS: pointer.Bool(false),
+				},
+			},
+			wantErr: true,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {

@@ -174,6 +174,13 @@ func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, ol
 		allErrs = append(allErrs, err)
 	}
 
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "EnableFIPS"),
+		old.Spec.EnableFIPS,
+		m.Spec.EnableFIPS); err != nil && old.Spec.EnableFIPS != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	// custom headers are immutable
 	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, CustomHeaderPrefix)
 	newCustomHeaders := maps.FilterByKeyPrefix(m.ObjectMeta.Annotations, CustomHeaderPrefix)

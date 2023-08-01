@@ -556,6 +556,11 @@ type AzureManagedMachinePoolSpec struct {
 	// Immutable.
 	// +optional
 	SubnetName *string `json:"subnetName,omitempty"`
+
+	// EnableFIPS indicates whether FIPS is enabled on the node pool.
+	// Immutable.
+	// +optional
+	EnableFIPS *bool `json:"enableFIPS,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.

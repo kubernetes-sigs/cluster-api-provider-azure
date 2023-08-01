@@ -58,6 +58,10 @@ spec:
                 items:
                   type: string
                 type: array
+              enableFIPS:
+                description: EnableFIPS indicates whether FIPS is enabled on the node
+                  pool. Immutable.
+                type: boolean
               enableNodePublicIP:
                 description: EnableNodePublicIP controls whether or not nodes in the
                   pool each have a public IP address. Immutable.

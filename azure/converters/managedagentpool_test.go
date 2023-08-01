@@ -57,6 +57,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					Tags: map[string]*string{
 						"custom": pointer.String("default"),
 					},
+					EnableFIPS: pointer.Bool(true),
 				},
 			},
 
@@ -84,6 +85,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					Tags: map[string]*string{
 						"custom": pointer.String("default"),
 					},
+					EnableFIPS: pointer.Bool(true),
 				}))
 			},
 		},
