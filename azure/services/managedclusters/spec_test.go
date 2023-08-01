@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
@@ -31,6 +31,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+)
+
+var (
+	nodePoolModeUser                     = armcontainerservice.AgentPoolMode(infrav1.NodePoolModeUser)
+	nodePoolModeSystem                   = armcontainerservice.AgentPoolMode(infrav1.NodePoolModeSystem)
+	agentPoolTypeVirtualMachineScaleSets = armcontainerservice.AgentPoolTypeVirtualMachineScaleSets
+	loadBalancerSKUStandard              = armcontainerservice.LoadBalancerSKUStandard
+	resourceIdentityTypeSystemAssigned   = armcontainerservice.ResourceIdentityTypeSystemAssigned
 )
 
 func TestParameters(t *testing.T) {
@@ -43,8 +51,8 @@ func TestParameters(t *testing.T) {
 	}{
 		{
 			name: "managedcluster in non-terminal provisioning state",
-			existing: containerservice.ManagedCluster{
-				ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+			existing: armcontainerservice.ManagedCluster{
+				Properties: &armcontainerservice.ManagedClusterProperties{
 					ProvisioningState: pointer.String("Deleting"),
 				},
 			},
@@ -101,7 +109,7 @@ func TestParameters(t *testing.T) {
 				},
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
 				g.Expect(gomockinternal.DiffEq(result).Matches(getSampleManagedCluster())).To(BeTrue(), cmp.Diff(result, getSampleManagedCluster()))
 			},
 		},
@@ -141,11 +149,11 @@ func TestParameters(t *testing.T) {
 				KubeletUserAssignedIdentity: "/resource/ID",
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
-				g.Expect(result.(containerservice.ManagedCluster).KubernetesVersion).To(Equal(pointer.String("v1.22.99")))
-				g.Expect(result.(containerservice.ManagedCluster).Identity.Type).To(Equal(containerservice.ResourceIdentityType("UserAssigned")))
-				g.Expect(result.(containerservice.ManagedCluster).Identity.UserAssignedIdentities).To(Equal(map[string]*containerservice.ManagedClusterIdentityUserAssignedIdentitiesValue{"/resource/ID": {}}))
-				g.Expect(result.(containerservice.ManagedCluster).IdentityProfile).To(Equal(map[string]*containerservice.UserAssignedIdentity{kubeletIdentityKey: {ResourceID: pointer.String("/resource/ID")}}))
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				g.Expect(result.(armcontainerservice.ManagedCluster).Properties.KubernetesVersion).To(Equal(pointer.String("v1.22.99")))
+				g.Expect(result.(armcontainerservice.ManagedCluster).Identity.Type).To(Equal(armcontainerservice.ResourceIdentityType("UserAssigned")))
+				g.Expect(result.(armcontainerservice.ManagedCluster).Identity.UserAssignedIdentities).To(Equal(map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{"/resource/ID": {}}))
+				g.Expect(result.(armcontainerservice.ManagedCluster).Properties.IdentityProfile).To(Equal(map[string]*armcontainerservice.UserAssignedIdentity{kubeletIdentityKey: {ResourceID: pointer.String("/resource/ID")}}))
 			},
 		},
 		{
@@ -191,9 +199,9 @@ func TestParameters(t *testing.T) {
 				},
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
-				g.Expect(result.(containerservice.ManagedCluster).LinuxProfile).To(Not(BeNil()))
-				g.Expect(*(*result.(containerservice.ManagedCluster).LinuxProfile.SSH.PublicKeys)[0].KeyData).To(Equal("test-ssh-key"))
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				g.Expect(result.(armcontainerservice.ManagedCluster).Properties.LinuxProfile).To(Not(BeNil()))
+				g.Expect(*(result.(armcontainerservice.ManagedCluster).Properties.LinuxProfile.SSH.PublicKeys)[0].KeyData).To(Equal("test-ssh-key"))
 			},
 		},
 		{
@@ -222,8 +230,8 @@ func TestParameters(t *testing.T) {
 				},
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
-				g.Expect(result.(containerservice.ManagedCluster).LinuxProfile).To(BeNil())
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				g.Expect(result.(armcontainerservice.ManagedCluster).Properties.LinuxProfile).To(BeNil())
 			},
 		},
 		{
@@ -273,7 +281,7 @@ func TestGetIdentity(t *testing.T) {
 	testcases := []struct {
 		name         string
 		identity     *infrav1.Identity
-		expectedType containerservice.ResourceIdentityType
+		expectedType armcontainerservice.ResourceIdentityType
 	}{
 		{
 			name:     "default",
@@ -285,14 +293,14 @@ func TestGetIdentity(t *testing.T) {
 				Type:                           infrav1.ManagedControlPlaneIdentityTypeUserAssigned,
 				UserAssignedIdentityResourceID: "/subscriptions/fae7cc14-bfba-4471-9435-f945b42a16dd/resourcegroups/my-identities/providers/Microsoft.ManagedIdentity/userAssignedIdentities/my-cluster-user-identity",
 			},
-			expectedType: containerservice.ResourceIdentityTypeUserAssigned,
+			expectedType: armcontainerservice.ResourceIdentityTypeUserAssigned,
 		},
 		{
 			name: "system-assigned identity",
 			identity: &infrav1.Identity{
 				Type: infrav1.ManagedControlPlaneIdentityTypeSystemAssigned,
 			},
-			expectedType: containerservice.ResourceIdentityTypeSystemAssigned,
+			expectedType: armcontainerservice.ResourceIdentityTypeSystemAssigned,
 		},
 	}
 	for _, tc := range testcases {
@@ -307,7 +315,7 @@ func TestGetIdentity(t *testing.T) {
 				g.Expect(result.Type).To(Equal(tc.expectedType))
 				if tc.identity.Type == infrav1.ManagedControlPlaneIdentityTypeUserAssigned {
 					g.Expect(result.UserAssignedIdentities).To(Not(BeEmpty()))
-					g.Expect(*result.UserAssignedIdentities[tc.identity.UserAssignedIdentityResourceID]).To(Equal(containerservice.ManagedClusterIdentityUserAssignedIdentitiesValue{}))
+					g.Expect(*result.UserAssignedIdentities[tc.identity.UserAssignedIdentityResourceID]).To(Equal(armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{}))
 				} else {
 					g.Expect(result.UserAssignedIdentities).To(BeEmpty())
 				}
@@ -318,33 +326,33 @@ func TestGetIdentity(t *testing.T) {
 	}
 }
 
-func getExistingClusterWithAPIServerAccessProfile() containerservice.ManagedCluster {
+func getExistingClusterWithAPIServerAccessProfile() armcontainerservice.ManagedCluster {
 	mc := getExistingCluster()
-	mc.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+	mc.Properties.APIServerAccessProfile = &armcontainerservice.ManagedClusterAPIServerAccessProfile{
 		EnablePrivateCluster: pointer.Bool(false),
 	}
 	return mc
 }
 
-func getExistingCluster() containerservice.ManagedCluster {
+func getExistingCluster() armcontainerservice.ManagedCluster {
 	mc := getSampleManagedCluster()
-	mc.ProvisioningState = pointer.String("Succeeded")
+	mc.Properties.ProvisioningState = pointer.String("Succeeded")
 	mc.ID = pointer.String("test-id")
 	return mc
 }
 
-func getSampleManagedCluster() containerservice.ManagedCluster {
-	return containerservice.ManagedCluster{
-		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+func getSampleManagedCluster() armcontainerservice.ManagedCluster {
+	return armcontainerservice.ManagedCluster{
+		Properties: &armcontainerservice.ManagedClusterProperties{
 			KubernetesVersion: pointer.String("v1.22.0"),
 			DNSPrefix:         pointer.String("test-managedcluster"),
-			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{
+			AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 				{
 					Name:         pointer.String("test-agentpool-0"),
-					Mode:         containerservice.AgentPoolMode(infrav1.NodePoolModeSystem),
+					Mode:         &nodePoolModeSystem,
 					Count:        pointer.Int32(2),
-					Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
-					OsDiskSizeGB: pointer.Int32(0),
+					Type:         &agentPoolTypeVirtualMachineScaleSets,
+					OSDiskSizeGB: pointer.Int32(0),
 					Tags: map[string]*string{
 						"test-tag": pointer.String("test-value"),
 					},
@@ -352,40 +360,40 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 				},
 				{
 					Name:                pointer.String("test-agentpool-1"),
-					Mode:                containerservice.AgentPoolMode(infrav1.NodePoolModeUser),
+					Mode:                &nodePoolModeUser,
 					Count:               pointer.Int32(4),
-					Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-					OsDiskSizeGB:        pointer.Int32(0),
+					Type:                &agentPoolTypeVirtualMachineScaleSets,
+					OSDiskSizeGB:        pointer.Int32(0),
 					VMSize:              pointer.String("test_SKU"),
 					OrchestratorVersion: pointer.String("v1.22.0"),
 					VnetSubnetID:        pointer.String("fake/subnet/id"),
 					MaxPods:             pointer.Int32(int32(32)),
-					AvailabilityZones:   &[]string{"1", "2"},
+					AvailabilityZones:   []*string{pointer.String("1"), pointer.String("2")},
 					Tags: map[string]*string{
 						"test-tag": pointer.String("test-value"),
 					},
 					EnableAutoScaling: pointer.Bool(false),
 				},
 			},
-			LinuxProfile: &containerservice.LinuxProfile{
+			LinuxProfile: &armcontainerservice.LinuxProfile{
 				AdminUsername: pointer.String(azure.DefaultAKSUserName),
-				SSH: &containerservice.SSHConfiguration{
-					PublicKeys: &[]containerservice.SSHPublicKey{
+				SSH: &armcontainerservice.SSHConfiguration{
+					PublicKeys: []*armcontainerservice.SSHPublicKey{
 						{
 							KeyData: pointer.String("test-ssh-key"),
 						},
 					},
 				},
 			},
-			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{ClientID: pointer.String("msi")},
+			ServicePrincipalProfile: &armcontainerservice.ManagedClusterServicePrincipalProfile{ClientID: pointer.String("msi")},
 			NodeResourceGroup:       pointer.String("test-node-rg"),
 			EnableRBAC:              pointer.Bool(true),
-			NetworkProfile: &containerservice.NetworkProfile{
-				LoadBalancerSku: "Standard",
+			NetworkProfile: &armcontainerservice.NetworkProfile{
+				LoadBalancerSKU: &loadBalancerSKUStandard,
 			},
 		},
-		Identity: &containerservice.ManagedClusterIdentity{
-			Type: containerservice.ResourceIdentityTypeSystemAssigned,
+		Identity: &armcontainerservice.ManagedClusterIdentity{
+			Type: &resourceIdentityTypeSystemAssigned,
 		},
 		Location: pointer.String("test-location"),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{

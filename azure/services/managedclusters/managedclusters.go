@@ -19,13 +19,13 @@ package managedclusters
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -50,18 +50,22 @@ type ManagedClusterScope interface {
 // Service provides operations on azure resources.
 type Service struct {
 	Scope ManagedClusterScope
-	async.Reconciler
+	asyncpoller.Reconciler
 	CredentialGetter
 }
 
 // New creates a new service.
-func New(scope ManagedClusterScope) *Service {
-	client := newClient(scope)
-	return &Service{
-		Scope:            scope,
-		Reconciler:       async.New(scope, client, client),
-		CredentialGetter: client,
+func New(scope ManagedClusterScope) (*Service, error) {
+	client, err := newClient(scope)
+	if err != nil {
+		return nil, err
 	}
+	return &Service{
+		Scope: scope,
+		Reconciler: asyncpoller.New[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse,
+			armcontainerservice.ManagedClustersClientDeleteResponse](scope, client, client),
+		CredentialGetter: client,
+	}, nil
 }
 
 // Name returns the service name.
@@ -84,13 +88,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	result, resultErr := s.CreateOrUpdateResource(ctx, managedClusterSpec, serviceName)
 	if resultErr == nil {
-		managedCluster, ok := result.(containerservice.ManagedCluster)
+		managedCluster, ok := result.(armcontainerservice.ManagedCluster)
 		if !ok {
-			return errors.Errorf("%T is not a containerservice.ManagedCluster", result)
+			return errors.Errorf("%T is not an armcontainerservice.ManagedCluster", result)
 		}
 		// Update control plane endpoint.
 		endpoint := clusterv1.APIEndpoint{
-			Host: pointer.StringDeref(managedCluster.ManagedClusterProperties.Fqdn, ""),
+			Host: pointer.StringDeref(managedCluster.Properties.Fqdn, ""),
 			Port: 443,
 		}
 		s.Scope.SetControlPlaneEndpoint(endpoint)
@@ -105,7 +109,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		// This field gets populated by AKS when not set by the user. Persist AKS's value so for future diffs,
 		// the "before" reflects the correct value.
-		if id := managedCluster.ManagedClusterProperties.IdentityProfile[kubeletIdentityKey]; id != nil && id.ResourceID != nil {
+		if id := managedCluster.Properties.IdentityProfile[kubeletIdentityKey]; id != nil && id.ResourceID != nil {
 			s.Scope.SetKubeletIdentity(*id.ResourceID)
 		}
 	}

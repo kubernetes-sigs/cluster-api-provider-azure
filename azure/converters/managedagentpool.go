@@ -17,17 +17,17 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 )
 
 // AgentPoolToManagedClusterAgentPoolProfile converts a AgentPoolSpec to an Azure SDK ManagedClusterAgentPoolProfile used in managedcluster reconcile.
-func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) containerservice.ManagedClusterAgentPoolProfile {
-	properties := pool.ManagedClusterAgentPoolProfileProperties
-	agentPool := containerservice.ManagedClusterAgentPoolProfile{
+func AgentPoolToManagedClusterAgentPoolProfile(pool armcontainerservice.AgentPool) armcontainerservice.ManagedClusterAgentPoolProfile {
+	properties := pool.Properties
+	agentPool := armcontainerservice.ManagedClusterAgentPoolProfile{
 		Name:                 pool.Name, // Note: if converting from agentPoolSpec.Parameters(), this field will not be set
 		VMSize:               properties.VMSize,
-		OsType:               properties.OsType,
-		OsDiskSizeGB:         properties.OsDiskSizeGB,
+		OSType:               properties.OSType,
+		OSDiskSizeGB:         properties.OSDiskSizeGB,
 		Count:                properties.Count,
 		Type:                 properties.Type,
 		OrchestratorVersion:  properties.OrchestratorVersion,
@@ -39,7 +39,7 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool containerservice.AgentPool) 
 		NodeTaints:           properties.NodeTaints,
 		AvailabilityZones:    properties.AvailabilityZones,
 		MaxPods:              properties.MaxPods,
-		OsDiskType:           properties.OsDiskType,
+		OSDiskType:           properties.OSDiskType,
 		NodeLabels:           properties.NodeLabels,
 		EnableUltraSSD:       properties.EnableUltraSSD,
 		EnableNodePublicIP:   properties.EnableNodePublicIP,

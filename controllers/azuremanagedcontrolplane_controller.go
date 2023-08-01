@@ -233,7 +233,11 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 		}
 	}
 
-	if err := newAzureManagedControlPlaneReconciler(scope).Reconcile(ctx); err != nil {
+	reconciler, err := newAzureManagedControlPlaneReconciler(scope)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create reconciler")
+	}
+	if err := reconciler.Reconcile(ctx); err != nil {
 		// Handle transient and terminal errors
 		log := log.WithValues("name", scope.ControlPlane.Name, "namespace", scope.ControlPlane.Namespace)
 		var reconcileError azure.ReconcileError
@@ -269,7 +273,11 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 
 	log.Info("Reconciling AzureManagedControlPlane delete")
 
-	if err := newAzureManagedControlPlaneReconciler(scope).Delete(ctx); err != nil {
+	reconciler, err := newAzureManagedControlPlaneReconciler(scope)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create reconciler")
+	}
+	if err := reconciler.Delete(ctx); err != nil {
 		// Handle transient errors
 		var reconcileError azure.ReconcileError
 		if errors.As(err, &reconcileError) && reconcileError.IsTransient() {
