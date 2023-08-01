@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -214,12 +214,12 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 				Count:               &s.Replicas,
 				OrchestratorVersion: s.Version,
 				Mode:                containerservice.AgentPoolMode(s.Mode),
-				EnableAutoScaling:   pointer.Bool(s.EnableAutoScaling),
+				EnableAutoScaling:   ptr.To(s.EnableAutoScaling),
 				MinCount:            s.MinCount,
 				MaxCount:            s.MaxCount,
 				NodeLabels:          s.NodeLabels,
 				NodeTaints:          &s.NodeTaints,
-				ScaleDownMode:       containerservice.ScaleDownMode(pointer.StringDeref(s.ScaleDownMode, "")),
+				ScaleDownMode:       containerservice.ScaleDownMode(ptr.Deref(s.ScaleDownMode, "")),
 				Tags:                converters.TagsToMap(s.AdditionalTags),
 			},
 		}
@@ -228,7 +228,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		}
 
 		if s.SpotMaxPrice != nil {
-			normalizedProfile.SpotMaxPrice = pointer.Float64(s.SpotMaxPrice.AsApproximateFloat64())
+			normalizedProfile.SpotMaxPrice = ptr.To[float64](s.SpotMaxPrice.AsApproximateFloat64())
 		}
 
 		if s.KubeletConfig != nil {
@@ -286,7 +286,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 	}
 	var spotMaxPrice *float64
 	if s.SpotMaxPrice != nil {
-		spotMaxPrice = pointer.Float64(s.SpotMaxPrice.AsApproximateFloat64())
+		spotMaxPrice = ptr.To[float64](s.SpotMaxPrice.AsApproximateFloat64())
 	}
 	tags := converters.TagsToMap(s.AdditionalTags)
 	if tags == nil {
@@ -360,10 +360,10 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			AvailabilityZones:    availabilityZones,
 			Count:                &s.Replicas,
-			EnableAutoScaling:    pointer.Bool(s.EnableAutoScaling),
+			EnableAutoScaling:    ptr.To(s.EnableAutoScaling),
 			EnableUltraSSD:       s.EnableUltraSSD,
 			KubeletConfig:        kubeletConfig,
-			KubeletDiskType:      containerservice.KubeletDiskType(pointer.StringDeref((*string)(s.KubeletDiskType), "")),
+			KubeletDiskType:      containerservice.KubeletDiskType(ptr.Deref((*string)(s.KubeletDiskType), "")),
 			MaxCount:             s.MaxCount,
 			MaxPods:              s.MaxPods,
 			MinCount:             s.MinCount,
@@ -372,10 +372,10 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 			NodeTaints:           nodeTaints,
 			OrchestratorVersion:  s.Version,
 			OsDiskSizeGB:         &s.OSDiskSizeGB,
-			OsDiskType:           containerservice.OSDiskType(pointer.StringDeref(s.OsDiskType, "")),
-			OsType:               containerservice.OSType(pointer.StringDeref(s.OSType, "")),
-			ScaleSetPriority:     containerservice.ScaleSetPriority(pointer.StringDeref(s.ScaleSetPriority, "")),
-			ScaleDownMode:        containerservice.ScaleDownMode(pointer.StringDeref(s.ScaleDownMode, "")),
+			OsDiskType:           containerservice.OSDiskType(ptr.Deref(s.OsDiskType, "")),
+			OsType:               containerservice.OSType(ptr.Deref(s.OSType, "")),
+			ScaleSetPriority:     containerservice.ScaleSetPriority(ptr.Deref(s.ScaleSetPriority, "")),
+			ScaleDownMode:        containerservice.ScaleDownMode(ptr.Deref(s.ScaleDownMode, "")),
 			SpotMaxPrice:         spotMaxPrice,
 			Type:                 containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VMSize:               sku,

@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -34,10 +34,10 @@ var (
 		Priority:         2200,
 		Protocol:         infrav1.SecurityGroupProtocolTCP,
 		Direction:        infrav1.SecurityRuleDirectionInbound,
-		Source:           pointer.String("*"),
-		SourcePorts:      pointer.String("*"),
-		Destination:      pointer.String("*"),
-		DestinationPorts: pointer.String("22"),
+		Source:           ptr.To("*"),
+		SourcePorts:      ptr.To("*"),
+		Destination:      ptr.To("*"),
+		DestinationPorts: ptr.To("22"),
 	}
 	otherRule = infrav1.SecurityRule{
 		Name:             "other_rule",
@@ -45,10 +45,10 @@ var (
 		Priority:         500,
 		Protocol:         infrav1.SecurityGroupProtocolTCP,
 		Direction:        infrav1.SecurityRuleDirectionInbound,
-		Source:           pointer.String("*"),
-		SourcePorts:      pointer.String("*"),
-		Destination:      pointer.String("*"),
-		DestinationPorts: pointer.String("80"),
+		Source:           ptr.To("*"),
+		SourcePorts:      ptr.To("*"),
+		Destination:      ptr.To("*"),
+		DestinationPorts: ptr.To("80"),
 	}
 	customRule = infrav1.SecurityRule{
 		Name:             "custom_rule",
@@ -56,10 +56,10 @@ var (
 		Priority:         501,
 		Protocol:         infrav1.SecurityGroupProtocolTCP,
 		Direction:        infrav1.SecurityRuleDirectionOutbound,
-		Source:           pointer.String("*"),
-		SourcePorts:      pointer.String("*"),
-		Destination:      pointer.String("*"),
-		DestinationPorts: pointer.String("80"),
+		Source:           ptr.To("*"),
+		SourcePorts:      ptr.To("*"),
+		Destination:      ptr.To("*"),
+		DestinationPorts: ptr.To("80"),
 	}
 )
 
@@ -84,7 +84,7 @@ func TestParameters(t *testing.T) {
 				ClusterName:   "my-cluster",
 			},
 			existing: network.SecurityGroup{
-				Name: pointer.String("test-nsg"),
+				Name: ptr.To("test-nsg"),
 				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 					SecurityRules: &[]network.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
@@ -109,9 +109,9 @@ func TestParameters(t *testing.T) {
 				ClusterName:   "my-cluster",
 			},
 			existing: network.SecurityGroup{
-				Name:     pointer.String("test-nsg"),
-				Location: pointer.String("test-location"),
-				Etag:     pointer.String("fake-etag"),
+				Name:     ptr.To("test-nsg"),
+				Location: ptr.To("test-location"),
+				Etag:     ptr.To("fake-etag"),
 				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 					SecurityRules: &[]network.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
@@ -122,8 +122,8 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
 				g.Expect(result).To(Equal(network.SecurityGroup{
-					Location: pointer.String("test-location"),
-					Etag:     pointer.String("fake-etag"),
+					Location: ptr.To("test-location"),
+					Etag:     ptr.To("fake-etag"),
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 						SecurityRules: &[]network.SecurityRule{
 							converters.SecurityRuleToSDK(otherRule),
@@ -132,8 +132,8 @@ func TestParameters(t *testing.T) {
 						},
 					},
 					Tags: map[string]*string{
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
-						"Name": pointer.String("test-nsg"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+						"Name": ptr.To("test-nsg"),
 					},
 				}))
 			},
@@ -156,9 +156,9 @@ func TestParameters(t *testing.T) {
 				},
 			},
 			existing: network.SecurityGroup{
-				Name:     pointer.String("test-nsg"),
-				Location: pointer.String("test-location"),
-				Etag:     pointer.String("fake-etag"),
+				Name:     ptr.To("test-nsg"),
+				Location: ptr.To("test-location"),
+				Etag:     ptr.To("fake-etag"),
 				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 					SecurityRules: &[]network.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
@@ -170,8 +170,8 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
 				g.Expect(result).To(Equal(network.SecurityGroup{
-					Location: pointer.String("test-location"),
-					Etag:     pointer.String("fake-etag"),
+					Location: ptr.To("test-location"),
+					Etag:     ptr.To("fake-etag"),
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 						SecurityRules: &[]network.SecurityRule{
 							converters.SecurityRuleToSDK(sshRule),
@@ -179,8 +179,8 @@ func TestParameters(t *testing.T) {
 						},
 					},
 					Tags: map[string]*string{
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
-						"Name": pointer.String("test-nsg"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+						"Name": ptr.To("test-nsg"),
 					},
 				}))
 			},
@@ -202,9 +202,9 @@ func TestParameters(t *testing.T) {
 				},
 			},
 			existing: network.SecurityGroup{
-				Name:     pointer.String("test-nsg"),
-				Location: pointer.String("test-location"),
-				Etag:     pointer.String("fake-etag"),
+				Name:     ptr.To("test-nsg"),
+				Location: ptr.To("test-location"),
+				Etag:     ptr.To("fake-etag"),
 				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 					SecurityRules: &[]network.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
@@ -239,10 +239,10 @@ func TestParameters(t *testing.T) {
 							converters.SecurityRuleToSDK(otherRule),
 						},
 					},
-					Location: pointer.String("test-location"),
+					Location: ptr.To("test-location"),
 					Tags: map[string]*string{
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
-						"Name": pointer.String("test-nsg"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+						"Name": ptr.To("test-nsg"),
 					},
 				}))
 			},

@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters/mock_managedclusters"
@@ -63,11 +63,11 @@ func TestReconcile(t *testing.T) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-						Fqdn:              pointer.String("my-managedcluster-fqdn"),
-						ProvisioningState: pointer.String("Succeeded"),
+						Fqdn:              ptr.To("my-managedcluster-fqdn"),
+						ProvisioningState: ptr.To("Succeeded"),
 						IdentityProfile: map[string]*containerservice.UserAssignedIdentity{
 							kubeletIdentityKey: {
-								ResourceID: pointer.String("kubelet-id"),
+								ResourceID: ptr.To("kubelet-id"),
 							},
 						},
 					},
@@ -89,8 +89,8 @@ func TestReconcile(t *testing.T) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
 					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-						Fqdn:              pointer.String("my-managedcluster-fqdn"),
-						ProvisioningState: pointer.String("Succeeded"),
+						Fqdn:              ptr.To("my-managedcluster-fqdn"),
+						ProvisioningState: ptr.To("Succeeded"),
 					},
 				}, nil)
 				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{

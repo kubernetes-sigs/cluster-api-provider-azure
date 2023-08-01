@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -616,8 +616,8 @@ func (m *AzureManagedControlPlane) validateAutoScalerProfile(_ client.Client) er
 // validateMaxNodeProvisionTime validates update to AutoscalerProfile.MaxNodeProvisionTime.
 func (m *AzureManagedControlPlane) validateMaxNodeProvisionTime() field.ErrorList {
 	var allErrs field.ErrorList
-	if pointer.StringDeref(m.Spec.AutoScalerProfile.MaxNodeProvisionTime, "") != "" {
-		if !rMaxNodeProvisionTime.MatchString(pointer.StringDeref(m.Spec.AutoScalerProfile.MaxNodeProvisionTime, "")) {
+	if ptr.Deref(m.Spec.AutoScalerProfile.MaxNodeProvisionTime, "") != "" {
+		if !rMaxNodeProvisionTime.MatchString(ptr.Deref(m.Spec.AutoScalerProfile.MaxNodeProvisionTime, "")) {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "MaxNodeProvisionTime"), m.Spec.AutoScalerProfile.MaxNodeProvisionTime, "invalid value"))
 		}
 	}
@@ -627,8 +627,8 @@ func (m *AzureManagedControlPlane) validateMaxNodeProvisionTime() field.ErrorLis
 // validateScanInterval validates update to AutoscalerProfile.ScanInterval.
 func (m *AzureManagedControlPlane) validateScanInterval() field.ErrorList {
 	var allErrs field.ErrorList
-	if pointer.StringDeref(m.Spec.AutoScalerProfile.ScanInterval, "") != "" {
-		if !rScanInterval.MatchString(pointer.StringDeref(m.Spec.AutoScalerProfile.ScanInterval, "")) {
+	if ptr.Deref(m.Spec.AutoScalerProfile.ScanInterval, "") != "" {
+		if !rScanInterval.MatchString(ptr.Deref(m.Spec.AutoScalerProfile.ScanInterval, "")) {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "ScanInterval"), m.Spec.AutoScalerProfile.ScanInterval, "invalid value"))
 		}
 	}
@@ -638,8 +638,8 @@ func (m *AzureManagedControlPlane) validateScanInterval() field.ErrorList {
 // validateNewPodScaleUpDelay validates update to AutoscalerProfile.NewPodScaleUpDelay.
 func (m *AzureManagedControlPlane) validateNewPodScaleUpDelay() field.ErrorList {
 	var allErrs field.ErrorList
-	if pointer.StringDeref(m.Spec.AutoScalerProfile.NewPodScaleUpDelay, "") != "" {
-		_, err := time.ParseDuration(pointer.StringDeref(m.Spec.AutoScalerProfile.NewPodScaleUpDelay, ""))
+	if ptr.Deref(m.Spec.AutoScalerProfile.NewPodScaleUpDelay, "") != "" {
+		_, err := time.ParseDuration(ptr.Deref(m.Spec.AutoScalerProfile.NewPodScaleUpDelay, ""))
 		if err != nil {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "NewPodScaleUpDelay"), m.Spec.AutoScalerProfile.NewPodScaleUpDelay, "invalid value"))
 		}
@@ -650,9 +650,9 @@ func (m *AzureManagedControlPlane) validateNewPodScaleUpDelay() field.ErrorList 
 // validateScaleDownDelayAfterDelete validates update to AutoscalerProfile.ScaleDownDelayAfterDelete value.
 func (m *AzureManagedControlPlane) validateScaleDownDelayAfterDelete() field.ErrorList {
 	var allErrs field.ErrorList
-	if pointer.StringDeref(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete, "") != "" {
-		if !rScaleDownDelayAfterDelete.MatchString(pointer.StringDeref(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete, "")) {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "ScaleDownDelayAfterDelete"), pointer.StringDeref(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete, ""), "invalid value"))
+	if ptr.Deref(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete, "") != "" {
+		if !rScaleDownDelayAfterDelete.MatchString(ptr.Deref(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete, "")) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", "ScaleDownDelayAfterDelete"), ptr.Deref(m.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete, ""), "invalid value"))
 		}
 	}
 	return allErrs
@@ -661,9 +661,9 @@ func (m *AzureManagedControlPlane) validateScaleDownDelayAfterDelete() field.Err
 // validateScaleDownTime validates update to AutoscalerProfile.ScaleDown* values.
 func (m *AzureManagedControlPlane) validateScaleDownTime(scaleDownValue *string, fieldName string) field.ErrorList {
 	var allErrs field.ErrorList
-	if pointer.StringDeref(scaleDownValue, "") != "" {
-		if !rScaleDownTime.MatchString(pointer.StringDeref(scaleDownValue, "")) {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", fieldName), pointer.StringDeref(scaleDownValue, ""), "invalid value"))
+	if ptr.Deref(scaleDownValue, "") != "" {
+		if !rScaleDownTime.MatchString(ptr.Deref(scaleDownValue, "")) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "AutoscalerProfile", fieldName), ptr.Deref(scaleDownValue, ""), "invalid value"))
 		}
 	}
 	return allErrs

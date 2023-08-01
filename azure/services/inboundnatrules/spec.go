@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 // InboundNatSpec defines the specification for an inbound NAT rule.
@@ -63,11 +63,11 @@ func (s *InboundNatSpec) Parameters(ctx context.Context, existing interface{}) (
 	}
 
 	rule := network.InboundNatRule{
-		Name: pointer.String(s.ResourceName()),
+		Name: ptr.To(s.ResourceName()),
 		InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
-			BackendPort:          pointer.Int32(22),
-			EnableFloatingIP:     pointer.Bool(false),
-			IdleTimeoutInMinutes: pointer.Int32(4),
+			BackendPort:          ptr.To[int32](22),
+			EnableFloatingIP:     ptr.To(false),
+			IdleTimeoutInMinutes: ptr.To[int32](4),
 			FrontendIPConfiguration: &network.SubResource{
 				ID: s.FrontendIPConfigurationID,
 			},

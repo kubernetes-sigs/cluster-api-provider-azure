@@ -26,7 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -47,8 +47,8 @@ var (
 	managedTags = resources.TagsResource{
 		Properties: &resources.Tags{
 			Tags: map[string]*string{
-				"foo": pointer.String("bar"),
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": pointer.String("owned"),
+				"foo": ptr.To("bar"),
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": ptr.To("owned"),
 			},
 		},
 	}
@@ -56,18 +56,18 @@ var (
 	unmanagedTags = resources.TagsResource{
 		Properties: &resources.Tags{
 			Tags: map[string]*string{
-				"foo":       pointer.String("bar"),
-				"something": pointer.String("else"),
+				"foo":       ptr.To("bar"),
+				"something": ptr.To("else"),
 			},
 		},
 	}
 
 	customVnet = network.VirtualNetwork{
-		ID:   pointer.String("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
-		Name: pointer.String("test-vnet"),
+		ID:   ptr.To("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
+		Name: ptr.To("test-vnet"),
 		Tags: map[string]*string{
-			"foo":       pointer.String("bar"),
-			"something": pointer.String("else"),
+			"foo":       ptr.To("bar"),
+			"something": ptr.To("else"),
 		},
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
@@ -75,13 +75,13 @@ var (
 			},
 			Subnets: &[]network.Subnet{
 				{
-					Name: pointer.String("test-subnet"),
+					Name: ptr.To("test-subnet"),
 					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-						AddressPrefix: pointer.String("subnet-cidr"),
+						AddressPrefix: ptr.To("subnet-cidr"),
 					},
 				},
 				{
-					Name: pointer.String("test-subnet-2"),
+					Name: ptr.To("test-subnet-2"),
 					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 						AddressPrefixes: &[]string{
 							"subnet-cidr-1",

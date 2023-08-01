@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -48,7 +48,7 @@ func TestReconcileAgentPools(t *testing.T) {
 				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(sdkFakeAgentPool(sdkWithAutoscaling(true), sdkWithCount(1)), nil)
 				s.SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")
-				s.SetCAPIMachinePoolReplicas(pointer.Int32(1))
+				s.SetCAPIMachinePoolReplicas(ptr.To[int32](1))
 				s.UpdatePutStatus(infrav1.AgentPoolsReadyCondition, serviceName, nil)
 			},
 		},

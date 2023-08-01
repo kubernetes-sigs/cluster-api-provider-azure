@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -85,13 +85,13 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 	}
 
 	if s.CustomNetworkInterfaceName != "" {
-		privateEndpointProperties.CustomNetworkInterfaceName = pointer.String(s.CustomNetworkInterfaceName)
+		privateEndpointProperties.CustomNetworkInterfaceName = ptr.To(s.CustomNetworkInterfaceName)
 	}
 
 	if len(s.PrivateIPAddresses) > 0 {
 		privateIPAddresses := make([]network.PrivateEndpointIPConfiguration, 0, len(s.PrivateIPAddresses))
 		for _, address := range s.PrivateIPAddresses {
-			ipConfig := &network.PrivateEndpointIPConfigurationProperties{PrivateIPAddress: pointer.String(address)}
+			ipConfig := &network.PrivateEndpointIPConfigurationProperties{PrivateIPAddress: ptr.To(address)}
 
 			privateIPAddresses = append(privateIPAddresses, network.PrivateEndpointIPConfiguration{
 				PrivateEndpointIPConfigurationProperties: ipConfig,
@@ -103,9 +103,9 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 	privateLinkServiceConnections := make([]network.PrivateLinkServiceConnection, 0, len(s.PrivateLinkServiceConnections))
 	for _, privateLinkServiceConnection := range s.PrivateLinkServiceConnections {
 		linkServiceConnection := network.PrivateLinkServiceConnection{
-			Name: pointer.String(privateLinkServiceConnection.Name),
+			Name: ptr.To(privateLinkServiceConnection.Name),
 			PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-				PrivateLinkServiceID: pointer.String(privateLinkServiceConnection.PrivateLinkServiceID),
+				PrivateLinkServiceID: ptr.To(privateLinkServiceConnection.PrivateLinkServiceID),
 			},
 		}
 
@@ -114,7 +114,7 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 		}
 
 		if privateLinkServiceConnection.RequestMessage != "" {
-			linkServiceConnection.PrivateLinkServiceConnectionProperties.RequestMessage = pointer.String(privateLinkServiceConnection.RequestMessage)
+			linkServiceConnection.PrivateLinkServiceConnectionProperties.RequestMessage = ptr.To(privateLinkServiceConnection.RequestMessage)
 		}
 		privateLinkServiceConnections = append(privateLinkServiceConnections, linkServiceConnection)
 	}
@@ -131,25 +131,25 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 
 	for _, applicationSecurityGroup := range s.ApplicationSecurityGroups {
 		applicationSecurityGroups = append(applicationSecurityGroups, network.ApplicationSecurityGroup{
-			ID: pointer.String(applicationSecurityGroup),
+			ID: ptr.To(applicationSecurityGroup),
 		})
 	}
 
 	privateEndpointProperties.ApplicationSecurityGroups = &applicationSecurityGroups
 
 	newPrivateEndpoint := network.PrivateEndpoint{
-		Name:                      pointer.String(s.Name),
+		Name:                      ptr.To(s.Name),
 		PrivateEndpointProperties: &privateEndpointProperties,
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        pointer.String(s.Name),
+			Name:        ptr.To(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
 	}
 
 	if s.Location != "" {
-		newPrivateEndpoint.Location = pointer.String(s.Location)
+		newPrivateEndpoint.Location = ptr.To(s.Location)
 	}
 
 	if existing != nil {

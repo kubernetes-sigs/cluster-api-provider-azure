@@ -27,7 +27,7 @@ import (
 	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
@@ -386,7 +386,7 @@ func (s *ManagedControlPlaneScope) IsIPv6Enabled() bool {
 // IsVnetManaged returns true if the vnet is managed.
 func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	if s.cache.isVnetManaged != nil {
-		return pointer.BoolDeref(s.cache.isVnetManaged, false)
+		return ptr.Deref(s.cache.isVnetManaged, false)
 	}
 	// TODO refactor `IsVnetManaged` so that it is able to use an upstream context
 	// see https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/2581
@@ -397,7 +397,7 @@ func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	if err != nil {
 		log.Error(err, "Unable to determine if ManagedControlPlaneScope VNET is managed by capz", "AzureManagedCluster", s.ClusterName())
 	}
-	s.cache.isVnetManaged = pointer.Bool(isManaged)
+	s.cache.isVnetManaged = ptr.To(isManaged)
 	return isManaged
 }
 

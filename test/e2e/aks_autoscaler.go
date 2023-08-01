@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -85,8 +85,8 @@ func AKSAutoscaleSpec(ctx context.Context, inputGetter func() AKSAutoscaleSpecIn
 			} else {
 				enabling = "Enabling"
 				ammp.Spec.Scaling = &infrav1.ManagedMachinePoolScaling{
-					MinSize: pointer.Int32(1),
-					MaxSize: pointer.Int32(2),
+					MinSize: ptr.To[int32](1),
+					MaxSize: ptr.To[int32](2),
 				}
 			}
 			By(enabling + " autoscaling")
@@ -114,7 +114,7 @@ func validateAKSAutoscaleDisabled(agentPoolGetter func() (containerservice.Agent
 	Eventually(func(g Gomega) {
 		agentpool, err := agentPoolGetter()
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(pointer.BoolDeref(agentpool.EnableAutoScaling, false)).To(BeFalse())
+		g.Expect(ptr.Deref(agentpool.EnableAutoScaling, false)).To(BeFalse())
 	}, inputGetter().WaitIntervals...).Should(Succeed())
 }
 
@@ -123,6 +123,6 @@ func validateAKSAutoscaleEnabled(agentPoolGetter func() (containerservice.AgentP
 	Eventually(func(g Gomega) {
 		agentpool, err := agentPoolGetter()
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(pointer.BoolDeref(agentpool.EnableAutoScaling, false)).To(BeTrue())
+		g.Expect(ptr.Deref(agentpool.EnableAutoScaling, false)).To(BeTrue())
 	}, inputGetter().WaitIntervals...).Should(Succeed())
 }

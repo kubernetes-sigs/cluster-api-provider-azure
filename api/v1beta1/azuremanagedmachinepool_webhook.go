@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
@@ -75,7 +75,7 @@ func (mw *azureManagedMachinePoolWebhook) Default(ctx context.Context, obj runti
 	}
 
 	if m.Spec.OSType == nil {
-		m.Spec.OSType = pointer.String(DefaultOSType)
+		m.Spec.OSType = ptr.To(DefaultOSType)
 	}
 
 	return nil
@@ -338,7 +338,7 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 
 func (m *AzureManagedMachinePool) validateMaxPods() error {
 	if m.Spec.MaxPods != nil {
-		if pointer.Int32Deref(m.Spec.MaxPods, 0) < 10 || pointer.Int32Deref(m.Spec.MaxPods, 0) > 250 {
+		if ptr.Deref[int32](m.Spec.MaxPods, 0) < 10 || ptr.Deref[int32](m.Spec.MaxPods, 0) > 250 {
 			return field.Invalid(
 				field.NewPath("Spec", "MaxPods"),
 				m.Spec.MaxPods,
@@ -411,7 +411,7 @@ func (m *AzureManagedMachinePool) validateSubnetName() error {
 	if m.Spec.SubnetName != nil {
 		subnetRegex := "^[a-zA-Z0-9][a-zA-Z0-9-]{0,78}[a-zA-Z0-9]$"
 		regex := regexp.MustCompile(subnetRegex)
-		if success := regex.MatchString(pointer.StringDeref(m.Spec.SubnetName, "")); !success {
+		if success := regex.MatchString(ptr.Deref(m.Spec.SubnetName, "")); !success {
 			return field.Invalid(field.NewPath("Spec", "SubnetName"), m.Spec.SubnetName,
 				fmt.Sprintf("name of subnet doesn't match regex %s", subnetRegex))
 		}
@@ -431,7 +431,7 @@ func (m *AzureManagedMachinePool) validateKubeletConfig() error {
 	}
 	if m.Spec.KubeletConfig != nil {
 		if m.Spec.KubeletConfig.CPUCfsQuotaPeriod != nil {
-			if !strings.HasSuffix(pointer.StringDeref(m.Spec.KubeletConfig.CPUCfsQuotaPeriod, ""), "ms") {
+			if !strings.HasSuffix(ptr.Deref(m.Spec.KubeletConfig.CPUCfsQuotaPeriod, ""), "ms") {
 				return field.Invalid(
 					field.NewPath("Spec", "KubeletConfig", "CPUCfsQuotaPeriod"),
 					m.Spec.KubeletConfig.CPUCfsQuotaPeriod,
@@ -439,12 +439,12 @@ func (m *AzureManagedMachinePool) validateKubeletConfig() error {
 			}
 		}
 		if m.Spec.KubeletConfig.ImageGcHighThreshold != nil && m.Spec.KubeletConfig.ImageGcLowThreshold != nil {
-			if pointer.Int32Deref(m.Spec.KubeletConfig.ImageGcLowThreshold, 0) > pointer.Int32Deref(m.Spec.KubeletConfig.ImageGcHighThreshold, 0) {
+			if ptr.Deref[int32](m.Spec.KubeletConfig.ImageGcLowThreshold, 0) > ptr.Deref[int32](m.Spec.KubeletConfig.ImageGcHighThreshold, 0) {
 				return field.Invalid(
 					field.NewPath("Spec", "KubeletConfig", "ImageGcLowThreshold"),
 					m.Spec.KubeletConfig.ImageGcLowThreshold,
 					fmt.Sprintf("must not be greater than ImageGcHighThreshold, ImageGcLowThreshold=%d, ImageGcHighThreshold=%d",
-						pointer.Int32Deref(m.Spec.KubeletConfig.ImageGcLowThreshold, 0), pointer.Int32Deref(m.Spec.KubeletConfig.ImageGcHighThreshold, 0)))
+						ptr.Deref[int32](m.Spec.KubeletConfig.ImageGcLowThreshold, 0), ptr.Deref[int32](m.Spec.KubeletConfig.ImageGcHighThreshold, 0)))
 			}
 		}
 		for _, val := range m.Spec.KubeletConfig.AllowedUnsafeSysctls {
@@ -475,7 +475,7 @@ func (m *AzureManagedMachinePool) validateLinuxOSConfig() error {
 	}
 
 	if m.Spec.LinuxOSConfig.SwapFileSizeMB != nil {
-		if m.Spec.KubeletConfig == nil || pointer.BoolDeref(m.Spec.KubeletConfig.FailSwapOn, true) {
+		if m.Spec.KubeletConfig == nil || ptr.Deref(m.Spec.KubeletConfig.FailSwapOn, true) {
 			errs = append(errs, field.Invalid(
 				field.NewPath("Spec", "LinuxOSConfig", "SwapFileSizeMB"),
 				m.Spec.LinuxOSConfig.SwapFileSizeMB,

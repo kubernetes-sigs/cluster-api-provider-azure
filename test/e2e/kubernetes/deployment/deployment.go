@@ -33,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -63,7 +63,7 @@ func Create(image, name, namespace string) *Builder {
 				Labels:    map[string]string{},
 			},
 			Spec: appsv1.DeploymentSpec{
-				Replicas: pointer.Int32(1),
+				Replicas: ptr.To[int32](1),
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						"app": name,

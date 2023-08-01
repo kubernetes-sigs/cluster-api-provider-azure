@@ -23,7 +23,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -116,13 +116,13 @@ func (s *VMSpec) Parameters(ctx context.Context, existing interface{}) (params i
 
 	return compute.VirtualMachine{
 		Plan:             converters.ImageToPlan(s.Image),
-		Location:         pointer.String(s.Location),
+		Location:         ptr.To(s.Location),
 		ExtendedLocation: converters.ExtendedLocationToComputeSDK(s.ExtendedLocation),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        pointer.String(s.Name),
-			Role:        pointer.String(s.Role),
+			Name:        ptr.To(s.Name),
+			Role:        ptr.To(s.Role),
 			Additional:  s.AdditionalTags,
 		})),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
@@ -151,7 +151,7 @@ func (s *VMSpec) Parameters(ctx context.Context, existing interface{}) (params i
 func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 	storageProfile := &compute.StorageProfile{
 		OsDisk: &compute.OSDisk{
-			Name:         pointer.String(azure.GenerateOSDiskName(s.Name)),
+			Name:         ptr.To(azure.GenerateOSDiskName(s.Name)),
 			OsType:       compute.OperatingSystemTypes(s.OSDisk.OSType),
 			CreateOption: compute.DiskCreateOptionTypesFromImage,
 			DiskSizeGB:   s.OSDisk.DiskSizeGB,
@@ -194,7 +194,7 @@ func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 			storageProfile.OsDisk.ManagedDisk.StorageAccountType = compute.StorageAccountTypes(s.OSDisk.ManagedDisk.StorageAccountType)
 		}
 		if s.OSDisk.ManagedDisk.DiskEncryptionSet != nil {
-			storageProfile.OsDisk.ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: pointer.String(s.OSDisk.ManagedDisk.DiskEncryptionSet.ID)}
+			storageProfile.OsDisk.ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: ptr.To(s.OSDisk.ManagedDisk.DiskEncryptionSet.ID)}
 		}
 		if s.OSDisk.ManagedDisk.SecurityProfile != nil {
 			if _, exists := s.SKU.GetCapability(resourceskus.ConfidentialComputingType); !exists {
@@ -204,7 +204,7 @@ func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 			storageProfile.OsDisk.ManagedDisk.SecurityProfile = &compute.VMDiskSecurityProfile{}
 
 			if s.OSDisk.ManagedDisk.SecurityProfile.DiskEncryptionSet != nil {
-				storageProfile.OsDisk.ManagedDisk.SecurityProfile.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: pointer.String(s.OSDisk.ManagedDisk.SecurityProfile.DiskEncryptionSet.ID)}
+				storageProfile.OsDisk.ManagedDisk.SecurityProfile.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: ptr.To(s.OSDisk.ManagedDisk.SecurityProfile.DiskEncryptionSet.ID)}
 			}
 			if s.OSDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType != "" {
 				storageProfile.OsDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType = compute.SecurityEncryptionTypes(string(s.OSDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType))
@@ -216,9 +216,9 @@ func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 	for i, disk := range s.DataDisks {
 		dataDisks[i] = compute.DataDisk{
 			CreateOption: compute.DiskCreateOptionTypesEmpty,
-			DiskSizeGB:   pointer.Int32(disk.DiskSizeGB),
+			DiskSizeGB:   ptr.To[int32](disk.DiskSizeGB),
 			Lun:          disk.Lun,
-			Name:         pointer.String(azure.GenerateDataDiskName(s.Name, disk.NameSuffix)),
+			Name:         ptr.To(azure.GenerateDataDiskName(s.Name, disk.NameSuffix)),
 			Caching:      compute.CachingTypes(disk.CachingType),
 		}
 
@@ -228,7 +228,7 @@ func (s *VMSpec) generateStorageProfile() (*compute.StorageProfile, error) {
 			}
 
 			if disk.ManagedDisk.DiskEncryptionSet != nil {
-				dataDisks[i].ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: pointer.String(disk.ManagedDisk.DiskEncryptionSet.ID)}
+				dataDisks[i].ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: ptr.To(disk.ManagedDisk.DiskEncryptionSet.ID)}
 			}
 
 			// check the support for ultra disks based on location and vm size
@@ -256,9 +256,9 @@ func (s *VMSpec) generateOSProfile() (*compute.OSProfile, error) {
 	}
 
 	osProfile := &compute.OSProfile{
-		ComputerName:  pointer.String(s.Name),
-		AdminUsername: pointer.String(azure.DefaultUserName),
-		CustomData:    pointer.String(s.BootstrapData),
+		ComputerName:  ptr.To(s.Name),
+		AdminUsername: ptr.To(azure.DefaultUserName),
+		CustomData:    ptr.To(s.BootstrapData),
 	}
 
 	switch s.OSDisk.OSType {
@@ -270,18 +270,18 @@ func (s *VMSpec) generateOSProfile() (*compute.OSProfile, error) {
 		// but the password on the VM will NOT be the same as created here.
 		// Access is provided via SSH public key that is set during deployment
 		// Azure also provides a way to reset user passwords in the case of need.
-		osProfile.AdminPassword = pointer.String(generators.SudoRandomPassword(123))
+		osProfile.AdminPassword = ptr.To(generators.SudoRandomPassword(123))
 		osProfile.WindowsConfiguration = &compute.WindowsConfiguration{
-			EnableAutomaticUpdates: pointer.Bool(false),
+			EnableAutomaticUpdates: ptr.To(false),
 		}
 	default:
 		osProfile.LinuxConfiguration = &compute.LinuxConfiguration{
-			DisablePasswordAuthentication: pointer.Bool(true),
+			DisablePasswordAuthentication: ptr.To(true),
 			SSH: &compute.SSHConfiguration{
 				PublicKeys: &[]compute.SSHPublicKey{
 					{
-						Path:    pointer.String(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-						KeyData: pointer.String(string(sshKey)),
+						Path:    ptr.To(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+						KeyData: ptr.To(string(sshKey)),
 					},
 				},
 			},
@@ -356,7 +356,7 @@ func (s *VMSpec) generateSecurityProfile(storageProfile *compute.StorageProfile)
 			}
 
 			securityProfile.SecurityType = compute.SecurityTypesTrustedLaunch
-			securityProfile.UefiSettings.SecureBootEnabled = pointer.Bool(true)
+			securityProfile.UefiSettings.SecureBootEnabled = ptr.To(true)
 		}
 
 		if s.SecurityProfile.UefiSettings.VTpmEnabled != nil && *s.SecurityProfile.UefiSettings.VTpmEnabled {
@@ -369,7 +369,7 @@ func (s *VMSpec) generateSecurityProfile(storageProfile *compute.StorageProfile)
 			}
 
 			securityProfile.SecurityType = compute.SecurityTypesTrustedLaunch
-			securityProfile.UefiSettings.VTpmEnabled = pointer.Bool(true)
+			securityProfile.UefiSettings.VTpmEnabled = ptr.To(true)
 		}
 	}
 
@@ -381,9 +381,9 @@ func (s *VMSpec) generateNICRefs() *[]compute.NetworkInterfaceReference {
 	for i, id := range s.NICIDs {
 		primary := i == 0
 		nicRefs[i] = compute.NetworkInterfaceReference{
-			ID: pointer.String(id),
+			ID: ptr.To(id),
 			NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
-				Primary: pointer.Bool(primary),
+				Primary: ptr.To(primary),
 			},
 		}
 	}
@@ -398,7 +398,7 @@ func (s *VMSpec) generateAdditionalCapabilities() *compute.AdditionalCapabilitie
 	for _, dataDisk := range s.DataDisks {
 		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
 			capabilities = &compute.AdditionalCapabilities{
-				UltraSSDEnabled: pointer.Bool(true),
+				UltraSSDEnabled: ptr.To(true),
 			}
 			break
 		}

@@ -23,7 +23,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -56,7 +56,7 @@ func TestParameters(t *testing.T) {
 					},
 				},
 				Spec: asoresourcesv1.ResourceGroup_Spec{
-					Location: pointer.String("location"),
+					Location: ptr.To("location"),
 					Tags: map[string]string{
 						"some": "tags",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster": "owned",

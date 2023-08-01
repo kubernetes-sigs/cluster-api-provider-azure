@@ -17,7 +17,7 @@ limitations under the License.
 package converters
 
 import (
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -31,7 +31,7 @@ func MapToTags(src map[string]*string) infrav1.Tags {
 	tags := make(infrav1.Tags, len(src))
 
 	for k, v := range src {
-		tags[k] = pointer.StringDeref(v, "")
+		tags[k] = ptr.Deref(v, "")
 	}
 
 	return tags

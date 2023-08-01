@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -69,20 +69,20 @@ func (s *NatGatewaySpec) Parameters(ctx context.Context, existing interface{}) (
 	}
 
 	natGatewayToCreate := network.NatGateway{
-		Name:     pointer.String(s.Name),
-		Location: pointer.String(s.Location),
+		Name:     ptr.To(s.Name),
+		Location: ptr.To(s.Location),
 		Sku:      &network.NatGatewaySku{Name: network.NatGatewaySkuNameStandard},
 		NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{
 			PublicIPAddresses: &[]network.SubResource{
 				{
-					ID: pointer.String(azure.PublicIPID(s.SubscriptionID, s.ResourceGroupName(), s.NatGatewayIP.Name)),
+					ID: ptr.To(azure.PublicIPID(s.SubscriptionID, s.ResourceGroupName(), s.NatGatewayIP.Name)),
 				},
 			},
 		},
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        pointer.String(s.Name),
+			Name:        ptr.To(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
 	}

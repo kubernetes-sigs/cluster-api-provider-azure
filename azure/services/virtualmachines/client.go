@@ -27,7 +27,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -138,7 +138,7 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Delete")
 	defer done()
 
-	forceDelete := pointer.Bool(true)
+	forceDelete := ptr.To(true)
 	deleteFuture, err := ac.virtualmachines.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName(), forceDelete)
 	if err != nil {
 		return nil, err

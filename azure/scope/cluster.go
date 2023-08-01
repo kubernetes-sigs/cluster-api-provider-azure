@@ -29,7 +29,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/net"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
@@ -577,10 +577,10 @@ func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 // IsVnetManaged returns true if the vnet is managed.
 func (s *ClusterScope) IsVnetManaged() bool {
 	if s.cache.isVnetManaged != nil {
-		return pointer.BoolDeref(s.cache.isVnetManaged, false)
+		return ptr.Deref(s.cache.isVnetManaged, false)
 	}
 	isVnetManaged := s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
-	s.cache.isVnetManaged = pointer.Bool(isVnetManaged)
+	s.cache.isVnetManaged = ptr.To(isVnetManaged)
 	return isVnetManaged
 }
 
@@ -919,10 +919,10 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				Priority:         2200,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
 				Direction:        infrav1.SecurityRuleDirectionInbound,
-				Source:           pointer.String("*"),
-				SourcePorts:      pointer.String("*"),
-				Destination:      pointer.String("*"),
-				DestinationPorts: pointer.String("22"),
+				Source:           ptr.To("*"),
+				SourcePorts:      ptr.To("*"),
+				Destination:      ptr.To("*"),
+				DestinationPorts: ptr.To("22"),
 			},
 			infrav1.SecurityRule{
 				Name:             "allow_apiserver",
@@ -930,10 +930,10 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				Priority:         2201,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
 				Direction:        infrav1.SecurityRuleDirectionInbound,
-				Source:           pointer.String("*"),
-				SourcePorts:      pointer.String("*"),
-				Destination:      pointer.String("*"),
-				DestinationPorts: pointer.String(strconv.Itoa(int(s.APIServerPort()))),
+				Source:           ptr.To("*"),
+				SourcePorts:      ptr.To("*"),
+				Destination:      ptr.To("*"),
+				DestinationPorts: ptr.To(strconv.Itoa(int(s.APIServerPort()))),
 			},
 		}
 		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)

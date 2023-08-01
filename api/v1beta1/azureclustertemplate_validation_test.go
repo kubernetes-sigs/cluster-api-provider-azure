@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestValdateVnetCIDRs(t *testing.T) {
@@ -446,7 +446,7 @@ func TestValidateAPIServerLBTemplate(t *testing.T) {
 								APIServerLB: LoadBalancerClassSpec{
 									SKU:                  SKUStandard,
 									Type:                 Public,
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
 						},
@@ -468,7 +468,7 @@ func TestValidateAPIServerLBTemplate(t *testing.T) {
 								APIServerLB: LoadBalancerClassSpec{
 									SKU:                  SKU("wrong"),
 									Type:                 Public,
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
 						},
@@ -490,7 +490,7 @@ func TestValidateAPIServerLBTemplate(t *testing.T) {
 								APIServerLB: LoadBalancerClassSpec{
 									SKU:                  SKUStandard,
 									Type:                 LBType("wrong"),
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
 						},
@@ -580,7 +580,7 @@ func TestControlPlaneOutboundLBTemplate(t *testing.T) {
 									Type: Internal,
 								},
 								ControlPlaneOutboundLB: &LoadBalancerClassSpec{
-									IdleTimeoutInMinutes: pointer.Int32(2),
+									IdleTimeoutInMinutes: ptr.To[int32](2),
 								},
 							},
 						},
@@ -603,7 +603,7 @@ func TestControlPlaneOutboundLBTemplate(t *testing.T) {
 									Type: Internal,
 								},
 								ControlPlaneOutboundLB: &LoadBalancerClassSpec{
-									IdleTimeoutInMinutes: pointer.Int32(60),
+									IdleTimeoutInMinutes: ptr.To[int32](60),
 								},
 							},
 						},
@@ -710,7 +710,7 @@ func TestNodeOutboundLBTemplate(t *testing.T) {
 									Type: Public,
 								},
 								NodeOutboundLB: &LoadBalancerClassSpec{
-									IdleTimeoutInMinutes: pointer.Int32(2),
+									IdleTimeoutInMinutes: ptr.To[int32](2),
 								},
 							},
 						},
@@ -733,7 +733,7 @@ func TestNodeOutboundLBTemplate(t *testing.T) {
 									Type: Public,
 								},
 								NodeOutboundLB: &LoadBalancerClassSpec{
-									IdleTimeoutInMinutes: pointer.Int32(60),
+									IdleTimeoutInMinutes: ptr.To[int32](60),
 								},
 							},
 						},

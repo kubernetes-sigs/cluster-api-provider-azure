@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -57,7 +57,7 @@ func (s RecordSpec) Parameters(ctx context.Context, existing interface{}) (param
 	}
 	set := privatedns.RecordSet{
 		RecordSetProperties: &privatedns.RecordSetProperties{
-			TTL: pointer.Int64(300),
+			TTL: ptr.To[int64](300),
 		},
 	}
 	recordType := converters.GetRecordType(s.Record.IP)

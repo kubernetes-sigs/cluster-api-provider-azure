@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestResourceGroupDefault(t *testing.T) {
@@ -139,7 +139,7 @@ func TestVnetDefaults(t *testing.T) {
 							},
 						},
 						NodeOutboundLB: &LoadBalancerSpec{
-							FrontendIPsCount: pointer.Int32(1),
+							FrontendIPsCount: ptr.To[int32](1),
 						},
 					},
 				},
@@ -656,10 +656,10 @@ func TestSubnetDefaults(t *testing.T) {
 												Description:      "allow port 50000",
 												Protocol:         "*",
 												Priority:         2202,
-												SourcePorts:      pointer.String("*"),
-												DestinationPorts: pointer.String("*"),
-												Source:           pointer.String("*"),
-												Destination:      pointer.String("*"),
+												SourcePorts:      ptr.To("*"),
+												DestinationPorts: ptr.To("*"),
+												Source:           ptr.To("*"),
+												Destination:      ptr.To("*"),
 											},
 										},
 									},
@@ -691,10 +691,10 @@ func TestSubnetDefaults(t *testing.T) {
 												Description:      "allow port 50000",
 												Protocol:         "*",
 												Priority:         2202,
-												SourcePorts:      pointer.String("*"),
-												DestinationPorts: pointer.String("*"),
-												Source:           pointer.String("*"),
-												Destination:      pointer.String("*"),
+												SourcePorts:      ptr.To("*"),
+												DestinationPorts: ptr.To("*"),
+												Source:           ptr.To("*"),
+												Destination:      ptr.To("*"),
 												Direction:        SecurityRuleDirectionInbound,
 											},
 										},
@@ -970,7 +970,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
-								IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
 					},
@@ -1014,7 +1014,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Internal,
-								IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 							Name: "cluster-test-internal-lb",
 						},
@@ -1062,7 +1062,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Internal,
-								IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 							Name: "cluster-test-internal-lb",
 						},
@@ -1310,11 +1310,11 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							BackendPool: BackendPool{
 								Name: "cluster-test-outboundBackendPool",
 							},
-							FrontendIPsCount: pointer.Int32(1),
+							FrontendIPsCount: ptr.To[int32](1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
-								IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
 					},
@@ -1409,11 +1409,11 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							BackendPool: BackendPool{
 								Name: "cluster-test-outboundBackendPool",
 							},
-							FrontendIPsCount: pointer.Int32(1),
+							FrontendIPsCount: ptr.To[int32](1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
-								IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
 					},
@@ -1623,11 +1623,11 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							BackendPool: BackendPool{
 								Name: "cluster-test-outboundBackendPool",
 							},
-							FrontendIPsCount: pointer.Int32(1),
+							FrontendIPsCount: ptr.To[int32](1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
-								IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
 					},
@@ -1671,12 +1671,12 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					NetworkSpec: NetworkSpec{
 						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						NodeOutboundLB: &LoadBalancerSpec{
-							FrontendIPsCount: pointer.Int32(2),
+							FrontendIPsCount: ptr.To[int32](2),
 							BackendPool: BackendPool{
 								Name: "custom-backend-pool",
 							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								IdleTimeoutInMinutes: pointer.Int32(15),
+								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
 					},
@@ -1711,11 +1711,11 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							BackendPool: BackendPool{
 								Name: "custom-backend-pool",
 							},
-							FrontendIPsCount: pointer.Int32(2), // we expect the original value to be respected here
+							FrontendIPsCount: ptr.To[int32](2), // we expect the original value to be respected here
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
-								IdleTimeoutInMinutes: pointer.Int32(15), // we expect the original value to be respected here
+								IdleTimeoutInMinutes: ptr.To[int32](15), // we expect the original value to be respected here
 							},
 							Name: "cluster-test",
 						},
@@ -1805,11 +1805,11 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							BackendPool: BackendPool{
 								Name: "user-defined-name-outboundBackendPool",
 							},
-							FrontendIPsCount: pointer.Int32(1),
+							FrontendIPsCount: ptr.To[int32](1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
-								IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
@@ -1905,9 +1905,9 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 					NetworkSpec: NetworkSpec{
 						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
-							FrontendIPsCount: pointer.Int32(2),
+							FrontendIPsCount: ptr.To[int32](2),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								IdleTimeoutInMinutes: pointer.Int32(15),
+								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
 					},
@@ -1943,11 +1943,11 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 									},
 								},
 							},
-							FrontendIPsCount: pointer.Int32(2),
+							FrontendIPsCount: ptr.To[int32](2),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
-								IdleTimeoutInMinutes: pointer.Int32(15),
+								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
 					},
@@ -1968,7 +1968,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 								Name: "custom-outbound-lb",
 							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								IdleTimeoutInMinutes: pointer.Int32(15),
+								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
 					},
@@ -1998,11 +1998,11 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 									},
 								},
 							},
-							FrontendIPsCount: pointer.Int32(1),
+							FrontendIPsCount: ptr.To[int32](1),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
-								IdleTimeoutInMinutes: pointer.Int32(15),
+								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
 					},

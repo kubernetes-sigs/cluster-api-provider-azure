@@ -18,7 +18,7 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -30,8 +30,8 @@ func IPTagsToSDK(ipTags []infrav1.IPTag) *[]network.IPTag {
 	skdIPTags := make([]network.IPTag, len(ipTags))
 	for i, ipTag := range ipTags {
 		skdIPTags[i] = network.IPTag{
-			IPTagType: pointer.String(ipTag.Type),
-			Tag:       pointer.String(ipTag.Tag),
+			IPTagType: ptr.To(ipTag.Type),
+			Tag:       ptr.To(ipTag.Tag),
 		}
 	}
 	return &skdIPTags

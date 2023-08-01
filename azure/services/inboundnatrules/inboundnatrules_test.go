@@ -25,7 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -40,17 +40,17 @@ var (
 	noExistingRules   = []network.InboundNatRule{}
 	fakeExistingRules = []network.InboundNatRule{
 		{
-			Name: pointer.String("other-machine-nat-rule"),
-			ID:   pointer.String("some-natrules-id"),
+			Name: ptr.To("other-machine-nat-rule"),
+			ID:   ptr.To("some-natrules-id"),
 			InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
-				FrontendPort: pointer.Int32(22),
+				FrontendPort: ptr.To[int32](22),
 			},
 		},
 		{
-			Name: pointer.String("other-machine-nat-rule-2"),
-			ID:   pointer.String("some-natrules-id-2"),
+			Name: ptr.To("other-machine-nat-rule-2"),
+			ID:   ptr.To("some-natrules-id-2"),
 			InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
-				FrontendPort: pointer.Int32(2201),
+				FrontendPort: ptr.To[int32](2201),
 			},
 		},
 	}
@@ -59,13 +59,13 @@ var (
 		Name:                      "my-machine-1",
 		LoadBalancerName:          "my-lb-1",
 		ResourceGroup:             fakeGroupName,
-		FrontendIPConfigurationID: pointer.String("frontend-ip-config-id-1"),
+		FrontendIPConfigurationID: ptr.To("frontend-ip-config-id-1"),
 	}
 	fakeNatSpec2 = InboundNatSpec{
 		Name:                      "my-machine-2",
 		LoadBalancerName:          "my-lb-1",
 		ResourceGroup:             fakeGroupName,
-		FrontendIPConfigurationID: pointer.String("frontend-ip-config-id-2"),
+		FrontendIPConfigurationID: ptr.To("frontend-ip-config-id-2"),
 	}
 
 	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
@@ -78,7 +78,7 @@ func getFakeNatSpecWithoutPort(spec InboundNatSpec) *InboundNatSpec {
 
 func getFakeNatSpecWithPort(spec InboundNatSpec, port int32) *InboundNatSpec {
 	newSpec := spec
-	newSpec.SSHFrontendPort = pointer.Int32(port)
+	newSpec.SSHFrontendPort = ptr.To[int32](port)
 	return &newSpec
 }
 

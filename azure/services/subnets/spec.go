@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -88,26 +88,26 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (para
 
 	if s.RouteTableName != "" {
 		subnetProperties.RouteTable = &network.RouteTable{
-			ID: pointer.String(azure.RouteTableID(s.SubscriptionID, s.ResourceGroup, s.RouteTableName)),
+			ID: ptr.To(azure.RouteTableID(s.SubscriptionID, s.ResourceGroup, s.RouteTableName)),
 		}
 	}
 
 	if s.NatGatewayName != "" {
 		subnetProperties.NatGateway = &network.SubResource{
-			ID: pointer.String(azure.NatGatewayID(s.SubscriptionID, s.ResourceGroup, s.NatGatewayName)),
+			ID: ptr.To(azure.NatGatewayID(s.SubscriptionID, s.ResourceGroup, s.NatGatewayName)),
 		}
 	}
 
 	if s.SecurityGroupName != "" {
 		subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
-			ID: pointer.String(azure.SecurityGroupID(s.SubscriptionID, s.ResourceGroup, s.SecurityGroupName)),
+			ID: ptr.To(azure.SecurityGroupID(s.SubscriptionID, s.ResourceGroup, s.SecurityGroupName)),
 		}
 	}
 
 	serviceEndpoints := make([]network.ServiceEndpointPropertiesFormat, 0, len(s.ServiceEndpoints))
 	for _, se := range s.ServiceEndpoints {
 		se := se
-		serviceEndpoints = append(serviceEndpoints, network.ServiceEndpointPropertiesFormat{Service: pointer.String(se.Service), Locations: &se.Locations})
+		serviceEndpoints = append(serviceEndpoints, network.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: &se.Locations})
 	}
 	subnetProperties.ServiceEndpoints = &serviceEndpoints
 
@@ -139,7 +139,7 @@ func (s *SubnetSpec) shouldUpdate(existingSubnet network.Subnet) bool {
 		newServiceEndpoints := make([]network.ServiceEndpointPropertiesFormat, len(s.ServiceEndpoints))
 		for _, se := range s.ServiceEndpoints {
 			se := se
-			newServiceEndpoints = append(newServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: pointer.String(se.Service), Locations: &se.Locations})
+			newServiceEndpoints = append(newServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: &se.Locations})
 		}
 
 		diff := cmp.Diff(newServiceEndpoints, existingServiceEndpoints)

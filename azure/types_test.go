@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -107,7 +107,7 @@ func TestVMSS_HasModelChanges(t *testing.T) {
 			Factory: func() (VMSS, VMSS) {
 				l := getDefaultVMSSForModelTesting()
 				l.Image = infrav1.Image{
-					ID: pointer.String("foo"),
+					ID: ptr.To("foo"),
 				}
 				r := getDefaultVMSSForModelTesting()
 				return r, l

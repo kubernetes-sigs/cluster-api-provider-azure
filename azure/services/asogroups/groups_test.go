@@ -26,7 +26,7 @@ import (
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
@@ -51,7 +51,7 @@ var (
 			Namespace: "test-group-ns",
 		},
 		Spec: asoresourcesv1.ResourceGroup_Spec{
-			Location: pointer.String("test-location"),
+			Location: ptr.To("test-location"),
 		},
 	}
 )

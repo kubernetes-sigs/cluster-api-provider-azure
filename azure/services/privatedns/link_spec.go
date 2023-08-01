@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -67,11 +67,11 @@ func (s LinkSpec) Parameters(ctx context.Context, existing interface{}) (params 
 	return privatedns.VirtualNetworkLink{
 		VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
 			VirtualNetwork: &privatedns.SubResource{
-				ID: pointer.String(azure.VNetID(s.SubscriptionID, s.VNetResourceGroup, s.VNetName)),
+				ID: ptr.To(azure.VNetID(s.SubscriptionID, s.VNetResourceGroup, s.VNetName)),
 			},
-			RegistrationEnabled: pointer.Bool(false),
+			RegistrationEnabled: ptr.To(false),
 		},
-		Location: pointer.String(azure.Global),
+		Location: ptr.To(azure.Global),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,

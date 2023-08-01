@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -95,7 +95,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if len(createdOrUpdated) > 0 {
 				createdOrUpdatedTags := make(map[string]*string)
 				for k, v := range createdOrUpdated {
-					createdOrUpdatedTags[k] = pointer.String(v)
+					createdOrUpdatedTags[k] = ptr.To(v)
 				}
 
 				if _, err := s.client.UpdateAtScope(ctx, tagsSpec.Scope, resources.TagsPatchResource{Operation: "Merge", Properties: &resources.Tags{Tags: createdOrUpdatedTags}}); err != nil {
@@ -106,7 +106,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if len(deleted) > 0 {
 				deletedTags := make(map[string]*string)
 				for k, v := range deleted {
-					deletedTags[k] = pointer.String(v)
+					deletedTags[k] = ptr.To(v)
 				}
 
 				if _, err := s.client.UpdateAtScope(ctx, tagsSpec.Scope, resources.TagsPatchResource{Operation: "Delete", Properties: &resources.Tags{Tags: deletedTags}}); err != nil {

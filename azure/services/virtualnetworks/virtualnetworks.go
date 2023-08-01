@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -89,7 +89,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Errorf("%T is not a network.VirtualNetwork", result)
 		}
 		vnet := s.Scope.Vnet()
-		vnet.ID = pointer.StringDeref(existingVnet.ID, "")
+		vnet.ID = ptr.Deref(existingVnet.ID, "")
 		vnet.Tags = converters.MapToTags(existingVnet.Tags)
 
 		var prefixes []string
@@ -103,7 +103,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// Subnets that are not part of this cluster spec are silently ignored.
 		if existingVnet.Subnets != nil {
 			for _, subnet := range *existingVnet.Subnets {
-				s.Scope.UpdateSubnetCIDRs(pointer.StringDeref(subnet.Name, ""), converters.GetSubnetAddresses(subnet))
+				s.Scope.UpdateSubnetCIDRs(ptr.Deref(subnet.Name, ""), converters.GetSubnetAddresses(subnet))
 			}
 		}
 	}

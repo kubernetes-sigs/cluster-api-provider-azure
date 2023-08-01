@@ -30,7 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -100,7 +100,7 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 
 	var wg sync.WaitGroup
 	for _, mp := range machinepools {
-		goalReplicas := pointer.Int32Deref(mp.Spec.Replicas, 0) + 1
+		goalReplicas := ptr.Deref[int32](mp.Spec.Replicas, 0) + 1
 		Byf("Scaling machine pool %s out from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
 		wg.Add(1)
 		go func(mp *expv1.MachinePool) {
@@ -118,7 +118,7 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 	wg.Wait()
 
 	for _, mp := range machinepools {
-		goalReplicas := pointer.Int32Deref(mp.Spec.Replicas, 0) - 1
+		goalReplicas := ptr.Deref[int32](mp.Spec.Replicas, 0) - 1
 		Byf("Scaling machine pool %s in from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
 		wg.Add(1)
 		go func(mp *expv1.MachinePool) {

@@ -19,7 +19,7 @@ package v1beta1
 import (
 	"fmt"
 
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 const (
@@ -241,7 +241,7 @@ func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 	}
 
 	if lb.FrontendIPsCount == nil {
-		lb.FrontendIPsCount = pointer.Int32(1)
+		lb.FrontendIPsCount = ptr.To[int32](1)
 	}
 
 	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
@@ -261,7 +261,7 @@ func (c *AzureCluster) SetControlPlaneOutboundLBDefaults() {
 		lb.Name = generateControlPlaneOutboundLBName(c.ObjectMeta.Name)
 	}
 	if lb.FrontendIPsCount == nil {
-		lb.FrontendIPsCount = pointer.Int32(1)
+		lb.FrontendIPsCount = ptr.To[int32](1)
 	}
 	c.setOutboundLBFrontendIPs(lb, generateControlPlaneOutboundIPName)
 	c.SetControlPlaneOutboundLBBackendPoolNameDefault()
@@ -356,7 +356,7 @@ func (lb *LoadBalancerClassSpec) setAPIServerLBDefaults() {
 		lb.SKU = SKUStandard
 	}
 	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes)
+		lb.IdleTimeoutInMinutes = ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes)
 	}
 }
 
@@ -372,7 +372,7 @@ func (lb *LoadBalancerClassSpec) setOutboundLBDefaults() {
 	lb.Type = Public
 	lb.SKU = SKUStandard
 	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes)
+		lb.IdleTimeoutInMinutes = ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes)
 	}
 }
 
@@ -391,7 +391,7 @@ func setControlPlaneOutboundLBDefaults(lb *LoadBalancerClassSpec, apiserverLBTyp
 	lb.SKU = SKUStandard
 
 	if lb.IdleTimeoutInMinutes == nil {
-		lb.IdleTimeoutInMinutes = pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes)
+		lb.IdleTimeoutInMinutes = ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes)
 	}
 }
 

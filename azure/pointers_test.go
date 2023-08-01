@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestStringSlice(t *testing.T) {
@@ -64,7 +64,7 @@ func TestStringMapPtr(t *testing.T) {
 		{
 			Name:     "Should convert to a map[string]*string",
 			Arg:      map[string]string{"foo": "baz", "bar": "qux"},
-			Expected: map[string]*string{"foo": pointer.String("baz"), "bar": pointer.String("qux")},
+			Expected: map[string]*string{"foo": ptr.To("baz"), "bar": ptr.To("qux")},
 		},
 	}
 	for _, tc := range cases {

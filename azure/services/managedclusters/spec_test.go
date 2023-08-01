@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -45,7 +45,7 @@ func TestParameters(t *testing.T) {
 			name: "managedcluster in non-terminal provisioning state",
 			existing: containerservice.ManagedCluster{
 				ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-					ProvisioningState: pointer.String("Deleting"),
+					ProvisioningState: ptr.To("Deleting"),
 				},
 			},
 			spec: &ManagedClusterSpec{
@@ -89,9 +89,9 @@ func TestParameters(t *testing.T) {
 							Replicas:          int32(4),
 							Cluster:           "test-managedcluster",
 							SKU:               "test_SKU",
-							Version:           pointer.String("v1.22.0"),
+							Version:           ptr.To("v1.22.0"),
 							VnetSubnetID:      "fake/subnet/id",
-							MaxPods:           pointer.Int32(int32(32)),
+							MaxPods:           ptr.To[int32](int32(32)),
 							AvailabilityZones: []string{"1", "2"},
 							AdditionalTags: map[string]string{
 								"test-tag": "test-value",
@@ -142,10 +142,10 @@ func TestParameters(t *testing.T) {
 			},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
-				g.Expect(result.(containerservice.ManagedCluster).KubernetesVersion).To(Equal(pointer.String("v1.22.99")))
+				g.Expect(result.(containerservice.ManagedCluster).KubernetesVersion).To(Equal(ptr.To("v1.22.99")))
 				g.Expect(result.(containerservice.ManagedCluster).Identity.Type).To(Equal(containerservice.ResourceIdentityType("UserAssigned")))
 				g.Expect(result.(containerservice.ManagedCluster).Identity.UserAssignedIdentities).To(Equal(map[string]*containerservice.ManagedClusterIdentityUserAssignedIdentitiesValue{"/resource/ID": {}}))
-				g.Expect(result.(containerservice.ManagedCluster).IdentityProfile).To(Equal(map[string]*containerservice.UserAssignedIdentity{kubeletIdentityKey: {ResourceID: pointer.String("/resource/ID")}}))
+				g.Expect(result.(containerservice.ManagedCluster).IdentityProfile).To(Equal(map[string]*containerservice.UserAssignedIdentity{kubeletIdentityKey: {ResourceID: ptr.To("/resource/ID")}}))
 			},
 		},
 		{
@@ -382,65 +382,65 @@ func TestGetIdentity(t *testing.T) {
 func getExistingClusterWithAPIServerAccessProfile() containerservice.ManagedCluster {
 	mc := getExistingCluster()
 	mc.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
-		EnablePrivateCluster: pointer.Bool(false),
+		EnablePrivateCluster: ptr.To(false),
 	}
 	return mc
 }
 
 func getExistingCluster() containerservice.ManagedCluster {
 	mc := getSampleManagedCluster()
-	mc.ProvisioningState = pointer.String("Succeeded")
-	mc.ID = pointer.String("test-id")
+	mc.ProvisioningState = ptr.To("Succeeded")
+	mc.ID = ptr.To("test-id")
 	return mc
 }
 
 func getSampleManagedCluster() containerservice.ManagedCluster {
 	return containerservice.ManagedCluster{
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
-			KubernetesVersion: pointer.String("v1.22.0"),
-			DNSPrefix:         pointer.String("test-managedcluster"),
+			KubernetesVersion: ptr.To("v1.22.0"),
+			DNSPrefix:         ptr.To("test-managedcluster"),
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{
 				{
-					Name:         pointer.String("test-agentpool-0"),
+					Name:         ptr.To("test-agentpool-0"),
 					Mode:         containerservice.AgentPoolMode(infrav1.NodePoolModeSystem),
-					Count:        pointer.Int32(2),
+					Count:        ptr.To[int32](2),
 					Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
-					OsDiskSizeGB: pointer.Int32(0),
+					OsDiskSizeGB: ptr.To[int32](0),
 					Tags: map[string]*string{
-						"test-tag": pointer.String("test-value"),
+						"test-tag": ptr.To("test-value"),
 					},
-					EnableAutoScaling: pointer.Bool(false),
+					EnableAutoScaling: ptr.To(false),
 				},
 				{
-					Name:                pointer.String("test-agentpool-1"),
+					Name:                ptr.To("test-agentpool-1"),
 					Mode:                containerservice.AgentPoolMode(infrav1.NodePoolModeUser),
-					Count:               pointer.Int32(4),
+					Count:               ptr.To[int32](4),
 					Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
-					OsDiskSizeGB:        pointer.Int32(0),
-					VMSize:              pointer.String("test_SKU"),
-					OrchestratorVersion: pointer.String("v1.22.0"),
-					VnetSubnetID:        pointer.String("fake/subnet/id"),
-					MaxPods:             pointer.Int32(int32(32)),
+					OsDiskSizeGB:        ptr.To[int32](0),
+					VMSize:              ptr.To("test_SKU"),
+					OrchestratorVersion: ptr.To("v1.22.0"),
+					VnetSubnetID:        ptr.To("fake/subnet/id"),
+					MaxPods:             ptr.To[int32](int32(32)),
 					AvailabilityZones:   &[]string{"1", "2"},
 					Tags: map[string]*string{
-						"test-tag": pointer.String("test-value"),
+						"test-tag": ptr.To("test-value"),
 					},
-					EnableAutoScaling: pointer.Bool(false),
+					EnableAutoScaling: ptr.To(false),
 				},
 			},
 			LinuxProfile: &containerservice.LinuxProfile{
-				AdminUsername: pointer.String(azure.DefaultAKSUserName),
+				AdminUsername: ptr.To(azure.DefaultAKSUserName),
 				SSH: &containerservice.SSHConfiguration{
 					PublicKeys: &[]containerservice.SSHPublicKey{
 						{
-							KeyData: pointer.String("test-ssh-key"),
+							KeyData: ptr.To("test-ssh-key"),
 						},
 					},
 				},
 			},
-			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{ClientID: pointer.String("msi")},
-			NodeResourceGroup:       pointer.String("test-node-rg"),
-			EnableRBAC:              pointer.Bool(true),
+			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{ClientID: ptr.To("msi")},
+			NodeResourceGroup:       ptr.To("test-node-rg"),
+			EnableRBAC:              ptr.To(true),
 			NetworkProfile: &containerservice.NetworkProfile{
 				LoadBalancerSku: "Standard",
 			},
@@ -448,12 +448,12 @@ func getSampleManagedCluster() containerservice.ManagedCluster {
 		Identity: &containerservice.ManagedClusterIdentity{
 			Type: containerservice.ResourceIdentityTypeSystemAssigned,
 		},
-		Location: pointer.String("test-location"),
+		Location: ptr.To("test-location"),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			ClusterName: "test-cluster",
-			Name:        pointer.String("test-managedcluster"),
-			Role:        pointer.String(infrav1.CommonRole),
+			Name:        ptr.To("test-managedcluster"),
+			Role:        ptr.To(infrav1.CommonRole),
 			Additional: infrav1.Tags{
 				"test-tag": "test-value",
 			},

@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -191,7 +191,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 	addresses := []corev1.NodeAddress{
 		{
 			Type:    corev1.NodeInternalDNS,
-			Address: pointer.StringDeref(vm.Name, ""),
+			Address: ptr.Deref(vm.Name, ""),
 		},
 	}
 	if vm.NetworkProfile.NetworkInterfaces == nil {
@@ -204,7 +204,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 		if nicRef.ID == nil {
 			continue
 		}
-		nicName := getResourceNameByID(pointer.StringDeref(nicRef.ID, ""))
+		nicName := getResourceNameByID(ptr.Deref(nicRef.ID, ""))
 
 		// Fetch nic and append its addresses
 		existingNic, err := s.interfacesGetter.Get(ctx, &networkinterfaces.NICSpec{
@@ -228,7 +228,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 				addresses = append(addresses,
 					corev1.NodeAddress{
 						Type:    corev1.NodeInternalIP,
-						Address: pointer.StringDeref(ipConfig.PrivateIPAddress, ""),
+						Address: ptr.Deref(ipConfig.PrivateIPAddress, ""),
 					},
 				)
 			}
@@ -238,7 +238,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 			}
 			// ID is the only field populated in PublicIPAddress sub-resource.
 			// Thus, we have to go fetch the publicIP with the name.
-			publicIPName := getResourceNameByID(pointer.StringDeref(ipConfig.PublicIPAddress.ID, ""))
+			publicIPName := getResourceNameByID(ptr.Deref(ipConfig.PublicIPAddress.ID, ""))
 			publicNodeAddress, err := s.getPublicIPAddress(ctx, publicIPName, rgName)
 			if err != nil {
 				return addresses, err
@@ -270,7 +270,7 @@ func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName st
 	}
 
 	retAddress.Type = corev1.NodeExternalIP
-	retAddress.Address = pointer.StringDeref(publicIP.IPAddress, "")
+	retAddress.Address = ptr.Deref(publicIP.IPAddress, "")
 
 	return retAddress, nil
 }

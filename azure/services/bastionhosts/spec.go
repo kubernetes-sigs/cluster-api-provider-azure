@@ -23,7 +23,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
@@ -75,23 +75,23 @@ func (s *AzureBastionSpec) Parameters(ctx context.Context, existing interface{})
 	bastionHostIPConfigName := fmt.Sprintf("%s-%s", s.Name, "bastionIP")
 
 	return network.BastionHost{
-		Name:     pointer.String(s.Name),
-		Location: pointer.String(s.Location),
+		Name:     ptr.To(s.Name),
+		Location: ptr.To(s.Location),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        pointer.String(s.Name),
-			Role:        pointer.String("Bastion"),
+			Name:        ptr.To(s.Name),
+			Role:        ptr.To("Bastion"),
 		})),
 		Sku: &network.Sku{
 			Name: network.BastionHostSkuName(s.Sku),
 		},
 		BastionHostPropertiesFormat: &network.BastionHostPropertiesFormat{
-			EnableTunneling: pointer.Bool(s.EnableTunneling),
-			DNSName:         pointer.String(fmt.Sprintf("%s-bastion", strings.ToLower(s.Name))),
+			EnableTunneling: ptr.To(s.EnableTunneling),
+			DNSName:         ptr.To(fmt.Sprintf("%s-bastion", strings.ToLower(s.Name))),
 			IPConfigurations: &[]network.BastionHostIPConfiguration{
 				{
-					Name: pointer.String(bastionHostIPConfigName),
+					Name: ptr.To(bastionHostIPConfigName),
 					BastionHostIPConfigurationPropertiesFormat: &network.BastionHostIPConfigurationPropertiesFormat{
 						Subnet: &network.SubResource{
 							ID: &s.SubnetID,

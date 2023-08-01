@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 const (
@@ -105,7 +105,7 @@ func (b *Builder) WithAnnotations(annotations map[string]string) *Builder {
 }
 
 func (b *Builder) WithStorageClass(scName string) *Builder {
-	b.pvc.Spec.StorageClassName = pointer.String(scName)
+	b.pvc.Spec.StorageClassName = ptr.To(scName)
 	return b
 }
 

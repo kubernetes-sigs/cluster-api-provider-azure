@@ -28,7 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	kubedrain "k8s.io/kubectl/pkg/drain"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -242,7 +242,7 @@ func (s *MachinePoolMachineScope) IsReady() bool {
 
 // SetFailureMessage sets the AzureMachinePoolMachine status failure message.
 func (s *MachinePoolMachineScope) SetFailureMessage(v error) {
-	s.AzureMachinePoolMachine.Status.FailureMessage = pointer.String(v.Error())
+	s.AzureMachinePoolMachine.Status.FailureMessage = ptr.To(v.Error())
 }
 
 // SetFailureReason sets the AzureMachinePoolMachine status failure reason.

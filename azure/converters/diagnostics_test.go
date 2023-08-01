@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -40,7 +40,7 @@ func TestGetDiagnosticsProfile(t *testing.T) {
 			},
 			want: &compute.DiagnosticsProfile{
 				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled: pointer.Bool(true),
+					Enabled: ptr.To(true),
 				},
 			},
 		},
@@ -56,8 +56,8 @@ func TestGetDiagnosticsProfile(t *testing.T) {
 			},
 			want: &compute.DiagnosticsProfile{
 				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled:    pointer.Bool(true),
-					StorageURI: pointer.String("https://fake"),
+					Enabled:    ptr.To(true),
+					StorageURI: ptr.To("https://fake"),
 				},
 			},
 		},
@@ -70,7 +70,7 @@ func TestGetDiagnosticsProfile(t *testing.T) {
 			},
 			want: &compute.DiagnosticsProfile{
 				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled: pointer.Bool(false),
+					Enabled: ptr.To(false),
 				},
 			},
 		},

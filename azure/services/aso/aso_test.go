@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
@@ -127,7 +127,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Nil()).Return(&asoresourcesv1.ResourceGroup{
 			Spec: asoresourcesv1.ResourceGroup_Spec{
-				Location: pointer.String("location"),
+				Location: ptr.To("location"),
 			},
 		}, nil)
 
@@ -151,7 +151,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ReconcilePolicyAnnotation: ReconcilePolicySkip,
 		}))
 		g.Expect(created.Spec).To(Equal(asoresourcesv1.ResourceGroup_Spec{
-			Location: pointer.String("location"),
+			Location: ptr.To("location"),
 		}))
 	})
 
@@ -342,7 +342,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
 			group := object.DeepCopyObject().(*asoresourcesv1.ResourceGroup)
-			group.Spec.Location = pointer.String("location")
+			group.Spec.Location = ptr.To("location")
 			return group, nil
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
@@ -606,7 +606,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				},
 			},
 			Spec: asoresourcesv1.ResourceGroup_Spec{
-				Location: pointer.String("location"),
+				Location: ptr.To("location"),
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -624,7 +624,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		g.Expect(result.GetName()).To(Equal("name"))
 		g.Expect(result.GetNamespace()).To(Equal("namespace"))
-		g.Expect(result.(*asoresourcesv1.ResourceGroup).Spec.Location).To(Equal(pointer.String("location")))
+		g.Expect(result.(*asoresourcesv1.ResourceGroup).Spec.Location).To(Equal(ptr.To("location")))
 	})
 
 	t.Run("error updating", func(t *testing.T) {
@@ -647,7 +647,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
 			group := object.DeepCopyObject().(*asoresourcesv1.ResourceGroup)
-			group.Spec.Location = pointer.String("location")
+			group.Spec.Location = ptr.To("location")
 			return group, nil
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)

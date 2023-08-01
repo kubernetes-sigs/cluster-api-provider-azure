@@ -26,7 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -245,14 +245,14 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
 					Image: &Image{
-						ID: pointer.String("imageID-1"),
+						ID: ptr.To("imageID-1"),
 					},
 				},
 			},
 			newMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
 					Image: &Image{
-						ID: pointer.String("imageID-2"),
+						ID: ptr.To("imageID-2"),
 					},
 				},
 			},
@@ -263,14 +263,14 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
 					Image: &Image{
-						ID: pointer.String("imageID-1"),
+						ID: ptr.To("imageID-1"),
 					},
 				},
 			},
 			newMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
 					Image: &Image{
-						ID: pointer.String("imageID-1"),
+						ID: ptr.To("imageID-1"),
 					},
 				},
 			},
@@ -580,12 +580,12 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			name: "invalidTest: azuremachine.spec.AcceleratedNetworking is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					AcceleratedNetworking: pointer.Bool(true),
+					AcceleratedNetworking: ptr.To(true),
 				},
 			},
 			newMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					AcceleratedNetworking: pointer.Bool(false),
+					AcceleratedNetworking: ptr.To(false),
 				},
 			},
 			wantErr: true,
@@ -594,12 +594,12 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			name: "validTest: azuremachine.spec.AcceleratedNetworking is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					AcceleratedNetworking: pointer.Bool(true),
+					AcceleratedNetworking: ptr.To(true),
 				},
 			},
 			newMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					AcceleratedNetworking: pointer.Bool(true),
+					AcceleratedNetworking: ptr.To(true),
 				},
 			},
 			wantErr: false,
@@ -608,7 +608,7 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			name: "validTest: azuremachine.spec.AcceleratedNetworking transition(from true) to nil is acceptable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					AcceleratedNetworking: pointer.Bool(true),
+					AcceleratedNetworking: ptr.To(true),
 				},
 			},
 			newMachine: &AzureMachine{
@@ -622,7 +622,7 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			name: "validTest: azuremachine.spec.AcceleratedNetworking transition(from false) to nil is acceptable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					AcceleratedNetworking: pointer.Bool(false),
+					AcceleratedNetworking: ptr.To(false),
 				},
 			},
 			newMachine: &AzureMachine{
@@ -672,12 +672,12 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			name: "invalidTest: azuremachine.spec.SecurityProfile is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					SecurityProfile: &SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
+					SecurityProfile: &SecurityProfile{EncryptionAtHost: ptr.To(true)},
 				},
 			},
 			newMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					SecurityProfile: &SecurityProfile{EncryptionAtHost: pointer.Bool(false)},
+					SecurityProfile: &SecurityProfile{EncryptionAtHost: ptr.To(false)},
 				},
 			},
 			wantErr: true,
@@ -686,12 +686,12 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			name: "validTest: azuremachine.spec.SecurityProfile is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					SecurityProfile: &SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
+					SecurityProfile: &SecurityProfile{EncryptionAtHost: ptr.To(true)},
 				},
 			},
 			newMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
-					SecurityProfile: &SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
+					SecurityProfile: &SecurityProfile{EncryptionAtHost: ptr.To(true)},
 				},
 			},
 			wantErr: false,
@@ -1036,7 +1036,7 @@ func createMachineWithConfidentialCompute(securityEncryptionType SecurityEncrypt
 	}
 
 	osDisk := OSDisk{
-		DiskSizeGB: pointer.Int32(30),
+		DiskSizeGB: ptr.To[int32](30),
 		OSType:     LinuxOS,
 		ManagedDisk: &ManagedDiskParameters{
 			StorageAccountType: "Premium_LRS",

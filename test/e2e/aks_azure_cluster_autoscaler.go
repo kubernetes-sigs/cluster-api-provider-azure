@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -100,7 +100,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 		}, amcp)
 		g.Expect(err).NotTo(HaveOccurred())
 		amcp.Spec.AutoScalerProfile = &infrav1.AutoScalerProfile{
-			Expander: (*infrav1.Expander)(pointer.String(string(newExpanderValue))),
+			Expander: (*infrav1.Expander)(ptr.To(string(newExpanderValue))),
 		}
 		g.Expect(mgmtClient.Update(ctx, amcp)).To(Succeed())
 	}, input.WaitIntervals...).Should(Succeed())

@@ -27,7 +27,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
@@ -91,27 +91,27 @@ func TestGetExistingVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
-					ID:   pointer.String("my-id"),
-					Name: pointer.String("my-vmss"),
+					ID:   ptr.To("my-id"),
+					Name: ptr.To("my-vmss"),
 					Sku: &compute.Sku{
-						Capacity: pointer.Int64(1),
-						Name:     pointer.String("Standard_D2"),
+						Capacity: ptr.To[int64](1),
+						Name:     ptr.To("Standard_D2"),
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-						SinglePlacementGroup: pointer.Bool(false),
-						ProvisioningState:    pointer.String("Succeeded"),
+						SinglePlacementGroup: ptr.To(false),
+						ProvisioningState:    ptr.To("Succeeded"),
 					},
 					Zones: &[]string{"1", "3"},
 				}, nil)
 				m.ListInstances(gomock.Any(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
 					{
-						ID:         pointer.String("my-vm-id"),
-						InstanceID: pointer.String("my-vm-1"),
-						Name:       pointer.String("my-vm"),
+						ID:         ptr.To("my-vm-id"),
+						InstanceID: ptr.To("my-vm-1"),
+						Name:       ptr.To("my-vm"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-							ProvisioningState: pointer.String("Succeeded"),
+							ProvisioningState: ptr.To("Succeeded"),
 							OsProfile: &compute.OSProfile{
-								ComputerName: pointer.String("instance-000001"),
+								ComputerName: ptr.To("instance-000001"),
 							},
 						},
 					},
@@ -126,11 +126,11 @@ func TestGetExistingVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
-					ID:   pointer.String("my-id"),
-					Name: pointer.String("my-vmss"),
+					ID:   ptr.To("my-id"),
+					Name: ptr.To("my-vmss"),
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-						SinglePlacementGroup: pointer.Bool(false),
-						ProvisioningState:    pointer.String("Succeeded"),
+						SinglePlacementGroup: ptr.To(false),
+						ProvisioningState:    ptr.To("Succeeded"),
 					},
 				}, nil)
 				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not found"))
@@ -197,7 +197,7 @@ func TestReconcileVMSS(t *testing.T) {
 				defaultSpec.DataDisks = append(defaultSpec.DataDisks, infrav1.DataDisk{
 					NameSuffix: "my_disk_with_ultra_disks",
 					DiskSizeGB: 128,
-					Lun:        pointer.Int32(3),
+					Lun:        ptr.To[int32](3),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
@@ -205,7 +205,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE")
-				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
@@ -253,8 +253,8 @@ func TestReconcileVMSS(t *testing.T) {
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE_AN")
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
-				(*netConfigs)[0].EnableAcceleratedNetworking = pointer.Bool(true)
-				vmss.Sku.Name = pointer.String(spec.Size)
+				(*netConfigs)[0].EnableAcceleratedNetworking = ptr.To(true)
+				vmss.Sku.Name = ptr.To(spec.Size)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE_AN"), putFuture)
@@ -276,17 +276,17 @@ func TestReconcileVMSS(t *testing.T) {
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE_AN")
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
-				(*netConfigs)[0].Name = pointer.String("my-vmss-nic-0")
-				(*netConfigs)[0].EnableIPForwarding = pointer.Bool(true)
-				(*netConfigs)[0].EnableAcceleratedNetworking = pointer.Bool(true)
+				(*netConfigs)[0].Name = ptr.To("my-vmss-nic-0")
+				(*netConfigs)[0].EnableIPForwarding = ptr.To(true)
+				(*netConfigs)[0].EnableAcceleratedNetworking = ptr.To(true)
 				nic1IPConfigs := (*netConfigs)[0].IPConfigurations
-				(*nic1IPConfigs)[0].Name = pointer.String("ipConfig0")
+				(*nic1IPConfigs)[0].Name = ptr.To("ipConfig0")
 				(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
 				(*nic1IPConfigs)[0].Subnet = &compute.APIEntityReference{
-					ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/somesubnet"),
+					ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/somesubnet"),
 				}
-				(*netConfigs)[0].EnableAcceleratedNetworking = pointer.Bool(true)
-				(*netConfigs)[0].Primary = pointer.Bool(true)
+				(*netConfigs)[0].EnableAcceleratedNetworking = ptr.To(true)
+				(*netConfigs)[0].Primary = ptr.To(true)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE_AN"), putFuture)
@@ -300,7 +300,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 					NameSuffix: "my_disk_with_ultra_disks",
 					DiskSizeGB: 128,
-					Lun:        pointer.Int32(3),
+					Lun:        ptr.To[int32](3),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
@@ -309,53 +309,53 @@ func TestReconcileVMSS(t *testing.T) {
 					{
 						SubnetName:            "my-subnet",
 						PrivateIPConfigs:      1,
-						AcceleratedNetworking: pointer.Bool(true),
+						AcceleratedNetworking: ptr.To(true),
 					},
 					{
 						SubnetName:            "subnet2",
 						PrivateIPConfigs:      2,
-						AcceleratedNetworking: pointer.Bool(true),
+						AcceleratedNetworking: ptr.To(true),
 					},
 				}
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE")
-				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
-				(*netConfigs)[0].Name = pointer.String("my-vmss-nic-0")
-				(*netConfigs)[0].EnableIPForwarding = pointer.Bool(true)
+				(*netConfigs)[0].Name = ptr.To("my-vmss-nic-0")
+				(*netConfigs)[0].EnableIPForwarding = ptr.To(true)
 				nic1IPConfigs := (*netConfigs)[0].IPConfigurations
-				(*nic1IPConfigs)[0].Name = pointer.String("ipConfig0")
+				(*nic1IPConfigs)[0].Name = ptr.To("ipConfig0")
 				(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
-				(*netConfigs)[0].EnableAcceleratedNetworking = pointer.Bool(true)
-				(*netConfigs)[0].Primary = pointer.Bool(true)
+				(*netConfigs)[0].EnableAcceleratedNetworking = ptr.To(true)
+				(*netConfigs)[0].Primary = ptr.To(true)
 				vmssIPConfigs := []compute.VirtualMachineScaleSetIPConfiguration{
 					{
-						Name: pointer.String("ipConfig0"),
+						Name: ptr.To("ipConfig0"),
 						VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
-							Primary:                 pointer.Bool(true),
+							Primary:                 ptr.To(true),
 							PrivateIPAddressVersion: compute.IPVersionIPv4,
 							Subnet: &compute.APIEntityReference{
-								ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
+								ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
 							},
 						},
 					},
 					{
-						Name: pointer.String("ipConfig1"),
+						Name: ptr.To("ipConfig1"),
 						VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 							PrivateIPAddressVersion: compute.IPVersionIPv4,
 							Subnet: &compute.APIEntityReference{
-								ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
+								ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
 							},
 						},
 					},
 				}
 				*netConfigs = append(*netConfigs, compute.VirtualMachineScaleSetNetworkConfiguration{
-					Name: pointer.String("my-vmss-nic-1"),
+					Name: ptr.To("my-vmss-nic-1"),
 					VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
-						EnableAcceleratedNetworking: pointer.Bool(true),
+						EnableAcceleratedNetworking: ptr.To(true),
 						IPConfigurations:            &vmssIPConfigs,
-						EnableIPForwarding:          pointer.Bool(true),
+						EnableIPForwarding:          ptr.To(true),
 					},
 				})
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
@@ -372,7 +372,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 					NameSuffix: "my_disk_with_ultra_disks",
 					DiskSizeGB: 128,
-					Lun:        pointer.Int32(3),
+					Lun:        ptr.To[int32](3),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
@@ -380,7 +380,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE")
-				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
@@ -439,7 +439,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 					NameSuffix: "my_disk_with_ultra_disks",
 					DiskSizeGB: 128,
-					Lun:        pointer.Int32(3),
+					Lun:        ptr.To[int32](3),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
@@ -449,9 +449,9 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss := newDefaultVMSS("VM_SIZE")
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.BillingProfile = &compute.BillingProfile{
-					MaxPrice: pointer.Float64(0.001),
+					MaxPrice: ptr.To[float64](0.001),
 				}
-				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
@@ -468,7 +468,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 					NameSuffix: "my_disk_with_ultra_disks",
 					DiskSizeGB: 128,
-					Lun:        pointer.Int32(3),
+					Lun:        ptr.To[int32](3),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
@@ -476,12 +476,12 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE")
-				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 				osdisk := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk
 				osdisk.ManagedDisk = &compute.VirtualMachineScaleSetManagedDiskParameters{
 					StorageAccountType: "Premium_LRS",
 					DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
-						ID: pointer.String("my-diskencryptionset-id"),
+						ID: ptr.To("my-diskencryptionset-id"),
 					},
 				}
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
@@ -497,7 +497,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 					NameSuffix: "my_disk_with_ultra_disks",
 					DiskSizeGB: 128,
-					Lun:        pointer.Int32(3),
+					Lun:        ptr.To[int32](3),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
@@ -511,7 +511,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE")
-				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 				vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
 					Type: compute.ResourceIdentityTypeUserAssigned,
 					UserAssignedIdentities: map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{
@@ -529,14 +529,14 @@ func TestReconcileVMSS(t *testing.T) {
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
 				spec.Size = "VM_SIZE_EAH"
-				spec.SecurityProfile = &infrav1.SecurityProfile{EncryptionAtHost: pointer.Bool(true)}
+				spec.SecurityProfile = &infrav1.SecurityProfile{EncryptionAtHost: ptr.To(true)}
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE_EAH")
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.SecurityProfile = &compute.SecurityProfile{
-					EncryptionAtHost: pointer.Bool(true),
+					EncryptionAtHost: ptr.To(true),
 				}
-				vmss.Sku.Name = pointer.String(spec.Size)
+				vmss.Sku.Name = ptr.To(spec.Size)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE_EAH"), putFuture)
@@ -551,7 +551,7 @@ func TestReconcileVMSS(t *testing.T) {
 					Size:            "VM_SIZE",
 					Capacity:        2,
 					SSHKeyData:      "ZmFrZXNzaGtleQo=",
-					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
+					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: ptr.To(true)},
 				})
 			},
 		},
@@ -588,7 +588,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 					NameSuffix: "my_disk_with_ultra_disks",
 					DiskSizeGB: 128,
-					Lun:        pointer.Int32(3),
+					Lun:        ptr.To[int32](3),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
@@ -597,20 +597,20 @@ func TestReconcileVMSS(t *testing.T) {
 
 				setupDefaultVMSSUpdateExpectations(s)
 				existingVMSS := newDefaultExistingVMSS("VM_SIZE")
-				existingVMSS.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
-				existingVMSS.Sku.Capacity = pointer.Int64(2)
-				existingVMSS.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				existingVMSS.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+				existingVMSS.Sku.Capacity = ptr.To[int64](2)
+				existingVMSS.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 				instances := newDefaultInstances()
 				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(existingVMSS, nil)
 				m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil)
 
 				clone := newDefaultExistingVMSS("VM_SIZE")
-				clone.Sku.Capacity = pointer.Int64(3)
-				clone.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+				clone.Sku.Capacity = ptr.To[int64](3)
+				clone.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 				patchVMSS, err := getVMSSUpdateFromVMSS(clone)
 				g.Expect(err).NotTo(HaveOccurred())
-				patchVMSS.VirtualMachineProfile.StorageProfile.ImageReference.Version = pointer.String("2.0")
+				patchVMSS.VirtualMachineProfile.StorageProfile.ImageReference.Version = ptr.To("2.0")
 				patchVMSS.VirtualMachineProfile.NetworkProfile = nil
 				m.UpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(patchVMSS)).
 					Return(patchFuture, nil)
@@ -700,7 +700,7 @@ func TestReconcileVMSS(t *testing.T) {
 					Capacity:   2,
 					SSHKeyData: "ZmFrZXNzaGtleQo=",
 					AdditionalCapabilities: &infrav1.AdditionalCapabilities{
-						UltraSSDEnabled: pointer.Bool(true),
+						UltraSSDEnabled: ptr.To(true),
 					},
 				})
 				s.Location().AnyTimes().Return("test-location")
@@ -723,7 +723,7 @@ func TestReconcileVMSS(t *testing.T) {
 						},
 					},
 					AdditionalCapabilities: &infrav1.AdditionalCapabilities{
-						UltraSSDEnabled: pointer.Bool(false),
+						UltraSSDEnabled: ptr.To(false),
 					},
 				})
 				s.Location().AnyTimes().Return("test-location")
@@ -767,7 +767,7 @@ func TestReconcileVMSS(t *testing.T) {
 
 				vmss := newDefaultVMSS("VM_SIZE")
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
-					Enabled:    pointer.Bool(true),
+					Enabled:    ptr.To(true),
 					StorageURI: &storageURI,
 				}}
 
@@ -795,7 +795,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				vmss := newDefaultVMSS("VM_SIZE")
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
-					Enabled: pointer.Bool(true),
+					Enabled: ptr.To(true),
 				}}
 
 				instances := newDefaultInstances()
@@ -822,7 +822,7 @@ func TestReconcileVMSS(t *testing.T) {
 
 				vmss := newDefaultVMSS("VM_SIZE")
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
-					Enabled: pointer.Bool(false),
+					Enabled: ptr.To(false),
 				}}
 				instances := newDefaultInstances()
 
@@ -986,22 +986,22 @@ func TestDeleteVMSS(t *testing.T) {
 func getFakeSkus() []compute.ResourceSku {
 	return []compute.ResourceSku{
 		{
-			Name:         pointer.String("VM_SIZE"),
-			ResourceType: pointer.String(string(resourceskus.VirtualMachines)),
-			Kind:         pointer.String(string(resourceskus.VirtualMachines)),
+			Name:         ptr.To("VM_SIZE"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
-					Location: pointer.String("test-location"),
+					Location: ptr.To("test-location"),
 					Zones:    &[]string{"1", "3"},
 					ZoneDetails: &[]compute.ResourceSkuZoneDetails{
 						{
 							Capabilities: &[]compute.ResourceSkuCapabilities{
 								{
-									Name:  pointer.String("UltraSSDAvailable"),
-									Value: pointer.String("True"),
+									Name:  ptr.To("UltraSSDAvailable"),
+									Value: ptr.To("True"),
 								},
 							},
 							Name: &[]string{"1", "3"},
@@ -1011,36 +1011,36 @@ func getFakeSkus() []compute.ResourceSku {
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
 				{
-					Name:  pointer.String(resourceskus.AcceleratedNetworking),
-					Value: pointer.String(string(resourceskus.CapabilityUnsupported)),
+					Name:  ptr.To(resourceskus.AcceleratedNetworking),
+					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
 				},
 				{
-					Name:  pointer.String(resourceskus.VCPUs),
-					Value: pointer.String("4"),
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("4"),
 				},
 				{
-					Name:  pointer.String(resourceskus.MemoryGB),
-					Value: pointer.String("4"),
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("4"),
 				},
 			},
 		},
 		{
-			Name:         pointer.String("VM_SIZE_AN"),
-			ResourceType: pointer.String(string(resourceskus.VirtualMachines)),
-			Kind:         pointer.String(string(resourceskus.VirtualMachines)),
+			Name:         ptr.To("VM_SIZE_AN"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
-					Location: pointer.String("test-location"),
+					Location: ptr.To("test-location"),
 					Zones:    &[]string{"1", "3"},
 					// ZoneDetails: &[]compute.ResourceSkuZoneDetails{
 					//    {
 					//        	Capabilities: &[]compute.ResourceSkuCapabilities{
 					//        		{
-					//        			Name:  pointer.String("UltraSSDAvailable"),
-					//        			Value: pointer.String("True"),
+					//        			Name:  ptr.To("UltraSSDAvailable"),
+					//        			Value: ptr.To("True"),
 					//        		},
 					//        	},
 					//        },
@@ -1049,92 +1049,92 @@ func getFakeSkus() []compute.ResourceSku {
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
 				{
-					Name:  pointer.String(resourceskus.AcceleratedNetworking),
-					Value: pointer.String(string(resourceskus.CapabilitySupported)),
+					Name:  ptr.To(resourceskus.AcceleratedNetworking),
+					Value: ptr.To(string(resourceskus.CapabilitySupported)),
 				},
 				{
-					Name:  pointer.String(resourceskus.VCPUs),
-					Value: pointer.String("4"),
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("4"),
 				},
 				{
-					Name:  pointer.String(resourceskus.MemoryGB),
-					Value: pointer.String("6"),
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("6"),
 				},
 			},
 		},
 		{
-			Name:         pointer.String("VM_SIZE_1_CPU"),
-			ResourceType: pointer.String(string(resourceskus.VirtualMachines)),
-			Kind:         pointer.String(string(resourceskus.VirtualMachines)),
+			Name:         ptr.To("VM_SIZE_1_CPU"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
-					Location: pointer.String("test-location"),
+					Location: ptr.To("test-location"),
 					Zones:    &[]string{"1", "3"},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
 				{
-					Name:  pointer.String(resourceskus.AcceleratedNetworking),
-					Value: pointer.String(string(resourceskus.CapabilityUnsupported)),
+					Name:  ptr.To(resourceskus.AcceleratedNetworking),
+					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
 				},
 				{
-					Name:  pointer.String(resourceskus.VCPUs),
-					Value: pointer.String("1"),
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("1"),
 				},
 				{
-					Name:  pointer.String(resourceskus.MemoryGB),
-					Value: pointer.String("4"),
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("4"),
 				},
 			},
 		},
 		{
-			Name:         pointer.String("VM_SIZE_1_MEM"),
-			ResourceType: pointer.String(string(resourceskus.VirtualMachines)),
-			Kind:         pointer.String(string(resourceskus.VirtualMachines)),
+			Name:         ptr.To("VM_SIZE_1_MEM"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
-					Location: pointer.String("test-location"),
+					Location: ptr.To("test-location"),
 					Zones:    &[]string{"1", "3"},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
 				{
-					Name:  pointer.String(resourceskus.AcceleratedNetworking),
-					Value: pointer.String(string(resourceskus.CapabilityUnsupported)),
+					Name:  ptr.To(resourceskus.AcceleratedNetworking),
+					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
 				},
 				{
-					Name:  pointer.String(resourceskus.VCPUs),
-					Value: pointer.String("2"),
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("2"),
 				},
 				{
-					Name:  pointer.String(resourceskus.MemoryGB),
-					Value: pointer.String("1"),
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("1"),
 				},
 			},
 		},
 		{
-			Name:         pointer.String("VM_SIZE_EAH"),
-			ResourceType: pointer.String(string(resourceskus.VirtualMachines)),
-			Kind:         pointer.String(string(resourceskus.VirtualMachines)),
+			Name:         ptr.To("VM_SIZE_EAH"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
-					Location: pointer.String("test-location"),
+					Location: ptr.To("test-location"),
 					Zones:    &[]string{"1", "3"},
 					//  ZoneDetails: &[]compute.ResourceSkuZoneDetails{
 					//	    {
 					//    		Capabilities: &[]compute.ResourceSkuCapabilities{
 					//    			{
-					//    				Name:  pointer.String("UltraSSDAvailable"),
-					//    				Value: pointer.String("True"),
+					//    				Name:  ptr.To("UltraSSDAvailable"),
+					//    				Value: ptr.To("True"),
 					//    			},
 					//    		},
 					//	    },
@@ -1143,64 +1143,64 @@ func getFakeSkus() []compute.ResourceSku {
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
 				{
-					Name:  pointer.String(resourceskus.VCPUs),
-					Value: pointer.String("4"),
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("4"),
 				},
 				{
-					Name:  pointer.String(resourceskus.MemoryGB),
-					Value: pointer.String("8"),
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("8"),
 				},
 				{
-					Name:  pointer.String(resourceskus.EncryptionAtHost),
-					Value: pointer.String(string(resourceskus.CapabilitySupported)),
+					Name:  ptr.To(resourceskus.EncryptionAtHost),
+					Value: ptr.To(string(resourceskus.CapabilitySupported)),
 				},
 			},
 		},
 		{
-			Name:         pointer.String("VM_SIZE_USSD"),
-			ResourceType: pointer.String(string(resourceskus.VirtualMachines)),
-			Kind:         pointer.String(string(resourceskus.VirtualMachines)),
+			Name:         ptr.To("VM_SIZE_USSD"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
-					Location: pointer.String("test-location"),
+					Location: ptr.To("test-location"),
 					Zones:    &[]string{"1", "3"},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
 				{
-					Name:  pointer.String(resourceskus.AcceleratedNetworking),
-					Value: pointer.String(string(resourceskus.CapabilitySupported)),
+					Name:  ptr.To(resourceskus.AcceleratedNetworking),
+					Value: ptr.To(string(resourceskus.CapabilitySupported)),
 				},
 				{
-					Name:  pointer.String(resourceskus.VCPUs),
-					Value: pointer.String("4"),
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("4"),
 				},
 				{
-					Name:  pointer.String(resourceskus.MemoryGB),
-					Value: pointer.String("6"),
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("6"),
 				},
 			},
 		},
 		{
-			Name:         pointer.String("VM_SIZE_EPH"),
-			ResourceType: pointer.String(string(resourceskus.VirtualMachines)),
-			Kind:         pointer.String(string(resourceskus.VirtualMachines)),
+			Name:         ptr.To("VM_SIZE_EPH"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
-					Location: pointer.String("test-location"),
+					Location: ptr.To("test-location"),
 					Zones:    &[]string{"1", "3"},
 					ZoneDetails: &[]compute.ResourceSkuZoneDetails{
 						{
 							Capabilities: &[]compute.ResourceSkuCapabilities{
 								{
-									Name:  pointer.String("UltraSSDAvailable"),
-									Value: pointer.String("True"),
+									Name:  ptr.To("UltraSSDAvailable"),
+									Value: ptr.To("True"),
 								},
 							},
 							Name: &[]string{"1", "3"},
@@ -1210,20 +1210,20 @@ func getFakeSkus() []compute.ResourceSku {
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
 				{
-					Name:  pointer.String(resourceskus.AcceleratedNetworking),
-					Value: pointer.String(string(resourceskus.CapabilityUnsupported)),
+					Name:  ptr.To(resourceskus.AcceleratedNetworking),
+					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
 				},
 				{
-					Name:  pointer.String(resourceskus.VCPUs),
-					Value: pointer.String("4"),
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("4"),
 				},
 				{
-					Name:  pointer.String(resourceskus.MemoryGB),
-					Value: pointer.String("4"),
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("4"),
 				},
 				{
-					Name:  pointer.String(resourceskus.EphemeralOSDisk),
-					Value: pointer.String("True"),
+					Name:  ptr.To(resourceskus.EphemeralOSDisk),
+					Value: ptr.To("True"),
 				},
 			},
 		},
@@ -1238,7 +1238,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 		SSHKeyData: "ZmFrZXNzaGtleQo=",
 		OSDisk: infrav1.OSDisk{
 			OSType:     "Linux",
-			DiskSizeGB: pointer.Int32(120),
+			DiskSizeGB: ptr.To[int32](120),
 			ManagedDisk: &infrav1.ManagedDiskParameters{
 				StorageAccountType: "Premium_LRS",
 			},
@@ -1247,12 +1247,12 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 			{
 				NameSuffix: "my_disk",
 				DiskSizeGB: 128,
-				Lun:        pointer.Int32(0),
+				Lun:        ptr.To[int32](0),
 			},
 			{
 				NameSuffix: "my_disk_with_managed_disk",
 				DiskSizeGB: 128,
-				Lun:        pointer.Int32(1),
+				Lun:        ptr.To[int32](1),
 				ManagedDisk: &infrav1.ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 				},
@@ -1260,7 +1260,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 			{
 				NameSuffix: "managed_disk_with_encryption",
 				DiskSizeGB: 128,
-				Lun:        pointer.Int32(2),
+				Lun:        ptr.To[int32](2),
 				ManagedDisk: &infrav1.ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 					DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
@@ -1280,7 +1280,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 		PublicLBName:                 "capz-lb",
 		PublicLBAddressPoolName:      "backendPool",
 		AcceleratedNetworking:        nil,
-		TerminateNotificationTimeout: pointer.Int(7),
+		TerminateNotificationTimeout: ptr.To(7),
 		FailureDomains:               []string{"1", "3"},
 		NetworkInterfaces: []infrav1.NetworkInterface{
 			{
@@ -1299,7 +1299,7 @@ func newWindowsVMSSSpec() azure.ScaleSetSpec {
 
 func newDefaultExistingVMSS(vmSize string) compute.VirtualMachineScaleSet {
 	vmss := newDefaultVMSS(vmSize)
-	vmss.ID = pointer.String("subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
+	vmss.ID = ptr.To("subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 	return vmss
 }
 
@@ -1308,7 +1308,7 @@ func newDefaultWindowsVMSS() compute.VirtualMachineScaleSet {
 	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.OsType = compute.OperatingSystemTypesWindows
 	vmss.VirtualMachineProfile.OsProfile.LinuxConfiguration = nil
 	vmss.VirtualMachineProfile.OsProfile.WindowsConfiguration = &compute.WindowsConfiguration{
-		EnableAutomaticUpdates: pointer.Bool(false),
+		EnableAutomaticUpdates: ptr.To(false),
 	}
 	return vmss
 }
@@ -1316,59 +1316,59 @@ func newDefaultWindowsVMSS() compute.VirtualMachineScaleSet {
 func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 	dataDisk := fetchDataDiskBasedOnSize(vmSize)
 	return compute.VirtualMachineScaleSet{
-		Location: pointer.String("test-location"),
+		Location: ptr.To("test-location"),
 		Tags: map[string]*string{
-			"Name": pointer.String(defaultVMSSName),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
-			"sigs.k8s.io_cluster-api-provider-azure_role":               pointer.String("node"),
+			"Name": ptr.To(defaultVMSSName),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+			"sigs.k8s.io_cluster-api-provider-azure_role":               ptr.To("node"),
 		},
 		Sku: &compute.Sku{
-			Name:     pointer.String(vmSize),
-			Tier:     pointer.String("Standard"),
-			Capacity: pointer.Int64(2),
+			Name:     ptr.To(vmSize),
+			Tier:     ptr.To("Standard"),
+			Capacity: ptr.To[int64](2),
 		},
 		Zones: &[]string{"1", "3"},
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-			SinglePlacementGroup: pointer.Bool(false),
+			SinglePlacementGroup: ptr.To(false),
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,
 			},
-			Overprovision:     pointer.Bool(false),
+			Overprovision:     ptr.To(false),
 			OrchestrationMode: compute.OrchestrationModeUniform,
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
-					ComputerNamePrefix: pointer.String(defaultVMSSName),
-					AdminUsername:      pointer.String(azure.DefaultUserName),
-					CustomData:         pointer.String("fake-bootstrap-data"),
+					ComputerNamePrefix: ptr.To(defaultVMSSName),
+					AdminUsername:      ptr.To(azure.DefaultUserName),
+					CustomData:         ptr.To("fake-bootstrap-data"),
 					LinuxConfiguration: &compute.LinuxConfiguration{
 						SSH: &compute.SSHConfiguration{
 							PublicKeys: &[]compute.SSHPublicKey{
 								{
-									Path:    pointer.String("/home/capi/.ssh/authorized_keys"),
-									KeyData: pointer.String("fakesshkey\n"),
+									Path:    ptr.To("/home/capi/.ssh/authorized_keys"),
+									KeyData: ptr.To("fakesshkey\n"),
 								},
 							},
 						},
-						DisablePasswordAuthentication: pointer.Bool(true),
+						DisablePasswordAuthentication: ptr.To(true),
 					},
 				},
 				ScheduledEventsProfile: &compute.ScheduledEventsProfile{
 					TerminateNotificationProfile: &compute.TerminateNotificationProfile{
-						NotBeforeTimeout: pointer.String("PT7M"),
-						Enable:           pointer.Bool(true),
+						NotBeforeTimeout: ptr.To("PT7M"),
+						Enable:           ptr.To(true),
 					},
 				},
 				StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
 					ImageReference: &compute.ImageReference{
-						Publisher: pointer.String("fake-publisher"),
-						Offer:     pointer.String("my-offer"),
-						Sku:       pointer.String("sku-id"),
-						Version:   pointer.String("1.0"),
+						Publisher: ptr.To("fake-publisher"),
+						Offer:     ptr.To("my-offer"),
+						Sku:       ptr.To("sku-id"),
+						Version:   ptr.To("1.0"),
 					},
 					OsDisk: &compute.VirtualMachineScaleSetOSDisk{
 						OsType:       "Linux",
 						CreateOption: "FromImage",
-						DiskSizeGB:   pointer.Int32(120),
+						DiskSizeGB:   ptr.To[int32](120),
 						ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -1377,27 +1377,27 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 				},
 				DiagnosticsProfile: &compute.DiagnosticsProfile{
 					BootDiagnostics: &compute.BootDiagnostics{
-						Enabled: pointer.Bool(true),
+						Enabled: ptr.To(true),
 					},
 				},
 				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 						{
-							Name: pointer.String("my-vmss-nic-0"),
+							Name: ptr.To("my-vmss-nic-0"),
 							VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
-								Primary:                     pointer.Bool(true),
-								EnableAcceleratedNetworking: pointer.Bool(false),
-								EnableIPForwarding:          pointer.Bool(true),
+								Primary:                     ptr.To(true),
+								EnableAcceleratedNetworking: ptr.To(false),
+								EnableIPForwarding:          ptr.To(true),
 								IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
 									{
-										Name: pointer.String("ipConfig0"),
+										Name: ptr.To("ipConfig0"),
 										VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 											Subnet: &compute.APIEntityReference{
-												ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
+												ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
 											},
-											Primary:                         pointer.Bool(true),
+											Primary:                         ptr.To(true),
 											PrivateIPAddressVersion:         compute.IPVersionIPv4,
-											LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
+											LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
 										},
 									},
 								},
@@ -1408,11 +1408,11 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 				ExtensionProfile: &compute.VirtualMachineScaleSetExtensionProfile{
 					Extensions: &[]compute.VirtualMachineScaleSetExtension{
 						{
-							Name: pointer.String("someExtension"),
+							Name: ptr.To("someExtension"),
 							VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
-								Publisher:          pointer.String("somePublisher"),
-								Type:               pointer.String("someExtension"),
-								TypeHandlerVersion: pointer.String("someVersion"),
+								Publisher:          ptr.To("somePublisher"),
+								Type:               ptr.To("someExtension"),
+								TypeHandlerVersion: ptr.To("someVersion"),
 								Settings: map[string]string{
 									"someSetting": "someValue",
 								},
@@ -1433,37 +1433,37 @@ func fetchDataDiskBasedOnSize(vmSize string) *[]compute.VirtualMachineScaleSetDa
 	if vmSize == "VM_SIZE" {
 		dataDisk = &[]compute.VirtualMachineScaleSetDataDisk{
 			{
-				Lun:          pointer.Int32(0),
-				Name:         pointer.String("my-vmss_my_disk"),
+				Lun:          ptr.To[int32](0),
+				Name:         ptr.To("my-vmss_my_disk"),
 				CreateOption: "Empty",
-				DiskSizeGB:   pointer.Int32(128),
+				DiskSizeGB:   ptr.To[int32](128),
 			},
 			{
-				Lun:          pointer.Int32(1),
-				Name:         pointer.String("my-vmss_my_disk_with_managed_disk"),
+				Lun:          ptr.To[int32](1),
+				Name:         ptr.To("my-vmss_my_disk_with_managed_disk"),
 				CreateOption: "Empty",
-				DiskSizeGB:   pointer.Int32(128),
+				DiskSizeGB:   ptr.To[int32](128),
 				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 				},
 			},
 			{
-				Lun:          pointer.Int32(2),
-				Name:         pointer.String("my-vmss_managed_disk_with_encryption"),
+				Lun:          ptr.To[int32](2),
+				Name:         ptr.To("my-vmss_managed_disk_with_encryption"),
 				CreateOption: "Empty",
-				DiskSizeGB:   pointer.Int32(128),
+				DiskSizeGB:   ptr.To[int32](128),
 				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 					DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
-						ID: pointer.String("encryption_id"),
+						ID: ptr.To("encryption_id"),
 					},
 				},
 			},
 			{
-				Lun:          pointer.Int32(3),
-				Name:         pointer.String("my-vmss_my_disk_with_ultra_disks"),
+				Lun:          ptr.To[int32](3),
+				Name:         ptr.To("my-vmss_my_disk_with_ultra_disks"),
 				CreateOption: "Empty",
-				DiskSizeGB:   pointer.Int32(128),
+				DiskSizeGB:   ptr.To[int32](128),
 				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
 					StorageAccountType: "UltraSSD_LRS",
 				},
@@ -1472,29 +1472,29 @@ func fetchDataDiskBasedOnSize(vmSize string) *[]compute.VirtualMachineScaleSetDa
 	} else {
 		dataDisk = &[]compute.VirtualMachineScaleSetDataDisk{
 			{
-				Lun:          pointer.Int32(0),
-				Name:         pointer.String("my-vmss_my_disk"),
+				Lun:          ptr.To[int32](0),
+				Name:         ptr.To("my-vmss_my_disk"),
 				CreateOption: "Empty",
-				DiskSizeGB:   pointer.Int32(128),
+				DiskSizeGB:   ptr.To[int32](128),
 			},
 			{
-				Lun:          pointer.Int32(1),
-				Name:         pointer.String("my-vmss_my_disk_with_managed_disk"),
+				Lun:          ptr.To[int32](1),
+				Name:         ptr.To("my-vmss_my_disk_with_managed_disk"),
 				CreateOption: "Empty",
-				DiskSizeGB:   pointer.Int32(128),
+				DiskSizeGB:   ptr.To[int32](128),
 				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 				},
 			},
 			{
-				Lun:          pointer.Int32(2),
-				Name:         pointer.String("my-vmss_managed_disk_with_encryption"),
+				Lun:          ptr.To[int32](2),
+				Name:         ptr.To("my-vmss_managed_disk_with_encryption"),
 				CreateOption: "Empty",
-				DiskSizeGB:   pointer.Int32(128),
+				DiskSizeGB:   ptr.To[int32](128),
 				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 					DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
-						ID: pointer.String("encryption_id"),
+						ID: ptr.To("encryption_id"),
 					},
 				},
 			},
@@ -1506,39 +1506,39 @@ func fetchDataDiskBasedOnSize(vmSize string) *[]compute.VirtualMachineScaleSetDa
 func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 	return []compute.VirtualMachineScaleSetVM{
 		{
-			ID:         pointer.String("my-vm-id"),
-			InstanceID: pointer.String("my-vm-1"),
-			Name:       pointer.String("my-vm"),
+			ID:         ptr.To("my-vm-id"),
+			InstanceID: ptr.To("my-vm-1"),
+			Name:       ptr.To("my-vm"),
 			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-				ProvisioningState: pointer.String("Succeeded"),
+				ProvisioningState: ptr.To("Succeeded"),
 				OsProfile: &compute.OSProfile{
-					ComputerName: pointer.String("instance-000001"),
+					ComputerName: ptr.To("instance-000001"),
 				},
 				StorageProfile: &compute.StorageProfile{
 					ImageReference: &compute.ImageReference{
-						Publisher: pointer.String("fake-publisher"),
-						Offer:     pointer.String("my-offer"),
-						Sku:       pointer.String("sku-id"),
-						Version:   pointer.String("1.0"),
+						Publisher: ptr.To("fake-publisher"),
+						Offer:     ptr.To("my-offer"),
+						Sku:       ptr.To("sku-id"),
+						Version:   ptr.To("1.0"),
 					},
 				},
 			},
 		},
 		{
-			ID:         pointer.String("my-vm-id"),
-			InstanceID: pointer.String("my-vm-2"),
-			Name:       pointer.String("my-vm"),
+			ID:         ptr.To("my-vm-id"),
+			InstanceID: ptr.To("my-vm-2"),
+			Name:       ptr.To("my-vm"),
 			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-				ProvisioningState: pointer.String("Succeeded"),
+				ProvisioningState: ptr.To("Succeeded"),
 				OsProfile: &compute.OSProfile{
-					ComputerName: pointer.String("instance-000002"),
+					ComputerName: ptr.To("instance-000002"),
 				},
 				StorageProfile: &compute.StorageProfile{
 					ImageReference: &compute.ImageReference{
-						Publisher: pointer.String("fake-publisher"),
-						Offer:     pointer.String("my-offer"),
-						Sku:       pointer.String("sku-id"),
-						Version:   pointer.String("1.0"),
+						Publisher: ptr.To("fake-publisher"),
+						Offer:     ptr.To("my-offer"),
+						Sku:       ptr.To("sku-id"),
+						Version:   ptr.To("1.0"),
 					},
 				},
 			},
@@ -1547,8 +1547,8 @@ func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 }
 
 func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, createdVMSS compute.VirtualMachineScaleSet, instances []compute.VirtualMachineScaleSetVM) {
-	createdVMSS.ID = pointer.String("subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
-	createdVMSS.ProvisioningState = pointer.String(string(infrav1.Succeeded))
+	createdVMSS.ID = ptr.To("subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
+	createdVMSS.ProvisioningState = ptr.To(string(infrav1.Succeeded))
 	setupDefaultVMSSExpectations(s)
 	future := &infrav1.Future{
 		Type:          infrav1.PutFuture,

@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
@@ -76,11 +76,11 @@ func (s *AvailabilitySetSpec) Parameters(ctx context.Context, existing interface
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse availability set fault domain count")
 	}
-	faultDomainCount = pointer.Int32(int32(count))
+	faultDomainCount = ptr.To[int32](int32(count))
 
 	asParams := compute.AvailabilitySet{
 		Sku: &compute.Sku{
-			Name: pointer.String(string(compute.AvailabilitySetSkuTypesAligned)),
+			Name: ptr.To(string(compute.AvailabilitySetSkuTypesAligned)),
 		},
 		AvailabilitySetProperties: &compute.AvailabilitySetProperties{
 			PlatformFaultDomainCount: faultDomainCount,
@@ -88,11 +88,11 @@ func (s *AvailabilitySetSpec) Parameters(ctx context.Context, existing interface
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        pointer.String(s.Name),
-			Role:        pointer.String(infrav1.CommonRole),
+			Name:        ptr.To(s.Name),
+			Role:        ptr.To(infrav1.CommonRole),
 			Additional:  s.AdditionalTags,
 		})),
-		Location: pointer.String(s.Location),
+		Location: ptr.To(s.Location),
 	}
 
 	return asParams, nil

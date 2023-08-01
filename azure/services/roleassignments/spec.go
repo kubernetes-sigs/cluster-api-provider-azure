@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 // RoleAssignmentSpec defines the specification for a role assignment.
@@ -63,7 +63,7 @@ func (s *RoleAssignmentSpec) Parameters(ctx context.Context, existing interface{
 	return authorization.RoleAssignmentCreateParameters{
 		Properties: &authorization.RoleAssignmentProperties{
 			PrincipalID:      s.PrincipalID,
-			RoleDefinitionID: pointer.String(s.RoleDefinitionID),
+			RoleDefinitionID: ptr.To(s.RoleDefinitionID),
 		},
 	}, nil
 }

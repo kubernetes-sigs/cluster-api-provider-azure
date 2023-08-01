@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -64,9 +64,9 @@ func TestZoneSpec_Parameters(t *testing.T) {
 			spec:          zoneSpec,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(Equal(privatedns.PrivateZone{
-					Location: pointer.String(azure.Global),
+					Location: ptr.To(azure.Global),
 					Tags: map[string]*string{
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
 					},
 				}))
 			},
@@ -76,7 +76,7 @@ func TestZoneSpec_Parameters(t *testing.T) {
 			expectedError: "",
 			spec:          zoneSpec,
 			existing: privatedns.PrivateZone{Tags: map[string]*string{
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
 			}},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())

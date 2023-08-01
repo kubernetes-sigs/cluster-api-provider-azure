@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -83,8 +83,8 @@ var (
 	managedTags = resources.TagsResource{
 		Properties: &resources.Tags{
 			Tags: map[string]*string{
-				"foo": pointer.String("bar"),
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + clusterName: pointer.String("owned"),
+				"foo": ptr.To("bar"),
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + clusterName: ptr.To("owned"),
 			},
 		},
 	}

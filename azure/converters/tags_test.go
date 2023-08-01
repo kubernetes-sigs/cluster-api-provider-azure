@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -39,7 +39,7 @@ func Test_TagsToMap(t *testing.T) {
 		},
 		{
 			tags:   infrav1.Tags{"env": "prod"},
-			expect: map[string]*string{"env": pointer.String("prod")},
+			expect: map[string]*string{"env": ptr.To("prod")},
 		},
 	}
 
@@ -68,7 +68,7 @@ func Test_MapToTags(t *testing.T) {
 			expect: infrav1.Tags{},
 		},
 		{
-			tags:   map[string]*string{"env": pointer.String("prod")},
+			tags:   map[string]*string{"env": ptr.To("prod")},
 			expect: infrav1.Tags{"env": "prod"},
 		},
 	}
@@ -134,8 +134,8 @@ func Test_MapToTagsMapRoundTrip(t *testing.T) {
 			expect: map[string]*string{},
 		},
 		{
-			tags:   map[string]*string{"env": pointer.String("prod")},
-			expect: map[string]*string{"env": pointer.String("prod")},
+			tags:   map[string]*string{"env": ptr.To("prod")},
+			expect: map[string]*string{"env": ptr.To("prod")},
 		},
 	}
 

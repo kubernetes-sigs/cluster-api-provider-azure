@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -312,7 +312,7 @@ func getReconcileInputs(tc TestReconcileInput) (*AzureMachineReconciler, *scope.
 	})
 	machine := getFakeMachine(azureMachine, func(m *clusterv1.Machine) {
 		m.Spec.Bootstrap = clusterv1.Bootstrap{
-			DataSecretName: pointer.String("fooSecret"),
+			DataSecretName: ptr.To("fooSecret"),
 		}
 	})
 
@@ -560,7 +560,7 @@ func getFakeMachine(azureMachine *infrav1.AzureMachine, changes ...func(*cluster
 				Name:       azureMachine.Name,
 				Namespace:  azureMachine.Namespace,
 			},
-			Version: pointer.String("v1.22.0"),
+			Version: ptr.To("v1.22.0"),
 		},
 	}
 	for _, change := range changes {

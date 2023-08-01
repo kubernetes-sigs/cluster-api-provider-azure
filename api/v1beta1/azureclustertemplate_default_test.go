@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestVnetTemplateDefaults(t *testing.T) {
@@ -472,7 +472,7 @@ func TestAPIServerLBClassDefaults(t *testing.T) {
 								APIServerLB: LoadBalancerClassSpec{
 									SKU:                  SKUStandard,
 									Type:                 Public,
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
 						},
@@ -509,7 +509,7 @@ func TestAPIServerLBClassDefaults(t *testing.T) {
 								APIServerLB: LoadBalancerClassSpec{
 									SKU:                  SKUStandard,
 									Type:                 Internal,
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
 						},
@@ -648,7 +648,7 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 								NodeOutboundLB: &LoadBalancerClassSpec{
 									SKU:                  SKUStandard,
 									Type:                 Public,
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
 						},
@@ -720,7 +720,7 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 								NodeOutboundLB: &LoadBalancerClassSpec{
 									SKU:                  SKUStandard,
 									Type:                 Public,
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
 						},
@@ -794,7 +794,7 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 								NodeOutboundLB: &LoadBalancerClassSpec{
 									SKU:                  SKUStandard,
 									Type:                 Public,
-									IdleTimeoutInMinutes: pointer.Int32(DefaultOutboundRuleIdleTimeoutInMinutes),
+									IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
 						},
@@ -910,7 +910,7 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 							NetworkSpec: NetworkTemplateSpec{
 								APIServerLB: LoadBalancerClassSpec{Type: Internal},
 								NodeOutboundLB: &LoadBalancerClassSpec{
-									IdleTimeoutInMinutes: pointer.Int32(15),
+									IdleTimeoutInMinutes: ptr.To[int32](15),
 								},
 							},
 						},
@@ -927,7 +927,7 @@ func TestNodeOutboundLBClassDefaults(t *testing.T) {
 							NetworkSpec: NetworkTemplateSpec{
 								APIServerLB: LoadBalancerClassSpec{Type: Internal},
 								NodeOutboundLB: &LoadBalancerClassSpec{
-									IdleTimeoutInMinutes: pointer.Int32(15),
+									IdleTimeoutInMinutes: ptr.To[int32](15),
 									SKU:                  SKUStandard,
 									Type:                 Public,
 								},
