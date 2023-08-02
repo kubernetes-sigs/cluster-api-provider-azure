@@ -22,10 +22,10 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	gtypes "github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
+	"go.uber.org/mock/gomock"
 	"k8s.io/apimachinery/pkg/types"
 	mock_coalescing "sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/log"

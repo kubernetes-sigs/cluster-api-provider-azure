@@ -25,7 +25,7 @@ import (
 	reflect "reflect"
 
 	msi "github.com/Azure/azure-sdk-for-go/services/msi/mgmt/2018-11-30/msi"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockClient is a mock of Client interface.

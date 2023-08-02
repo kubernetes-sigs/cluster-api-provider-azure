@@ -26,7 +26,7 @@ import (
 
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	autorest "github.com/Azure/go-autorest/autorest"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 

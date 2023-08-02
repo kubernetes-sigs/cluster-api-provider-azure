@@ -19,8 +19,8 @@ package azure
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 )
 

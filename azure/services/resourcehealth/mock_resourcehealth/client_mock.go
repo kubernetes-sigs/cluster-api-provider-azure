@@ -25,7 +25,7 @@ import (
 	reflect "reflect"
 
 	resourcehealth "github.com/Azure/azure-sdk-for-go/services/resourcehealth/mgmt/2020-05-01/resourcehealth"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockclient is a mock of client interface.
