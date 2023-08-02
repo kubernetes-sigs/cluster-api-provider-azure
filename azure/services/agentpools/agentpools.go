@@ -19,7 +19,7 @@ package agentpools
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -80,9 +80,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			resultingErr = err
 		} else {
-			agentPool, ok := result.(containerservice.AgentPool)
+			agentPool, ok := result.(armcontainerservice.AgentPool)
 			if !ok {
-				return errors.Errorf("%T is not a containerservice.AgentPool", result)
+				return errors.Errorf("%T is not an armcontainerservice.AgentPool", result)
 			}
 			// When autoscaling is set, add the annotation to the machine pool and update the replica count.
 			if pointer.BoolDeref(agentPool.EnableAutoScaling, false) {
