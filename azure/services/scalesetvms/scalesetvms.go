@@ -19,14 +19,14 @@ package scalesetvms
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -39,27 +39,27 @@ type (
 	ScaleSetVMScope interface {
 		azure.ClusterDescriber
 		azure.AsyncStatusUpdater
-		InstanceID() string
-		ProviderID() string
-		ScaleSetName() string
-		OrchestrationMode() infrav1.OrchestrationModeType
+		ScaleSetVMSpec() azure.ResourceSpecGetter
 		SetVMSSVM(vmssvm *azure.VMSSVM)
+		SetVMSSVMState(state infrav1.ProvisioningState)
 	}
 
 	// Service provides operations on Azure resources.
 	Service struct {
-		Client   client
-		VMClient virtualmachines.Client
-		Scope    ScaleSetVMScope
+		Scope ScaleSetVMScope
+		async.Reconciler
+		VMReconciler async.Reconciler
 	}
 )
 
 // NewService creates a new service.
 func NewService(scope ScaleSetVMScope) *Service {
+	client := newClient(scope)
+	vmClient := virtualmachines.NewClient(scope)
 	return &Service{
-		Client:   newClient(scope),
-		VMClient: virtualmachines.NewClient(scope),
-		Scope:    scope,
+		Reconciler:   async.New(scope, client, client),
+		VMReconciler: async.New(scope, vmClient, vmClient),
+		Scope:        scope,
 	}
 }
 
@@ -73,211 +73,96 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.Reconcile")
 	defer done()
 
-	var (
-		resourceGroup = s.Scope.ResourceGroup()
-		vmssName      = s.Scope.ScaleSetName()
-		instanceID    = s.Scope.InstanceID()
-		providerID    = s.Scope.ProviderID()
-		isFlex        = s.Scope.OrchestrationMode() == infrav1.FlexibleOrchestrationMode
-	)
+	spec := s.Scope.ScaleSetVMSpec()
+	scaleSetVMSpec, ok := spec.(*ScaleSetVMSpec)
+	if !ok {
+		return errors.Errorf("%T is not of type ScaleSetVMSpec", spec)
+	}
 
+	reconciler := s.Reconciler
+	var getter azure.ResourceSpecGetter = scaleSetVMSpec
+	var result interface{}
+	var err error
 	// Fetch the latest instance or VM data. AzureMachinePoolReconciler handles model mutations.
-	if isFlex {
-		resourceID := strings.TrimPrefix(providerID, azureutil.ProviderIDPrefix)
-		log.V(4).Info("VMSS is flex", "vmssName", vmssName, "providerID", providerID, "resourceID", resourceID)
-		// Using VMSS Flex, so fetch by resource ID.
-		vm, err := s.VMClient.GetByID(ctx, resourceID)
+	if scaleSetVMSpec.IsFlex {
+		log.V(4).Info("VMSS is flex", "vmssName", scaleSetVMSpec.Name, "providerID", scaleSetVMSpec.ProviderID, "resourceID", scaleSetVMSpec.ResourceID)
+		getter, err = scaleSetVMSpecToVMSpec(*scaleSetVMSpec)
 		if err != nil {
-			if azure.ResourceNotFound(err) {
-				return azure.WithTransientError(errors.New("vm does not exist yet"), 30*time.Second)
-			}
-			return errors.Wrap(err, "failed getting vm")
+			return errors.Wrap(err, "failed to convert scaleSetVMSpec to vmSpec")
+		}
+		reconciler = s.VMReconciler
+	} else {
+		log.V(4).Info("VMSS is uniform", "vmssName", scaleSetVMSpec.Name, "providerID", scaleSetVMSpec.ProviderID, "instanceID", scaleSetVMSpec.InstanceID)
+	}
+
+	// We only want to get the resource if it exists and handle the not found error.
+	// We're using CreateOrUpdateResource() to do so but it doesn't actually create or update anything since getter.Parameters() always returns nil.
+	result, err = reconciler.CreateOrUpdateResource(ctx, getter, serviceName)
+	if err != nil {
+		return err
+	} else if result == nil {
+		return azure.WithTransientError(fmt.Errorf("instance does not exist yet"), time.Second*30)
+	}
+
+	if scaleSetVMSpec.IsFlex {
+		vm, ok := result.(compute.VirtualMachine)
+		if !ok {
+			return errors.Errorf("%T is not of type compute.VirtualMachine", result)
 		}
 		s.Scope.SetVMSSVM(converters.SDKVMToVMSSVM(vm, infrav1.FlexibleOrchestrationMode))
-		return nil
-	}
-
-	log.V(4).Info("VMSS is uniform", "vmssName", vmssName, "providerID", providerID, "instanceID", instanceID)
-	// Using VMSS Uniform, so fetch by instance ID.
-	instance, err := s.Client.Get(ctx, resourceGroup, vmssName, instanceID)
-	if err != nil {
-		if azure.ResourceNotFound(err) {
-			return azure.WithTransientError(errors.New("instance does not exist yet"), 30*time.Second)
+	} else {
+		instance, ok := result.(compute.VirtualMachineScaleSetVM)
+		if !ok {
+			return errors.Errorf("%T is not of type compute.VirtualMachineScaleSetVM", result)
 		}
-		return errors.Wrap(err, "failed getting instance")
+		s.Scope.SetVMSSVM(converters.SDKToVMSSVM(instance))
 	}
 
-	s.Scope.SetVMSSVM(converters.SDKToVMSSVM(instance))
 	return nil
 }
 
 // Delete deletes a scaleset instance asynchronously returning a future which encapsulates the long-running operation.
 func (s *Service) Delete(ctx context.Context) error {
-	var (
-		resourceGroup = s.Scope.ResourceGroup()
-		vmssName      = s.Scope.ScaleSetName()
-		instanceID    = s.Scope.InstanceID()
-		providerID    = s.Scope.ProviderID()
-		isFlex        = s.Scope.OrchestrationMode() == infrav1.FlexibleOrchestrationMode
-	)
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.Delete")
 
-	ctx, log, done := tele.StartSpanWithLogger(
-		ctx,
-		"scalesetvms.Service.Delete",
-		tele.KVP("resourceGroup", resourceGroup),
-		tele.KVP("scaleset", vmssName),
-		tele.KVP("instanceID", instanceID),
-	)
 	defer done()
 
-	if isFlex {
-		return s.deleteVMSSFlexVM(ctx, strings.TrimPrefix(providerID, azureutil.ProviderIDPrefix))
+	spec := s.Scope.ScaleSetVMSpec()
+	scaleSetVMSpec, ok := spec.(*ScaleSetVMSpec)
+	if !ok {
+		return errors.Errorf("%T is not of type ScaleSetVMSpec", spec)
 	}
-	return s.deleteVMSSUniformInstance(ctx, resourceGroup, vmssName, instanceID, log)
+
+	reconciler := s.Reconciler
+	var getter azure.ResourceSpecGetter = scaleSetVMSpec
+	var err error
+	if scaleSetVMSpec.IsFlex {
+		getter, err = scaleSetVMSpecToVMSpec(*scaleSetVMSpec)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert scaleSetVMSpec to vmSpec")
+		}
+		reconciler = s.VMReconciler
+	}
+
+	err = reconciler.DeleteResource(ctx, getter, serviceName)
+	if err != nil {
+		s.Scope.SetVMSSVMState(infrav1.Deleting)
+	} else {
+		s.Scope.SetVMSSVMState(infrav1.Deleted)
+	}
+
+	return err
 }
 
-func (s *Service) deleteVMSSFlexVM(ctx context.Context, resourceID string) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.deleteVMSSFlexVM")
-	defer done()
-
-	defer func() {
-		if vm, err := s.VMClient.GetByID(ctx, resourceID); err == nil && vm.VirtualMachineProperties != nil {
-			log.V(4).Info("vmss vm delete in progress", "state", vm.ProvisioningState)
-			s.Scope.SetVMSSVM(converters.SDKVMToVMSSVM(vm, s.Scope.OrchestrationMode()))
-		}
-	}()
-
-	parsed, err := azureutil.ParseResourceID(resourceID)
+func scaleSetVMSpecToVMSpec(scaleSetVMSpec ScaleSetVMSpec) (*VMSSFlexGetter, error) {
+	parsed, err := azureutil.ParseResourceID(scaleSetVMSpec.ResourceID)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to parse resource id %q", resourceID))
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to parse resource id %q", scaleSetVMSpec.ResourceID))
 	}
 	resourceGroup, resourceName := parsed.ResourceGroupName, parsed.Name
 
-	log.V(4).Info("entering delete")
-	future := s.Scope.GetLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture)
-	if future != nil {
-		if future.Type != infrav1.DeleteFuture {
-			return azure.WithTransientError(errors.New("attempting to delete, non-delete operation in progress"), 30*time.Second)
-		}
-
-		log.V(4).Info("checking if the vm is done deleting")
-		if _, err := s.VMClient.GetResultIfDone(ctx, future); err != nil {
-			// fetch vm to update status
-			return errors.Wrap(err, "failed to get result of long running operation")
-		}
-
-		// there was no error in fetching the result, the future has been completed
-		log.V(4).Info("successfully deleted the vm")
-		s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture)
-		return nil
-	}
-	// since the future was nil, there is no ongoing activity; start deleting the vm
-	log.V(4).Info("vmss delete vm future is nil") // This is always true
-
-	vmGetter := &VMSSFlexVMGetter{
+	return &VMSSFlexGetter{
 		Name:          resourceName,
 		ResourceGroup: resourceGroup,
-	}
-
-	sdkFuture, err := s.VMClient.DeleteAsync(ctx, vmGetter)
-	if err != nil {
-		if azure.ResourceNotFound(err) {
-			// already deleted
-			return nil
-		}
-		return errors.Wrapf(err, "failed to delete vm %s/%s", resourceGroup, resourceName)
-	}
-
-	if sdkFuture != nil {
-		future, err = converters.SDKToFuture(sdkFuture, infrav1.DeleteFuture, serviceName, vmGetter.ResourceName(), vmGetter.ResourceGroupName())
-		if err != nil {
-			return errors.Wrapf(err, "failed to convert SDK to Future %s/%s", resourceGroup, resourceName)
-		}
-		s.Scope.SetLongRunningOperationState(future)
-		return nil
-	}
-
-	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture)
-	return nil
-}
-
-func (s *Service) deleteVMSSUniformInstance(ctx context.Context, resourceGroup string, vmssName string, instanceID string, log logr.Logger) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesetvms.Service.deleteVMSSUniformInstance")
-	defer done()
-
-	defer func() {
-		if instance, err := s.Client.Get(ctx, resourceGroup, vmssName, instanceID); err == nil && instance.VirtualMachineScaleSetVMProperties != nil {
-			log.V(4).Info("updating vmss vm state", "state", instance.ProvisioningState)
-			s.Scope.SetVMSSVM(converters.SDKToVMSSVM(instance))
-		}
-	}()
-
-	log.V(4).Info("entering delete")
-	future := s.Scope.GetLongRunningOperationState(instanceID, serviceName, infrav1.DeleteFuture)
-	if future != nil {
-		if future.Type != infrav1.DeleteFuture {
-			return azure.WithTransientError(errors.New("attempting to delete, non-delete operation in progress"), 30*time.Second)
-		}
-
-		log.V(4).Info("checking if the instance is done deleting")
-		if _, err := s.Client.GetResultIfDone(ctx, future); err != nil {
-			// fetch instance to update status
-			return errors.Wrap(err, "failed to get result of long running operation")
-		}
-
-		// there was no error in fetching the result, the future has been completed
-		log.V(4).Info("successfully deleted the instance")
-		s.Scope.DeleteLongRunningOperationState(instanceID, serviceName, infrav1.DeleteFuture)
-		return nil
-	}
-
-	// since the future was nil, there is no ongoing activity; start deleting the instance
-	future, err := s.Client.DeleteAsync(ctx, resourceGroup, vmssName, instanceID)
-	if err != nil {
-		if azure.ResourceNotFound(err) {
-			// already deleted
-			return nil
-		}
-		return errors.Wrapf(err, "failed to delete instance %s/%s", vmssName, instanceID)
-	}
-
-	s.Scope.SetLongRunningOperationState(future)
-
-	log.V(4).Info("checking if the instance is done deleting")
-	if _, err := s.Client.GetResultIfDone(ctx, future); err != nil {
-		// fetch instance to update status
-		return errors.Wrap(err, "failed to get result of long running operation")
-	}
-
-	s.Scope.DeleteLongRunningOperationState(instanceID, serviceName, infrav1.DeleteFuture)
-	return nil
-}
-
-// VMSSFlexVMGetter gets the information required to create, update, or delete an Azure resource.
-type VMSSFlexVMGetter struct {
-	Name          string
-	ResourceGroup string
-}
-
-// ResourceName returns the name of the resource.
-func (vm *VMSSFlexVMGetter) ResourceName() string {
-	return vm.Name
-}
-
-// OwnerResourceName returns the name of the resource that owns this Azure subresource.
-func (vm *VMSSFlexVMGetter) OwnerResourceName() string {
-	return ""
-}
-
-// ResourceGroupName returns the name of the resource group the resource is in.
-func (vm *VMSSFlexVMGetter) ResourceGroupName() string {
-	return vm.ResourceGroup
-}
-
-// Parameters takes the existing resource and returns the desired parameters of the resource.
-// If the resource does not exist, or we do not care about existing parameters to update the resource, existing should be `nil`.
-// If no update is needed on the resource, Parameters should return `nil`.
-// NOTE: Not yet implemented, see kubernetes-sigs/cluster-api-provider-azure#2720.
-func (vm *VMSSFlexVMGetter) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
-	return nil, nil
+	}, nil
 }

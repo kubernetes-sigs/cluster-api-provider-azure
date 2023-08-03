@@ -275,20 +275,6 @@ func (mr *MockScaleSetVMScopeMockRecorder) HashKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockScaleSetVMScope)(nil).HashKey))
 }
 
-// InstanceID mocks base method.
-func (m *MockScaleSetVMScope) InstanceID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InstanceID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// InstanceID indicates an expected call of InstanceID.
-func (mr *MockScaleSetVMScopeMockRecorder) InstanceID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstanceID", reflect.TypeOf((*MockScaleSetVMScope)(nil).InstanceID))
-}
-
 // Location mocks base method.
 func (m *MockScaleSetVMScope) Location() string {
 	m.ctrl.T.Helper()
@@ -301,34 +287,6 @@ func (m *MockScaleSetVMScope) Location() string {
 func (mr *MockScaleSetVMScopeMockRecorder) Location() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScaleSetVMScope)(nil).Location))
-}
-
-// OrchestrationMode mocks base method.
-func (m *MockScaleSetVMScope) OrchestrationMode() v1beta1.OrchestrationModeType {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OrchestrationMode")
-	ret0, _ := ret[0].(v1beta1.OrchestrationModeType)
-	return ret0
-}
-
-// OrchestrationMode indicates an expected call of OrchestrationMode.
-func (mr *MockScaleSetVMScopeMockRecorder) OrchestrationMode() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OrchestrationMode", reflect.TypeOf((*MockScaleSetVMScope)(nil).OrchestrationMode))
-}
-
-// ProviderID mocks base method.
-func (m *MockScaleSetVMScope) ProviderID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProviderID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ProviderID indicates an expected call of ProviderID.
-func (mr *MockScaleSetVMScopeMockRecorder) ProviderID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProviderID", reflect.TypeOf((*MockScaleSetVMScope)(nil).ProviderID))
 }
 
 // ResourceGroup mocks base method.
@@ -345,18 +303,18 @@ func (mr *MockScaleSetVMScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockScaleSetVMScope)(nil).ResourceGroup))
 }
 
-// ScaleSetName mocks base method.
-func (m *MockScaleSetVMScope) ScaleSetName() string {
+// ScaleSetVMSpec mocks base method.
+func (m *MockScaleSetVMScope) ScaleSetVMSpec() azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ScaleSetName")
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "ScaleSetVMSpec")
+	ret0, _ := ret[0].(azure.ResourceSpecGetter)
 	return ret0
 }
 
-// ScaleSetName indicates an expected call of ScaleSetName.
-func (mr *MockScaleSetVMScopeMockRecorder) ScaleSetName() *gomock.Call {
+// ScaleSetVMSpec indicates an expected call of ScaleSetVMSpec.
+func (mr *MockScaleSetVMScopeMockRecorder) ScaleSetVMSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetName", reflect.TypeOf((*MockScaleSetVMScope)(nil).ScaleSetName))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetVMSpec", reflect.TypeOf((*MockScaleSetVMScope)(nil).ScaleSetVMSpec))
 }
 
 // SetLongRunningOperationState mocks base method.
@@ -381,6 +339,18 @@ func (m *MockScaleSetVMScope) SetVMSSVM(vmssvm *azure.VMSSVM) {
 func (mr *MockScaleSetVMScopeMockRecorder) SetVMSSVM(vmssvm interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVMSSVM", reflect.TypeOf((*MockScaleSetVMScope)(nil).SetVMSSVM), vmssvm)
+}
+
+// SetVMSSVMState mocks base method.
+func (m *MockScaleSetVMScope) SetVMSSVMState(state v1beta1.ProvisioningState) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetVMSSVMState", state)
+}
+
+// SetVMSSVMState indicates an expected call of SetVMSSVMState.
+func (mr *MockScaleSetVMScopeMockRecorder) SetVMSSVMState(state interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVMSSVMState", reflect.TypeOf((*MockScaleSetVMScope)(nil).SetVMSSVMState), state)
 }
 
 // SubscriptionID mocks base method.
