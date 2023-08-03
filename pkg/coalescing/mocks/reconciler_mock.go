@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 

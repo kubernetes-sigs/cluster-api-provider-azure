@@ -25,7 +25,7 @@ import (
 	reflect "reflect"
 
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockNodeLister is a mock of NodeLister interface.

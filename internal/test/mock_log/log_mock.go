@@ -24,7 +24,7 @@ import (
 	reflect "reflect"
 
 	logr "github.com/go-logr/logr"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockLogSink is a mock of LogSink interface.

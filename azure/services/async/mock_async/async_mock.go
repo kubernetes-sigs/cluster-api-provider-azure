@@ -26,7 +26,7 @@ import (
 
 	resources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	azure "github.com/Azure/go-autorest/autorest/azure"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure0 "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"

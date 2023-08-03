@@ -25,7 +25,7 @@ import (
 	reflect "reflect"
 
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )

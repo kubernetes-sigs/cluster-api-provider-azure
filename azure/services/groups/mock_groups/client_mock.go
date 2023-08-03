@@ -25,7 +25,7 @@ import (
 	reflect "reflect"
 
 	azure "github.com/Azure/go-autorest/autorest/azure"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	azure0 "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 

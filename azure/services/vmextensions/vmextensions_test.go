@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"go.uber.org/mock/gomock"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
