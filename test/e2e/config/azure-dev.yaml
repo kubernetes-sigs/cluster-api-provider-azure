@@ -166,7 +166,6 @@ variables:
   CONFORMANCE_IMAGE: "${CONFORMANCE_IMAGE:-}"
   CONFORMANCE_NODES: "${CONFORMANCE_NODES:-1}"
   IP_FAMILY: "IPv4" # this is used by the CAPI quickstart spec
-  MULTI_TENANCY_IDENTITY_NAME: "multi-tenancy-identity"
   CLUSTER_IDENTITY_NAME: "cluster-identity-sp"
   NODE_DRAIN_TIMEOUT: "60s"
   CI_VERSION: ""
