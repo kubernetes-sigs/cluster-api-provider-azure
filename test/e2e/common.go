@@ -66,7 +66,6 @@ const (
 	AzureVNetCidr                   = "AZURE_PRIVATE_VNET_CIDR"
 	AzureNodeSubnetCidr             = "AZURE_NODE_SUBNET_CIDR"
 	AzureBastionSubnetCidr          = "AZURE_BASTION_SUBNET_CIDR"
-	MultiTenancyIdentityName        = "MULTI_TENANCY_IDENTITY_NAME"
 	ClusterIdentityName             = "CLUSTER_IDENTITY_NAME"
 	ClusterIdentityNamespace        = "CLUSTER_IDENTITY_NAMESPACE"
 	ClusterIdentitySecretName       = "AZURE_CLUSTER_IDENTITY_SECRET_NAME"      //nolint:gosec // Not a secret itself, just its name
