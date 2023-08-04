@@ -18,8 +18,8 @@ package ot
 
 import (
 	crprometheus "github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
@@ -33,7 +33,7 @@ func RegisterMetrics() error {
 		return err
 	}
 	meterProvider := metric.NewMeterProvider(metric.WithReader(exporter))
-	global.SetMeterProvider(meterProvider)
+	otel.SetMeterProvider(meterProvider)
 
 	return nil
 }
