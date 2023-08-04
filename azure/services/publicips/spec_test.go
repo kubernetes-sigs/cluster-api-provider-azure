@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -51,33 +51,33 @@ var (
 	}
 
 	fakePublicIPWithDNS = network.PublicIPAddress{
-		Name:     pointer.String("my-publicip"),
+		Name:     ptr.To("my-publicip"),
 		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Location: pointer.String("centralIndia"),
+		Location: ptr.To("centralIndia"),
 		Tags: map[string]*string{
-			"Name": pointer.String("my-publicip"),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
-			"foo": pointer.String("bar"),
+			"Name": ptr.To("my-publicip"),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+			"foo": ptr.To("bar"),
 		},
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   network.IPVersionIPv4,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 			DNSSettings: &network.PublicIPAddressDNSSettings{
-				DomainNameLabel: pointer.String("fakedns"),
-				Fqdn:            pointer.String("fakedns.mydomain.io"),
+				DomainNameLabel: ptr.To("fakedns"),
+				Fqdn:            ptr.To("fakedns.mydomain.io"),
 			},
 		},
 		Zones: &[]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
 	}
 
 	fakePublicIPWithoutDNS = network.PublicIPAddress{
-		Name:     pointer.String("my-publicip-2"),
+		Name:     ptr.To("my-publicip-2"),
 		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Location: pointer.String("centralIndia"),
+		Location: ptr.To("centralIndia"),
 		Tags: map[string]*string{
-			"Name": pointer.String("my-publicip-2"),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
-			"foo": pointer.String("bar"),
+			"Name": ptr.To("my-publicip-2"),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+			"foo": ptr.To("bar"),
 		},
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   network.IPVersionIPv4,
@@ -87,20 +87,20 @@ var (
 	}
 
 	fakePublicIPIpv6 = network.PublicIPAddress{
-		Name:     pointer.String("my-publicip-ipv6"),
+		Name:     ptr.To("my-publicip-ipv6"),
 		Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-		Location: pointer.String("centralIndia"),
+		Location: ptr.To("centralIndia"),
 		Tags: map[string]*string{
-			"Name": pointer.String("my-publicip-ipv6"),
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"),
-			"foo": pointer.String("bar"),
+			"Name": ptr.To("my-publicip-ipv6"),
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+			"foo": ptr.To("bar"),
 		},
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAddressVersion:   network.IPVersionIPv6,
 			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 			DNSSettings: &network.PublicIPAddressDNSSettings{
-				DomainNameLabel: pointer.String("fakename"),
-				Fqdn:            pointer.String("fakename.mydomain.io"),
+				DomainNameLabel: ptr.To("fakename"),
+				Fqdn:            ptr.To("fakename.mydomain.io"),
 			},
 		},
 		Zones: &[]string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},

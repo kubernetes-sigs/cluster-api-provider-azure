@@ -29,7 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -327,7 +327,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
-							FrontendIPsCount: pointer.Int32(0),
+							FrontendIPsCount: ptr.To[int32](0),
 						},
 						APIServerLB: infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
@@ -371,7 +371,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
-							FrontendIPsCount: pointer.Int32(1),
+							FrontendIPsCount: ptr.To[int32](1),
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "my-frontend-ip",
@@ -438,7 +438,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
-							FrontendIPsCount: pointer.Int32(3),
+							FrontendIPsCount: ptr.To[int32](3),
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "my-frontend-ip-1",
@@ -1499,7 +1499,7 @@ func TestIsVnetManaged(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{},
 				},
 				cache: &ClusterCache{
-					isVnetManaged: pointer.Bool(false),
+					isVnetManaged: ptr.To(false),
 				},
 			},
 			want: false,
@@ -1511,7 +1511,7 @@ func TestIsVnetManaged(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{},
 				},
 				cache: &ClusterCache{
-					isVnetManaged: pointer.Bool(true),
+					isVnetManaged: ptr.To(true),
 				},
 			},
 			want: true,
@@ -1526,8 +1526,8 @@ func TestIsVnetManaged(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("IsVnetManaged() = \n%t, want \n%t", got, tt.want)
 			}
-			if pointer.BoolDeref(tt.clusterScope.cache.isVnetManaged, false) != got {
-				t.Errorf("IsVnetManaged() = \n%t, cache = \n%t", got, pointer.BoolDeref(tt.clusterScope.cache.isVnetManaged, false))
+			if ptr.Deref(tt.clusterScope.cache.isVnetManaged, false) != got {
+				t.Errorf("IsVnetManaged() = \n%t, cache = \n%t", got, ptr.Deref(tt.clusterScope.cache.isVnetManaged, false))
 			}
 		})
 	}
@@ -2553,7 +2553,7 @@ func TestAPIServerPort(t *testing.T) {
 			name:        "Non nil cluster network and non nil apiserverport",
 			clusterName: "my-cluster",
 			clusterNetowrk: &clusterv1.ClusterNetwork{
-				APIServerPort: pointer.Int32(7000),
+				APIServerPort: ptr.To[int32](7000),
 			},
 			expectAPIServerPort: 7000,
 		},
@@ -2741,7 +2741,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type:                 infrav1.Public,
-								IdleTimeoutInMinutes: pointer.Int32(30),
+								IdleTimeoutInMinutes: ptr.To[int32](30),
 								SKU:                  infrav1.SKUStandard,
 							},
 							FrontendIPs: []infrav1.FrontendIP{
@@ -2760,7 +2760,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type:                 infrav1.Public,
-								IdleTimeoutInMinutes: pointer.Int32(15),
+								IdleTimeoutInMinutes: ptr.To[int32](15),
 								SKU:                  infrav1.SKUStandard,
 							},
 							FrontendIPs: []infrav1.FrontendIP{
@@ -2779,7 +2779,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type:                 infrav1.Public,
-								IdleTimeoutInMinutes: pointer.Int32(50),
+								IdleTimeoutInMinutes: ptr.To[int32](50),
 								SKU:                  infrav1.SKUStandard,
 							},
 							FrontendIPs: []infrav1.FrontendIP{
@@ -2817,7 +2817,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					SKU:                  infrav1.SKUStandard,
 					Role:                 infrav1.APIServerRole,
 					BackendPoolName:      "api-server-lb-backend-pool",
-					IdleTimeoutInMinutes: pointer.Int32(30),
+					IdleTimeoutInMinutes: ptr.To[int32](30),
 					AdditionalTags: infrav1.Tags{
 						"foo": "bar",
 					},
@@ -2842,7 +2842,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					SKU:                  infrav1.SKUStandard,
 					Role:                 infrav1.NodeOutboundRole,
 					BackendPoolName:      "node-outbound-backend-pool",
-					IdleTimeoutInMinutes: pointer.Int32(50),
+					IdleTimeoutInMinutes: ptr.To[int32](50),
 					AdditionalTags: infrav1.Tags{
 						"foo": "bar",
 					},
@@ -2866,7 +2866,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					Type:                 infrav1.Public,
 					SKU:                  infrav1.SKUStandard,
 					BackendPoolName:      "cp-outbound-backend-pool",
-					IdleTimeoutInMinutes: pointer.Int32(15),
+					IdleTimeoutInMinutes: ptr.To[int32](15),
 					Role:                 infrav1.ControlPlaneOutboundRole,
 					AdditionalTags: infrav1.Tags{
 						"foo": "bar",
@@ -2912,7 +2912,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type:                 infrav1.Internal,
-								IdleTimeoutInMinutes: pointer.Int32(30),
+								IdleTimeoutInMinutes: ptr.To[int32](30),
 								SKU:                  infrav1.SKUStandard,
 							},
 						},
@@ -2934,7 +2934,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					SKU:                  infrav1.SKUStandard,
 					Role:                 infrav1.APIServerRole,
 					BackendPoolName:      "api-server-lb-backend-pool",
-					IdleTimeoutInMinutes: pointer.Int32(30),
+					IdleTimeoutInMinutes: ptr.To[int32](30),
 					AdditionalTags:       infrav1.Tags{},
 				},
 			},
@@ -3195,14 +3195,14 @@ func TestVNetPeerings(t *testing.T) {
 							ResourceGroup:  "rg2",
 							RemoteVnetName: "vnet2",
 							ForwardPeeringProperties: infrav1.VnetPeeringProperties{
-								AllowForwardedTraffic: pointer.Bool(true),
-								AllowGatewayTransit:   pointer.Bool(false),
-								UseRemoteGateways:     pointer.Bool(true),
+								AllowForwardedTraffic: ptr.To(true),
+								AllowGatewayTransit:   ptr.To(false),
+								UseRemoteGateways:     ptr.To(true),
 							},
 							ReversePeeringProperties: infrav1.VnetPeeringProperties{
-								AllowForwardedTraffic: pointer.Bool(true),
-								AllowGatewayTransit:   pointer.Bool(true),
-								UseRemoteGateways:     pointer.Bool(false),
+								AllowForwardedTraffic: ptr.To(true),
+								AllowGatewayTransit:   ptr.To(true),
+								UseRemoteGateways:     ptr.To(false),
 							},
 						},
 					},
@@ -3216,9 +3216,9 @@ func TestVNetPeerings(t *testing.T) {
 					RemoteResourceGroup:   "rg2",
 					RemoteVnetName:        "vnet2",
 					SubscriptionID:        fakeSubscriptionID,
-					AllowForwardedTraffic: pointer.Bool(true),
-					AllowGatewayTransit:   pointer.Bool(false),
-					UseRemoteGateways:     pointer.Bool(true),
+					AllowForwardedTraffic: ptr.To(true),
+					AllowGatewayTransit:   ptr.To(false),
+					UseRemoteGateways:     ptr.To(true),
 				},
 				&vnetpeerings.VnetPeeringSpec{
 					PeeringName:           "vnet2-To-vnet1",
@@ -3227,9 +3227,9 @@ func TestVNetPeerings(t *testing.T) {
 					RemoteResourceGroup:   "rg1",
 					RemoteVnetName:        "vnet1",
 					SubscriptionID:        fakeSubscriptionID,
-					AllowForwardedTraffic: pointer.Bool(true),
-					AllowGatewayTransit:   pointer.Bool(true),
-					UseRemoteGateways:     pointer.Bool(false),
+					AllowForwardedTraffic: ptr.To(true),
+					AllowGatewayTransit:   ptr.To(true),
+					UseRemoteGateways:     ptr.To(false),
 				},
 			},
 		},
@@ -3245,14 +3245,14 @@ func TestVNetPeerings(t *testing.T) {
 							ResourceGroup:  "rg2",
 							RemoteVnetName: "vnet2",
 							ForwardPeeringProperties: infrav1.VnetPeeringProperties{
-								AllowForwardedTraffic: pointer.Bool(true),
-								AllowGatewayTransit:   pointer.Bool(false),
-								UseRemoteGateways:     pointer.Bool(true),
+								AllowForwardedTraffic: ptr.To(true),
+								AllowGatewayTransit:   ptr.To(false),
+								UseRemoteGateways:     ptr.To(true),
 							},
 							ReversePeeringProperties: infrav1.VnetPeeringProperties{
-								AllowForwardedTraffic: pointer.Bool(true),
-								AllowGatewayTransit:   pointer.Bool(true),
-								UseRemoteGateways:     pointer.Bool(false),
+								AllowForwardedTraffic: ptr.To(true),
+								AllowGatewayTransit:   ptr.To(true),
+								UseRemoteGateways:     ptr.To(false),
 							},
 						},
 					},
@@ -3272,9 +3272,9 @@ func TestVNetPeerings(t *testing.T) {
 					RemoteResourceGroup:   "rg2",
 					RemoteVnetName:        "vnet2",
 					SubscriptionID:        fakeSubscriptionID,
-					AllowForwardedTraffic: pointer.Bool(true),
-					AllowGatewayTransit:   pointer.Bool(false),
-					UseRemoteGateways:     pointer.Bool(true),
+					AllowForwardedTraffic: ptr.To(true),
+					AllowGatewayTransit:   ptr.To(false),
+					UseRemoteGateways:     ptr.To(true),
 				},
 				&vnetpeerings.VnetPeeringSpec{
 					PeeringName:           "vnet2-To-vnet1",
@@ -3283,9 +3283,9 @@ func TestVNetPeerings(t *testing.T) {
 					RemoteResourceGroup:   "rg1",
 					RemoteVnetName:        "vnet1",
 					SubscriptionID:        fakeSubscriptionID,
-					AllowForwardedTraffic: pointer.Bool(true),
-					AllowGatewayTransit:   pointer.Bool(true),
-					UseRemoteGateways:     pointer.Bool(false),
+					AllowForwardedTraffic: ptr.To(true),
+					AllowGatewayTransit:   ptr.To(true),
+					UseRemoteGateways:     ptr.To(false),
 				},
 				&vnetpeerings.VnetPeeringSpec{
 					PeeringName:         "vnet1-To-vnet3",

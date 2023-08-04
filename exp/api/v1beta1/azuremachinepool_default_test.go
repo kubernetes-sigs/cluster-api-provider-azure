@@ -23,7 +23,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -278,7 +278,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 				Spec: AzureMachinePoolSpec{
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName:            "test-subnet",
-						AcceleratedNetworking: pointer.Bool(true),
+						AcceleratedNetworking: ptr.To(true),
 					},
 				},
 			},
@@ -291,7 +291,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 							{
 								SubnetName:            "test-subnet",
 								PrivateIPConfigs:      1,
-								AcceleratedNetworking: pointer.Bool(true),
+								AcceleratedNetworking: ptr.To(true),
 							},
 						},
 					},

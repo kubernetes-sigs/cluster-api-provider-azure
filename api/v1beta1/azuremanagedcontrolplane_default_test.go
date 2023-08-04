@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestAzureManagedControlPlane_SetDefaultSSHPublicKey(t *testing.T) {
@@ -65,23 +65,23 @@ func TestSetDefaultAutoScalerProfile(t *testing.T) {
 	defaultAMP := &AzureManagedControlPlane{
 		Spec: AzureManagedControlPlaneSpec{
 			AutoScalerProfile: &AutoScalerProfile{
-				BalanceSimilarNodeGroups:      (*BalanceSimilarNodeGroups)(pointer.String(string(BalanceSimilarNodeGroupsFalse))),
-				Expander:                      (*Expander)(pointer.String(string(ExpanderRandom))),
-				MaxEmptyBulkDelete:            pointer.String("10"),
-				MaxGracefulTerminationSec:     pointer.String("600"),
-				MaxNodeProvisionTime:          pointer.String("15m"),
-				MaxTotalUnreadyPercentage:     pointer.String("45"),
-				NewPodScaleUpDelay:            pointer.String("0s"),
-				OkTotalUnreadyCount:           pointer.String("3"),
-				ScanInterval:                  pointer.String("10s"),
-				ScaleDownDelayAfterAdd:        pointer.String("10m"),
-				ScaleDownDelayAfterDelete:     pointer.String("10s"),
-				ScaleDownDelayAfterFailure:    pointer.String("3m"),
-				ScaleDownUnneededTime:         pointer.String("10m"),
-				ScaleDownUnreadyTime:          pointer.String("20m"),
-				ScaleDownUtilizationThreshold: pointer.String("0.5"),
-				SkipNodesWithLocalStorage:     (*SkipNodesWithLocalStorage)(pointer.String(string(SkipNodesWithLocalStorageFalse))),
-				SkipNodesWithSystemPods:       (*SkipNodesWithSystemPods)(pointer.String(string(SkipNodesWithSystemPodsTrue))),
+				BalanceSimilarNodeGroups:      (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsFalse))),
+				Expander:                      (*Expander)(ptr.To(string(ExpanderRandom))),
+				MaxEmptyBulkDelete:            ptr.To("10"),
+				MaxGracefulTerminationSec:     ptr.To("600"),
+				MaxNodeProvisionTime:          ptr.To("15m"),
+				MaxTotalUnreadyPercentage:     ptr.To("45"),
+				NewPodScaleUpDelay:            ptr.To("0s"),
+				OkTotalUnreadyCount:           ptr.To("3"),
+				ScanInterval:                  ptr.To("10s"),
+				ScaleDownDelayAfterAdd:        ptr.To("10m"),
+				ScaleDownDelayAfterDelete:     ptr.To("10s"),
+				ScaleDownDelayAfterFailure:    ptr.To("3m"),
+				ScaleDownUnneededTime:         ptr.To("10m"),
+				ScaleDownUnreadyTime:          ptr.To("20m"),
+				ScaleDownUtilizationThreshold: ptr.To("0.5"),
+				SkipNodesWithLocalStorage:     (*SkipNodesWithLocalStorage)(ptr.To(string(SkipNodesWithLocalStorageFalse))),
+				SkipNodesWithSystemPods:       (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsTrue))),
 			},
 		},
 	}
@@ -99,23 +99,23 @@ func TestSetDefaultAutoScalerProfile(t *testing.T) {
 	expectedNotNil := &AzureManagedControlPlane{
 		Spec: AzureManagedControlPlaneSpec{
 			AutoScalerProfile: &AutoScalerProfile{
-				BalanceSimilarNodeGroups:      (*BalanceSimilarNodeGroups)(pointer.String(string(BalanceSimilarNodeGroupsTrue))),
-				Expander:                      (*Expander)(pointer.String(string(ExpanderLeastWaste))),
-				MaxEmptyBulkDelete:            pointer.String("5"),
-				MaxGracefulTerminationSec:     pointer.String("300"),
-				MaxNodeProvisionTime:          pointer.String("10m"),
-				MaxTotalUnreadyPercentage:     pointer.String("30"),
-				NewPodScaleUpDelay:            pointer.String("30s"),
-				OkTotalUnreadyCount:           pointer.String("5"),
-				ScanInterval:                  pointer.String("20s"),
-				ScaleDownDelayAfterAdd:        pointer.String("5m"),
-				ScaleDownDelayAfterDelete:     pointer.String("1m"),
-				ScaleDownDelayAfterFailure:    pointer.String("2m"),
-				ScaleDownUnneededTime:         pointer.String("5m"),
-				ScaleDownUnreadyTime:          pointer.String("10m"),
-				ScaleDownUtilizationThreshold: pointer.String("0.4"),
-				SkipNodesWithLocalStorage:     (*SkipNodesWithLocalStorage)(pointer.String(string(SkipNodesWithLocalStorageTrue))),
-				SkipNodesWithSystemPods:       (*SkipNodesWithSystemPods)(pointer.String(string(SkipNodesWithSystemPodsFalse))),
+				BalanceSimilarNodeGroups:      (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsTrue))),
+				Expander:                      (*Expander)(ptr.To(string(ExpanderLeastWaste))),
+				MaxEmptyBulkDelete:            ptr.To("5"),
+				MaxGracefulTerminationSec:     ptr.To("300"),
+				MaxNodeProvisionTime:          ptr.To("10m"),
+				MaxTotalUnreadyPercentage:     ptr.To("30"),
+				NewPodScaleUpDelay:            ptr.To("30s"),
+				OkTotalUnreadyCount:           ptr.To("5"),
+				ScanInterval:                  ptr.To("20s"),
+				ScaleDownDelayAfterAdd:        ptr.To("5m"),
+				ScaleDownDelayAfterDelete:     ptr.To("1m"),
+				ScaleDownDelayAfterFailure:    ptr.To("2m"),
+				ScaleDownUnneededTime:         ptr.To("5m"),
+				ScaleDownUnreadyTime:          ptr.To("10m"),
+				ScaleDownUtilizationThreshold: ptr.To("0.4"),
+				SkipNodesWithLocalStorage:     (*SkipNodesWithLocalStorage)(ptr.To(string(SkipNodesWithLocalStorageTrue))),
+				SkipNodesWithSystemPods:       (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsFalse))),
 			},
 		},
 	}

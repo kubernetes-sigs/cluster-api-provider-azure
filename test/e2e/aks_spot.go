@@ -28,7 +28,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -53,8 +53,8 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 	Expect(err).NotTo(HaveOccurred())
 
 	scaling := infrav1.ManagedMachinePoolScaling{
-		MaxSize: pointer.Int32(9),
-		MinSize: pointer.Int32(0),
+		MaxSize: ptr.To[int32](9),
+		MinSize: ptr.To[int32](0),
 	}
 	spotMaxPrice := resource.MustParse("123.456789")
 
@@ -67,10 +67,10 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 		Spec: infrav1.AzureManagedMachinePoolSpec{
 			Mode:             "User",
 			SKU:              "Standard_D2s_v3",
-			ScaleSetPriority: pointer.String("Spot"),
+			ScaleSetPriority: ptr.To("Spot"),
 			Scaling:          &scaling,
 			SpotMaxPrice:     &spotMaxPrice,
-			ScaleDownMode:    pointer.String("Deallocate"),
+			ScaleDownMode:    ptr.To("Deallocate"),
 		},
 	}
 	err = mgmtClient.Create(ctx, infraMachinePool)
@@ -83,11 +83,11 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 		},
 		Spec: expv1.MachinePoolSpec{
 			ClusterName: input.Cluster.Name,
-			Replicas:    pointer.Int32(0),
+			Replicas:    ptr.To[int32](0),
 			Template: clusterv1.MachineTemplateSpec{
 				Spec: clusterv1.MachineSpec{
 					Bootstrap: clusterv1.Bootstrap{
-						DataSecretName: pointer.String(""),
+						DataSecretName: ptr.To(""),
 					},
 					ClusterName: input.Cluster.Name,
 					InfrastructureRef: corev1.ObjectReference{
@@ -95,7 +95,7 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 						Kind:       "AzureManagedMachinePool",
 						Name:       infraMachinePool.Name,
 					},
-					Version: pointer.String(input.KubernetesVersion),
+					Version: ptr.To(input.KubernetesVersion),
 				},
 			},
 		},

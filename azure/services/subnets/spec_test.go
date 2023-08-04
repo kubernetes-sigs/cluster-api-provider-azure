@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -43,10 +43,10 @@ var (
 
 	fakeSubnetOneCidrParams = network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-			AddressPrefix:        pointer.String("10.0.0.0/16"),
-			RouteTable:           &network.RouteTable{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
-			NetworkSecurityGroup: &network.SecurityGroup{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
-			NatGateway:           &network.SubResource{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
+			AddressPrefix:        ptr.To("10.0.0.0/16"),
+			RouteTable:           &network.RouteTable{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+			NetworkSecurityGroup: &network.SecurityGroup{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
+			NatGateway:           &network.SubResource{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
 			ServiceEndpoints:     &[]network.ServiceEndpointPropertiesFormat{},
 		},
 	}
@@ -72,9 +72,9 @@ var (
 				"10.1.0.0/16",
 				"10.2.0.0/16",
 			},
-			RouteTable:           &network.RouteTable{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
-			NetworkSecurityGroup: &network.SecurityGroup{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
-			NatGateway:           &network.SubResource{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
+			RouteTable:           &network.RouteTable{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+			NetworkSecurityGroup: &network.SecurityGroup{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
+			NatGateway:           &network.SubResource{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-nat-gateway")},
 			ServiceEndpoints:     &[]network.ServiceEndpointPropertiesFormat{},
 		},
 	}
@@ -93,15 +93,15 @@ var (
 	}
 
 	fakeIpv6SubnetNotManaged = network.Subnet{
-		ID:   pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-ipv6-subnet"),
-		Name: pointer.String("my-ipv6-subnet"),
+		ID:   ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-ipv6-subnet"),
+		Name: ptr.To("my-ipv6-subnet"),
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 			AddressPrefixes: &[]string{
 				"10.0.0.0/16",
 				"2001:1234:5678:9abd::/64",
 			},
-			RouteTable:           &network.RouteTable{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
-			NetworkSecurityGroup: &network.SecurityGroup{ID: pointer.String("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
+			RouteTable:           &network.RouteTable{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+			NetworkSecurityGroup: &network.SecurityGroup{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
 		},
 	}
 )
@@ -221,7 +221,7 @@ func TestSubnetSpec_shouldUpdate(t *testing.T) {
 			},
 			args: args{
 				existingSubnet: network.Subnet{
-					Name: pointer.String("my-subnet"),
+					Name: ptr.To("my-subnet"),
 				},
 			},
 			want: false,
@@ -237,7 +237,7 @@ func TestSubnetSpec_shouldUpdate(t *testing.T) {
 			},
 			args: args{
 				existingSubnet: network.Subnet{
-					Name: pointer.String("my-subnet"),
+					Name: ptr.To("my-subnet"),
 					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 						NatGateway: nil,
 					},
@@ -260,7 +260,7 @@ func TestSubnetSpec_shouldUpdate(t *testing.T) {
 			},
 			args: args{
 				existingSubnet: network.Subnet{
-					Name: pointer.String("my-subnet"),
+					Name: ptr.To("my-subnet"),
 					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 						ServiceEndpoints: nil,
 					},
@@ -279,7 +279,7 @@ func TestSubnetSpec_shouldUpdate(t *testing.T) {
 			},
 			args: args{
 				existingSubnet: network.Subnet{
-					Name: pointer.String("my-subnet"),
+					Name: ptr.To("my-subnet"),
 					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 						AddressPrefixes: &[]string{"10.1.0.0/8"},
 					},

@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -44,9 +44,9 @@ func Test_ImageToPlan(t *testing.T) {
 			},
 			expect: func(g *GomegaWithT, result *compute.Plan) {
 				g.Expect(result).To(Equal(&compute.Plan{
-					Name:      pointer.String("my-sku"),
-					Publisher: pointer.String("my-publisher"),
-					Product:   pointer.String("my-offer"),
+					Name:      ptr.To("my-sku"),
+					Publisher: ptr.To("my-publisher"),
+					Product:   ptr.To("my-offer"),
 				}))
 			},
 		},
@@ -59,16 +59,16 @@ func Test_ImageToPlan(t *testing.T) {
 					Gallery:        "fake-gallery-name",
 					Name:           "fake-image-name",
 					Version:        "v1.0.0",
-					Publisher:      pointer.String("my-publisher"),
-					Offer:          pointer.String("my-offer"),
-					SKU:            pointer.String("my-sku"),
+					Publisher:      ptr.To("my-publisher"),
+					Offer:          ptr.To("my-offer"),
+					SKU:            ptr.To("my-sku"),
 				},
 			},
 			expect: func(g *GomegaWithT, result *compute.Plan) {
 				g.Expect(result).To(Equal(&compute.Plan{
-					Name:      pointer.String("my-sku"),
-					Publisher: pointer.String("my-publisher"),
-					Product:   pointer.String("my-offer"),
+					Name:      ptr.To("my-sku"),
+					Publisher: ptr.To("my-publisher"),
+					Product:   ptr.To("my-offer"),
 				}))
 			},
 		},
@@ -119,16 +119,16 @@ func Test_ImageToPlan(t *testing.T) {
 			},
 			expect: func(g *GomegaWithT, result *compute.Plan) {
 				g.Expect(result).To(Equal(&compute.Plan{
-					Name:      pointer.String("my-sku"),
-					Publisher: pointer.String("my-publisher"),
-					Product:   pointer.String("my-offer"),
+					Name:      ptr.To("my-sku"),
+					Publisher: ptr.To("my-publisher"),
+					Product:   ptr.To("my-offer"),
 				}))
 			},
 		},
 		{
 			name: "Should return nil for an image ID",
 			image: &infrav1.Image{
-				ID: pointer.String("fake/image/id"),
+				ID: ptr.To("fake/image/id"),
 			},
 			expect: func(g *GomegaWithT, result *compute.Plan) {
 				g.Expect(result).To(BeNil())
@@ -157,8 +157,8 @@ func Test_ComputeImageToSDK(t *testing.T) {
 			name: "Should return parsed compute gallery image id",
 			image: &infrav1.Image{
 				ComputeGallery: &infrav1.AzureComputeGalleryImage{
-					ResourceGroup:  pointer.String("my-resourcegroup"),
-					SubscriptionID: pointer.String("my-subscription-id"),
+					ResourceGroup:  ptr.To("my-resourcegroup"),
+					SubscriptionID: ptr.To("my-subscription-id"),
 					Gallery:        "my-gallery",
 					Name:           "my-image",
 					Version:        "my-version",
@@ -167,7 +167,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
 				g.Expect(err).Should(BeNil())
 				g.Expect(result).To(Equal(&compute.ImageReference{
-					ID: pointer.String("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
+					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
 				}))
 			},
 		},
@@ -185,7 +185,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
 				g.Expect(err).Should(BeNil())
 				g.Expect(result).To(Equal(&compute.ImageReference{
-					ID: pointer.String("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
+					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
 				}))
 			},
 		},
@@ -201,7 +201,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
 				g.Expect(err).Should(BeNil())
 				g.Expect(result).To(Equal(&compute.ImageReference{
-					CommunityGalleryImageID: pointer.String("/CommunityGalleries/my-gallery/Images/my-image/Versions/my-version"),
+					CommunityGalleryImageID: ptr.To("/CommunityGalleries/my-gallery/Images/my-image/Versions/my-version"),
 				}))
 			},
 		},

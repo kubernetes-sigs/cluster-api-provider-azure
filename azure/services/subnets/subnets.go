@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -90,7 +90,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if !ok {
 				return errors.Errorf("%T is not a network.Subnet", result)
 			}
-			s.Scope.UpdateSubnetID(subnetSpec.ResourceName(), pointer.StringDeref(subnet.ID, ""))
+			s.Scope.UpdateSubnetID(subnetSpec.ResourceName(), ptr.Deref(subnet.ID, ""))
 			s.Scope.UpdateSubnetCIDRs(subnetSpec.ResourceName(), converters.GetSubnetAddresses(subnet))
 		}
 	}

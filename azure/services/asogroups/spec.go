@@ -22,7 +22,7 @@ import (
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 )
@@ -58,12 +58,12 @@ func (s *GroupSpec) Parameters(ctx context.Context, object genruntime.MetaObject
 			OwnerReferences: []metav1.OwnerReference{s.Owner},
 		},
 		Spec: asoresourcesv1.ResourceGroup_Spec{
-			Location: pointer.String(s.Location),
+			Location: ptr.To(s.Location),
 			Tags: infrav1.Build(infrav1.BuildParams{
 				ClusterName: s.ClusterName,
 				Lifecycle:   infrav1.ResourceLifecycleOwned,
-				Name:        pointer.String(s.Name),
-				Role:        pointer.String(infrav1.CommonRole),
+				Name:        ptr.To(s.Name),
+				Role:        ptr.To(infrav1.CommonRole),
 				Additional:  s.AdditionalTags,
 			}),
 		},

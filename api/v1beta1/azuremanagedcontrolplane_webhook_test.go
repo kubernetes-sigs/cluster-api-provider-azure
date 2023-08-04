@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
@@ -41,7 +41,7 @@ func TestDefaultingWebhook(t *testing.T) {
 			ResourceGroupName: "fooRg",
 			Location:          "fooLocation",
 			Version:           "1.17.5",
-			SSHPublicKey:      pointer.String(""),
+			SSHPublicKey:      ptr.To(""),
 		},
 	}
 	mcpw := &azureManagedControlPlaneWebhook{}
@@ -98,7 +98,7 @@ func TestValidatingWebhook(t *testing.T) {
 			name: "Testing valid DNSServiceIP",
 			amcp: AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.17.8",
 				},
 			},
@@ -108,7 +108,7 @@ func TestValidatingWebhook(t *testing.T) {
 			name: "Testing invalid DNSServiceIP",
 			amcp: AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0.3"),
+					DNSServiceIP: ptr.To("192.168.0.0.3"),
 					Version:      "v1.17.8",
 				},
 			},
@@ -118,7 +118,7 @@ func TestValidatingWebhook(t *testing.T) {
 			name: "Invalid Version",
 			amcp: AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "honk",
 				},
 			},
@@ -128,7 +128,7 @@ func TestValidatingWebhook(t *testing.T) {
 			name: "not following the Kubernetes Version pattern",
 			amcp: AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "1.19.0",
 				},
 			},
@@ -138,7 +138,7 @@ func TestValidatingWebhook(t *testing.T) {
 			name: "Version not set",
 			amcp: AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "",
 				},
 			},
@@ -148,7 +148,7 @@ func TestValidatingWebhook(t *testing.T) {
 			name: "Valid Version",
 			amcp: AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.17.8",
 				},
 			},
@@ -175,9 +175,9 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						ManagedOutboundIPs:     pointer.Int32(10),
-						AllocatedOutboundPorts: pointer.Int32(1000),
-						IdleTimeoutInMinutes:   pointer.Int32(60),
+						ManagedOutboundIPs:     ptr.To[int32](10),
+						AllocatedOutboundPorts: ptr.To[int32](1000),
+						IdleTimeoutInMinutes:   ptr.To[int32](60),
 					},
 				},
 			},
@@ -189,7 +189,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						ManagedOutboundIPs: pointer.Int32(200),
+						ManagedOutboundIPs: ptr.To[int32](200),
 					},
 				},
 			},
@@ -201,7 +201,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						AllocatedOutboundPorts: pointer.Int32(80000),
+						AllocatedOutboundPorts: ptr.To[int32](80000),
 					},
 				},
 			},
@@ -213,7 +213,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						IdleTimeoutInMinutes: pointer.Int32(600),
+						IdleTimeoutInMinutes: ptr.To[int32](600),
 					},
 				},
 			},
@@ -225,7 +225,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						ManagedOutboundIPs: pointer.Int32(1),
+						ManagedOutboundIPs: ptr.To[int32](1),
 						OutboundIPs: []string{
 							"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/foo-bar/providers/Microsoft.Network/publicIPAddresses/my-public-ip",
 						},
@@ -252,23 +252,23 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						BalanceSimilarNodeGroups:      (*BalanceSimilarNodeGroups)(pointer.String(string(BalanceSimilarNodeGroupsFalse))),
-						Expander:                      (*Expander)(pointer.String(string(ExpanderRandom))),
-						MaxEmptyBulkDelete:            pointer.String("10"),
-						MaxGracefulTerminationSec:     pointer.String("600"),
-						MaxNodeProvisionTime:          pointer.String("10m"),
-						MaxTotalUnreadyPercentage:     pointer.String("45"),
-						NewPodScaleUpDelay:            pointer.String("10m"),
-						OkTotalUnreadyCount:           pointer.String("3"),
-						ScanInterval:                  pointer.String("60s"),
-						ScaleDownDelayAfterAdd:        pointer.String("10m"),
-						ScaleDownDelayAfterDelete:     pointer.String("10s"),
-						ScaleDownDelayAfterFailure:    pointer.String("10m"),
-						ScaleDownUnneededTime:         pointer.String("10m"),
-						ScaleDownUnreadyTime:          pointer.String("10m"),
-						ScaleDownUtilizationThreshold: pointer.String("0.5"),
-						SkipNodesWithLocalStorage:     (*SkipNodesWithLocalStorage)(pointer.String(string(SkipNodesWithLocalStorageTrue))),
-						SkipNodesWithSystemPods:       (*SkipNodesWithSystemPods)(pointer.String(string(SkipNodesWithSystemPodsTrue))),
+						BalanceSimilarNodeGroups:      (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsFalse))),
+						Expander:                      (*Expander)(ptr.To(string(ExpanderRandom))),
+						MaxEmptyBulkDelete:            ptr.To("10"),
+						MaxGracefulTerminationSec:     ptr.To("600"),
+						MaxNodeProvisionTime:          ptr.To("10m"),
+						MaxTotalUnreadyPercentage:     ptr.To("45"),
+						NewPodScaleUpDelay:            ptr.To("10m"),
+						OkTotalUnreadyCount:           ptr.To("3"),
+						ScanInterval:                  ptr.To("60s"),
+						ScaleDownDelayAfterAdd:        ptr.To("10m"),
+						ScaleDownDelayAfterDelete:     ptr.To("10s"),
+						ScaleDownDelayAfterFailure:    ptr.To("10m"),
+						ScaleDownUnneededTime:         ptr.To("10m"),
+						ScaleDownUnreadyTime:          ptr.To("10m"),
+						ScaleDownUtilizationThreshold: ptr.To("0.5"),
+						SkipNodesWithLocalStorage:     (*SkipNodesWithLocalStorage)(ptr.To(string(SkipNodesWithLocalStorageTrue))),
+						SkipNodesWithSystemPods:       (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsTrue))),
 					},
 				},
 			},
@@ -280,7 +280,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						Expander: (*Expander)(pointer.String(string(ExpanderRandom))),
+						Expander: (*Expander)(ptr.To(string(ExpanderRandom))),
 					},
 				},
 			},
@@ -292,7 +292,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						Expander: (*Expander)(pointer.String(string(ExpanderLeastWaste))),
+						Expander: (*Expander)(ptr.To(string(ExpanderLeastWaste))),
 					},
 				},
 			},
@@ -304,7 +304,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						Expander: (*Expander)(pointer.String(string(ExpanderMostPods))),
+						Expander: (*Expander)(ptr.To(string(ExpanderMostPods))),
 					},
 				},
 			},
@@ -316,7 +316,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						Expander: (*Expander)(pointer.String(string(ExpanderPriority))),
+						Expander: (*Expander)(ptr.To(string(ExpanderPriority))),
 					},
 				},
 			},
@@ -328,7 +328,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						BalanceSimilarNodeGroups: (*BalanceSimilarNodeGroups)(pointer.String(string(BalanceSimilarNodeGroupsTrue))),
+						BalanceSimilarNodeGroups: (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsTrue))),
 					},
 				},
 			},
@@ -340,7 +340,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						BalanceSimilarNodeGroups: (*BalanceSimilarNodeGroups)(pointer.String(string(BalanceSimilarNodeGroupsFalse))),
+						BalanceSimilarNodeGroups: (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsFalse))),
 					},
 				},
 			},
@@ -352,7 +352,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						MaxEmptyBulkDelete: pointer.String("invalid"),
+						MaxEmptyBulkDelete: ptr.To("invalid"),
 					},
 				},
 			},
@@ -364,7 +364,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						MaxGracefulTerminationSec: pointer.String("invalid"),
+						MaxGracefulTerminationSec: ptr.To("invalid"),
 					},
 				},
 			},
@@ -376,7 +376,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						MaxNodeProvisionTime: pointer.String("invalid"),
+						MaxNodeProvisionTime: ptr.To("invalid"),
 					},
 				},
 			},
@@ -388,7 +388,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						MaxTotalUnreadyPercentage: pointer.String("invalid"),
+						MaxTotalUnreadyPercentage: ptr.To("invalid"),
 					},
 				},
 			},
@@ -400,7 +400,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						NewPodScaleUpDelay: pointer.String("invalid"),
+						NewPodScaleUpDelay: ptr.To("invalid"),
 					},
 				},
 			},
@@ -412,7 +412,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						OkTotalUnreadyCount: pointer.String("invalid"),
+						OkTotalUnreadyCount: ptr.To("invalid"),
 					},
 				},
 			},
@@ -424,7 +424,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						ScanInterval: pointer.String("invalid"),
+						ScanInterval: ptr.To("invalid"),
 					},
 				},
 			},
@@ -436,7 +436,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						ScaleDownDelayAfterAdd: pointer.String("invalid"),
+						ScaleDownDelayAfterAdd: ptr.To("invalid"),
 					},
 				},
 			},
@@ -448,7 +448,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						ScaleDownDelayAfterDelete: pointer.String("invalid"),
+						ScaleDownDelayAfterDelete: ptr.To("invalid"),
 					},
 				},
 			},
@@ -460,7 +460,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						ScaleDownDelayAfterFailure: pointer.String("invalid"),
+						ScaleDownDelayAfterFailure: ptr.To("invalid"),
 					},
 				},
 			},
@@ -472,7 +472,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						ScaleDownUnneededTime: pointer.String("invalid"),
+						ScaleDownUnneededTime: ptr.To("invalid"),
 					},
 				},
 			},
@@ -484,7 +484,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						ScaleDownUnreadyTime: pointer.String("invalid"),
+						ScaleDownUnreadyTime: ptr.To("invalid"),
 					},
 				},
 			},
@@ -496,7 +496,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						ScaleDownUtilizationThreshold: pointer.String("invalid"),
+						ScaleDownUtilizationThreshold: ptr.To("invalid"),
 					},
 				},
 			},
@@ -508,7 +508,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						SkipNodesWithLocalStorage: (*SkipNodesWithLocalStorage)(pointer.String(string(SkipNodesWithLocalStorageTrue))),
+						SkipNodesWithLocalStorage: (*SkipNodesWithLocalStorage)(ptr.To(string(SkipNodesWithLocalStorageTrue))),
 					},
 				},
 			},
@@ -520,7 +520,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						SkipNodesWithLocalStorage: (*SkipNodesWithLocalStorage)(pointer.String(string(SkipNodesWithLocalStorageFalse))),
+						SkipNodesWithLocalStorage: (*SkipNodesWithLocalStorage)(ptr.To(string(SkipNodesWithLocalStorageFalse))),
 					},
 				},
 			},
@@ -532,7 +532,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						SkipNodesWithSystemPods: (*SkipNodesWithSystemPods)(pointer.String(string(SkipNodesWithSystemPodsTrue))),
+						SkipNodesWithSystemPods: (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsTrue))),
 					},
 				},
 			},
@@ -544,7 +544,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.24.1",
 					AutoScalerProfile: &AutoScalerProfile{
-						SkipNodesWithSystemPods: (*SkipNodesWithSystemPods)(pointer.String(string(SkipNodesWithSystemPodsFalse))),
+						SkipNodesWithSystemPods: (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsFalse))),
 					},
 				},
 			},
@@ -663,8 +663,8 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					Name: "microsoft-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.23.5",
 				},
 			},
@@ -678,8 +678,8 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					Name: "a-windows-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.23.5",
 				},
 			},
@@ -693,9 +693,9 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "my-host",
 					},
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
-					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
+					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
 					AADProfile: &AADProfile{
 						Managed: true,
 						AdminGroupObjectIDs: []string{
@@ -713,9 +713,9 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Port: 444,
 					},
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
-					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
+					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
 					AADProfile: &AADProfile{
 						Managed: true,
 						AdminGroupObjectIDs: []string{
@@ -809,14 +809,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane SubscriptionID is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:   pointer.String("192.168.0.0"),
+					DNSServiceIP:   ptr.To("192.168.0.0"),
 					SubscriptionID: "212ec1q8",
 					Version:        "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:   pointer.String("192.168.0.0"),
+					DNSServiceIP:   ptr.To("192.168.0.0"),
 					SubscriptionID: "212ec1q9",
 					Version:        "v1.18.0",
 				},
@@ -827,14 +827,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane ResourceGroupName is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:      pointer.String("192.168.0.0"),
+					DNSServiceIP:      ptr.To("192.168.0.0"),
 					ResourceGroupName: "hello-1",
 					Version:           "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:      pointer.String("192.168.0.0"),
+					DNSServiceIP:      ptr.To("192.168.0.0"),
 					ResourceGroupName: "hello-2",
 					Version:           "v1.18.0",
 				},
@@ -845,14 +845,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane NodeResourceGroupName is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:          pointer.String("192.168.0.0"),
+					DNSServiceIP:          ptr.To("192.168.0.0"),
 					NodeResourceGroupName: "hello-1",
 					Version:               "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:          pointer.String("192.168.0.0"),
+					DNSServiceIP:          ptr.To("192.168.0.0"),
 					NodeResourceGroupName: "hello-2",
 					Version:               "v1.18.0",
 				},
@@ -863,14 +863,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane Location is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Location:     "westeurope",
 					Version:      "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Location:     "eastus",
 					Version:      "v1.18.0",
 				},
@@ -881,15 +881,15 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane SSHPublicKey is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
-					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
+					DNSServiceIP: ptr.To("192.168.0.0"),
+					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
 					Version:      "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
-					SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
+					DNSServiceIP: ptr.To("192.168.0.0"),
+					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
 					Version:      "v1.18.0",
 				},
 			},
@@ -899,13 +899,13 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane DNSServiceIP is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.1"),
+					DNSServiceIP: ptr.To("192.168.0.1"),
 					Version:      "v1.18.0",
 				},
 			},
@@ -915,7 +915,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane DNSServiceIP is immutable, unsetting is not allowed",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
@@ -930,15 +930,15 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane NetworkPlugin is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:  pointer.String("192.168.0.0"),
-					NetworkPlugin: pointer.String("azure"),
+					DNSServiceIP:  ptr.To("192.168.0.0"),
+					NetworkPlugin: ptr.To("azure"),
 					Version:       "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:  pointer.String("192.168.0.0"),
-					NetworkPlugin: pointer.String("kubenet"),
+					DNSServiceIP:  ptr.To("192.168.0.0"),
+					NetworkPlugin: ptr.To("kubenet"),
 					Version:       "v1.18.0",
 				},
 			},
@@ -948,14 +948,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane NetworkPlugin is immutable, unsetting is not allowed",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:  pointer.String("192.168.0.0"),
-					NetworkPlugin: pointer.String("azure"),
+					DNSServiceIP:  ptr.To("192.168.0.0"),
+					NetworkPlugin: ptr.To("azure"),
 					Version:       "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
@@ -965,15 +965,15 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane NetworkPolicy is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:  pointer.String("192.168.0.0"),
-					NetworkPolicy: pointer.String("azure"),
+					DNSServiceIP:  ptr.To("192.168.0.0"),
+					NetworkPolicy: ptr.To("azure"),
 					Version:       "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:  pointer.String("192.168.0.0"),
-					NetworkPolicy: pointer.String("calico"),
+					DNSServiceIP:  ptr.To("192.168.0.0"),
+					NetworkPolicy: ptr.To("calico"),
 					Version:       "v1.18.0",
 				},
 			},
@@ -983,14 +983,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane NetworkPolicy is immutable, unsetting is not allowed",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:  pointer.String("192.168.0.0"),
-					NetworkPolicy: pointer.String("azure"),
+					DNSServiceIP:  ptr.To("192.168.0.0"),
+					NetworkPolicy: ptr.To("azure"),
 					Version:       "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
@@ -1000,15 +1000,15 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane LoadBalancerSKU is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:    pointer.String("192.168.0.0"),
-					LoadBalancerSKU: pointer.String("Standard"),
+					DNSServiceIP:    ptr.To("192.168.0.0"),
+					LoadBalancerSKU: ptr.To("Standard"),
 					Version:         "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:    pointer.String("192.168.0.0"),
-					LoadBalancerSKU: pointer.String("Basic"),
+					DNSServiceIP:    ptr.To("192.168.0.0"),
+					LoadBalancerSKU: ptr.To("Basic"),
 					Version:         "v1.18.0",
 				},
 			},
@@ -1018,14 +1018,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane LoadBalancerSKU is immutable, unsetting is not allowed",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP:    pointer.String("192.168.0.0"),
-					LoadBalancerSKU: pointer.String("Standard"),
+					DNSServiceIP:    ptr.To("192.168.0.0"),
+					LoadBalancerSKU: ptr.To("Standard"),
 					Version:         "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
@@ -1146,16 +1146,16 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane EnablePrivateCluster is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 					APIServerAccessProfile: &APIServerAccessProfile{
-						EnablePrivateCluster: pointer.Bool(true),
+						EnablePrivateCluster: ptr.To(true),
 					},
 				},
 			},
@@ -1165,13 +1165,13 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name: "AzureManagedControlPlane AuthorizedIPRanges is mutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 					APIServerAccessProfile: &APIServerAccessProfile{
 						AuthorizedIPRanges: []string{"192.168.0.1/32"},
@@ -1187,7 +1187,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 						Name:          "test-network",
@@ -1205,7 +1205,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
@@ -1218,7 +1218,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
 			},
@@ -1227,7 +1227,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 						Name:          "test-network",
@@ -1249,7 +1249,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 						Name:          "test-network",
@@ -1267,7 +1267,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: pointer.String("192.168.0.0"),
+					DNSServiceIP: ptr.To("192.168.0.0"),
 					Version:      "v1.18.0",
 					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 						Name:          "test-network",
@@ -1289,7 +1289,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					OutboundType: (*ManagedControlPlaneOutboundType)(pointer.String(string(ManagedControlPlaneOutboundTypeUserDefinedRouting))),
+					OutboundType: (*ManagedControlPlaneOutboundType)(ptr.To(string(ManagedControlPlaneOutboundTypeUserDefinedRouting))),
 				},
 			},
 			amcp: &AzureManagedControlPlane{
@@ -1297,7 +1297,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					OutboundType: (*ManagedControlPlaneOutboundType)(pointer.String(string(ManagedControlPlaneOutboundTypeLoadBalancer))),
+					OutboundType: (*ManagedControlPlaneOutboundType)(ptr.To(string(ManagedControlPlaneOutboundTypeLoadBalancer))),
 				},
 			},
 			wantErr: true,
@@ -1320,7 +1320,7 @@ func createAzureManagedControlPlane(serviceIP, version, sshKey string) *AzureMan
 	return &AzureManagedControlPlane{
 		Spec: AzureManagedControlPlaneSpec{
 			SSHPublicKey: &sshKey,
-			DNSServiceIP: pointer.String(serviceIP),
+			DNSServiceIP: ptr.To(serviceIP),
 			Version:      version,
 		},
 	}
@@ -1329,9 +1329,9 @@ func createAzureManagedControlPlane(serviceIP, version, sshKey string) *AzureMan
 func getKnownValidAzureManagedControlPlane() *AzureManagedControlPlane {
 	return &AzureManagedControlPlane{
 		Spec: AzureManagedControlPlaneSpec{
-			DNSServiceIP: pointer.String("192.168.0.0"),
+			DNSServiceIP: ptr.To("192.168.0.0"),
 			Version:      "v1.18.0",
-			SSHPublicKey: pointer.String(generateSSHPublicKey(true)),
+			SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
 			AADProfile: &AADProfile{
 				Managed: true,
 				AdminGroupObjectIDs: []string{

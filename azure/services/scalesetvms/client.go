@@ -25,7 +25,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -136,7 +136,7 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssN
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.azureClient.DeleteAsync")
 	defer done()
 
-	future, err := ac.scalesetvms.Delete(ctx, resourceGroupName, vmssName, instanceID, pointer.Bool(false))
+	future, err := ac.scalesetvms.Delete(ctx, resourceGroupName, vmssName, instanceID, ptr.To(false))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed deleting vmss named %q", vmssName)
 	}

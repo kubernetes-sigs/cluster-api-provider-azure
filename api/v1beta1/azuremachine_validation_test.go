@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestAzureMachine_ValidateSSHKey(t *testing.T) {
@@ -101,7 +101,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 			name:    "valid ephemeral os disk spec",
 			wantErr: false,
 			osDisk: OSDisk{
-				DiskSizeGB:  pointer.Int32(30),
+				DiskSizeGB:  ptr.To[int32](30),
 				CachingType: "None",
 				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
@@ -116,7 +116,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 			name:    "byoc encryption with ephemeral os disk spec",
 			wantErr: true,
 			osDisk: OSDisk{
-				DiskSizeGB:  pointer.Int32(30),
+				DiskSizeGB:  ptr.To[int32](30),
 				CachingType: "None",
 				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
@@ -152,42 +152,42 @@ func generateNegativeTestCases() []osDiskTestInput {
 	invalidDiskSpecs := []OSDisk{
 		{},
 		{
-			DiskSizeGB: pointer.Int32(0),
+			DiskSizeGB: ptr.To[int32](0),
 			OSType:     "blah",
 		},
 		{
-			DiskSizeGB: pointer.Int32(-10),
+			DiskSizeGB: ptr.To[int32](-10),
 			OSType:     "blah",
 		},
 		{
-			DiskSizeGB: pointer.Int32(2050),
+			DiskSizeGB: ptr.To[int32](2050),
 			OSType:     "blah",
 		},
 		{
-			DiskSizeGB: pointer.Int32(20),
+			DiskSizeGB: ptr.To[int32](20),
 			OSType:     "",
 		},
 		{
-			DiskSizeGB:  pointer.Int32(30),
+			DiskSizeGB:  ptr.To[int32](30),
 			OSType:      "blah",
 			ManagedDisk: &ManagedDiskParameters{},
 		},
 		{
-			DiskSizeGB: pointer.Int32(30),
+			DiskSizeGB: ptr.To[int32](30),
 			OSType:     "blah",
 			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "",
 			},
 		},
 		{
-			DiskSizeGB: pointer.Int32(30),
+			DiskSizeGB: ptr.To[int32](30),
 			OSType:     "blah",
 			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "invalid_type",
 			},
 		},
 		{
-			DiskSizeGB: pointer.Int32(30),
+			DiskSizeGB: ptr.To[int32](30),
 			OSType:     "blah",
 			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "Premium_LRS",
@@ -211,7 +211,7 @@ func generateNegativeTestCases() []osDiskTestInput {
 
 func generateValidOSDisk() OSDisk {
 	return OSDisk{
-		DiskSizeGB: pointer.Int32(30),
+		DiskSizeGB: ptr.To[int32](30),
 		OSType:     LinuxOS,
 		ManagedDisk: &ManagedDiskParameters{
 			StorageAccountType: "Premium_LRS",
@@ -250,13 +250,13 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix:  "my_other_disk",
 					DiskSizeGB:  64,
-					Lun:         pointer.Int32(1),
+					Lun:         ptr.To[int32](1),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -268,13 +268,13 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix:  "disk",
 					DiskSizeGB:  64,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix:  "disk",
 					DiskSizeGB:  64,
-					Lun:         pointer.Int32(1),
+					Lun:         ptr.To[int32](1),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -286,13 +286,13 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix:  "my_other_disk",
 					DiskSizeGB:  64,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -304,7 +304,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  0,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -316,7 +316,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix:  "",
 					DiskSizeGB:  0,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -328,7 +328,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: "invalidCacheType",
 				},
 			},
@@ -340,7 +340,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -355,7 +355,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
@@ -364,7 +364,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					Lun:         pointer.Int32(1),
+					Lun:         ptr.To[int32](1),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -379,7 +379,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "invalid storage account",
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -394,7 +394,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.CachingTypesNone),
 				},
 			},
@@ -409,7 +409,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.CachingTypesReadWrite),
 				},
 			},
@@ -424,7 +424,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.CachingTypesReadOnly),
 				},
 			},
@@ -676,7 +676,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk",
 					DiskSizeGB: 64,
-					Lun:        pointer.Int32(0),
+					Lun:        ptr.To[int32](0),
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
@@ -685,7 +685,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_other_disk",
 					DiskSizeGB: 64,
-					Lun:        pointer.Int32(1),
+					Lun:        ptr.To[int32](1),
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
@@ -696,7 +696,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk",
 					DiskSizeGB: 64,
-					Lun:        pointer.Int32(0),
+					Lun:        ptr.To[int32](0),
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
@@ -705,7 +705,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_other_disk",
 					DiskSizeGB: 64,
-					Lun:        pointer.Int32(1),
+					Lun:        ptr.To[int32](1),
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
@@ -723,7 +723,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -734,7 +734,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -749,7 +749,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					Lun: pointer.Int32(0),
+					Lun: ptr.To[int32](0),
 				},
 			},
 			oldDisks: []DataDisk{
@@ -770,7 +770,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -781,7 +781,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
@@ -790,7 +790,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
-					Lun:         pointer.Int32(2),
+					Lun:         ptr.To[int32](2),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -805,7 +805,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
@@ -814,7 +814,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
-					Lun:         pointer.Int32(2),
+					Lun:         ptr.To[int32](2),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -825,7 +825,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
@@ -858,7 +858,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 		{
 			name:                  "valid config with deprecated network fields",
 			subnetName:            "subnet1",
-			acceleratedNetworking: pointer.Bool(true),
+			acceleratedNetworking: ptr.To(true),
 			networkInterfaces:     nil,
 			wantErr:               false,
 		},
@@ -868,7 +868,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			acceleratedNetworking: nil,
 			networkInterfaces: []NetworkInterface{{
 				SubnetName:            "subnet1",
-				AcceleratedNetworking: pointer.Bool(true),
+				AcceleratedNetworking: ptr.To(true),
 				PrivateIPConfigs:      1,
 			}},
 			wantErr: false,
@@ -880,12 +880,12 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			networkInterfaces: []NetworkInterface{
 				{
 					SubnetName:            "subnet1",
-					AcceleratedNetworking: pointer.Bool(true),
+					AcceleratedNetworking: ptr.To(true),
 					PrivateIPConfigs:      1,
 				},
 				{
 					SubnetName:            "subnet2",
-					AcceleratedNetworking: pointer.Bool(true),
+					AcceleratedNetworking: ptr.To(true),
 					PrivateIPConfigs:      30,
 				},
 			},
@@ -905,10 +905,10 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 		{
 			name:                  "invalid config using both deprecated acceleratedNetworking and networkInterfaces",
 			subnetName:            "",
-			acceleratedNetworking: pointer.Bool(true),
+			acceleratedNetworking: ptr.To(true),
 			networkInterfaces: []NetworkInterface{{
 				SubnetName:            "subnet1",
-				AcceleratedNetworking: pointer.Bool(true),
+				AcceleratedNetworking: ptr.To(true),
 				PrivateIPConfigs:      1,
 			}},
 			wantErr: true,
@@ -919,7 +919,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			acceleratedNetworking: nil,
 			networkInterfaces: []NetworkInterface{{
 				SubnetName:            "subnet1",
-				AcceleratedNetworking: pointer.Bool(true),
+				AcceleratedNetworking: ptr.To(true),
 				PrivateIPConfigs:      0,
 			}},
 			wantErr: true,
@@ -965,7 +965,7 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 				},
 			},
 			securityProfile: &SecurityProfile{
-				EncryptionAtHost: pointer.Bool(true),
+				EncryptionAtHost: ptr.To(true),
 			},
 			wantErr: false,
 		},
@@ -979,8 +979,8 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 			securityProfile: &SecurityProfile{
 				SecurityType: SecurityTypesConfidentialVM,
 				UefiSettings: &UefiSettings{
-					VTpmEnabled:       pointer.Bool(true),
-					SecureBootEnabled: pointer.Bool(false),
+					VTpmEnabled:       ptr.To(true),
+					SecureBootEnabled: ptr.To(false),
 				},
 			},
 			wantErr: false,
@@ -995,8 +995,8 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 			securityProfile: &SecurityProfile{
 				SecurityType: SecurityTypesConfidentialVM,
 				UefiSettings: &UefiSettings{
-					VTpmEnabled:       pointer.Bool(true),
-					SecureBootEnabled: pointer.Bool(true),
+					VTpmEnabled:       ptr.To(true),
+					SecureBootEnabled: ptr.To(true),
 				},
 			},
 			wantErr: false,
@@ -1009,10 +1009,10 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 				},
 			},
 			securityProfile: &SecurityProfile{
-				EncryptionAtHost: pointer.Bool(true),
+				EncryptionAtHost: ptr.To(true),
 				SecurityType:     SecurityTypesConfidentialVM,
 				UefiSettings: &UefiSettings{
-					VTpmEnabled: pointer.Bool(true),
+					VTpmEnabled: ptr.To(true),
 				},
 			},
 			wantErr: false,
@@ -1027,8 +1027,8 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 			securityProfile: &SecurityProfile{
 				SecurityType: SecurityTypesConfidentialVM,
 				UefiSettings: &UefiSettings{
-					SecureBootEnabled: pointer.Bool(true),
-					VTpmEnabled:       pointer.Bool(true),
+					SecureBootEnabled: ptr.To(true),
+					VTpmEnabled:       ptr.To(true),
 				},
 			},
 			wantErr: false,
@@ -1041,7 +1041,7 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 				},
 			},
 			securityProfile: &SecurityProfile{
-				EncryptionAtHost: pointer.Bool(true),
+				EncryptionAtHost: ptr.To(true),
 			},
 			wantErr: true,
 		},
@@ -1055,8 +1055,8 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 			securityProfile: &SecurityProfile{
 				SecurityType: SecurityTypesConfidentialVM,
 				UefiSettings: &UefiSettings{
-					VTpmEnabled:       pointer.Bool(false),
-					SecureBootEnabled: pointer.Bool(false),
+					VTpmEnabled:       ptr.To(false),
+					SecureBootEnabled: ptr.To(false),
 				},
 			},
 			wantErr: true,
@@ -1071,8 +1071,8 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 			securityProfile: &SecurityProfile{
 				SecurityType: SecurityTypesConfidentialVM,
 				UefiSettings: &UefiSettings{
-					VTpmEnabled:       pointer.Bool(true),
-					SecureBootEnabled: pointer.Bool(false),
+					VTpmEnabled:       ptr.To(true),
+					SecureBootEnabled: ptr.To(false),
 				},
 			},
 			wantErr: true,
@@ -1086,8 +1086,8 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 			},
 			securityProfile: &SecurityProfile{
 				UefiSettings: &UefiSettings{
-					VTpmEnabled:       pointer.Bool(true),
-					SecureBootEnabled: pointer.Bool(true),
+					VTpmEnabled:       ptr.To(true),
+					SecureBootEnabled: ptr.To(true),
 				},
 			},
 			wantErr: true,
@@ -1101,8 +1101,8 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 			},
 			securityProfile: &SecurityProfile{
 				UefiSettings: &UefiSettings{
-					VTpmEnabled:       pointer.Bool(true),
-					SecureBootEnabled: pointer.Bool(true),
+					VTpmEnabled:       ptr.To(true),
+					SecureBootEnabled: ptr.To(true),
 				},
 			},
 			wantErr: true,

@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourcehealth/mock_resourcehealth"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -62,7 +62,7 @@ func TestReconcileResourceHealth(t *testing.T) {
 				m.GetByResource(gomockinternal.AContext(), gomock.Any()).Times(1).Return(resourcehealth.AvailabilityStatus{
 					Properties: &resourcehealth.AvailabilityStatusProperties{
 						AvailabilityState: resourcehealth.AvailabilityStateValuesUnavailable,
-						Summary:           pointer.String("summary"),
+						Summary:           ptr.To("summary"),
 					},
 				}, nil)
 			},
@@ -85,7 +85,7 @@ func TestReconcileResourceHealth(t *testing.T) {
 				m.GetByResource(gomockinternal.AContext(), gomock.Any()).Times(1).Return(resourcehealth.AvailabilityStatus{
 					Properties: &resourcehealth.AvailabilityStatusProperties{
 						AvailabilityState: resourcehealth.AvailabilityStateValuesUnavailable,
-						Summary:           pointer.String("summary"),
+						Summary:           ptr.To("summary"),
 					},
 				}, nil)
 				// ignore the above status

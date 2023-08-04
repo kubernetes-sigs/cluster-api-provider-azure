@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
@@ -85,7 +85,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				return errors.Errorf("%T is not a containerservice.AgentPool", result)
 			}
 			// When autoscaling is set, add the annotation to the machine pool and update the replica count.
-			if pointer.BoolDeref(agentPool.EnableAutoScaling, false) {
+			if ptr.Deref(agentPool.EnableAutoScaling, false) {
 				s.scope.SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")
 				s.scope.SetCAPIMachinePoolReplicas(agentPool.Count)
 			} else { // Otherwise, remove the annotation.

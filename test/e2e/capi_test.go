@@ -29,7 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -270,8 +270,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				ClusterctlConfigPath:     clusterctlConfigPath,
 				BootstrapClusterProxy:    bootstrapClusterProxy,
 				ArtifactFolder:           artifactFolder,
-				ControlPlaneMachineCount: pointer.Int64(3),
-				WorkerMachineCount:       pointer.Int64(0),
+				ControlPlaneMachineCount: ptr.To[int64](3),
+				WorkerMachineCount:       ptr.To[int64](0),
 				SkipCleanup:              skipCleanup,
 				SkipConformanceTests:     true,
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
@@ -288,11 +288,11 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				ClusterctlConfigPath:     clusterctlConfigPath,
 				BootstrapClusterProxy:    bootstrapClusterProxy,
 				ArtifactFolder:           artifactFolder,
-				ControlPlaneMachineCount: pointer.Int64(3),
-				WorkerMachineCount:       pointer.Int64(0),
+				ControlPlaneMachineCount: ptr.To[int64](3),
+				WorkerMachineCount:       ptr.To[int64](0),
 				SkipCleanup:              skipCleanup,
 				SkipConformanceTests:     true,
-				Flavor:                   pointer.String("kcp-scale-in"),
+				Flavor:                   ptr.To("kcp-scale-in"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},

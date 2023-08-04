@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -59,11 +59,11 @@ func (s *VMSSExtensionSpec) Parameters(ctx context.Context, existing interface{}
 	}
 
 	return compute.VirtualMachineScaleSetExtension{
-		Name: pointer.String(s.Name),
+		Name: ptr.To(s.Name),
 		VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
-			Publisher:          pointer.String(s.Publisher),
-			Type:               pointer.String(s.Name),
-			TypeHandlerVersion: pointer.String(s.Version),
+			Publisher:          ptr.To(s.Publisher),
+			Type:               ptr.To(s.Name),
+			TypeHandlerVersion: ptr.To(s.Version),
 			Settings:           s.Settings,
 			ProtectedSettings:  s.ProtectedSettings,
 		},

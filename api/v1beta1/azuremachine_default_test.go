@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -142,13 +142,13 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: "ReadWrite",
 				},
 				{
 					NameSuffix:  "testdisk2",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(1),
+					Lun:         ptr.To[int32](1),
 					CachingType: "ReadWrite",
 				},
 			},
@@ -159,13 +159,13 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(5),
+					Lun:         ptr.To[int32](5),
 					CachingType: "ReadWrite",
 				},
 				{
 					NameSuffix:  "testdisk2",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(3),
+					Lun:         ptr.To[int32](3),
 					CachingType: "ReadWrite",
 				},
 			},
@@ -173,13 +173,13 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(5),
+					Lun:         ptr.To[int32](5),
 					CachingType: "ReadWrite",
 				},
 				{
 					NameSuffix:  "testdisk2",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(3),
+					Lun:         ptr.To[int32](3),
 					CachingType: "ReadWrite",
 				},
 			},
@@ -190,7 +190,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: "ReadWrite",
 				},
 				{
@@ -201,7 +201,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 				{
 					NameSuffix:  "testdisk3",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(1),
+					Lun:         ptr.To[int32](1),
 					CachingType: "ReadWrite",
 				},
 				{
@@ -214,25 +214,25 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: "ReadWrite",
 				},
 				{
 					NameSuffix:  "testdisk2",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(2),
+					Lun:         ptr.To[int32](2),
 					CachingType: "ReadWrite",
 				},
 				{
 					NameSuffix:  "testdisk3",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(1),
+					Lun:         ptr.To[int32](1),
 					CachingType: "ReadWrite",
 				},
 				{
 					NameSuffix:  "testdisk4",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(3),
+					Lun:         ptr.To[int32](3),
 					CachingType: "ReadWrite",
 				},
 			},
@@ -243,12 +243,12 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 				{
 					NameSuffix: "testdisk1",
 					DiskSizeGB: 30,
-					Lun:        pointer.Int32(0),
+					Lun:        ptr.To[int32](0),
 				},
 				{
 					NameSuffix: "testdisk2",
 					DiskSizeGB: 30,
-					Lun:        pointer.Int32(2),
+					Lun:        ptr.To[int32](2),
 				},
 				{
 					NameSuffix: "testdisk3",
@@ -256,26 +256,26 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
-					Lun: pointer.Int32(3),
+					Lun: ptr.To[int32](3),
 				},
 			},
 			output: []DataDisk{
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(0),
+					Lun:         ptr.To[int32](0),
 					CachingType: "ReadWrite",
 				},
 				{
 					NameSuffix:  "testdisk2",
 					DiskSizeGB:  30,
-					Lun:         pointer.Int32(2),
+					Lun:         ptr.To[int32](2),
 					CachingType: "ReadWrite",
 				},
 				{
 					NameSuffix: "testdisk3",
 					DiskSizeGB: 30,
-					Lun:        pointer.Int32(3),
+					Lun:        ptr.To[int32](3),
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
@@ -353,7 +353,7 @@ func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 			machine: &AzureMachine{
 				Spec: AzureMachineSpec{
 					SubnetName:            "test-subnet",
-					AcceleratedNetworking: pointer.Bool(true),
+					AcceleratedNetworking: ptr.To(true),
 				},
 			},
 			want: &AzureMachine{
@@ -364,7 +364,7 @@ func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 						{
 							SubnetName:            "test-subnet",
 							PrivateIPConfigs:      1,
-							AcceleratedNetworking: pointer.Bool(true),
+							AcceleratedNetworking: ptr.To(true),
 						},
 					},
 				},

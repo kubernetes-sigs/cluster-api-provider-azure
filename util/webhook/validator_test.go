@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestValidateImmutableBoolPtr(t *testing.T) {
@@ -40,25 +40,25 @@ func TestValidateImmutableBoolPtr(t *testing.T) {
 		},
 		{
 			name:   "no change",
-			input1: pointer.Bool(true),
-			input2: pointer.Bool(true),
+			input1: ptr.To(true),
+			input2: ptr.To(true),
 		},
 		{
 			name:           "can't unset",
-			input1:         pointer.Bool(true),
+			input1:         ptr.To(true),
 			input2:         nil,
 			expectedOutput: field.Invalid(testPath, nil, unsetMessage),
 		},
 		{
 			name:           "can't set from empty",
 			input1:         nil,
-			input2:         pointer.Bool(true),
+			input2:         ptr.To(true),
 			expectedOutput: field.Invalid(testPath, nil, setMessage),
 		},
 		{
 			name:           "can't change",
-			input1:         pointer.Bool(true),
-			input2:         pointer.Bool(false),
+			input1:         ptr.To(true),
+			input2:         ptr.To(false),
 			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
 		},
 	}
@@ -148,25 +148,25 @@ func TestValidateImmutableStringPtr(t *testing.T) {
 		},
 		{
 			name:   "no change",
-			input1: pointer.String("foo"),
-			input2: pointer.String("foo"),
+			input1: ptr.To("foo"),
+			input2: ptr.To("foo"),
 		},
 		{
 			name:           "can't unset",
-			input1:         pointer.String("foo"),
+			input1:         ptr.To("foo"),
 			input2:         nil,
 			expectedOutput: field.Invalid(testPath, nil, unsetMessage),
 		},
 		{
 			name:           "can't set from empty",
 			input1:         nil,
-			input2:         pointer.String("foo"),
+			input2:         ptr.To("foo"),
 			expectedOutput: field.Invalid(testPath, nil, setMessage),
 		},
 		{
 			name:           "can't change",
-			input1:         pointer.String("foo"),
-			input2:         pointer.String("bar"),
+			input1:         ptr.To("foo"),
+			input2:         ptr.To("bar"),
 			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
 		},
 	}
@@ -316,24 +316,24 @@ func TestValidateZeroTransitionPtr(t *testing.T) {
 		},
 		{
 			name:   "no change",
-			input1: pointer.Bool(true),
-			input2: pointer.Bool(true),
+			input1: ptr.To(true),
+			input2: ptr.To(true),
 		},
 		{
 			name:   "can unset",
-			input1: pointer.Bool(true),
+			input1: ptr.To(true),
 			input2: nil,
 		},
 		{
 			name:           "can't set from empty",
 			input1:         nil,
-			input2:         pointer.Bool(true),
+			input2:         ptr.To(true),
 			expectedOutput: field.Invalid(testPath, nil, setMessage),
 		},
 		{
 			name:           "can't change",
-			input1:         pointer.Bool(true),
-			input2:         pointer.Bool(false),
+			input1:         ptr.To(true),
+			input2:         ptr.To(false),
 			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
 		},
 	}
@@ -422,24 +422,24 @@ func TestValidateZeroTransitionStringPtr(t *testing.T) {
 		},
 		{
 			name:   "no change",
-			input1: pointer.String("foo"),
-			input2: pointer.String("foo"),
+			input1: ptr.To("foo"),
+			input2: ptr.To("foo"),
 		},
 		{
 			name:   "can unset",
-			input1: pointer.String("foo"),
+			input1: ptr.To("foo"),
 			input2: nil,
 		},
 		{
 			name:           "can't set from empty",
 			input1:         nil,
-			input2:         pointer.String("foo"),
+			input2:         ptr.To("foo"),
 			expectedOutput: field.Invalid(testPath, nil, setMessage),
 		},
 		{
 			name:           "can't change",
-			input1:         pointer.String("foo"),
-			input2:         pointer.String("bar"),
+			input1:         ptr.To("foo"),
+			input2:         ptr.To("bar"),
 			expectedOutput: field.Invalid(testPath, nil, immutableMessage),
 		},
 	}

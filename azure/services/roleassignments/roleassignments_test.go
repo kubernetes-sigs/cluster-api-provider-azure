@@ -26,7 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments/mock_roleassignments"
@@ -45,7 +45,7 @@ var (
 		MachineName:   "test-vm",
 		ResourceGroup: "my-rg",
 		ResourceType:  azure.VirtualMachine,
-		PrincipalID:   pointer.String("fake-principal-id"),
+		PrincipalID:   ptr.To("fake-principal-id"),
 	}
 	fakeRoleAssignment2 = RoleAssignmentSpec{
 		MachineName:   "test-vmss",

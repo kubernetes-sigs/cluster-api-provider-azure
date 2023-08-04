@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -66,7 +66,7 @@ func (s *VnetPeeringSpec) Parameters(ctx context.Context, existing interface{}) 
 	vnetID := azure.VNetID(s.SubscriptionID, s.RemoteResourceGroup, s.RemoteVnetName)
 	peeringProperties := network.VirtualNetworkPeeringPropertiesFormat{
 		RemoteVirtualNetwork: &network.SubResource{
-			ID: pointer.String(vnetID),
+			ID: ptr.To(vnetID),
 		},
 		AllowForwardedTraffic:     s.AllowForwardedTraffic,
 		AllowGatewayTransit:       s.AllowGatewayTransit,
@@ -74,7 +74,7 @@ func (s *VnetPeeringSpec) Parameters(ctx context.Context, existing interface{}) 
 		UseRemoteGateways:         s.UseRemoteGateways,
 	}
 	return network.VirtualNetworkPeering{
-		Name:                                  pointer.String(s.PeeringName),
+		Name:                                  ptr.To(s.PeeringName),
 		VirtualNetworkPeeringPropertiesFormat: &peeringProperties,
 	}, nil
 }

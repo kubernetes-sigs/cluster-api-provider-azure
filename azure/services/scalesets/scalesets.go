@@ -25,7 +25,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -303,7 +303,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 		// surge capacity with the intention of lowering during instance reconciliation
 		surge := spec.Capacity + int64(maxSurge)
 		log.V(4).Info("surging...", "surge", surge, "hasModelChanges", hasModelChanges, "updated", updated)
-		patch.Sku.Capacity = pointer.Int64(surge)
+		patch.Sku.Capacity = ptr.To[int64](surge)
 	}
 
 	// If the VMSS is managed by an external autoscaler, we should patch the VMSS if customData has changed.
@@ -482,17 +482,17 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 	orchestrationMode := converters.GetOrchestrationMode(s.Scope.ScaleSetSpec().OrchestrationMode)
 	vmss := compute.VirtualMachineScaleSet{
-		Location: pointer.String(s.Scope.Location()),
+		Location: ptr.To(s.Scope.Location()),
 		Sku: &compute.Sku{
-			Name:     pointer.String(vmssSpec.Size),
-			Tier:     pointer.String("Standard"),
-			Capacity: pointer.Int64(vmssSpec.Capacity),
+			Name:     ptr.To(vmssSpec.Size),
+			Tier:     ptr.To("Standard"),
+			Capacity: ptr.To[int64](vmssSpec.Capacity),
 		},
 		Zones: &vmssSpec.FailureDomains,
 		Plan:  s.generateImagePlan(ctx),
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 			OrchestrationMode:    orchestrationMode,
-			SinglePlacementGroup: pointer.Bool(false),
+			SinglePlacementGroup: ptr.To(false),
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile:          osProfile,
 				StorageProfile:     storageProfile,
@@ -514,14 +514,14 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 	// Set properties specific to VMSS orchestration mode
 	switch orchestrationMode {
 	case compute.OrchestrationModeUniform:
-		vmss.VirtualMachineScaleSetProperties.Overprovision = pointer.Bool(false)
+		vmss.VirtualMachineScaleSetProperties.Overprovision = ptr.To(false)
 		vmss.VirtualMachineScaleSetProperties.UpgradePolicy = &compute.UpgradePolicy{Mode: compute.UpgradeModeManual}
 	case compute.OrchestrationModeFlexible:
 		vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkAPIVersion =
 			compute.NetworkAPIVersionTwoZeroTwoZeroHyphenMinusOneOneHyphenMinusZeroOne
-		vmss.VirtualMachineScaleSetProperties.PlatformFaultDomainCount = pointer.Int32(1)
+		vmss.VirtualMachineScaleSetProperties.PlatformFaultDomainCount = ptr.To[int32](1)
 		if len(vmssSpec.FailureDomains) > 1 {
-			vmss.VirtualMachineScaleSetProperties.PlatformFaultDomainCount = pointer.Int32(int32(len(vmssSpec.FailureDomains)))
+			vmss.VirtualMachineScaleSetProperties.PlatformFaultDomainCount = ptr.To[int32](int32(len(vmssSpec.FailureDomains)))
 		}
 	}
 
@@ -546,7 +546,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 	for _, dataDisk := range vmssSpec.DataDisks {
 		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
 			vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{
-				UltraSSDEnabled: pointer.Bool(true),
+				UltraSSDEnabled: ptr.To(true),
 			}
 		}
 	}
@@ -562,8 +562,8 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 	if vmssSpec.TerminateNotificationTimeout != nil {
 		vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.ScheduledEventsProfile = &compute.ScheduledEventsProfile{
 			TerminateNotificationProfile: &compute.TerminateNotificationProfile{
-				NotBeforeTimeout: pointer.String(fmt.Sprintf("PT%dM", *vmssSpec.TerminateNotificationTimeout)),
-				Enable:           pointer.Bool(true),
+				NotBeforeTimeout: ptr.To(fmt.Sprintf("PT%dM", *vmssSpec.TerminateNotificationTimeout)),
+				Enable:           ptr.To(true),
 			},
 		}
 	}
@@ -571,8 +571,8 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 	tags := infrav1.Build(infrav1.BuildParams{
 		ClusterName: s.Scope.ClusterName(),
 		Lifecycle:   infrav1.ResourceLifecycleOwned,
-		Name:        pointer.String(vmssSpec.Name),
-		Role:        pointer.String(infrav1.Node),
+		Name:        ptr.To(vmssSpec.Name),
+		Role:        ptr.To(infrav1.Node),
 		Additional:  s.Scope.AdditionalTags(),
 	})
 
@@ -586,7 +586,7 @@ func (s *Service) getVirtualMachineScaleSetNetworkConfiguration(vmssSpec azure.S
 		if vmssSpec.PublicLBAddressPoolName != "" {
 			backendAddressPools = append(backendAddressPools,
 				compute.SubResource{
-					ID: pointer.String(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), vmssSpec.PublicLBName, vmssSpec.PublicLBAddressPoolName)),
+					ID: ptr.To(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), vmssSpec.PublicLBName, vmssSpec.PublicLBAddressPoolName)),
 				})
 		}
 	}
@@ -594,8 +594,8 @@ func (s *Service) getVirtualMachineScaleSetNetworkConfiguration(vmssSpec azure.S
 	for i, n := range vmssSpec.NetworkInterfaces {
 		nicConfig := compute.VirtualMachineScaleSetNetworkConfiguration{}
 		nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties = &compute.VirtualMachineScaleSetNetworkConfigurationProperties{}
-		nicConfig.Name = pointer.String(vmssSpec.Name + "-nic-" + strconv.Itoa(i))
-		nicConfig.EnableIPForwarding = pointer.Bool(true)
+		nicConfig.Name = ptr.To(vmssSpec.Name + "-nic-" + strconv.Itoa(i))
+		nicConfig.EnableIPForwarding = ptr.To(true)
 		if n.AcceleratedNetworking != nil {
 			nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = n.AcceleratedNetworking
 		} else {
@@ -608,29 +608,29 @@ func (s *Service) getVirtualMachineScaleSetNetworkConfiguration(vmssSpec azure.S
 		ipconfigs := []compute.VirtualMachineScaleSetIPConfiguration{}
 		for j := 0; j < n.PrivateIPConfigs; j++ {
 			ipconfig := compute.VirtualMachineScaleSetIPConfiguration{
-				Name: pointer.String(fmt.Sprintf("ipConfig" + strconv.Itoa(j))),
+				Name: ptr.To(fmt.Sprintf("ipConfig" + strconv.Itoa(j))),
 				VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 					PrivateIPAddressVersion: compute.IPVersionIPv4,
 					Subnet: &compute.APIEntityReference{
-						ID: pointer.String(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
+						ID: ptr.To(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
 					},
 				},
 			}
 
 			if j == 0 {
 				// Always use the first IPConfig as the Primary
-				ipconfig.Primary = pointer.Bool(true)
+				ipconfig.Primary = ptr.To(true)
 			}
 			ipconfigs = append(ipconfigs, ipconfig)
 		}
 		if vmssSpec.IPv6Enabled {
 			ipv6Config := compute.VirtualMachineScaleSetIPConfiguration{
-				Name: pointer.String("ipConfigv6"),
+				Name: ptr.To("ipConfigv6"),
 				VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 					PrivateIPAddressVersion: compute.IPVersionIPv6,
-					Primary:                 pointer.Bool(false),
+					Primary:                 ptr.To(false),
 					Subnet: &compute.APIEntityReference{
-						ID: pointer.String(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
+						ID: ptr.To(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, n.SubnetName)),
 					},
 				},
 			}
@@ -638,7 +638,7 @@ func (s *Service) getVirtualMachineScaleSetNetworkConfiguration(vmssSpec azure.S
 		}
 		if i == 0 {
 			ipconfigs[0].LoadBalancerBackendAddressPools = &backendAddressPools
-			nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.Primary = pointer.Bool(true)
+			nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.Primary = ptr.To(true)
 		}
 		nicConfig.VirtualMachineScaleSetNetworkConfigurationProperties.IPConfigurations = &ipconfigs
 		nicConfigs = append(nicConfigs, nicConfig)
@@ -730,7 +730,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmssSpec azure.Sca
 			storageProfile.OsDisk.ManagedDisk.StorageAccountType = compute.StorageAccountTypes(vmssSpec.OSDisk.ManagedDisk.StorageAccountType)
 		}
 		if vmssSpec.OSDisk.ManagedDisk.DiskEncryptionSet != nil {
-			storageProfile.OsDisk.ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: pointer.String(vmssSpec.OSDisk.ManagedDisk.DiskEncryptionSet.ID)}
+			storageProfile.OsDisk.ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: ptr.To(vmssSpec.OSDisk.ManagedDisk.DiskEncryptionSet.ID)}
 		}
 	}
 
@@ -742,9 +742,9 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmssSpec azure.Sca
 	for i, disk := range vmssSpec.DataDisks {
 		dataDisks[i] = compute.VirtualMachineScaleSetDataDisk{
 			CreateOption: compute.DiskCreateOptionTypesEmpty,
-			DiskSizeGB:   pointer.Int32(disk.DiskSizeGB),
+			DiskSizeGB:   ptr.To[int32](disk.DiskSizeGB),
 			Lun:          disk.Lun,
-			Name:         pointer.String(azure.GenerateDataDiskName(vmssSpec.Name, disk.NameSuffix)),
+			Name:         ptr.To(azure.GenerateDataDiskName(vmssSpec.Name, disk.NameSuffix)),
 		}
 
 		if disk.ManagedDisk != nil {
@@ -753,7 +753,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmssSpec azure.Sca
 			}
 
 			if disk.ManagedDisk.DiskEncryptionSet != nil {
-				dataDisks[i].ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: pointer.String(disk.ManagedDisk.DiskEncryptionSet.ID)}
+				dataDisks[i].ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: ptr.To(disk.ManagedDisk.DiskEncryptionSet.ID)}
 			}
 		}
 	}
@@ -787,9 +787,9 @@ func (s *Service) generateOSProfile(ctx context.Context, vmssSpec azure.ScaleSet
 	}
 
 	osProfile := &compute.VirtualMachineScaleSetOSProfile{
-		ComputerNamePrefix: pointer.String(vmssSpec.Name),
-		AdminUsername:      pointer.String(azure.DefaultUserName),
-		CustomData:         pointer.String(bootstrapData),
+		ComputerNamePrefix: ptr.To(vmssSpec.Name),
+		AdminUsername:      ptr.To(azure.DefaultUserName),
+		CustomData:         ptr.To(bootstrapData),
 	}
 
 	switch vmssSpec.OSDisk.OSType {
@@ -801,18 +801,18 @@ func (s *Service) generateOSProfile(ctx context.Context, vmssSpec azure.ScaleSet
 		// but the password on the VM will NOT be the same as created here.
 		// Access is provided via SSH public key that is set during deployment
 		// Azure also provides a way to reset user passwords in the case of need.
-		osProfile.AdminPassword = pointer.String(generators.SudoRandomPassword(123))
+		osProfile.AdminPassword = ptr.To(generators.SudoRandomPassword(123))
 		osProfile.WindowsConfiguration = &compute.WindowsConfiguration{
-			EnableAutomaticUpdates: pointer.Bool(false),
+			EnableAutomaticUpdates: ptr.To(false),
 		}
 	default:
 		osProfile.LinuxConfiguration = &compute.LinuxConfiguration{
-			DisablePasswordAuthentication: pointer.Bool(true),
+			DisablePasswordAuthentication: ptr.To(true),
 			SSH: &compute.SSHConfiguration{
 				PublicKeys: &[]compute.SSHPublicKey{
 					{
-						Path:    pointer.String(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-						KeyData: pointer.String(string(sshKey)),
+						Path:    ptr.To(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+						KeyData: ptr.To(string(sshKey)),
 					},
 				},
 			},
@@ -849,9 +849,9 @@ func (s *Service) generateImagePlan(ctx context.Context) *compute.Plan {
 	}
 
 	return &compute.Plan{
-		Publisher: pointer.String(image.Marketplace.Publisher),
-		Name:      pointer.String(image.Marketplace.SKU),
-		Product:   pointer.String(image.Marketplace.Offer),
+		Publisher: ptr.To(image.Marketplace.Publisher),
+		Name:      ptr.To(image.Marketplace.SKU),
+		Product:   ptr.To(image.Marketplace.Offer),
 	}
 }
 
@@ -881,7 +881,7 @@ func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*com
 	}
 
 	return &compute.SecurityProfile{
-		EncryptionAtHost: pointer.Bool(*vmssSpec.SecurityProfile.EncryptionAtHost),
+		EncryptionAtHost: ptr.To(*vmssSpec.SecurityProfile.EncryptionAtHost),
 	}, nil
 }
 

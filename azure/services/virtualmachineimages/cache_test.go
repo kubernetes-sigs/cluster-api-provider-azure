@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages/mock_virtualmachineimages"
 )
 
@@ -41,7 +41,7 @@ func TestCacheGet(t *testing.T) {
 			location: "test", publisher: "foo", offer: "bar", sku: "baz",
 			have: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("foo")},
+					{Name: ptr.To("foo")},
 				},
 			},
 			expectedError: nil,

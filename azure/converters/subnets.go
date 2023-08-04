@@ -18,7 +18,7 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -26,7 +26,7 @@ import (
 func GetSubnetAddresses(subnet network.Subnet) []string {
 	var addresses []string
 	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefix != nil {
-		addresses = []string{pointer.StringDeref(subnet.SubnetPropertiesFormat.AddressPrefix, "")}
+		addresses = []string{ptr.Deref(subnet.SubnetPropertiesFormat.AddressPrefix, "")}
 	} else if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
 		addresses = azure.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
 	}

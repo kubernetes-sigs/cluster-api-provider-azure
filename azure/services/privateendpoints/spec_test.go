@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -80,30 +80,30 @@ func TestParameters(t *testing.T) {
 			},
 			// See https://learn.microsoft.com/en-us/rest/api/virtualnetwork/private-endpoints/get?tabs=Go for more options
 			existing: network.PrivateEndpoint{
-				Name: pointer.String("test-private-endpoint1"),
+				Name: ptr.To("test-private-endpoint1"),
 				PrivateEndpointProperties: &network.PrivateEndpointProperties{
 					Subnet: &network.Subnet{
-						ID: pointer.String("test-subnet"),
+						ID: ptr.To("test-subnet"),
 						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 							PrivateEndpointNetworkPolicies:    network.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled,
 							PrivateLinkServiceNetworkPolicies: network.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled,
 						},
 					},
 					ApplicationSecurityGroups: &[]network.ApplicationSecurityGroup{{
-						ID: pointer.String("asg1"),
+						ID: ptr.To("asg1"),
 					}},
 					PrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{{
-						Name: pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
+						Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
 						PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
+							PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
 							GroupIds:             nil,
-							RequestMessage:       pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
+							RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
 						},
 					}},
 					ManualPrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{},
 					ProvisioningState:                   "Succeeded",
 				},
-				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"), "Name": pointer.String("test-private-endpoint1")},
+				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint1")},
 			},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
@@ -127,30 +127,30 @@ func TestParameters(t *testing.T) {
 			},
 			// See https://learn.microsoft.com/en-us/rest/api/virtualnetwork/private-endpoints/get?tabs=Go for more options
 			existing: network.PrivateEndpoint{
-				Name: pointer.String("test-private-endpoint-manual"),
+				Name: ptr.To("test-private-endpoint-manual"),
 				PrivateEndpointProperties: &network.PrivateEndpointProperties{
 					Subnet: &network.Subnet{
-						ID: pointer.String("test-subnet"),
+						ID: ptr.To("test-subnet"),
 						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 							PrivateEndpointNetworkPolicies:    network.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled,
 							PrivateLinkServiceNetworkPolicies: network.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled,
 						},
 					},
 					ApplicationSecurityGroups: &[]network.ApplicationSecurityGroup{{
-						ID: pointer.String("asg1"),
+						ID: ptr.To("asg1"),
 					}},
 					ManualPrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{{
-						Name: pointer.String(privateEndpoint1Manual.PrivateLinkServiceConnections[0].Name),
+						Name: ptr.To(privateEndpoint1Manual.PrivateLinkServiceConnections[0].Name),
 						PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: pointer.String(privateEndpoint1Manual.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
+							PrivateLinkServiceID: ptr.To(privateEndpoint1Manual.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
 							GroupIds:             &[]string{"aa", "bb"},
-							RequestMessage:       pointer.String(privateEndpoint1Manual.PrivateLinkServiceConnections[0].RequestMessage),
+							RequestMessage:       ptr.To(privateEndpoint1Manual.PrivateLinkServiceConnections[0].RequestMessage),
 						},
 					}},
 					PrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{},
 					ProvisioningState:             "Succeeded",
 				},
-				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"), "Name": pointer.String("test-private-endpoint-manual")},
+				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint-manual")},
 			},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
@@ -175,25 +175,25 @@ func TestParameters(t *testing.T) {
 				CustomNetworkInterfaceName: "test-if-name",
 			},
 			existing: network.PrivateEndpoint{
-				Name:     pointer.String("test-private-endpoint2"),
-				Location: pointer.String("test-location"),
+				Name:     ptr.To("test-private-endpoint2"),
+				Location: ptr.To("test-location"),
 				PrivateEndpointProperties: &network.PrivateEndpointProperties{
 					Subnet: &network.Subnet{
-						ID: pointer.String("test-subnet"),
+						ID: ptr.To("test-subnet"),
 						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 							PrivateEndpointNetworkPolicies:    network.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled,
 							PrivateLinkServiceNetworkPolicies: network.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled,
 						},
 					},
 					ApplicationSecurityGroups: &[]network.ApplicationSecurityGroup{{
-						ID: pointer.String("asg1"),
+						ID: ptr.To("asg1"),
 					}},
 					PrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{{
-						Name: pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
+						Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
 						PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
+							PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
 							GroupIds:             &[]string{"aa", "bb"},
-							RequestMessage:       pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
+							RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
 						},
 					}},
 					ManualPrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{},
@@ -201,54 +201,54 @@ func TestParameters(t *testing.T) {
 					IPConfigurations: &[]network.PrivateEndpointIPConfiguration{
 						{
 							PrivateEndpointIPConfigurationProperties: &network.PrivateEndpointIPConfigurationProperties{
-								PrivateIPAddress: pointer.String("10.0.0.1"),
+								PrivateIPAddress: ptr.To("10.0.0.1"),
 							},
 						},
 					},
-					CustomNetworkInterfaceName: pointer.String("test-if-name"),
+					CustomNetworkInterfaceName: ptr.To("test-if-name"),
 				},
-				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"), "Name": pointer.String("test-private-endpoint2")},
+				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint2")},
 			},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.PrivateEndpoint{}))
 				g.Expect(result).To(Equal(network.PrivateEndpoint{
-					Name:     pointer.String("test-private-endpoint2"),
-					Location: pointer.String("test-location"),
+					Name:     ptr.To("test-private-endpoint2"),
+					Location: ptr.To("test-location"),
 					PrivateEndpointProperties: &network.PrivateEndpointProperties{
 						Subnet: &network.Subnet{
-							ID: pointer.String("test-subnet"),
+							ID: ptr.To("test-subnet"),
 							SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 								PrivateEndpointNetworkPolicies:    network.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled,
 								PrivateLinkServiceNetworkPolicies: network.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled,
 							},
 						},
 						ApplicationSecurityGroups: &[]network.ApplicationSecurityGroup{{
-							ID: pointer.String("asg1"),
+							ID: ptr.To("asg1"),
 						}},
 						PrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{{
-							Name: pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
+							Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
 							PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-								PrivateLinkServiceID: pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
+								PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
 								GroupIds:             &[]string{"aa", "bb"},
-								RequestMessage:       pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
+								RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
 							},
 						}},
 						ManualPrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{},
 						IPConfigurations: &[]network.PrivateEndpointIPConfiguration{
 							{
 								PrivateEndpointIPConfigurationProperties: &network.PrivateEndpointIPConfigurationProperties{
-									PrivateIPAddress: pointer.String("10.0.0.1"),
+									PrivateIPAddress: ptr.To("10.0.0.1"),
 								},
 							},
 							{
 								PrivateEndpointIPConfigurationProperties: &network.PrivateEndpointIPConfigurationProperties{
-									PrivateIPAddress: pointer.String("10.0.0.2"),
+									PrivateIPAddress: ptr.To("10.0.0.2"),
 								},
 							},
 						},
-						CustomNetworkInterfaceName: pointer.String("test-if-name"),
+						CustomNetworkInterfaceName: ptr.To("test-if-name"),
 					},
-					Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"), "Name": pointer.String("test-private-endpoint2")},
+					Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint2")},
 				}))
 			},
 		},
@@ -274,43 +274,43 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(network.PrivateEndpoint{}))
 				g.Expect(result).To(Equal(network.PrivateEndpoint{
-					Name:     pointer.String("test-private-endpoint2"),
-					Location: pointer.String("test-location"),
+					Name:     ptr.To("test-private-endpoint2"),
+					Location: ptr.To("test-location"),
 					PrivateEndpointProperties: &network.PrivateEndpointProperties{
 						Subnet: &network.Subnet{
-							ID: pointer.String("test-subnet"),
+							ID: ptr.To("test-subnet"),
 							SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 								PrivateEndpointNetworkPolicies:    network.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled,
 								PrivateLinkServiceNetworkPolicies: network.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled,
 							},
 						},
 						ApplicationSecurityGroups: &[]network.ApplicationSecurityGroup{{
-							ID: pointer.String("asg1"),
+							ID: ptr.To("asg1"),
 						}},
 						PrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{{
-							Name: pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
+							Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
 							PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-								PrivateLinkServiceID: pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
+								PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
 								GroupIds:             &[]string{"aa", "bb"},
-								RequestMessage:       pointer.String(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
+								RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
 							},
 						}},
 						ManualPrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{},
 						IPConfigurations: &[]network.PrivateEndpointIPConfiguration{
 							{
 								PrivateEndpointIPConfigurationProperties: &network.PrivateEndpointIPConfigurationProperties{
-									PrivateIPAddress: pointer.String("10.0.0.1"),
+									PrivateIPAddress: ptr.To("10.0.0.1"),
 								},
 							},
 							{
 								PrivateEndpointIPConfigurationProperties: &network.PrivateEndpointIPConfigurationProperties{
-									PrivateIPAddress: pointer.String("10.0.0.2"),
+									PrivateIPAddress: ptr.To("10.0.0.2"),
 								},
 							},
 						},
-						CustomNetworkInterfaceName: pointer.String("test-if-name"),
+						CustomNetworkInterfaceName: ptr.To("test-if-name"),
 					},
-					Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": pointer.String("owned"), "Name": pointer.String("test-private-endpoint2")},
+					Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint2")},
 				}))
 			},
 		},

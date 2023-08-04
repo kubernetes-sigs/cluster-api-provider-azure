@@ -30,7 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
@@ -189,7 +189,7 @@ func TestMachinePoolScope_NetworkInterfaces(t *testing.T) {
 					},
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							AcceleratedNetworking: pointer.Bool(true),
+							AcceleratedNetworking: ptr.To(true),
 							SubnetName:            "node-subnet",
 						},
 					},
@@ -273,7 +273,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 		{
 			Name: "default surge should be 1 regardless of replica count with no surger",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
-				mp.Spec.Replicas = pointer.Int32(3)
+				mp.Spec.Replicas = ptr.To[int32](3)
 			},
 			Verify: func(g *WithT, surge int, err error) {
 				g.Expect(surge).To(Equal(1))
@@ -283,7 +283,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 		{
 			Name: "default surge should be 2 as specified by the surger",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
-				mp.Spec.Replicas = pointer.Int32(3)
+				mp.Spec.Replicas = ptr.To[int32](3)
 				two := intstr.FromInt(2)
 				amp.Spec.Strategy = infrav1exp.AzureMachinePoolDeploymentStrategy{
 					Type: infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType,
@@ -300,7 +300,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 		{
 			Name: "default surge should be 2 (50%) of the desired replicas",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
-				mp.Spec.Replicas = pointer.Int32(4)
+				mp.Spec.Replicas = ptr.To[int32](4)
 				fiftyPercent := intstr.FromString("50%")
 				amp.Spec.Strategy = infrav1exp.AzureMachinePoolDeploymentStrategy{
 					Type: infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType,
@@ -412,7 +412,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 		{
 			Name: "should set and default the image if no image is specified for the AzureMachinePool",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
-				mp.Spec.Template.Spec.Version = pointer.String("v1.19.11")
+				mp.Spec.Template.Spec.Version = ptr.To("v1.19.11")
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, vmImage *infrav1.Image, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
@@ -434,7 +434,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 		{
 			Name: "should not default or set the image on the AzureMachinePool if it already exists",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
-				mp.Spec.Template.Spec.Version = pointer.String("v1.19.11")
+				mp.Spec.Template.Spec.Version = ptr.To("v1.19.11")
 				amp.Spec.Template.Image = &infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						ImagePlan: infrav1.ImagePlan{
@@ -518,7 +518,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 			Name: "should requeue if the machine is not in succeeded state",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				creating := infrav1.Creating
-				mp.Spec.Replicas = pointer.Int32(0)
+				mp.Spec.Replicas = ptr.To[int32](0)
 				amp.Status.ProvisioningState = &creating
 			},
 			Verify: func(g *WithT, requeue bool) {
@@ -529,7 +529,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 			Name: "should not requeue if the machine is in succeeded state",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				succeeded := infrav1.Succeeded
-				mp.Spec.Replicas = pointer.Int32(0)
+				mp.Spec.Replicas = ptr.To[int32](0)
 				amp.Status.ProvisioningState = &succeeded
 			},
 			Verify: func(g *WithT, requeue bool) {
@@ -540,7 +540,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 			Name: "should requeue if the machine is in succeeded state but desired replica count does not match",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				succeeded := infrav1.Succeeded
-				mp.Spec.Replicas = pointer.Int32(1)
+				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.ProvisioningState = &succeeded
 			},
 			Verify: func(g *WithT, requeue bool) {
@@ -551,7 +551,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 			Name: "should not requeue if the machine is in succeeded state but desired replica count does match",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				succeeded := infrav1.Succeeded
-				mp.Spec.Replicas = pointer.Int32(1)
+				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.ProvisioningState = &succeeded
 				vmss.Instances = []azure.VMSSVM{
 					{
@@ -567,7 +567,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 			Name: "should requeue if an instance VM image does not match the VM image of the VMSS",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				succeeded := infrav1.Succeeded
-				mp.Spec.Replicas = pointer.Int32(1)
+				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.ProvisioningState = &succeeded
 				vmss.Instances = []azure.VMSSVM{
 					{
@@ -790,7 +790,7 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 					MachineName:   "machine-name",
 					Name:          "role-assignment-name",
 					ResourceGroup: "my-rg",
-					PrincipalID:   pointer.String("fakePrincipalID"),
+					PrincipalID:   ptr.To("fakePrincipalID"),
 				},
 			},
 		},
@@ -837,14 +837,14 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 					ResourceGroup:    "my-rg",
 					Scope:            "scope",
 					RoleDefinitionID: "role-definition-id",
-					PrincipalID:      pointer.String("fakePrincipalID"),
+					PrincipalID:      ptr.To("fakePrincipalID"),
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.machinePoolScope.RoleAssignmentSpecs(pointer.String("fakePrincipalID")); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.machinePoolScope.RoleAssignmentSpecs(ptr.To("fakePrincipalID")); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("RoleAssignmentSpecs() = %v, want %v", got, tt.want)
 			}
 		})
@@ -1240,7 +1240,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 			Name: "if MachinePool is externally managed and overProvisionCount > 0, do not try to reduce replicas",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Annotations = map[string]string{clusterv1.ReplicasManagedByAnnotation: "cluster-autoscaler"}
-				mp.Spec.Replicas = pointer.Int32(1)
+				mp.Spec.Replicas = ptr.To[int32](1)
 
 				for _, machine := range getReadyAzureMachinePoolMachines(2) {
 					obj := machine
@@ -1267,7 +1267,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		{
 			Name: "if MachinePool is not externally managed and overProvisionCount > 0, reduce replicas",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
-				mp.Spec.Replicas = pointer.Int32(1)
+				mp.Spec.Replicas = ptr.To[int32](1)
 
 				for _, machine := range getReadyAzureMachinePoolMachines(2) {
 					obj := machine

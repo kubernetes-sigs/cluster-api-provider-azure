@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -66,10 +66,10 @@ var (
 		Priority:         2200,
 		Protocol:         infrav1.SecurityGroupProtocolTCP,
 		Direction:        infrav1.SecurityRuleDirectionInbound,
-		Source:           pointer.String("*"),
-		SourcePorts:      pointer.String("*"),
-		Destination:      pointer.String("*"),
-		DestinationPorts: pointer.String("22"),
+		Source:           ptr.To("*"),
+		SourcePorts:      ptr.To("*"),
+		Destination:      ptr.To("*"),
+		DestinationPorts: ptr.To("22"),
 	}
 	securityRule2 = infrav1.SecurityRule{
 		Name:             "other_rule",
@@ -77,10 +77,10 @@ var (
 		Priority:         500,
 		Protocol:         infrav1.SecurityGroupProtocolTCP,
 		Direction:        infrav1.SecurityRuleDirectionInbound,
-		Source:           pointer.String("*"),
-		SourcePorts:      pointer.String("*"),
-		Destination:      pointer.String("*"),
-		DestinationPorts: pointer.String("80"),
+		Source:           ptr.To("*"),
+		SourcePorts:      ptr.To("*"),
+		Destination:      ptr.To("*"),
+		DestinationPorts: ptr.To("80"),
 	}
 	errFake      = errors.New("this is an error")
 	notDoneError = azure.NewOperationNotDoneError(&infrav1.Future{})
@@ -286,41 +286,41 @@ func TestDeleteSecurityGroups(t *testing.T) {
 
 var (
 	ruleA = network.SecurityRule{
-		Name: pointer.String("A"),
+		Name: ptr.To("A"),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Description:              pointer.String("this is rule A"),
+			Description:              ptr.To("this is rule A"),
 			Protocol:                 network.SecurityRuleProtocolTCP,
-			DestinationPortRange:     pointer.String("*"),
-			SourcePortRange:          pointer.String("*"),
-			DestinationAddressPrefix: pointer.String("*"),
-			SourceAddressPrefix:      pointer.String("*"),
-			Priority:                 pointer.Int32(100),
+			DestinationPortRange:     ptr.To("*"),
+			SourcePortRange:          ptr.To("*"),
+			DestinationAddressPrefix: ptr.To("*"),
+			SourceAddressPrefix:      ptr.To("*"),
+			Priority:                 ptr.To[int32](100),
 			Direction:                network.SecurityRuleDirectionInbound,
 		},
 	}
 	ruleB = network.SecurityRule{
-		Name: pointer.String("B"),
+		Name: ptr.To("B"),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Description:              pointer.String("this is rule B"),
+			Description:              ptr.To("this is rule B"),
 			Protocol:                 network.SecurityRuleProtocolTCP,
-			DestinationPortRange:     pointer.String("*"),
-			SourcePortRange:          pointer.String("*"),
-			DestinationAddressPrefix: pointer.String("*"),
-			SourceAddressPrefix:      pointer.String("*"),
-			Priority:                 pointer.Int32(100),
+			DestinationPortRange:     ptr.To("*"),
+			SourcePortRange:          ptr.To("*"),
+			DestinationAddressPrefix: ptr.To("*"),
+			SourceAddressPrefix:      ptr.To("*"),
+			Priority:                 ptr.To[int32](100),
 			Direction:                network.SecurityRuleDirectionOutbound,
 		},
 	}
 	ruleBModified = network.SecurityRule{
-		Name: pointer.String("B"),
+		Name: ptr.To("B"),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Description:              pointer.String("this is rule B"),
+			Description:              ptr.To("this is rule B"),
 			Protocol:                 network.SecurityRuleProtocolTCP,
-			DestinationPortRange:     pointer.String("80"),
-			SourcePortRange:          pointer.String("*"),
-			DestinationAddressPrefix: pointer.String("*"),
-			SourceAddressPrefix:      pointer.String("*"),
-			Priority:                 pointer.Int32(100),
+			DestinationPortRange:     ptr.To("80"),
+			SourcePortRange:          ptr.To("*"),
+			DestinationAddressPrefix: ptr.To("*"),
+			SourceAddressPrefix:      ptr.To("*"),
+			Priority:                 ptr.To[int32](100),
 			Direction:                network.SecurityRuleDirectionOutbound,
 		},
 	}

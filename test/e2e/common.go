@@ -38,7 +38,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -321,8 +321,8 @@ func createApplyClusterTemplateInput(specName string, changes ...func(*clusterct
 			Namespace:                "default",
 			ClusterName:              "cluster",
 			KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
-			ControlPlaneMachineCount: pointer.Int64(1),
-			WorkerMachineCount:       pointer.Int64(1),
+			ControlPlaneMachineCount: ptr.To[int64](1),
+			WorkerMachineCount:       ptr.To[int64](1),
 		},
 		WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 		WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -369,13 +369,13 @@ func withKubernetesVersion(version string) func(*clusterctl.ApplyClusterTemplate
 
 func withControlPlaneMachineCount(count int64) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
 	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
-		input.ConfigCluster.ControlPlaneMachineCount = pointer.Int64(count)
+		input.ConfigCluster.ControlPlaneMachineCount = ptr.To[int64](count)
 	}
 }
 
 func withWorkerMachineCount(count int64) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
 	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
-		input.ConfigCluster.WorkerMachineCount = pointer.Int64(count)
+		input.ConfigCluster.WorkerMachineCount = ptr.To[int64](count)
 	}
 }
 

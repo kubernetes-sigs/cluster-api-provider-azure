@@ -26,7 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
@@ -364,7 +364,7 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 	}
 
 	// There should only be one IP config.
-	if len(lb.FrontendIPs) != 1 || pointer.Int32Deref(lb.FrontendIPsCount, 1) != 1 {
+	if len(lb.FrontendIPs) != 1 || ptr.Deref[int32](lb.FrontendIPsCount, 1) != 1 {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPs,
 			"API Server Load balancer should have 1 Frontend IP"))
 	} else {
@@ -521,7 +521,7 @@ func validateClassSpecForAPIServerLB(lb LoadBalancerClassSpec, old *LoadBalancer
 	}
 
 	// IdletimeoutInMinutes should be immutable.
-	if old != nil && old.IdleTimeoutInMinutes != nil && !pointer.Int32Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
+	if old != nil && old.IdleTimeoutInMinutes != nil && !ptr.Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
 		allErrs = append(allErrs, field.Forbidden(apiServerLBPath.Child("idleTimeoutInMinutes"), "API Server load balancer idle timeout cannot be modified after AzureCluster creation."))
 	}
 
@@ -554,7 +554,7 @@ func validateClassSpecForNodeOutboundLB(lb *LoadBalancerClassSpec, old *LoadBala
 		allErrs = append(allErrs, field.Forbidden(fldPath.Child("type"), "Node outbound load balancer Type cannot be modified after AzureCluster creation."))
 	}
 
-	if old != nil && !pointer.Int32Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
+	if old != nil && !ptr.Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
 		allErrs = append(allErrs, field.Forbidden(fldPath.Child("idleTimeoutInMinutes"), "Node outbound load balancer idle timeout cannot be modified after AzureCluster creation."))
 	}
 

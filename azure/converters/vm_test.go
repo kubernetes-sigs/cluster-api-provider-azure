@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -35,10 +35,10 @@ func TestSDKToVM(t *testing.T) {
 		{
 			name: "Basic conversion with required fields",
 			sdk: compute.VirtualMachine{
-				ID:   pointer.String("test-vm-id"),
-				Name: pointer.String("test-vm-name"),
+				ID:   ptr.To("test-vm-id"),
+				Name: ptr.To("test-vm-name"),
 				VirtualMachineProperties: &compute.VirtualMachineProperties{
-					ProvisioningState: pointer.String("Succeeded"),
+					ProvisioningState: ptr.To("Succeeded"),
 				},
 			},
 			want: &VM{
@@ -50,10 +50,10 @@ func TestSDKToVM(t *testing.T) {
 		{
 			name: "Should convert and populate with VMSize",
 			sdk: compute.VirtualMachine{
-				ID:   pointer.String("test-vm-id"),
-				Name: pointer.String("test-vm-name"),
+				ID:   ptr.To("test-vm-id"),
+				Name: ptr.To("test-vm-name"),
 				VirtualMachineProperties: &compute.VirtualMachineProperties{
-					ProvisioningState: pointer.String("Succeeded"),
+					ProvisioningState: ptr.To("Succeeded"),
 					HardwareProfile: &compute.HardwareProfile{
 						VMSize: compute.VirtualMachineSizeTypesStandardA1,
 					},
@@ -69,10 +69,10 @@ func TestSDKToVM(t *testing.T) {
 		{
 			name: "Should convert and populate with availability zones",
 			sdk: compute.VirtualMachine{
-				ID:   pointer.String("test-vm-id"),
-				Name: pointer.String("test-vm-name"),
+				ID:   ptr.To("test-vm-id"),
+				Name: ptr.To("test-vm-name"),
 				VirtualMachineProperties: &compute.VirtualMachineProperties{
-					ProvisioningState: pointer.String("Succeeded"),
+					ProvisioningState: ptr.To("Succeeded"),
 				},
 				Zones: &[]string{"1", "2"},
 			},
@@ -86,12 +86,12 @@ func TestSDKToVM(t *testing.T) {
 		{
 			name: "Should convert and populate with tags",
 			sdk: compute.VirtualMachine{
-				ID:   pointer.String("test-vm-id"),
-				Name: pointer.String("test-vm-name"),
+				ID:   ptr.To("test-vm-id"),
+				Name: ptr.To("test-vm-name"),
 				VirtualMachineProperties: &compute.VirtualMachineProperties{
-					ProvisioningState: pointer.String("Succeeded"),
+					ProvisioningState: ptr.To("Succeeded"),
 				},
-				Tags: map[string]*string{"foo": pointer.String("bar")},
+				Tags: map[string]*string{"foo": ptr.To("bar")},
 			},
 			want: &VM{
 				ID:    "test-vm-id",
@@ -103,16 +103,16 @@ func TestSDKToVM(t *testing.T) {
 		{
 			name: "Should convert and populate with all fields",
 			sdk: compute.VirtualMachine{
-				ID:   pointer.String("test-vm-id"),
-				Name: pointer.String("test-vm-name"),
+				ID:   ptr.To("test-vm-id"),
+				Name: ptr.To("test-vm-name"),
 				VirtualMachineProperties: &compute.VirtualMachineProperties{
-					ProvisioningState: pointer.String("Succeeded"),
+					ProvisioningState: ptr.To("Succeeded"),
 					HardwareProfile: &compute.HardwareProfile{
 						VMSize: compute.VirtualMachineSizeTypesStandardA1,
 					},
 				},
 				Zones: &[]string{"1"},
-				Tags:  map[string]*string{"foo": pointer.String("bar")},
+				Tags:  map[string]*string{"foo": ptr.To("bar")},
 			},
 			want: &VM{
 				ID:               "test-vm-id",

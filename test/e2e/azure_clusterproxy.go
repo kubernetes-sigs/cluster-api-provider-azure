@@ -43,7 +43,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kubectl/pkg/describe"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -271,7 +271,7 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 			return
 		}
 		event := itr.Value()
-		if pointer.StringDeref(event.Category.Value, "") != "Policy" {
+		if ptr.Deref(event.Category.Value, "") != "Policy" {
 			b, err := json.MarshalIndent(myEventData(event), "", "    ")
 			if err != nil {
 				Logf("Got error converting activity logs data to json: %v", err)

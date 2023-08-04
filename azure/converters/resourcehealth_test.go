@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resourcehealth/mgmt/2020-05-01/resourcehealth"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -55,8 +55,8 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 			avail: resourcehealth.AvailabilityStatus{
 				Properties: &resourcehealth.AvailabilityStatusProperties{
 					AvailabilityState: resourcehealth.AvailabilityStateValuesUnavailable,
-					ReasonType:        pointer.String("this Is  a reason "),
-					Summary:           pointer.String("The Summary"),
+					ReasonType:        ptr.To("this Is  a reason "),
+					Summary:           ptr.To("The Summary"),
 				},
 			},
 			expected: &clusterv1.Condition{
@@ -71,8 +71,8 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 			avail: resourcehealth.AvailabilityStatus{
 				Properties: &resourcehealth.AvailabilityStatusProperties{
 					AvailabilityState: resourcehealth.AvailabilityStateValuesDegraded,
-					ReasonType:        pointer.String("TheReason"),
-					Summary:           pointer.String("The Summary"),
+					ReasonType:        ptr.To("TheReason"),
+					Summary:           ptr.To("The Summary"),
 				},
 			},
 			expected: &clusterv1.Condition{

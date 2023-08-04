@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -44,7 +44,7 @@ var (
 		SKU:                  infrav1.SKUStandard,
 		SubnetName:           "my-cp-subnet",
 		BackendPoolName:      "my-publiclb-backendPool",
-		IdleTimeoutInMinutes: pointer.Int32(4),
+		IdleTimeoutInMinutes: ptr.To[int32](4),
 		FrontendIPConfigs: []infrav1.FrontendIP{
 			{
 				Name: "my-publiclb-frontEnd",
@@ -68,7 +68,7 @@ var (
 		SKU:                  infrav1.SKUStandard,
 		SubnetName:           "my-cp-subnet",
 		BackendPoolName:      "my-private-lb-backendPool",
-		IdleTimeoutInMinutes: pointer.Int32(4),
+		IdleTimeoutInMinutes: ptr.To[int32](4),
 		FrontendIPConfigs: []infrav1.FrontendIP{
 			{
 				Name: "my-private-lb-frontEnd",
@@ -90,7 +90,7 @@ var (
 		Type:                 infrav1.Public,
 		SKU:                  infrav1.SKUStandard,
 		BackendPoolName:      "my-cluster-outboundBackendPool",
-		IdleTimeoutInMinutes: pointer.Int32(30),
+		IdleTimeoutInMinutes: ptr.To[int32](30),
 		FrontendIPConfigs: []infrav1.FrontendIP{
 			{
 				Name: "my-cluster-frontEnd",

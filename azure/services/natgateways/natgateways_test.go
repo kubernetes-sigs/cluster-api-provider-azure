@@ -26,7 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -49,7 +49,7 @@ var (
 		NatGatewayIP:   infrav1.PublicIPSpec{Name: "pip-node-subnet"},
 	}
 	natGateway1 = network.NatGateway{
-		ID: pointer.String("/subscriptions/my-sub/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway-1"),
+		ID: ptr.To("/subscriptions/my-sub/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway-1"),
 	}
 	customVNetTags = infrav1.Tags{
 		"Name": "my-vnet",

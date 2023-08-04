@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"
@@ -40,8 +40,8 @@ var (
 	fakeSku              = resourceskus.SKU{
 		Capabilities: &[]compute.ResourceSkuCapabilities{
 			{
-				Name:  pointer.String(resourceskus.MaximumPlatformFaultDomainCount),
-				Value: pointer.String(strconv.Itoa(fakeFaultDomainCount)),
+				Name:  ptr.To(resourceskus.MaximumPlatformFaultDomainCount),
+				Value: ptr.To(strconv.Itoa(fakeFaultDomainCount)),
 			},
 		},
 	}
@@ -67,7 +67,7 @@ var (
 	fakeSetWithVMs = compute.AvailabilitySet{
 		AvailabilitySetProperties: &compute.AvailabilitySetProperties{
 			VirtualMachines: &[]compute.SubResource{
-				{ID: pointer.String("vm-id")},
+				{ID: ptr.To("vm-id")},
 			},
 		},
 	}

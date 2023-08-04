@@ -42,7 +42,7 @@ require (
 	k8s.io/component-base v0.26.2
 	k8s.io/klog/v2 v2.90.1
 	k8s.io/kubectl v0.26.1
-	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/cloud-provider-azure v1.26.7
 	sigs.k8s.io/cluster-api v1.4.5
 	sigs.k8s.io/cluster-api/test v1.4.5

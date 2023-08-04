@@ -27,7 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -289,18 +289,18 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			ClusterName: s.ClusterName,
-			Name:        pointer.String(s.Name),
-			Role:        pointer.String(infrav1.CommonRole),
+			Name:        ptr.To(s.Name),
+			Role:        ptr.To(infrav1.CommonRole),
 			Additional:  s.Tags,
 		})),
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 			NodeResourceGroup: &s.NodeResourceGroup,
-			EnableRBAC:        pointer.Bool(true),
+			EnableRBAC:        ptr.To(true),
 			DNSPrefix:         &s.Name,
 			KubernetesVersion: &s.Version,
 
 			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{
-				ClientID: pointer.String("msi"),
+				ClientID: ptr.To("msi"),
 			},
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{},
 			NetworkProfile: &containerservice.NetworkProfile{
@@ -313,11 +313,11 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 
 	if decodedSSHPublicKey != nil {
 		managedCluster.LinuxProfile = &containerservice.LinuxProfile{
-			AdminUsername: pointer.String(azure.DefaultAKSUserName),
+			AdminUsername: ptr.To(azure.DefaultAKSUserName),
 			SSH: &containerservice.SSHConfiguration{
 				PublicKeys: &[]containerservice.SSHPublicKey{
 					{
-						KeyData: pointer.String(string(decodedSSHPublicKey)),
+						KeyData: ptr.To(string(decodedSSHPublicKey)),
 					},
 				},
 			},
@@ -409,7 +409,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 	if s.KubeletUserAssignedIdentity != "" {
 		managedCluster.ManagedClusterProperties.IdentityProfile = map[string]*containerservice.UserAssignedIdentity{
 			kubeletIdentityKey: {
-				ResourceID: pointer.String(s.KubeletUserAssignedIdentity),
+				ResourceID: ptr.To(s.KubeletUserAssignedIdentity),
 			},
 		}
 	}
@@ -470,7 +470,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			if !ok {
 				return nil, fmt.Errorf("%T is not a containerservice.AgentPool", agentPool)
 			}
-			agentPool.Name = pointer.String(spec.ResourceName())
+			agentPool.Name = ptr.To(spec.ResourceName())
 			profile := converters.AgentPoolToManagedClusterAgentPoolProfile(agentPool)
 			*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 		}

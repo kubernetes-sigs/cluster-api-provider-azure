@@ -36,7 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
@@ -1197,7 +1197,7 @@ func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1.Azu
 		Spec: infrav1.AzureManagedMachinePoolSpec{
 			Mode:         mode,
 			SKU:          "Standard_B2s",
-			OSDiskSizeGB: pointer.Int32(512),
+			OSDiskSizeGB: ptr.To[int32](512),
 			KubeletConfig: &infrav1.KubeletConfig{
 				CPUManagerPolicy:      &cpuManagerPolicyStatic,
 				TopologyManagerPolicy: &topologyManagerPolicy,
@@ -1220,7 +1220,7 @@ func newMachinePool(clusterName, poolName string) *expv1.MachinePool {
 			Namespace: "default",
 		},
 		Spec: expv1.MachinePoolSpec{
-			Replicas: pointer.Int32(2),
+			Replicas: ptr.To[int32](2),
 		},
 	}
 }

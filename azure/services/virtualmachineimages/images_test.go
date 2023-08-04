@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages/mock_virtualmachineimages"
@@ -88,9 +88,9 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "121.13.20220613",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("121.13.20220526")},
-					{Name: pointer.String("121.13.20220613")},
-					{Name: pointer.String("121.13.20220524")},
+					{Name: ptr.To("121.13.20220526")},
+					{Name: ptr.To("121.13.20220613")},
+					{Name: ptr.To("121.13.20220524")},
 				},
 			},
 		},
@@ -110,8 +110,8 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "122.10.20220613",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("122.10.20220524")},
-					{Name: pointer.String("122.10.20220613")},
+					{Name: ptr.To("122.10.20220524")},
+					{Name: ptr.To("122.10.20220613")},
 				},
 			},
 		},
@@ -121,7 +121,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "122.16.20221117",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("122.16.20221117")},
+					{Name: ptr.To("122.16.20221117")},
 				},
 			},
 		},
@@ -136,10 +136,10 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "123.7.20231231",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("123.7.20221124")},
-					{Name: pointer.String("123.7.20220524")},
-					{Name: pointer.String("123.7.20231231")},
-					{Name: pointer.String("123.7.20220818")},
+					{Name: ptr.To("123.7.20221124")},
+					{Name: ptr.To("123.7.20220524")},
+					{Name: ptr.To("123.7.20231231")},
+					{Name: ptr.To("123.7.20220818")},
 				},
 			},
 		},
@@ -149,7 +149,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "124.0.20220512",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("124.0.20220512")},
+					{Name: ptr.To("124.0.20220512")},
 				},
 			},
 		},
@@ -159,7 +159,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "123.12.20220921",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("123.12.20220921")},
+					{Name: ptr.To("123.12.20220921")},
 				},
 			},
 		},
@@ -169,7 +169,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "123.13.20221014",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("123.13.20221014")},
+					{Name: ptr.To("123.13.20221014")},
 				},
 			},
 		},
@@ -179,7 +179,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "124.6.20220921",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("124.6.20220921")},
+					{Name: ptr.To("124.6.20220921")},
 				},
 			},
 		},
@@ -189,7 +189,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "124.7.20221014",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("124.7.20221014")},
+					{Name: ptr.To("124.7.20221014")},
 				},
 			},
 		},
@@ -199,7 +199,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "125.2.20220921",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("125.2.20220921")},
+					{Name: ptr.To("125.2.20220921")},
 				},
 			},
 		},
@@ -209,7 +209,7 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			expectedVersion: "125.3.20221014",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("125.3.20221014")},
+					{Name: ptr.To("125.3.20221014")},
 				},
 			},
 		},
@@ -434,17 +434,17 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			osAndVersion:    "windows-2022",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("121.13.20220524")},
-					{Name: pointer.String("124.0.20220512")},
-					{Name: pointer.String("121.13.20220524")},
-					{Name: pointer.String("123.13.20220524")},
-					{Name: pointer.String("121.13.20220619")},
-					{Name: pointer.String("121.13.20300524")},
-					{Name: pointer.String("121.14.20220524")},
-					{Name: pointer.String("121.12.20220524")},
-					{Name: pointer.String("121.13.20220101")},
-					{Name: pointer.String("121.13.20231231")},
-					{Name: pointer.String("121.13.19991231")},
+					{Name: ptr.To("121.13.20220524")},
+					{Name: ptr.To("124.0.20220512")},
+					{Name: ptr.To("121.13.20220524")},
+					{Name: ptr.To("123.13.20220524")},
+					{Name: ptr.To("121.13.20220619")},
+					{Name: ptr.To("121.13.20300524")},
+					{Name: ptr.To("121.14.20220524")},
+					{Name: ptr.To("121.12.20220524")},
+					{Name: ptr.To("121.13.20220101")},
+					{Name: ptr.To("121.13.20231231")},
+					{Name: ptr.To("121.13.19991231")},
 				},
 			},
 		},
@@ -484,7 +484,7 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			osAndVersion:    "ubuntu-2004",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("123.12.20220921")},
+					{Name: ptr.To("123.12.20220921")},
 				},
 			},
 		},
@@ -496,7 +496,7 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			osAndVersion:    "ubuntu-2204",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("123.13.20220524")},
+					{Name: ptr.To("123.13.20220524")},
 				},
 			},
 		},
@@ -516,7 +516,7 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			osAndVersion:    "ubuntu-2004",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("124.0.20220512")},
+					{Name: ptr.To("124.0.20220512")},
 				},
 			},
 		},
@@ -528,7 +528,7 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			osAndVersion:    "windows-2022-containerd",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("124.0.20220606")},
+					{Name: ptr.To("124.0.20220606")},
 				},
 			},
 		},
@@ -538,7 +538,7 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			osAndVersion:  "windows-2022-containerd",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("124.0.20220606")},
+					{Name: ptr.To("124.0.20220606")},
 				},
 			},
 		},
@@ -550,7 +550,7 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			osAndVersion:    "ubuntu-2204",
 			versions: compute.ListVirtualMachineImageResource{
 				Value: &[]compute.VirtualMachineImageResource{
-					{Name: pointer.String("125.4.20221011")},
+					{Name: ptr.To("125.4.20221011")},
 				},
 			},
 		},

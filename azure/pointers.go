@@ -16,7 +16,7 @@ limitations under the License.
 
 package azure
 
-import "k8s.io/utils/pointer"
+import "k8s.io/utils/ptr"
 
 // StringSlice returns a string slice value for the passed string slice pointer. It returns a nil
 // slice if the pointer is nil.
@@ -34,7 +34,7 @@ func StringMapPtr(m map[string]string) map[string]*string {
 	}
 	msp := make(map[string]*string, len(m))
 	for k, v := range m {
-		msp[k] = pointer.String(v)
+		msp[k] = ptr.To(v)
 	}
 	return msp
 }

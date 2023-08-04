@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets"
@@ -220,7 +220,7 @@ func (m *MachineScope) InboundNatSpecs() []azure.ResourceSpecGetter {
 		if frontEndIPs := m.APIServerLB().FrontendIPs; len(frontEndIPs) > 0 {
 			ipConfig := frontEndIPs[0].Name
 			id := azure.FrontendIPConfigID(m.SubscriptionID(), m.ResourceGroup(), m.APIServerLBName(), ipConfig)
-			spec.FrontendIPConfigurationID = pointer.String(id)
+			spec.FrontendIPConfigurationID = ptr.To(id)
 		}
 
 		return []azure.ResourceSpecGetter{spec}
@@ -458,7 +458,7 @@ func (m *MachineScope) GetVMID() string {
 
 // ProviderID returns the AzureMachine providerID from the spec.
 func (m *MachineScope) ProviderID() string {
-	return pointer.StringDeref(m.AzureMachine.Spec.ProviderID, "")
+	return ptr.Deref(m.AzureMachine.Spec.ProviderID, "")
 }
 
 // AvailabilitySetSpec returns the availability set spec for this machine if available.
@@ -543,7 +543,7 @@ func (m *MachineScope) SystemAssignedIdentityDefinitionID() string {
 
 // SetProviderID sets the AzureMachine providerID in spec.
 func (m *MachineScope) SetProviderID(v string) {
-	m.AzureMachine.Spec.ProviderID = pointer.String(v)
+	m.AzureMachine.Spec.ProviderID = ptr.To(v)
 }
 
 // VMState returns the AzureMachine VM state.
@@ -571,7 +571,7 @@ func (m *MachineScope) SetNotReady() {
 
 // SetFailureMessage sets the AzureMachine status failure message.
 func (m *MachineScope) SetFailureMessage(v error) {
-	m.AzureMachine.Status.FailureMessage = pointer.String(v.Error())
+	m.AzureMachine.Status.FailureMessage = ptr.To(v.Error())
 }
 
 // SetFailureReason sets the AzureMachine status failure reason.
@@ -695,11 +695,11 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 		runtime := m.AzureMachine.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachine.Annotations["windowsServerVersion"]
 		log.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		return svc.GetDefaultWindowsImage(ctx, m.Location(), pointer.StringDeref(m.Machine.Spec.Version, ""), runtime, windowsServerVersion)
+		return svc.GetDefaultWindowsImage(ctx, m.Location(), ptr.Deref(m.Machine.Spec.Version, ""), runtime, windowsServerVersion)
 	}
 
 	log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
-	return svc.GetDefaultUbuntuImage(ctx, m.Location(), pointer.StringDeref(m.Machine.Spec.Version, ""))
+	return svc.GetDefaultUbuntuImage(ctx, m.Location(), ptr.Deref(m.Machine.Spec.Version, ""))
 }
 
 // SetSubnetName defaults the AzureMachine subnet name to the name of one the subnets with the machine role when there is only one of them.

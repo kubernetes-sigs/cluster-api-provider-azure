@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
@@ -58,7 +58,7 @@ func TestMachineScope_Name(t *testing.T) {
 						Name: "machine-with-a-long-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						OSDisk: infrav1.OSDisk{
 							OSType: "Windows",
 						},
@@ -164,7 +164,7 @@ func TestMachineScope_GetVMID(t *testing.T) {
 						Name: "not-this-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 					},
 				},
 			},
@@ -178,7 +178,7 @@ func TestMachineScope_GetVMID(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("foo"),
+						ProviderID: ptr.To("foo"),
 					},
 				},
 			},
@@ -209,7 +209,7 @@ func TestMachineScope_ProviderID(t *testing.T) {
 						Name: "not-this-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 					},
 				},
 			},
@@ -223,7 +223,7 @@ func TestMachineScope_ProviderID(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String(""),
+						ProviderID: ptr.To(""),
 					},
 				},
 			},
@@ -402,7 +402,7 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 					Name:                      "machine-name",
 					LoadBalancerName:          "foo-loadbalancer",
 					ResourceGroup:             "my-rg",
-					FrontendIPConfigurationID: pointer.String(azure.FrontendIPConfigID("123", "my-rg", "foo-loadbalancer", "foo-frontend-ip")),
+					FrontendIPConfigurationID: ptr.To(azure.FrontendIPConfigID("123", "my-rg", "foo-loadbalancer", "foo-frontend-ip")),
 				},
 			},
 		},
@@ -475,7 +475,7 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 					MachineName:   "machine-name",
 					Name:          "azure-role-assignment-name",
 					ResourceGroup: "my-rg",
-					PrincipalID:   pointer.String("fakePrincipalID"),
+					PrincipalID:   ptr.To("fakePrincipalID"),
 				},
 			},
 		},
@@ -522,14 +522,14 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 					ResourceGroup:    "my-rg",
 					Scope:            "/subscriptions/123/resourceGroups/my-rg",
 					RoleDefinitionID: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Authorization/roleAssignments/123",
-					PrincipalID:      pointer.String("fakePrincipalID"),
+					PrincipalID:      ptr.To("fakePrincipalID"),
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.machineScope.RoleAssignmentSpecs(pointer.String("fakePrincipalID")); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.machineScope.RoleAssignmentSpecs(ptr.To("fakePrincipalID")); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("RoleAssignmentSpecs() = %v, want %v", got, tt.want)
 			}
 		})
@@ -1008,7 +1008,7 @@ func TestMachineScope_AvailabilityZone(t *testing.T) {
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{
 					Spec: clusterv1.MachineSpec{
-						FailureDomain: pointer.String("dummy-failure-domain-from-machine-spec"),
+						FailureDomain: ptr.To("dummy-failure-domain-from-machine-spec"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1016,7 +1016,7 @@ func TestMachineScope_AvailabilityZone(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						FailureDomain: pointer.String("dummy-failure-domain-from-azuremachine-spec"),
+						FailureDomain: ptr.To("dummy-failure-domain-from-azuremachine-spec"),
 					},
 				},
 			},
@@ -1033,7 +1033,7 @@ func TestMachineScope_AvailabilityZone(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						FailureDomain: pointer.String("dummy-failure-domain-from-azuremachine-spec"),
+						FailureDomain: ptr.To("dummy-failure-domain-from-azuremachine-spec"),
 					},
 				},
 			},
@@ -1418,13 +1418,13 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 					},
 					Spec: infrav1.AzureMachineSpec{
 						Image: &infrav1.Image{
-							ID: pointer.String("1"),
+							ID: ptr.To("1"),
 						},
 					},
 				},
 			},
 			want: &infrav1.Image{
-				ID: pointer.String("1"),
+				ID: ptr.To("1"),
 			},
 			expectedErr: "",
 		},
@@ -1436,7 +1436,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: pointer.String("1.20.1"),
+						Version: ptr.To("1.20.1"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1465,7 +1465,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: pointer.String("1.22.1"),
+						Version: ptr.To("1.22.1"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1494,7 +1494,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: pointer.String("1.22.1"),
+						Version: ptr.To("1.22.1"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1526,7 +1526,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: pointer.String("1.21.1"),
+						Version: ptr.To("1.21.1"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1558,7 +1558,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: pointer.String("1.21.1"),
+						Version: ptr.To("1.21.1"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1587,7 +1587,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: pointer.String("1.23.3"),
+						Version: ptr.To("1.23.3"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1619,7 +1619,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: pointer.String("1.23.3"),
+						Version: ptr.To("1.23.3"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1651,7 +1651,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: pointer.String("1.20.1"),
+						Version: ptr.To("1.20.1"),
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1749,7 +1749,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -1856,7 +1856,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -1873,7 +1873,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 				},
 				cache: &MachineCache{
 					VMSKU: resourceskus.SKU{
-						Name: pointer.String("Standard_D2v2"),
+						Name: ptr.To("Standard_D2v2"),
 					},
 				},
 			},
@@ -1899,7 +1899,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU: &resourceskus.SKU{
-						Name: pointer.String("Standard_D2v2"),
+						Name: ptr.To("Standard_D2v2"),
 					},
 					ClusterName: "cluster",
 					AdditionalTags: infrav1.Tags{
@@ -1972,7 +1972,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2076,7 +2076,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2190,7 +2190,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2300,7 +2300,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2410,7 +2410,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName:       "subnet1",
 							PrivateIPConfigs: 1,
@@ -2521,16 +2521,16 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{
 							{
 								SubnetName:            "subnet1",
-								AcceleratedNetworking: pointer.Bool(true),
+								AcceleratedNetworking: ptr.To(true),
 								PrivateIPConfigs:      1,
 							},
 							{
 								SubnetName:            "subnet2",
-								AcceleratedNetworking: pointer.Bool(true),
+								AcceleratedNetworking: ptr.To(true),
 								PrivateIPConfigs:      2,
 							},
 						},
@@ -2560,7 +2560,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
-					AcceleratedNetworking:     pointer.Bool(true),
+					AcceleratedNetworking:     ptr.To(true),
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -2585,7 +2585,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
-					AcceleratedNetworking:     pointer.Bool(true),
+					AcceleratedNetworking:     ptr.To(true),
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -2658,17 +2658,17 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID:       pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID:       ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						AllocatePublicIP: true,
 						NetworkInterfaces: []infrav1.NetworkInterface{
 							{
 								SubnetName:            "subnet1",
-								AcceleratedNetworking: pointer.Bool(true),
+								AcceleratedNetworking: ptr.To(true),
 								PrivateIPConfigs:      1,
 							},
 							{
 								SubnetName:            "subnet2",
-								AcceleratedNetworking: pointer.Bool(true),
+								AcceleratedNetworking: ptr.To(true),
 								PrivateIPConfigs:      2,
 							},
 						},
@@ -2698,7 +2698,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "pip-machine-name",
-					AcceleratedNetworking:     pointer.Bool(true),
+					AcceleratedNetworking:     ptr.To(true),
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -2723,7 +2723,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
-					AcceleratedNetworking:     pointer.Bool(true),
+					AcceleratedNetworking:     ptr.To(true),
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -2799,11 +2799,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						Name: "machine",
 					},
 					Spec: infrav1.AzureMachineSpec{
-						ProviderID: pointer.String("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
 						NetworkInterfaces: []infrav1.NetworkInterface{
 							{
 								SubnetName:            "subnet1",
-								AcceleratedNetworking: pointer.Bool(true),
+								AcceleratedNetworking: ptr.To(true),
 								PrivateIPConfigs:      10,
 							},
 						},
@@ -2833,7 +2833,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					InternalLBName:            "",
 					InternalLBAddressPoolName: "",
 					PublicIPName:              "",
-					AcceleratedNetworking:     pointer.Bool(true),
+					AcceleratedNetworking:     ptr.To(true),
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU:                       nil,
@@ -2887,7 +2887,7 @@ func TestDiskSpecs(t *testing.T) {
 					},
 					Spec: infrav1.AzureMachineSpec{
 						OSDisk: infrav1.OSDisk{
-							DiskSizeGB: pointer.Int32(30),
+							DiskSizeGB: ptr.To[int32](30),
 							OSType:     "Linux",
 						},
 					},
@@ -2929,7 +2929,7 @@ func TestDiskSpecs(t *testing.T) {
 					},
 					Spec: infrav1.AzureMachineSpec{
 						OSDisk: infrav1.OSDisk{
-							DiskSizeGB: pointer.Int32(30),
+							DiskSizeGB: ptr.To[int32](30),
 							OSType:     "Linux",
 						},
 						DataDisks: []infrav1.DataDisk{
@@ -2979,7 +2979,7 @@ func TestDiskSpecs(t *testing.T) {
 					},
 					Spec: infrav1.AzureMachineSpec{
 						OSDisk: infrav1.OSDisk{
-							DiskSizeGB: pointer.Int32(30),
+							DiskSizeGB: ptr.To[int32](30),
 							OSType:     "Linux",
 						},
 						DataDisks: []infrav1.DataDisk{

@@ -26,7 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -109,8 +109,8 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 				Cluster:           "cluster1",
 				Replicas:          1,
 				EnableAutoScaling: true,
-				MinCount:          pointer.Int32(2),
-				MaxCount:          pointer.Int32(10),
+				MinCount:          ptr.To[int32](2),
+				MaxCount:          ptr.To[int32](10),
 				VnetSubnetID:      "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				Headers:           map[string]string{},
 			},
@@ -208,7 +208,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 				Cluster:  "cluster1",
 				Replicas: 1,
 				NodeLabels: map[string]*string{
-					"custom": pointer.String("default"),
+					"custom": ptr.To("default"),
 				},
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				Headers:      map[string]string{},
@@ -403,7 +403,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 				Mode:         "System",
 				Cluster:      "cluster1",
 				Replicas:     1,
-				MaxPods:      pointer.Int32(12),
+				MaxPods:      ptr.To[int32](12),
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				Headers:      map[string]string{},
 			},
@@ -600,7 +600,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
-				OsDiskType:   pointer.String(string(containerservice.OSDiskTypeEphemeral)),
+				OsDiskType:   ptr.To(string(containerservice.OSDiskTypeEphemeral)),
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				Headers:      map[string]string{},
 			},
@@ -733,7 +733,7 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool1"),
-					InfraMachinePool: getAzureMachinePoolWithSubnetName("pool1", pointer.String("my-subnet")),
+					InfraMachinePool: getAzureMachinePoolWithSubnetName("pool1", ptr.To("my-subnet")),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -828,7 +828,7 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool1"),
-					InfraMachinePool: getAzureMachinePoolWithKubeletDiskType("pool1", (*infrav1.KubeletDiskType)(pointer.String("Temporary"))),
+					InfraMachinePool: getAzureMachinePoolWithKubeletDiskType("pool1", (*infrav1.KubeletDiskType)(ptr.To("Temporary"))),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
@@ -837,7 +837,7 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 				Mode:            "User",
 				Cluster:         "cluster1",
 				Replicas:        1,
-				KubeletDiskType: (*infrav1.KubeletDiskType)(pointer.String("Temporary")),
+				KubeletDiskType: (*infrav1.KubeletDiskType)(ptr.To("Temporary")),
 				VnetSubnetID:    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 				Headers:         map[string]string{},
 			},
@@ -879,7 +879,7 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 		Spec: infrav1.AzureManagedMachinePoolSpec{
 			Mode: string(mode),
 			SKU:  "Standard_D2s_v3",
-			Name: pointer.String(name),
+			Name: ptr.To(name),
 		},
 	}
 }
@@ -887,15 +887,15 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 func getAzureMachinePoolWithScaling(name string, min, max int32) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.Scaling = &infrav1.ManagedMachinePoolScaling{
-		MinSize: pointer.Int32(min),
-		MaxSize: pointer.Int32(max),
+		MinSize: ptr.To[int32](min),
+		MaxSize: ptr.To[int32](max),
 	}
 	return managedPool
 }
 
 func getAzureMachinePoolWithMaxPods(name string, maxPods int32) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeSystem)
-	managedPool.Spec.MaxPods = pointer.Int32(maxPods)
+	managedPool.Spec.MaxPods = ptr.To[int32](maxPods)
 	return managedPool
 }
 
@@ -913,7 +913,7 @@ func getAzureMachinePoolWithSubnetName(name string, subnetName *string) *infrav1
 
 func getAzureMachinePoolWithOsDiskType(name string, osDiskType string) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
-	managedPool.Spec.OsDiskType = pointer.String(osDiskType)
+	managedPool.Spec.OsDiskType = ptr.To(osDiskType)
 	return managedPool
 }
 
@@ -952,18 +952,18 @@ func getMachinePool(name string) *expv1.MachinePool {
 
 func getLinuxAzureMachinePool(name string) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
-	managedPool.Spec.OSType = pointer.String(azure.LinuxOS)
+	managedPool.Spec.OSType = ptr.To(azure.LinuxOS)
 	return managedPool
 }
 
 func getWindowsAzureMachinePool(name string) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
-	managedPool.Spec.OSType = pointer.String(azure.WindowsOS)
+	managedPool.Spec.OSType = ptr.To(azure.WindowsOS)
 	return managedPool
 }
 
 func getMachinePoolWithVersion(name, version string) *expv1.MachinePool {
 	machine := getMachinePool(name)
-	machine.Spec.Template.Spec.Version = pointer.String(version)
+	machine.Spec.Template.Spec.Version = ptr.To(version)
 	return machine
 }

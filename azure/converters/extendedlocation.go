@@ -19,7 +19,7 @@ package converters
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -29,7 +29,7 @@ func ExtendedLocationToNetworkSDK(src *infrav1.ExtendedLocationSpec) *network.Ex
 		return nil
 	}
 	return &network.ExtendedLocation{
-		Name: pointer.String(src.Name),
+		Name: ptr.To(src.Name),
 		Type: network.ExtendedLocationTypes(src.Type),
 	}
 }
@@ -40,7 +40,7 @@ func ExtendedLocationToComputeSDK(src *infrav1.ExtendedLocationSpec) *compute.Ex
 		return nil
 	}
 	return &compute.ExtendedLocation{
-		Name: pointer.String(src.Name),
+		Name: ptr.To(src.Name),
 		Type: compute.ExtendedLocationTypes(src.Type),
 	}
 }

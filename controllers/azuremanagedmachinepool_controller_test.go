@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -264,20 +264,20 @@ func fakeAgentPool(changes ...func(*agentpools.AgentPoolSpec)) agentpools.AgentP
 		Cluster:           "fake-cluster",
 		AvailabilityZones: []string{"fake-zone"},
 		EnableAutoScaling: true,
-		EnableUltraSSD:    pointer.Bool(true),
-		KubeletDiskType:   (*infrav1.KubeletDiskType)(pointer.String("fake-kubelet-disk-type")),
-		MaxCount:          pointer.Int32(5),
-		MaxPods:           pointer.Int32(10),
-		MinCount:          pointer.Int32(1),
+		EnableUltraSSD:    ptr.To(true),
+		KubeletDiskType:   (*infrav1.KubeletDiskType)(ptr.To("fake-kubelet-disk-type")),
+		MaxCount:          ptr.To[int32](5),
+		MaxPods:           ptr.To[int32](10),
+		MinCount:          ptr.To[int32](1),
 		Mode:              "fake-mode",
-		NodeLabels:        map[string]*string{"fake-label": pointer.String("fake-value")},
+		NodeLabels:        map[string]*string{"fake-label": ptr.To("fake-value")},
 		NodeTaints:        []string{"fake-taint"},
 		OSDiskSizeGB:      2,
-		OsDiskType:        pointer.String("fake-os-disk-type"),
-		OSType:            pointer.String("fake-os-type"),
+		OsDiskType:        ptr.To("fake-os-disk-type"),
+		OSType:            ptr.To("fake-os-type"),
 		Replicas:          1,
 		SKU:               "fake-sku",
-		Version:           pointer.String("fake-version"),
+		Version:           ptr.To("fake-version"),
 		VnetSubnetID:      "fake-vnet-subnet-id",
 		Headers:           map[string]string{"fake-header": "fake-value"},
 		AdditionalTags:    infrav1.Tags{"fake": "tag"},
@@ -293,14 +293,14 @@ func fakeAgentPool(changes ...func(*agentpools.AgentPoolSpec)) agentpools.AgentP
 func fakeVirtualMachineScaleSetVM() []compute.VirtualMachineScaleSetVM {
 	virtualMachineScaleSetVM := []compute.VirtualMachineScaleSetVM{
 		{
-			InstanceID: pointer.String("0"),
-			ID:         pointer.String("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156"),
-			Name:       pointer.String("vm0"),
+			InstanceID: ptr.To("0"),
+			ID:         ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156"),
+			Name:       ptr.To("vm0"),
 			Zones:      &[]string{"zone0"},
 			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-				ProvisioningState: pointer.String(string(compute.ProvisioningState1Succeeded)),
+				ProvisioningState: ptr.To(string(compute.ProvisioningState1Succeeded)),
 				OsProfile: &compute.OSProfile{
-					ComputerName: pointer.String("instance-000000"),
+					ComputerName: ptr.To("instance-000000"),
 				},
 			},
 		},
@@ -310,25 +310,25 @@ func fakeVirtualMachineScaleSetVM() []compute.VirtualMachineScaleSetVM {
 
 func fakeVirtualMachineScaleSet() []compute.VirtualMachineScaleSet {
 	tags := map[string]*string{
-		"foo":      pointer.String("bazz"),
-		"poolName": pointer.String("fake-agent-pool-name"),
+		"foo":      ptr.To("bazz"),
+		"poolName": ptr.To("fake-agent-pool-name"),
 	}
 	zones := []string{"zone0", "zone1"}
 	virtualMachineScaleSet := []compute.VirtualMachineScaleSet{
 		{
 			Sku: &compute.Sku{
-				Name:     pointer.String("skuName"),
-				Tier:     pointer.String("skuTier"),
-				Capacity: pointer.Int64(2),
+				Name:     ptr.To("skuName"),
+				Tier:     ptr.To("skuTier"),
+				Capacity: ptr.To[int64](2),
 			},
 			Zones:    &zones,
-			ID:       pointer.String("vmssID"),
-			Name:     pointer.String("vmssName"),
-			Location: pointer.String("westus2"),
+			ID:       ptr.To("vmssID"),
+			Name:     ptr.To("vmssName"),
+			Location: ptr.To("westus2"),
 			Tags:     tags,
 			VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-				SinglePlacementGroup: pointer.Bool(false),
-				ProvisioningState:    pointer.String(string(compute.ProvisioningState1Succeeded)),
+				SinglePlacementGroup: ptr.To(false),
+				ProvisioningState:    ptr.To(string(compute.ProvisioningState1Succeeded)),
 			},
 		},
 	}

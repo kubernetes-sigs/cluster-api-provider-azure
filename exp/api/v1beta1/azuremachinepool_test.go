@@ -21,7 +21,7 @@ import (
 
 	"github.com/onsi/gomega"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -88,7 +88,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				return &infrav1exp.AzureMachinePool{
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							TerminateNotificationTimeout: pointer.Int(7),
+							TerminateNotificationTimeout: ptr.To(7),
 						},
 					},
 				}
@@ -103,7 +103,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				return &infrav1exp.AzureMachinePool{
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							TerminateNotificationTimeout: pointer.Int(20),
+							TerminateNotificationTimeout: ptr.To(20),
 						},
 					},
 				}
@@ -119,7 +119,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				return &infrav1exp.AzureMachinePool{
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							TerminateNotificationTimeout: pointer.Int(3),
+							TerminateNotificationTimeout: ptr.To(3),
 						},
 					},
 				}

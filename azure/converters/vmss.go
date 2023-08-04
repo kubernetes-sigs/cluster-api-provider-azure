@@ -20,7 +20,7 @@ import (
 	"regexp"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -36,14 +36,14 @@ const (
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.
 func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) *azure.VMSS {
 	vmss := &azure.VMSS{
-		ID:    pointer.StringDeref(sdkvmss.ID, ""),
-		Name:  pointer.StringDeref(sdkvmss.Name, ""),
-		State: infrav1.ProvisioningState(pointer.StringDeref(sdkvmss.ProvisioningState, "")),
+		ID:    ptr.Deref(sdkvmss.ID, ""),
+		Name:  ptr.Deref(sdkvmss.Name, ""),
+		State: infrav1.ProvisioningState(ptr.Deref(sdkvmss.ProvisioningState, "")),
 	}
 
 	if sdkvmss.Sku != nil {
-		vmss.Sku = pointer.StringDeref(sdkvmss.Sku.Name, "")
-		vmss.Capacity = pointer.Int64Deref(sdkvmss.Sku.Capacity, 0)
+		vmss.Sku = ptr.Deref(sdkvmss.Sku.Name, "")
+		vmss.Capacity = ptr.Deref[int64](sdkvmss.Sku.Capacity, 0)
 	}
 
 	if sdkvmss.Zones != nil && len(*sdkvmss.Zones) > 0 {
@@ -75,7 +75,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 // SDKVMToVMSSVM converts an Azure SDK VM to a VMSS VM.
 func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine, mode infrav1.OrchestrationModeType) *azure.VMSSVM {
 	instance := azure.VMSSVM{
-		ID: pointer.StringDeref(sdkInstance.ID, ""),
+		ID: ptr.Deref(sdkInstance.ID, ""),
 	}
 
 	if sdkInstance.VirtualMachineProperties == nil {
@@ -84,7 +84,7 @@ func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine, mode infrav1.Orchestratio
 
 	instance.State = infrav1.Creating
 	if sdkInstance.ProvisioningState != nil {
-		instance.State = infrav1.ProvisioningState(pointer.StringDeref(sdkInstance.ProvisioningState, ""))
+		instance.State = infrav1.ProvisioningState(ptr.Deref(sdkInstance.ProvisioningState, ""))
 	}
 
 	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
@@ -110,14 +110,14 @@ func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine, mode infrav1.Orchestratio
 func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 	// Convert resourceGroup Name ID ( ProviderID in capz objects )
 	var convertedID string
-	convertedID, err := azprovider.ConvertResourceGroupNameToLower(pointer.StringDeref(sdkInstance.ID, ""))
+	convertedID, err := azprovider.ConvertResourceGroupNameToLower(ptr.Deref(sdkInstance.ID, ""))
 	if err != nil {
-		convertedID = pointer.StringDeref(sdkInstance.ID, "")
+		convertedID = ptr.Deref(sdkInstance.ID, "")
 	}
 
 	instance := azure.VMSSVM{
 		ID:         convertedID,
-		InstanceID: pointer.StringDeref(sdkInstance.InstanceID, ""),
+		InstanceID: ptr.Deref(sdkInstance.InstanceID, ""),
 	}
 
 	if sdkInstance.VirtualMachineScaleSetVMProperties == nil {
@@ -126,7 +126,7 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 
 	instance.State = infrav1.Creating
 	if sdkInstance.ProvisioningState != nil {
-		instance.State = infrav1.ProvisioningState(pointer.StringDeref(sdkInstance.ProvisioningState, ""))
+		instance.State = infrav1.ProvisioningState(ptr.Deref(sdkInstance.ProvisioningState, ""))
 	}
 
 	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
@@ -137,7 +137,7 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 		for _, r := range *sdkInstance.Resources {
 			if r.ProvisioningState != nil && r.Name != nil &&
 				(*r.Name == azure.BootstrappingExtensionLinux || *r.Name == azure.BootstrappingExtensionWindows) {
-				instance.BootstrappingState = infrav1.ProvisioningState(pointer.StringDeref(r.ProvisioningState, ""))
+				instance.BootstrappingState = infrav1.ProvisioningState(ptr.Deref(r.ProvisioningState, ""))
 				break
 			}
 		}
@@ -190,8 +190,8 @@ func IDImageRefToImage(id string) infrav1.Image {
 				Gallery:        params["gallery"],
 				Name:           params["name"],
 				Version:        params["version"],
-				SubscriptionID: pointer.String(params["subID"]),
-				ResourceGroup:  pointer.String(params["rg"]),
+				SubscriptionID: ptr.To(params["subID"]),
+				ResourceGroup:  ptr.To(params["rg"]),
 			},
 		}
 	}
@@ -207,11 +207,11 @@ func mpImageRefToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bo
 	return infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			ImagePlan: infrav1.ImagePlan{
-				Publisher: pointer.StringDeref(sdkImageRef.Publisher, ""),
-				Offer:     pointer.StringDeref(sdkImageRef.Offer, ""),
-				SKU:       pointer.StringDeref(sdkImageRef.Sku, ""),
+				Publisher: ptr.Deref(sdkImageRef.Publisher, ""),
+				Offer:     ptr.Deref(sdkImageRef.Offer, ""),
+				SKU:       ptr.Deref(sdkImageRef.Sku, ""),
 			},
-			Version:         pointer.StringDeref(sdkImageRef.Version, ""),
+			Version:         ptr.Deref(sdkImageRef.Version, ""),
 			ThirdPartyImage: isThirdPartyImage,
 		},
 	}

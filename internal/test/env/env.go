@@ -34,7 +34,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
@@ -46,7 +46,7 @@ import (
 )
 
 var (
-	logger                 = record.NewLogger(record.WithThreshold(pointer.Int(1)), record.WithWriter(ginkgo.GinkgoWriter))
+	logger                 = record.NewLogger(record.WithThreshold(ptr.To(1)), record.WithWriter(ginkgo.GinkgoWriter))
 	scheme                 = runtime.NewScheme()
 	env                    *envtest.Environment
 	clusterAPIVersionRegex = regexp.MustCompile(`^(\W)sigs.k8s.io/cluster-api v(.+)`)
