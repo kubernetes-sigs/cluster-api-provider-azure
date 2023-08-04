@@ -77,6 +77,24 @@ func (r *azureManagedControlPlaneService) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// Pause pauses all components making up the cluster.
+func (r *azureManagedControlPlaneService) Pause(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedControlPlaneService.Pause")
+	defer done()
+
+	for _, service := range r.services {
+		pauser, ok := service.(azure.Pauser)
+		if !ok {
+			continue
+		}
+		if err := pauser.Pause(ctx); err != nil {
+			return errors.Wrapf(err, "failed to pause AzureManagedControlPlane service %s", service.Name())
+		}
+	}
+
+	return nil
+}
+
 // Delete reconciles all the services in a predetermined order.
 func (r *azureManagedControlPlaneService) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedControlPlaneService.Delete")
