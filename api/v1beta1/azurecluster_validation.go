@@ -23,6 +23,7 @@ import (
 	"regexp"
 
 	valid "github.com/asaskevich/govalidator"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -106,6 +107,10 @@ func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
 		allErrs = append(allErrs, err)
 	}
 
+	if err := validateIdentityRef(c.Spec.IdentityRef, field.NewPath("spec").Child("identityRef")); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	return allErrs
 }
 
@@ -136,12 +141,23 @@ func validateBastionSpec(bastionSpec BastionSpec, fldPath *field.Path) *field.Er
 	return nil
 }
 
+// validateIdentityRef validates an IdentityRef.
+func validateIdentityRef(identityRef *corev1.ObjectReference, fldPath *field.Path) *field.Error {
+	if identityRef == nil {
+		return field.Required(fldPath, "identityRef is required")
+	}
+	if identityRef.Kind != "AzureClusterIdentity" {
+		return field.NotSupported(fldPath.Child("name"), identityRef.Name, []string{"AzureClusterIdentity"})
+	}
+	return nil
+}
+
 // validateNetworkSpec validates a NetworkSpec.
 func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	// If the user specifies a resourceGroup for vnet, it means
-	// that she intends to use a pre-existing vnet. In this case,
-	// we need to verify the information she provides
+	// that they intend to use a pre-existing vnet. In this case,
+	// we need to verify the information they provide
 	if networkSpec.Vnet.ResourceGroup != "" {
 		if err := validateResourceGroup(networkSpec.Vnet.ResourceGroup,
 			fldPath.Child("vnet").Child("resourceGroup")); err != nil {

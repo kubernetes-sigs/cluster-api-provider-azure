@@ -51,13 +51,24 @@ An Azure Service Principal is needed for deploying Azure resources. The below in
   az ad sp create-for-rbac --role contributor --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}"
   ```
 
-  6. Save the output from the above command in environment variables.
+  6. Save the output from the above command somewhere easily accessible and secure. You will need to save the `tenantID`, `clientID`, and `client secret`. When creating a Cluster, you will need to provide these values as a part of the `AzureClusterIdentity` object. Note that authentication via environment variables is now removed and an `AzureClusterIdentity` is required to be created. An example `AzureClusterIdentity` object is shown below:
 
-  ```bash
-  export AZURE_TENANT_ID="<Tenant>"
-  export AZURE_CLIENT_ID="<AppId>"
-  export AZURE_CLIENT_SECRET='<Password>'
-  export AZURE_LOCATION="eastus" # this should be an Azure region that your subscription has quota for.
+  ```yaml
+  apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+  kind: AzureClusterIdentity
+  metadata:
+    labels:
+      clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+    name: <cluster-identity-name>
+    namespace: default
+  spec:
+    allowedNamespaces: {}
+    clientID: <clientID>
+    clientSecret:
+      name: <client-secret-name>
+      namespace: <client-secret-namespace>
+    tenantID: <tenantID>
+    type: ServicePrincipal
   ```
 
 <aside class="note warning"> 

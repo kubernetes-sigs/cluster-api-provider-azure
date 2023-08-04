@@ -8,7 +8,6 @@ commonLabels:
 
 resources:
   - namespace.yaml
-  - credentials.yaml
   - aad-pod-identity-deployment.yaml  
 
 bases:
@@ -21,7 +20,6 @@ bases:
 patchesStrategicMerge:
   - manager_image_patch.yaml
   - manager_pull_policy.yaml
-  - manager_credentials_patch.yaml
   - manager_webhook_patch.yaml
   - webhookcainjection_patch.yaml
 
