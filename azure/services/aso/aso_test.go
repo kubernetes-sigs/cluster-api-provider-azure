@@ -797,6 +797,65 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(result).To(BeNil())
 		g.Expect(err.Error()).To(ContainSubstring("failed to reconcile tags"))
 	})
+
+	t.Run("reconcile policy annotation resets after un-pause", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New(c, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
+		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		})
+		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
+			return nil, nil
+		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					PrePauseReconcilePolicyAnnotation: ReconcilePolicyManage,
+					ReconcilePolicyAnnotation:         ReconcilePolicySkip,
+				},
+			},
+			Spec: asoresourcesv1.ResourceGroup_Spec{
+				Location: ptr.To("location"),
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Conditions: []conditions.Condition{
+					{
+						Type:   conditions.ConditionTypeReady,
+						Status: metav1.ConditionTrue,
+					},
+				},
+			},
+		})).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue())
+
+		updated := &asoresourcesv1.ResourceGroup{}
+		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+		g.Expect(updated.Annotations).NotTo(HaveKey(PrePauseReconcilePolicyAnnotation))
+		g.Expect(updated.Annotations).To(HaveKeyWithValue(ReconcilePolicyAnnotation, ReconcilePolicyManage))
+	})
 }
 
 // TestDeleteResource tests the DeleteResource function.
@@ -959,4 +1018,202 @@ func TestDeleteResource(t *testing.T) {
 		g.Expect(err).NotTo(BeNil())
 		g.Expect(err.Error()).To(ContainSubstring("failed to delete resource"))
 	})
+}
+
+func TestPauseResource(t *testing.T) {
+	tests := []struct {
+		name          string
+		expect        func(*mock_azure.MockASOResourceSpecGetterMockRecorder)
+		clientBuilder func(g Gomega) client.Client
+		expectedErr   string
+		verify        func(g Gomega, ctrlClient client.Client, spec azure.ASOResourceSpecGetter)
+	}{
+		{
+			name: "success, not already paused",
+			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder) {
+				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "namespace",
+					},
+				}).AnyTimes()
+			},
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+				return fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(&asoresourcesv1.ResourceGroup{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "name",
+							Namespace: "namespace",
+							Annotations: map[string]string{
+								ReconcilePolicyAnnotation: ReconcilePolicyManage,
+							},
+							Labels: map[string]string{
+								infrav1.OwnedByClusterLabelKey: clusterName,
+							},
+						},
+					}).
+					Build()
+			},
+			verify: func(g Gomega, ctrlClient client.Client, spec azure.ASOResourceSpecGetter) {
+				ctx := context.Background()
+				actual := &asoresourcesv1.ResourceGroup{}
+				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(PrePauseReconcilePolicyAnnotation, ReconcilePolicyManage))
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(ReconcilePolicyAnnotation, ReconcilePolicySkip))
+			},
+		},
+		{
+			name: "success, already paused",
+			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder) {
+				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "namespace",
+					},
+				}).AnyTimes()
+			},
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+				return fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(&asoresourcesv1.ResourceGroup{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "name",
+							Namespace: "namespace",
+							Annotations: map[string]string{
+								ReconcilePolicyAnnotation: ReconcilePolicySkip,
+							},
+							Labels: map[string]string{
+								infrav1.OwnedByClusterLabelKey: clusterName,
+							},
+						},
+					}).
+					Build()
+			},
+			verify: func(g Gomega, ctrlClient client.Client, spec azure.ASOResourceSpecGetter) {
+				ctx := context.Background()
+				actual := &asoresourcesv1.ResourceGroup{}
+				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(PrePauseReconcilePolicyAnnotation, ReconcilePolicySkip))
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(ReconcilePolicyAnnotation, ReconcilePolicySkip))
+			},
+		},
+		{
+			name: "failure getting existing resource",
+			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder) {
+				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "namespace",
+					},
+				}).AnyTimes()
+			},
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+				return fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					Build()
+			},
+			expectedErr: "not found",
+		},
+		{
+			name: "failure patching resource",
+			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder) {
+				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "namespace",
+					},
+				}).AnyTimes()
+			},
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+				c := fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(&asoresourcesv1.ResourceGroup{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "name",
+							Namespace: "namespace",
+							Annotations: map[string]string{
+								ReconcilePolicyAnnotation: ReconcilePolicySkip,
+							},
+							Labels: map[string]string{
+								infrav1.OwnedByClusterLabelKey: clusterName,
+							},
+						},
+					}).
+					Build()
+				return ErroringPatchClient{Client: c, err: errors.New("test patch error")}
+			},
+			expectedErr: "test patch error",
+		},
+		{
+			name: "success, unmanaged resource",
+			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder) {
+				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "namespace",
+					},
+				}).AnyTimes()
+			},
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+				return fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(&asoresourcesv1.ResourceGroup{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "name",
+							Namespace: "namespace",
+							Annotations: map[string]string{
+								ReconcilePolicyAnnotation: ReconcilePolicyManage,
+							},
+							Labels: map[string]string{
+								infrav1.OwnedByClusterLabelKey: "not-" + clusterName,
+							},
+						},
+					}).
+					Build()
+			},
+			verify: func(g Gomega, ctrlClient client.Client, spec azure.ASOResourceSpecGetter) {
+				ctx := context.Background()
+				actual := &asoresourcesv1.ResourceGroup{}
+				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
+				g.Expect(actual.Annotations).NotTo(HaveKey(PrePauseReconcilePolicyAnnotation))
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(ReconcilePolicyAnnotation, ReconcilePolicyManage))
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			ctx := context.Background()
+			svcName := "service"
+
+			ctrlClient := test.clientBuilder(g)
+
+			mockCtrl := gomock.NewController(t)
+			spec := mock_azure.NewMockASOResourceSpecGetter(mockCtrl)
+			test.expect(spec.EXPECT())
+
+			err := PauseResource(ctx, ctrlClient, spec, clusterName, svcName)
+			if test.expectedErr != "" {
+				g.Expect(err.Error()).To(ContainSubstring(test.expectedErr))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+			if test.verify != nil {
+				test.verify(g, ctrlClient, spec)
+			}
+		})
+	}
 }

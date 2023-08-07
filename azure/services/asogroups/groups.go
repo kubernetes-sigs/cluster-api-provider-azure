@@ -99,6 +99,17 @@ func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 	return aso.IsManaged(ctx, s.Scope.GetClient(), s.Scope.ASOGroupSpec(), s.Scope.ClusterName())
 }
 
+var _ azure.Pauser = (*Service)(nil)
+
+// Pause implements azure.Pauser.
+func (s *Service) Pause(ctx context.Context) error {
+	groupSpec := s.Scope.ASOGroupSpec()
+	if groupSpec == nil {
+		return nil
+	}
+	return aso.PauseResource(ctx, s.Scope.GetClient(), groupSpec, s.Scope.ClusterName(), ServiceName)
+}
+
 // ShouldDeleteIndividualResources returns false if the resource group is
 // managed and reconciled by ASO, meaning that we can rely on a single resource
 // group delete operation as opposed to deleting every individual resource.
