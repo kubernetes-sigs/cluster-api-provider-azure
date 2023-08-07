@@ -261,6 +261,9 @@ func buildAutoScalerProfile(autoScalerProfile *AutoScalerProfile) *containerserv
 }
 
 // Parameters returns the parameters for the managed clusters.
+// TODO: remove nolint after refactoring this function
+//
+//nolint:gocyclo
 func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Parameters")
 	defer done()
