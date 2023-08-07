@@ -1,0 +1,25 @@
+@startuml
+title Figure 1. Controller replaces Node OS image
+
+[*] --> ChooseHealthyNode  : given interval of time has passed
+ChooseHealthyNode : Choose a healthy node to become the new prototype image
+ChooseHealthyNode --> ShutdownChosenNode
+
+ShutdownChosenNode : Cleanly shut down the node by cordoning and draining it
+ShutdownChosenNode --> SnapshotChosenNode
+
+SnapshotChosenNode : Create a snapshot of the node's disk (OS Image)
+SnapshotChosenNode --> RestartChosenNode
+
+RestartChosenNode : Restart the node so it can continue operating in the cluster as it was
+RestartChosenNode --> CreateComputeImageGalleryImage
+
+CreateComputeImageGalleryImage : Create a compute image gallery image from the snapshot
+CreateComputeImageGalleryImage --> DeleteSnapshot
+
+DeleteSnapshot : Delete the snapshot
+DeleteSnapshot --> ConfigureAzureMachinePool
+
+ConfigureAzureMachinePool : Configure the AzureMachinePool to use the new Compute Image Gallery Image
+
+@enduml
