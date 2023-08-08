@@ -20,32 +20,32 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/go-autorest/autorest"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-const codeResourceGroupNotFound = "ResourceGroupNotFound"
-
-// ResourceGroupNotFound parses the error to check if it's a resource group not found error.
-func ResourceGroupNotFound(err error) bool {
-	derr := autorest.DetailedError{}
-	serr := &azureautorest.ServiceError{}
-	return errors.As(err, &derr) && errors.As(derr.Original, &serr) && serr.Code == codeResourceGroupNotFound
-}
-
-// ResourceNotFound parses the error to check if it's a resource not found error.
+// ResourceNotFound parses an error to check if its status code is Not Found (404).
 func ResourceNotFound(err error) bool {
-	derr := autorest.DetailedError{}
-	return errors.As(err, &derr) && derr.StatusCode == 404
+	return hasStatusCode(err, http.StatusNotFound)
 }
 
-// ResourceConflict parses the error to check if it's a resource conflict error (409).
+// ResourceConflict parses an error to check if its status code is Conflict (409).
 func ResourceConflict(err error) bool {
-	derr := autorest.DetailedError{}
-	return errors.As(err, &derr) && derr.StatusCode == 409
+	return hasStatusCode(err, http.StatusConflict)
+}
+
+// hasStatusCode returns true if an error is a DetailedError or ResponseError with a matching status code.
+func hasStatusCode(err error, statusCode int) bool {
+	derr := autorest.DetailedError{} // azure-sdk-for-go v1
+	if errors.As(err, &derr) {
+		return derr.StatusCode == statusCode
+	}
+	var rerr *azcore.ResponseError // azure-sdk-for-go v2
+	return errors.As(err, &rerr) && rerr.StatusCode == statusCode
 }
 
 // VMDeletedError is returned when a virtual machine is deleted outside of capz.
