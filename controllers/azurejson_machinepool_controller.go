@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
@@ -189,6 +190,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 		Kind:       kind,
 		Name:       azureMachinePool.GetName(),
 		UID:        azureMachinePool.GetUID(),
+		Controller: pointer.Bool(true),
 	}
 
 	if azureMachinePool.Spec.Identity == infrav1.VMIdentityNone {
