@@ -107,10 +107,15 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		return errors.Wrap(err, "error creating controller")
 	}
 
+	azureManagedMachinePoolMapper, err := util.ClusterToObjectsMapper(ammpr.Client, &infrav1.AzureManagedMachinePoolList{}, mgr.GetScheme())
+	if err != nil {
+		return errors.Wrap(err, "failed to create mapper for Cluster to AzureManagedMachinePools")
+	}
+
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), mgr.GetClient(), &infrav1.AzureManagedMachinePool{})),
+		handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, ammpr.WatchFilterValue),
 	); err != nil {
