@@ -149,6 +149,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		}))
 		g.Expect(created.Annotations).To(Equal(map[string]string{
 			ReconcilePolicyAnnotation: ReconcilePolicySkip,
+			SecretNameAnnotation:      "cluster-aso-secret",
 		}))
 		g.Expect(created.Spec).To(Equal(asoresourcesv1.ResourceGroup_Spec{
 			Location: ptr.To("location"),
@@ -425,6 +426,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
 		g.Expect(updated.Annotations).To(Equal(map[string]string{
 			ReconcilePolicyAnnotation: ReconcilePolicyManage,
+			SecretNameAnnotation:      "cluster-aso-secret",
 		}))
 	})
 
@@ -482,6 +484,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
 		g.Expect(updated.Annotations).To(Equal(map[string]string{
 			ReconcilePolicyAnnotation: ReconcilePolicyManage,
+			SecretNameAnnotation:      "cluster-aso-secret",
 		}))
 	})
 
@@ -603,6 +606,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				},
 				Annotations: map[string]string{
 					ReconcilePolicyAnnotation: ReconcilePolicyManage,
+					SecretNameAnnotation:      "cluster-aso-secret",
 				},
 			},
 			Spec: asoresourcesv1.ResourceGroup_Spec{

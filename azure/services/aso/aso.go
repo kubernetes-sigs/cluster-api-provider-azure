@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,6 +50,9 @@ const (
 
 	createOrUpdateFutureType = "ASOCreateOrUpdate"
 	deleteFutureType         = "ASODelete"
+
+	// SecretNameAnnotation is the annotation key for ASO's credentials to use.
+	SecretNameAnnotation = "serviceoperator.azure.com/credential-from"
 )
 
 // Service is an implementation of the Reconciler interface. It handles creation
@@ -187,6 +191,10 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 	if adopt {
 		annotations[ReconcilePolicyAnnotation] = ReconcilePolicyManage
 	}
+
+	// Set the secret name annotation in order to leverage the ASO resource credential scope as defined in
+	// https://azure.github.io/azure-service-operator/guide/authentication/credential-scope/#resource-scope.
+	annotations[SecretNameAnnotation] = aso.GetASOSecretName(s.clusterName)
 
 	if len(labels) == 0 {
 		labels = nil

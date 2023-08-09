@@ -22,6 +22,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -475,13 +477,13 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 	old := &corev1.Secret{}
 	err := kubeclient.Get(ctx, key, old)
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrap(err, "failed to fetch existing azure json")
+		return errors.Wrap(err, "failed to fetch existing secret")
 	}
 
 	// Create if it wasn't found
 	if apierrors.IsNotFound(err) {
 		if err := kubeclient.Create(ctx, newSecret); err != nil && !apierrors.IsAlreadyExists(err) {
-			return errors.Wrap(err, "failed to create cluster azure json")
+			return errors.Wrap(err, "failed to create secret")
 		}
 		return nil
 	}
@@ -489,7 +491,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 	tag, exists := old.Labels[clusterName]
 
 	if !exists || tag != string(infrav1.ResourceLifecycleOwned) {
-		log.V(2).Info("returning early from json reconcile, user provided secret already exists")
+		log.V(2).Info("returning early from secret reconcile, user provided secret already exists")
 		return nil
 	}
 
@@ -505,7 +507,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 	hasData := equality.Semantic.DeepEqual(old.Data, newSecret.Data)
 	if hasData && hasOwner {
 		// no update required
-		log.V(2).Info("returning early from json reconcile, no update needed")
+		log.V(2).Info("returning early from secret reconcile, no update needed")
 		return nil
 	}
 
@@ -517,12 +519,12 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 		old.Data = newSecret.Data
 	}
 
-	log.V(2).Info("updating azure json")
+	log.V(2).Info("updating azure secret")
 	if err := kubeclient.Update(ctx, old); err != nil {
-		return errors.Wrap(err, "failed to update cluster azure json when diff was required")
+		return errors.Wrap(err, "failed to update secret when diff was required")
 	}
 
-	log.V(2).Info("done updating azure json")
+	log.V(2).Info("done updating secret")
 
 	return nil
 }
@@ -1055,4 +1057,13 @@ func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
 		DeleteFunc:  func(e event.DeleteEvent) bool { return false },
 		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
+}
+
+func getCertificateFromFile(certificateFilePath string) ([]byte, error) {
+	certificateFilePathTrimmed := strings.TrimSpace(certificateFilePath)
+	if certificateFilePathTrimmed == "" {
+		return nil, fmt.Errorf("certificate path is empty")
+	}
+
+	return os.ReadFile(certificateFilePathTrimmed)
 }
