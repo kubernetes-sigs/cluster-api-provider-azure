@@ -70,9 +70,10 @@
    - `sudo apt install make` on Linux.
 9. Install [timeout][timeout]
    - `brew install coreutils` on macOS.
-9. Install [pre-commit framework](https://pre-commit.com/#installation)
+10. Install [pre-commit framework](https://pre-commit.com/#installation)
    - `brew install pre-commit` Or `pip install pre-commit`. Installs pre-commit globally.
    - run `pre-commit install` at the root of the project to install pre-commit hooks to read `.pre-commit-config.yaml`
+   - *Note*: use `git commit --no-verify` to skip running pre-commit workflow as and when needed.
 
 When developing on Windows, it is suggested to set up the project on Windows + WSL2 and the file should be checked out on as wsl file system for better results.
 
