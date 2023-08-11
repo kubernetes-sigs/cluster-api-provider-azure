@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
-	"sigs.k8s.io/cluster-api-provider-azure/util/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -298,7 +298,7 @@ func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() e
 	return func() error {
 		// Only Flexible orchestration mode requires validation.
 		if amp.Spec.OrchestrationMode == infrav1.OrchestrationModeType(compute.OrchestrationModeFlexible) {
-			parent, err := azure.FindParentMachinePoolWithRetry(amp.Name, c, 5)
+			parent, err := azureutil.FindParentMachinePoolWithRetry(amp.Name, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to find parent MachinePool")
 			}
