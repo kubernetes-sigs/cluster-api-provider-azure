@@ -17,10 +17,17 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"go.uber.org/mock/gomock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
@@ -57,6 +64,75 @@ func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)
 			g.Expect(errors.Is(c.Err, NewAgentPoolVMSSNotFoundError("foo", "baz"))).To(gomega.Equal(c.Expected))
+		})
+	}
+}
+
+func TestAzureManagedMachinePoolServicePause(t *testing.T) {
+	type pausingServiceReconciler struct {
+		*mock_azure.MockServiceReconciler
+		*mock_azure.MockPauser
+	}
+
+	cases := map[string]struct {
+		expectedError string
+		expect        func(svc pausingServiceReconciler)
+	}{
+		"service paused": {
+			expectedError: "",
+			expect: func(svc pausingServiceReconciler) {
+				gomock.InOrder(
+					svc.MockPauser.EXPECT().Pause(gomockinternal.AContext()).Return(nil),
+				)
+			},
+		},
+		"service pause fails": {
+			expectedError: "failed to pause machine pool ammp: some error happened",
+			expect: func(svc pausingServiceReconciler) {
+				gomock.InOrder(
+					svc.MockPauser.EXPECT().Pause(gomockinternal.AContext()).Return(errors.New("some error happened")),
+				)
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			g := gomega.NewWithT(t)
+
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			newPausingServiceReconciler := func() pausingServiceReconciler {
+				return pausingServiceReconciler{
+					mock_azure.NewMockServiceReconciler(mockCtrl),
+					mock_azure.NewMockPauser(mockCtrl),
+				}
+			}
+			svcMock := newPausingServiceReconciler()
+
+			tc.expect(svcMock)
+
+			s := &azureManagedMachinePoolService{
+				agentPoolsSvc: svcMock,
+				scope: &scope.ManagedMachinePoolScope{
+					InfraMachinePool: &infrav1.AzureManagedMachinePool{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "ammp",
+						},
+					},
+				},
+			}
+
+			err := s.Pause(context.TODO())
+			if tc.expectedError != "" {
+				g.Expect(err).To(gomega.HaveOccurred())
+				g.Expect(err).To(gomega.MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+			}
 		})
 	}
 }

@@ -43,6 +43,7 @@ type azureMachineService struct {
 	services  []azure.ServiceReconciler
 	skuCache  *resourceskus.Cache
 	Reconcile func(context.Context) error
+	Pause     func(context.Context) error
 	Delete    func(context.Context) error
 }
 
@@ -68,6 +69,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 		skuCache: cache,
 	}
 	ams.Reconcile = ams.reconcile
+	ams.Pause = ams.pause
 	ams.Delete = ams.delete
 
 	return ams, nil
@@ -75,7 +77,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 
 // reconcile reconciles all the services in a predetermined order.
 func (s *azureMachineService) reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.Reconcile")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.reconcile")
 	defer done()
 
 	// Ensure that the deprecated networking field values have been migrated to the new NetworkInterfaces field.
@@ -94,9 +96,27 @@ func (s *azureMachineService) reconcile(ctx context.Context) error {
 	return nil
 }
 
+// pause pauses all components making up the machine.
+func (s *azureMachineService) pause(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.pause")
+	defer done()
+
+	for _, service := range s.services {
+		pauser, ok := service.(azure.Pauser)
+		if !ok {
+			continue
+		}
+		if err := pauser.Pause(ctx); err != nil {
+			return errors.Wrapf(err, "failed to pause AzureMachine service %s", service.Name())
+		}
+	}
+
+	return nil
+}
+
 // delete deletes all the services in a predetermined order.
 func (s *azureMachineService) delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.Delete")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.delete")
 	defer done()
 
 	// Delete services in reverse order of creation.

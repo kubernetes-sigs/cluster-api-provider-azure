@@ -111,16 +111,6 @@ func TestAzureMachineReconcile(t *testing.T) {
 			},
 			event: "Unable to get cluster from metadata",
 		},
-		"should return if cluster is paused": {
-			objects: []runtime.Object{
-				getFakeCluster(func(c *clusterv1.Cluster) {
-					c.Spec.Paused = true
-				}),
-				defaultAzureCluster,
-				defaultAzureMachine,
-				defaultMachine,
-			},
-		},
 		"should return if azureCluster does not yet available": {
 			objects: []runtime.Object{
 				defaultCluster,
@@ -239,6 +229,45 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 				g.Expect(machineScope.AzureMachine.Status.FailureReason).ToNot(BeNil())
 				g.Expect(*machineScope.AzureMachine.Status.FailureReason).To(Equal(tc.machineScopeFailureReason))
 			}
+			if tc.expectedErr != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedErr))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestAzureMachineReconcilePause(t *testing.T) {
+	cases := map[string]TestReconcileInput{
+		"should pause successfully": {
+			createAzureMachineService: getFakeAzureMachineService,
+			cache:                     &scope.MachineCache{},
+		},
+		"should fail if failed to create azure machine service": {
+			createAzureMachineService: getFakeAzureMachineServiceWithFailure,
+			cache:                     &scope.MachineCache{},
+			expectedErr:               "failed to create AzureMachineService",
+		},
+		"should fail to pause for errors": {
+			createAzureMachineService: getFakeAzureMachineServiceWithGeneralError,
+			cache:                     &scope.MachineCache{},
+			expectedErr:               "failed to pause azure machine service",
+		},
+	}
+
+	for name, c := range cases {
+		tc := c
+		t.Run(name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			reconciler, machineScope, _, err := getReconcileInputs(tc)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			result, err := reconciler.reconcilePause(context.Background(), machineScope)
+			g.Expect(result).To(Equal(tc.expectedResult))
+
 			if tc.expectedErr != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedErr))
@@ -431,6 +460,9 @@ func getFakeAzureMachineServiceWithGeneralError(machineScope *scope.MachineScope
 	ams.Reconcile = func(context.Context) error {
 		return errors.New("foo error")
 	}
+	ams.Pause = func(context.Context) error {
+		return errors.New("foo error")
+	}
 	ams.Delete = func(context.Context) error {
 		return errors.New("foo error")
 	}
@@ -444,6 +476,9 @@ func getDefaultAzureMachineService(machineScope *scope.MachineScope, cache *reso
 		services: []azure.ServiceReconciler{},
 		skuCache: cache,
 		Reconcile: func(context.Context) error {
+			return nil
+		},
+		Pause: func(context.Context) error {
 			return nil
 		},
 		Delete: func(context.Context) error {

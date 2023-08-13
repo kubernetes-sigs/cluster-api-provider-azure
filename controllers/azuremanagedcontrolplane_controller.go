@@ -99,7 +99,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(amcpr.ClusterToAzureManagedControlPlane),
-		predicates.Any(log, predicates.ClusterCreateInfraReady(log), predicates.ClusterUpdateInfraReady(log), ClusterUpdatePauseChange(log)),
+		ClusterPauseChangeAndInfrastructureReady(log),
 		predicates.ResourceHasFilterLabel(log, amcpr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")

@@ -158,6 +158,22 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// Pause pauses all components making up the machine pool.
+func (s *azureManagedMachinePoolService) Pause(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedMachinePoolService.Pause")
+	defer done()
+
+	pauser, ok := s.agentPoolsSvc.(azure.Pauser)
+	if !ok {
+		return nil
+	}
+	if err := pauser.Pause(ctx); err != nil {
+		return errors.Wrapf(err, "failed to pause machine pool %s", s.scope.Name())
+	}
+
+	return nil
+}
+
 // Delete reconciles all the services in a predetermined order.
 func (s *azureManagedMachinePoolService) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedMachinePoolService.Delete")

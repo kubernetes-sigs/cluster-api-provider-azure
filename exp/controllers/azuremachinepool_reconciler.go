@@ -73,6 +73,24 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// Pause pauses all the services.
+func (s *azureMachinePoolService) Pause(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachinePoolService.Pause")
+	defer done()
+
+	for _, service := range s.services {
+		pauser, ok := service.(azure.Pauser)
+		if !ok {
+			continue
+		}
+		if err := pauser.Pause(ctx); err != nil {
+			return errors.Wrapf(err, "failed to pause AzureMachinePool service %s", service.Name())
+		}
+	}
+
+	return nil
+}
+
 // Delete reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachinePoolService.Delete")
