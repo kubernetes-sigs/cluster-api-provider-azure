@@ -266,7 +266,6 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 	validators := []func(client client.Client) error{
 		m.validateName,
 		m.validateVersion,
-		m.validateDNSServiceIP,
 		m.validateSSHKey,
 		m.validateLoadBalancerProfile,
 		m.validateAPIServerAccessProfile,
@@ -283,17 +282,6 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 	}
 
 	return kerrors.NewAggregate(errs)
-}
-
-// validateDNSServiceIP validates the DNSServiceIP.
-func (m *AzureManagedControlPlane) validateDNSServiceIP(_ client.Client) error {
-	if m.Spec.DNSServiceIP != nil {
-		if net.ParseIP(*m.Spec.DNSServiceIP) == nil {
-			return errors.New("DNSServiceIP must be a valid IP")
-		}
-	}
-
-	return nil
 }
 
 // validateVersion validates the Kubernetes version.
@@ -434,9 +422,21 @@ func (m *AzureManagedControlPlane) validateManagedClusterNetwork(cli client.Clie
 		if err != nil {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("Cluster", "Spec", "ClusterNetwork", "Services", "CIDRBlocks"), serviceCIDR, fmt.Sprintf("failed to parse cluster service cidr: %v", err)))
 		}
-		ip := net.ParseIP(*m.Spec.DNSServiceIP)
-		if !cidr.Contains(ip) {
+
+		dnsIP := net.ParseIP(*m.Spec.DNSServiceIP)
+		if dnsIP == nil { // dnsIP will be nil if the string is not a valid IP
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "DNSServiceIP"), *m.Spec.DNSServiceIP, "must be a valid IP address"))
+		}
+
+		if dnsIP != nil && !cidr.Contains(dnsIP) {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("Cluster", "Spec", "ClusterNetwork", "Services", "CIDRBlocks"), serviceCIDR, "DNSServiceIP must reside within the associated cluster serviceCIDR"))
+		}
+
+		// AKS only supports .10 as the last octet for the DNSServiceIP.
+		// Refer to: https://learn.microsoft.com/en-us/azure/aks/configure-kubenet#create-an-aks-cluster-with-system-assigned-managed-identities
+		targetSuffix := ".10"
+		if dnsIP != nil && !strings.HasSuffix(dnsIP.String(), targetSuffix) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "DNSServiceIP"), *m.Spec.DNSServiceIP, fmt.Sprintf("must end with %q", targetSuffix)))
 		}
 	}
 
