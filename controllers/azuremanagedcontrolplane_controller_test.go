@@ -73,7 +73,7 @@ func TestClusterToAzureManagedControlPlane(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
-			actual := (&AzureManagedControlPlaneReconciler{}).ClusterToAzureManagedControlPlane(&clusterv1.Cluster{
+			actual := (&AzureManagedControlPlaneReconciler{}).ClusterToAzureManagedControlPlane(context.TODO(), &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
 					ControlPlaneRef: test.controlPlaneRef,
 				},

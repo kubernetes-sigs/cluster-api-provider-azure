@@ -89,7 +89,7 @@ func AzureClusterToAzureMachinesMapper(ctx context.Context, c client.Client, obj
 		return nil, errors.Wrap(err, "failed to find GVK for AzureMachine")
 	}
 
-	return func(o client.Object) []ctrl.Request {
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
@@ -124,7 +124,7 @@ func AzureClusterToAzureMachinesMapper(ctx context.Context, c client.Client, obj
 		var results []ctrl.Request
 		for _, machine := range machineList.Items {
 			m := machine
-			azureMachines := mapFunc(&m)
+			azureMachines := mapFunc(ctx, &m)
 			results = append(results, azureMachines...)
 		}
 
@@ -698,7 +698,7 @@ func RemoveClusterIdentityFinalizer(ctx context.Context, c client.Client, object
 // MachinePoolToInfrastructureMapFunc returns a handler.MapFunc that watches for
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
 func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
-	return func(o client.Object) []reconcile.Request {
+	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		m, ok := o.(*expv1.MachinePool)
 		if !ok {
 			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o))
@@ -735,7 +735,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c 
 		return nil, errors.Wrap(err, "failed to find GVK for AzureManagedMachinePool")
 	}
 
-	return func(o client.Object) []ctrl.Request {
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
@@ -770,7 +770,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c 
 		var results []ctrl.Request
 		for _, machine := range machineList.Items {
 			m := machine
-			azureMachines := mapFunc(&m)
+			azureMachines := mapFunc(ctx, &m)
 			results = append(results, azureMachines...)
 		}
 
@@ -788,7 +788,7 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Contex
 		return nil, errors.Wrap(err, "failed to find GVK for AzureManagedMachinePool")
 	}
 
-	return func(o client.Object) []ctrl.Request {
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
@@ -823,7 +823,7 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Contex
 		var results []ctrl.Request
 		for _, machine := range machineList.Items {
 			m := machine
-			azureMachines := mapFunc(&m)
+			azureMachines := mapFunc(ctx, &m)
 			results = append(results, azureMachines...)
 		}
 
@@ -835,7 +835,7 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Contex
 // AzureManagedControlPlane. The transform requires AzureManagedCluster to map to the owning Cluster, then from the
 // Cluster, collect the control plane infrastructure reference.
 func AzureManagedClusterToAzureManagedControlPlaneMapper(ctx context.Context, c client.Client, log logr.Logger) (handler.MapFunc, error) {
-	return func(o client.Object) []ctrl.Request {
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
@@ -884,7 +884,7 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(ctx context.Context, c 
 // AzureManagedControlPlane. The transform requires AzureManagedCluster to map to the owning Cluster, then from the
 // Cluster, collect the control plane infrastructure reference.
 func AzureManagedControlPlaneToAzureManagedClusterMapper(ctx context.Context, c client.Client, log logr.Logger) (handler.MapFunc, error) {
-	return func(o client.Object) []ctrl.Request {
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
@@ -932,7 +932,7 @@ func AzureManagedControlPlaneToAzureManagedClusterMapper(ctx context.Context, c 
 // MachinePoolToAzureManagedControlPlaneMapFunc returns a handler.MapFunc that watches for
 // MachinePool events and returns reconciliation requests for a control plane object.
 func MachinePoolToAzureManagedControlPlaneMapFunc(ctx context.Context, c client.Client, gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
-	return func(o client.Object) []reconcile.Request {
+	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 

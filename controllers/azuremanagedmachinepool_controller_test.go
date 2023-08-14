@@ -141,7 +141,11 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 
 					return s
 				}()
-				cb = fake.NewClientBuilder().WithScheme(scheme)
+				cb = fake.NewClientBuilder().
+					WithStatusSubresource(
+						&infrav1.AzureManagedMachinePool{},
+					).
+					WithScheme(scheme)
 			)
 			defer mockCtrl.Finish()
 
@@ -234,8 +238,9 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 	// AzureManagedMachinePool
 	ammp := &infrav1.AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo-ammp",
-			Namespace: "foobar",
+			Name:       "foo-ammp",
+			Namespace:  "foobar",
+			Finalizers: []string{"test"},
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Name:       "foo-mp1",

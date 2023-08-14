@@ -929,7 +929,7 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 	return b.String()
 }
 
-func CopyConfigMap(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cl client.Client, cmName, fromNamespace, toNamespace string) {
+func CopyConfigMap(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cl client.Client, cmName, fromNamespace, toNamespace string) {
 	cm := &corev1.ConfigMap{}
 	Eventually(func(g Gomega) {
 		g.Expect(cl.Get(ctx, client.ObjectKey{Name: cmName, Namespace: fromNamespace}, cm)).To(Succeed())

@@ -75,7 +75,7 @@ func (asos *ASOSecretReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 
 	// Add a watch on infrav1.AzureManagedControlPlane.
 	if err = c.Watch(
-		&source.Kind{Type: &infrav1.AzureManagedControlPlane{}},
+		source.Kind(mgr.GetCache(), &infrav1.AzureManagedControlPlane{}),
 		&handler.EnqueueRequestForObject{},
 		predicates.ResourceNotPausedAndHasFilterLabel(log, asos.WatchFilterValue),
 	); err != nil {
@@ -84,18 +84,15 @@ func (asos *ASOSecretReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 
 	// Add a watch on ASO secrets owned by an AzureManagedControlPlane
 	if err = c.Watch(
-		&source.Kind{Type: &corev1.Secret{}},
-		&handler.EnqueueRequestForOwner{
-			OwnerType:    &infrav1.AzureManagedControlPlane{},
-			IsController: true,
-		},
+		source.Kind(mgr.GetCache(), &corev1.Secret{}),
+		handler.EnqueueRequestForOwner(asos.Scheme(), asos.RESTMapper(), &infrav1.AzureManagedControlPlane{}, handler.OnlyControllerOwner()),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for secrets")
 	}
 
 	// Add a watch on clusterv1.Cluster object for unpause notifications.
 	if err = c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
+		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureCluster"), mgr.GetClient(), &infrav1.AzureCluster{})),
 		predicates.ClusterUnpaused(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, asos.WatchFilterValue),

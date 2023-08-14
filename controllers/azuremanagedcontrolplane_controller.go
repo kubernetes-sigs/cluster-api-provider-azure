@@ -82,12 +82,12 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, amcpr.WatchFilterValue)).
 		// watch AzureManagedCluster resources
 		Watches(
-			&source.Kind{Type: &infrav1.AzureManagedCluster{}},
+			&infrav1.AzureManagedCluster{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedClusterMapper),
 		).
 		// watch MachinePool resources
 		Watches(
-			&source.Kind{Type: &expv1.MachinePool{}},
+			&expv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 		).
 		Build(r)
@@ -97,7 +97,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 
 	// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 	if err = c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
+		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(amcpr.ClusterToAzureManagedControlPlane),
 		ClusterPauseChangeAndInfrastructureReady(log),
 		predicates.ResourceHasFilterLabel(log, amcpr.WatchFilterValue),
@@ -311,7 +311,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 
 // ClusterToAzureManagedControlPlane is a handler.ToRequestsFunc to be used to enqueue requests for
 // reconciliation for AzureManagedControlPlane based on updates to a Cluster.
-func (amcpr *AzureManagedControlPlaneReconciler) ClusterToAzureManagedControlPlane(o client.Object) []ctrl.Request {
+func (amcpr *AzureManagedControlPlaneReconciler) ClusterToAzureManagedControlPlane(_ context.Context, o client.Object) []ctrl.Request {
 	c, ok := o.(*clusterv1.Cluster)
 	if !ok {
 		panic(fmt.Sprintf("Expected a Cluster but got a %T", o))

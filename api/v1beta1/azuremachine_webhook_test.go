@@ -221,7 +221,7 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mw := &azureMachineWebhook{}
-			err := mw.ValidateCreate(context.Background(), tc.machine)
+			_, err := mw.ValidateCreate(context.Background(), tc.machine)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -798,7 +798,7 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mw := &azureMachineWebhook{}
-			err := mw.ValidateUpdate(context.Background(), tc.oldMachine, tc.newMachine)
+			_, err := mw.ValidateUpdate(context.Background(), tc.oldMachine, tc.newMachine)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

@@ -157,7 +157,7 @@ CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
 WEBHOOK_ROOT ?= $(MANIFEST_ROOT)/webhook
 RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 ASO_CRDS_PATH := $(MANIFEST_ROOT)/aso/crds.yaml
-ASO_VERSION := v2.1.0
+ASO_VERSION := v2.2.0
 ASO_CRDS := resourcegroups.resources.azure.com
 
 # Allow overriding the imagePullPolicy
@@ -301,7 +301,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.5/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.0/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAPZ
 	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=$(KIND_CLUSTER_NAME)

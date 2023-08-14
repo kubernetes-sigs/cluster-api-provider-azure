@@ -172,8 +172,9 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 
 	ampm := &infrav1exp.AzureMachinePoolMachine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ampm1",
-			Namespace: "default",
+			Name:       "ampm1",
+			Namespace:  "default",
+			Finalizers: []string{"test"},
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Name:       amp.Name,

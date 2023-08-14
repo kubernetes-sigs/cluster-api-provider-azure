@@ -42,7 +42,7 @@ type DiscoverAndWaitForAKSControlPlaneInput struct {
 
 // WaitForAKSControlPlaneInitialized waits for the Azure managed control plane to be initialized.
 // This will be invoked by cluster api e2e framework.
-func WaitForAKSControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
+func WaitForAKSControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
 	client := input.ClusterProxy.GetClient()
 	DiscoverAndWaitForAKSControlPlaneInitialized(ctx, DiscoverAndWaitForAKSControlPlaneInput{
 		Lister:  client,
@@ -53,7 +53,7 @@ func WaitForAKSControlPlaneInitialized(ctx context.Context, input clusterctl.App
 
 // WaitForAKSControlPlaneReady waits for the azure managed control plane to be ready.
 // This will be invoked by cluster api e2e framework.
-func WaitForAKSControlPlaneReady(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, result *clusterctl.ApplyClusterTemplateAndWaitResult) {
+func WaitForAKSControlPlaneReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
 	client := input.ClusterProxy.GetClient()
 	DiscoverAndWaitForAKSControlPlaneReady(ctx, DiscoverAndWaitForAKSControlPlaneInput{
 		Lister:  client,

@@ -608,7 +608,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			mw := &azureManagedMachinePoolWebhook{
 				Client: client,
 			}
-			err := mw.ValidateUpdate(context.Background(), tc.old, tc.new)
+			_, err := mw.ValidateUpdate(context.Background(), tc.old, tc.new)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -1163,7 +1163,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			mw := &azureManagedMachinePoolWebhook{
 				Client: client,
 			}
-			err := mw.ValidateCreate(context.Background(), tc.ammp)
+			_, err := mw.ValidateCreate(context.Background(), tc.ammp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(HaveLen(tc.errorLen))
@@ -1197,7 +1197,7 @@ func TestAzureManagedMachinePool_ValidateCreateFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
 			mw := &azureManagedMachinePoolWebhook{}
-			err := mw.ValidateCreate(context.Background(), tc.ammp)
+			_, err := mw.ValidateCreate(context.Background(), tc.ammp)
 			g.Expect(err).To(HaveOccurred())
 		})
 	}
@@ -1205,6 +1205,7 @@ func TestAzureManagedMachinePool_ValidateCreateFailure(t *testing.T) {
 
 func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 	deletionTime := metav1.Now()
+	finalizers := []string{"test"}
 	systemMachinePool := getManagedMachinePoolWithSystemMode()
 	tests := []struct {
 		name    string
@@ -1220,6 +1221,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
+					Finalizers:        finalizers,
 				},
 				Spec: clusterv1.ClusterSpec{
 					Paused: true,
@@ -1235,6 +1237,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
+					Finalizers:        finalizers,
 				},
 				Spec: clusterv1.ClusterSpec{
 					Paused: true,
@@ -1261,6 +1264,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
+					Finalizers:        finalizers,
 				},
 			},
 			wantErr: false,

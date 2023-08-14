@@ -5,7 +5,7 @@ metadata:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
     controller-gen.kubebuilder.io/version: v0.11.3
   labels:
-    serviceoperator.azure.com/version: v2.1.0
+    serviceoperator.azure.com/version: v2.2.0
   name: resourcegroups.resources.azure.com
 spec:
   conversion:

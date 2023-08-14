@@ -53,7 +53,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 		return nil, errors.Wrap(err, "failed to find GVK for AzureMachinePool")
 	}
 
-	return func(o client.Object) []ctrl.Request {
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
@@ -89,7 +89,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 		var results []ctrl.Request
 		for _, machine := range machineList.Items {
 			m := machine
-			azureMachines := mapFunc(&m)
+			azureMachines := mapFunc(ctx, &m)
 			results = append(results, azureMachines...)
 		}
 
@@ -99,7 +99,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 
 // AzureMachinePoolMachineMapper creates a mapping handler to transform AzureMachinePoolMachine to AzureMachinePools.
 func AzureMachinePoolMachineMapper(scheme *runtime.Scheme, log logr.Logger) handler.MapFunc {
-	return func(o client.Object) []ctrl.Request {
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
 		gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureMachinePool), scheme)
 		if err != nil {
 			log.Error(errors.WithStack(err), "failed to find GVK for AzureMachinePool")
@@ -143,7 +143,7 @@ func AzureMachinePoolMachineMapper(scheme *runtime.Scheme, log logr.Logger) hand
 // MachinePoolToInfrastructureMapFunc returns a handler.MapFunc that watches for
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
 func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
-	return func(o client.Object) []reconcile.Request {
+	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		m, ok := o.(*expv1.MachinePool)
 		if !ok {
 			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o))
@@ -173,7 +173,7 @@ func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Lo
 // AzureClusterToAzureMachinePoolsFunc is a handler.MapFunc to be used to enqueue
 // requests for reconciliation of AzureMachinePools.
 func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, c client.Client, log logr.Logger) handler.MapFunc {
-	return func(o client.Object) []reconcile.Request {
+	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
@@ -218,7 +218,7 @@ func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, c client.Client, l
 // AzureMachinePoolToAzureMachinePoolMachines maps an AzureMachinePool to its child AzureMachinePoolMachines through
 // Cluster and MachinePool labels.
 func AzureMachinePoolToAzureMachinePoolMachines(ctx context.Context, c client.Client, log logr.Logger) handler.MapFunc {
-	return func(o client.Object) []reconcile.Request {
+	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
@@ -321,7 +321,7 @@ func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Fun
 
 // KubeadmConfigToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for KubeadmConfig events and returns.
 func KubeadmConfigToInfrastructureMapFunc(ctx context.Context, c client.Client, log logr.Logger) handler.MapFunc {
-	return func(o client.Object) []reconcile.Request {
+	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 

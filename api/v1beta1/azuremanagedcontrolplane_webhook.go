@@ -38,6 +38,7 @@ import (
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var (
@@ -107,33 +108,33 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1beta1,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedControlPlaneWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+func (mw *azureManagedControlPlaneWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	m, ok := obj.(*AzureManagedControlPlane)
 	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
+		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
 	}
 	// NOTE: AzureManagedControlPlane relies upon MachinePools, which is behind a feature gate flag.
 	// The webhook must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
-		return field.Forbidden(
+		return nil, field.Forbidden(
 			field.NewPath("spec"),
 			"can be set only if the Cluster API 'MachinePool' feature flag is enabled",
 		)
 	}
 
-	return m.Validate(mw.Client)
+	return nil, m.Validate(mw.Client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	old, ok := oldObj.(*AzureManagedControlPlane)
 	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
+		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
 	}
 	m, ok := newObj.(*AzureManagedControlPlane)
 	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
+		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
 	}
 
 	if err := webhookutils.ValidateImmutable(
@@ -250,15 +251,15 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 	}
 
 	if len(allErrs) == 0 {
-		return m.Validate(mw.Client)
+		return nil, m.Validate(mw.Client)
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), m.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), m.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedControlPlaneWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
-	return nil
+func (mw *azureManagedControlPlaneWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, nil
 }
 
 // Validate the Azure Managed Control Plane and return an aggregate error.

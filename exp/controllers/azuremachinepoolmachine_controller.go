@@ -102,7 +102,7 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 
 	// Add a watch on AzureMachinePool for model changes
 	if err := c.Watch(
-		&source.Kind{Type: &infrav1exp.AzureMachinePool{}},
+		source.Kind(mgr.GetCache(), &infrav1exp.AzureMachinePool{}),
 		handler.EnqueueRequestsFromMapFunc(AzureMachinePoolToAzureMachinePoolMachines(ctx, mgr.GetClient(), log)),
 		MachinePoolModelHasChanged(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, ampmr.WatchFilterValue),

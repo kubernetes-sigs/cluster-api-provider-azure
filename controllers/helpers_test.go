@@ -76,7 +76,7 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 	mapper, err := AzureClusterToAzureMachinesMapper(context.Background(), client, &infrav1.AzureMachine{}, scheme, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper(&infrav1.AzureCluster{
+	requests := mapper(context.TODO(), &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: "default",
@@ -841,7 +841,7 @@ func TestAzureManagedClusterToAzureManagedMachinePoolsMapper(t *testing.T) {
 	mapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper(&infrav1.AzureManagedCluster{
+	requests := mapper(context.TODO(), &infrav1.AzureManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: "default",
@@ -906,7 +906,7 @@ func TestAzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t *testing.T) 
 	mapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper(&infrav1.AzureManagedControlPlane{
+	requests := mapper(context.TODO(), &infrav1.AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cpName,
 			Namespace: cluster.Namespace,
@@ -978,7 +978,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1.GroupVersion.WithKind("AzureManagedControlPlane"), logr.New(sink))
 
 	// system pool should trigger
-	requests := mapper(newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
+	requests := mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
 	g.Expect(requests).To(ConsistOf([]reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
@@ -989,7 +989,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 	}))
 
 	// any other pool should not trigger
-	requests = mapper(newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"))
+	requests = mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"))
 	g.Expect(requests).To(BeNil())
 }
 
@@ -1022,7 +1022,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncFailure(t *testing.T) {
 	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1.GroupVersion.WithKind("AzureManagedControlPlane"), logr.New(sink))
 
 	// default pool should trigger if owned cluster could not be fetched
-	requests := mapper(newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
+	requests := mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
 	g.Expect(requests).To(ConsistOf([]reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
@@ -1033,7 +1033,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncFailure(t *testing.T) {
 	}))
 
 	// any other pool should also trigger if owned cluster could not be fetched
-	requests = mapper(newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"))
+	requests = mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"))
 	g.Expect(requests).To(ConsistOf([]reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
@@ -1068,7 +1068,7 @@ func TestAzureManagedClusterToAzureManagedControlPlaneMapper(t *testing.T) {
 
 	mapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(context.Background(), fakeClient, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
-	requests := mapper(&infrav1.AzureManagedCluster{
+	requests := mapper(context.TODO(), &infrav1.AzureManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "az-" + cluster.Name,
 			Namespace: "default",
@@ -1137,7 +1137,7 @@ func TestAzureManagedControlPlaneToAzureManagedClusterMapper(t *testing.T) {
 
 	mapper, err := AzureManagedControlPlaneToAzureManagedClusterMapper(context.Background(), fakeClient, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
-	requests := mapper(&infrav1.AzureManagedControlPlane{
+	requests := mapper(context.TODO(), &infrav1.AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cpName,
 			Namespace: cluster.Namespace,
@@ -1306,7 +1306,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 				c.Setup(sink)
 			}
 			f := MachinePoolToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), logr.New(sink))
-			reqs := f(c.MapObjectFactory(g))
+			reqs := f(context.TODO(), c.MapObjectFactory(g))
 			c.Expect(g, reqs)
 		})
 	}

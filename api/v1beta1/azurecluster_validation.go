@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 const (
@@ -68,15 +69,15 @@ var (
 )
 
 // validateCluster validates a cluster.
-func (c *AzureCluster) validateCluster(old *AzureCluster) error {
+func (c *AzureCluster) validateCluster(old *AzureCluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	allErrs = append(allErrs, c.validateClusterName()...)
 	allErrs = append(allErrs, c.validateClusterSpec(old)...)
 	if len(allErrs) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	return apierrors.NewInvalid(
+	return nil, apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "AzureCluster"},
 		c.Name, allErrs)
 }

@@ -20,6 +20,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -36,7 +37,7 @@ const (
 // retryWithTimeout retries a function that returns an error until a timeout is reached
 func retryWithTimeout(interval, timeout time.Duration, fn func() error) error {
 	var pollError error
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), interval, timeout, true, func(context.Context) (bool, error) {
 		pollError = nil
 		err := fn()
 		if err != nil {

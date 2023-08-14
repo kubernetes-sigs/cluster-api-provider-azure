@@ -38,6 +38,7 @@ import (
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}/resourcegroups/[^/]+/providers/microsoft\.network/publicipprefixes/[^/]+$`)
@@ -84,15 +85,15 @@ func (mw *azureManagedMachinePoolWebhook) Default(ctx context.Context, obj runti
 //+kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,versions=v1beta1,name=validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedMachinePoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+func (mw *azureManagedMachinePoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	m, ok := obj.(*AzureManagedMachinePool)
 	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedMachinePool")
+		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
 	// NOTE: AzureManagedMachinePool relies upon MachinePools, which is behind a feature gate flag.
 	// The webhook must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
-		return field.Forbidden(
+		return nil, field.Forbidden(
 			field.NewPath("spec"),
 			"can be set only if the Cluster API 'MachinePool' feature flag is enabled",
 		)
@@ -116,18 +117,18 @@ func (mw *azureManagedMachinePoolWebhook) ValidateCreate(ctx context.Context, ob
 		}
 	}
 
-	return kerrors.NewAggregate(errs)
+	return nil, kerrors.NewAggregate(errs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	old, ok := oldObj.(*AzureManagedMachinePool)
 	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedMachinePool")
+		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
 	m, ok := newObj.(*AzureManagedMachinePool)
 	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedMachinePool")
+		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
 	var allErrs field.ErrorList
 
@@ -271,23 +272,23 @@ func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, ol
 	}
 
 	if len(allErrs) != 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), m.Name, allErrs)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), m.Name, allErrs)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedMachinePoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
+func (mw *azureManagedMachinePoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	m, ok := obj.(*AzureManagedMachinePool)
 	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedMachinePool")
+		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
 	if m.Spec.Mode != string(NodePoolModeSystem) {
-		return nil
+		return nil, nil
 	}
 
-	return errors.Wrapf(m.validateLastSystemNodePool(mw.Client), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
+	return nil, errors.Wrapf(m.validateLastSystemNodePool(mw.Client), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
 }
 
 // validateLastSystemNodePool is used to check if the existing system node pool is the last system node pool.

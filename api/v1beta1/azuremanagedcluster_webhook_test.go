@@ -166,7 +166,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amc.ValidateUpdate(tc.oldAMC)
+			_, err := tc.amc.ValidateUpdate(tc.oldAMC)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -214,7 +214,7 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.amc.ValidateCreate()
+			_, err := tc.amc.ValidateCreate()
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -246,7 +246,7 @@ func TestAzureManagedCluster_ValidateCreateFailure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
-			err := tc.amc.ValidateCreate()
+			_, err := tc.amc.ValidateCreate()
 			g.Expect(err).To(HaveOccurred())
 		})
 	}

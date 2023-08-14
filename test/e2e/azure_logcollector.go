@@ -125,6 +125,12 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 	return kinderrors.NewAggregate(errs)
 }
 
+// CollectInfrastructureLogs collects log from the infrastructure.
+// This is currently a no-op implementation to satisfy the LogCollector interface.
+func (k AzureLogCollector) CollectInfrastructureLogs(ctx context.Context, managementClusterClient client.Client, c *clusterv1.Cluster, outputPath string) error {
+	return nil
+}
+
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
 func collectLogsFromNode(cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
 	nodeOSType := azure.LinuxOS

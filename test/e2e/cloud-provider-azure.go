@@ -40,12 +40,12 @@ const (
 
 // InstallCalicoAndCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
 // and validates that expected pods exist and are Ready.
-func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
+func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	specName := "cloud-provider-azure-install"
 	By("Installing cloud-provider-azure components via helm")
 	options := &HelmOptions{
 		Values: []string{
-			fmt.Sprintf("infra.clusterName=%s", input.ConfigCluster.ClusterName),
+			fmt.Sprintf("infra.clusterName=%s", input.ClusterName),
 			"cloudControllerManager.logVerbosity=4",
 		},
 		StringValues: []string{fmt.Sprintf("cloudControllerManager.clusterCIDR=%s", strings.Join(cidrBlocks, `\,`))},
@@ -60,11 +60,11 @@ func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clus
 		options.StringValues = append(options.StringValues, fmt.Sprintf("cloudNodeManager.imageTag=%s", os.Getenv("IMAGE_TAG_CNM")))
 	}
 
-	if input.ConfigCluster.Flavor == "flatcar" {
+	if strings.Contains(input.ClusterName, "flatcar") {
 		options.StringValues = append(options.StringValues, "cloudControllerManager.caCertDir=/usr/share/ca-certificates")
 	}
 
-	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 	InstallHelmChart(ctx, clusterProxy, defaultNamespace, cloudProviderAzureHelmRepoURL, cloudProviderAzureChartName, cloudProviderAzureHelmReleaseName, options, "")
 
 	// We do this before waiting for the pods to be ready because there is a co-dependency between CNI (nodes ready) and cloud-provider being initialized.
@@ -78,7 +78,7 @@ func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clus
 }
 
 // InstallAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
-func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyClusterTemplateAndWaitInput, hasWindows bool) {
+func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, hasWindows bool) {
 	specName := "azuredisk-csi-drivers-install"
 	By("Installing azure-disk CSI driver components via helm")
 	options := &HelmOptions{
@@ -88,7 +88,7 @@ func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.Ap
 	if hasWindows {
 		options.Values = append(options.Values, "windows.useHostProcessContainers=true")
 	}
-	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.ConfigCluster.Namespace, input.ConfigCluster.ClusterName)
+	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 	InstallHelmChart(ctx, clusterProxy, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options, "")
 	By("Waiting for Ready csi-azuredisk-controller deployment pods")
 	for _, d := range []string{"csi-azuredisk-controller"} {

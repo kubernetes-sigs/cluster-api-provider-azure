@@ -32,10 +32,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/v2"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func init() {
@@ -51,6 +53,7 @@ func init() {
 }
 
 func TestE2E(t *testing.T) {
+	ctrl.SetLogger(klog.Background())
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "capz-e2e")
 }

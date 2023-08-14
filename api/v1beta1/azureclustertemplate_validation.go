@@ -22,17 +22,18 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-func (c *AzureClusterTemplate) validateClusterTemplate() error {
+func (c *AzureClusterTemplate) validateClusterTemplate() (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	allErrs = append(allErrs, c.validateClusterTemplateSpec()...)
 
 	if len(allErrs) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	return apierrors.NewInvalid(
+	return nil, apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "AzureClusterTemplate"},
 		c.Name, allErrs)
 }

@@ -109,17 +109,17 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, ampr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
-			&source.Kind{Type: &expv1.MachinePool{}},
+			&expv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), log)),
 		).
 		// watch for changes in AzureCluster resources
 		Watches(
-			&source.Kind{Type: &infrav1.AzureCluster{}},
+			&infrav1.AzureCluster{},
 			handler.EnqueueRequestsFromMapFunc(azureClusterMapper),
 		).
 		// watch for changes in KubeadmConfig to sync bootstrap token
 		Watches(
-			&source.Kind{Type: &kubeadmv1.KubeadmConfig{}},
+			&kubeadmv1.KubeadmConfig{},
 			handler.EnqueueRequestsFromMapFunc(KubeadmConfigToInfrastructureMapFunc(ctx, ampr.Client, log)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
@@ -129,7 +129,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 	}
 
 	if err := c.Watch(
-		&source.Kind{Type: &infrav1exp.AzureMachinePoolMachine{}},
+		source.Kind(mgr.GetCache(), &infrav1exp.AzureMachinePoolMachine{}),
 		handler.EnqueueRequestsFromMapFunc(AzureMachinePoolMachineMapper(mgr.GetScheme(), log)),
 		MachinePoolMachineHasStateOrVersionChange(log),
 		predicates.ResourceHasFilterLabel(log, ampr.WatchFilterValue),
@@ -137,14 +137,14 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		return errors.Wrap(err, "failed adding a watch for AzureMachinePoolMachine")
 	}
 
-	azureMachinePoolMapper, err := util.ClusterToObjectsMapper(ampr.Client, &infrav1exp.AzureMachinePoolList{}, mgr.GetScheme())
+	azureMachinePoolMapper, err := util.ClusterToTypedObjectsMapper(ampr.Client, &infrav1exp.AzureMachinePoolList{}, mgr.GetScheme())
 	if err != nil {
 		return errors.Wrap(err, "failed to create mapper for Cluster to AzureMachines")
 	}
 
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err := c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
+		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 		infracontroller.ClusterPauseChangeAndInfrastructureReady(log),
 		predicates.ResourceHasFilterLabel(log, ampr.WatchFilterValue),

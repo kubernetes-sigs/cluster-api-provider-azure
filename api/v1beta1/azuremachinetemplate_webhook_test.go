@@ -241,7 +241,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			err := test.machineTemplate.ValidateCreate(ctx, test.machineTemplate)
+			_, err := test.machineTemplate.ValidateCreate(ctx, test.machineTemplate)
 			if test.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -588,7 +588,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		amt := amt
 		t.Run(amt.name, func(t *testing.T) {
 			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(true)}})
-			err := amt.template.ValidateUpdate(ctx, amt.oldTemplate, amt.template)
+			_, err := amt.template.ValidateUpdate(ctx, amt.oldTemplate, amt.template)
 			if amt.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -602,7 +602,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		t.Run(amt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(false)}})
-			err := amt.template.ValidateUpdate(ctx, amt.oldTemplate, amt.template)
+			_, err := amt.template.ValidateUpdate(ctx, amt.oldTemplate, amt.template)
 			if amt.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

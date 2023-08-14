@@ -28,6 +28,7 @@ import (
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
@@ -42,20 +43,20 @@ func (r *AzureManagedCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Validator = &AzureManagedCluster{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureManagedCluster) ValidateCreate() error {
+func (r *AzureManagedCluster) ValidateCreate() (admission.Warnings, error) {
 	// NOTE: AzureManagedCluster relies upon MachinePools, which is behind a feature gate flag.
 	// The webhook must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
-		return field.Forbidden(
+		return nil, field.Forbidden(
 			field.NewPath("spec"),
 			"can be set only if the Cluster API 'MachinePool' feature flag is enabled",
 		)
 	}
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) error {
+func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
 	old := oldRaw.(*AzureManagedCluster)
 	var allErrs field.ErrorList
 
@@ -71,13 +72,13 @@ func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	}
 
 	if len(allErrs) != 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedCluster").GroupKind(), r.Name, allErrs)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedCluster").GroupKind(), r.Name, allErrs)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureManagedCluster) ValidateDelete() error {
-	return nil
+func (r *AzureManagedCluster) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
