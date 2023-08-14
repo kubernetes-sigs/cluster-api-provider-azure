@@ -40,9 +40,6 @@ func (s *Service) reconcileZone(ctx context.Context, zoneSpec azure.ResourceSpec
 
 	if !managed {
 		log.V(1).Info("Skipping reconciliation of unmanaged private DNS zone", "private DNS", zoneSpec.ResourceName())
-		// TODO: Remove this log in future release. This is only required because older clusters created before https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1791 will not have capz ownership tags.
-		log.V(1).Info("Tag the DNS manually from azure to manage it with capz."+
-			"Please see https://capz.sigs.k8s.io/topics/custom-dns.html#manage-dns-via-capz-tool", "private DNS", zoneSpec.ResourceName())
 		return managed, nil
 	}
 
