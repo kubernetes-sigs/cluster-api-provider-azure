@@ -92,6 +92,10 @@ updates:
   commit-message:
     prefix: "dependabot"
     include: scope
+  ignore:
+  - dependency-name: '*golang*'
+    update-types:
+    - version-update:semver-major
   labels:
     - "ok-to-test"
     - "kind/cleanup"
