@@ -521,10 +521,17 @@ func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Ob
 	case *AzureCluster:
 		obj.Spec.SubscriptionID = "test-subscription-id"
 	case *clusterv1.Cluster:
-		obj.Spec.InfrastructureRef = &corev1.ObjectReference{
-			Kind:      "AzureCluster",
-			Name:      "test-cluster",
-			Namespace: "default",
+		obj.Spec = clusterv1.ClusterSpec{
+			InfrastructureRef: &corev1.ObjectReference{
+				Kind:      "AzureCluster",
+				Name:      "test-cluster",
+				Namespace: "default",
+			},
+			ClusterNetwork: &clusterv1.ClusterNetwork{
+				Services: &clusterv1.NetworkRanges{
+					CIDRBlocks: []string{"192.168.0.0/26"},
+				},
+			},
 		}
 	default:
 		return errors.New("unexpected object type")
