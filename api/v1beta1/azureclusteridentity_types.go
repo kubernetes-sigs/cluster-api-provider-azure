@@ -55,7 +55,7 @@ type AzureClusterIdentitySpec struct {
 	ClientID string `json:"clientID"`
 	// ClientSecret is a secret reference which should contain either a Service Principal password or certificate secret.
 	// +optional
-	ClientSecret corev1.SecretReference `json:"clientSecret,omitempty"`
+	ClientSecret *corev1.SecretReference `json:"clientSecret,omitempty"`
 	// TenantID is the service principal primary tenant id.
 	TenantID string `json:"tenantID"`
 	// AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from.

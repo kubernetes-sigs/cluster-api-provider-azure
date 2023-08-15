@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -163,7 +164,7 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 					Type:         infrav1.ServicePrincipal,
 					ResourceID:   "my-resource-id",
 					ClientID:     "my-client-id",
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					ClientSecret: &corev1.SecretReference{Name: "my-client-secret"},
 					TenantID:     "my-tenant-id",
 				},
 			},
@@ -193,7 +194,7 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 					Type:         infrav1.UserAssignedMSI,
 					ResourceID:   "my-resource-id",
 					ClientID:     "my-client-id",
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					ClientSecret: &corev1.SecretReference{Name: "my-client-secret"},
 					TenantID:     "my-tenant-id",
 				},
 			},
@@ -223,7 +224,7 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 					Type:         infrav1.ServicePrincipalCertificate,
 					ResourceID:   "my-resource-id",
 					ClientID:     "my-client-id",
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					ClientSecret: &corev1.SecretReference{Name: "my-client-secret"},
 					TenantID:     "my-tenant-id",
 				},
 			},
@@ -253,7 +254,7 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 					Type:         "fooIdentity",
 					ResourceID:   "my-resource-id",
 					ClientID:     "my-client-id",
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					ClientSecret: &corev1.SecretReference{Name: "my-client-secret"},
 					TenantID:     "my-tenant-id",
 				},
 			},
@@ -276,7 +277,7 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 				g.Expect(resultIdentity.Spec.Type).To(Equal(tc.identityType))
 				g.Expect(resultIdentity.Spec.ResourceID).To(Equal(tc.identity.Spec.ResourceID))
 				g.Expect(resultIdentity.Spec.ClientID).To(Equal(tc.identity.Spec.ClientID))
-				g.Expect(resultIdentity.Spec.ClientPassword).To(Equal(tc.identity.Spec.ClientSecret))
+				g.Expect(resultIdentity.Spec.ClientPassword).To(Equal(ptr.Deref(tc.identity.Spec.ClientSecret, corev1.SecretReference{})))
 				g.Expect(resultIdentity.Spec.TenantID).To(Equal(tc.identity.Spec.TenantID))
 				g.Expect(resultIdentity.Spec.ADResourceID).To(Equal(tc.resourceManagerEndpoint))
 				g.Expect(resultIdentity.Spec.ADEndpoint).To(Equal(tc.activeDirectoryEndpoint))
@@ -316,7 +317,7 @@ func TestHasClientSecret(t *testing.T) {
 			identity: &infrav1.AzureClusterIdentity{
 				Spec: infrav1.AzureClusterIdentitySpec{
 					Type:         infrav1.ServicePrincipal,
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					ClientSecret: &corev1.SecretReference{Name: "my-client-secret"},
 				},
 			},
 			want: true,
@@ -326,7 +327,7 @@ func TestHasClientSecret(t *testing.T) {
 			identity: &infrav1.AzureClusterIdentity{
 				Spec: infrav1.AzureClusterIdentitySpec{
 					Type:         infrav1.ServicePrincipalCertificate,
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					ClientSecret: &corev1.SecretReference{Name: "my-client-secret"},
 				},
 			},
 			want: false,
@@ -336,7 +337,7 @@ func TestHasClientSecret(t *testing.T) {
 			identity: &infrav1.AzureClusterIdentity{
 				Spec: infrav1.AzureClusterIdentitySpec{
 					Type:         infrav1.ManualServicePrincipal,
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					ClientSecret: &corev1.SecretReference{Name: "my-client-secret"},
 				},
 			},
 			want: true,

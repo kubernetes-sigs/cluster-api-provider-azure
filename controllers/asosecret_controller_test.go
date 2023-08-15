@@ -267,7 +267,7 @@ func getASOAzureClusterIdentity(changes ...func(identity *infrav1.AzureClusterId
 		Spec: infrav1.AzureClusterIdentitySpec{
 			Type:     infrav1.IdentityType("ServicePrincipal"),
 			ClientID: "fooClient",
-			ClientSecret: corev1.SecretReference{
+			ClientSecret: &corev1.SecretReference{
 				Name:      "fooSecret",
 				Namespace: "default",
 			},
