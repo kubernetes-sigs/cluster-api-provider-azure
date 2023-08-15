@@ -1387,6 +1387,36 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "AzureManagedControlPlane HTTPProxyConfig is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					HTTPProxyConfig: &HTTPProxyConfig{
+						HTTPProxy:  ptr.To("http://1.2.3.4:8080"),
+						HTTPSProxy: ptr.To("https://5.6.7.8:8443"),
+						NoProxy:    []string{"endpoint1", "endpoint2"},
+						TrustedCA:  ptr.To("ca"),
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					HTTPProxyConfig: &HTTPProxyConfig{
+						HTTPProxy:  ptr.To("http://10.20.3.4:8080"),
+						HTTPSProxy: ptr.To("https://5.6.7.8:8443"),
+						NoProxy:    []string{"endpoint1", "endpoint2"},
+						TrustedCA:  ptr.To("ca"),
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	client := mockClient{ReturnError: false}
 	for _, tc := range tests {

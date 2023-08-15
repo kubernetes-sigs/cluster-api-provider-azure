@@ -201,6 +201,13 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 	}
 
 	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "HTTPProxyConfig"),
+		old.Spec.HTTPProxyConfig,
+		m.Spec.HTTPProxyConfig); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "AzureEnvironment"),
 		old.Spec.AzureEnvironment,
 		m.Spec.AzureEnvironment); err != nil {

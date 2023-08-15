@@ -186,6 +186,30 @@ type AzureManagedControlPlaneSpec struct {
 	// For authentication with Azure Container Registry.
 	// +optional
 	KubeletUserAssignedIdentity string `json:"kubeletUserAssignedIdentity,omitempty"`
+
+	// HTTPProxyConfig is the HTTP proxy configuration for the cluster.
+	// Immutable.
+	// +optional
+	HTTPProxyConfig *HTTPProxyConfig `json:"httpProxyConfig,omitempty"`
+}
+
+// HTTPProxyConfig is the HTTP proxy configuration for the cluster.
+type HTTPProxyConfig struct {
+	// HTTPProxy is the HTTP proxy server endpoint to use.
+	// +optional
+	HTTPProxy *string `json:"httpProxy,omitempty"`
+
+	// HTTPSProxy is the HTTPS proxy server endpoint to use.
+	// +optional
+	HTTPSProxy *string `json:"httpsProxy,omitempty"`
+
+	// NoProxy indicates the endpoints that should not go through proxy.
+	// +optional
+	NoProxy []string `json:"noProxy,omitempty"`
+
+	// TrustedCA is the alternative CA cert to use for connecting to proxy servers.
+	// +optional
+	TrustedCA *string `json:"trustedCa,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
