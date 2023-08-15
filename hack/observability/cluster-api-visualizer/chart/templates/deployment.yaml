@@ -18,7 +18,7 @@ spec:
       containers:
       - name: capi-visualizer
         image: "{{ .Values.image.repository }}/{{ .Values.image.name }}:{{ default .Chart.AppVersion .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        imagePullPolicy: {{ .Values.image.imagePullPolicy }}
         ports:
         - containerPort: 8081
       serviceAccountName: capi-visualizer
