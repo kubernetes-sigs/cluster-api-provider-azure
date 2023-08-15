@@ -22,8 +22,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -1058,15 +1056,6 @@ func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
 		DeleteFunc:  func(e event.DeleteEvent) bool { return false },
 		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
-}
-
-func getCertificateFromFile(certificateFilePath string) ([]byte, error) {
-	certificateFilePathTrimmed := strings.TrimSpace(certificateFilePath)
-	if certificateFilePathTrimmed == "" {
-		return nil, fmt.Errorf("certificate path is empty")
-	}
-
-	return os.ReadFile(certificateFilePathTrimmed)
 }
 
 // ClusterPauseChangeAndInfrastructureReady is based on ClusterUnpausedAndInfrastructureReady, but

@@ -122,8 +122,7 @@ Makefile targets and scripts are offered to work with go modules:
 
 ### Setting up the environment
 
-Your environment must have the Azure credentials as outlined in the [getting
-started prerequisites](../topics/getting-started.md#Prerequisites) section.
+Your must have the Azure credentials as outlined in the [getting started prerequisites](../topics/getting-started.md#Prerequisites) section.
 
 ### Tilt Requirements
 
@@ -154,17 +153,17 @@ development will span both CAPZ and CAPI, then follow the [CAPI and CAPZ instruc
 
 If you want to develop in CAPZ and get a local development cluster working quickly, this is the path for you.
 
-From the root of the CAPZ repository and after configuring the environment variables, you can run the following to generate your `tilt-settings.yaml` file:
+Create a file named `tilt-settings.yaml` in the root of the CAPZ repository with the following contents:
 
-```shell
-cat <<EOF > tilt-settings.yaml
+```yaml
 kustomize_substitutions:
-  AZURE_SUBSCRIPTION_ID_B64: "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_TENANT_ID_B64: "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_CLIENT_SECRET_B64: "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_CLIENT_ID_B64: "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-EOF
+  AZURE_SUBSCRIPTION_ID: <subscription-id>
+  AZURE_TENANT_ID: <tenant-id>
+  AZURE_CLIENT_SECRET: <client-secret>
+  AZURE_CLIENT_ID: <client-id>
 ```
+
+You should have these values saved from the [getting started prerequisites](../topics/getting-started.md#Prerequisites) section.
 
 To build a kind cluster and start Tilt, just run:
 
@@ -212,12 +211,14 @@ enable_providers:
 - kubeadm-bootstrap
 - kubeadm-control-plane
 kustomize_substitutions:
-  AZURE_SUBSCRIPTION_ID_B64: "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_TENANT_ID_B64: "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_CLIENT_SECRET_B64: "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_CLIENT_ID_B64: "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_SUBSCRIPTION_ID: <subscription-id>
+  AZURE_TENANT_ID: <tenant-id>
+  AZURE_CLIENT_SECRET: <client-secret>
+  AZURE_CLIENT_ID: <client-id>
 EOF
 ```
+
+Make sure to replace the credentials with the values from the [getting started prerequisites](../topics/getting-started.md#Prerequisites) section.
 
 > `$REGISTRY` should be in the format `docker.io/<dockerhub-username>`
 
@@ -287,10 +288,10 @@ enable_providers:
 - kubeadm-bootstrap
 - kubeadm-control-plane
 kustomize_substitutions:
-  AZURE_SUBSCRIPTION_ID_B64: "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_TENANT_ID_B64: "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_CLIENT_SECRET_B64: "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')"
-  AZURE_CLIENT_ID_B64: "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  AZURE_SUBSCRIPTION_ID: <subscription-id>
+  AZURE_TENANT_ID: <tenant-id>
+  AZURE_CLIENT_SECRET: <client-secret>
+  AZURE_CLIENT_ID: <client-id>
 debug:
   azure:
     continue: true

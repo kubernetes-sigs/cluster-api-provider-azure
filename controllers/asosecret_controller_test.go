@@ -62,42 +62,6 @@ func TestASOSecretReconcile(t *testing.T) {
 		event       string
 		asoSecret   *corev1.Secret
 	}{
-		"should reconcile normally for AzureCluster without IdentityRef configured": {
-			clusterName: defaultAzureCluster.Name,
-			objects: []runtime.Object{
-				getASOCluster(func(c *clusterv1.Cluster) {
-					c.Spec.InfrastructureRef.Name = defaultAzureCluster.Name
-					c.Spec.InfrastructureRef.Kind = defaultAzureCluster.Kind
-				}),
-				defaultAzureCluster,
-			},
-			asoSecret: getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
-				s.Data = map[string][]byte{
-					"AZURE_SUBSCRIPTION_ID": []byte("123"),
-					"AZURE_TENANT_ID":       []byte("fooTenant"),
-					"AZURE_CLIENT_ID":       []byte("fooClient"),
-					"AZURE_CLIENT_SECRET":   []byte("fooSecret"),
-				}
-			}),
-		},
-		"should reconcile normally for AzureManagedControlPlane without IdentityRef configured": {
-			clusterName: defaultAzureManagedControlPlane.Name,
-			objects: []runtime.Object{
-				getASOCluster(func(c *clusterv1.Cluster) {
-					c.Spec.InfrastructureRef.Name = defaultAzureManagedControlPlane.Name
-					c.Spec.InfrastructureRef.Kind = defaultAzureManagedControlPlane.Kind
-				}),
-				defaultAzureManagedControlPlane,
-			},
-			asoSecret: getASOSecret(defaultAzureManagedControlPlane, func(s *corev1.Secret) {
-				s.Data = map[string][]byte{
-					"AZURE_SUBSCRIPTION_ID": []byte("fooSubscription"),
-					"AZURE_TENANT_ID":       []byte("fooTenant"),
-					"AZURE_CLIENT_ID":       []byte("fooClient"),
-					"AZURE_CLIENT_SECRET":   []byte("fooSecret"),
-				}
-			}),
-		},
 		"should not fail if the azure cluster is not found": {
 			clusterName: defaultAzureCluster.Name,
 			objects: []runtime.Object{

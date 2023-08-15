@@ -261,61 +261,40 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 		},
 	}
 
-	if clusterIdentity != nil {
-		// if the namespace isn't specified then assume it's in the same namespace as the Cluster's one
-		namespace := clusterIdentity.Namespace
-		if namespace == "" {
-			namespace = cluster.GetNamespace()
-		}
-		identity := &infrav1.AzureClusterIdentity{}
-		key := client.ObjectKey{
-			Name:      clusterIdentity.Name,
-			Namespace: namespace,
-		}
-		if err := asos.Get(ctx, key, identity); err != nil {
-			return nil, errors.Wrap(err, "failed to retrieve AzureClusterIdentity")
-		}
+	// if the namespace isn't specified then assume it's in the same namespace as the Cluster's one
+	namespace := clusterIdentity.Namespace
+	if namespace == "" {
+		namespace = cluster.GetNamespace()
+	}
+	identity := &infrav1.AzureClusterIdentity{}
+	key := client.ObjectKey{
+		Name:      clusterIdentity.Name,
+		Namespace: namespace,
+	}
+	if err := asos.Get(ctx, key, identity); err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve AzureClusterIdentity")
+	}
 
-		newASOSecret.Data["AZURE_TENANT_ID"] = []byte(identity.Spec.TenantID)
-		newASOSecret.Data["AZURE_CLIENT_ID"] = []byte(identity.Spec.ClientID)
+	newASOSecret.Data["AZURE_TENANT_ID"] = []byte(identity.Spec.TenantID)
+	newASOSecret.Data["AZURE_CLIENT_ID"] = []byte(identity.Spec.ClientID)
 
-		// Fetch identity secret, if it exists
-		key = types.NamespacedName{
-			Namespace: identity.Spec.ClientSecret.Namespace,
-			Name:      identity.Spec.ClientSecret.Name,
-		}
-		identitySecret := &corev1.Secret{}
-		err := asos.Get(ctx, key, identitySecret)
-		if err != nil && !apierrors.IsNotFound(err) {
-			return nil, errors.Wrap(err, "failed to fetch AzureClusterIdentity secret")
-		}
+	// Fetch identity secret, if it exists
+	key = types.NamespacedName{
+		Namespace: identity.Spec.ClientSecret.Namespace,
+		Name:      identity.Spec.ClientSecret.Name,
+	}
+	identitySecret := &corev1.Secret{}
+	err := asos.Get(ctx, key, identitySecret)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return nil, errors.Wrap(err, "failed to fetch AzureClusterIdentity secret")
+	}
 
-		switch identity.Spec.Type {
-		case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
-			newASOSecret.Data["AZURE_CLIENT_SECRET"] = identitySecret.Data[scope.AzureSecretKey]
-		case infrav1.ServicePrincipalCertificate:
-			newASOSecret.Data["AZURE_CLIENT_CERTIFICATE"] = identitySecret.Data["certificate"]
-			newASOSecret.Data["AZURE_CLIENT_CERTIFICATE_PASSWORD"] = identitySecret.Data["password"]
-		}
-	} else {
-		newASOSecret.Data["AZURE_TENANT_ID"] = []byte(azureClient.TenantID())
-		newASOSecret.Data["AZURE_CLIENT_ID"] = []byte(azureClient.ClientID())
-
-		// Populate ASO data in the following order:
-		// 1. Client credentials
-		// 2. Client certificate
-		if _, e := azureClient.GetClientCredentials(); e == nil {
-			newASOSecret.Data["AZURE_CLIENT_SECRET"] = []byte(azureClient.ClientSecret())
-		} else if clientCert, e := azureClient.GetClientCertificate(); e == nil {
-			cert, err := getCertificateFromFile(clientCert.CertificatePath)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to read client certificate")
-			}
-			newASOSecret.Data["AZURE_CLIENT_CERTIFICATE"] = cert
-			newASOSecret.Data["AZURE_CLIENT_CERTIFICATE_PASSWORD"] = []byte(clientCert.CertificatePassword)
-		} else {
-			return nil, errors.Wrap(e, "failed to configure an authentication method for ASO secret")
-		}
+	switch identity.Spec.Type {
+	case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
+		newASOSecret.Data["AZURE_CLIENT_SECRET"] = identitySecret.Data[scope.AzureSecretKey]
+	case infrav1.ServicePrincipalCertificate:
+		newASOSecret.Data["AZURE_CLIENT_CERTIFICATE"] = identitySecret.Data["certificate"]
+		newASOSecret.Data["AZURE_CLIENT_CERTIFICATE_PASSWORD"] = identitySecret.Data["password"]
 	}
 	return newASOSecret, nil
 }

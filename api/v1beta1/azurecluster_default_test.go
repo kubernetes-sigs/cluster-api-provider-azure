@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 )
@@ -142,6 +143,11 @@ func TestVnetDefaults(t *testing.T) {
 							FrontendIPsCount: ptr.To[int32](1),
 						},
 					},
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: "AzureClusterIdentity",
+						},
+					},
 				},
 			},
 		},
@@ -153,6 +159,11 @@ func TestVnetDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					ResourceGroup: "cluster-test",
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: "AzureClusterIdentity",
+						},
+					},
 				},
 			},
 			output: &AzureCluster{
@@ -168,6 +179,11 @@ func TestVnetDefaults(t *testing.T) {
 							VnetClassSpec: VnetClassSpec{
 								CIDRBlocks: []string{DefaultVnetCIDR},
 							},
+						},
+					},
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: "AzureClusterIdentity",
 						},
 					},
 				},
@@ -188,6 +204,11 @@ func TestVnetDefaults(t *testing.T) {
 							},
 						},
 					},
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: "AzureClusterIdentity",
+						},
+					},
 				},
 			},
 			output: &AzureCluster{
@@ -203,6 +224,11 @@ func TestVnetDefaults(t *testing.T) {
 							VnetClassSpec: VnetClassSpec{
 								CIDRBlocks: []string{"10.0.0.0/16"},
 							},
+						},
+					},
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: "AzureClusterIdentity",
 						},
 					},
 				},
@@ -223,6 +249,11 @@ func TestVnetDefaults(t *testing.T) {
 							},
 						},
 					},
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: "AzureClusterIdentity",
+						},
+					},
 				},
 			},
 			output: &AzureCluster{
@@ -238,6 +269,11 @@ func TestVnetDefaults(t *testing.T) {
 							VnetClassSpec: VnetClassSpec{
 								CIDRBlocks: []string{DefaultVnetCIDR, "2001:1234:5678:9a00::/56"},
 							},
+						},
+					},
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: "AzureClusterIdentity",
 						},
 					},
 				},

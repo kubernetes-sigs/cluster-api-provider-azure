@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
@@ -236,6 +237,50 @@ func TestClusterSpecWithoutPreexistingVnetValid(t *testing.T) {
 	t.Run(testCase.name, func(t *testing.T) {
 		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(errs).To(BeNil())
+	})
+}
+
+func TestClusterSpecWithoutIdentityRefInvalid(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		name    string
+		cluster *AzureCluster
+	}
+
+	testCase := test{
+		name:    "azurecluster spec without identityRef - invalid",
+		cluster: createValidCluster(),
+	}
+
+	// invalid because it doesn't specify an identityRef
+	testCase.cluster.Spec.IdentityRef = nil
+
+	t.Run(testCase.name, func(t *testing.T) {
+		errs := testCase.cluster.validateClusterSpec(nil)
+		g.Expect(len(errs)).To(BeNumerically(">", 0))
+	})
+}
+
+func TestClusterSpecWithWrongKindInvalid(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		name    string
+		cluster *AzureCluster
+	}
+
+	testCase := test{
+		name:    "azurecluster spec with wrong kind - invalid",
+		cluster: createValidCluster(),
+	}
+
+	// invalid because it doesn't specify AzureClusterIdentity as the kind
+	testCase.cluster.Spec.IdentityRef.Kind = "bad"
+
+	t.Run(testCase.name, func(t *testing.T) {
+		errs := testCase.cluster.validateClusterSpec(nil)
+		g.Expect(len(errs)).To(BeNumerically(">", 0))
 	})
 }
 
@@ -1293,6 +1338,11 @@ func createValidCluster() *AzureCluster {
 		},
 		Spec: AzureClusterSpec{
 			NetworkSpec: createValidNetworkSpec(),
+			AzureClusterClassSpec: AzureClusterClassSpec{
+				IdentityRef: &corev1.ObjectReference{
+					Kind: "AzureClusterIdentity",
+				},
+			},
 		},
 	}
 }
