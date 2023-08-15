@@ -279,22 +279,25 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 	newASOSecret.Data["AZURE_CLIENT_ID"] = []byte(identity.Spec.ClientID)
 
 	// Fetch identity secret, if it exists
-	key = types.NamespacedName{
-		Namespace: identity.Spec.ClientSecret.Namespace,
-		Name:      identity.Spec.ClientSecret.Name,
-	}
-	identitySecret := &corev1.Secret{}
-	err := asos.Get(ctx, key, identitySecret)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return nil, errors.Wrap(err, "failed to fetch AzureClusterIdentity secret")
+	if identity.Spec.ClientSecret != nil {
+		key = types.NamespacedName{
+			Namespace: identity.Spec.ClientSecret.Namespace,
+			Name:      identity.Spec.ClientSecret.Name,
+		}
+		identitySecret := &corev1.Secret{}
+		err := asos.Get(ctx, key, identitySecret)
+		if err != nil && !apierrors.IsNotFound(err) {
+			return nil, errors.Wrap(err, "failed to fetch AzureClusterIdentity secret")
+		}
+
+		switch identity.Spec.Type {
+		case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
+			newASOSecret.Data["AZURE_CLIENT_SECRET"] = identitySecret.Data[scope.AzureSecretKey]
+		case infrav1.ServicePrincipalCertificate:
+			newASOSecret.Data["AZURE_CLIENT_CERTIFICATE"] = identitySecret.Data["certificate"]
+			newASOSecret.Data["AZURE_CLIENT_CERTIFICATE_PASSWORD"] = identitySecret.Data["password"]
+		}
 	}
 
-	switch identity.Spec.Type {
-	case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
-		newASOSecret.Data["AZURE_CLIENT_SECRET"] = identitySecret.Data[scope.AzureSecretKey]
-	case infrav1.ServicePrincipalCertificate:
-		newASOSecret.Data["AZURE_CLIENT_CERTIFICATE"] = identitySecret.Data["certificate"]
-		newASOSecret.Data["AZURE_CLIENT_CERTIFICATE_PASSWORD"] = identitySecret.Data["password"]
-	}
 	return newASOSecret, nil
 }
