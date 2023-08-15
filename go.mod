@@ -43,7 +43,7 @@ require (
 	k8s.io/klog/v2 v2.90.1
 	k8s.io/kubectl v0.27.2
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	sigs.k8s.io/cloud-provider-azure v1.26.7
+	sigs.k8s.io/cloud-provider-azure v1.27.7
 	sigs.k8s.io/cluster-api v1.5.0
 	sigs.k8s.io/cluster-api/test v1.5.0
 	sigs.k8s.io/controller-runtime v0.15.0
@@ -188,9 +188,8 @@ require (
 	k8s.io/apiextensions-apiserver v0.27.2 // indirect
 	k8s.io/apiserver v0.27.2 // indirect
 	k8s.io/cli-runtime v0.27.2 // indirect
-	k8s.io/cloud-provider v0.26.2 // indirect
+	k8s.io/cloud-provider v0.27.1 // indirect
 	k8s.io/cluster-bootstrap v0.27.2 // indirect
-	k8s.io/component-helpers v0.27.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.2 // indirect
