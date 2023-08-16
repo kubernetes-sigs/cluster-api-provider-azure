@@ -278,6 +278,11 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 	newASOSecret.Data["AZURE_TENANT_ID"] = []byte(identity.Spec.TenantID)
 	newASOSecret.Data["AZURE_CLIENT_ID"] = []byte(identity.Spec.ClientID)
 
+	// If the identity type is WorkloadIdentity or UserAssignedMSI, then we don't need to fetch the secret so return early
+	if identity.Spec.Type == infrav1.WorkloadIdentity || identity.Spec.Type == infrav1.UserAssignedMSI {
+		return newASOSecret, nil
+	}
+
 	// Fetch identity secret, if it exists
 	key = types.NamespacedName{
 		Namespace: identity.Spec.ClientSecret.Namespace,
@@ -285,7 +290,7 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 	}
 	identitySecret := &corev1.Secret{}
 	err := asos.Get(ctx, key, identitySecret)
-	if err != nil && !apierrors.IsNotFound(err) {
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch AzureClusterIdentity secret")
 	}
 
