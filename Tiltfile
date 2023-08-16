@@ -155,7 +155,7 @@ def observability():
 
     k8s_yaml(helm(
         "./hack/observability/cluster-api-visualizer/chart",
-        name = "visualize-cluster",
+        name = "visualizer",
         namespace = "capz-system",
     ))
 
@@ -177,7 +177,7 @@ def observability():
     k8s_resource(workload = "opentelemetry-collector-agent", labels = ["observability"])
     k8s_resource(
         workload = "capi-visualizer",
-        new_name = "visualize-cluster",
+        new_name = "visualizer",
         port_forwards = [port_forward(local_port = 8000, container_port = 8081, name = "View visualization")],
         labels = ["observability"],
     )
