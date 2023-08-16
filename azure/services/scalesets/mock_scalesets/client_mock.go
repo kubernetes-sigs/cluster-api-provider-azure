@@ -25,9 +25,9 @@ import (
 	reflect "reflect"
 
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	autorest "github.com/Azure/go-autorest/autorest"
+	azure "github.com/Azure/go-autorest/autorest/azure"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	azure0 "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // MockClient is a mock of Client interface.
@@ -54,63 +54,64 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // CreateOrUpdateAsync mocks base method.
-func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSet) (*v1beta1.Future, error) {
+func (m *MockClient) CreateOrUpdateAsync(ctx context.Context, spec azure0.ResourceSpecGetter, parameters interface{}) (interface{}, azure.FutureAPI, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*v1beta1.Future)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec, parameters)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(azure.FutureAPI)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
-func (mr *MockClientMockRecorder) CreateOrUpdateAsync(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CreateOrUpdateAsync(ctx, spec, parameters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), ctx, spec, parameters)
 }
 
 // DeleteAsync mocks base method.
-func (m *MockClient) DeleteAsync(arg0 context.Context, arg1, arg2 string) (*v1beta1.Future, error) {
+func (m *MockClient) DeleteAsync(ctx context.Context, spec azure0.ResourceSpecGetter) (azure.FutureAPI, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret := m.ctrl.Call(m, "DeleteAsync", ctx, spec)
+	ret0, _ := ret[0].(azure.FutureAPI)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DeleteAsync indicates an expected call of DeleteAsync.
-func (mr *MockClientMockRecorder) DeleteAsync(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) DeleteAsync(ctx, spec interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*MockClient)(nil).DeleteAsync), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*MockClient)(nil).DeleteAsync), ctx, spec)
 }
 
 // Get mocks base method.
-func (m *MockClient) Get(arg0 context.Context, arg1, arg2 string) (compute.VirtualMachineScaleSet, error) {
+func (m *MockClient) Get(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (interface{}, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
-	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockClientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1)
 }
 
-// GetResultIfDone mocks base method.
-func (m *MockClient) GetResultIfDone(ctx context.Context, future *v1beta1.Future) (compute.VirtualMachineScaleSet, error) {
+// IsDone mocks base method.
+func (m *MockClient) IsDone(ctx context.Context, future azure.FutureAPI) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetResultIfDone", ctx, future)
-	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
+	ret := m.ctrl.Call(m, "IsDone", ctx, future)
+	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetResultIfDone indicates an expected call of GetResultIfDone.
-func (mr *MockClientMockRecorder) GetResultIfDone(ctx, future interface{}) *gomock.Call {
+// IsDone indicates an expected call of IsDone.
+func (mr *MockClientMockRecorder) IsDone(ctx, future interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResultIfDone", reflect.TypeOf((*MockClient)(nil).GetResultIfDone), ctx, future)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDone", reflect.TypeOf((*MockClient)(nil).IsDone), ctx, future)
 }
 
 // List mocks base method.
@@ -143,19 +144,19 @@ func (mr *MockClientMockRecorder) ListInstances(arg0, arg1, arg2 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstances", reflect.TypeOf((*MockClient)(nil).ListInstances), arg0, arg1, arg2)
 }
 
-// UpdateAsync mocks base method.
-func (m *MockClient) UpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSetUpdate) (*v1beta1.Future, error) {
+// Result mocks base method.
+func (m *MockClient) Result(ctx context.Context, future azure.FutureAPI, futureType string) (interface{}, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateAsync", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret := m.ctrl.Call(m, "Result", ctx, future, futureType)
+	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdateAsync indicates an expected call of UpdateAsync.
-func (mr *MockClientMockRecorder) UpdateAsync(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// Result indicates an expected call of Result.
+func (mr *MockClientMockRecorder) Result(ctx, future, futureType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAsync", reflect.TypeOf((*MockClient)(nil).UpdateAsync), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Result", reflect.TypeOf((*MockClient)(nil).Result), ctx, future, futureType)
 }
 
 // UpdateInstances mocks base method.
@@ -170,57 +171,4 @@ func (m *MockClient) UpdateInstances(arg0 context.Context, arg1, arg2 string, ar
 func (mr *MockClientMockRecorder) UpdateInstances(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstances", reflect.TypeOf((*MockClient)(nil).UpdateInstances), arg0, arg1, arg2, arg3)
-}
-
-// MockgenericScaleSetFuture is a mock of genericScaleSetFuture interface.
-type MockgenericScaleSetFuture struct {
-	ctrl     *gomock.Controller
-	recorder *MockgenericScaleSetFutureMockRecorder
-}
-
-// MockgenericScaleSetFutureMockRecorder is the mock recorder for MockgenericScaleSetFuture.
-type MockgenericScaleSetFutureMockRecorder struct {
-	mock *MockgenericScaleSetFuture
-}
-
-// NewMockgenericScaleSetFuture creates a new mock instance.
-func NewMockgenericScaleSetFuture(ctrl *gomock.Controller) *MockgenericScaleSetFuture {
-	mock := &MockgenericScaleSetFuture{ctrl: ctrl}
-	mock.recorder = &MockgenericScaleSetFutureMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockgenericScaleSetFuture) EXPECT() *MockgenericScaleSetFutureMockRecorder {
-	return m.recorder
-}
-
-// DoneWithContext mocks base method.
-func (m *MockgenericScaleSetFuture) DoneWithContext(ctx context.Context, sender autorest.Sender) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoneWithContext", ctx, sender)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DoneWithContext indicates an expected call of DoneWithContext.
-func (mr *MockgenericScaleSetFutureMockRecorder) DoneWithContext(ctx, sender interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoneWithContext", reflect.TypeOf((*MockgenericScaleSetFuture)(nil).DoneWithContext), ctx, sender)
-}
-
-// Result mocks base method.
-func (m *MockgenericScaleSetFuture) Result(client compute.VirtualMachineScaleSetsClient) (compute.VirtualMachineScaleSet, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Result", client)
-	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Result indicates an expected call of Result.
-func (mr *MockgenericScaleSetFutureMockRecorder) Result(client interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Result", reflect.TypeOf((*MockgenericScaleSetFuture)(nil).Result), client)
 }

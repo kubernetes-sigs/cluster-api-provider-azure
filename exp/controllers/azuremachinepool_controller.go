@@ -300,14 +300,14 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	err := machinePoolScope.InitMachinePoolCache(ctx)
 	if err != nil {
 		if errors.As(err, &reconcileError) && reconcileError.IsTerminal() {
-			ampr.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "SKUNotFound", errors.Wrap(err, "failed to initialize machine cache").Error())
-			log.Error(err, "Failed to initialize machine cache")
+			ampr.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "SKUNotFound", errors.Wrap(err, "failed to initialize machinepool cache").Error())
+			log.Error(err, "Failed to initialize machinepool cache")
 			machinePoolScope.SetFailureReason(capierrors.InvalidConfigurationMachineError)
 			machinePoolScope.SetFailureMessage(err)
 			machinePoolScope.SetNotReady()
 			return reconcile.Result{}, nil
 		}
-		return reconcile.Result{}, errors.Wrap(err, "failed to init machine scope cache")
+		return reconcile.Result{}, errors.Wrap(err, "failed to init machinepool scope cache")
 	}
 
 	ams, err := ampr.createAzureMachinePoolService(machinePoolScope)

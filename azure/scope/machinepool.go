@@ -62,7 +62,7 @@ type (
 		MachinePool      *expv1.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		ClusterScope     azure.ClusterScoper
-		Caches           *MachinePoolCache
+		Cache            *MachinePoolCache
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
@@ -77,15 +77,19 @@ type (
 		cache                      *MachinePoolCache
 	}
 
-	// MachinePoolCache stores common machine pool information so we don't have to hit the API multiple times within the same reconcile loop.
-	MachinePoolCache struct {
-		VMSKU resourceskus.SKU
-	}
-
 	// NodeStatus represents the status of a Kubernetes node.
 	NodeStatus struct {
 		Ready   bool
 		Version string
+	}
+
+	// MachinePoolCache stores common machine pool information so we don't have to hit the API multiple times within the same reconcile loop.
+	MachinePoolCache struct {
+		BootstrapData           string
+		HasBootstrapDataChanges bool
+		VMImage                 *infrav1.Image
+		VMSKU                   resourceskus.SKU
+		MaxSurge                int
 	}
 )
 
@@ -133,6 +137,27 @@ func (m *MachinePoolScope) InitMachinePoolCache(ctx context.Context) error {
 		var err error
 		m.cache = &MachinePoolCache{}
 
+		m.cache.BootstrapData, err = m.GetBootstrapData(ctx)
+		if err != nil {
+			return err
+		}
+
+		m.cache.HasBootstrapDataChanges, err = m.HasBootstrapDataChanges(ctx)
+		if err != nil {
+			return err
+		}
+
+		m.cache.VMImage, err = m.GetVMImage(ctx)
+		if err != nil {
+			return err
+		}
+		m.SaveVMImageToStatus(m.cache.VMImage)
+
+		m.cache.MaxSurge, err = m.MaxSurge()
+		if err != nil {
+			return err
+		}
+
 		skuCache, err := resourceskus.GetCache(m, m.Location())
 		if err != nil {
 			return err
@@ -148,9 +173,19 @@ func (m *MachinePoolScope) InitMachinePoolCache(ctx context.Context) error {
 }
 
 // ScaleSetSpec returns the scale set spec.
-func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
-	return azure.ScaleSetSpec{
+func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecGetter {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.ScaleSetSpec")
+	defer done()
+
+	shouldPatchCustomData := false
+	if m.HasReplicasExternallyManaged(ctx) {
+		shouldPatchCustomData = m.cache.HasBootstrapDataChanges
+		log.V(4).Info("has bootstrap data changed?", "shouldPatchCustomData", shouldPatchCustomData)
+	}
+
+	return &scalesets.ScaleSetSpec{
 		Name:                         m.Name(),
+		ResourceGroup:                m.ResourceGroup(),
 		Size:                         m.AzureMachinePool.Spec.Template.VMSize,
 		Capacity:                     int64(ptr.Deref[int32](m.MachinePool.Spec.Replicas, 0)),
 		SSHKeyData:                   m.AzureMachinePool.Spec.Template.SSHPublicKey,
@@ -172,6 +207,16 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		NetworkInterfaces:            m.AzureMachinePool.Spec.Template.NetworkInterfaces,
 		IPv6Enabled:                  m.IsIPv6Enabled(),
 		OrchestrationMode:            m.AzureMachinePool.Spec.OrchestrationMode,
+		Location:                     m.AzureMachinePool.Spec.Location,
+		SubscriptionID:               m.SubscriptionID(),
+		VMSSExtensionSpecs:           m.VMSSExtensionSpecs(),
+		HasReplicasExternallyManaged: m.HasReplicasExternallyManaged(ctx),
+		ClusterName:                  m.ClusterName(),
+		AdditionalTags:               m.AzureMachinePool.Spec.AdditionalTags,
+		SKU:                          m.cache.VMSKU,
+		VMImage:                      m.cache.VMImage,
+		BootstrapData:                m.cache.BootstrapData,
+		ShouldPatchCustomData:        shouldPatchCustomData,
 	}
 }
 
@@ -614,11 +659,8 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 }
 
 // calculateBootstrapDataHash calculates the sha256 hash of the bootstrap data.
-func (m *MachinePoolScope) calculateBootstrapDataHash(ctx context.Context) (string, error) {
-	bootstrapData, err := m.GetBootstrapData(ctx)
-	if err != nil {
-		return "", err
-	}
+func (m *MachinePoolScope) calculateBootstrapDataHash(_ context.Context) (string, error) {
+	bootstrapData := m.cache.BootstrapData
 	h := sha256.New()
 	n, err := io.WriteString(h, bootstrapData)
 	if err != nil || n == 0 {

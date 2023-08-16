@@ -34,8 +34,8 @@ const (
 )
 
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.
-func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) *azure.VMSS {
-	vmss := &azure.VMSS{
+func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) azure.VMSS {
+	vmss := azure.VMSS{
 		ID:    ptr.Deref(sdkvmss.ID, ""),
 		Name:  ptr.Deref(sdkvmss.Name, ""),
 		State: infrav1.ProvisioningState(ptr.Deref(sdkvmss.ProvisioningState, "")),

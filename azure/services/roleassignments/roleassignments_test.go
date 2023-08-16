@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments/mock_roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -55,6 +56,10 @@ var (
 
 	emptyRoleAssignmentSpec = RoleAssignmentSpec{}
 	fakeRoleAssignmentSpecs = []azure.ResourceSpecGetter{&fakeRoleAssignment1, &fakeRoleAssignment2, &emptyRoleAssignmentSpec}
+	fakeVMSSSpec            = scalesets.ScaleSetSpec{
+		Name:          "test-vmss",
+		ResourceGroup: "my-rg",
+	}
 )
 
 func TestReconcileRoleAssignmentsVM(t *testing.T) {
@@ -169,7 +174,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return("test-vmss")
-				mvmss.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
+				mvmss.Get(gomockinternal.AContext(), &fakeVMSSSpec).Return(compute.VirtualMachineScaleSet{
 					Identity: &compute.VirtualMachineScaleSetIdentity{
 						PrincipalID: &fakePrincipalID,
 					},
@@ -187,7 +192,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return("test-vmss")
 				s.HasSystemAssignedIdentity().Return(true)
-				mvmss.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{},
+				mvmss.Get(gomockinternal.AContext(), &fakeVMSSSpec).Return(compute.VirtualMachineScaleSet{},
 					autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
@@ -202,7 +207,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return("test-vmss")
-				mvmss.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
+				mvmss.Get(gomockinternal.AContext(), &fakeVMSSSpec).Return(compute.VirtualMachineScaleSet{
 					Identity: &compute.VirtualMachineScaleSetIdentity{
 						PrincipalID: &fakePrincipalID,
 					},
@@ -229,7 +234,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			s := &Service{
 				Scope:                        scopeMock,
 				Reconciler:                   asyncMock,
-				virtualMachineScaleSetClient: vmMock,
+				virtualMachineScaleSetGetter: vmMock,
 			}
 
 			err := s.Reconcile(context.TODO())

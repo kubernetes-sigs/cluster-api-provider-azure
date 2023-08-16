@@ -51,7 +51,7 @@ var (
 	}
 )
 
-func TestParameters(t *testing.T) {
+func TestVMSSExtensionParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          *VMSSExtensionSpec
