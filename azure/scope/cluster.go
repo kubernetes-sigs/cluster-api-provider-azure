@@ -131,7 +131,7 @@ func (s *ClusterScope) BaseURI() string {
 	return s.ResourceManagerEndpoint
 }
 
-// Authorizer returns the Azure client Authorizer.
+// Authorizer returns the Azure client Authorizer which is used for SDKv1 services.
 func (s *ClusterScope) Authorizer() autorest.Authorizer {
 	return s.AzureClients.Authorizer
 }

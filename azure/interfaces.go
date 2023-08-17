@@ -45,6 +45,7 @@ type ServiceReconciler interface {
 }
 
 // Authorizer is an interface which can get the subscription ID, base URI, and authorizer for an Azure service.
+// The Authorizer field is used by SDKv1 services while the Token is used by SDKv2 services.
 type Authorizer interface {
 	SubscriptionID() string
 	ClientID() string

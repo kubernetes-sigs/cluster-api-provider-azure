@@ -67,7 +67,7 @@ func (c *AzureClients) SubscriptionID() string {
 	return c.Values[auth.SubscriptionID]
 }
 
-// Token returns the Azure token credential of the cluster.
+// Token returns the Azure token credential of the cluster used for SDKv2 services.
 func (c *AzureClients) Token() azcore.TokenCredential {
 	return c.TokenCredential
 }
