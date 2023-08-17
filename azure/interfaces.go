@@ -19,6 +19,7 @@ package azure
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/Azure/go-autorest/autorest"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -53,6 +54,7 @@ type Authorizer interface {
 	BaseURI() string
 	Authorizer() autorest.Authorizer
 	HashKey() string
+	Token() azcore.TokenCredential
 }
 
 // NetworkDescriber is an interface which can get common Azure Cluster Networking information.
