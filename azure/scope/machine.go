@@ -575,7 +575,7 @@ func (m *MachineScope) SetFailureMessage(v error) {
 }
 
 // SetFailureReason sets the AzureMachine status failure reason.
-func (m *MachineScope) SetFailureReason(v capierrors.MachineStatusError) {
+func (m *MachineScope) SetFailureReason(v capierrors.MachinePoolStatusFailure) {
 	m.AzureMachine.Status.FailureReason = &v
 }
 

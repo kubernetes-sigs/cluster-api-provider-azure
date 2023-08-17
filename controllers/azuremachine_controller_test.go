@@ -46,7 +46,7 @@ type TestReconcileInput struct {
 	createAzureMachineService func(*scope.MachineScope) (*azureMachineService, error)
 	azureMachineOptions       func(am *infrav1.AzureMachine)
 	expectedErr               string
-	machineScopeFailureReason capierrors.MachineStatusError
+	machineScopeFailureReason capierrors.MachinePoolStatusFailure
 	ready                     bool
 	cache                     *scope.MachineCache
 	expectedResult            reconcile.Result
