@@ -19,6 +19,7 @@ type PrivateLinkSpec struct {
 	ResourceGroup             string
 	SubscriptionID            string
 	Location                  string
+	VNetResourceGroup         string
 	VNet                      string
 	NATIPConfiguration        []NATIPConfiguration
 	LoadBalancerName          string
@@ -88,7 +89,7 @@ func (s *PrivateLinkSpec) Parameters(ctx context.Context, existing interface{}) 
 						fmt.Sprintf(
 							"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
 							s.SubscriptionID,
-							s.ResourceGroup,
+							s.VNetResourceGroup,
 							s.VNet,
 							natIPConfiguration.Subnet)),
 				},
