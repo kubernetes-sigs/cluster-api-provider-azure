@@ -54,6 +54,7 @@ func TestASOSecretReconcile(t *testing.T) {
 	defaultAzureCluster := getASOAzureCluster()
 	defaultAzureManagedControlPlane := getASOAzureManagedControlPlane()
 	defaultASOSecret := getASOSecret(defaultAzureCluster)
+	defaultClusterIdentityType := infrav1.ServicePrincipal
 
 	cases := map[string]struct {
 		clusterName string
@@ -80,7 +81,13 @@ func TestASOSecretReconcile(t *testing.T) {
 						Namespace: "default",
 					}
 				}),
-				getASOAzureClusterIdentity(),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = defaultClusterIdentityType
+					identity.Spec.ClientSecret = corev1.SecretReference{
+						Name:      "fooSecret",
+						Namespace: "default",
+					}
+				}),
 				getASOAzureClusterIdentitySecret(),
 				defaultCluster,
 			},
@@ -102,7 +109,13 @@ func TestASOSecretReconcile(t *testing.T) {
 						Namespace: "default",
 					}
 				}),
-				getASOAzureClusterIdentity(),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = defaultClusterIdentityType
+					identity.Spec.ClientSecret = corev1.SecretReference{
+						Name:      "fooSecret",
+						Namespace: "default",
+					}
+				}),
 				getASOAzureClusterIdentitySecret(),
 				defaultCluster,
 			},
@@ -114,6 +127,70 @@ func TestASOSecretReconcile(t *testing.T) {
 					"AZURE_CLIENT_SECRET":   []byte("fooSecret"),
 				}
 			}),
+		},
+		"should reconcile normally for AzureCluster with an IdentityRef of type WorkloadIdentity": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = "WorkloadIdentity"
+				}),
+				defaultCluster,
+			},
+			asoSecret: getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+				s.Data = map[string][]byte{
+					"AZURE_SUBSCRIPTION_ID": []byte("123"),
+					"AZURE_TENANT_ID":       []byte("fooTenant"),
+					"AZURE_CLIENT_ID":       []byte("fooClient"),
+				}
+			}),
+		},
+		"should reconcile normally for AzureManagedControlPlane with an IdentityRef of type WorkloadIdentity": {
+			clusterName: defaultAzureManagedControlPlane.Name,
+			objects: []runtime.Object{
+				getASOAzureManagedControlPlane(func(c *infrav1.AzureManagedControlPlane) {
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.WorkloadIdentity
+				}),
+				defaultCluster,
+			},
+			asoSecret: getASOSecret(defaultAzureManagedControlPlane, func(s *corev1.Secret) {
+				s.Data = map[string][]byte{
+					"AZURE_SUBSCRIPTION_ID": []byte("fooSubscription"),
+					"AZURE_TENANT_ID":       []byte("fooTenant"),
+					"AZURE_CLIENT_ID":       []byte("fooClient"),
+				}
+			}),
+		},
+		"should fail if IdentityRef secret doesn't exist": {
+			clusterName: defaultAzureManagedControlPlane.Name,
+			objects: []runtime.Object{
+				getASOAzureManagedControlPlane(func(c *infrav1.AzureManagedControlPlane) {
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = defaultClusterIdentityType
+					identity.Spec.ClientSecret = corev1.SecretReference{
+						Name:      "fooSecret",
+						Namespace: "default",
+					}
+				}),
+				defaultCluster,
+			},
+			err: "secrets \"fooSecret\" not found",
 		},
 		"should return if cluster does not exist": {
 			clusterName: defaultAzureCluster.Name,
@@ -175,7 +252,7 @@ func TestASOSecretReconcile(t *testing.T) {
 				g.Expect(reconciler.Recorder.(*record.FakeRecorder).Events).To(Receive(ContainSubstring(tc.event)))
 			}
 			if tc.err != "" {
-				g.Expect(err).To(MatchError(tc.err))
+				g.Expect(err).To(MatchError(ContainSubstring(tc.err)))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -265,12 +342,7 @@ func getASOAzureClusterIdentity(changes ...func(identity *infrav1.AzureClusterId
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type:     infrav1.IdentityType("ServicePrincipal"),
 			ClientID: "fooClient",
-			ClientSecret: corev1.SecretReference{
-				Name:      "fooSecret",
-				Namespace: "default",
-			},
 			TenantID: "fooTenant",
 		},
 	}
