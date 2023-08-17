@@ -279,7 +279,7 @@ type (
 		// can be added as events to the MachinePool object and/or logged in the
 		// controller's output.
 		// +optional
-		FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
+		FailureReason *errors.MachinePoolStatusFailure `json:"failureReason,omitempty"`
 
 		// FailureMessage will be set in the event that there is a terminal problem
 		// reconciling the MachinePool and will contain a more verbose string suitable
