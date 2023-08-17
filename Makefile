@@ -142,7 +142,11 @@ else
 endif
 
 # Define Docker related variables. Releases should modify and double check these vars.
-REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
+ifeq (,$(shell command -v gcloud))
+    REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
+else
+    REGISTRY ?= localhost:5000
+endif
 STAGING_REGISTRY := gcr.io/k8s-staging-cluster-api-azure
 PROD_REGISTRY := registry.k8s.io/cluster-api-azure
 IMAGE_NAME ?= cluster-api-azure-controller
