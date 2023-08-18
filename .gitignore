@@ -85,3 +85,7 @@ release-*/manifests/calico-*.yaml
 # mentioned in the capz book
 /sp.json
 /cluster.yaml
+
+# go.work files
+go.work
+go.work.sum
