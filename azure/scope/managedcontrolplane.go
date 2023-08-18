@@ -565,6 +565,15 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 		}
 	}
 
+	if s.ControlPlane.Spec.HTTPProxyConfig != nil {
+		managedClusterSpec.HTTPProxyConfig = &managedclusters.HTTPProxyConfig{
+			HTTPProxy:  s.ControlPlane.Spec.HTTPProxyConfig.HTTPProxy,
+			HTTPSProxy: s.ControlPlane.Spec.HTTPProxyConfig.HTTPSProxy,
+			NoProxy:    s.ControlPlane.Spec.HTTPProxyConfig.NoProxy,
+			TrustedCA:  s.ControlPlane.Spec.HTTPProxyConfig.TrustedCA,
+		}
+	}
+
 	return &managedClusterSpec
 }
 

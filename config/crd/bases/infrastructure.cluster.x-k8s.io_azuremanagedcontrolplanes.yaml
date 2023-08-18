@@ -244,6 +244,28 @@ spec:
                   DNS service. It must be within the Kubernetes service address range
                   specified in serviceCidr. Immutable.
                 type: string
+              httpProxyConfig:
+                description: HTTPProxyConfig is the HTTP proxy configuration for the
+                  cluster. Immutable.
+                properties:
+                  httpProxy:
+                    description: HTTPProxy is the HTTP proxy server endpoint to use.
+                    type: string
+                  httpsProxy:
+                    description: HTTPSProxy is the HTTPS proxy server endpoint to
+                      use.
+                    type: string
+                  noProxy:
+                    description: NoProxy indicates the endpoints that should not go
+                      through proxy.
+                    items:
+                      type: string
+                    type: array
+                  trustedCa:
+                    description: TrustedCA is the alternative CA cert to use for connecting
+                      to proxy servers.
+                    type: string
+                type: object
               identity:
                 description: Identity configuration used by the AKS control plane.
                 properties:

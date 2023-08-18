@@ -197,6 +197,53 @@ func TestParameters(t *testing.T) {
 			},
 		},
 		{
+			name:     "set HTTPProxyConfig if set",
+			existing: nil,
+			spec: &ManagedClusterSpec{
+				Name:            "test-managedcluster",
+				ResourceGroup:   "test-rg",
+				Location:        "test-location",
+				Tags:            nil,
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "Standard",
+				HTTPProxyConfig: &HTTPProxyConfig{
+					HTTPProxy:  ptr.To("http://proxy.com"),
+					HTTPSProxy: ptr.To("https://proxy.com"),
+				},
+				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
+					return []azure.ResourceSpecGetter{}, nil
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
+				g.Expect(result.(containerservice.ManagedCluster).HTTPProxyConfig).To(Not(BeNil()))
+				g.Expect((*result.(containerservice.ManagedCluster).HTTPProxyConfig.HTTPProxy)).To(Equal("http://proxy.com"))
+			},
+		},
+		{
+			name:     "set HTTPProxyConfig if set with no proxy list",
+			existing: nil,
+			spec: &ManagedClusterSpec{
+				Name:            "test-managedcluster",
+				ResourceGroup:   "test-rg",
+				Location:        "test-location",
+				Tags:            nil,
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "Standard",
+				HTTPProxyConfig: &HTTPProxyConfig{
+					NoProxy: []string{"noproxy1", "noproxy2"},
+				},
+				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
+					return []azure.ResourceSpecGetter{}, nil
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(containerservice.ManagedCluster{}))
+				g.Expect(result.(containerservice.ManagedCluster).HTTPProxyConfig).To(Not(BeNil()))
+				g.Expect((*result.(containerservice.ManagedCluster).HTTPProxyConfig.NoProxy)).To(Equal([]string{"noproxy1", "noproxy2"}))
+			},
+		},
+		{
 			name:     "skip Linux profile if SSH key is not set",
 			existing: nil,
 			spec: &ManagedClusterSpec{

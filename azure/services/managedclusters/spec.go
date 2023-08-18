@@ -113,6 +113,24 @@ type ManagedClusterSpec struct {
 
 	// KubeletUserAssignedIdentity is the user-assigned identity for kubelet to authenticate to ACR.
 	KubeletUserAssignedIdentity string
+
+	// HTTPProxyConfig is the HTTP proxy configuration for the cluster.
+	HTTPProxyConfig *HTTPProxyConfig
+}
+
+// HTTPProxyConfig is the HTTP proxy configuration for the cluster.
+type HTTPProxyConfig struct {
+	// HTTPProxy is the HTTP proxy server endpoint to use.
+	HTTPProxy *string `json:"httpProxy,omitempty"`
+
+	// HTTPSProxy is the HTTPS proxy server endpoint to use.
+	HTTPSProxy *string `json:"httpsProxy,omitempty"`
+
+	// NoProxy is the endpoints that should not go through proxy.
+	NoProxy []string `json:"noProxy,omitempty"`
+
+	// TrustedCA is the Alternative CA cert to use for connecting to proxy servers.
+	TrustedCA *string `json:"trustedCa,omitempty"`
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
@@ -411,6 +429,18 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 			kubeletIdentityKey: {
 				ResourceID: ptr.To(s.KubeletUserAssignedIdentity),
 			},
+		}
+	}
+
+	if s.HTTPProxyConfig != nil {
+		managedCluster.HTTPProxyConfig = &containerservice.ManagedClusterHTTPProxyConfig{
+			HTTPProxy:  s.HTTPProxyConfig.HTTPProxy,
+			HTTPSProxy: s.HTTPProxyConfig.HTTPSProxy,
+			TrustedCa:  s.HTTPProxyConfig.TrustedCA,
+		}
+
+		if s.HTTPProxyConfig.NoProxy != nil {
+			managedCluster.HTTPProxyConfig.NoProxy = &s.HTTPProxyConfig.NoProxy
 		}
 	}
 
