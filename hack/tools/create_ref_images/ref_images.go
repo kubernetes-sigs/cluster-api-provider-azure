@@ -30,7 +30,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/microsoft/azure-devops-go-api/azuredevops/v7"
+	azuredevops "github.com/microsoft/azure-devops-go-api/azuredevops/v7"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/pipelines"
 	"gopkg.in/yaml.v2"
 	"k8s.io/utils/ptr"

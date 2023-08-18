@@ -13,3 +13,7 @@
 !/main.go
 !/go.mod
 !/go.sum
+
+# go.work files
+go.work
+go.work.sum
