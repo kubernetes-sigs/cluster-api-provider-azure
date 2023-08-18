@@ -17,82 +17,82 @@ common_settings: &common
 
 # configurations for each image
 configurations:
-  # Ubuntu 22.04
-  - <<: *common
-    OS: "Ubuntu"
-    OS_VERSION: "22.04"
-    OFFER: "capi"
-    KUBERNETES_BOOTSTRAP_VERSION: ""
-    KUBERNETES_VERSION: "1.28.0"
-  - <<: *common
-    OS: "Ubuntu"
-    OS_VERSION: "22.04"
-    OFFER: "capi"
-    KUBERNETES_BOOTSTRAP_VERSION: ""
-    KUBERNETES_VERSION: "1.27.4"
-  - <<: *common
-    OS: "Ubuntu"
-    OS_VERSION: "22.04"
-    OFFER: "capi"
-    KUBERNETES_BOOTSTRAP_VERSION: ""
-    KUBERNETES_VERSION: "1.26.7"
+  # # Ubuntu 22.04
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "22.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.28.0"
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "22.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.27.4"
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "22.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.26.7"
 
-  # Ubuntu 20.04
-  - <<: *common
-    OS: "Ubuntu"
-    OS_VERSION: "20.04"
-    OFFER: "capi"
-    KUBERNETES_BOOTSTRAP_VERSION: ""
-    KUBERNETES_VERSION: "1.28.0"
-  - <<: *common
-    OS: "Ubuntu"
-    OS_VERSION: "20.04"
-    OFFER: "capi"
-    KUBERNETES_BOOTSTRAP_VERSION: ""
-    KUBERNETES_VERSION: "1.27.4"
-  - <<: *common
-    OS: "Ubuntu"
-    OS_VERSION: "20.04"
-    OFFER: "capi"
-    KUBERNETES_BOOTSTRAP_VERSION: ""
-    KUBERNETES_VERSION: "1.26.7"
+  # # Ubuntu 20.04
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "20.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.28.0"
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "20.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.27.4"
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "20.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.26.7"
 
   # Windows 2019
-  - <<: *common
+  - <<: *common # rerun
     OS: "Windows"
     OS_VERSION: "2019-containerd"
     OFFER: "capi-windows"
     KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
     KUBERNETES_VERSION: "1.28.0"
-  - <<: *common
-    OS: "Windows"
-    OS_VERSION: "2019-containerd"
-    OFFER: "capi-windows"
-    KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
-    KUBERNETES_VERSION: "1.27.4"
-  - <<: *common
-    OS: "Windows"
-    OS_VERSION: "2019-containerd"
-    OFFER: "capi-windows"
-    KUBERNETES_BOOTSTRAP_VERSION: "1.26.6"
-    KUBERNETES_VERSION: "1.26.7"
+  - <<: *common # rerun
+  #   OS: "Windows"
+  #   OS_VERSION: "2019-containerd"
+  #   OFFER: "capi-windows"
+  #   KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
+  #   KUBERNETES_VERSION: "1.27.4"
+  # - <<: *common # rerun
+  #   OS: "Windows"
+  #   OS_VERSION: "2019-containerd"
+  #   OFFER: "capi-windows"
+  #   KUBERNETES_BOOTSTRAP_VERSION: "1.26.6"
+  #   KUBERNETES_VERSION: "1.26.7"
 
   # Windows 2022
-  - <<: *common
+  - <<: *common # rerun
     OS: "Windows"
     OS_VERSION: "2022-containerd"
     OFFER: "capi-windows"
     KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
     KUBERNETES_VERSION: "1.28.0"
-  - <<: *common
-    OS: "Windows"
-    OS_VERSION: "2022-containerd"
-    OFFER: "capi-windows"
-    KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
-    KUBERNETES_VERSION: "1.27.4"
-  - <<: *common
-    OS: "Windows"
-    OS_VERSION: "2022-containerd"
-    OFFER: "capi-windows"
-    KUBERNETES_BOOTSTRAP_VERSION: "1.26.6"
-    KUBERNETES_VERSION: "1.26.7"
+  # - <<: *common # rerun last stage
+  #   OS: "Windows"
+  #   OS_VERSION: "2022-containerd"
+  #   OFFER: "capi-windows"
+  #   KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
+  #   KUBERNETES_VERSION: "1.27.4"
+  # - <<: *common
+  #   OS: "Windows"
+  #   OS_VERSION: "2022-containerd"
+  #   OFFER: "capi-windows"
+  #   KUBERNETES_BOOTSTRAP_VERSION: "1.26.6"
+  #   KUBERNETES_VERSION: "1.26.7"

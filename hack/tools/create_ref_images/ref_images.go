@@ -30,7 +30,7 @@ import (
 	"sync"
 	"time"
 
-	azuredevops "github.com/microsoft/azure-devops-go-api/azuredevops/v7"
+	"github.com/microsoft/azure-devops-go-api/azuredevops/v7"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/pipelines"
 	"gopkg.in/yaml.v2"
 	"k8s.io/utils/ptr"
@@ -351,7 +351,6 @@ func displayRunDetails(run *pipelines.Run) {
 		}
 		if run.Resources != nil {
 			if run.Resources.Repositories != nil {
-				fmt.Printf(kvFormat, "Repositories")
 				for str, repo := range *run.Resources.Repositories {
 					fmt.Printf(kvFormat, "  ", str)
 					if repo.RefName != nil {
