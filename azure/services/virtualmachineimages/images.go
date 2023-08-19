@@ -35,12 +35,16 @@ type Service struct {
 	azure.Authorizer
 }
 
-// New creates a new VM Images service.
-func New(auth azure.Authorizer) *Service {
-	return &Service{
-		Client:     NewClient(auth),
-		Authorizer: auth,
+// New creates a VM Images service.
+func New(auth azure.Authorizer) (*Service, error) {
+	client, err := NewClient(auth)
+	if err != nil {
+		return nil, err
 	}
+	return &Service{
+		Client:     client,
+		Authorizer: auth,
+	}, nil
 }
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
@@ -137,25 +141,25 @@ func (s *Service) getSKUAndVersion(ctx context.Context, location, publisher, off
 	sku := fmt.Sprintf("%s-gen1", osAndVersion)
 
 	imageCache, err := GetCache(s.Authorizer)
-	imageCache.client = s.Client
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to get image cache")
 	}
+	imageCache.client = s.Client
 
-	listVMImagesResource, err := imageCache.Get(ctx, location, publisher, offer, sku)
+	listImagesResponse, err := imageCache.Get(ctx, location, publisher, offer, sku)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "unable to list VM images for publisher \"%s\" offer \"%s\" sku \"%s\"", publisher, offer, sku)
 	}
 
-	vmImages := listVMImagesResource.Value
-	if vmImages == nil || len(*vmImages) == 0 {
+	vmImages := listImagesResponse.VirtualMachineImageResourceArray
+	if len(vmImages) == 0 {
 		return "", "", errors.Errorf("no VM images found for publisher \"%s\" offer \"%s\" sku \"%s\"", publisher, offer, sku)
 	}
 
 	// Sort the VM image names descending, so more recent dates sort first.
 	// (The date is encoded into the end of the name, for example "124.0.20220512").
 	names := []string{}
-	for _, vmImage := range *vmImages {
+	for _, vmImage := range vmImages {
 		names = append(names, *vmImage.Name)
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(names)))
