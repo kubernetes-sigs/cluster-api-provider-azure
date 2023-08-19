@@ -28,6 +28,11 @@ source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
+: "${AZURE_STORAGE_ACCOUNT:?Environment variable empty or not defined.}"
+: "${AZURE_STORAGE_KEY:?Environment variable empty or not defined.}"
+# JOB_NAME is an environment variable set by a prow job -
+# https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
+: "${JOB_NAME:?Environment variable empty or not defined.}"
 : "${REGISTRY:?Environment variable empty or not defined.}"
 
 # cloud controller manager image
@@ -52,6 +57,11 @@ setup() {
     echo "Image registry is ${REGISTRY}"
     echo "Image Tag CCM is ${IMAGE_TAG_CCM}"
     echo "Image Tag CNM is ${IMAGE_TAG_CNM}"
+    if [[ "${TEST_ACR_CREDENTIAL_PROVIDER:-}" =~ "true" ]]; then
+        IMAGE_TAG_ACR_CREDENTIAL_PROVIDER="${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER:-${IMAGE_TAG}}"
+        export IMAGE_TAG_ACR_CREDENTIAL_PROVIDER
+        echo "Image Tag ACR credential provider is ${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}"
+    fi
 
     if [[ -n "${WINDOWS_SERVER_VERSION:-}" ]]; then
         if [[ "${WINDOWS_SERVER_VERSION}" == "windows-2019" ]]; then
@@ -70,6 +80,20 @@ main() {
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
         echo "Building Linux amd64 and Windows ${WINDOWS_IMAGE_VERSION} amd64 cloud node managers"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64 manifest-node-manager-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64
+
+        if [[ "${TEST_ACR_CREDENTIAL_PROVIDER:-}" =~ "true" ]]; then
+            echo "Building and pushing Linux and Windows amd64 Azure ACR credential provider"
+            make -C "${AZURE_CLOUD_PROVIDER_ROOT}" bin/azure-acr-credential-provider bin/azure-acr-credential-provider.exe
+
+            if [[ "$(az storage container exists --name "${JOB_NAME}" --query exists --output tsv)" == "false" ]]; then
+                echo "Creating ${JOB_NAME} storage container"
+                az storage container create --name "${JOB_NAME}" > /dev/null
+                az storage container set-permission --name "${JOB_NAME}" --public-access container > /dev/null
+            fi
+
+            az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+            az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider.exe" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe"
+        fi
     fi
 }
 
@@ -85,6 +109,14 @@ can_reuse_artifacts() {
     FULL_VERSION=$(docker manifest inspect mcr.microsoft.com/windows/nanoserver:${WINDOWS_IMAGE_VERSION} | jq -r '.manifests[0].platform["os.version"]')
     if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os.version\": \"${FULL_VERSION}\""; then
         echo "false" && return
+    fi
+
+    if [[ "${TEST_ACR_CREDENTIAL_PROVIDER:-}" =~ "true" ]]; then
+        for BINARY in azure-acr-credential-provider azure-acr-credential-provider.exe; do
+            if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv)" == "false" ]]; then
+                echo "false" && return
+            fi
+        done
     fi
 
     echo "true"
