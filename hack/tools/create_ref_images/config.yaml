@@ -1,0 +1,98 @@
+# Path: hack/tools/create_ref_images/config.yaml
+# Azure DevOps settings
+organization_url: "https://dev.azure.com/AzureContainerUpstream"
+project_name: "capz"
+pipeline_id: 224
+pipeline_name: "Create new Marketplace image"
+
+# common settings for all configurations
+common_settings: &common
+  AZ_CAPI_EXTENSION_URL: "https://github.com/Azure/azure-capi-cli-extension/releases/download/v0.1.4/capi-0.1.4-py2.py3-none-any.whl"
+  CLEANUP: "False"
+  CONTAINER_IMAGE: "mcr.microsoft.com/oss/azcu/go-dev:v1.37.0"
+  DEBUG: "0"
+  PACKER_FLAGS: ""
+  PREFLIGHT_CHECKS: "true"
+  BRANCH: "refs/heads/august-patch-master"
+
+# configurations for each image
+configurations:
+  # # Ubuntu 22.04
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "22.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.28.0"
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "22.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.27.4"
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "22.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.26.7"
+
+  # # Ubuntu 20.04
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "20.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.28.0"
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "20.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.27.4"
+  # - <<: *common
+  #   OS: "Ubuntu"
+  #   OS_VERSION: "20.04"
+  #   OFFER: "capi"
+  #   KUBERNETES_BOOTSTRAP_VERSION: ""
+  #   KUBERNETES_VERSION: "1.26.7"
+
+  # Windows 2019
+  - <<: *common # rerun
+    OS: "Windows"
+    OS_VERSION: "2019-containerd"
+    OFFER: "capi-windows"
+    KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
+    KUBERNETES_VERSION: "1.28.0"
+  - <<: *common # rerun
+  #   OS: "Windows"
+  #   OS_VERSION: "2019-containerd"
+  #   OFFER: "capi-windows"
+  #   KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
+  #   KUBERNETES_VERSION: "1.27.4"
+  # - <<: *common # rerun
+  #   OS: "Windows"
+  #   OS_VERSION: "2019-containerd"
+  #   OFFER: "capi-windows"
+  #   KUBERNETES_BOOTSTRAP_VERSION: "1.26.6"
+  #   KUBERNETES_VERSION: "1.26.7"
+
+  # Windows 2022
+  - <<: *common # rerun
+    OS: "Windows"
+    OS_VERSION: "2022-containerd"
+    OFFER: "capi-windows"
+    KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
+    KUBERNETES_VERSION: "1.28.0"
+  # - <<: *common # rerun last stage
+  #   OS: "Windows"
+  #   OS_VERSION: "2022-containerd"
+  #   OFFER: "capi-windows"
+  #   KUBERNETES_BOOTSTRAP_VERSION: "1.27.3"
+  #   KUBERNETES_VERSION: "1.27.4"
+  # - <<: *common
+  #   OS: "Windows"
+  #   OS_VERSION: "2022-containerd"
+  #   OFFER: "capi-windows"
+  #   KUBERNETES_BOOTSTRAP_VERSION: "1.26.6"
+  #   KUBERNETES_VERSION: "1.26.7"
