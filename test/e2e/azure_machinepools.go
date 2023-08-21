@@ -33,7 +33,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/util/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -92,7 +92,7 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 				Expect(providerID).To(MatchRegexp(regexpUniformInstance))
 			}
 		}
-		mp, err := azure.FindParentMachinePool(amp.Name, bootstrapClusterProxy.GetClient())
+		mp, err := azureutil.FindParentMachinePool(amp.Name, bootstrapClusterProxy.GetClient())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(mp).NotTo(BeNil())
 		machinepools = append(machinepools, mp)
