@@ -28,7 +28,8 @@ make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 if [[ -n "${CUSTOM_CLOUD_PROVIDER_CONFIG:-}" ]]; then
   curl --retry 3 -sL -o tmp_azure_json "${CUSTOM_CLOUD_PROVIDER_CONFIG}"
   envsubst < tmp_azure_json > azure_json
-  kubectl create secret generic "${CLUSTER_NAME}-control-plane-azure-json" \
+  "${KUBECTL}" delete secret "${CLUSTER_NAME}-control-plane-azure-json" || true
+  "${KUBECTL}" create secret generic "${CLUSTER_NAME}-control-plane-azure-json" \
     --from-file=control-plane-azure.json=azure_json \
     --from-file=worker-node-azure.json=azure_json
   rm tmp_azure_json azure_json
