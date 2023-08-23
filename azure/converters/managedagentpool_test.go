@@ -19,38 +19,37 @@ package converters
 import (
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 	cases := []struct {
 		name   string
-		pool   containerservice.AgentPool
-		expect func(*GomegaWithT, containerservice.ManagedClusterAgentPoolProfile)
+		pool   armcontainerservice.AgentPool
+		expect func(*GomegaWithT, armcontainerservice.ManagedClusterAgentPoolProfile)
 	}{
 		{
 			name: "Should set all values correctly",
-			pool: containerservice.AgentPool{
+			pool: armcontainerservice.AgentPool{
 				Name: ptr.To("agentpool1"),
-				ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+				Properties: &armcontainerservice.ManagedClusterAgentPoolProfileProperties{
 					VMSize:              ptr.To("Standard_D2s_v3"),
-					OsType:              azure.LinuxOS,
-					OsDiskSizeGB:        ptr.To[int32](100),
+					OSType:              ptr.To(armcontainerservice.OSTypeLinux),
+					OSDiskSizeGB:        ptr.To[int32](100),
 					Count:               ptr.To[int32](2),
-					Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
+					Type:                ptr.To(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
 					OrchestratorVersion: ptr.To("1.22.6"),
 					VnetSubnetID:        ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123"),
-					Mode:                containerservice.AgentPoolModeUser,
+					Mode:                ptr.To(armcontainerservice.AgentPoolModeUser),
 					EnableAutoScaling:   ptr.To(true),
 					MaxCount:            ptr.To[int32](5),
 					MinCount:            ptr.To[int32](2),
-					NodeTaints:          &[]string{"key1=value1:NoSchedule"},
-					AvailabilityZones:   &[]string{"zone1"},
+					NodeTaints:          []*string{ptr.To("key1=value1:NoSchedule")},
+					AvailabilityZones:   []*string{ptr.To("zone1")},
 					MaxPods:             ptr.To[int32](60),
-					OsDiskType:          containerservice.OSDiskTypeManaged,
+					OSDiskType:          ptr.To(armcontainerservice.OSDiskTypeManaged),
 					NodeLabels: map[string]*string{
 						"custom": ptr.To("default"),
 					},
@@ -61,24 +60,24 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 				},
 			},
 
-			expect: func(g *GomegaWithT, result containerservice.ManagedClusterAgentPoolProfile) {
-				g.Expect(result).To(Equal(containerservice.ManagedClusterAgentPoolProfile{
+			expect: func(g *GomegaWithT, result armcontainerservice.ManagedClusterAgentPoolProfile) {
+				g.Expect(result).To(Equal(armcontainerservice.ManagedClusterAgentPoolProfile{
 					Name:                ptr.To("agentpool1"),
 					VMSize:              ptr.To("Standard_D2s_v3"),
-					OsType:              azure.LinuxOS,
-					OsDiskSizeGB:        ptr.To[int32](100),
+					OSType:              ptr.To(armcontainerservice.OSTypeLinux),
+					OSDiskSizeGB:        ptr.To[int32](100),
 					Count:               ptr.To[int32](2),
-					Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
+					Type:                ptr.To(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
 					OrchestratorVersion: ptr.To("1.22.6"),
 					VnetSubnetID:        ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123"),
-					Mode:                containerservice.AgentPoolModeUser,
+					Mode:                ptr.To(armcontainerservice.AgentPoolModeUser),
 					EnableAutoScaling:   ptr.To(true),
 					MaxCount:            ptr.To[int32](5),
 					MinCount:            ptr.To[int32](2),
-					NodeTaints:          &[]string{"key1=value1:NoSchedule"},
-					AvailabilityZones:   &[]string{"zone1"},
+					NodeTaints:          []*string{ptr.To("key1=value1:NoSchedule")},
+					AvailabilityZones:   []*string{ptr.To("zone1")},
 					MaxPods:             ptr.To[int32](60),
-					OsDiskType:          containerservice.OSDiskTypeManaged,
+					OSDiskType:          ptr.To(armcontainerservice.OSDiskTypeManaged),
 					NodeLabels: map[string]*string{
 						"custom": ptr.To("default"),
 					},

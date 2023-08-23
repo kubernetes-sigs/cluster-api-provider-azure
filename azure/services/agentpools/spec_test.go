@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -83,27 +83,26 @@ func withSpotMaxPrice(spotMaxPrice string) func(*AgentPoolSpec) {
 		pool.SpotMaxPrice = &quantity
 	}
 }
-
-func sdkFakeAgentPool(changes ...func(*containerservice.AgentPool)) containerservice.AgentPool {
-	pool := containerservice.AgentPool{
-		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
-			AvailabilityZones:   &[]string{"fake-zone"},
+func sdkFakeAgentPool(changes ...func(*armcontainerservice.AgentPool)) armcontainerservice.AgentPool {
+	pool := armcontainerservice.AgentPool{
+		Properties: &armcontainerservice.ManagedClusterAgentPoolProfileProperties{
+			AvailabilityZones:   []*string{ptr.To("fake-zone")},
 			Count:               ptr.To[int32](1), // updates if changed
 			EnableAutoScaling:   ptr.To(true),     // updates if changed
 			EnableUltraSSD:      ptr.To(true),
-			KubeletDiskType:     containerservice.KubeletDiskType("fake-kubelet-disk-type"),
+			KubeletDiskType:     ptr.To(armcontainerservice.KubeletDiskType("fake-kubelet-disk-type")),
 			MaxCount:            ptr.To[int32](5), // updates if changed
 			MaxPods:             ptr.To[int32](10),
 			MinCount:            ptr.To[int32](1),                                       // updates if changed
-			Mode:                containerservice.AgentPoolMode("fake-mode"),            // updates if changed
+			Mode:                ptr.To(armcontainerservice.AgentPoolMode("fake-mode")), // updates if changed
 			NodeLabels:          map[string]*string{"fake-label": ptr.To("fake-value")}, // updates if changed
-			NodeTaints:          &[]string{"fake-taint"},                                // updates if changed
+			NodeTaints:          []*string{ptr.To("fake-taint")},                        // updates if changed
 			OrchestratorVersion: ptr.To("fake-version"),                                 // updates if changed
-			OsDiskSizeGB:        ptr.To[int32](2),
-			OsDiskType:          containerservice.OSDiskType("fake-os-disk-type"),
-			OsType:              containerservice.OSType("fake-os-type"),
+			OSDiskSizeGB:        ptr.To[int32](2),
+			OSDiskType:          ptr.To(armcontainerservice.OSDiskType("fake-os-disk-type")),
+			OSType:              ptr.To(armcontainerservice.OSType("fake-os-type")),
 			Tags:                map[string]*string{"fake": ptr.To("tag")},
-			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
+			Type:                ptr.To(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
 			VMSize:              ptr.To("fake-sku"),
 			VnetSubnetID:        ptr.To("fake-vnet-subnet-id"),
 		},
@@ -116,33 +115,37 @@ func sdkFakeAgentPool(changes ...func(*containerservice.AgentPool)) containerser
 	return pool
 }
 
-func sdkWithAutoscaling(enableAutoscaling bool) func(*containerservice.AgentPool) {
-	return func(pool *containerservice.AgentPool) {
-		pool.ManagedClusterAgentPoolProfileProperties.EnableAutoScaling = ptr.To(enableAutoscaling)
+func sdkWithAutoscaling(enableAutoscaling bool) func(*armcontainerservice.AgentPool) {
+	return func(pool *armcontainerservice.AgentPool) {
+		pool.Properties.EnableAutoScaling = ptr.To(enableAutoscaling)
 	}
 }
 
-func sdkWithScaleDownMode(scaleDownMode containerservice.ScaleDownMode) func(*containerservice.AgentPool) {
-	return func(pool *containerservice.AgentPool) {
-		pool.ManagedClusterAgentPoolProfileProperties.ScaleDownMode = scaleDownMode
+func sdkWithCount(count int32) func(*armcontainerservice.AgentPool) {
+	return func(pool *armcontainerservice.AgentPool) {
+		pool.Properties.Count = ptr.To[int32](count)
 	}
 }
 
-func sdkWithSpotMaxPrice(spotMaxPrice float64) func(*containerservice.AgentPool) {
-	return func(pool *containerservice.AgentPool) {
-		pool.ManagedClusterAgentPoolProfileProperties.SpotMaxPrice = &spotMaxPrice
+func sdkWithProvisioningState(state string) func(*armcontainerservice.AgentPool) {
+	return func(pool *armcontainerservice.AgentPool) {
+		pool.Properties.ProvisioningState = ptr.To(state)
 	}
 }
 
-func sdkWithCount(count int32) func(*containerservice.AgentPool) {
-	return func(pool *containerservice.AgentPool) {
-		pool.ManagedClusterAgentPoolProfileProperties.Count = ptr.To[int32](count)
+func sdkWithScaleDownMode(scaleDownMode armcontainerservice.ScaleDownMode) func(*armcontainerservice.AgentPool) {
+	return func(pool *armcontainerservice.AgentPool) {
+		if scaleDownMode == "" {
+			pool.Properties.ScaleDownMode = nil
+		} else {
+			pool.Properties.ScaleDownMode = ptr.To(scaleDownMode)
+		}
 	}
 }
 
-func sdkWithProvisioningState(state string) func(*containerservice.AgentPool) {
-	return func(pool *containerservice.AgentPool) {
-		pool.ManagedClusterAgentPoolProfileProperties.ProvisioningState = ptr.To(state)
+func sdkWithSpotMaxPrice(spotMaxPrice float32) func(*armcontainerservice.AgentPool) {
+	return func(pool *armcontainerservice.AgentPool) {
+		pool.Properties.SpotMaxPrice = &spotMaxPrice
 	}
 }
 
@@ -239,7 +242,7 @@ func TestParameters(t *testing.T) {
 			name: "parameters with an existing agent pool and update needed on scale down mode",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
-				sdkWithScaleDownMode(containerservice.ScaleDownModeDeallocate),
+				sdkWithScaleDownMode(armcontainerservice.ScaleDownModeDeallocate),
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      sdkFakeAgentPool(),
@@ -272,7 +275,7 @@ func TestParameters(t *testing.T) {
 			name: "parameters with an existing agent pool and update needed on max count",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) { pool.MaxCount = ptr.To[int32](3) },
+				func(pool *armcontainerservice.AgentPool) { pool.Properties.MaxCount = ptr.To[int32](3) },
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      sdkFakeAgentPool(),
@@ -282,7 +285,7 @@ func TestParameters(t *testing.T) {
 			name: "parameters with an existing agent pool and update needed on min count",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) { pool.MinCount = ptr.To[int32](3) },
+				func(pool *armcontainerservice.AgentPool) { pool.Properties.MinCount = ptr.To[int32](3) },
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      sdkFakeAgentPool(),
@@ -292,7 +295,9 @@ func TestParameters(t *testing.T) {
 			name: "parameters with an existing agent pool and update needed on mode",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) { pool.Mode = "fake-old-mode" },
+				func(pool *armcontainerservice.AgentPool) {
+					pool.Properties.Mode = ptr.To(armcontainerservice.AgentPoolMode("fake-old-mode"))
+				},
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      sdkFakeAgentPool(),
@@ -302,8 +307,8 @@ func TestParameters(t *testing.T) {
 			name: "parameters with an existing agent pool and update needed on node labels",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) {
-					pool.NodeLabels = map[string]*string{
+				func(pool *armcontainerservice.AgentPool) {
+					pool.Properties.NodeLabels = map[string]*string{
 						"fake-label":     ptr.To("fake-value"),
 						"fake-old-label": ptr.To("fake-old-value"),
 					}
@@ -323,8 +328,8 @@ func TestParameters(t *testing.T) {
 				},
 			),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) {
-					pool.NodeLabels = map[string]*string{
+				func(pool *armcontainerservice.AgentPool) {
+					pool.Properties.NodeLabels = map[string]*string{
 						"fake-label":                            ptr.To("fake-value"),
 						"kubernetes.azure.com/scalesetpriority": ptr.To("spot"),
 					}
@@ -338,7 +343,9 @@ func TestParameters(t *testing.T) {
 			name: "parameters with an existing agent pool and update needed on node taints",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) { pool.NodeTaints = &[]string{"fake-old-taint"} },
+				func(pool *armcontainerservice.AgentPool) {
+					pool.Properties.NodeTaints = []*string{ptr.To("fake-old-taint")}
+				},
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      sdkFakeAgentPool(),
@@ -367,7 +374,7 @@ func TestParameters(t *testing.T) {
 				func(pool *AgentPoolSpec) { pool.NodeTaints = nil },
 			),
 			existing: sdkFakeAgentPool(
-				func(pool *containerservice.AgentPool) { pool.NodeTaints = nil },
+				func(pool *armcontainerservice.AgentPool) { pool.Properties.NodeTaints = nil },
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      nil,

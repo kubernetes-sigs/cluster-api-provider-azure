@@ -18,14 +18,12 @@ package managedclusters
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
-	"github.com/Azure/go-autorest/autorest"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -37,21 +35,20 @@ type CredentialGetter interface {
 
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
-	managedclusters containerservice.ManagedClustersClient
+	managedclusters *armcontainerservice.ManagedClustersClient
 }
 
-// newClient creates a new managed cluster client from an authorizer.
-func newClient(auth azure.Authorizer) *azureClient {
-	return &azureClient{
-		managedclusters: newManagedClustersClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
+// newClient creates a new managedclusters client from an authorizer.
+func newClient(scope ManagedClusterScope) (*azureClient, error) {
+	opts, err := azure.ARMClientOptions(scope.CloudEnvironment(), azure.CustomPutPatchHeaderPolicy{Getter: scope.ManagedClusterSpec()})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create managedclusters client options")
 	}
-}
-
-// newManagedClustersClient creates a new managed clusters client from subscription ID.
-func newManagedClustersClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) containerservice.ManagedClustersClient {
-	managedClustersClient := containerservice.NewManagedClustersClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&managedClustersClient.Client, authorizer)
-	return managedClustersClient
+	factory, err := armcontainerservice.NewClientFactory(scope.SubscriptionID(), scope.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armcontainerservice client factory")
+	}
+	return &azureClient{factory.NewManagedClustersClient()}, nil
 }
 
 // Get gets a managed cluster.
@@ -59,7 +56,11 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.Get")
 	defer done()
 
-	return ac.managedclusters.Get(ctx, spec.ResourceGroupName(), spec.ResourceName())
+	resp, err := ac.managedclusters.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp.ManagedCluster, nil
 }
 
 // GetCredentials fetches the admin kubeconfig for a managed cluster.
@@ -67,45 +68,38 @@ func (ac *azureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.GetCredentials")
 	defer done()
 
-	credentialList, err := ac.managedclusters.ListClusterAdminCredentials(ctx, resourceGroupName, name, "")
+	credentialList, err := ac.managedclusters.ListClusterAdminCredentials(ctx, resourceGroupName, name, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if credentialList.Kubeconfigs == nil || len(*credentialList.Kubeconfigs) < 1 {
-		return nil, errors.New("no kubeconfigs available for the managed cluster cluster")
+	if len(credentialList.Kubeconfigs) == 0 {
+		return nil, errors.New("no kubeconfigs available for the managed cluster")
 	}
 
-	return *(*credentialList.Kubeconfigs)[0].Value, nil
+	return credentialList.Kubeconfigs[0].Value, nil
 }
 
 // CreateOrUpdateAsync creates or updates a managed cluster.
-// It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// It sends a PUT request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.CreateOrUpdate")
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (
+	result interface{}, poller *runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.CreateOrUpdateAsync")
 	defer done()
 
-	managedcluster, ok := parameters.(containerservice.ManagedCluster)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a containerservice.ManagedCluster", parameters)
+	var managedCluster armcontainerservice.ManagedCluster
+	if parameters != nil {
+		mc, ok := parameters.(armcontainerservice.ManagedCluster)
+		if !ok {
+			return nil, nil, errors.Errorf("%T is not an armcontainerservice.ManagedCluster", parameters)
+		}
+		managedCluster = mc
 	}
 
-	preparer, err := ac.managedclusters.CreateOrUpdatePreparer(ctx, spec.ResourceGroupName(), spec.ResourceName(), managedcluster)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to prepare operation")
-	}
-
-	headerSpec, ok := spec.(azure.ResourceSpecGetterWithHeaders)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a azure.ResourceSpecGetterWithHeaders", spec)
-	}
-
-	for key, value := range headerSpec.CustomHeaders() {
-		preparer.Header.Add(key, value)
-	}
-
-	createFuture, err := ac.managedclusters.CreateOrUpdateSender(preparer)
+	opts := &armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
+	log.V(4).Info("sending request", "resumeToken", resumeToken)
+	poller, err = ac.managedclusters.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), managedCluster, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -113,26 +107,28 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = createFuture.WaitForCompletionRef(ctx, ac.managedclusters.Client)
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	resp, err := poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
-		// if an error occurs, return the future.
-		// this means the long-running operation didn't finish in the specified timeout.
-		return nil, &createFuture, err
+		// If an error occurs, return the poller.
+		return nil, poller, err
 	}
 
-	result, err = createFuture.Result(ac.managedclusters)
-	// if the operation completed, return a nil future
-	return result, nil, err
+	// if the operation completed, return a nil poller
+	return resp.ManagedCluster, nil, err
 }
 
 // DeleteAsync deletes a managed cluster asynchronously. DeleteAsync sends a DELETE
-// request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.DeleteAsync")
+func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (
+	poller *runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.DeleteAsync")
 	defer done()
 
-	deleteFuture, err := ac.managedclusters.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
+	opts := &armcontainerservice.ManagedClustersClientBeginDeleteOptions{ResumeToken: resumeToken}
+	log.V(4).Info("sending request", "resumeToken", resumeToken)
+	poller, err = ac.managedclusters.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -140,54 +136,14 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = deleteFuture.WaitForCompletionRef(ctx, ac.managedclusters.Client)
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	_, err = poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
-		// if an error occurs, return the future.
-		// this means the long-running operation didn't finish in the specified timeout.
-		return &deleteFuture, err
+		// If an error occurs, return the poller.
+		// This means the long-running operation didn't finish in the specified timeout.
+		return poller, err
 	}
-	_, err = deleteFuture.Result(ac.managedclusters)
-	// if the operation completed, return a nil future.
+
+	// if the operation completed, return a nil poller.
 	return nil, err
-}
-
-// IsDone returns true if the long-running operation has completed.
-func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.IsDone")
-	defer done()
-
-	return future.DoneWithContext(ctx, ac.managedclusters)
-}
-
-// Result fetches the result of a long-running operation future.
-func (ac *azureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
-	_, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.azureClient.Result")
-	defer done()
-
-	if future == nil {
-		return nil, errors.Errorf("cannot get result from nil future")
-	}
-
-	switch futureType {
-	case infrav1.PutFuture:
-		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
-		// Unfortunately the FutureAPI can't be casted directly to ManagedClustersCreateOrUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
-		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
-		var createFuture *containerservice.ManagedClustersCreateOrUpdateFuture
-		jsonData, err := future.MarshalJSON()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal future")
-		}
-		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal future data")
-		}
-		return createFuture.Result(ac.managedclusters)
-
-	case infrav1.DeleteFuture:
-		// Delete does not return a result managed cluster.
-		return nil, nil
-
-	default:
-		return nil, errors.Errorf("unknown future type %q", futureType)
-	}
 }

@@ -21,7 +21,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
@@ -61,11 +61,11 @@ func TestReconcile(t *testing.T) {
 			expectedError: "",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
-					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
+					Properties: &armcontainerservice.ManagedClusterProperties{
 						Fqdn:              ptr.To("my-managedcluster-fqdn"),
 						ProvisioningState: ptr.To("Succeeded"),
-						IdentityProfile: map[string]*containerservice.UserAssignedIdentity{
+						IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
 							kubeletIdentityKey: {
 								ResourceID: ptr.To("kubelet-id"),
 							},
@@ -87,8 +87,8 @@ func TestReconcile(t *testing.T) {
 			expectedError: "failed to get credentials for managed cluster: internal server error",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
-					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
+					Properties: &armcontainerservice.ManagedClusterProperties{
 						Fqdn:              ptr.To("my-managedcluster-fqdn"),
 						ProvisioningState: ptr.To("Succeeded"),
 					},
