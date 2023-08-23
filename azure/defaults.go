@@ -338,7 +338,7 @@ func UserAgent() string {
 }
 
 // ARMClientOptions returns default ARM client options for CAPZ SDK v2 requests.
-func ARMClientOptions(azureEnvironment string) (*arm.ClientOptions, error) {
+func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (*arm.ClientOptions, error) {
 	opts := &arm.ClientOptions{}
 
 	switch azureEnvironment {
@@ -357,6 +357,7 @@ func ARMClientOptions(azureEnvironment string) (*arm.ClientOptions, error) {
 		correlationIDPolicy{},
 		userAgentPolicy{},
 	}
+	opts.PerCallPolicies = append(opts.PerCallPolicies, extraPolicies...)
 	opts.Retry.MaxRetries = -1 // Less than zero means one try and no retries.
 
 	return opts, nil
@@ -381,6 +382,26 @@ type userAgentPolicy struct{}
 // Do extends the "User-Agent" header of a request by appending CAPZ's user agent.
 func (p userAgentPolicy) Do(req *policy.Request) (*http.Response, error) {
 	req.Raw().Header.Set("User-Agent", req.Raw().UserAgent()+" "+UserAgent())
+	return req.Next()
+}
+
+// CustomPutPatchHeaderPolicy adds custom headers to a PUT or PATCH request.
+// It implements the policy.Policy interface.
+type CustomPutPatchHeaderPolicy struct {
+	Getter ResourceSpecGetter
+}
+
+// Do adds any custom headers to a PUT or PATCH request.
+func (p CustomPutPatchHeaderPolicy) Do(req *policy.Request) (*http.Response, error) {
+	if req.Raw().Method == http.MethodPut || req.Raw().Method == http.MethodPatch {
+		headerSpec, ok := p.Getter.(ResourceSpecGetterWithHeaders)
+		if ok {
+			for key, element := range headerSpec.CustomHeaders() {
+				req.Raw().Header.Set(key, element)
+			}
+		}
+	}
+
 	return req.Next()
 }
 
