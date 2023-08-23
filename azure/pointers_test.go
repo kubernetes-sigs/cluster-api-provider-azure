@@ -76,3 +76,73 @@ func TestStringMapPtr(t *testing.T) {
 		})
 	}
 }
+
+func TestPtrSlice(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Arg      *[]string
+		Expected []*string
+	}{
+		{
+			Name:     "Should return nil if the pointer is nil",
+			Arg:      nil,
+			Expected: nil,
+		},
+		{
+			Name:     "Should return nil if the slice pointed to is empty",
+			Arg:      &[]string{},
+			Expected: nil,
+		},
+		{
+			Name:     "Should return slice of pointers from a pointer to a slice",
+			Arg:      &[]string{"foo", "bar"},
+			Expected: []*string{ptr.To("foo"), ptr.To("bar")},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			g := NewWithT(t)
+			actual := PtrSlice(tc.Arg)
+			g.Expect(tc.Expected).To(Equal(actual))
+		})
+	}
+}
+
+func TestAliasOrNil(t *testing.T) {
+	type TestAlias string
+	cases := []struct {
+		Name     string
+		Arg      *string
+		Expected *string
+	}{
+		{
+			Name: "Should return nil if the pointer is nil",
+		},
+		{
+			Name: "Should return nil for an empty string pointer",
+			Arg:  ptr.To(""),
+		},
+		{
+			Name:     "Should return a string pointer",
+			Arg:      ptr.To("foo"),
+			Expected: ptr.To("foo"),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			// Test with string
+			actual := AliasOrNil[string](tc.Arg)
+			g.Expect(tc.Expected).To(Equal(actual))
+
+			// Test with type alias
+			aliasActual := AliasOrNil[TestAlias](tc.Arg)
+			if tc.Expected == nil {
+				g.Expect(aliasActual).To(BeNil())
+			} else {
+				g.Expect(aliasActual).To(Equal(ptr.To(TestAlias(*tc.Expected))))
+			}
+		})
+	}
+}
