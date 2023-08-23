@@ -32,7 +32,7 @@ func SecurityRuleToSDK(rule infrav1.SecurityRule) network.SecurityRule {
 			SourcePortRange:          rule.SourcePorts,
 			DestinationAddressPrefix: rule.Destination,
 			DestinationPortRange:     rule.DestinationPorts,
-			Access:                   network.SecurityRuleAccessAllow,
+			Access:                   network.SecurityRuleAccess(rule.Action),
 			Priority:                 ptr.To[int32](rule.Priority),
 		},
 	}

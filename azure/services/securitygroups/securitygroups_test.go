@@ -70,6 +70,7 @@ var (
 		SourcePorts:      ptr.To("*"),
 		Destination:      ptr.To("*"),
 		DestinationPorts: ptr.To("22"),
+		Action:           infrav1.SecurityRuleActionAllow,
 	}
 	securityRule2 = infrav1.SecurityRule{
 		Name:             "other_rule",
@@ -81,6 +82,7 @@ var (
 		SourcePorts:      ptr.To("*"),
 		Destination:      ptr.To("*"),
 		DestinationPorts: ptr.To("80"),
+		Action:           infrav1.SecurityRuleActionAllow,
 	}
 	errFake      = errors.New("this is an error")
 	notDoneError = azure.NewOperationNotDoneError(&infrav1.Future{})
@@ -296,6 +298,7 @@ var (
 			SourceAddressPrefix:      ptr.To("*"),
 			Priority:                 ptr.To[int32](100),
 			Direction:                network.SecurityRuleDirectionInbound,
+			Access:                   network.SecurityRuleAccessAllow,
 		},
 	}
 	ruleB = network.SecurityRule{
@@ -309,6 +312,7 @@ var (
 			SourceAddressPrefix:      ptr.To("*"),
 			Priority:                 ptr.To[int32](100),
 			Direction:                network.SecurityRuleDirectionOutbound,
+			Access:                   network.SecurityRuleAccessAllow,
 		},
 	}
 	ruleBModified = network.SecurityRule{
@@ -322,6 +326,7 @@ var (
 			SourceAddressPrefix:      ptr.To("*"),
 			Priority:                 ptr.To[int32](100),
 			Direction:                network.SecurityRuleDirectionOutbound,
+			Access:                   network.SecurityRuleAccessAllow,
 		},
 	}
 )

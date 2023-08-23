@@ -932,6 +932,7 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				SourcePorts:      ptr.To("*"),
 				Destination:      ptr.To("*"),
 				DestinationPorts: ptr.To("22"),
+				Action:           infrav1.SecurityRuleActionAllow,
 			},
 			infrav1.SecurityRule{
 				Name:             "allow_apiserver",
@@ -943,6 +944,7 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				SourcePorts:      ptr.To("*"),
 				Destination:      ptr.To("*"),
 				DestinationPorts: ptr.To(strconv.Itoa(int(s.APIServerPort()))),
+				Action:           infrav1.SecurityRuleActionAllow,
 			},
 		}
 		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)

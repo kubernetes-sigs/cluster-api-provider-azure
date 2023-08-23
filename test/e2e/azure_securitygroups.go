@@ -57,6 +57,7 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 			DestinationPorts: ptr.To("80"),
 			Source:           ptr.To("*"),
 			Destination:      ptr.To("*"),
+			Action:           "Allow",
 		}
 		testSecurityRule2 = infrav1.SecurityRule{
 			Name:             "test-security-rule-2",
@@ -68,6 +69,7 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 			DestinationPorts: ptr.To("80"),
 			Source:           ptr.To("*"),
 			Destination:      ptr.To("*"),
+			Action:           "Allow",
 		}
 		input AzureSecurityGroupsSpecInput
 	)

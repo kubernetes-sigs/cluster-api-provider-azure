@@ -270,6 +270,17 @@ const (
 	SecurityRuleDirectionOutbound = SecurityRuleDirection("Outbound")
 )
 
+// SecurityRuleAccess defines the action type for a security group rule.
+type SecurityRuleAccess string
+
+const (
+	// SecurityRuleActionAllow allows traffic defined in the rule.
+	SecurityRuleActionAllow SecurityRuleAccess = "Allow"
+
+	// SecurityRuleActionDeny denies traffic defined in the rule.
+	SecurityRuleActionDeny SecurityRuleAccess = "Deny"
+)
+
 // SecurityRule defines an Azure security rule for security groups.
 type SecurityRule struct {
 	// Name is a unique name within the network security group.
@@ -297,6 +308,11 @@ type SecurityRule struct {
 	// Destination is the destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
 	// +optional
 	Destination *string `json:"destination,omitempty"`
+	// Action specifies whether network traffic is allowed or denied. Can either be "Allow" or "Deny". Defaults to "Allow".
+	// +kubebuilder:default=Allow
+	// +kubebuilder:validation:Enum=Allow;Deny
+	//+optional
+	Action SecurityRuleAccess `json:"action"`
 }
 
 // SecurityRules is a slice of Azure security rules for security groups.

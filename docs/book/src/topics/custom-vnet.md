@@ -149,6 +149,7 @@ spec:
               destinationPorts: "22"
               source: "*"
               sourcePorts: "*"
+              action: "Allow"
             - name: "allow_apiserver"
               description: "Allow K8s API Server"
               direction: "Inbound"
@@ -158,6 +159,7 @@ spec:
               destinationPorts: "6443"
               source: "*"
               sourcePorts: "*"
+              action: "Allow"
             - name: "allow_port_50000"
               description: "allow port 50000"
               direction: "Outbound"
@@ -167,6 +169,7 @@ spec:
               destinationPorts: "50000"
               source: "*"
               sourcePorts: "*"
+              action: "Allow"
       - name: my-subnet-node
         role: node
         cidrBlocks:
@@ -213,10 +216,10 @@ spec:
 
 ### Private Endpoints
 
-A [Private Endpoint](https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview) is a network interface that uses 
-a private IP address from your virtual network. This network interface connects you privately and securely to a service that's powered 
-by [Azure Private Link](https://learn.microsoft.com/en-us/azure/private-link/private-link-overview). Azure Private Link enables you 
-to access Azure PaaS Services (for example, Azure Storage and SQL Database) and Azure hosted customer-owned/partner services over a 
+A [Private Endpoint](https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview) is a network interface that uses
+a private IP address from your virtual network. This network interface connects you privately and securely to a service that's powered
+by [Azure Private Link](https://learn.microsoft.com/en-us/azure/private-link/private-link-overview). Azure Private Link enables you
+to access Azure PaaS Services (for example, Azure Storage and SQL Database) and Azure hosted customer-owned/partner services over a
 private endpoint in your virtual network.
 
  Private Endpoints are configured on a per-subnet basis. Vnets managed by either
@@ -279,10 +282,10 @@ spec:
       privateEndpoints:
       - name: my-pe
         customNetworkInterfaceName: nic-my-pe # optional
-        applicationSecurityGroups: # optional 
+        applicationSecurityGroups: # optional
         - <ASG ID>
-        privateIPAddresses: # optional 
-        - 10.0.2.10 
+        privateIPAddresses: # optional
+        - 10.0.2.10
         location: eastus2 # optional
         privateLinkServiceConnections:
         - name: my-pls # optional
