@@ -265,12 +265,11 @@ func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID s
 
 func workloadIdentityCloudProviderConfig(d azure.ClusterScoper) (cpConfig *CloudProviderConfig, wkConfig *CloudProviderConfig) {
 	controlPlaneConfig, workerConfig := newCloudProviderConfig(d)
-	// secret is not needed ins workload identity.
+	// secret is not needed in workload identity.
 	controlPlaneConfig.AadClientSecret = ""
 	controlPlaneConfig.UseFederatedWorkloadIdentityExtension = true
 	workerConfig.AadClientSecret = ""
-	// ToDo: set the path
-	controlPlaneConfig.AADFederatedTokenFile = ""
+	controlPlaneConfig.AADFederatedTokenFile = scope.AzureTokenFilePath
 	return controlPlaneConfig, workerConfig
 }
 

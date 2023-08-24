@@ -76,7 +76,6 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		return nil, errors.New("failed to generate new scope from nil AzureCluster")
 	}
 
-	// ToDo: AzureClusterIdentiy is optional now so do not fail.
 	if params.AzureClusterIdentity == nil {
 		return nil, errors.New("failed to generate new scope from nil AzureClusterIdentity")
 	}

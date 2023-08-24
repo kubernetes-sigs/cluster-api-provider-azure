@@ -56,8 +56,8 @@ const (
 	azureClientIDEnvKey = "AZURE_CLIENT_ID"
 	// azureTenantIDEnvKey is the env key for AZURE_TENANT_ID.
 	azureTenantIDEnvKey = "AZURE_TENANT_ID"
-	// azureTokenFilePath is the path of the projected token.
-	azureTokenFilePath = "/var/run/secrets/azure/tokens/azure-identity-token" // #nosec G101
+	// AzureTokenFilePath is the path of the projected token.
+	AzureTokenFilePath = "/var/run/secrets/azure/tokens/azure-identity-token" // #nosec G101
 	// azureFederatedTokenFileRefreshTime is the time interval after which it should be read again.
 	azureFederatedTokenFileRefreshTime = 5 * time.Minute
 )
@@ -98,7 +98,7 @@ func (w *WorkloadIdentityCredentialOptions) WithTenantID(tenantID string) *Workl
 func getProjectedTokenPath() string {
 	tokenPath := strings.TrimSpace(os.Getenv(azureFederatedTokenFileEnvKey))
 	if tokenPath == "" {
-		return azureTokenFilePath
+		return AzureTokenFilePath
 	}
 	return tokenPath
 }

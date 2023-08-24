@@ -133,7 +133,8 @@ func (s *ManagedControlPlaneScope) GetClient() client.Client {
 
 // WorkloadIdentityEnabled returns true if workload identity is enabled.
 func (s *ManagedControlPlaneScope) WorkloadIdentityEnabled() bool {
-	// ToDo: complete this method
+	// this method will be no-op until workload identity UX is added for managed
+	// cluster
 	return false
 }
 

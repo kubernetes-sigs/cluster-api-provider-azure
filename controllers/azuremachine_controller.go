@@ -198,7 +198,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	if err := amr.Client.Get(ctx, azureClusterIdentityName, azureClusterIdentity); err != nil {
 		amr.Recorder.Eventf(azureMachine, corev1.EventTypeNormal, "AzureClusterIdentity unavailable", "AzureClusterIdentity is not available yet")
-		log.Info("AzureCluster is not available yet")
+		log.Info("AzureClusterIdentity is not available yet")
 		return reconcile.Result{}, nil
 	}
 	// Create the cluster scope
