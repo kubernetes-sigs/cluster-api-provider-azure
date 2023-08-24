@@ -883,6 +883,20 @@ func (mr *MockClusterDescriberMockRecorder) Token() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockClusterDescriber)(nil).Token))
 }
 
+// WorkloadIdentityEnabled mocks base method.
+func (m *MockClusterDescriber) WorkloadIdentityEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WorkloadIdentityEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WorkloadIdentityEnabled indicates an expected call of WorkloadIdentityEnabled.
+func (mr *MockClusterDescriberMockRecorder) WorkloadIdentityEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkloadIdentityEnabled", reflect.TypeOf((*MockClusterDescriber)(nil).WorkloadIdentityEnabled))
+}
+
 // MockAsyncStatusUpdater is a mock of AsyncStatusUpdater interface.
 type MockAsyncStatusUpdater struct {
 	ctrl     *gomock.Controller
@@ -1491,6 +1505,20 @@ func (mr *MockClusterScoperMockRecorder) Vnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockClusterScoper)(nil).Vnet))
 }
 
+// WorkloadIdentityEnabled mocks base method.
+func (m *MockClusterScoper) WorkloadIdentityEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WorkloadIdentityEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WorkloadIdentityEnabled indicates an expected call of WorkloadIdentityEnabled.
+func (mr *MockClusterScoperMockRecorder) WorkloadIdentityEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkloadIdentityEnabled", reflect.TypeOf((*MockClusterScoper)(nil).WorkloadIdentityEnabled))
+}
+
 // MockManagedClusterScoper is a mock of ManagedClusterScoper interface.
 type MockManagedClusterScoper struct {
 	ctrl     *gomock.Controller
@@ -1792,6 +1820,20 @@ func (m *MockManagedClusterScoper) Token() azcore.TokenCredential {
 func (mr *MockManagedClusterScoperMockRecorder) Token() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockManagedClusterScoper)(nil).Token))
+}
+
+// WorkloadIdentityEnabled mocks base method.
+func (m *MockManagedClusterScoper) WorkloadIdentityEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WorkloadIdentityEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WorkloadIdentityEnabled indicates an expected call of WorkloadIdentityEnabled.
+func (mr *MockManagedClusterScoperMockRecorder) WorkloadIdentityEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkloadIdentityEnabled", reflect.TypeOf((*MockManagedClusterScoper)(nil).WorkloadIdentityEnabled))
 }
 
 // MockResourceSpecGetter is a mock of ResourceSpecGetter interface.

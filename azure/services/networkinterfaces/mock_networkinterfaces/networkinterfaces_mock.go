@@ -407,3 +407,17 @@ func (mr *MockNICScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockNICScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
+
+// WorkloadIdentityEnabled mocks base method.
+func (m *MockNICScope) WorkloadIdentityEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WorkloadIdentityEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WorkloadIdentityEnabled indicates an expected call of WorkloadIdentityEnabled.
+func (mr *MockNICScopeMockRecorder) WorkloadIdentityEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkloadIdentityEnabled", reflect.TypeOf((*MockNICScope)(nil).WorkloadIdentityEnabled))
+}

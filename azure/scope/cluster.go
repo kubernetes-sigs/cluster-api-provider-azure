@@ -56,10 +56,11 @@ import (
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type ClusterScopeParams struct {
 	AzureClients
-	Client       client.Client
-	Cluster      *clusterv1.Cluster
-	AzureCluster *infrav1.AzureCluster
-	Cache        *ClusterCache
+	Client               client.Client
+	Cluster              *clusterv1.Cluster
+	AzureCluster         *infrav1.AzureCluster
+	AzureClusterIdentity *infrav1.AzureClusterIdentity
+	Cache                *ClusterCache
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -73,6 +74,11 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 	}
 	if params.AzureCluster == nil {
 		return nil, errors.New("failed to generate new scope from nil AzureCluster")
+	}
+
+	// ToDo: AzureClusterIdentiy is optional now so do not fail.
+	if params.AzureClusterIdentity == nil {
+		return nil, errors.New("failed to generate new scope from nil AzureClusterIdentity")
 	}
 
 	if params.AzureCluster.Spec.IdentityRef == nil {
@@ -101,12 +107,13 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 	}
 
 	return &ClusterScope{
-		Client:       params.Client,
-		AzureClients: params.AzureClients,
-		Cluster:      params.Cluster,
-		AzureCluster: params.AzureCluster,
-		patchHelper:  helper,
-		cache:        params.Cache,
+		Client:               params.Client,
+		AzureClients:         params.AzureClients,
+		Cluster:              params.Cluster,
+		AzureCluster:         params.AzureCluster,
+		AzureClusterIdentity: params.AzureClusterIdentity,
+		patchHelper:          helper,
+		cache:                params.Cache,
 	}, nil
 }
 
@@ -117,8 +124,9 @@ type ClusterScope struct {
 	cache       *ClusterCache
 
 	AzureClients
-	Cluster      *clusterv1.Cluster
-	AzureCluster *infrav1.AzureCluster
+	Cluster              *clusterv1.Cluster
+	AzureCluster         *infrav1.AzureCluster
+	AzureClusterIdentity *infrav1.AzureClusterIdentity
 }
 
 // ClusterCache stores ClusterCache data locally so we don't have to hit the API multiple times within the same reconcile loop.
@@ -768,6 +776,11 @@ func (s *ClusterScope) Location() string {
 // AvailabilitySetEnabled informs machines that they should be part of an Availability Set.
 func (s *ClusterScope) AvailabilitySetEnabled() bool {
 	return len(s.AzureCluster.Status.FailureDomains) == 0
+}
+
+// WorkloadIdentityEnabled returns true if workload identity is enabled.
+func (s *ClusterScope) WorkloadIdentityEnabled() bool {
+	return s.AzureClusterIdentity.Spec.Type == infrav1.WorkloadIdentity
 }
 
 // CloudProviderConfigOverrides returns the cloud provider config overrides for the cluster.

@@ -202,7 +202,12 @@ func GetCloudProviderSecret(d azure.ClusterScoper, namespace, name string, owner
 		}
 		controlPlaneConfig, workerNodeConfig = userAssignedIdentityCloudProviderConfig(d, userIdentityID)
 	case infrav1.VMIdentityNone:
-		controlPlaneConfig, workerNodeConfig = newCloudProviderConfig(d)
+		// if using workload identity
+		if d.WorkloadIdentityEnabled() {
+			controlPlaneConfig, workerNodeConfig = workloadIdentityCloudProviderConfig(d)
+		} else {
+			controlPlaneConfig, workerNodeConfig = newCloudProviderConfig(d)
+		}
 	}
 
 	// Enable VMSS Flexible nodes if MachinePools are enabled
@@ -255,6 +260,17 @@ func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID s
 	workerConfig.AadClientSecret = ""
 	workerConfig.UseManagedIdentityExtension = true
 	workerConfig.UserAssignedIdentityID = identityID
+	return controlPlaneConfig, workerConfig
+}
+
+func workloadIdentityCloudProviderConfig(d azure.ClusterScoper) (cpConfig *CloudProviderConfig, wkConfig *CloudProviderConfig) {
+	controlPlaneConfig, workerConfig := newCloudProviderConfig(d)
+	// secret is not needed ins workload identity.
+	controlPlaneConfig.AadClientSecret = ""
+	controlPlaneConfig.UseFederatedWorkloadIdentityExtension = true
+	workerConfig.AadClientSecret = ""
+	// ToDo: set the path
+	controlPlaneConfig.AADFederatedTokenFile = ""
 	return controlPlaneConfig, workerConfig
 }
 
@@ -343,6 +359,12 @@ type CloudProviderConfig struct {
 	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
 	EnableVmssFlexNodes          bool   `json:"enableVmssFlexNodes,omitempty"`
 	UserAssignedIdentityID       string `json:"userAssignedIdentityID,omitempty"`
+	// AADFederatedTokenFile is the path of AAD federated token file
+	// Cloud provider azure should be deployed by projecting service account
+	// token volume as part of their pod spec
+	AADFederatedTokenFile string `json:"aadFederatedTokenFile,omitempty"`
+	// Use workload identity federation for the virtual machine to access Azure ARM APIs
+	UseFederatedWorkloadIdentityExtension bool `json:"useFederatedWorkloadIdentityExtension,omitempty"`
 	CloudProviderRateLimitConfig
 	BackOffConfig
 }

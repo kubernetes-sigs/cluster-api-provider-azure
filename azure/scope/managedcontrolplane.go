@@ -131,6 +131,12 @@ func (s *ManagedControlPlaneScope) GetClient() client.Client {
 	return s.Client
 }
 
+// WorkloadIdentityEnabled returns true if workload identity is enabled.
+func (s *ManagedControlPlaneScope) WorkloadIdentityEnabled() bool {
+	// ToDo: complete this method
+	return false
+}
+
 // ResourceGroup returns the managed control plane's resource group.
 func (s *ManagedControlPlaneScope) ResourceGroup() string {
 	if s.ControlPlane == nil {

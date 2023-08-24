@@ -629,3 +629,17 @@ func (mr *MockBastionScopeMockRecorder) Vnet() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockBastionScope)(nil).Vnet))
 }
+
+// WorkloadIdentityEnabled mocks base method.
+func (m *MockBastionScope) WorkloadIdentityEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WorkloadIdentityEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WorkloadIdentityEnabled indicates an expected call of WorkloadIdentityEnabled.
+func (mr *MockBastionScopeMockRecorder) WorkloadIdentityEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkloadIdentityEnabled", reflect.TypeOf((*MockBastionScope)(nil).WorkloadIdentityEnabled))
+}

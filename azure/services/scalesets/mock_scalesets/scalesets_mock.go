@@ -472,3 +472,17 @@ func (mr *MockScaleSetScopeMockRecorder) VMSSExtensionSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSSExtensionSpecs", reflect.TypeOf((*MockScaleSetScope)(nil).VMSSExtensionSpecs))
 }
+
+// WorkloadIdentityEnabled mocks base method.
+func (m *MockScaleSetScope) WorkloadIdentityEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WorkloadIdentityEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WorkloadIdentityEnabled indicates an expected call of WorkloadIdentityEnabled.
+func (mr *MockScaleSetScopeMockRecorder) WorkloadIdentityEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkloadIdentityEnabled", reflect.TypeOf((*MockScaleSetScope)(nil).WorkloadIdentityEnabled))
+}

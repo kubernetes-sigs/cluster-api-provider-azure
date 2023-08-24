@@ -89,6 +89,7 @@ type ClusterDescriber interface {
 	ExtendedLocationType() string
 	AdditionalTags() infrav1.Tags
 	AvailabilitySetEnabled() bool
+	WorkloadIdentityEnabled() bool
 	CloudProviderConfigOverrides() *infrav1.CloudProviderConfigOverrides
 	FailureDomains() []string
 }
