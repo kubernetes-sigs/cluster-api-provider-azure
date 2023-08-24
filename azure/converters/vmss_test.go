@@ -32,7 +32,7 @@ func Test_SDKToVMSS(t *testing.T) {
 	cases := []struct {
 		Name           string
 		SubjectFactory func(*gomega.GomegaWithT) (compute.VirtualMachineScaleSet, []compute.VirtualMachineScaleSetVM)
-		Expect         func(*gomega.GomegaWithT, azure.VMSS)
+		Expect         func(*gomega.GomegaWithT, *azure.VMSS)
 	}{
 		{
 			Name: "ShouldPopulateWithData",
@@ -84,7 +84,7 @@ func Test_SDKToVMSS(t *testing.T) {
 						},
 					}
 			},
-			Expect: func(g *gomega.GomegaWithT, actual azure.VMSS) {
+			Expect: func(g *gomega.GomegaWithT, actual *azure.VMSS) {
 				expected := azure.VMSS{
 					ID:       "vmssID",
 					Name:     "vmssName",
@@ -107,7 +107,7 @@ func Test_SDKToVMSS(t *testing.T) {
 						State:            "Succeeded",
 					}
 				}
-				g.Expect(actual).To(gomega.Equal(expected))
+				g.Expect(actual).To(gomega.Equal(&expected))
 			},
 		},
 	}

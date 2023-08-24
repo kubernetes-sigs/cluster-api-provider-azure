@@ -47,7 +47,7 @@ type Service struct {
 	Scope                 RoleAssignmentScope
 	virtualMachinesGetter async.Getter
 	async.Reconciler
-	virtualMachineScaleSetGetter async.Getter
+	virtualMachineScaleSetClient scalesets.Client
 }
 
 // New creates a new service.
@@ -56,7 +56,7 @@ func New(scope RoleAssignmentScope) *Service {
 	return &Service{
 		Scope:                        scope,
 		virtualMachinesGetter:        virtualmachines.NewClient(scope),
-		virtualMachineScaleSetGetter: scalesets.NewClient(scope),
+		virtualMachineScaleSetClient: scalesets.NewClient(scope),
 		Reconciler:                   async.New(scope, client, client),
 	}
 }
@@ -141,20 +141,10 @@ func (s *Service) getVMSSPrincipalID(ctx context.Context) (*string, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "roleassignments.Service.getVMPrincipalID")
 	defer done()
 	log.V(2).Info("fetching principal ID for VMSS")
-	spec := &scalesets.ScaleSetSpec{
-		Name:          s.Scope.Name(),
-		ResourceGroup: s.Scope.ResourceGroup(),
-	}
-
-	resultVMSSIface, err := s.virtualMachineScaleSetGetter.Get(ctx, spec)
+	resultVMSS, err := s.virtualMachineScaleSetClient.Get(ctx, s.Scope.ResourceGroup(), s.Scope.Name())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get principal ID for VMSS")
 	}
-	resultVMSS, ok := resultVMSSIface.(compute.VirtualMachineScaleSet)
-	if !ok {
-		return nil, errors.Errorf("%T is not a compute.VirtualMachineScaleSet", resultVMSSIface)
-	}
-
 	return resultVMSS.Identity.PrincipalID, nil
 }
 

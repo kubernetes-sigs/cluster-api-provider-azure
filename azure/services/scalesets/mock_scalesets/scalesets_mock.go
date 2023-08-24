@@ -249,6 +249,21 @@ func (mr *MockScaleSetScopeMockRecorder) FailureDomains() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockScaleSetScope)(nil).FailureDomains))
 }
 
+// GetBootstrapData mocks base method.
+func (m *MockScaleSetScope) GetBootstrapData(arg0 context.Context) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBootstrapData", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBootstrapData indicates an expected call of GetBootstrapData.
+func (mr *MockScaleSetScopeMockRecorder) GetBootstrapData(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBootstrapData", reflect.TypeOf((*MockScaleSetScope)(nil).GetBootstrapData), arg0)
+}
+
 // GetLongRunningOperationState mocks base method.
 func (m *MockScaleSetScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
@@ -261,6 +276,50 @@ func (m *MockScaleSetScope) GetLongRunningOperationState(arg0, arg1, arg2 string
 func (mr *MockScaleSetScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
+}
+
+// GetVMImage mocks base method.
+func (m *MockScaleSetScope) GetVMImage(arg0 context.Context) (*v1beta1.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVMImage", arg0)
+	ret0, _ := ret[0].(*v1beta1.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVMImage indicates an expected call of GetVMImage.
+func (mr *MockScaleSetScopeMockRecorder) GetVMImage(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVMImage", reflect.TypeOf((*MockScaleSetScope)(nil).GetVMImage), arg0)
+}
+
+// HasBootstrapDataChanges mocks base method.
+func (m *MockScaleSetScope) HasBootstrapDataChanges(arg0 context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasBootstrapDataChanges", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasBootstrapDataChanges indicates an expected call of HasBootstrapDataChanges.
+func (mr *MockScaleSetScopeMockRecorder) HasBootstrapDataChanges(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasBootstrapDataChanges", reflect.TypeOf((*MockScaleSetScope)(nil).HasBootstrapDataChanges), arg0)
+}
+
+// HasReplicasExternallyManaged mocks base method.
+func (m *MockScaleSetScope) HasReplicasExternallyManaged(arg0 context.Context) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasReplicasExternallyManaged", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// HasReplicasExternallyManaged indicates an expected call of HasReplicasExternallyManaged.
+func (mr *MockScaleSetScopeMockRecorder) HasReplicasExternallyManaged(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasReplicasExternallyManaged", reflect.TypeOf((*MockScaleSetScope)(nil).HasReplicasExternallyManaged), arg0)
 }
 
 // HashKey mocks base method.
@@ -291,6 +350,21 @@ func (mr *MockScaleSetScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScaleSetScope)(nil).Location))
 }
 
+// MaxSurge mocks base method.
+func (m *MockScaleSetScope) MaxSurge() (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MaxSurge")
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MaxSurge indicates an expected call of MaxSurge.
+func (mr *MockScaleSetScopeMockRecorder) MaxSurge() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxSurge", reflect.TypeOf((*MockScaleSetScope)(nil).MaxSurge))
+}
+
 // ReconcileReplicas mocks base method.
 func (m *MockScaleSetScope) ReconcileReplicas(arg0 context.Context, arg1 *azure.VMSS) error {
 	m.ctrl.T.Helper()
@@ -319,18 +393,30 @@ func (mr *MockScaleSetScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockScaleSetScope)(nil).ResourceGroup))
 }
 
-// ScaleSetSpec mocks base method.
-func (m *MockScaleSetScope) ScaleSetSpec(arg0 context.Context) azure.ResourceSpecGetter {
+// SaveVMImageToStatus mocks base method.
+func (m *MockScaleSetScope) SaveVMImageToStatus(arg0 *v1beta1.Image) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ScaleSetSpec", arg0)
-	ret0, _ := ret[0].(azure.ResourceSpecGetter)
+	m.ctrl.Call(m, "SaveVMImageToStatus", arg0)
+}
+
+// SaveVMImageToStatus indicates an expected call of SaveVMImageToStatus.
+func (mr *MockScaleSetScopeMockRecorder) SaveVMImageToStatus(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveVMImageToStatus", reflect.TypeOf((*MockScaleSetScope)(nil).SaveVMImageToStatus), arg0)
+}
+
+// ScaleSetSpec mocks base method.
+func (m *MockScaleSetScope) ScaleSetSpec() azure.ScaleSetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ScaleSetSpec")
+	ret0, _ := ret[0].(azure.ScaleSetSpec)
 	return ret0
 }
 
 // ScaleSetSpec indicates an expected call of ScaleSetSpec.
-func (mr *MockScaleSetScopeMockRecorder) ScaleSetSpec(arg0 interface{}) *gomock.Call {
+func (mr *MockScaleSetScopeMockRecorder) ScaleSetSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetSpec", reflect.TypeOf((*MockScaleSetScope)(nil).ScaleSetSpec), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetSpec", reflect.TypeOf((*MockScaleSetScope)(nil).ScaleSetSpec))
 }
 
 // SetAnnotation mocks base method.
