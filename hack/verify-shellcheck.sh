@@ -31,9 +31,9 @@ SHELLCHECK_COLORIZED_OUTPUT="${SHELLCHECK_COLORIZED_OUTPUT:-auto}"
 
 # required version for this script, if not installed on the host we will
 # use the official docker image instead. keep this in sync with SHELLCHECK_IMAGE
-SHELLCHECK_VERSION="0.7.2"
-# upstream shellcheck latest stable image as of October 23rd, 2019
-SHELLCHECK_IMAGE="docker.io/koalaman/shellcheck:v0.7.2@sha256:90680b9c98552cb5468966f6e83cd419a951d2a099454663429be796462c7549"
+SHELLCHECK_VERSION="0.9.0"
+# upstream shellcheck latest stable image as of August 23, 2023.
+SHELLCHECK_IMAGE="docker.io/koalaman/shellcheck:v0.9.0@sha256:f35e8987b02760d4e76fc99a68ad5c42cc10bb32f3dd2143a3cf92f1e5446a45"
 
 # disabled lints
 disabled=(
