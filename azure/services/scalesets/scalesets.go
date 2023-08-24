@@ -109,7 +109,10 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	result, err := s.CreateOrUpdateResource(ctx, scaleSetSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, err)
 
-	if err == nil && result != nil {
+	fmt.Printf("WILLIE TEST: created and updated\n")
+	fmt.Printf("WILLIE TEST: result: %v\n", result)
+	if err == nil {
+		fmt.Printf("WILLIE TEST: err is nil\n")
 		vmss, ok := result.(compute.VirtualMachineScaleSet)
 		if !ok {
 			return errors.Errorf("%T is not a compute.VirtualMachineScaleSet", result)
@@ -127,6 +130,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		}
 		s.Scope.SetProviderID(providerID)
 		s.Scope.SetVMSSState(&fetchedVMSS)
+		fmt.Printf("WILLIE TEST: set vmss state\n")
 	}
 
 	return err
