@@ -17,10 +17,96 @@ limitations under the License.
 package inboundnatrules
 
 import (
+	"context"
+	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 )
+
+func TestParameters(t *testing.T) {
+	testcases := []struct {
+		name     string
+		spec     InboundNatSpec
+		existing interface{}
+		expected interface{}
+		errorMsg string
+	}{
+		{
+			name:     "no existing InboundNatRule",
+			spec:     fakeInboundNatSpec(true),
+			existing: nil,
+			expected: fakeNatRule(),
+		},
+		{
+			name:     "no existing InboundNatRule and FrontendIPConfigurationID not set",
+			spec:     fakeInboundNatSpec(false),
+			existing: nil,
+			errorMsg: "FrontendIPConfigurationID is not set",
+		},
+		{
+			name:     "existing is not an InboundNatRule",
+			spec:     fakeInboundNatSpec(true),
+			existing: context.TODO(),
+			errorMsg: "*context.emptyCtx is not an armnetwork.InboundNatRule",
+		},
+		{
+			name:     "existing InboundNatRule",
+			spec:     fakeInboundNatSpec(false),
+			existing: fakeNatRule(),
+			expected: nil,
+		},
+	}
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
+
+			result, err := tc.spec.Parameters(context.Background(), tc.existing)
+			if tc.errorMsg != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Error()).To(ContainSubstring(tc.errorMsg))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+			if !reflect.DeepEqual(result, tc.expected) {
+				t.Errorf("Got difference between expected result and computed result:\n%s", cmp.Diff(tc.expected, result))
+			}
+		})
+	}
+}
+
+func fakeInboundNatSpec(frontendIPConfigID bool) InboundNatSpec {
+	spec := InboundNatSpec{
+		Name:             "my-machine-1",
+		LoadBalancerName: "my-lb-1",
+		ResourceGroup:    fakeGroupName,
+	}
+	if frontendIPConfigID {
+		spec.FrontendIPConfigurationID = ptr.To("frontend-ip-config-id-1")
+	}
+	return spec
+}
+
+// fakeNatRule returns a fake InboundNatRule, associated with `fakeInboundNatSpec()`.
+func fakeNatRule() armnetwork.InboundNatRule {
+	return armnetwork.InboundNatRule{
+		Name: ptr.To("my-machine-1"),
+		Properties: &armnetwork.InboundNatRulePropertiesFormat{
+			BackendPort:      ptr.To[int32](22),
+			EnableFloatingIP: ptr.To(false),
+			FrontendIPConfiguration: &armnetwork.SubResource{
+				ID: ptr.To("frontend-ip-config-id-1"),
+			},
+			IdleTimeoutInMinutes: ptr.To[int32](4),
+			Protocol:             ptr.To(armnetwork.TransportProtocolTCP),
+		},
+	}
+}
 
 func TestGetAvailablePort(t *testing.T) {
 	testcases := []struct {
