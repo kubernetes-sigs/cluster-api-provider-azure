@@ -1,0 +1,82 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: "${CLUSTER_NAME}-mp-flex-win"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-mp-flex-win"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfig
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-mp-flex-win"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachinePool
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: "${CLUSTER_NAME}-mp-flex-win"
+  annotations:
+    runtime: containerd
+    windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
+spec:
+  orchestrationMode: Flexible
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0%
+      maxUnavailable: 0
+      deletePolicy:
+  location: ${AZURE_LOCATION}
+  template:
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    osDisk:
+      osType: "Windows"
+      diskSizeGB: 128
+      managedDisk:
+        storageAccountType: "Premium_LRS"
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: "${CLUSTER_NAME}-mp-flex-win"
+spec:
+  users:
+  - name: capi
+    groups: Administrators
+    sshAuthorizedKeys:
+    - ${AZURE_SSH_PUBLIC_KEY:=""}
+  preKubeadmCommands:
+    - powershell c:/create-external-network.ps1
+  postKubeadmCommands:
+    - nssm set kubelet start SERVICE_AUTO_START
+    - powershell C:/defender-exclude-calico.ps1
+  joinConfiguration:
+    nodeRegistration:
+      name: '{{ ds.meta_data["local_hostname"] }}'
+      criSocket: npipe:////./pipe/containerd-containerd
+      kubeletExtraArgs:
+        azure-container-registry-config: 'c:/k/azure.json'
+        cloud-provider: external
+        pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:3.9"
+  files:
+  - contentFrom:
+      secret:
+        name: ${CLUSTER_NAME}-mp-flex-win-azure-json
+        key: worker-node-azure.json
+    owner: root:root
+    path: c:/k/azure.json
+    permissions: "0644"
+  - path: C:/defender-exclude-calico.ps1
+    permissions: "0744"
+    content: |-
+      Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe

@@ -1,7 +1,7 @@
 namespace: default
 resources:
   - ../machinepool
-  - machine-pool-deployment-windows.yaml
+  - machinepool-windows.yaml
 
 patchesStrategicMerge:
   - ../base-windows-containerd/cluster.yaml

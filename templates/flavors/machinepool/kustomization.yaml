@@ -1,7 +1,7 @@
 namespace: default
 resources:
   - ../base
-  - machine-pool-deployment.yaml
+  - machinepool.yaml
   - ../../azure-cluster-identity
 
 patchesStrategicMerge:

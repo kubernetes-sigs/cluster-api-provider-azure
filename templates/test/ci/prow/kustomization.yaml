@@ -2,12 +2,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../../../flavors/base
-  - ../../../flavors/default/machine-deployment.yaml
+  - ../../../flavors/default
   - ../../../flavors/windows/machine-deployment-windows.yaml
+  - ../../../flavors/machinepool/machinepool.yaml
+  - ../../../flavors/machinepool-windows/machinepool-windows.yaml
+  - machinepool-flex.yaml
+  - machinepool-flex-windows.yaml
   - mhc.yaml
   - cni-resource-set.yaml
-  - ../../../azure-cluster-identity
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
   - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
 patchesStrategicMerge:
@@ -15,8 +17,9 @@ patchesStrategicMerge:
   - ../patches/mhc.yaml
   - ../patches/controller-manager.yaml
   - ../patches/machine-deployment-worker-counts.yaml
-  - ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
+  - ../patches/machine-pool-worker-counts.yaml
   - ../patches/azuremachinetemplate-vmextension.yaml
+  - ../patches/azuremachinepool-vmextension.yaml
   - ../patches/windows-feature-gates.yaml
   - ../patches/windows-containerd-labels.yaml
   - ../patches/windows-server-version.yaml

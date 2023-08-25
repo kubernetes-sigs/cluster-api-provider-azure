@@ -5,6 +5,8 @@ resources:
 patchesStrategicMerge:
   - patches/machine-deployment-pr-version.yaml
   - patches/machine-deployment-pr-version-windows.yaml
+  - patches/machinepool-pr-version-windows.yaml
+  - patches/machinepool-custom-builds.yaml
   - ../../../test/ci/patches/windows-feature-gates.yaml
   - ../../../test/ci/patches/windows-containerd-labels.yaml
   - ../../../test/ci/patches/machine-deployment-worker-counts.yaml
@@ -31,6 +33,13 @@ patches:
     name: .*-md-win
     namespace: default
   path: patches/kubeadm-bootstrap-windows-k8s-pr-binaries.yaml
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1beta1
+    kind: KubeadmConfig
+    name: .*-mp-win
+    namespace: default
+  path: patches/kubeadm-bootstrap-machinepool-windows-k8s-pr-binaries.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     behavior: merge

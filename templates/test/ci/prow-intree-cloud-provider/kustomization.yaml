@@ -7,3 +7,4 @@ patchesStrategicMerge:
   - patches/intree-cp.yaml
   - patches/intree-md-0.yaml
   - patches/intree-md-win.yaml
+  - patches/intree-mp.yaml
