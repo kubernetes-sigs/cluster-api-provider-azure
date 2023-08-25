@@ -118,14 +118,6 @@ select_cluster_template() {
     else
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow.yaml"
     fi
-
-    if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
-        if [[ "${CLUSTER_TEMPLATE}" =~ "prow" ]]; then
-            export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-machine-pool}"
-        elif [[ "${CLUSTER_TEMPLATE}" =~ "custom-builds" ]]; then
-            export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
-        fi
-    fi
 }
 
 create_cluster() {

@@ -208,18 +208,18 @@ var _ = Describe("Workload cluster creation", func() {
 	}
 
 	Context("Creating a highly available cluster [REQUIRED]", func() {
-		It("With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes", func() {
+		It("With 3 control-plane nodes and 3 Linux and 3 Windows worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "ha")
 
 			// Opt into using windows with prow template
-			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
+			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "1")).To(Succeed())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(3),
-				withWorkerMachineCount(2),
+				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
@@ -298,6 +298,17 @@ var _ = Describe("Workload cluster creation", func() {
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
 						Windows:               true,
+					}
+				})
+			})
+
+			By("Cordon and draining a node", func() {
+				AzureMachinePoolDrainSpec(ctx, func() AzureMachinePoolDrainSpecInput {
+					return AzureMachinePoolDrainSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
 					}
 				})
 			})
@@ -459,85 +470,6 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating a VMSS cluster [REQUIRED]", func() {
-		It("with a single control plane node and an AzureMachinePool with 2 Linux and 2 Windows worker nodes", func() {
-			clusterName = getClusterName(clusterNamePrefix, "vmss")
-
-			// Opt into using windows with prow template
-			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
-
-			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
-				specName,
-				withFlavor("machine-pool"),
-				withNamespace(namespace.Name),
-				withClusterName(clusterName),
-				withControlPlaneMachineCount(1),
-				withWorkerMachineCount(2),
-				withMachineDeploymentInterval(specName, ""),
-				withControlPlaneInterval(specName, "wait-control-plane"),
-				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
-				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				}),
-				withPostMachinesProvisioned(func() {
-					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
-						return DaemonsetsSpecInput{
-							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:             namespace,
-							ClusterName:           clusterName,
-						}
-					})
-				}),
-			), result)
-
-			By("Verifying expected VM extensions are present on the node", func() {
-				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
-					return AzureVMExtensionsSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
-			})
-
-			By("Creating an accessible load balancer", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			By("Creating an accessible load balancer for windows", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-						Windows:               true,
-					}
-				})
-			})
-
-			By("Cordon and draining a node", func() {
-				AzureMachinePoolDrainSpec(ctx, func() AzureMachinePoolDrainSpecInput {
-					return AzureMachinePoolDrainSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			By("PASSED!")
-		})
-	})
-
 	// ci-e2e.sh and Prow CI skip this test by default, since N-series GPUs are relatively expensive
 	// and may require specific quota limits on the subscription.
 	// To include this test, set `GINKGO_SKIP=""`.
@@ -602,65 +534,8 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
-	Context("Creating a cluster with VMSS flex machinepools [OPTIONAL]", func() {
-		It("with 1 control plane node and 1 machinepool", func() {
-			clusterName = getClusterName(clusterNamePrefix, "flex")
-			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
-				specName,
-				withFlavor("machine-pool-flex"),
-				withNamespace(namespace.Name),
-				withClusterName(clusterName),
-				withControlPlaneMachineCount(1),
-				withWorkerMachineCount(1),
-				withKubernetesVersion("v1.26.1"),
-				withMachineDeploymentInterval(specName, ""),
-				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				}),
-				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
-				withControlPlaneInterval(specName, "wait-control-plane"),
-			), result)
-
-			By("Verifying machinepool can scale out and in", func() {
-				AzureMachinePoolsSpec(ctx, func() AzureMachinePoolsSpecInput {
-					return AzureMachinePoolsSpecInput{
-						Cluster:               result.Cluster,
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						WaitIntervals:         e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-					}
-				})
-			})
-
-			By("Verifying expected VM extensions are present on the node", func() {
-				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
-					return AzureVMExtensionsSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
-			})
-
-			By("Creating an accessible load balancer", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			By("PASSED!")
-		})
-	})
-
-	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
 	Context("Creating a cluster that uses the intree cloud provider [OPTIONAL]", func() {
-		It("with a 1 control plane nodes and 2 worker nodes", func() {
+		It("with a 1 control plane nodes and 4 worker nodes", func() {
 			By("using user-assigned identity")
 			clusterName = getClusterName(clusterNamePrefix, "intree")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
@@ -669,7 +544,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(1),
-				withWorkerMachineCount(2),
+				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
