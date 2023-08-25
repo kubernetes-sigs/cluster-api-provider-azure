@@ -32,35 +32,22 @@ type Client interface {
 
 // AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
-	images armcompute.VirtualMachineImagesClient
+	images *armcompute.VirtualMachineImagesClient
 }
 
 var _ Client = (*AzureClient)(nil)
 
 // NewClient creates an AzureClient from an Authorizer.
 func NewClient(auth azure.Authorizer) (*AzureClient, error) {
-	c, err := newVirtualMachineImagesClient(auth)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create VM images client")
-	}
-	return &AzureClient{c}, nil
-}
-
-// newVirtualMachineImagesClient creates a new VM images client from subscription ID and base URI.
-func newVirtualMachineImagesClient(auth azure.Authorizer) (armcompute.VirtualMachineImagesClient, error) {
-	credential := auth.Token()
-	if credential == nil {
-		return armcompute.VirtualMachineImagesClient{}, errors.New("azure auth is nil")
-	}
 	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
 	if err != nil {
-		return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create ARM client options")
+		return nil, errors.Wrap(err, "failed to create virtualmachineimages client options")
 	}
-	computeClientFactory, err := armcompute.NewClientFactory(auth.SubscriptionID(), credential, opts)
+	computeClientFactory, err := armcompute.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
-		return armcompute.VirtualMachineImagesClient{}, errors.Wrap(err, "failed to create ARM compute client factory")
+		return nil, errors.Wrap(err, "failed to create armcompute client factory")
 	}
-	return *computeClientFactory.NewVirtualMachineImagesClient(), nil
+	return &AzureClient{computeClientFactory.NewVirtualMachineImagesClient()}, nil
 }
 
 // List returns a VM image list response.

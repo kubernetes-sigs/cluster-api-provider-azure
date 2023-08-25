@@ -33,26 +33,17 @@ type azureClient struct {
 	natgateways *armnetwork.NatGatewaysClient
 }
 
-// newClient creates a new VM client from subscription ID.
+// newClient creates a new nat gateways client from an authorizer.
 func newClient(auth azure.Authorizer) (*azureClient, error) {
-	c, err := netNatGatewaysClient(auth)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create natgateways client")
-	}
-	return &azureClient{c}, nil
-}
-
-// netNatGatewaysClient creates a new nat gateways client from subscription ID.
-func netNatGatewaysClient(auth azure.Authorizer) (*armnetwork.NatGatewaysClient, error) {
 	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
 	if err != nil {
-		return &armnetwork.NatGatewaysClient{}, errors.Wrap(err, "failed to create natgateways client options")
+		return nil, errors.Wrap(err, "failed to create natgateways client options")
 	}
 	factory, err := armnetwork.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
-		return &armnetwork.NatGatewaysClient{}, errors.Wrap(err, "failed to create armnetwork client factory")
+		return nil, errors.Wrap(err, "failed to create armnetwork client factory")
 	}
-	return factory.NewNatGatewaysClient(), nil
+	return &azureClient{factory.NewNatGatewaysClient()}, nil
 }
 
 // Get gets the specified nat gateway.
@@ -90,7 +81,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	defer cancel()
 
 	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
-	result, err = poller.PollUntilDone(ctx, pollOpts)
+	resp, err := poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
 		// if an error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
@@ -98,7 +89,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	}
 
 	// if the operation completed, return a nil poller
-	return result, nil, err
+	return resp.NatGateway, nil, err
 }
 
 // DeleteAsync deletes a Nat Gateway asynchronously. DeleteAsync sends a DELETE
