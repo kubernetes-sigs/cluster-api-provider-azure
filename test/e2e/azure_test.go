@@ -533,68 +533,6 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
-	Context("Creating a cluster that uses the intree cloud provider [OPTIONAL]", func() {
-		It("with a 1 control plane nodes and 4 worker nodes", func() {
-			By("using user-assigned identity")
-			clusterName = getClusterName(clusterNamePrefix, "intree")
-			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
-				specName,
-				withFlavor("intree-cloud-provider"),
-				withNamespace(namespace.Name),
-				withClusterName(clusterName),
-				withControlPlaneMachineCount(1),
-				withWorkerMachineCount(1),
-				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				}),
-				withPostMachinesProvisioned(func() {
-					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
-						return DaemonsetsSpecInput{
-							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:             namespace,
-							ClusterName:           clusterName,
-						}
-					})
-				}),
-			), result)
-
-			By("Verifying expected VM extensions are present on the node", func() {
-				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
-					return AzureVMExtensionsSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
-			})
-
-			By("Creating an accessible load balancer", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			By("Creating a deployment that uses persistent volume", func() {
-				AzureDiskCSISpec(ctx, func() AzureDiskCSISpecInput {
-					return AzureDiskCSISpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			By("PASSED!")
-		})
-	})
-
 	// You can override the default SKU `Standard_D2s_v3` by setting the
 	// `AZURE_AKS_NODE_MACHINE_TYPE` environment variable.
 	Context("Creating an AKS cluster [Managed Kubernetes]", func() {
