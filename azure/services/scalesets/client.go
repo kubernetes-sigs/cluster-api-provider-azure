@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
@@ -139,20 +140,23 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 
 	createFuture, err := ac.scalesets.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), scaleset)
 	if err != nil {
+		fmt.Printf("Willie: error: %v\n", err)
 		return nil, nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
 
 	err = createFuture.WaitForCompletionRef(ctx, ac.scalesets.Client)
 	if err != nil {
 		// if an error occurs, return the future.
 		// this means the long-running operation didn't finish in the specified timeout.
+		fmt.Printf("Willie: error2: %v\n", err)
 		return nil, &createFuture, err
 	}
 
 	result, err = createFuture.Result(ac.scalesets)
+	fmt.Printf("Willie: result: %v\n", result)
 	// if the operation completed, return a nil future
 	return result, nil, err
 }
