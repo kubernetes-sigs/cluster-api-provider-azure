@@ -56,8 +56,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/internal v1.1.2 h1:mLY+pNL
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/iothub/armiothub v1.1.1 h1:Dh8SxVXcSyQN76LI4IseKyrnqyTUsx336Axg8zDYSMs=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/machinelearning/armmachinelearning v1.0.0 h1:KWvCVjnOTKCZAlqED5KPNoN9AfcK2BhUeveLdiwy33Q=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/managementgroups/armmanagementgroups v1.0.0 h1:pPvTJ1dY0sA35JOeFq6TsY2xj6Z85Yo23Pj4wCCvu4o=
-github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.0.0 h1:pqCyNi/Paz03SbWRmGlb5WBzK14aOXVuSJuOTWzOM5M=
-github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.0.0/go.mod h1:bCUhQ1sbQHAG4nm1SqWwLlnKnRVT2e6Lu0cij7OzliM=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.1.0 h1:CNHJpPiOM3FHaF0vXch5U9CY8lgzwQ5T4SBD/e2N03M=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.1.0/go.mod h1:pw/iPLHx25GjvPaTHaU3qH07SnGr4RmXSqR9o1+aCtI=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/redis/armredis v1.0.0 h1:nmpTBgRg1HynngFYICRhceC7s5dmbKN9fJ/XQz/UQ2I=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1 h1:7CBQ+Ei8SP2c6ydQTGCCrS35bDxgTMfoP2miAwK++OU=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1/go.mod h1:c/wcGeGx5FUPbM/JltUYHZcKmigwyVLJlDq+4HdtXaw=
