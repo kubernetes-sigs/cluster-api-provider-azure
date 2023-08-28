@@ -217,6 +217,7 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 		VMImage:                      m.cache.VMImage,
 		BootstrapData:                m.cache.BootstrapData,
 		ShouldPatchCustomData:        shouldPatchCustomData,
+		MaxSurge:                     m.cache.MaxSurge,
 	}
 }
 
