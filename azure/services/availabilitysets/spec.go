@@ -20,7 +20,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -56,8 +56,8 @@ func (s *AvailabilitySetSpec) OwnerResourceName() string {
 // Parameters returns the parameters for the availability set.
 func (s *AvailabilitySetSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
-		if _, ok := existing.(compute.AvailabilitySet); !ok {
-			return nil, errors.Errorf("%T is not a compute.AvailabilitySet", existing)
+		if _, ok := existing.(armcompute.AvailabilitySet); !ok {
+			return nil, errors.Errorf("%T is not an armcompute.AvailabilitySet", existing)
 		}
 		// availability set already exists
 		return nil, nil
@@ -78,11 +78,11 @@ func (s *AvailabilitySetSpec) Parameters(ctx context.Context, existing interface
 	}
 	faultDomainCount = ptr.To[int32](int32(count))
 
-	asParams := compute.AvailabilitySet{
-		Sku: &compute.Sku{
-			Name: ptr.To(string(compute.AvailabilitySetSkuTypesAligned)),
+	asParams := armcompute.AvailabilitySet{
+		SKU: &armcompute.SKU{
+			Name: ptr.To(string(armcompute.AvailabilitySetSKUTypesAligned)),
 		},
-		AvailabilitySetProperties: &compute.AvailabilitySetProperties{
+		Properties: &armcompute.AvailabilitySetProperties{
 			PlatformFaultDomainCount: faultDomainCount,
 		},
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{

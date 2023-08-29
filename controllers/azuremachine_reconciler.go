@@ -53,6 +53,10 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
+	availabilitySetsSvc, err := availabilitysets.New(machineScope, cache)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating availabilitysets service")
+	}
 	disksSvc, err := disks.New(machineScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating disks service")
@@ -67,7 +71,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 			publicips.New(machineScope),
 			inboundnatrules.New(machineScope),
 			networkinterfaces.New(machineScope, cache),
-			availabilitysets.New(machineScope, cache),
+			availabilitySetsSvc,
 			disksSvc,
 			virtualmachines.New(machineScope),
 			roleassignments.New(machineScope),
