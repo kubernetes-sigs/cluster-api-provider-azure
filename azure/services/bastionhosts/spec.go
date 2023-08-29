@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -65,8 +65,8 @@ func (s *AzureBastionSpec) OwnerResourceName() string {
 // Parameters returns the parameters for the bastion host.
 func (s *AzureBastionSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
 	if existing != nil {
-		if _, ok := existing.(network.BastionHost); !ok {
-			return nil, errors.Errorf("%T is not a network.BastionHost", existing)
+		if _, ok := existing.(armnetwork.BastionHost); !ok {
+			return nil, errors.Errorf("%T is not an armnetwork.BastionHost", existing)
 		}
 		// bastion host already exists
 		return nil, nil
@@ -74,7 +74,7 @@ func (s *AzureBastionSpec) Parameters(ctx context.Context, existing interface{})
 
 	bastionHostIPConfigName := fmt.Sprintf("%s-%s", s.Name, "bastionIP")
 
-	return network.BastionHost{
+	return armnetwork.BastionHost{
 		Name:     ptr.To(s.Name),
 		Location: ptr.To(s.Location),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
@@ -83,23 +83,23 @@ func (s *AzureBastionSpec) Parameters(ctx context.Context, existing interface{})
 			Name:        ptr.To(s.Name),
 			Role:        ptr.To("Bastion"),
 		})),
-		Sku: &network.Sku{
-			Name: network.BastionHostSkuName(s.Sku),
+		SKU: &armnetwork.SKU{
+			Name: ptr.To(armnetwork.BastionHostSKUName(s.Sku)),
 		},
-		BastionHostPropertiesFormat: &network.BastionHostPropertiesFormat{
+		Properties: &armnetwork.BastionHostPropertiesFormat{
 			EnableTunneling: ptr.To(s.EnableTunneling),
 			DNSName:         ptr.To(fmt.Sprintf("%s-bastion", strings.ToLower(s.Name))),
-			IPConfigurations: &[]network.BastionHostIPConfiguration{
+			IPConfigurations: []*armnetwork.BastionHostIPConfiguration{
 				{
 					Name: ptr.To(bastionHostIPConfigName),
-					BastionHostIPConfigurationPropertiesFormat: &network.BastionHostIPConfigurationPropertiesFormat{
-						Subnet: &network.SubResource{
+					Properties: &armnetwork.BastionHostIPConfigurationPropertiesFormat{
+						Subnet: &armnetwork.SubResource{
 							ID: &s.SubnetID,
 						},
-						PublicIPAddress: &network.SubResource{
+						PublicIPAddress: &armnetwork.SubResource{
 							ID: &s.PublicIPID,
 						},
-						PrivateIPAllocationMethod: network.IPAllocationMethodDynamic,
+						PrivateIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodDynamic),
 					},
 				},
 			},

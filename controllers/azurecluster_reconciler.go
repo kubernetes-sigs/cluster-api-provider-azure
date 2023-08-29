@@ -56,6 +56,10 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
+	bastionHostsSvc, err := bastionhosts.New(scope)
+	if err != nil {
+		return nil, err
+	}
 	var groupsSvc azure.ServiceReconciler = asogroups.New(scope)
 	if scope.UseLegacyGroups {
 		groupsSvc = groups.New(scope)
@@ -77,7 +81,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			vnetpeerings.New(scope),
 			loadbalancers.New(scope),
 			privatedns.New(scope),
-			bastionhosts.New(scope),
+			bastionHostsSvc,
 			privateendpoints.New(scope),
 			tags.New(scope),
 		},

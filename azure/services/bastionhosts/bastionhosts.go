@@ -19,9 +19,10 @@ package bastionhosts
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -38,16 +39,20 @@ type BastionScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope BastionScope
-	async.Reconciler
+	asyncpoller.Reconciler
 }
 
 // New creates a new service.
-func New(scope BastionScope) *Service {
-	client := newClient(scope)
-	return &Service{
-		Scope:      scope,
-		Reconciler: async.New(scope, client, client),
+func New(scope BastionScope) (*Service, error) {
+	client, err := newClient(scope)
+	if err != nil {
+		return nil, err
 	}
+	return &Service{
+		Scope: scope,
+		Reconciler: asyncpoller.New[armnetwork.BastionHostsClientCreateOrUpdateResponse,
+			armnetwork.BastionHostsClientDeleteResponse](scope, client, client),
+	}, nil
 }
 
 // Name returns the service name.
