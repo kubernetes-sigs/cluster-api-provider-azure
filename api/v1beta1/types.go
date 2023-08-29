@@ -372,6 +372,7 @@ type IPTag struct {
 	Tag string `json:"tag"`
 }
 
+// PrivateLink configures an Azure Private Link Service.
 type PrivateLink struct {
 	// Name of the Azure Private Link Service resource.
 	// +optional
@@ -398,6 +399,7 @@ type PrivateLink struct {
 	EnableProxyProtocol *bool `json:"enableProxyProtocol,omitempty"`
 }
 
+// PrivateLinkNATIPConfiguration specifies NAT IP configuration for the private link service.
 type PrivateLinkNATIPConfiguration struct {
 	AllocationMethod string `json:"allocationMethod"`
 
@@ -413,7 +415,10 @@ type PrivateLinkNATIPConfiguration struct {
 type PrivateLinkNATIPAllocationMethod string
 
 const (
-	NATIPAllocationMethodStatic  PrivateLinkNATIPAllocationMethod = "Static"
+	// NATIPAllocationMethodStatic ...
+	NATIPAllocationMethodStatic PrivateLinkNATIPAllocationMethod = "Static"
+
+	// NATIPAllocationMethodDynamic ...
 	NATIPAllocationMethodDynamic PrivateLinkNATIPAllocationMethod = "Dynamic"
 )
 

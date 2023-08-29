@@ -919,6 +919,756 @@ func TestValidateAPIServerLB(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatePrivateLinks(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name        string
+		lb          LoadBalancerSpec
+		old         LoadBalancerSpec
+		subnets     Subnets
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name: "internal LB with a private link",
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "10.1.0.3",
+						},
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Dynamic",
+								Subnet:           "node-subnet",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "internal LB with a private link with static NAT IP",
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "10.1.0.3",
+						},
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.10",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+						CIDRBlocks: []string{
+							"10.10.0.0/16",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "public LB with a private link",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Public,
+				},
+				Name: "my-public-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-public-lb-privatelink",
+					},
+				},
+			},
+			subnets: Subnets{},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.privateLinks",
+				BadValue: []PrivateLink{
+					{
+						Name: "my-public-lb-privatelink",
+					},
+				},
+				Detail: "private links can be added only to an internal load balancer",
+			},
+		},
+		{
+			name: "internal LB with more than 8 private links",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink-1",
+					},
+					{
+						Name: "my-private-lb-privatelink-2",
+					},
+					{
+						Name: "my-private-lb-privatelink-3",
+					},
+					{
+						Name: "my-private-lb-privatelink-4",
+					},
+					{
+						Name: "my-private-lb-privatelink-5",
+					},
+					{
+						Name: "my-private-lb-privatelink-6",
+					},
+					{
+						Name: "my-private-lb-privatelink-7",
+					},
+					{
+						Name: "my-private-lb-privatelink-8",
+					},
+					{
+						Name: "my-private-lb-privatelink-9",
+					},
+				},
+			},
+			subnets: Subnets{},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.privateLinks",
+				BadValue: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink-1",
+					},
+					{
+						Name: "my-private-lb-privatelink-2",
+					},
+					{
+						Name: "my-private-lb-privatelink-3",
+					},
+					{
+						Name: "my-private-lb-privatelink-4",
+					},
+					{
+						Name: "my-private-lb-privatelink-5",
+					},
+					{
+						Name: "my-private-lb-privatelink-6",
+					},
+					{
+						Name: "my-private-lb-privatelink-7",
+					},
+					{
+						Name: "my-private-lb-privatelink-8",
+					},
+					{
+						Name: "my-private-lb-privatelink-9",
+					},
+				},
+				Detail: "maximum number of private links per load balancer is 8 (Azure limit)",
+			},
+		},
+		{
+			name: "empty private link name",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "",
+					},
+				},
+			},
+			subnets: Subnets{},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].name",
+				BadValue: "",
+				Detail:   "name of private link cannot be empty",
+			},
+		},
+		{
+			name: "invalid private link name",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "apiserver-$",
+					},
+				},
+			},
+			subnets: Subnets{},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].name",
+				BadValue: "apiserver-$",
+				Detail:   "name of private link doesn't match regex ^[-\\w\\._]+$",
+			},
+		},
+		{
+			name: "private link does not have frontend configuration",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name:                    "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Dynamic",
+								Subnet:           "node-subnet",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].lbFrontendIPConfigNames",
+				BadValue: []string{},
+				Detail:   "LBFrontendIPConfigNames cannot be empty",
+			},
+		},
+		{
+			name: "private link with incorrect frontend configuration name",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"some-other-frontend-config",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Dynamic",
+								Subnet:           "node-subnet",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].lbFrontendIPConfigNames[0]",
+				BadValue: "some-other-frontend-config",
+				Detail:   "LBFrontendIPConfigName must exist in the API server LoadBalancerSpec.FrontendIPs",
+			},
+		},
+		{
+			name: "private link with frontend configuration specified multiple times",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Dynamic",
+								Subnet:           "node-subnet",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.privateLinks[0].lbFrontendIPConfigNames",
+				BadValue: []string{
+					"ip-1",
+					"ip-1",
+				},
+				Detail: "LBFrontendIPConfigNames cannot have duplicate entries (ip-1 has been specified 2 times)",
+			},
+		},
+		{
+			name: "private link without NAT IP configurations",
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{},
+					},
+				},
+			},
+			subnets: Subnets{},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].natIPConfigurations",
+				BadValue: []PrivateLinkNATIPConfiguration{},
+				Detail:   "NATIPConfigurations cannot be empty",
+			},
+		},
+		{
+			name: "private link with more than 8 NAT IP configurations",
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.11",
+							},
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.12",
+							},
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.13",
+							},
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.14",
+							},
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.15",
+							},
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.16",
+							},
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.17",
+							},
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.18",
+							},
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.10.0.19",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+						CIDRBlocks: []string{
+							"10.10.0.0/16",
+						},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.privateLinks[0].natIPConfigurations",
+				BadValue: []PrivateLinkNATIPConfiguration{
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.11",
+					},
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.12",
+					},
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.13",
+					},
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.14",
+					},
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.15",
+					},
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.16",
+					},
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.17",
+					},
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.18",
+					},
+					{
+						AllocationMethod: "Static",
+						Subnet:           "node-subnet",
+						PrivateIPAddress: "10.10.0.19",
+					},
+				},
+				Detail: "maximum number of NAT IP Configurations is 8 (Azure limit)",
+			},
+		},
+		{
+			name: "private link with NAT IP config without specified subnet",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Dynamic",
+								Subnet:           "",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.privateLinks[0].natIPConfigurations[0]",
+				BadValue: PrivateLinkNATIPConfiguration{
+					AllocationMethod: "Dynamic",
+					Subnet:           "",
+				},
+				Detail: "NATIPConfiguration must specify an existing subnet name",
+			},
+		},
+		{
+			name: "private link with NAT IP config with non-existent subnet",
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Dynamic",
+								Subnet:           "other-subnet",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].natIPConfigurations[0].subnet",
+				BadValue: "other-subnet",
+				Detail:   "NATIPConfiguration must use existing subnet (subnet other-subnet not specified in AzureCluster resource)",
+			},
+		},
+		{
+			name: "private link with an out-of-range static NAT IP",
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Static",
+								Subnet:           "node-subnet",
+								PrivateIPAddress: "10.11.0.10",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+						CIDRBlocks: []string{
+							"10.10.0.0/16",
+						},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].natIPConfigurations[0].privateIPAddress",
+				BadValue: "10.11.0.10",
+				Detail:   "Private Link IP address needs to be in subnet range ([10.10.0.0/16])",
+			},
+		},
+		{
+			name: "private link NAT IP configuration cannot be modified",
+			old: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Dynamic",
+								Subnet:           "cp-subnet",
+							},
+						},
+					},
+				},
+			},
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+				Name: "my-private-lb",
+				PrivateLinks: []PrivateLink{
+					{
+						Name: "my-private-lb-privatelink",
+						LBFrontendIPConfigNames: []string{
+							"ip-1",
+						},
+						NATIPConfigurations: []PrivateLinkNATIPConfiguration{
+							{
+								AllocationMethod: "Dynamic",
+								Subnet:           "node-subnet",
+							},
+						},
+					},
+				},
+			},
+			subnets: Subnets{
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "node-subnet",
+					},
+				},
+				{
+					SubnetClassSpec: SubnetClassSpec{
+						Name: "cp-subnet",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.privateLinks[0].natIPConfigurations",
+				BadValue: []PrivateLinkNATIPConfiguration{
+					{
+						AllocationMethod: "Dynamic",
+						Subnet:           "node-subnet",
+					},
+				},
+				Detail: "NATIPConfigurations cannot be modified",
+			},
+		},
+	}
+
+	for _, test := range testcases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateLBPrivateLinks(test.lb, test.old, test.subnets, field.NewPath("apiServerLB"))
+			if test.wantErr {
+				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
+			} else {
+				g.Expect(err).To(BeEmpty())
+			}
+		})
+	}
+}
+
 func TestPrivateDNSZoneName(t *testing.T) {
 	g := NewWithT(t)
 

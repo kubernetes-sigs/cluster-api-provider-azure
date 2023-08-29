@@ -1101,12 +1101,13 @@ func (s *ClusterScope) PrivateEndpointSpecs() []azure.ResourceSpecGetter {
 	return privateEndpointSpecs
 }
 
+// PrivateLinkSpecs returns the private link specs.
 func (s *ClusterScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
 	// First we get all private links to API server load balancer.
 	// Other load balancers (ControlPlaneOutboundLB and NodeOutboundLB) are outbound, so we cannot create private links
 	// for those.
 	privateLinks := s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks
-	var privateLinksSpecs []azure.ResourceSpecGetter
+	privateLinksSpecs := make([]azure.ResourceSpecGetter, len(privateLinks))
 
 	for _, privateLink := range privateLinks {
 		privateLinkSpec := privatelinks.PrivateLinkSpec{
@@ -1125,8 +1126,8 @@ func (s *ClusterScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
 			AdditionalTags:            s.AdditionalTags(),
 		}
 		// Set NAT IP configuration
-		for _, natIpConfiguration := range privateLink.NATIPConfigurations {
-			privateLinkSpec.NATIPConfiguration = append(privateLinkSpec.NATIPConfiguration, privatelinks.NATIPConfiguration(natIpConfiguration))
+		for _, natIPConfiguration := range privateLink.NATIPConfigurations {
+			privateLinkSpec.NATIPConfiguration = append(privateLinkSpec.NATIPConfiguration, privatelinks.NATIPConfiguration(natIPConfiguration))
 		}
 		privateLinksSpecs = append(privateLinksSpecs, &privateLinkSpec)
 	}

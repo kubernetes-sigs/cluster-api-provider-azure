@@ -1,3 +1,19 @@
+/*
+Copyright 2023 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package privatelinks
 
 import (
@@ -8,12 +24,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
-	"k8s.io/utils/pointer"
-
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
 
+// PrivateLinkSpec defines the specification for a private link service.
 type PrivateLinkSpec struct {
 	Name                      string
 	ResourceGroup             string
@@ -31,6 +48,7 @@ type PrivateLinkSpec struct {
 	AdditionalTags            infrav1.Tags
 }
 
+// NATIPConfiguration defines the NAT IP configuration for the private link service.
 type NATIPConfiguration struct {
 	// AllocationMethod can be Static or Dynamic.
 	AllocationMethod string
@@ -67,57 +85,46 @@ func (s *PrivateLinkSpec) Parameters(ctx context.Context, existing interface{}) 
 	}
 
 	// NAT IP configurations
-	var ipConfigurations []network.PrivateLinkServiceIPConfiguration
+	ipConfigurations := make([]network.PrivateLinkServiceIPConfiguration, 0, len(s.NATIPConfiguration))
 	for i, natIPConfiguration := range s.NATIPConfiguration {
 		ipAllocationMethod := network.IPAllocationMethod(natIPConfiguration.AllocationMethod)
 		if ipAllocationMethod != network.Dynamic && ipAllocationMethod != network.Static {
 			return nil, errors.Errorf("%T is not a supported network.IPAllocationMethodStatic", natIPConfiguration.AllocationMethod)
 		}
-		var privateIpAddress *string
+		var privateIPAddress *string
 		if ipAllocationMethod == network.Static {
 			if natIPConfiguration.PrivateIPAddress != "" {
-				privateIpAddress = pointer.String(natIPConfiguration.PrivateIPAddress)
+				privateIPAddress = ptr.To(natIPConfiguration.PrivateIPAddress)
 			} else {
 				return nil, errors.Errorf("Private link NAT IP configuration with static IP allocation must specify a private address")
 			}
 		}
 		ipConfiguration := network.PrivateLinkServiceIPConfiguration{
-			Name: pointer.String(fmt.Sprintf("%s-natipconfig-%d", natIPConfiguration.Subnet, i+1)),
+			Name: ptr.To(fmt.Sprintf("%s-natipconfig-%d", natIPConfiguration.Subnet, i+1)),
 			PrivateLinkServiceIPConfigurationProperties: &network.PrivateLinkServiceIPConfigurationProperties{
 				Subnet: &network.Subnet{
-					ID: pointer.String(
-						fmt.Sprintf(
-							"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-							s.SubscriptionID,
-							s.VNetResourceGroup,
-							s.VNet,
-							natIPConfiguration.Subnet)),
+					ID: ptr.To(azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNet, natIPConfiguration.Subnet)),
 				},
 				PrivateIPAllocationMethod: ipAllocationMethod,
-				PrivateIPAddress:          privateIpAddress,
+				PrivateIPAddress:          privateIPAddress,
 			},
 		}
 		ipConfigurations = append(ipConfigurations, ipConfiguration)
-		ipConfigurations[0].Primary = pointer.Bool(true)
+		ipConfigurations[0].Primary = ptr.To(true)
 	}
 
 	// Load balancer front-end IP configurations
-	var frontendIPConfigurations []network.FrontendIPConfiguration
+	frontendIPConfigurations := make([]network.FrontendIPConfiguration, 0, len(s.LBFrontendIPConfigNames))
 	for _, frontendIPConfigName := range s.LBFrontendIPConfigNames {
 		frontendIPConfig := network.FrontendIPConfiguration{
-			ID: pointer.String(
-				fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
-					s.SubscriptionID,
-					s.ResourceGroupName(),
-					s.LoadBalancerName,
-					frontendIPConfigName)),
+			ID: ptr.To(azure.FrontendIPConfigID(s.SubscriptionID, s.ResourceGroupName(), s.LoadBalancerName, frontendIPConfigName)),
 		}
 		frontendIPConfigurations = append(frontendIPConfigurations, frontendIPConfig)
 	}
 
 	privateLinkToCreate := network.PrivateLinkService{
-		Name:     pointer.String(s.Name),
-		Location: pointer.String(s.Location),
+		Name:     ptr.To(s.Name),
+		Location: ptr.To(s.Location),
 		PrivateLinkServiceProperties: &network.PrivateLinkServiceProperties{
 			IPConfigurations:                     &ipConfigurations,
 			LoadBalancerFrontendIPConfigurations: &frontendIPConfigurations,
@@ -126,7 +133,7 @@ func (s *PrivateLinkSpec) Parameters(ctx context.Context, existing interface{}) 
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        pointer.String(s.Name),
+			Name:        ptr.To(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
 	}
@@ -160,11 +167,11 @@ func isExistingUpToDate(existing network.PrivateLinkService, wanted network.Priv
 	// NAT IP configuration is not checked as it cannot be changed.
 
 	// Check load balancer configurations
-	var wantedFrontendIDs []string
+	wantedFrontendIDs := make([]string, len(*wanted.LoadBalancerFrontendIPConfigurations))
 	for _, wantedFrontendIPConfig := range *wanted.LoadBalancerFrontendIPConfigurations {
 		wantedFrontendIDs = append(wantedFrontendIDs, *wantedFrontendIPConfig.ID)
 	}
-	var existingFrontendIDs []string
+	existingFrontendIDs := make([]string, len(*existing.LoadBalancerFrontendIPConfigurations))
 	for _, existingFrontendIPConfig := range *existing.LoadBalancerFrontendIPConfigurations {
 		existingFrontendIDs = append(existingFrontendIDs, *existingFrontendIPConfig.ID)
 	}
@@ -173,7 +180,7 @@ func isExistingUpToDate(existing network.PrivateLinkService, wanted network.Priv
 	}
 
 	// Check proxy protocol config
-	if !pointer.BoolEqual(wanted.EnableProxyProtocol, existing.EnableProxyProtocol) {
+	if !ptr.Equal(wanted.EnableProxyProtocol, existing.EnableProxyProtocol) {
 		return false
 	}
 
@@ -212,11 +219,12 @@ func equalStructWithStringSlicesPtrIgnoreOrder[T any](a, b *T, getStringSlice fu
 }
 
 func equalStringSlicesPtrIgnoreOrder(a, b *[]string) bool {
-	if bothPointersAreNil(a, b) {
-		return true
+	// normalize nil to empty slice pointer
+	if a == nil {
+		a = &[]string{}
 	}
-	if onlyOnePointerIsNil(a, b) {
-		return false
+	if b == nil {
+		b = &[]string{}
 	}
 
 	// both are different from nil
@@ -224,6 +232,12 @@ func equalStringSlicesPtrIgnoreOrder(a, b *[]string) bool {
 }
 
 func equalStringSlicesIgnoreOrder(a, b []string) bool {
+	// manual length check, so we return true for any combination of nil and
+	// empty slices in the parameters
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+
 	slicesDiff := cmp.Diff(a, b, cmpopts.SortSlices(func(s1, s2 string) bool {
 		return s1 < s2
 	}))
@@ -236,5 +250,5 @@ func bothPointersAreNil[T any](a, b *T) bool {
 }
 
 func onlyOnePointerIsNil[T any](a, b *T) bool {
-	return a == nil && b != nil || a != nil || b == nil
+	return a == nil && b != nil || a != nil && b == nil
 }
