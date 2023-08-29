@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
@@ -44,11 +45,15 @@ type azureManagedControlPlaneService struct {
 
 // newAzureManagedControlPlaneReconciler populates all the services based on input scope.
 func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedControlPlaneService {
+	var groupsService azure.ServiceReconciler = asogroups.New(scope)
+	if scope.UseLegacyGroups {
+		groupsService = groups.New(scope)
+	}
 	return &azureManagedControlPlaneService{
 		kubeclient: scope.Client,
 		scope:      scope,
 		services: []azure.ServiceReconciler{
-			groups.New(scope),
+			groupsService,
 			virtualnetworks.New(scope),
 			subnets.New(scope),
 			managedclusters.New(scope),

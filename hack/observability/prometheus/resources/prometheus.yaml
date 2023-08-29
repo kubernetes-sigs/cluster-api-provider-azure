@@ -51,8 +51,12 @@ metadata:
 spec:
   serviceAccountName: prometheus
   serviceMonitorSelector:
-    matchLabels:
-      control-plane: capz-controller-manager
+    matchExpressions:
+      - key: control-plane
+        operator: In
+        values:
+          - capz-controller-manager
+          - azureserviceoperator-controller-manager
   resources:
     requests:
       memory: 400Mi
@@ -90,3 +94,18 @@ spec:
   selector:
     matchLabels:
       control-plane: capz-controller-manager
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    control-plane: azureserviceoperator-controller-manager
+  name: azureserviceoperator-controller-manager-metrics-monitor
+spec:
+  endpoints:
+    - path: /metrics
+      port: metrics
+      scheme: http
+  selector:
+    matchLabels:
+      control-plane: controller-manager

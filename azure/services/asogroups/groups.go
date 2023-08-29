@@ -59,7 +59,7 @@ func (s *Service) Name() string {
 
 // Reconcile idempotently creates or updates a resource group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Reconcile")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "asogroups.Service.Reconcile")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
@@ -77,7 +77,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the resource group if it is managed by capz.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "asogroups.Service.Delete")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)

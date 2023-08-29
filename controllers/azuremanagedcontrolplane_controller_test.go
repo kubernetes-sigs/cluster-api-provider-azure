@@ -19,6 +19,7 @@ import (
 	"context"
 	"testing"
 
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,6 +96,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		clusterv1.AddToScheme,
 		infrav1.AddToScheme,
+		asoresourcesv1.AddToScheme,
 	)
 	s := runtime.NewScheme()
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
@@ -111,11 +113,12 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 		WatchFilterValue: "",
 	}
 	name := test.RandomName("paused", 10)
+	namespace := "default"
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "default",
+			Namespace: namespace,
 		},
 		Spec: clusterv1.ClusterSpec{
 			Paused: true,
@@ -126,7 +129,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	instance := &infrav1.AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "default",
+			Namespace: namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Cluster",
@@ -136,10 +139,19 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 			},
 		},
 		Spec: infrav1.AzureManagedControlPlaneSpec{
-			SubscriptionID: "something",
+			SubscriptionID:    "something",
+			ResourceGroupName: name,
 		},
 	}
 	g.Expect(c.Create(ctx, instance)).To(Succeed())
+
+	rg := &asoresourcesv1.ResourceGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	g.Expect(c.Create(ctx, rg)).To(Succeed())
 
 	result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
 		NamespacedName: client.ObjectKey{

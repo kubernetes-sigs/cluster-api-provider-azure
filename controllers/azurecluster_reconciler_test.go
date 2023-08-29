@@ -20,19 +20,26 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestAzureClusterServiceReconcile(t *testing.T) {
@@ -169,48 +176,110 @@ func TestAzureClusterServicePause(t *testing.T) {
 }
 
 func TestAzureClusterServiceDelete(t *testing.T) {
+	clusterName := "cluster"
+	namespace := "ns"
+	resourceGroup := "rg"
+
 	cases := map[string]struct {
 		expectedError string
+		clientBuilder func(g Gomega) client.Client
 		expect        func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder)
 	}{
 		"Resource Group is deleted successfully": {
 			expectedError: "",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+
+				rg := &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceGroup,
+						Namespace: namespace,
+						Labels: map[string]string{
+							infrav1.OwnedByClusterLabelKey: clusterName,
+						},
+						Annotations: map[string]string{
+							aso.ReconcilePolicyAnnotation: aso.ReconcilePolicyManage,
+						},
+					},
+				}
+
+				c := fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(rg).
+					Build()
+
+				return c
+			},
+			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
-					grp.Name().Return(groups.ServiceName),
-					grp.IsManaged(gomockinternal.AContext()).Return(true, nil),
-					grp.Name().Return(groups.ServiceName),
+					grp.Name().Return(asogroups.ServiceName),
 					vpr.Name().Return(vnetpeerings.ServiceName),
 					vpr.Delete(gomockinternal.AContext()).Return(nil),
+					grp.Name().Return(asogroups.ServiceName),
 					grp.Delete(gomockinternal.AContext()).Return(nil))
-			},
-		},
-		"Error when checking if resource group is managed": {
-			expectedError: "failed to determine if the AzureCluster resource group is managed: an error happened",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
-				gomock.InOrder(
-					grp.Name().Return(groups.ServiceName),
-					grp.IsManaged(gomockinternal.AContext()).Return(false, errors.New("an error happened")))
 			},
 		},
 		"Resource Group delete fails": {
 			expectedError: "failed to delete resource group: internal error",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+
+				rg := &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceGroup,
+						Namespace: namespace,
+						Labels: map[string]string{
+							infrav1.OwnedByClusterLabelKey: clusterName,
+						},
+						Annotations: map[string]string{
+							aso.ReconcilePolicyAnnotation: aso.ReconcilePolicyManage,
+						},
+					},
+				}
+
+				c := fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(rg).
+					Build()
+
+				return c
+			},
+			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
-					grp.Name().Return(groups.ServiceName),
-					grp.IsManaged(gomockinternal.AContext()).Return(true, nil),
-					grp.Name().Return(groups.ServiceName),
+					grp.Name().Return(asogroups.ServiceName),
 					vpr.Name().Return(vnetpeerings.ServiceName),
 					vpr.Delete(gomockinternal.AContext()).Return(nil),
+					grp.Name().Return(asogroups.ServiceName),
 					grp.Delete(gomockinternal.AContext()).Return(errors.New("internal error")))
 			},
 		},
 		"Resource Group not owned by cluster": {
 			expectedError: "",
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+
+				rg := &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceGroup,
+						Namespace: namespace,
+						Labels: map[string]string{
+							infrav1.OwnedByClusterLabelKey: "not-" + clusterName,
+						},
+					},
+				}
+
+				c := fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(rg).
+					Build()
+
+				return c
+			},
 			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
-					grp.Name().Return(groups.ServiceName),
-					grp.IsManaged(gomockinternal.AContext()).Return(false, nil),
 					three.Delete(gomockinternal.AContext()).Return(nil),
 					two.Delete(gomockinternal.AContext()).Return(nil),
 					one.Delete(gomockinternal.AContext()).Return(nil),
@@ -220,10 +289,29 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 		},
 		"service delete fails": {
 			expectedError: "failed to delete AzureCluster service two: some error happened",
-			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+
+				rg := &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceGroup,
+						Namespace: namespace,
+						Labels: map[string]string{
+							infrav1.OwnedByClusterLabelKey: "not-" + clusterName,
+						},
+					},
+				}
+
+				c := fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(rg).
+					Build()
+
+				return c
+			},
+			expect: func(_ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
-					grp.Name().Return(groups.ServiceName),
-					grp.IsManaged(gomockinternal.AContext()).Return(false, nil),
 					three.Delete(gomockinternal.AContext()).Return(nil),
 					two.Delete(gomockinternal.AContext()).Return(errors.New("some error happened")),
 					two.Name().Return("two"))
@@ -246,10 +334,23 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			svcThreeMock := mock_azure.NewMockServiceReconciler(mockCtrl)
 
 			tc.expect(groupsMock.EXPECT(), vnetpeeringsMock.EXPECT(), svcOneMock.EXPECT(), svcTwoMock.EXPECT(), svcThreeMock.EXPECT())
+			c := tc.clientBuilder(g)
 
 			s := &azureClusterService{
 				scope: &scope.ClusterScope{
-					AzureCluster: &infrav1.AzureCluster{},
+					Client: c,
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: resourceGroup,
+						},
+					},
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:              clusterName,
+							Namespace:         namespace,
+							DeletionTimestamp: &metav1.Time{Time: time.Now()},
+						},
+					},
 				},
 				services: []azure.ServiceReconciler{
 					groupsMock,

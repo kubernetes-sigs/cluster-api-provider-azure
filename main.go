@@ -26,6 +26,7 @@ import (
 
 	// +kubebuilder:scaffold:imports
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,6 +73,7 @@ func init() {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = expv1.AddToScheme(scheme)
 	_ = kubeadmv1.AddToScheme(scheme)
+	_ = asoresourcesv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 
 	// Add aadpodidentity v1 to the scheme.

@@ -117,15 +117,6 @@ func TestReconcileGroups(t *testing.T) {
 	}
 }
 
-type ErroringGetClient struct {
-	client.Client
-	err error
-}
-
-func (e *ErroringGetClient) Get(_ context.Context, _ client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
-	return e.err
-}
-
 type ErroringDeleteClient struct {
 	client.Client
 	err error
@@ -223,24 +214,14 @@ func TestDeleteGroups(t *testing.T) {
 
 func TestShouldDeleteIndividualResources(t *testing.T) {
 	tests := []struct {
-		name          string
-		clientBuilder func(g Gomega) client.Client
-		expect        func(s *mock_asogroups.MockGroupScopeMockRecorder)
-		expected      bool
+		name     string
+		objects  []client.Object
+		expect   func(s *mock_asogroups.MockGroupScopeMockRecorder)
+		expected bool
 	}{
 		{
-			name: "error checking if group is managed",
-			clientBuilder: func(g Gomega) client.Client {
-				scheme := runtime.NewScheme()
-				g.Expect(asoresourcesv1.AddToScheme(scheme))
-				c := fakeclient.NewClientBuilder().
-					WithScheme(scheme).
-					Build()
-				return &ErroringGetClient{
-					Client: c,
-					err:    errors.New("an error"),
-				}
-			},
+			name:    "error checking if group is managed",
+			objects: nil,
 			expect: func(s *mock_asogroups.MockGroupScopeMockRecorder) {
 				s.ASOGroupSpec().Return(&GroupSpec{}).AnyTimes()
 				s.ClusterName().Return("").AnyTimes()
@@ -248,23 +229,17 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "unmanaged",
-			clientBuilder: func(g Gomega) client.Client {
-				scheme := runtime.NewScheme()
-				g.Expect(asoresourcesv1.AddToScheme(scheme))
-				c := fakeclient.NewClientBuilder().
-					WithScheme(scheme).
-					WithObjects(&asoresourcesv1.ResourceGroup{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "name",
-							Namespace: "namespace",
-							Labels: map[string]string{
-								infrav1.OwnedByClusterLabelKey: "not-cluster",
-							},
+			name: "group is unmanaged",
+			objects: []client.Object{
+				&asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "namespace",
+						Labels: map[string]string{
+							infrav1.OwnedByClusterLabelKey: "not-cluster",
 						},
-					}).
-					Build()
-				return c
+					},
+				},
 			},
 			expect: func(s *mock_asogroups.MockGroupScopeMockRecorder) {
 				s.ASOGroupSpec().Return(&GroupSpec{
@@ -276,26 +251,20 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "managed, RG has reconcile policy skip",
-			clientBuilder: func(g Gomega) client.Client {
-				scheme := runtime.NewScheme()
-				g.Expect(asoresourcesv1.AddToScheme(scheme))
-				c := fakeclient.NewClientBuilder().
-					WithScheme(scheme).
-					WithObjects(&asoresourcesv1.ResourceGroup{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "name",
-							Namespace: "namespace",
-							Labels: map[string]string{
-								infrav1.OwnedByClusterLabelKey: "cluster",
-							},
-							Annotations: map[string]string{
-								aso.ReconcilePolicyAnnotation: aso.ReconcilePolicySkip,
-							},
+			name: "group is managed and has reconcile policy skip",
+			objects: []client.Object{
+				&asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "namespace",
+						Labels: map[string]string{
+							infrav1.OwnedByClusterLabelKey: "cluster",
 						},
-					}).
-					Build()
-				return c
+						Annotations: map[string]string{
+							aso.ReconcilePolicyAnnotation: aso.ReconcilePolicySkip,
+						},
+					},
+				},
 			},
 			expect: func(s *mock_asogroups.MockGroupScopeMockRecorder) {
 				s.ASOGroupSpec().Return(&GroupSpec{
@@ -307,26 +276,20 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "managed, RG has reconcile policy manage",
-			clientBuilder: func(g Gomega) client.Client {
-				scheme := runtime.NewScheme()
-				g.Expect(asoresourcesv1.AddToScheme(scheme))
-				c := fakeclient.NewClientBuilder().
-					WithScheme(scheme).
-					WithObjects(&asoresourcesv1.ResourceGroup{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "name",
-							Namespace: "namespace",
-							Labels: map[string]string{
-								infrav1.OwnedByClusterLabelKey: "cluster",
-							},
-							Annotations: map[string]string{
-								aso.ReconcilePolicyAnnotation: aso.ReconcilePolicyManage,
-							},
+			name: "group is managed and has reconcile policy manage",
+			objects: []client.Object{
+				&asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "namespace",
+						Labels: map[string]string{
+							infrav1.OwnedByClusterLabelKey: "cluster",
 						},
-					}).
-					Build()
-				return c
+						Annotations: map[string]string{
+							aso.ReconcilePolicyAnnotation: aso.ReconcilePolicyManage,
+						},
+					},
+				},
 			},
 			expect: func(s *mock_asogroups.MockGroupScopeMockRecorder) {
 				s.ASOGroupSpec().Return(&GroupSpec{
@@ -347,10 +310,12 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 			defer mockCtrl.Finish()
 			scopeMock := mock_asogroups.NewMockGroupScope(mockCtrl)
 
-			var ctrlClient client.Client
-			if test.clientBuilder != nil {
-				ctrlClient = test.clientBuilder(g)
-			}
+			scheme := runtime.NewScheme()
+			g.Expect(asoresourcesv1.AddToScheme(scheme))
+			ctrlClient := fakeclient.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(test.objects...).
+				Build()
 			scopeMock.EXPECT().GetClient().Return(ctrlClient).AnyTimes()
 			test.expect(scopeMock.EXPECT())
 
