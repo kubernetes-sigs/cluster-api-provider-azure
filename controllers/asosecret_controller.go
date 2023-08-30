@@ -170,6 +170,10 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+		if cluster == nil {
+			log.Info("Cluster Controller has not yet set OwnerRef")
+			return reconcile.Result{}, nil
+		}
 
 		// Create the scope.
 		clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
@@ -190,6 +194,10 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		cluster, err = util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
 		if err != nil {
 			return reconcile.Result{}, err
+		}
+		if cluster == nil {
+			log.Info("Cluster Controller has not yet set OwnerRef")
+			return reconcile.Result{}, nil
 		}
 
 		// Create the scope.
