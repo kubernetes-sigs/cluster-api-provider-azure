@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -213,10 +213,10 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			},
 			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
-					grp.Name().Return(asogroups.ServiceName),
+					grp.Name().Return(groups.ServiceName),
 					vpr.Name().Return(vnetpeerings.ServiceName),
 					vpr.Delete(gomockinternal.AContext()).Return(nil),
-					grp.Name().Return(asogroups.ServiceName),
+					grp.Name().Return(groups.ServiceName),
 					grp.Delete(gomockinternal.AContext()).Return(nil))
 			},
 		},
@@ -248,10 +248,10 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			},
 			expect: func(grp *mock_azure.MockServiceReconcilerMockRecorder, vpr *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
-					grp.Name().Return(asogroups.ServiceName),
+					grp.Name().Return(groups.ServiceName),
 					vpr.Name().Return(vnetpeerings.ServiceName),
 					vpr.Delete(gomockinternal.AContext()).Return(nil),
-					grp.Name().Return(asogroups.ServiceName),
+					grp.Name().Return(groups.ServiceName),
 					grp.Delete(gomockinternal.AContext()).Return(errors.New("internal error")))
 			},
 		},

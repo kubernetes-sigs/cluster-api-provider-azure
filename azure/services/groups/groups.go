@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package asogroups
+package groups
 
 import (
 	"context"
@@ -39,7 +39,7 @@ type Service struct {
 // GroupScope defines the scope interface for a group service.
 type GroupScope interface {
 	azure.AsyncStatusUpdater
-	ASOGroupSpec() azure.ASOResourceSpecGetter
+	GroupSpec() azure.ASOResourceSpecGetter
 	GetClient() client.Client
 	ClusterName() string
 }
@@ -59,13 +59,13 @@ func (s *Service) Name() string {
 
 // Reconcile idempotently creates or updates a resource group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "asogroups.Service.Reconcile")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Reconcile")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	groupSpec := s.Scope.ASOGroupSpec()
+	groupSpec := s.Scope.GroupSpec()
 	if groupSpec == nil {
 		return nil
 	}
@@ -77,13 +77,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the resource group if it is managed by capz.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "asogroups.Service.Delete")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	groupSpec := s.Scope.ASOGroupSpec()
+	groupSpec := s.Scope.GroupSpec()
 	if groupSpec == nil {
 		return nil
 	}
@@ -96,14 +96,14 @@ func (s *Service) Delete(ctx context.Context) error {
 // IsManaged returns true if the ASO ResourceGroup was created by CAPZ,
 // meaning that the resource group's lifecycle is managed.
 func (s *Service) IsManaged(ctx context.Context) (bool, error) {
-	return aso.IsManaged(ctx, s.Scope.GetClient(), s.Scope.ASOGroupSpec(), s.Scope.ClusterName())
+	return aso.IsManaged(ctx, s.Scope.GetClient(), s.Scope.GroupSpec(), s.Scope.ClusterName())
 }
 
 var _ azure.Pauser = (*Service)(nil)
 
 // Pause implements azure.Pauser.
 func (s *Service) Pause(ctx context.Context) error {
-	groupSpec := s.Scope.ASOGroupSpec()
+	groupSpec := s.Scope.GroupSpec()
 	if groupSpec == nil {
 		return nil
 	}
@@ -124,7 +124,7 @@ func (s *Service) ShouldDeleteIndividualResources(ctx context.Context) bool {
 	// For ASO, "managed" only tells us that we're allowed to delete the ASO
 	// resource. We also need to check that deleting the ASO resource will really
 	// delete the underlying resource group by checking the ASO reconcile-policy.
-	spec := s.Scope.ASOGroupSpec()
+	spec := s.Scope.GroupSpec()
 	group := spec.ResourceRef()
 	err = s.Scope.GetClient().Get(ctx, client.ObjectKeyFromObject(group), group)
 	return err != nil || group.GetAnnotations()[aso.ReconcilePolicyAnnotation] != aso.ReconcilePolicyManage

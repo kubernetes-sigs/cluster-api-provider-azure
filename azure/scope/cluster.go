@@ -32,8 +32,8 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
@@ -417,9 +417,9 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 	return subnetSpecs
 }
 
-// ASOGroupSpec returns the resource group spec.
-func (s *ClusterScope) ASOGroupSpec() azure.ASOResourceSpecGetter {
-	return &asogroups.GroupSpec{
+// GroupSpec returns the resource group spec.
+func (s *ClusterScope) GroupSpec() azure.ASOResourceSpecGetter {
+	return &groups.GroupSpec{
 		Name:           s.ResourceGroup(),
 		Namespace:      s.Namespace(),
 		Location:       s.Location(),

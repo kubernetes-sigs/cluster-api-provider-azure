@@ -37,7 +37,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
@@ -607,7 +607,7 @@ func ShouldDeleteIndividualResources(ctx context.Context, clusterScope *scope.Cl
 		return true
 	}
 
-	return asogroups.New(clusterScope).ShouldDeleteIndividualResources(ctx)
+	return groups.New(clusterScope).ShouldDeleteIndividualResources(ctx)
 }
 
 // GetClusterIdentityFromRef returns the AzureClusterIdentity referenced by the AzureCluster.

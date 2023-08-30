@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
@@ -101,7 +101,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	return &azureClusterService{
 		scope: scope,
 		services: []azure.ServiceReconciler{
-			asogroups.New(scope),
+			groups.New(scope),
 			virtualNetworksSvc,
 			securityGroupsSvc,
 			routeTablesSvc,
@@ -174,7 +174,7 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 			return errors.Wrap(err, "failed to delete peerings")
 		}
 
-		groupSvc, err := s.getService(asogroups.ServiceName)
+		groupSvc, err := s.getService(groups.ServiceName)
 		if err != nil {
 			return errors.Wrap(err, "failed to get group service")
 		}

@@ -16,6 +16,6 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //
-//go:generate ../../../../hack/tools/bin/mockgen -destination groups_mock.go -package mock_asogroups -source ../groups.go GroupScope
+//go:generate ../../../../hack/tools/bin/mockgen -destination groups_mock.go -package mock_groups -source ../groups.go GroupScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt groups_mock.go > _groups_mock.go && mv _groups_mock.go groups_mock.go"
-package mock_asogroups
+package mock_groups

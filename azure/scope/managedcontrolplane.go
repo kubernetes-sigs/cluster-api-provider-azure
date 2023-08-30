@@ -30,7 +30,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
@@ -251,9 +251,9 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 	}
 }
 
-// ASOGroupSpec returns the resource group spec.
-func (s *ManagedControlPlaneScope) ASOGroupSpec() azure.ASOResourceSpecGetter {
-	return &asogroups.GroupSpec{
+// GroupSpec returns the resource group spec.
+func (s *ManagedControlPlaneScope) GroupSpec() azure.ASOResourceSpecGetter {
+	return &groups.GroupSpec{
 		Name:           s.ResourceGroup(),
 		Namespace:      s.Cluster.Namespace,
 		Location:       s.Location(),
