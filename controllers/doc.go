@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 // Run go generate to regenerate this mock.
+//
 //go:generate ../hack/tools/bin/mockgen -destination nodelister_mock.go -package controllers -source azuremanagedmachinepool_reconciler.go Nodelister
 //go:generate /usr/bin/env bash -c "cat ../hack/boilerplate/boilerplate.generatego.txt nodelister_mock.go > _nodelister_mock.go && mv _nodelister_mock.go nodelister_mock.go"
 package controllers
