@@ -150,7 +150,7 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 		activeDirectoryEndpoint string
 		clusterMeta             metav1.ObjectMeta
 		copiedIdentity          metav1.ObjectMeta
-		binding                 metav1.ObjectMeta
+		bindings                []metav1.ObjectMeta
 		expectedErr             bool
 	}{
 		{
@@ -178,9 +178,15 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 				Name:      "cluster-name-my-namespace-test-identity",
 				Namespace: "capz-system",
 			},
-			binding: metav1.ObjectMeta{
-				Name:      "cluster-name-my-namespace-test-identity-binding",
-				Namespace: "capz-system",
+			bindings: []metav1.ObjectMeta{
+				{
+					Name:      "cluster-name-my-namespace-test-identity-binding",
+					Namespace: "capz-system",
+				},
+				{
+					Name:      "cluster-name-my-namespace-test-identity-aso-binding",
+					Namespace: "capz-system",
+				},
 			},
 		},
 		{
@@ -208,9 +214,15 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 				Name:      "cluster-name-my-namespace-test-identity",
 				Namespace: "capz-system",
 			},
-			binding: metav1.ObjectMeta{
-				Name:      "cluster-name-my-namespace-test-identity-binding",
-				Namespace: "capz-system",
+			bindings: []metav1.ObjectMeta{
+				{
+					Name:      "cluster-name-my-namespace-test-identity-binding",
+					Namespace: "capz-system",
+				},
+				{
+					Name:      "cluster-name-my-namespace-test-identity-aso-binding",
+					Namespace: "capz-system",
+				},
 			},
 		},
 		{
@@ -238,9 +250,15 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 				Name:      "cluster-name-my-namespace-test-identity",
 				Namespace: "capz-system",
 			},
-			binding: metav1.ObjectMeta{
-				Name:      "cluster-name-my-namespace-test-identity-binding",
-				Namespace: "capz-system",
+			bindings: []metav1.ObjectMeta{
+				{
+					Name:      "cluster-name-my-namespace-test-identity-binding",
+					Namespace: "capz-system",
+				},
+				{
+					Name:      "cluster-name-my-namespace-test-identity-aso-binding",
+					Namespace: "capz-system",
+				},
 			},
 		},
 		{
@@ -281,9 +299,11 @@ func TestCreateAzureIdentityWithBindings(t *testing.T) {
 				g.Expect(resultIdentity.Spec.ADResourceID).To(Equal(tc.resourceManagerEndpoint))
 				g.Expect(resultIdentity.Spec.ADEndpoint).To(Equal(tc.activeDirectoryEndpoint))
 
-				resultIdentityBinding := &aadpodv1.AzureIdentityBinding{}
-				key = client.ObjectKey{Name: tc.binding.Name, Namespace: tc.binding.Namespace}
-				g.Expect(fakeClient.Get(context.TODO(), key, resultIdentityBinding)).To(Succeed())
+				for _, binding := range tc.bindings {
+					resultIdentityBinding := &aadpodv1.AzureIdentityBinding{}
+					key = client.ObjectKey{Name: binding.Name, Namespace: binding.Namespace}
+					g.Expect(fakeClient.Get(context.TODO(), key, resultIdentityBinding)).To(Succeed())
+				}
 
 				// no error if identity already exists
 				err = createAzureIdentityWithBindings(context.TODO(), tc.identity, tc.resourceManagerEndpoint, tc.activeDirectoryEndpoint, tc.clusterMeta, fakeClient)
