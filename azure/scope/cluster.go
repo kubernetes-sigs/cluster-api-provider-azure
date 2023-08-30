@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
@@ -416,16 +415,6 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 	}
 
 	return subnetSpecs
-}
-
-// GroupSpec returns the resource group spec.
-func (s *ClusterScope) GroupSpec() azure.ResourceSpecGetter {
-	return &groups.GroupSpec{
-		Name:           s.ResourceGroup(),
-		Location:       s.Location(),
-		ClusterName:    s.ClusterName(),
-		AdditionalTags: s.AdditionalTags(),
-	}
 }
 
 // ASOGroupSpec returns the resource group spec.
