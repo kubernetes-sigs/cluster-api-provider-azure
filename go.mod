@@ -43,8 +43,8 @@ require (
 	k8s.io/kubectl v0.26.1
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	sigs.k8s.io/cloud-provider-azure v1.26.7
-	sigs.k8s.io/cluster-api v1.4.5
-	sigs.k8s.io/cluster-api/test v1.4.5
+	sigs.k8s.io/cluster-api v1.4.6
+	sigs.k8s.io/cluster-api/test v1.4.6
 	sigs.k8s.io/controller-runtime v0.14.5
 	sigs.k8s.io/kind v0.20.0
 )
@@ -75,7 +75,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/coredns/caddy v1.1.0 // indirect
-	github.com/coredns/corefile-migration v1.0.20 // indirect
+	github.com/coredns/corefile-migration v1.0.21 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
@@ -163,7 +163,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.13.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
@@ -194,4 +194,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.5
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.6
