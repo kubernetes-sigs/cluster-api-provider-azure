@@ -710,6 +710,17 @@ func validateLBPrivateLinks(lb LoadBalancerSpec, oldLb LoadBalancerSpec, subnets
 		oldPrivateLinksMap[oldPrivateLink.Name] = oldPrivateLink
 	}
 
+	subnetsSet := make(map[string]struct{})
+	var subnetCIDRs []string
+	for _, subnet := range subnets {
+		subnetsSet[subnet.Name] = struct{}{}
+		subnetCIDRs = append(subnetCIDRs, subnet.CIDRBlocks...)
+	}
+	lbFrontendIPSet := make(map[string]struct{})
+	for _, lbFrontendIP := range lb.FrontendIPs {
+		lbFrontendIPSet[lbFrontendIP.Name] = struct{}{}
+	}
+
 	for i, pl := range lb.PrivateLinks {
 		if err := validatePrivateLinkName(pl.Name, fldPath.Child("privateLinks").Index(i).Child("name")); err != nil {
 			allErrs = append(allErrs, err)
@@ -725,26 +736,21 @@ func validateLBPrivateLinks(lb LoadBalancerSpec, oldLb LoadBalancerSpec, subnets
 			lbFrontendIPNamesErrorAdded := map[string]bool{}
 			lbFrontendIPNamesCount := map[string]int{}
 			for j, lbFrontendIPName := range pl.LBFrontendIPConfigNames {
-				lbFrontendIPNameValid := false
-				for _, apiLbFrontendIP := range lb.FrontendIPs {
-					if lbFrontendIPName == apiLbFrontendIP.Name {
-						lbFrontendIPNameValid = true
-						break
-					}
+				if _, lbFrontendIPNameValid := lbFrontendIPSet[lbFrontendIPName]; lbFrontendIPNameValid {
+					// Valid front end IP, so we count how many times it's used.
+					lbFrontendIPNamesCount[lbFrontendIPName]++
+					continue
+				} else if _, errorAlreadyAdded := lbFrontendIPNamesErrorAdded[lbFrontendIPName]; !errorAlreadyAdded {
+					// Invalid front end IP name, we append new error (and mark that we added the error for this front
+					// end IP, so we don't add the same error twice).
+					allErrs = append(
+						allErrs,
+						field.Invalid(
+							fldPath.Child("privateLinks").Index(i).Child("lbFrontendIPConfigNames").Index(j),
+							lbFrontendIPName,
+							"LBFrontendIPConfigName must exist in the API server LoadBalancerSpec.FrontendIPs"))
+					lbFrontendIPNamesErrorAdded[lbFrontendIPName] = true
 				}
-				if !lbFrontendIPNameValid {
-					if _, errorAlreadyAdded := lbFrontendIPNamesErrorAdded[lbFrontendIPName]; !errorAlreadyAdded {
-						allErrs = append(
-							allErrs,
-							field.Invalid(
-								fldPath.Child("privateLinks").Index(i).Child("lbFrontendIPConfigNames").Index(j),
-								lbFrontendIPName,
-								"LBFrontendIPConfigName must exist in the API server LoadBalancerSpec.FrontendIPs"))
-						lbFrontendIPNamesErrorAdded[lbFrontendIPName] = true
-					}
-					break
-				}
-				lbFrontendIPNamesCount[lbFrontendIPName]++
 			}
 
 			for lbFrontendIPConfigName, count := range lbFrontendIPNamesCount {
@@ -779,10 +785,6 @@ func validateLBPrivateLinks(lb LoadBalancerSpec, oldLb LoadBalancerSpec, subnets
 					pl.NATIPConfigurations,
 					"maximum number of NAT IP Configurations is 8 (Azure limit)"))
 		default:
-			var subnetCIDRs []string
-			for _, subnet := range subnets {
-				subnetCIDRs = append(subnetCIDRs, subnet.CIDRBlocks...)
-			}
 			// validate that NAT IP configurations are correct
 			for j, natIPConfig := range pl.NATIPConfigurations {
 				if natIPConfig.Subnet == "" {
@@ -794,14 +796,7 @@ func validateLBPrivateLinks(lb LoadBalancerSpec, oldLb LoadBalancerSpec, subnets
 							"NATIPConfiguration must specify an existing subnet name"))
 					break
 				}
-
-				usesValidSubnet := false
-				for _, subnet := range subnets {
-					if natIPConfig.Subnet == subnet.Name {
-						usesValidSubnet = true
-					}
-				}
-				if !usesValidSubnet {
+				if _, usesValidSubnet := subnetsSet[natIPConfig.Subnet]; !usesValidSubnet {
 					allErrs = append(
 						allErrs,
 						field.Invalid(
