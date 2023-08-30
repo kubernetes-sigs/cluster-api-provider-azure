@@ -60,7 +60,7 @@ type NATIPConfiguration struct {
 	PrivateIPAddress string
 }
 
-// ResourceName returns the name of the NAT gateway.
+// ResourceName returns the name of the private link.
 func (s *PrivateLinkSpec) ResourceName() string {
 	return s.Name
 }
@@ -70,18 +70,50 @@ func (s *PrivateLinkSpec) ResourceGroupName() string {
 	return s.ResourceGroup
 }
 
-// OwnerResourceName is a no-op for NAT gateways.
+// OwnerResourceName is a no-op for private link.
 func (s *PrivateLinkSpec) OwnerResourceName() string {
 	return ""
 }
 
-// Parameters returns the parameters for the NAT gateway.
+// Parameters returns the parameters for the private link.
 func (s *PrivateLinkSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
+	if existing != nil {
+		// Private link already exist, so we have to check if it should be updated.
+		existingPrivateLink, ok := existing.(network.PrivateLinkService)
+		if !ok {
+			return nil, errors.Errorf("%T is not a network.PrivateLinkService", existing)
+		}
+
+		privateLinkToCreate, err := s.parameters()
+		if err != nil {
+			return nil, err
+		}
+
+		if isExistingUpToDate(existingPrivateLink, privateLinkToCreate) {
+			// Existing private link is up-to-date.
+			return nil, nil
+		} else {
+			// Existing private link is outdated, we return new updated parameters.
+			return privateLinkToCreate, nil
+		}
+	}
+
+	// Private link does not exist, so we create it here.
+	privateLinkToCreate, err := s.parameters()
+	if err != nil {
+		return nil, err
+	}
+
+	return privateLinkToCreate, nil
+}
+
+// Parameters returns the parameters for the private link.
+func (s *PrivateLinkSpec) parameters() (params network.PrivateLinkService, err error) {
 	if len(s.NATIPConfiguration) == 0 {
-		return nil, errors.Errorf("At least one private link NAT IP configuration must be specified")
+		return network.PrivateLinkService{}, errors.Errorf("At least one private link NAT IP configuration must be specified")
 	}
 	if len(s.LBFrontendIPConfigNames) == 0 {
-		return nil, errors.Errorf("At least one load balancer front end name must be specified")
+		return network.PrivateLinkService{}, errors.Errorf("At least one load balancer front end name must be specified")
 	}
 
 	// NAT IP configurations
@@ -89,14 +121,14 @@ func (s *PrivateLinkSpec) Parameters(ctx context.Context, existing interface{}) 
 	for i, natIPConfiguration := range s.NATIPConfiguration {
 		ipAllocationMethod := network.IPAllocationMethod(natIPConfiguration.AllocationMethod)
 		if ipAllocationMethod != network.Dynamic && ipAllocationMethod != network.Static {
-			return nil, errors.Errorf("%T is not a supported network.IPAllocationMethodStatic", natIPConfiguration.AllocationMethod)
+			return network.PrivateLinkService{}, errors.Errorf("%T is not a supported network.IPAllocationMethodStatic", natIPConfiguration.AllocationMethod)
 		}
 		var privateIPAddress *string
 		if ipAllocationMethod == network.Static {
 			if natIPConfiguration.PrivateIPAddress != "" {
 				privateIPAddress = ptr.To(natIPConfiguration.PrivateIPAddress)
 			} else {
-				return nil, errors.Errorf("Private link NAT IP configuration with static IP allocation must specify a private address")
+				return network.PrivateLinkService{}, errors.Errorf("Private link NAT IP configuration with static IP allocation must specify a private address")
 			}
 		}
 		ipConfiguration := network.PrivateLinkServiceIPConfiguration{
@@ -146,17 +178,6 @@ func (s *PrivateLinkSpec) Parameters(ctx context.Context, existing interface{}) 
 	if len(s.AutoApprovedSubscriptions) > 0 {
 		privateLinkToCreate.AutoApproval = &network.PrivateLinkServicePropertiesAutoApproval{
 			Subscriptions: &s.AutoApprovedSubscriptions,
-		}
-	}
-
-	if existing != nil {
-		existingPrivateLink, ok := existing.(network.PrivateLinkService)
-		if !ok {
-			return nil, errors.Errorf("%T is not a network.PrivateLinkService", existing)
-		}
-
-		if isExistingUpToDate(existingPrivateLink, privateLinkToCreate) {
-			return nil, nil
 		}
 	}
 

@@ -415,10 +415,10 @@ type PrivateLinkNATIPConfiguration struct {
 type PrivateLinkNATIPAllocationMethod string
 
 const (
-	// NATIPAllocationMethodStatic ...
+	// NATIPAllocationMethodStatic specifies that NAT IP for private link is allocated statically (manually set by user).
 	NATIPAllocationMethodStatic PrivateLinkNATIPAllocationMethod = "Static"
 
-	// NATIPAllocationMethodDynamic ...
+	// NATIPAllocationMethodDynamic specifies that NAT IP for private link is allocated dynamically (by Azure).
 	NATIPAllocationMethodDynamic PrivateLinkNATIPAllocationMethod = "Dynamic"
 )
 

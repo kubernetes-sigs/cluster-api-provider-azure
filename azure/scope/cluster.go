@@ -1107,7 +1107,7 @@ func (s *ClusterScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
 	// Other load balancers (ControlPlaneOutboundLB and NodeOutboundLB) are outbound, so we cannot create private links
 	// for those.
 	privateLinks := s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks
-	privateLinksSpecs := make([]azure.ResourceSpecGetter, len(privateLinks))
+	privateLinksSpecs := make([]azure.ResourceSpecGetter, 0, len(privateLinks))
 
 	for _, privateLink := range privateLinks {
 		privateLinkSpec := privatelinks.PrivateLinkSpec{

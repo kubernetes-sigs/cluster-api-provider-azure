@@ -30,11 +30,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+// azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	privateLinks network.PrivateLinkServicesClient
 }
 
-// newClient creates a new azureClient.
+// newClient creates a new private links client from subscription ID.
 func newClient(auth azure.Authorizer) *azureClient {
 	c := newPrivateLinksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &azureClient{c}
@@ -55,6 +56,9 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	return ac.privateLinks.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
 }
 
+// CreateOrUpdateAsync creates or updates a private link asynchronously.
+// It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// progress of the operation.
 func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatelinks.azureClient.CreateOrUpdateAsync")
 	defer done()
@@ -83,6 +87,9 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	return result, nil, err
 }
 
+// DeleteAsync deletes a private link asynchronously. DeleteAsync sends a DELETE
+// request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// progress of the operation.
 func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatelinks.azureClient.DeleteAsync")
 	defer done()
@@ -106,6 +113,7 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	return nil, err
 }
 
+// IsDone returns true if the long-running operation has completed.
 func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDOne bool, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatelinks.azureClient.IsDone")
 	defer done()
@@ -113,6 +121,7 @@ func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 	return future.DoneWithContext(ctx, ac.privateLinks)
 }
 
+// Result fetches the result of a long-running operation future.
 func (ac *azureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
 	_, _, done := tele.StartSpanWithLogger(ctx, "privatelinks.azureClient.Result")
 	defer done()

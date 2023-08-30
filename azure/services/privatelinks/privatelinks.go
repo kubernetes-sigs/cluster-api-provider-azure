@@ -98,7 +98,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	// We go through the list of PrivateLinkSpecs to delete each one, independently of the resultingErr of the previous one.
 	// If multiple errors occur, we return the most pressing one.
-	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (ie. error creating) -> operationNotDoneError (ie. creating in progress) -> no error (ie. created)
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var resultingErr error
 	for _, privateLinkSpec := range specs {
 		if err := s.DeleteResource(ctx, privateLinkSpec, ServiceName); err != nil {
