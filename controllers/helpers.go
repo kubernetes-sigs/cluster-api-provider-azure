@@ -38,7 +38,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
@@ -607,13 +606,7 @@ func ShouldDeleteIndividualResources(ctx context.Context, clusterScope *scope.Cl
 	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
 		return true
 	}
-	if clusterScope.UseLegacyGroups {
-		grpSvc := groups.New(clusterScope)
-		managed, err := grpSvc.IsManaged(ctx)
-		// Since this is a best effort attempt to speed up delete, we don't fail the delete if we can't get the RG status.
-		// Instead, take the long way and delete all resources one by one.
-		return err != nil || !managed
-	}
+
 	return asogroups.New(clusterScope).ShouldDeleteIndividualResources(ctx)
 }
 
