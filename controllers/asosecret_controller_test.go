@@ -72,6 +72,15 @@ func TestASOSecretReconcile(t *testing.T) {
 				}),
 			},
 		},
+		"should not fail for AzureCluster without ownerRef set yet": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.ObjectMeta.OwnerReferences = nil
+				}),
+				defaultCluster,
+			},
+		},
 		"should reconcile normally for AzureCluster with IdentityRef configured": {
 			clusterName: defaultAzureCluster.Name,
 			objects: []runtime.Object{
