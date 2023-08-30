@@ -47,8 +47,8 @@ require (
 	k8s.io/kubectl v0.27.2
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/cloud-provider-azure v1.27.7
-	sigs.k8s.io/cluster-api v1.5.0
-	sigs.k8s.io/cluster-api/test v1.5.0
+	sigs.k8s.io/cluster-api v1.5.1
+	sigs.k8s.io/cluster-api/test v1.5.1
 	sigs.k8s.io/controller-runtime v0.15.1
 	sigs.k8s.io/kind v0.20.0
 )
@@ -81,7 +81,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/coredns/caddy v1.1.0 // indirect
-	github.com/coredns/corefile-migration v1.0.20 // indirect
+	github.com/coredns/corefile-migration v1.0.21 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
@@ -202,4 +202,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.0
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.1

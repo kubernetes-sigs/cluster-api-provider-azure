@@ -163,7 +163,6 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool
 	if !useExistingCluster {
 		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(context.TODO(), bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 			Name:               config.ManagementClusterName,
-			KubernetesVersion:  "v1.27.3", // TODO: Remove this when a CAPI release has updated `DefaultNodeImageVersion`.
 			RequiresDockerSock: config.HasDockerProvider(),
 			Images:             config.Images,
 		})
