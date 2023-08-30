@@ -22,7 +22,8 @@ package e2e
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-03-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -43,14 +44,15 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	auth, err := settings.GetAuthorizer()
 	Expect(err).NotTo(HaveOccurred())
 	mgmtClient := bootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
-	containerserviceClient := containerservice.NewManagedClustersClient(subscriptionID)
-	containerserviceClient.Authorizer = auth
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	Expect(err).NotTo(HaveOccurred())
+	containerserviceClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
-	var expectedAksExpander containerservice.Expander
+	var expectedAksExpander armcontainerservice.Expander
 	var newExpanderValue infrav1.Expander
 	var amcpInitialAutoScalerProfile = &infrav1.AutoScalerProfile{}
 	amcp := &infrav1.AzureManagedControlPlane{}
@@ -62,16 +64,16 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 		g.Expect(err).NotTo(HaveOccurred())
 		amcpInitialAutoScalerProfile = amcp.Spec.AutoScalerProfile
 
-		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name)
+		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name, nil)
 		g.Expect(err).NotTo(HaveOccurred())
-		aksInitialAutoScalerProfile := aks.AutoScalerProfile
+		aksInitialAutoScalerProfile := aks.Properties.AutoScalerProfile
 
 		// Conditional is based off of the actual AKS settings not the AzureManagedControlPlane
 		if aksInitialAutoScalerProfile == nil {
-			expectedAksExpander = containerservice.ExpanderLeastWaste
+			expectedAksExpander = armcontainerservice.ExpanderLeastWaste
 			newExpanderValue = infrav1.ExpanderLeastWaste
-		} else if aksInitialAutoScalerProfile.Expander == containerservice.ExpanderLeastWaste {
-			expectedAksExpander = containerservice.ExpanderMostPods
+		} else if aksInitialAutoScalerProfile.Expander == ptr.To(armcontainerservice.ExpanderLeastWaste) {
+			expectedAksExpander = armcontainerservice.ExpanderMostPods
 			newExpanderValue = infrav1.ExpanderMostPods
 		}
 
@@ -107,10 +109,10 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 	By("Verifying the cluster-autoscaler settings have changed")
 	Eventually(func(g Gomega) {
 		// Check that the autoscaler settings have been sync'd to AKS
-		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name)
+		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name, nil)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(aks.AutoScalerProfile).ToNot(BeNil())
-		g.Expect(aks.AutoScalerProfile.Expander).To(Equal(expectedAksExpander))
+		g.Expect(aks.Properties.AutoScalerProfile).ToNot(BeNil())
+		g.Expect(aks.Properties.AutoScalerProfile.Expander).To(Equal(&expectedAksExpander))
 	}, input.WaitIntervals...).Should(Succeed())
 
 	Eventually(func(g Gomega) {

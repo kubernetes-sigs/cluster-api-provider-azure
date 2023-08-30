@@ -44,10 +44,14 @@ type azureManagedControlPlaneService struct {
 }
 
 // newAzureManagedControlPlaneReconciler populates all the services based on input scope.
-func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedControlPlaneService {
+func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope) (*azureManagedControlPlaneService, error) {
 	var groupsService azure.ServiceReconciler = asogroups.New(scope)
 	if scope.UseLegacyGroups {
 		groupsService = groups.New(scope)
+	}
+	managedClustersService, err := managedclusters.New(scope)
+	if err != nil {
+		return nil, err
 	}
 	return &azureManagedControlPlaneService{
 		kubeclient: scope.Client,
@@ -56,12 +60,12 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 			groupsService,
 			virtualnetworks.New(scope),
 			subnets.New(scope),
-			managedclusters.New(scope),
+			managedClustersService,
 			privateendpoints.New(scope),
 			tags.New(scope),
 			resourcehealth.New(scope),
 		},
-	}
+	}, nil
 }
 
 // Reconcile reconciles all the services in a predetermined order.

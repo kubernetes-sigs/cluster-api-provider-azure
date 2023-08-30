@@ -29,6 +29,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -116,6 +118,90 @@ func TestPerCallPolicies(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	defer resp.Body.Close()
 	g.Expect(resp.StatusCode).To(Equal(http.StatusOK))
+}
+
+func TestCustomPutPatchHeaderPolicy(t *testing.T) {
+	testHeaders := map[string]string{
+		"X-Test-Header":  "test-value",
+		"X-Test-Header2": "test-value2",
+	}
+	testcases := []struct {
+		name     string
+		method   string
+		headers  map[string]string
+		expected map[string]string
+	}{
+		{
+			name:     "should add custom headers to PUT request",
+			method:   http.MethodPut,
+			headers:  testHeaders,
+			expected: testHeaders,
+		},
+		{
+			name:     "should add custom headers to PATCH request",
+			method:   http.MethodPatch,
+			headers:  testHeaders,
+			expected: testHeaders,
+		},
+		{
+			name:   "should skip empty custom headers for PUT request",
+			method: http.MethodPut,
+		},
+		{
+			name:   "should skip empty custom headers for PATCH request",
+			method: http.MethodPatch,
+		},
+		{
+			name:   "should skip empty custom headers for GET request",
+			method: http.MethodGet,
+		},
+		{
+			name:    "should not add custom headers to GET request",
+			method:  http.MethodGet,
+			headers: testHeaders,
+		},
+		{
+			name:    "should not add custom headers to POST request",
+			method:  http.MethodPost,
+			headers: testHeaders,
+		},
+	}
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			// This server will check that custom headers are set correctly.
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				for k, v := range tc.expected {
+					g.Expect(r.Header.Get(k)).To(Equal(v))
+				}
+				fmt.Fprintf(w, "Hello, %s", r.Proto)
+			}))
+			defer server.Close()
+
+			// Create options with a custom PUT/PATCH header per-call policy
+			getterMock := mock_azure.NewMockResourceSpecGetterWithHeaders(mockCtrl)
+			getterMock.EXPECT().CustomHeaders().Return(tc.headers).AnyTimes()
+			opts, err := ARMClientOptions("", CustomPutPatchHeaderPolicy{Getter: getterMock})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			// Create a request
+			req, err := runtime.NewRequest(context.Background(), tc.method, server.URL)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			// Create a pipeline and send the request to the test server for validation.
+			pipeline := defaultTestPipeline(opts.PerCallPolicies)
+			resp, err := pipeline.Do(req)
+			g.Expect(err).NotTo(HaveOccurred())
+			defer resp.Body.Close()
+			g.Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+	}
 }
 
 func defaultTestPipeline(policies []policy.Policy) runtime.Pipeline {

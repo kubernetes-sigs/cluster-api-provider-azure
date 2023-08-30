@@ -279,7 +279,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 			}
 
 			if reconcileError.IsTransient() {
-				log.V(4).Info("requeuing due to transient transient failure", "error", err)
+				log.V(4).Info("requeuing due to transient failure", "error", err)
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 
