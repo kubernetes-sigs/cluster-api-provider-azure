@@ -35,8 +35,6 @@ settings.update(read_yaml(
     default = {},
 ))
 
-os_arch = str(local("go env GOARCH")).rstrip("\n")
-
 if settings.get("trigger_mode") == "manual":
     trigger_mode(TRIGGER_MODE_MANUAL)
 
@@ -45,6 +43,8 @@ if "allowed_contexts" in settings:
 
 if "default_registry" in settings:
     default_registry(settings.get("default_registry"))
+
+os_arch = str(local("go env GOARCH")).rstrip("\n")
 
 # deploy CAPI
 def deploy_capi():
