@@ -1,0 +1,40 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
+      controllerManager:
+        extraArgs:
+          allocate-node-cidrs: "false"
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+          cluster-name: ${CLUSTER_NAME}
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
