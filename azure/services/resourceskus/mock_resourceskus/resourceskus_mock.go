@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,10 +52,10 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // List mocks base method.
-func (m *MockClient) List(arg0 context.Context, arg1 string) ([]compute.ResourceSku, error) {
+func (m *MockClient) List(arg0 context.Context, arg1 string) ([]armcompute.ResourceSKU, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0, arg1)
-	ret0, _ := ret[0].([]compute.ResourceSku)
+	ret0, _ := ret[0].([]armcompute.ResourceSKU)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

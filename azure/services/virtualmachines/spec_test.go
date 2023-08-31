@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/google/go-cmp/cmp"
@@ -35,10 +36,10 @@ var (
 	validSKU = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v3"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"test-location",
+		Locations: []*string{
+			ptr.To("test-location"),
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.VCPUs),
 				Value: ptr.To("2"),
@@ -53,10 +54,10 @@ var (
 	validSKUWithEncryptionAtHost = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v3"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"test-location",
+		Locations: []*string{
+			ptr.To("test-location"),
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.VCPUs),
 				Value: ptr.To("2"),
@@ -75,10 +76,10 @@ var (
 	validSKUWithTrustedLaunchDisabled = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v3"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"test-location",
+		Locations: []*string{
+			ptr.To("test-location"),
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.VCPUs),
 				Value: ptr.To("2"),
@@ -97,10 +98,10 @@ var (
 	validSKUWithConfidentialComputingType = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v3"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"test-location",
+		Locations: []*string{
+			ptr.To("test-location"),
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.VCPUs),
 				Value: ptr.To("2"),
@@ -119,10 +120,10 @@ var (
 	validSKUWithEphemeralOS = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v3"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"test-location",
+		Locations: []*string{
+			ptr.To("test-location"),
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.VCPUs),
 				Value: ptr.To("2"),
@@ -141,27 +142,27 @@ var (
 	validSKUWithUltraSSD = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v3"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"test-location",
+		Locations: []*string{
+			ptr.To("test-location"),
 		},
-		LocationInfo: &[]compute.ResourceSkuLocationInfo{
+		LocationInfo: []*armcompute.ResourceSKULocationInfo{
 			{
 				Location: ptr.To("test-location"),
-				Zones:    &[]string{"1"},
-				ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+				Zones:    []*string{ptr.To("1")},
+				ZoneDetails: []*armcompute.ResourceSKUZoneDetails{
 					{
-						Capabilities: &[]compute.ResourceSkuCapabilities{
+						Capabilities: []*armcompute.ResourceSKUCapabilities{
 							{
 								Name:  ptr.To("UltraSSDAvailable"),
 								Value: ptr.To("True"),
 							},
 						},
-						Name: &[]string{"1"},
+						Name: []*string{ptr.To("1")},
 					},
 				},
 			},
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.VCPUs),
 				Value: ptr.To("2"),
@@ -176,10 +177,10 @@ var (
 	invalidCPUSKU = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v3"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"test-location",
+		Locations: []*string{
+			ptr.To("test-location"),
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.VCPUs),
 				Value: ptr.To("1"),
@@ -194,10 +195,10 @@ var (
 	invalidMemSKU = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v3"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"test-location",
+		Locations: []*string{
+			ptr.To("test-location"),
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.VCPUs),
 				Value: ptr.To("2"),

@@ -20,12 +20,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
+	"k8s.io/utils/ptr"
 )
 
 // SKU is a thin layer over the Azure resource SKU API to better introspect capabilities.
-type SKU compute.ResourceSku
+type SKU armcompute.ResourceSKU
 
 // ResourceType models available resource types as a set of known string constants.
 type ResourceType string
@@ -82,7 +83,7 @@ const (
 // "AcceleratedNetworkingEnabled", and "RdmaEnabled".
 func (s SKU) HasCapability(name string) bool {
 	if s.Capabilities != nil {
-		for _, capability := range *s.Capabilities {
+		for _, capability := range s.Capabilities {
 			if capability.Name != nil && *capability.Name == name {
 				if capability.Value != nil && strings.EqualFold(*capability.Value, string(CapabilitySupported)) {
 					return true
@@ -106,7 +107,7 @@ func (s SKU) HasCapabilityWithCapacity(name string, value int64) (bool, error) {
 		return false, nil
 	}
 
-	for _, capability := range *s.Capabilities {
+	for _, capability := range s.Capabilities {
 		if capability.Name == nil || *capability.Name != name || capability.Value == nil {
 			continue
 		}
@@ -128,7 +129,7 @@ func (s SKU) HasCapabilityWithCapacity(name string, value int64) (bool, error) {
 // Eg. MaximumPlatformFaultDomainCount -> "3" will return "3" for the capability "MaximumPlatformFaultDomainCount".
 func (s SKU) GetCapability(name string) (string, bool) {
 	if s.Capabilities != nil {
-		for _, capability := range *s.Capabilities {
+		for _, capability := range s.Capabilities {
 			if capability.Name != nil && *capability.Name == name {
 				return *capability.Value, true
 			}
@@ -143,27 +144,24 @@ func (s SKU) HasLocationCapability(capabilityName, location, zone string) bool {
 		return false
 	}
 
-	for _, info := range *s.LocationInfo {
+	for _, info := range s.LocationInfo {
 		if info.Location == nil || *info.Location != location || info.ZoneDetails == nil {
 			continue
 		}
 
-		for _, zoneDetail := range *info.ZoneDetails {
+		for _, zoneDetail := range info.ZoneDetails {
 			if zoneDetail.Capabilities == nil {
 				continue
 			}
 
-			for _, capability := range *zoneDetail.Capabilities {
+			for _, capability := range zoneDetail.Capabilities {
 				if capability.Name != nil && *capability.Name == capabilityName {
-					if zoneDetail.Name == nil {
-						return false
-					}
-
-					for _, name := range *zoneDetail.Name {
-						if name == zone {
+					for _, name := range zoneDetail.Name {
+						if ptr.Deref(name, "") == zone {
 							return true
 						}
 					}
+
 					return false
 				}
 			}
