@@ -19,11 +19,12 @@ package availabilitysets
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -42,19 +43,23 @@ type AvailabilitySetScope interface {
 type Service struct {
 	Scope AvailabilitySetScope
 	async.Getter
-	async.Reconciler
+	asyncpoller.Reconciler
 	resourceSKUCache *resourceskus.Cache
 }
 
 // New creates a new availability sets service.
-func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) *Service {
-	client := NewClient(scope)
+func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) (*Service, error) {
+	client, err := NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Scope:            scope,
 		Getter:           client,
 		resourceSKUCache: skuCache,
-		Reconciler:       async.New(scope, client, client),
-	}
+		Reconciler: asyncpoller.New[armcompute.AvailabilitySetsClientCreateOrUpdateResponse,
+			armcompute.AvailabilitySetsClientDeleteResponse](scope, client, client),
+	}, nil
 }
 
 // Name returns the service name.
@@ -103,12 +108,12 @@ func (s *Service) Delete(ctx context.Context) error {
 			resultingErr = errors.Wrapf(err, "failed to get availability set %s in resource group %s", setSpec.ResourceName(), setSpec.ResourceGroupName())
 		}
 	} else {
-		availabilitySet, ok := existingSet.(compute.AvailabilitySet)
+		availabilitySet, ok := existingSet.(armcompute.AvailabilitySet)
 		if !ok {
-			resultingErr = errors.Errorf("%T is not a compute.AvailabilitySet", existingSet)
+			resultingErr = errors.Errorf("%T is not an armcompute.AvailabilitySet", existingSet)
 		} else {
 			// only delete when the availability set does not have any vms
-			if availabilitySet.AvailabilitySetProperties != nil && availabilitySet.VirtualMachines != nil && len(*availabilitySet.VirtualMachines) > 0 {
+			if availabilitySet.Properties != nil && len(availabilitySet.Properties.VirtualMachines) > 0 {
 				log.V(2).Info("skip deleting availability set with VMs", "availability set", setSpec.ResourceName())
 			} else {
 				resultingErr = s.DeleteResource(ctx, setSpec, serviceName)

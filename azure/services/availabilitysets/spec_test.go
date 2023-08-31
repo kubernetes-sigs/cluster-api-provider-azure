@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
@@ -68,8 +68,8 @@ func TestParameters(t *testing.T) {
 			spec:     &fakeSetSpec,
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.AvailabilitySet{}))
-				g.Expect(result.(compute.AvailabilitySet).PlatformFaultDomainCount).To(Equal(ptr.To[int32](int32(fakeFaultDomainCount))))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.AvailabilitySet{}))
+				g.Expect(result.(armcompute.AvailabilitySet).Properties.PlatformFaultDomainCount).To(Equal(ptr.To[int32](int32(fakeFaultDomainCount))))
 			},
 			expectedError: "",
 		},
