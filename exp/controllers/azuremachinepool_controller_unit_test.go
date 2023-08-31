@@ -50,6 +50,8 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().BaseURI().AnyTimes()
 	clusterMock.EXPECT().Authorizer().AnyTimes()
+	clusterMock.EXPECT().CloudEnvironment().AnyTimes()
+	clusterMock.EXPECT().Token().AnyTimes()
 	clusterMock.EXPECT().Location().Return(cluster.Spec.Location)
 	clusterMock.EXPECT().HashKey().Return("fakeCluster")
 
