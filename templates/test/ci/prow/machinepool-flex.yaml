@@ -32,7 +32,6 @@ spec:
     rollingUpdate:
       maxSurge: 0%
       maxUnavailable: 0
-      deletePolicy:
   template:
     vmSize: ${AZURE_NODE_MACHINE_TYPE}
     osDisk:

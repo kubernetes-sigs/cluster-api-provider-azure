@@ -171,6 +171,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				ClusterctlConfigPath:  clusterctlConfigPath,
 				BootstrapClusterProxy: bootstrapClusterProxy,
 				ArtifactFolder:        artifactFolder,
+				Flavor:                ptr.To(""),
 				SkipCleanup:           skipCleanup,
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,

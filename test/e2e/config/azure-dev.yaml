@@ -171,7 +171,7 @@ variables:
   # the management cluster to be upgraded.
   INIT_WITH_BINARY: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/clusterctl-{OS}-{ARCH}"
   INIT_WITH_PROVIDERS_CONTRACT: "v1beta1"
-  INIT_WITH_KUBERNETES_VERSION: "v1.23.13"
+  INIT_WITH_KUBERNETES_VERSION: "v1.26.7"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   SECURITY_SCAN_FAIL_THRESHOLD: "${SECURITY_SCAN_FAIL_THRESHOLD:-100}"

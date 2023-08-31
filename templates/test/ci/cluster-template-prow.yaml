@@ -537,7 +537,6 @@ spec:
   orchestrationMode: Flexible
   strategy:
     rollingUpdate:
-      deletePolicy: null
       maxSurge: 0%
       maxUnavailable: 0
     type: RollingUpdate
@@ -606,7 +605,6 @@ spec:
   orchestrationMode: Flexible
   strategy:
     rollingUpdate:
-      deletePolicy: null
       maxSurge: 0%
       maxUnavailable: 0
     type: RollingUpdate
