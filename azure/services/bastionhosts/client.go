@@ -66,7 +66,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	defer done()
 
 	host, ok := parameters.(armnetwork.BastionHost)
-	if !ok {
+	if !ok && parameters != nil {
 		return nil, nil, errors.Errorf("%T is not an armnetwork.BastionHost", parameters)
 	}
 
