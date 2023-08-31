@@ -150,7 +150,7 @@ var _ = Describe("Workload cluster creation", func() {
 	if os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
 		// This spec expects a user-assigned identity with Contributor role assignment named "cloud-provider-user-identity" in a "capz-ci"
 		// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
-		Context("Creating a private cluster [OPTIONAL]", func() {
+		Context("Creating a private cluster with i-tree cloud-provider [OPTIONAL]", func() {
 			It("Creates a public management cluster in a custom vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
 				By("Creating a custom virtual network", func() {
