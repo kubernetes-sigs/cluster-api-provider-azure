@@ -22,13 +22,13 @@ import (
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups/mock_groups"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -261,7 +261,7 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 							infrav1.OwnedByClusterLabelKey: "cluster",
 						},
 						Annotations: map[string]string{
-							aso.ReconcilePolicyAnnotation: aso.ReconcilePolicySkip,
+							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 						},
 					},
 				},
@@ -286,7 +286,7 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 							infrav1.OwnedByClusterLabelKey: "cluster",
 						},
 						Annotations: map[string]string{
-							aso.ReconcilePolicyAnnotation: aso.ReconcilePolicyManage,
+							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 						},
 					},
 				},

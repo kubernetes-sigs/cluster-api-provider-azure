@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	asoconfig "github.com/Azure/azure-service-operator/v2/pkg/common/config"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -265,7 +266,7 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 			},
 		},
 		Data: map[string][]byte{
-			"AZURE_SUBSCRIPTION_ID": []byte(azureClient.SubscriptionID()),
+			asoconfig.AzureSubscriptionID: []byte(azureClient.SubscriptionID()),
 		},
 	}
 
@@ -283,16 +284,16 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 		return nil, errors.Wrap(err, "failed to retrieve AzureClusterIdentity")
 	}
 
-	newASOSecret.Data["AZURE_TENANT_ID"] = []byte(identity.Spec.TenantID)
-	newASOSecret.Data["AZURE_CLIENT_ID"] = []byte(identity.Spec.ClientID)
+	newASOSecret.Data[asoconfig.AzureTenantID] = []byte(identity.Spec.TenantID)
+	newASOSecret.Data[asoconfig.AzureClientID] = []byte(identity.Spec.ClientID)
 
 	// If the identity type is WorkloadIdentity or UserAssignedMSI, then we don't need to fetch the secret so return early
 	if identity.Spec.Type == infrav1.WorkloadIdentity {
-		newASOSecret.Data["AUTH_MODE"] = []byte("workloadidentity")
+		newASOSecret.Data[asoconfig.AuthMode] = []byte(asoconfig.WorkloadIdentityAuthMode)
 		return newASOSecret, nil
 	}
 	if identity.Spec.Type == infrav1.UserAssignedMSI {
-		newASOSecret.Data["AUTH_MODE"] = []byte("podidentity")
+		newASOSecret.Data[asoconfig.AuthMode] = []byte(asoconfig.PodIdentityAuthMode)
 		return newASOSecret, nil
 	}
 
@@ -309,10 +310,10 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 
 	switch identity.Spec.Type {
 	case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
-		newASOSecret.Data["AZURE_CLIENT_SECRET"] = identitySecret.Data[scope.AzureSecretKey]
+		newASOSecret.Data[asoconfig.AzureClientSecret] = identitySecret.Data[scope.AzureSecretKey]
 	case infrav1.ServicePrincipalCertificate:
-		newASOSecret.Data["AZURE_CLIENT_CERTIFICATE"] = identitySecret.Data["certificate"]
-		newASOSecret.Data["AZURE_CLIENT_CERTIFICATE_PASSWORD"] = identitySecret.Data["password"]
+		newASOSecret.Data[asoconfig.AzureClientCertificate] = identitySecret.Data["certificate"]
+		newASOSecret.Data[asoconfig.AzureClientCertificatePassword] = identitySecret.Data["password"]
 	}
 	return newASOSecret, nil
 }

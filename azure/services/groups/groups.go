@@ -19,6 +19,7 @@ package groups
 import (
 	"context"
 
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
@@ -127,5 +128,5 @@ func (s *Service) ShouldDeleteIndividualResources(ctx context.Context) bool {
 	spec := s.Scope.GroupSpec()
 	group := spec.ResourceRef()
 	err = s.Scope.GetClient().Get(ctx, client.ObjectKeyFromObject(group), group)
-	return err != nil || group.GetAnnotations()[aso.ReconcilePolicyAnnotation] != aso.ReconcilePolicyManage
+	return err != nil || group.GetAnnotations()[asoannotations.ReconcilePolicy] != string(asoannotations.ReconcilePolicyManage)
 }

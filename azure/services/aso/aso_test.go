@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	. "github.com/onsi/gomega"
@@ -148,8 +149,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			infrav1.OwnedByClusterLabelKey: clusterName,
 		}))
 		g.Expect(created.Annotations).To(Equal(map[string]string{
-			ReconcilePolicyAnnotation: ReconcilePolicySkip,
-			SecretNameAnnotation:      "cluster-aso-secret",
+			asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicySkip),
+			asoannotations.PerResourceSecret: "cluster-aso-secret",
 		}))
 		g.Expect(created.Spec).To(Equal(asoresourcesv1.ResourceGroup_Spec{
 			Location: ptr.To("location"),
@@ -404,7 +405,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
 				Annotations: map[string]string{
-					ReconcilePolicyAnnotation: ReconcilePolicySkip,
+					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
@@ -425,8 +426,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		updated := &asoresourcesv1.ResourceGroup{}
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
 		g.Expect(updated.Annotations).To(Equal(map[string]string{
-			ReconcilePolicyAnnotation: ReconcilePolicyManage,
-			SecretNameAnnotation:      "cluster-aso-secret",
+			asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
+			asoannotations.PerResourceSecret: "cluster-aso-secret",
 		}))
 	})
 
@@ -463,7 +464,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
 				Annotations: map[string]string{
-					ReconcilePolicyAnnotation: ReconcilePolicySkip,
+					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
@@ -483,8 +484,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		updated := &asoresourcesv1.ResourceGroup{}
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
 		g.Expect(updated.Annotations).To(Equal(map[string]string{
-			ReconcilePolicyAnnotation: ReconcilePolicyManage,
-			SecretNameAnnotation:      "cluster-aso-secret",
+			asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
+			asoannotations.PerResourceSecret: "cluster-aso-secret",
 		}))
 	})
 
@@ -605,8 +606,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
 				Annotations: map[string]string{
-					ReconcilePolicyAnnotation: ReconcilePolicyManage,
-					SecretNameAnnotation:      "cluster-aso-secret",
+					asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
+					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
 			},
 			Spec: asoresourcesv1.ResourceGroup_Spec{
@@ -724,7 +725,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
 				Annotations: map[string]string{
-					ReconcilePolicyAnnotation: ReconcilePolicyManage,
+					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
@@ -783,8 +784,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
 				Annotations: map[string]string{
-					ReconcilePolicyAnnotation: ReconcilePolicyManage,
-					tagsLastAppliedAnnotation: "{",
+					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
+					tagsLastAppliedAnnotation:      "{",
 				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
@@ -834,8 +835,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
 				Annotations: map[string]string{
-					PrePauseReconcilePolicyAnnotation: ReconcilePolicyManage,
-					ReconcilePolicyAnnotation:         ReconcilePolicySkip,
+					prePauseReconcilePolicyAnnotation: string(asoannotations.ReconcilePolicyManage),
+					asoannotations.ReconcilePolicy:    string(asoannotations.ReconcilePolicySkip),
 				},
 			},
 			Spec: asoresourcesv1.ResourceGroup_Spec{
@@ -857,8 +858,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		updated := &asoresourcesv1.ResourceGroup{}
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
-		g.Expect(updated.Annotations).NotTo(HaveKey(PrePauseReconcilePolicyAnnotation))
-		g.Expect(updated.Annotations).To(HaveKeyWithValue(ReconcilePolicyAnnotation, ReconcilePolicyManage))
+		g.Expect(updated.Annotations).NotTo(HaveKey(prePauseReconcilePolicyAnnotation))
+		g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicyManage)))
 	})
 }
 
@@ -1052,7 +1053,7 @@ func TestPauseResource(t *testing.T) {
 							Name:      "name",
 							Namespace: "namespace",
 							Annotations: map[string]string{
-								ReconcilePolicyAnnotation: ReconcilePolicyManage,
+								asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 							},
 							Labels: map[string]string{
 								infrav1.OwnedByClusterLabelKey: clusterName,
@@ -1065,8 +1066,8 @@ func TestPauseResource(t *testing.T) {
 				ctx := context.Background()
 				actual := &asoresourcesv1.ResourceGroup{}
 				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
-				g.Expect(actual.Annotations).To(HaveKeyWithValue(PrePauseReconcilePolicyAnnotation, ReconcilePolicyManage))
-				g.Expect(actual.Annotations).To(HaveKeyWithValue(ReconcilePolicyAnnotation, ReconcilePolicySkip))
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(prePauseReconcilePolicyAnnotation, string(asoannotations.ReconcilePolicyManage)))
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip)))
 			},
 		},
 		{
@@ -1089,7 +1090,7 @@ func TestPauseResource(t *testing.T) {
 							Name:      "name",
 							Namespace: "namespace",
 							Annotations: map[string]string{
-								ReconcilePolicyAnnotation: ReconcilePolicySkip,
+								asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 							},
 							Labels: map[string]string{
 								infrav1.OwnedByClusterLabelKey: clusterName,
@@ -1102,8 +1103,8 @@ func TestPauseResource(t *testing.T) {
 				ctx := context.Background()
 				actual := &asoresourcesv1.ResourceGroup{}
 				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
-				g.Expect(actual.Annotations).To(HaveKeyWithValue(PrePauseReconcilePolicyAnnotation, ReconcilePolicySkip))
-				g.Expect(actual.Annotations).To(HaveKeyWithValue(ReconcilePolicyAnnotation, ReconcilePolicySkip))
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(prePauseReconcilePolicyAnnotation, string(asoannotations.ReconcilePolicySkip)))
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip)))
 			},
 		},
 		{
@@ -1145,7 +1146,7 @@ func TestPauseResource(t *testing.T) {
 							Name:      "name",
 							Namespace: "namespace",
 							Annotations: map[string]string{
-								ReconcilePolicyAnnotation: ReconcilePolicySkip,
+								asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 							},
 							Labels: map[string]string{
 								infrav1.OwnedByClusterLabelKey: clusterName,
@@ -1177,7 +1178,7 @@ func TestPauseResource(t *testing.T) {
 							Name:      "name",
 							Namespace: "namespace",
 							Annotations: map[string]string{
-								ReconcilePolicyAnnotation: ReconcilePolicyManage,
+								asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 							},
 							Labels: map[string]string{
 								infrav1.OwnedByClusterLabelKey: "not-" + clusterName,
@@ -1190,8 +1191,8 @@ func TestPauseResource(t *testing.T) {
 				ctx := context.Background()
 				actual := &asoresourcesv1.ResourceGroup{}
 				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
-				g.Expect(actual.Annotations).NotTo(HaveKey(PrePauseReconcilePolicyAnnotation))
-				g.Expect(actual.Annotations).To(HaveKeyWithValue(ReconcilePolicyAnnotation, ReconcilePolicyManage))
+				g.Expect(actual.Annotations).NotTo(HaveKey(prePauseReconcilePolicyAnnotation))
+				g.Expect(actual.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicyManage)))
 			},
 		},
 	}
