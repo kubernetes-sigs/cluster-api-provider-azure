@@ -55,7 +55,11 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	}
 	disksSvc, err := disks.New(machineScope)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed creating a new disks service")
+		return nil, errors.Wrap(err, "failed creating disks service")
+	}
+	vmextensionsSvc, err := vmextensions.New(machineScope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating vmextensions service")
 	}
 	ams := &azureMachineService{
 		scope: machineScope,
@@ -67,7 +71,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 			disksSvc,
 			virtualmachines.New(machineScope),
 			roleassignments.New(machineScope),
-			vmextensions.New(machineScope),
+			vmextensionsSvc,
 			tags.New(machineScope),
 		},
 		skuCache: cache,
