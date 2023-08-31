@@ -200,6 +200,16 @@ spec:
                                           description: SecurityRule defines an Azure
                                             security rule for security groups.
                                           properties:
+                                            action:
+                                              default: Allow
+                                              description: Action specifies whether
+                                                network traffic is allowed or denied.
+                                                Can either be "Allow" or "Deny". Defaults
+                                                to "Allow".
+                                              enum:
+                                              - Allow
+                                              - Deny
+                                              type: string
                                             description:
                                               description: A description for this
                                                 rule. Restricted to 140 chars.
@@ -658,6 +668,16 @@ spec:
                                         description: SecurityRule defines an Azure
                                           security rule for security groups.
                                         properties:
+                                          action:
+                                            default: Allow
+                                            description: Action specifies whether
+                                              network traffic is allowed or denied.
+                                              Can either be "Allow" or "Deny". Defaults
+                                              to "Allow".
+                                            enum:
+                                            - Allow
+                                            - Deny
+                                            type: string
                                           description:
                                             description: A description for this rule.
                                               Restricted to 140 chars.

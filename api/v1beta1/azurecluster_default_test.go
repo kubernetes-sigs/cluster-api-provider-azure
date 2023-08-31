@@ -696,6 +696,7 @@ func TestSubnetDefaults(t *testing.T) {
 												DestinationPorts: ptr.To("*"),
 												Source:           ptr.To("*"),
 												Destination:      ptr.To("*"),
+												Action:           SecurityRuleActionAllow,
 											},
 										},
 									},
@@ -732,6 +733,99 @@ func TestSubnetDefaults(t *testing.T) {
 												Source:           ptr.To("*"),
 												Destination:      ptr.To("*"),
 												Direction:        SecurityRuleDirectionInbound,
+												Action:           SecurityRuleActionAllow,
+											},
+										},
+									},
+									Name: "my-custom-sg",
+								},
+							},
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role:       SubnetNode,
+									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+									Name:       "cluster-test-node-subnet",
+								},
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: NatGateway{
+									NatGatewayIP: PublicIPSpec{
+										Name: "",
+									},
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "cluster-test-node-natgw",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "subnets with custom security group to deny port 49999",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: "control-plane",
+									Name: "cluster-test-controlplane-subnet",
+								},
+								SecurityGroup: SecurityGroup{
+									SecurityGroupClass: SecurityGroupClass{
+										SecurityRules: []SecurityRule{
+											{
+												Name:             "deny_port_49999",
+												Description:      "deny port 49999",
+												Protocol:         "*",
+												Priority:         2201,
+												SourcePorts:      ptr.To("*"),
+												DestinationPorts: ptr.To("*"),
+												Source:           ptr.To("*"),
+												Destination:      ptr.To("*"),
+												Action:           SecurityRuleActionDeny,
+											},
+										},
+									},
+									Name: "my-custom-sg",
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role:       "control-plane",
+									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+									Name:       "cluster-test-controlplane-subnet",
+								},
+								SecurityGroup: SecurityGroup{
+									SecurityGroupClass: SecurityGroupClass{
+										SecurityRules: []SecurityRule{
+											{
+												Name:             "deny_port_49999",
+												Description:      "deny port 49999",
+												Protocol:         "*",
+												Priority:         2201,
+												SourcePorts:      ptr.To("*"),
+												DestinationPorts: ptr.To("*"),
+												Source:           ptr.To("*"),
+												Destination:      ptr.To("*"),
+												Direction:        SecurityRuleDirectionInbound,
+												Action:           SecurityRuleActionDeny,
 											},
 										},
 									},

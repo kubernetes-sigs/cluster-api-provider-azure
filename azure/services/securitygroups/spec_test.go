@@ -38,6 +38,7 @@ var (
 		SourcePorts:      ptr.To("*"),
 		Destination:      ptr.To("*"),
 		DestinationPorts: ptr.To("22"),
+		Action:           infrav1.SecurityRuleActionAllow,
 	}
 	otherRule = infrav1.SecurityRule{
 		Name:             "other_rule",
@@ -49,6 +50,7 @@ var (
 		SourcePorts:      ptr.To("*"),
 		Destination:      ptr.To("*"),
 		DestinationPorts: ptr.To("80"),
+		Action:           infrav1.SecurityRuleActionAllow,
 	}
 	customRule = infrav1.SecurityRule{
 		Name:             "custom_rule",
@@ -60,6 +62,19 @@ var (
 		SourcePorts:      ptr.To("*"),
 		Destination:      ptr.To("*"),
 		DestinationPorts: ptr.To("80"),
+		Action:           infrav1.SecurityRuleActionAllow,
+	}
+	denyRule = infrav1.SecurityRule{
+		Name:             "deny_rule",
+		Description:      "Deny Rule",
+		Priority:         510,
+		Protocol:         infrav1.SecurityGroupProtocolTCP,
+		Direction:        infrav1.SecurityRuleDirectionOutbound,
+		Source:           ptr.To("*"),
+		SourcePorts:      ptr.To("*"),
+		Destination:      ptr.To("*"),
+		DestinationPorts: ptr.To("80"),
+		Action:           infrav1.SecurityRuleActionDeny,
 	}
 )
 
@@ -139,6 +154,48 @@ func TestParameters(t *testing.T) {
 			},
 		},
 		{
+			name: "NSG already exists but missing a rule",
+			spec: &NSGSpec{
+				Name:     "test-nsg",
+				Location: "test-location",
+				SecurityRules: infrav1.SecurityRules{
+					sshRule,
+					otherRule,
+				},
+				ResourceGroup: "test-group",
+				ClusterName:   "my-cluster",
+			},
+			existing: network.SecurityGroup{
+				Name:     ptr.To("test-nsg"),
+				Location: ptr.To("test-location"),
+				Etag:     ptr.To("fake-etag"),
+				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+					SecurityRules: &[]network.SecurityRule{
+						converters.SecurityRuleToSDK(sshRule),
+						converters.SecurityRuleToSDK(denyRule),
+					},
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
+				g.Expect(result).To(Equal(network.SecurityGroup{
+					Location: ptr.To("test-location"),
+					Etag:     ptr.To("fake-etag"),
+					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+						SecurityRules: &[]network.SecurityRule{
+							converters.SecurityRuleToSDK(otherRule),
+							converters.SecurityRuleToSDK(sshRule),
+							converters.SecurityRuleToSDK(denyRule),
+						},
+					},
+					Tags: map[string]*string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+						"Name": ptr.To("test-nsg"),
+					},
+				}))
+			},
+		},
+		{
 			name: "NSG already exists and a rule is deleted",
 			spec: &NSGSpec{
 				Name:     "test-nsg",
@@ -164,6 +221,53 @@ func TestParameters(t *testing.T) {
 						converters.SecurityRuleToSDK(sshRule),
 						converters.SecurityRuleToSDK(customRule),
 						converters.SecurityRuleToSDK(otherRule),
+					},
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
+				g.Expect(result).To(Equal(network.SecurityGroup{
+					Location: ptr.To("test-location"),
+					Etag:     ptr.To("fake-etag"),
+					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+						SecurityRules: &[]network.SecurityRule{
+							converters.SecurityRuleToSDK(sshRule),
+							converters.SecurityRuleToSDK(customRule),
+						},
+					},
+					Tags: map[string]*string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+						"Name": ptr.To("test-nsg"),
+					},
+				}))
+			},
+		},
+		{
+			name: "NSG already exists and a deny rule is deleted",
+			spec: &NSGSpec{
+				Name:     "test-nsg",
+				Location: "test-location",
+				SecurityRules: infrav1.SecurityRules{
+					sshRule,
+					customRule,
+				},
+				ResourceGroup: "test-group",
+				ClusterName:   "my-cluster",
+				LastAppliedSecurityRules: map[string]interface{}{
+					"allow_ssh":   sshRule,
+					"custom_rule": customRule,
+					"deny_rule":   denyRule,
+				},
+			},
+			existing: network.SecurityGroup{
+				Name:     ptr.To("test-nsg"),
+				Location: ptr.To("test-location"),
+				Etag:     ptr.To("fake-etag"),
+				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+					SecurityRules: &[]network.SecurityRule{
+						converters.SecurityRuleToSDK(sshRule),
+						converters.SecurityRuleToSDK(customRule),
+						converters.SecurityRuleToSDK(denyRule),
 					},
 				},
 			},
