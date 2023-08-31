@@ -61,6 +61,10 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating disks service")
 	}
+	inboundnatrulesSvc, err := inboundnatrules.New(machineScope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating inboundnatrules service")
+	}
 	vmextensionsSvc, err := vmextensions.New(machineScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating vmextensions service")
@@ -69,7 +73,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 		scope: machineScope,
 		services: []azure.ServiceReconciler{
 			publicips.New(machineScope),
-			inboundnatrules.New(machineScope),
+			inboundnatrulesSvc,
 			networkinterfaces.New(machineScope, cache),
 			availabilitySetsSvc,
 			disksSvc,

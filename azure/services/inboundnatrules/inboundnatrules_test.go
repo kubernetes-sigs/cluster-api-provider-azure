@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -37,19 +37,19 @@ var (
 	fakeLBName    = "my-lb-1"
 	fakeGroupName = "my-rg"
 
-	noExistingRules   = []network.InboundNatRule{}
-	fakeExistingRules = []network.InboundNatRule{
+	noExistingRules   = []armnetwork.InboundNatRule{}
+	fakeExistingRules = []armnetwork.InboundNatRule{
 		{
 			Name: ptr.To("other-machine-nat-rule"),
 			ID:   ptr.To("some-natrules-id"),
-			InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+			Properties: &armnetwork.InboundNatRulePropertiesFormat{
 				FrontendPort: ptr.To[int32](22),
 			},
 		},
 		{
 			Name: ptr.To("other-machine-nat-rule-2"),
 			ID:   ptr.To("some-natrules-id-2"),
-			InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+			Properties: &armnetwork.InboundNatRulePropertiesFormat{
 				FrontendPort: ptr.To[int32](2201),
 			},
 		},

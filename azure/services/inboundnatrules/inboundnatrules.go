@@ -19,10 +19,11 @@ package inboundnatrules
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -41,17 +42,21 @@ type InboundNatScope interface {
 type Service struct {
 	Scope InboundNatScope
 	client
-	async.Reconciler
+	asyncpoller.Reconciler
 }
 
 // New creates a new service.
-func New(scope InboundNatScope) *Service {
-	client := newClient(scope)
-	return &Service{
-		Scope:      scope,
-		client:     client,
-		Reconciler: async.New(scope, client, client),
+func New(scope InboundNatScope) (*Service, error) {
+	client, err := newClient(scope)
+	if err != nil {
+		return nil, err
 	}
+	return &Service{
+		Scope:  scope,
+		client: client,
+		Reconciler: asyncpoller.New[armnetwork.InboundNatRulesClientCreateOrUpdateResponse,
+			armnetwork.InboundNatRulesClientDeleteResponse](scope, client, client),
+	}, nil
 }
 
 // Name returns the service name.
@@ -87,7 +92,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	portsInUse := make(map[int32]struct{})
 	for _, rule := range existingRules {
-		portsInUse[*rule.InboundNatRulePropertiesFormat.FrontendPort] = struct{}{} // Mark frontend port as in use
+		portsInUse[*rule.Properties.FrontendPort] = struct{}{} // Mark frontend port as in use
 	}
 
 	// We go through the list of InboundNatSpecs to reconcile each one, independently of the result of the previous one.
