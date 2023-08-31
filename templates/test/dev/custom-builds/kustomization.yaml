@@ -40,6 +40,13 @@ patches:
     name: .*-mp-win
     namespace: default
   path: patches/kubeadm-bootstrap-machinepool-windows-k8s-pr-binaries.yaml
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1beta1
+    kind: KubeadmConfig
+    name: .*-mp-flex-win
+    namespace: default
+  path: patches/kubeadm-bootstrap-machinepool-windows-k8s-pr-binaries.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     behavior: merge
