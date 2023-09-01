@@ -56,6 +56,10 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
+	routeTablesSvc, err := routetables.New(scope)
+	if err != nil {
+		return nil, err
+	}
 	bastionHostsSvc, err := bastionhosts.New(scope)
 	if err != nil {
 		return nil, err
@@ -74,7 +78,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			groupsSvc,
 			virtualnetworks.New(scope),
 			securitygroups.New(scope),
-			routetables.New(scope),
+			routeTablesSvc,
 			publicips.New(scope),
 			natGatewaysSvc,
 			subnets.New(scope),
