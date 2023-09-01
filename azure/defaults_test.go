@@ -187,7 +187,7 @@ func TestCustomPutPatchHeaderPolicy(t *testing.T) {
 			// Create options with a custom PUT/PATCH header per-call policy
 			getterMock := mock_azure.NewMockResourceSpecGetterWithHeaders(mockCtrl)
 			getterMock.EXPECT().CustomHeaders().Return(tc.headers).AnyTimes()
-			opts, err := ARMClientOptions("", CustomPutPatchHeaderPolicy{Getter: getterMock})
+			opts, err := ARMClientOptions("", CustomPutPatchHeaderPolicy{Headers: tc.headers})
 			g.Expect(err).NotTo(HaveOccurred())
 
 			// Create a request

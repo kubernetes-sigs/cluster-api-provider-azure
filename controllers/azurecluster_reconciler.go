@@ -56,6 +56,10 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
+	securityGroupsSvc, err := securitygroups.New(scope)
+	if err != nil {
+		return nil, err
+	}
 	routeTablesSvc, err := routetables.New(scope)
 	if err != nil {
 		return nil, err
@@ -93,7 +97,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 		services: []azure.ServiceReconciler{
 			groupsSvc,
 			virtualnetworks.New(scope),
-			securitygroups.New(scope),
+			securityGroupsSvc,
 			routeTablesSvc,
 			publicips.New(scope),
 			natGatewaysSvc,

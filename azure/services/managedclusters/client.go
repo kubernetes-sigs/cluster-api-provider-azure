@@ -40,7 +40,11 @@ type azureClient struct {
 
 // newClient creates a new managedclusters client from an authorizer.
 func newClient(scope ManagedClusterScope) (*azureClient, error) {
-	opts, err := azure.ARMClientOptions(scope.CloudEnvironment(), azure.CustomPutPatchHeaderPolicy{Getter: scope.ManagedClusterSpec()})
+	var headers map[string]string
+	if customHeaders, ok := scope.ManagedClusterSpec().(azure.ResourceSpecGetterWithHeaders); ok {
+		headers = customHeaders.CustomHeaders()
+	}
+	opts, err := azure.ARMClientOptions(scope.CloudEnvironment(), azure.CustomPutPatchHeaderPolicy{Headers: headers})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create managedclusters client options")
 	}

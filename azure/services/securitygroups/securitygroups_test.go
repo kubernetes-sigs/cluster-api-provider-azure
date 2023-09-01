@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
@@ -287,46 +287,46 @@ func TestDeleteSecurityGroups(t *testing.T) {
 }
 
 var (
-	ruleA = network.SecurityRule{
+	ruleA = &armnetwork.SecurityRule{
 		Name: ptr.To("A"),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
 			Description:              ptr.To("this is rule A"),
-			Protocol:                 network.SecurityRuleProtocolTCP,
+			Protocol:                 ptr.To(armnetwork.SecurityRuleProtocolTCP),
 			DestinationPortRange:     ptr.To("*"),
 			SourcePortRange:          ptr.To("*"),
 			DestinationAddressPrefix: ptr.To("*"),
 			SourceAddressPrefix:      ptr.To("*"),
 			Priority:                 ptr.To[int32](100),
-			Direction:                network.SecurityRuleDirectionInbound,
-			Access:                   network.SecurityRuleAccessAllow,
+			Direction:                ptr.To(armnetwork.SecurityRuleDirectionInbound),
+			Access:                   ptr.To(armnetwork.SecurityRuleAccessAllow),
 		},
 	}
-	ruleB = network.SecurityRule{
+	ruleB = &armnetwork.SecurityRule{
 		Name: ptr.To("B"),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
 			Description:              ptr.To("this is rule B"),
-			Protocol:                 network.SecurityRuleProtocolTCP,
+			Protocol:                 ptr.To(armnetwork.SecurityRuleProtocolTCP),
 			DestinationPortRange:     ptr.To("*"),
 			SourcePortRange:          ptr.To("*"),
 			DestinationAddressPrefix: ptr.To("*"),
 			SourceAddressPrefix:      ptr.To("*"),
 			Priority:                 ptr.To[int32](100),
-			Direction:                network.SecurityRuleDirectionOutbound,
-			Access:                   network.SecurityRuleAccessAllow,
+			Direction:                ptr.To(armnetwork.SecurityRuleDirectionOutbound),
+			Access:                   ptr.To(armnetwork.SecurityRuleAccessAllow),
 		},
 	}
-	ruleBModified = network.SecurityRule{
+	ruleBModified = &armnetwork.SecurityRule{
 		Name: ptr.To("B"),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
 			Description:              ptr.To("this is rule B"),
-			Protocol:                 network.SecurityRuleProtocolTCP,
+			Protocol:                 ptr.To(armnetwork.SecurityRuleProtocolTCP),
 			DestinationPortRange:     ptr.To("80"),
 			SourcePortRange:          ptr.To("*"),
 			DestinationAddressPrefix: ptr.To("*"),
 			SourceAddressPrefix:      ptr.To("*"),
 			Priority:                 ptr.To[int32](100),
-			Direction:                network.SecurityRuleDirectionOutbound,
-			Access:                   network.SecurityRuleAccessAllow,
+			Direction:                ptr.To(armnetwork.SecurityRuleDirectionOutbound),
+			Access:                   ptr.To(armnetwork.SecurityRuleAccessAllow),
 		},
 	}
 )
