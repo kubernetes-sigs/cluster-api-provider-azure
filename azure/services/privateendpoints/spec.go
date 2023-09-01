@@ -21,7 +21,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
@@ -74,12 +74,12 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 	_, log, done := tele.StartSpanWithLogger(ctx, "privateendpoints.Service.Parameters")
 	defer done()
 
-	privateEndpointProperties := network.PrivateEndpointProperties{
-		Subnet: &network.Subnet{
+	privateEndpointProperties := armnetwork.PrivateEndpointProperties{
+		Subnet: &armnetwork.Subnet{
 			ID: &s.SubnetID,
-			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-				PrivateEndpointNetworkPolicies:    network.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled,
-				PrivateLinkServiceNetworkPolicies: network.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled,
+			Properties: &armnetwork.SubnetPropertiesFormat{
+				PrivateEndpointNetworkPolicies:    ptr.To(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled),
+				PrivateLinkServiceNetworkPolicies: ptr.To(armnetwork.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled),
 			},
 		},
 	}
@@ -89,57 +89,57 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 	}
 
 	if len(s.PrivateIPAddresses) > 0 {
-		privateIPAddresses := make([]network.PrivateEndpointIPConfiguration, 0, len(s.PrivateIPAddresses))
+		privateIPAddresses := make([]*armnetwork.PrivateEndpointIPConfiguration, 0, len(s.PrivateIPAddresses))
 		for _, address := range s.PrivateIPAddresses {
-			ipConfig := &network.PrivateEndpointIPConfigurationProperties{PrivateIPAddress: ptr.To(address)}
+			ipConfig := &armnetwork.PrivateEndpointIPConfigurationProperties{PrivateIPAddress: ptr.To(address)}
 
-			privateIPAddresses = append(privateIPAddresses, network.PrivateEndpointIPConfiguration{
-				PrivateEndpointIPConfigurationProperties: ipConfig,
+			privateIPAddresses = append(privateIPAddresses, &armnetwork.PrivateEndpointIPConfiguration{
+				Properties: ipConfig,
 			})
 		}
-		privateEndpointProperties.IPConfigurations = &privateIPAddresses
+		privateEndpointProperties.IPConfigurations = privateIPAddresses
 	}
 
-	privateLinkServiceConnections := make([]network.PrivateLinkServiceConnection, 0, len(s.PrivateLinkServiceConnections))
+	privateLinkServiceConnections := make([]*armnetwork.PrivateLinkServiceConnection, 0, len(s.PrivateLinkServiceConnections))
 	for _, privateLinkServiceConnection := range s.PrivateLinkServiceConnections {
-		linkServiceConnection := network.PrivateLinkServiceConnection{
+		linkServiceConnection := &armnetwork.PrivateLinkServiceConnection{
 			Name: ptr.To(privateLinkServiceConnection.Name),
-			PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
+			Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
 				PrivateLinkServiceID: ptr.To(privateLinkServiceConnection.PrivateLinkServiceID),
 			},
 		}
 
 		if len(privateLinkServiceConnection.GroupIDs) > 0 {
-			linkServiceConnection.PrivateLinkServiceConnectionProperties.GroupIds = &privateLinkServiceConnection.GroupIDs
+			linkServiceConnection.Properties.GroupIDs = azure.PtrSlice(&privateLinkServiceConnection.GroupIDs)
 		}
 
 		if privateLinkServiceConnection.RequestMessage != "" {
-			linkServiceConnection.PrivateLinkServiceConnectionProperties.RequestMessage = ptr.To(privateLinkServiceConnection.RequestMessage)
+			linkServiceConnection.Properties.RequestMessage = ptr.To(privateLinkServiceConnection.RequestMessage)
 		}
 		privateLinkServiceConnections = append(privateLinkServiceConnections, linkServiceConnection)
 	}
 
 	if s.ManualApproval {
-		privateEndpointProperties.ManualPrivateLinkServiceConnections = &privateLinkServiceConnections
-		privateEndpointProperties.PrivateLinkServiceConnections = &[]network.PrivateLinkServiceConnection{}
+		privateEndpointProperties.ManualPrivateLinkServiceConnections = privateLinkServiceConnections
+		privateEndpointProperties.PrivateLinkServiceConnections = []*armnetwork.PrivateLinkServiceConnection{}
 	} else {
-		privateEndpointProperties.PrivateLinkServiceConnections = &privateLinkServiceConnections
-		privateEndpointProperties.ManualPrivateLinkServiceConnections = &[]network.PrivateLinkServiceConnection{}
+		privateEndpointProperties.PrivateLinkServiceConnections = privateLinkServiceConnections
+		privateEndpointProperties.ManualPrivateLinkServiceConnections = []*armnetwork.PrivateLinkServiceConnection{}
 	}
 
-	applicationSecurityGroups := make([]network.ApplicationSecurityGroup, 0, len(s.ApplicationSecurityGroups))
+	applicationSecurityGroups := make([]*armnetwork.ApplicationSecurityGroup, 0, len(s.ApplicationSecurityGroups))
 
 	for _, applicationSecurityGroup := range s.ApplicationSecurityGroups {
-		applicationSecurityGroups = append(applicationSecurityGroups, network.ApplicationSecurityGroup{
+		applicationSecurityGroups = append(applicationSecurityGroups, &armnetwork.ApplicationSecurityGroup{
 			ID: ptr.To(applicationSecurityGroup),
 		})
 	}
 
-	privateEndpointProperties.ApplicationSecurityGroups = &applicationSecurityGroups
+	privateEndpointProperties.ApplicationSecurityGroups = applicationSecurityGroups
 
-	newPrivateEndpoint := network.PrivateEndpoint{
-		Name:                      ptr.To(s.Name),
-		PrivateEndpointProperties: &privateEndpointProperties,
+	newPrivateEndpoint := armnetwork.PrivateEndpoint{
+		Name:       ptr.To(s.Name),
+		Properties: &privateEndpointProperties,
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
@@ -153,12 +153,12 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 	}
 
 	if existing != nil {
-		existingPE, ok := existing.(network.PrivateEndpoint)
+		existingPE, ok := existing.(armnetwork.PrivateEndpoint)
 		if !ok {
 			return nil, errors.Errorf("%T is not a network.PrivateEndpoint", existing)
 		}
 
-		ps := existingPE.ProvisioningState
+		ps := ptr.Deref(existingPE.Properties.ProvisioningState, "")
 		if string(ps) != string(infrav1.Canceled) && string(ps) != string(infrav1.Failed) && string(ps) != string(infrav1.Succeeded) {
 			return nil, azure.WithTransientError(errors.Errorf("Unable to update existing private endpoint in non-terminal state. Service Endpoint must be in one of the following provisioning states: Canceled, Failed, or Succeeded. Actual state: %s", ps), 20*time.Second)
 		}
@@ -180,81 +180,81 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 	return newPrivateEndpoint, nil
 }
 
-func normalizePrivateEndpoint(existingPE network.PrivateEndpoint) network.PrivateEndpoint {
-	normalizedExistingPE := network.PrivateEndpoint{
+func normalizePrivateEndpoint(existingPE armnetwork.PrivateEndpoint) armnetwork.PrivateEndpoint {
+	normalizedExistingPE := armnetwork.PrivateEndpoint{
 		Name:     existingPE.Name,
 		Location: existingPE.Location,
-		PrivateEndpointProperties: &network.PrivateEndpointProperties{
-			Subnet: &network.Subnet{
-				ID: existingPE.Subnet.ID,
-				SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-					PrivateEndpointNetworkPolicies:    existingPE.Subnet.PrivateEndpointNetworkPolicies,
-					PrivateLinkServiceNetworkPolicies: existingPE.Subnet.PrivateLinkServiceNetworkPolicies,
+		Properties: &armnetwork.PrivateEndpointProperties{
+			Subnet: &armnetwork.Subnet{
+				ID: existingPE.Properties.Subnet.ID,
+				Properties: &armnetwork.SubnetPropertiesFormat{
+					PrivateEndpointNetworkPolicies:    existingPE.Properties.Subnet.Properties.PrivateEndpointNetworkPolicies,
+					PrivateLinkServiceNetworkPolicies: existingPE.Properties.Subnet.Properties.PrivateLinkServiceNetworkPolicies,
 				},
 			},
-			ApplicationSecurityGroups:  existingPE.ApplicationSecurityGroups,
-			IPConfigurations:           existingPE.IPConfigurations,
-			CustomNetworkInterfaceName: existingPE.CustomNetworkInterfaceName,
+			ApplicationSecurityGroups:  existingPE.Properties.ApplicationSecurityGroups,
+			IPConfigurations:           existingPE.Properties.IPConfigurations,
+			CustomNetworkInterfaceName: existingPE.Properties.CustomNetworkInterfaceName,
 		},
 		Tags: existingPE.Tags,
 	}
 
-	existingPrivateLinkServiceConnections := make([]network.PrivateLinkServiceConnection, 0, len(*existingPE.PrivateLinkServiceConnections))
-	for _, privateLinkServiceConnection := range *existingPE.PrivateLinkServiceConnections {
-		existingPrivateLinkServiceConnections = append(existingPrivateLinkServiceConnections, network.PrivateLinkServiceConnection{
+	existingPrivateLinkServiceConnections := make([]*armnetwork.PrivateLinkServiceConnection, 0, len(existingPE.Properties.PrivateLinkServiceConnections))
+	for _, privateLinkServiceConnection := range existingPE.Properties.PrivateLinkServiceConnections {
+		existingPrivateLinkServiceConnections = append(existingPrivateLinkServiceConnections, &armnetwork.PrivateLinkServiceConnection{
 			Name: privateLinkServiceConnection.Name,
-			PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-				PrivateLinkServiceID: privateLinkServiceConnection.PrivateLinkServiceID,
-				RequestMessage:       privateLinkServiceConnection.RequestMessage,
-				GroupIds:             privateLinkServiceConnection.GroupIds,
+			Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
+				PrivateLinkServiceID: privateLinkServiceConnection.Properties.PrivateLinkServiceID,
+				RequestMessage:       privateLinkServiceConnection.Properties.RequestMessage,
+				GroupIDs:             privateLinkServiceConnection.Properties.GroupIDs,
 			},
 		})
 	}
-	normalizedExistingPE.PrivateEndpointProperties.PrivateLinkServiceConnections = &existingPrivateLinkServiceConnections
+	normalizedExistingPE.Properties.PrivateLinkServiceConnections = existingPrivateLinkServiceConnections
 
-	existingManualPrivateLinkServiceConnections := make([]network.PrivateLinkServiceConnection, 0, len(*existingPE.ManualPrivateLinkServiceConnections))
-	for _, manualPrivateLinkServiceConnection := range *existingPE.ManualPrivateLinkServiceConnections {
-		existingManualPrivateLinkServiceConnections = append(existingManualPrivateLinkServiceConnections, network.PrivateLinkServiceConnection{
+	existingManualPrivateLinkServiceConnections := make([]*armnetwork.PrivateLinkServiceConnection, 0, len(existingPE.Properties.ManualPrivateLinkServiceConnections))
+	for _, manualPrivateLinkServiceConnection := range existingPE.Properties.ManualPrivateLinkServiceConnections {
+		existingManualPrivateLinkServiceConnections = append(existingManualPrivateLinkServiceConnections, &armnetwork.PrivateLinkServiceConnection{
 			Name: manualPrivateLinkServiceConnection.Name,
-			PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-				PrivateLinkServiceID: manualPrivateLinkServiceConnection.PrivateLinkServiceID,
-				RequestMessage:       manualPrivateLinkServiceConnection.RequestMessage,
-				GroupIds:             manualPrivateLinkServiceConnection.GroupIds,
+			Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
+				PrivateLinkServiceID: manualPrivateLinkServiceConnection.Properties.PrivateLinkServiceID,
+				RequestMessage:       manualPrivateLinkServiceConnection.Properties.RequestMessage,
+				GroupIDs:             manualPrivateLinkServiceConnection.Properties.GroupIDs,
 			},
 		})
 	}
-	normalizedExistingPE.PrivateEndpointProperties.ManualPrivateLinkServiceConnections = &existingManualPrivateLinkServiceConnections
+	normalizedExistingPE.Properties.ManualPrivateLinkServiceConnections = existingManualPrivateLinkServiceConnections
 
 	return normalizedExistingPE
 }
 
 // Sort all slices in order to get the same order of elements for both new and existing private endpoints.
-func sortSlicesPrivateEndpoint(privateEndpoint network.PrivateEndpoint) network.PrivateEndpoint {
+func sortSlicesPrivateEndpoint(privateEndpoint armnetwork.PrivateEndpoint) armnetwork.PrivateEndpoint {
 	// Sort ManualPrivateLinkServiceConnections
-	if privateEndpoint.ManualPrivateLinkServiceConnections != nil {
-		sort.SliceStable(*privateEndpoint.ManualPrivateLinkServiceConnections, func(i, j int) bool {
-			return *(*privateEndpoint.ManualPrivateLinkServiceConnections)[i].Name < *(*privateEndpoint.ManualPrivateLinkServiceConnections)[j].Name
+	if privateEndpoint.Properties.ManualPrivateLinkServiceConnections != nil {
+		sort.SliceStable(privateEndpoint.Properties.ManualPrivateLinkServiceConnections, func(i, j int) bool {
+			return *privateEndpoint.Properties.ManualPrivateLinkServiceConnections[i].Name < *privateEndpoint.Properties.ManualPrivateLinkServiceConnections[j].Name
 		})
 	}
 
 	// Sort PrivateLinkServiceConnections
-	if privateEndpoint.PrivateLinkServiceConnections != nil {
-		sort.SliceStable(*privateEndpoint.PrivateLinkServiceConnections, func(i, j int) bool {
-			return *(*privateEndpoint.PrivateLinkServiceConnections)[i].Name < *(*privateEndpoint.PrivateLinkServiceConnections)[j].Name
+	if privateEndpoint.Properties.PrivateLinkServiceConnections != nil {
+		sort.SliceStable(privateEndpoint.Properties.PrivateLinkServiceConnections, func(i, j int) bool {
+			return *privateEndpoint.Properties.PrivateLinkServiceConnections[i].Name < *privateEndpoint.Properties.PrivateLinkServiceConnections[j].Name
 		})
 	}
 
 	// Sort IPConfigurations
-	if privateEndpoint.IPConfigurations != nil {
-		sort.SliceStable(*privateEndpoint.IPConfigurations, func(i, j int) bool {
-			return *(*privateEndpoint.IPConfigurations)[i].PrivateIPAddress < *(*privateEndpoint.IPConfigurations)[j].PrivateIPAddress
+	if privateEndpoint.Properties.IPConfigurations != nil {
+		sort.SliceStable(privateEndpoint.Properties.IPConfigurations, func(i, j int) bool {
+			return *privateEndpoint.Properties.IPConfigurations[i].Properties.PrivateIPAddress < *privateEndpoint.Properties.IPConfigurations[j].Properties.PrivateIPAddress
 		})
 	}
 
 	// Sort ApplicationSecurityGroups
-	if privateEndpoint.ApplicationSecurityGroups != nil {
-		sort.SliceStable(*privateEndpoint.ApplicationSecurityGroups, func(i, j int) bool {
-			return *(*privateEndpoint.ApplicationSecurityGroups)[i].Name < *(*privateEndpoint.ApplicationSecurityGroups)[j].Name
+	if privateEndpoint.Properties.ApplicationSecurityGroups != nil {
+		sort.SliceStable(privateEndpoint.Properties.ApplicationSecurityGroups, func(i, j int) bool {
+			return *privateEndpoint.Properties.ApplicationSecurityGroups[i].Name < *privateEndpoint.Properties.ApplicationSecurityGroups[j].Name
 		})
 	}
 

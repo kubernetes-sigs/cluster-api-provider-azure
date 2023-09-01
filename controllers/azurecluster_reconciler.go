@@ -60,6 +60,10 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, err
 	}
+	privateEndpointsSvc, err := privateendpoints.New(scope)
+	if err != nil {
+		return nil, err
+	}
 	var groupsSvc azure.ServiceReconciler = asogroups.New(scope)
 	if scope.UseLegacyGroups {
 		groupsSvc = groups.New(scope)
@@ -82,7 +86,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			loadbalancers.New(scope),
 			privatedns.New(scope),
 			bastionHostsSvc,
-			privateendpoints.New(scope),
+			privateEndpointsSvc,
 			tags.New(scope),
 		},
 		skuCache: skuCache,
