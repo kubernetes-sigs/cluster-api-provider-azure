@@ -65,6 +65,10 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating inboundnatrules service")
 	}
+	roleAssignmentsSvc, err := roleassignments.New(machineScope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating a roleassignments service")
+	}
 	vmextensionsSvc, err := vmextensions.New(machineScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating vmextensions service")
@@ -78,7 +82,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 			availabilitySetsSvc,
 			disksSvc,
 			virtualmachines.New(machineScope),
-			roleassignments.New(machineScope),
+			roleAssignmentsSvc,
 			vmextensionsSvc,
 			tags.New(machineScope),
 		},

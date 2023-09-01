@@ -41,12 +41,16 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create a NewCache")
 	}
+	roleAssignmentsSvc, err := roleassignments.New(machinePoolScope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a roleassignments service")
+	}
 
 	return &azureMachinePoolService{
 		scope: machinePoolScope,
 		services: []azure.ServiceReconciler{
 			scalesets.New(machinePoolScope, cache),
-			roleassignments.New(machinePoolScope),
+			roleAssignmentsSvc,
 		},
 		skuCache: cache,
 	}, nil

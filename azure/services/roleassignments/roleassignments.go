@@ -19,10 +19,12 @@ package roleassignments
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -46,19 +48,23 @@ type RoleAssignmentScope interface {
 type Service struct {
 	Scope                 RoleAssignmentScope
 	virtualMachinesGetter async.Getter
-	async.Reconciler
+	asyncpoller.Reconciler
 	virtualMachineScaleSetGetter async.Getter
 }
 
 // New creates a new service.
-func New(scope RoleAssignmentScope) *Service {
-	client := newClient(scope)
+func New(scope RoleAssignmentScope) (*Service, error) {
+	client, err := newClient(scope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create roleassignments service")
+	}
 	return &Service{
 		Scope:                        scope,
 		virtualMachinesGetter:        virtualmachines.NewClient(scope),
 		virtualMachineScaleSetGetter: scalesets.NewClient(scope),
-		Reconciler:                   async.New(scope, client, client),
-	}
+		Reconciler: asyncpoller.New[armauthorization.RoleAssignmentsClientCreateResponse,
+			armauthorization.RoleAssignmentsClientDeleteResponse](scope, client, nil),
+	}, nil
 }
 
 // Name returns the service name.
