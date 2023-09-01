@@ -17,10 +17,40 @@ limitations under the License.
 package converters
 
 import (
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
+
+// GetDiagnosticsProfileV2 converts a CAPZ Diagnostics option to a Azure SDK Diagnostics Profile.
+func GetDiagnosticsProfileV2(diagnostics *infrav1.Diagnostics) *armcompute.DiagnosticsProfile {
+	if diagnostics != nil && diagnostics.Boot != nil {
+		switch diagnostics.Boot.StorageAccountType {
+		case infrav1.DisabledDiagnosticsStorage:
+			return &armcompute.DiagnosticsProfile{
+				BootDiagnostics: &armcompute.BootDiagnostics{
+					Enabled: ptr.To(false),
+				},
+			}
+		case infrav1.ManagedDiagnosticsStorage:
+			return &armcompute.DiagnosticsProfile{
+				BootDiagnostics: &armcompute.BootDiagnostics{
+					Enabled: ptr.To(true),
+				},
+			}
+		case infrav1.UserManagedDiagnosticsStorage:
+			return &armcompute.DiagnosticsProfile{
+				BootDiagnostics: &armcompute.BootDiagnostics{
+					Enabled:    ptr.To(true),
+					StorageURI: &diagnostics.Boot.UserManaged.StorageAccountURI,
+				},
+			}
+		}
+	}
+
+	return nil
+}
 
 // GetDiagnosticsProfile converts a CAPZ Diagnostics option to a Azure SDK Diagnostics Profile.
 func GetDiagnosticsProfile(diagnostics *infrav1.Diagnostics) *compute.DiagnosticsProfile {

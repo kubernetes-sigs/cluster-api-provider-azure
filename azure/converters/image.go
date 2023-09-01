@@ -19,11 +19,82 @@ package converters
 import (
 	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
+
+// ImageToSDKv2 converts a CAPZ Image (as RawExtension) to a Azure SDK Image Reference.
+func ImageToSDKv2(image *infrav1.Image) (*armcompute.ImageReference, error) {
+	if image.ID != nil {
+		return specificImageToSDKv2(image)
+	}
+	if image.Marketplace != nil {
+		return mpImageToSDKv2(image)
+	}
+	if image.ComputeGallery != nil || image.SharedGallery != nil {
+		return computeImageToSDKv2(image)
+	}
+
+	return nil, errors.New("unable to convert image as no options set")
+}
+
+func mpImageToSDKv2(image *infrav1.Image) (*armcompute.ImageReference, error) {
+	return &armcompute.ImageReference{
+		Publisher: &image.Marketplace.Publisher,
+		Offer:     &image.Marketplace.Offer,
+		SKU:       &image.Marketplace.SKU,
+		Version:   &image.Marketplace.Version,
+	}, nil
+}
+
+func computeImageToSDKv2(image *infrav1.Image) (*armcompute.ImageReference, error) {
+	if image.ComputeGallery == nil && image.SharedGallery == nil {
+		return nil, errors.New("unable to convert compute image to SDK as SharedGallery or ComputeGallery fields are not set")
+	}
+
+	idTemplate := "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s"
+	if image.SharedGallery != nil {
+		return &armcompute.ImageReference{
+			ID: ptr.To(fmt.Sprintf(idTemplate,
+				image.SharedGallery.SubscriptionID,
+				image.SharedGallery.ResourceGroup,
+				image.SharedGallery.Gallery,
+				image.SharedGallery.Name,
+				image.SharedGallery.Version,
+			)),
+		}, nil
+	}
+
+	// For private Azure Compute Gallery consumption both resource group and subscription ID must be provided.
+	// If they are not, we assume use of community gallery.
+	if image.ComputeGallery.ResourceGroup != nil && image.ComputeGallery.SubscriptionID != nil {
+		return &armcompute.ImageReference{
+			ID: ptr.To(fmt.Sprintf(idTemplate,
+				ptr.Deref(image.ComputeGallery.SubscriptionID, ""),
+				ptr.Deref(image.ComputeGallery.ResourceGroup, ""),
+				image.ComputeGallery.Gallery,
+				image.ComputeGallery.Name,
+				image.ComputeGallery.Version,
+			)),
+		}, nil
+	}
+
+	return &armcompute.ImageReference{
+		CommunityGalleryImageID: ptr.To(fmt.Sprintf("/CommunityGalleries/%s/Images/%s/Versions/%s",
+			image.ComputeGallery.Gallery,
+			image.ComputeGallery.Name,
+			image.ComputeGallery.Version)),
+	}, nil
+}
+
+func specificImageToSDKv2(image *infrav1.Image) (*armcompute.ImageReference, error) {
+	return &armcompute.ImageReference{
+		ID: image.ID,
+	}, nil
+}
 
 // ImageToSDK converts a CAPZ Image (as RawExtension) to a Azure SDK Image Reference.
 func ImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {

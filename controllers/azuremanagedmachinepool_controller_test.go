@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -335,25 +337,25 @@ func fakeVirtualMachineScaleSetVM() []compute.VirtualMachineScaleSetVM {
 	return virtualMachineScaleSetVM
 }
 
-func fakeVirtualMachineScaleSet() []compute.VirtualMachineScaleSet {
+func fakeVirtualMachineScaleSet() []armcompute.VirtualMachineScaleSet {
 	tags := map[string]*string{
 		"foo":      ptr.To("bazz"),
 		"poolName": ptr.To("fake-agent-pool-name"),
 	}
 	zones := []string{"zone0", "zone1"}
-	virtualMachineScaleSet := []compute.VirtualMachineScaleSet{
+	virtualMachineScaleSet := []armcompute.VirtualMachineScaleSet{
 		{
-			Sku: &compute.Sku{
+			SKU: &armcompute.SKU{
 				Name:     ptr.To("skuName"),
 				Tier:     ptr.To("skuTier"),
 				Capacity: ptr.To[int64](2),
 			},
-			Zones:    &zones,
+			Zones:    azure.PtrSlice(&zones),
 			ID:       ptr.To("vmssID"),
 			Name:     ptr.To("vmssName"),
 			Location: ptr.To("westus2"),
 			Tags:     tags,
-			VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+			Properties: &armcompute.VirtualMachineScaleSetProperties{
 				SinglePlacementGroup: ptr.To(false),
 				ProvisioningState:    ptr.To(string(compute.ProvisioningState1Succeeded)),
 			},

@@ -24,6 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -52,10 +53,10 @@ func (m *MockNodeLister) EXPECT() *MockNodeListerMockRecorder {
 }
 
 // List mocks base method.
-func (m *MockNodeLister) List(arg0 context.Context, arg1 string) ([]compute.VirtualMachineScaleSet, error) {
+func (m *MockNodeLister) List(arg0 context.Context, arg1 string) ([]armcompute.VirtualMachineScaleSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0, arg1)
-	ret0, _ := ret[0].([]compute.VirtualMachineScaleSet)
+	ret0, _ := ret[0].([]armcompute.VirtualMachineScaleSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
