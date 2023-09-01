@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	resources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
+	armresources "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	azure "github.com/Azure/go-autorest/autorest/azure"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -244,10 +244,10 @@ func (m *MockTagsGetter) EXPECT() *MockTagsGetterMockRecorder {
 }
 
 // GetAtScope mocks base method.
-func (m *MockTagsGetter) GetAtScope(ctx context.Context, scope string) (resources.TagsResource, error) {
+func (m *MockTagsGetter) GetAtScope(ctx context.Context, scope string) (armresources.TagsResource, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAtScope", ctx, scope)
-	ret0, _ := ret[0].(resources.TagsResource)
+	ret0, _ := ret[0].(armresources.TagsResource)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

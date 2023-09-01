@@ -467,6 +467,12 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 	}
 }
 
+type fakeVnetDescriber struct{}
+
+func (f fakeVnetDescriber) IsManaged(ctx context.Context) (bool, error) {
+	return false, nil
+}
+
 func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
@@ -509,6 +515,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 						InfraMachinePool: getLinuxAzureMachinePool("pool1"),
 					},
 				},
+				VnetDescriber: fakeVnetDescriber{},
 			},
 			Expected: false,
 		},

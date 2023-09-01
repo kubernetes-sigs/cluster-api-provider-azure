@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -94,8 +94,8 @@ var (
 		},
 	}
 
-	managedTags = resources.TagsResource{
-		Properties: &resources.Tags{
+	managedTags = armresources.TagsResource{
+		Properties: &armresources.Tags{
 			Tags: map[string]*string{
 				"foo": ptr.To("bar"),
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
@@ -103,8 +103,8 @@ var (
 		},
 	}
 
-	unmanagedTags = resources.TagsResource{
-		Properties: &resources.Tags{
+	unmanagedTags = armresources.TagsResource{
+		Properties: &armresources.Tags{
 			Tags: map[string]*string{
 				"foo":       ptr.To("bar"),
 				"something": ptr.To("else"),

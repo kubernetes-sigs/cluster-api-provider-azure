@@ -19,7 +19,7 @@ package tags
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -45,11 +45,15 @@ type Service struct {
 }
 
 // New creates a new service.
-func New(scope TagScope) *Service {
+func New(scope TagScope) (*Service, error) {
+	cli, err := NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Scope:  scope,
-		client: NewClient(scope),
-	}
+		client: cli,
+	}, nil
 }
 
 // Name returns the service name.
@@ -98,7 +102,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					createdOrUpdatedTags[k] = ptr.To(v)
 				}
 
-				if _, err := s.client.UpdateAtScope(ctx, tagsSpec.Scope, resources.TagsPatchResource{Operation: "Merge", Properties: &resources.Tags{Tags: createdOrUpdatedTags}}); err != nil {
+				if _, err := s.client.UpdateAtScope(ctx, tagsSpec.Scope, armresources.TagsPatchResource{Operation: ptr.To(armresources.TagsPatchOperationMerge), Properties: &armresources.Tags{Tags: createdOrUpdatedTags}}); err != nil {
 					return errors.Wrap(err, "cannot update tags")
 				}
 			}
@@ -109,7 +113,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					deletedTags[k] = ptr.To(v)
 				}
 
-				if _, err := s.client.UpdateAtScope(ctx, tagsSpec.Scope, resources.TagsPatchResource{Operation: "Delete", Properties: &resources.Tags{Tags: deletedTags}}); err != nil {
+				if _, err := s.client.UpdateAtScope(ctx, tagsSpec.Scope, armresources.TagsPatchResource{Operation: ptr.To(armresources.TagsPatchOperationDelete), Properties: &armresources.Tags{Tags: deletedTags}}); err != nil {
 					return errors.Wrap(err, "cannot update tags")
 				}
 			}

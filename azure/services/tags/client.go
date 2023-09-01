@@ -19,51 +19,61 @@ package tags
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // client wraps go-sdk.
 type client interface {
-	GetAtScope(context.Context, string) (resources.TagsResource, error)
-	UpdateAtScope(context.Context, string, resources.TagsPatchResource) (resources.TagsResource, error)
+	GetAtScope(context.Context, string) (armresources.TagsResource, error)
+	UpdateAtScope(context.Context, string, armresources.TagsPatchResource) (armresources.TagsResource, error)
 }
 
 // AzureClient contains the Azure go-sdk client.
 type AzureClient struct {
-	tags resources.TagsClient
+	tags *armresources.TagsClient
 }
 
 var _ client = (*AzureClient)(nil)
 
-// NewClient creates a new tags client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
-	c := newTagsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{c}
-}
-
-// newTagsClient creates a new tags client from subscription ID.
-func newTagsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) resources.TagsClient {
-	tagsClient := resources.NewTagsClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&tagsClient.Client, authorizer)
-	return tagsClient
+// NewClient creates a tags client from an authorizer.
+func NewClient(auth azure.Authorizer) (*AzureClient, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create tags client options")
+	}
+	factory, err := armresources.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armresources client factory")
+	}
+	return &AzureClient{factory.NewTagsClient()}, nil
 }
 
 // GetAtScope sends the get at scope request.
-func (ac *AzureClient) GetAtScope(ctx context.Context, scope string) (resources.TagsResource, error) {
+func (ac *AzureClient) GetAtScope(ctx context.Context, scope string) (armresources.TagsResource, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.GetAtScope")
 	defer done()
 
-	return ac.tags.GetAtScope(ctx, scope)
+	resp, err := ac.tags.GetAtScope(ctx, scope, nil)
+	if err != nil {
+		return armresources.TagsResource{}, err
+	}
+
+	return resp.TagsResource, nil
 }
 
 // UpdateAtScope this operation allows replacing, merging or selectively deleting tags on the specified resource or
 // subscription.
-func (ac *AzureClient) UpdateAtScope(ctx context.Context, scope string, parameters resources.TagsPatchResource) (resources.TagsResource, error) {
+func (ac *AzureClient) UpdateAtScope(ctx context.Context, scope string, parameters armresources.TagsPatchResource) (armresources.TagsResource, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.UpdateAtScope")
 	defer done()
 
-	return ac.tags.UpdateAtScope(ctx, scope, parameters)
+	resp, err := ac.tags.UpdateAtScope(ctx, scope, parameters, nil)
+	if err != nil {
+		return armresources.TagsResource{}, err
+	}
+
+	return resp.TagsResource, nil
 }

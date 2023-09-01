@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -60,16 +60,16 @@ func TestReconcileTags(t *testing.T) {
 							Annotation: "my-annotation-2",
 						},
 					}),
-					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{Properties: &armresources.Tags{
 						Tags: map[string]*string{
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": ptr.To("owned"),
 							"externalSystemTag": ptr.To("randomValue"),
 						},
 					}}, nil),
 					s.AnnotationJSON("my-annotation"),
-					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsPatchResource{
-						Operation: "Merge",
-						Properties: &resources.Tags{
+					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", armresources.TagsPatchResource{
+						Operation: ptr.To(armresources.TagsPatchOperationMerge),
+						Properties: &armresources.Tags{
 							Tags: map[string]*string{
 								"foo":   ptr.To("bar"),
 								"thing": ptr.To("stuff"),
@@ -77,16 +77,16 @@ func TestReconcileTags(t *testing.T) {
 						},
 					}),
 					s.UpdateAnnotationJSON("my-annotation", map[string]interface{}{"foo": "bar", "thing": "stuff"}),
-					m.GetAtScope(gomockinternal.AContext(), "/sub/123/other/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+					m.GetAtScope(gomockinternal.AContext(), "/sub/123/other/scope").Return(armresources.TagsResource{Properties: &armresources.Tags{
 						Tags: map[string]*string{
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": ptr.To("owned"),
 							"externalSystem2Tag": ptr.To("randomValue2"),
 						},
 					}}, nil),
 					s.AnnotationJSON("my-annotation-2"),
-					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/other/scope", resources.TagsPatchResource{
-						Operation: "Merge",
-						Properties: &resources.Tags{
+					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/other/scope", armresources.TagsPatchResource{
+						Operation: ptr.To(armresources.TagsPatchOperationMerge),
+						Properties: &armresources.Tags{
 							Tags: map[string]*string{
 								"tag1": ptr.To("value1"),
 							},
@@ -111,7 +111,7 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil)
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{}, nil)
 			},
 		},
 		{
@@ -131,11 +131,11 @@ func TestReconcileTags(t *testing.T) {
 							Annotation: annotation,
 						},
 					}),
-					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil),
+					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{}, nil),
 					s.AnnotationJSON(annotation),
-					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsPatchResource{
-						Operation: "Merge",
-						Properties: &resources.Tags{
+					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", armresources.TagsPatchResource{
+						Operation: ptr.To(armresources.TagsPatchOperationMerge),
+						Properties: &armresources.Tags{
 							Tags: map[string]*string{
 								"foo":   ptr.To("bar"),
 								"thing": ptr.To("stuff"),
@@ -161,7 +161,7 @@ func TestReconcileTags(t *testing.T) {
 							Annotation: "my-annotation",
 						},
 					}),
-					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{Properties: &armresources.Tags{
 						Tags: map[string]*string{
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": ptr.To("owned"),
 							"foo":   ptr.To("bar"),
@@ -169,9 +169,9 @@ func TestReconcileTags(t *testing.T) {
 						},
 					}}, nil),
 					s.AnnotationJSON("my-annotation").Return(map[string]interface{}{"foo": "bar", "thing": "stuff"}, nil),
-					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsPatchResource{
-						Operation: "Delete",
-						Properties: &resources.Tags{
+					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", armresources.TagsPatchResource{
+						Operation: ptr.To(armresources.TagsPatchOperationDelete),
+						Properties: &armresources.Tags{
 							Tags: map[string]*string{
 								"thing": ptr.To("stuff"),
 							},
@@ -196,7 +196,7 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 		{
@@ -213,20 +213,20 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{Properties: &armresources.Tags{
 					Tags: map[string]*string{
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": ptr.To("owned"),
 					},
 				}}, nil)
 				s.AnnotationJSON("my-annotation")
-				m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsPatchResource{
-					Operation: "Merge",
-					Properties: &resources.Tags{
+				m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", armresources.TagsPatchResource{
+					Operation: ptr.To(armresources.TagsPatchOperationMerge),
+					Properties: &armresources.Tags{
 						Tags: map[string]*string{
 							"key": ptr.To("value"),
 						},
 					},
-				}).Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
+				}).Return(armresources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 		{
@@ -243,7 +243,7 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{Properties: &armresources.Tags{
 					Tags: map[string]*string{
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": ptr.To("owned"),
 						"key": ptr.To("value"),

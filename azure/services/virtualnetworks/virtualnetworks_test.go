@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -44,8 +44,8 @@ var (
 		AdditionalTags: map[string]string{"foo": "bar"},
 	}
 
-	managedTags = resources.TagsResource{
-		Properties: &resources.Tags{
+	managedTags = armresources.TagsResource{
+		Properties: &armresources.Tags{
 			Tags: map[string]*string{
 				"foo": ptr.To("bar"),
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": ptr.To("owned"),
@@ -53,8 +53,8 @@ var (
 		},
 	}
 
-	unmanagedTags = resources.TagsResource{
-		Properties: &resources.Tags{
+	unmanagedTags = armresources.TagsResource{
+		Properties: &armresources.Tags{
 			Tags: map[string]*string{
 				"foo":       ptr.To("bar"),
 				"something": ptr.To("else"),
@@ -304,7 +304,7 @@ func TestIsVnetManaged(t *testing.T) {
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder) {
 				s.VNetSpec().Return(&fakeVNetSpec)
 				s.SubscriptionID().Return("123")
-				m.GetAtScope(gomockinternal.AContext(), azure.VNetID("123", fakeVNetSpec.ResourceGroupName(), fakeVNetSpec.Name)).Return(resources.TagsResource{}, internalError)
+				m.GetAtScope(gomockinternal.AContext(), azure.VNetID("123", fakeVNetSpec.ResourceGroupName(), fakeVNetSpec.Name)).Return(armresources.TagsResource{}, internalError)
 			},
 		},
 	}
