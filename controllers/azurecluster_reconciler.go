@@ -68,6 +68,10 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, err
 	}
+	vnetPeeringsSvc, err := vnetpeerings.New(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &azureClusterService{
 		scope: scope,
 		services: []azure.ServiceReconciler{
@@ -78,7 +82,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			publicips.New(scope),
 			natGatewaysSvc,
 			subnets.New(scope),
-			vnetpeerings.New(scope),
+			vnetPeeringsSvc,
 			loadbalancers.New(scope),
 			privatedns.New(scope),
 			bastionHostsSvc,
