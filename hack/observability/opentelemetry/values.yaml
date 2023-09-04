@@ -27,7 +27,7 @@ config:
 image:
   repository: otel/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
-  tag: 0.75.0
+  tag: 0.84.0
 command:
   name: otelcol-contrib
 
