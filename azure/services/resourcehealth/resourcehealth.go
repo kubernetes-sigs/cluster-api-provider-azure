@@ -53,11 +53,15 @@ type Service struct {
 }
 
 // New creates a new service.
-func New(scope ResourceHealthScope) *Service {
+func New(scope ResourceHealthScope) (*Service, error) {
+	cli, err := newClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Scope:  scope,
-		client: newClient(scope),
-	}
+		client: cli,
+	}, nil
 }
 
 // Name returns the service name.

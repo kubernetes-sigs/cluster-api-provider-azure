@@ -19,39 +19,44 @@ package resourcehealth
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resourcehealth/mgmt/2020-05-01/resourcehealth"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth"
+	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // client wraps go-sdk.
 type client interface {
-	GetByResource(context.Context, string) (resourcehealth.AvailabilityStatus, error)
+	GetByResource(context.Context, string) (armresourcehealth.AvailabilityStatus, error)
 }
 
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
-	availabilityStatuses resourcehealth.AvailabilityStatusesClient
+	availabilityStatuses *armresourcehealth.AvailabilityStatusesClient
 }
 
-// newClient creates a new resource health client from subscription ID.
-func newClient(auth azure.Authorizer) *azureClient {
-	c := newResourceHealthClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &azureClient{c}
-}
-
-// newResourceHealthClient creates a new resource health client from subscription ID.
-func newResourceHealthClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) resourcehealth.AvailabilityStatusesClient {
-	healthClient := resourcehealth.NewAvailabilityStatusesClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&healthClient.Client, authorizer)
-	return healthClient
+// newClient creates a new resource health client from an authorizer.
+func newClient(auth azure.Authorizer) (*azureClient, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create resourcehealth client options")
+	}
+	factory, err := armresourcehealth.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armresourcehealth client factory")
+	}
+	return &azureClient{factory.NewAvailabilityStatusesClient()}, nil
 }
 
 // GetByResource gets the availability status for the specified resource.
-func (ac *azureClient) GetByResource(ctx context.Context, resourceURI string) (resourcehealth.AvailabilityStatus, error) {
+func (ac *azureClient) GetByResource(ctx context.Context, resourceURI string) (armresourcehealth.AvailabilityStatus, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourcehealth.AzureClient.GetByResource")
 	defer done()
 
-	return ac.availabilityStatuses.GetByResource(ctx, resourceURI, "", "")
+	opts := &armresourcehealth.AvailabilityStatusesClientGetByResourceOptions{}
+	resp, err := ac.availabilityStatuses.GetByResource(ctx, resourceURI, opts)
+	if err != nil {
+		return armresourcehealth.AvailabilityStatus{}, err
+	}
+	return resp.AvailabilityStatus, nil
 }

@@ -19,21 +19,22 @@ package converters
 import (
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/resourcehealth/mgmt/2020-05-01/resourcehealth"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 )
 
 // SDKAvailabilityStatusToCondition converts an Azure Resource Health availability status to a status condition.
-func SDKAvailabilityStatusToCondition(availStatus resourcehealth.AvailabilityStatus) *clusterv1.Condition {
+func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.AvailabilityStatus) *clusterv1.Condition {
 	if availStatus.Properties == nil {
 		return conditions.FalseCondition(infrav1.AzureResourceAvailableCondition, "", "", "")
 	}
 
 	state := availStatus.Properties.AvailabilityState
 
-	if state == resourcehealth.AvailabilityStateValuesAvailable {
+	if ptr.Deref(state, "") == armresourcehealth.AvailabilityStateValuesAvailable {
 		return conditions.TrueCondition(infrav1.AzureResourceAvailableCondition)
 	}
 
@@ -53,10 +54,10 @@ func SDKAvailabilityStatusToCondition(availStatus resourcehealth.AvailabilitySta
 	}
 
 	var severity clusterv1.ConditionSeverity
-	switch availStatus.Properties.AvailabilityState {
-	case resourcehealth.AvailabilityStateValuesUnavailable:
+	switch ptr.Deref(availStatus.Properties.AvailabilityState, "") {
+	case armresourcehealth.AvailabilityStateValuesUnavailable:
 		severity = clusterv1.ConditionSeverityError
-	case resourcehealth.AvailabilityStateValuesDegraded, resourcehealth.AvailabilityStateValuesUnknown:
+	case armresourcehealth.AvailabilityStateValuesDegraded, armresourcehealth.AvailabilityStateValuesUnknown:
 		severity = clusterv1.ConditionSeverityWarning
 	}
 

@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	resourcehealth "github.com/Azure/azure-sdk-for-go/services/resourcehealth/mgmt/2020-05-01/resourcehealth"
+	armresourcehealth "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,10 +52,10 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 }
 
 // GetByResource mocks base method.
-func (m *Mockclient) GetByResource(arg0 context.Context, arg1 string) (resourcehealth.AvailabilityStatus, error) {
+func (m *Mockclient) GetByResource(arg0 context.Context, arg1 string) (armresourcehealth.AvailabilityStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByResource", arg0, arg1)
-	ret0, _ := ret[0].(resourcehealth.AvailabilityStatus)
+	ret0, _ := ret[0].(armresourcehealth.AvailabilityStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
