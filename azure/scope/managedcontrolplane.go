@@ -591,6 +591,7 @@ func (s *ManagedControlPlaneScope) MakeEmptyKubeConfigSecret() corev1.Secret {
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
 			},
+			Labels: map[string]string{clusterv1.ClusterNameLabel: s.Cluster.Name},
 		},
 	}
 }
