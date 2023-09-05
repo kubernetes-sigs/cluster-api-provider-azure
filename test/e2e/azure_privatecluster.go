@@ -95,6 +95,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		ClusterProxy:            publicClusterProxy,
 		ClusterctlConfigPath:    input.ClusterctlConfigPath,
 		InfrastructureProviders: input.E2EConfig.InfrastructureProviders(),
+		AddonProviders:          input.E2EConfig.AddonProviders(),
 		LogFolder:               filepath.Join(input.ArtifactFolder, "clusters", input.ClusterName),
 	}, input.E2EConfig.GetIntervals(specName, "wait-controllers")...)
 

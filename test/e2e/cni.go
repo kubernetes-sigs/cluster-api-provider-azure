@@ -67,7 +67,7 @@ func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomCluster
 func InstallCalicoHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
 	specName := "calico-install"
 
-	By("Installing Calico CNI via helm")
+	By("Installing Calico via Helm")
 	values := getCalicoValues(cidrBlocks)
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 	InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values, os.Getenv(CalicoVersion))

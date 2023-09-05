@@ -3,6 +3,7 @@ kind: Cluster
 metadata:
   labels:
     cni: ${CLUSTER_NAME}-calico
+    installCloudProviderAzureChart: "true"
   name: ${CLUSTER_NAME}
   namespace: default
 spec:

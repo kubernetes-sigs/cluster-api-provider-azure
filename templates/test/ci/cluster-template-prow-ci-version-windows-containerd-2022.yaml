@@ -5,6 +5,7 @@ metadata:
     cni-windows: ${CLUSTER_NAME}-calico
     containerd-logger: enabled
     csi-proxy: enabled
+    enabledCloudProviderAzureChart: true
     metrics-server: enabled
   name: ${CLUSTER_NAME}
   namespace: default

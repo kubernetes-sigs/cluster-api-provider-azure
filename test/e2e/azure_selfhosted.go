@@ -134,6 +134,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 			ClusterProxy:            selfHostedClusterProxy,
 			ClusterctlConfigPath:    input.ClusterctlConfigPath,
 			InfrastructureProviders: input.E2EConfig.InfrastructureProviders(),
+			AddonProviders:          input.E2EConfig.AddonProviders(),
 			LogFolder:               filepath.Join(input.ArtifactFolder, "clusters", cluster.Name),
 		}, input.E2EConfig.GetIntervals(specName, "wait-controllers")...)
 

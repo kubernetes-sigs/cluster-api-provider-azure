@@ -241,6 +241,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithBootstrapProviders:      []string{"kubeadm:v1.0.5"},
 						InitWithControlPlaneProviders:   []string{"kubeadm:v1.0.5"},
 						InitWithInfrastructureProviders: []string{"azure:v1.0.2"},
+						// Note: this probably won't work with CAAPH since the Helm install only works with CAPI/clusterctl v1.5.0.
 					}
 				})
 			})

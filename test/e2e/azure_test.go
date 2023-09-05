@@ -25,16 +25,20 @@ import (
 	"os"
 	"time"
 
+	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/yaml"
+	addonsv1alpha1 "sigs.k8s.io/cluster-api-addon-provider-helm/api/v1alpha1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Workload cluster creation", func() {
@@ -75,6 +79,17 @@ var _ = Describe("Workload cluster creation", func() {
 		var err error
 		namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterNamePrefix, bootstrapClusterProxy, artifactFolder)
 		Expect(err).NotTo(HaveOccurred())
+
+		By("Initialize bootstrap client to install add-ons")
+		bootstrapClient := bootstrapClusterProxy.GetClient()
+		Expect(bootstrapClient).NotTo(BeNil())
+
+		By("Creating cloud-provider-azure HelmChartProxy")
+		path := cloudProviderAzurePath
+		if useCIArtifacts {
+			path = cloudProviderAzureCIPath
+		}
+		createHelmChartProxyFromFilePath(bootstrapClient, path, namespace.Name)
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
@@ -1056,3 +1071,27 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 })
+
+func createHelmChartProxyFromFilePath(client client.Client, path string, namespace string) {
+	content, err := os.ReadFile(path)
+	Expect(err).NotTo(HaveOccurred())
+
+	result, err := envsubst.EvalEnv(string(content))
+	Expect(err).NotTo(HaveOccurred())
+	content = []byte(result)
+
+	Logf("HelmChartProxy content:\n %s", string(content))
+
+	var helmChartProxy addonsv1alpha1.HelmChartProxy
+	err = yaml.Unmarshal(content, &helmChartProxy)
+	Expect(err).NotTo(HaveOccurred())
+
+	helmChartProxy.Namespace = namespace
+
+	Logf("HelmChartProxy object is %+v", helmChartProxy)
+
+	if err := client.Create(context.Background(), &helmChartProxy); err != nil {
+		Logf("Failed to create HelmChartProxy: %v", err)
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
