@@ -19,8 +19,9 @@ package identities
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/msi/mgmt/2018-11-30/msi"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/msi/armmsi"
+	"github.com/pkg/errors"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -28,39 +29,43 @@ import (
 
 // Client wraps go-sdk.
 type Client interface {
-	Get(ctx context.Context, resourceGroupName, name string) (msi.Identity, error)
+	Get(ctx context.Context, resourceGroupName, name string) (armmsi.Identity, error)
 	GetClientID(ctx context.Context, providerID string) (string, error)
 }
 
 // AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
-	userAssignedIdentities msi.UserAssignedIdentitiesClient
+	userAssignedIdentities *armmsi.UserAssignedIdentitiesClient
 }
 
-// NewClient creates a new MSI client from auth info.
-func NewClient(auth azure.Authorizer) *AzureClient {
-	c := newUserAssignedIdentitiesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{c}
-}
-
-// newUserAssignedIdentitiesClient creates a new MSI client from subscription ID, base URI, and authorizer.
-func newUserAssignedIdentitiesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) msi.UserAssignedIdentitiesClient {
-	userAssignedIdentitiesClient := msi.NewUserAssignedIdentitiesClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&userAssignedIdentitiesClient.Client, authorizer)
-	return userAssignedIdentitiesClient
+// NewClient creates a new MSI client from an authorizer.
+func NewClient(auth azure.Authorizer) (*AzureClient, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create identities client options")
+	}
+	factory, err := armmsi.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armmsi client factory")
+	}
+	return &AzureClient{factory.NewUserAssignedIdentitiesClient()}, nil
 }
 
 // Get returns a managed service identity.
-func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, name string) (msi.Identity, error) {
+func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, name string) (armmsi.Identity, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "identities.AzureClient.Get")
 	defer done()
 
-	return ac.userAssignedIdentities.Get(ctx, resourceGroupName, name)
+	resp, err := ac.userAssignedIdentities.Get(ctx, resourceGroupName, name, nil)
+	if err != nil {
+		return armmsi.Identity{}, err
+	}
+	return resp.Identity, nil
 }
 
 // GetClientID returns the client ID of a managed service identity, given its full URL identifier.
 func (ac *AzureClient) GetClientID(ctx context.Context, providerID string) (string, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "identities.GetClientID")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "identities.AzureClient.GetClientID")
 	defer done()
 
 	parsed, err := azureutil.ParseResourceID(providerID)
@@ -71,5 +76,5 @@ func (ac *AzureClient) GetClientID(ctx context.Context, providerID string) (stri
 	if err != nil {
 		return "", err
 	}
-	return ident.ClientID.String(), nil
+	return ptr.Deref(ident.Properties.ClientID, ""), nil
 }
