@@ -8,7 +8,7 @@ CAPZ supports two load balancer types, `Public` and `Internal`.
 
 `Public`, which is also the default, means that your API Server Load Balancer will have a publicly accessible IP address. This Load Balancer type supports a "public cluster" configuration, which load balances internet source traffic to the apiserver across the cluster's control plane nodes.
 
-`Internal` means that the API Server endpoint will only be accessible from within the cluster's virtual network (or peered VNets). This configuration supports a "private cluster" configuration, which load balances internal VNET source traffic to the apiserver across the cluster's control plane nodes.
+`Internal` means that the API Server endpoint will only be accessible from within the cluster's virtual network (or peered VNets). This configuration supports a "private cluster" configuration, which load balances internal VNET source traffic to the apiserver across the cluster's control plane nodes. Here it is also possible to expose API Server load balancer via a private link, as the source of traffic that is coming via private link will be NAT IP addresses chosen from a workload cluster subnet. 
 
 For a more complete "private cluster" template example, you may refer to [this reference template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-private.yaml) that the capz project maintains.
 
@@ -71,6 +71,45 @@ spec:
       frontendIPs:
         - name: lb-private-ip-frontend
           privateIP: 172.16.0.100
+```
+
+### Private link
+
+Here is an example of configuring the API Server LB with a private link
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: my-private-cluster
+  namespace: default
+spec:
+  location: eastus
+  networkSpec:
+    vnet:
+      name: my-vnet
+      cidrBlocks:
+        - 172.16.0.0/16
+    subnets:
+      - name: my-subnet-cp
+        role: control-plane
+        cidrBlocks:
+          - 172.16.0.0/24
+      - name: my-subnet-node
+        role: node
+        cidrBlocks:
+          - 172.16.2.0/24
+    apiServerLB:
+      type: Internal
+      frontendIPs:
+        - name: lb-private-ip-frontend
+          privateIP: 172.16.0.100
+      privateLinks:
+        - lbFrontendIPConfigNames:
+          - lb-private-ip-frontend
+          natIpConfigurations:
+            - allocationMethod: Dynamic
+              subnet: my-subnet-node
 ```
 
 ### Public IP

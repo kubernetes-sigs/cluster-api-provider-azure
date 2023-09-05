@@ -29,18 +29,19 @@ import (
 
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
-	Name              string
-	ResourceGroup     string
-	SubscriptionID    string
-	CIDRs             []string
-	VNetName          string
-	VNetResourceGroup string
-	IsVNetManaged     bool
-	RouteTableName    string
-	SecurityGroupName string
-	Role              infrav1.SubnetRole
-	NatGatewayName    string
-	ServiceEndpoints  infrav1.ServiceEndpoints
+	Name                    string
+	ResourceGroup           string
+	SubscriptionID          string
+	CIDRs                   []string
+	VNetName                string
+	VNetResourceGroup       string
+	IsVNetManaged           bool
+	RouteTableName          string
+	SecurityGroupName       string
+	Role                    infrav1.SubnetRole
+	NatGatewayName          string
+	ServiceEndpoints        infrav1.ServiceEndpoints
+	UsedForPrivateLinkNATIP bool
 }
 
 // ResourceName returns the name of the subnet.
@@ -79,11 +80,17 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (para
 		AddressPrefixes: &s.CIDRs,
 	}
 
-	// workaround needed to avoid SubscriptionNotRegisteredForFeature for feature Microsoft.Network/AllowMultipleAddressPrefixesOnSubnet.
 	if len(s.CIDRs) == 1 {
 		subnetProperties = network.SubnetPropertiesFormat{
+			// workaround needed to avoid SubscriptionNotRegisteredForFeature for feature Microsoft.Network/AllowMultipleAddressPrefixesOnSubnet.
 			AddressPrefix: &s.CIDRs[0],
 		}
+	}
+
+	if s.UsedForPrivateLinkNATIP {
+		// Disable PrivateLinkServiceNetworkPolicies only if the subnet is used for private link NAT IP in the
+		// AzureCluster spec, otherwise do not set any value here so the existing settings is not affected.
+		subnetProperties.PrivateLinkServiceNetworkPolicies = network.VirtualNetworkPrivateLinkServiceNetworkPoliciesDisabled
 	}
 
 	if s.RouteTableName != "" {

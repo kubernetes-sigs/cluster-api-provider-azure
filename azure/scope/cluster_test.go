@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatelinks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
@@ -3359,6 +3360,188 @@ func TestVNetPeerings(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.VnetPeeringSpecs()
 			g.Expect(tc.want).To(Equal(got))
+		})
+	}
+}
+
+func TestPrivateLinks(t *testing.T) {
+	fakeSubscriptionID := "123"
+	fakeResourceGroup := "my-rg"
+	fakeLocation := "westeurope"
+	fakeClusterName := "private-cluster"
+	fakeClusterNamespace := "hello"
+	fakeVNetResourceGroup := fakeResourceGroup
+	fakeVNetName := fmt.Sprintf("%s-vnet", fakeClusterName)
+	fakeSubnetName := "node-subnet"
+	fakeAPILBName := fmt.Sprintf("%s-apiserver-lb", fakeClusterName)
+
+	tests := []struct {
+		name                     string
+		azureCluster             infrav1.AzureCluster
+		expectedPrivateLinkSpecs []azure.ResourceSpecGetter
+	}{
+		{
+			name: "AzureCluster with a private link",
+			azureCluster: infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fakeClusterName,
+					Namespace: fakeClusterNamespace,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "cluster.x-k8s.io/v1beta1",
+							Kind:       "Cluster",
+							Name:       fakeClusterName,
+						},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ResourceGroup: fakeResourceGroup,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						Location:       fakeLocation,
+						SubscriptionID: fakeSubscriptionID,
+					},
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Name: fakeAPILBName,
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: fmt.Sprintf("%s-frontend", fakeAPILBName),
+								},
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
+							},
+							PrivateLinks: []infrav1.PrivateLink{
+								{
+									Name: fmt.Sprintf("%s-privatelink", fakeAPILBName),
+									NATIPConfigurations: []infrav1.PrivateLinkNATIPConfiguration{
+										{
+											AllocationMethod: string(infrav1.NATIPAllocationMethodDynamic),
+											Subnet:           fakeSubnetName,
+										},
+									},
+									LBFrontendIPConfigNames: []string{
+										fmt.Sprintf("%s-frontend", fakeAPILBName),
+									},
+									AllowedSubscriptions: []string{
+										fakeSubscriptionID,
+									},
+									AutoApprovedSubscriptions: []string{
+										fakeSubscriptionID,
+									},
+								},
+							},
+						},
+						Vnet: infrav1.VnetSpec{
+							ResourceGroup: fakeVNetResourceGroup,
+							Name:          fakeVNetName,
+						},
+						Subnets: infrav1.Subnets{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: fakeSubnetName,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedPrivateLinkSpecs: []azure.ResourceSpecGetter{
+				&privatelinks.PrivateLinkSpec{
+					Name:              fmt.Sprintf("%s-privatelink", fakeAPILBName),
+					ResourceGroup:     fakeResourceGroup,
+					SubscriptionID:    fakeSubscriptionID,
+					Location:          fakeLocation,
+					VNetResourceGroup: fakeVNetResourceGroup,
+					VNet:              fakeVNetName,
+					LoadBalancerName:  fakeAPILBName,
+					LBFrontendIPConfigNames: []string{
+						fmt.Sprintf("%s-frontend", fakeAPILBName),
+					},
+					NATIPConfiguration: []privatelinks.NATIPConfiguration{
+						{
+							AllocationMethod: "Dynamic",
+							Subnet:           fakeSubnetName,
+						},
+					},
+					AllowedSubscriptions: []string{
+						fakeSubscriptionID,
+					},
+					AutoApprovedSubscriptions: []string{
+						fakeSubscriptionID,
+					},
+					ClusterName:    fakeClusterName,
+					AdditionalTags: map[string]string{},
+				},
+			},
+		},
+		{
+			name: "AzureCluster without private links",
+			azureCluster: infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fakeClusterName,
+					Namespace: fakeClusterNamespace,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "cluster.x-k8s.io/v1beta1",
+							Kind:       "Cluster",
+							Name:       fakeClusterName,
+						},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ResourceGroup: fakeResourceGroup,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						Location:       fakeLocation,
+						SubscriptionID: fakeSubscriptionID,
+					},
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: infrav1.LoadBalancerSpec{
+							Name: fakeAPILBName,
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: fmt.Sprintf("%s-frontend", fakeAPILBName),
+								},
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
+							},
+							PrivateLinks: []infrav1.PrivateLink{},
+						},
+					},
+				},
+			},
+			expectedPrivateLinkSpecs: []azure.ResourceSpecGetter{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := runtime.NewScheme()
+			_ = infrav1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fakeClusterName,
+					Namespace: fakeClusterNamespace,
+				},
+			}
+
+			initObjects := []runtime.Object{cluster, &tc.azureCluster}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster:      cluster,
+				AzureCluster: &tc.azureCluster,
+				Client:       fakeClient,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+			got := clusterScope.PrivateLinkSpecs()
+			g.Expect(tc.expectedPrivateLinkSpecs).To(Equal(got))
 		})
 	}
 }
