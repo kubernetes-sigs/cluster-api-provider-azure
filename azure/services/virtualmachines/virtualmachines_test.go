@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest"
@@ -73,13 +74,13 @@ var (
 		Name:          "nic-1",
 		ResourceGroup: "test-group",
 	}
-	fakeNetworkInterface = network.Interface{
-		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-			IPConfigurations: &[]network.InterfaceIPConfiguration{
+	fakeNetworkInterface = armnetwork.Interface{
+		Properties: &armnetwork.InterfacePropertiesFormat{
+			IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 				{
-					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
 						PrivateIPAddress: ptr.To("10.0.0.5"),
-						PublicIPAddress: &network.PublicIPAddress{
+						PublicIPAddress: &armnetwork.PublicIPAddress{
 							ID: ptr.To("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/pip-1"),
 						},
 					},
@@ -168,7 +169,7 @@ func TestReconcileVM(t *testing.T) {
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
 				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
-				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(network.Interface{}, internalError)
+				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(armnetwork.Interface{}, internalError)
 			},
 		},
 		{

@@ -20,6 +20,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
@@ -69,9 +70,13 @@ func New(scope VMScope) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	interfacesSvc, err := networkinterfaces.NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Scope:            scope,
-		interfacesGetter: networkinterfaces.NewClient(scope),
+		interfacesGetter: interfacesSvc,
 		publicIPsGetter:  publicips.NewClient(scope),
 		identitiesGetter: identitiesSvc,
 		Reconciler:       async.New(scope, Client, Client),
@@ -219,30 +224,30 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 			return addresses, err
 		}
 
-		nic, ok := existingNic.(network.Interface)
+		nic, ok := existingNic.(armnetwork.Interface)
 		if !ok {
-			return nil, errors.Errorf("%T is not a network.Interface", existingNic)
+			return nil, errors.Errorf("%T is not an armnetwork.Interface", existingNic)
 		}
 
-		if nic.IPConfigurations == nil {
+		if nic.Properties.IPConfigurations == nil {
 			continue
 		}
-		for _, ipConfig := range *nic.IPConfigurations {
-			if ipConfig.PrivateIPAddress != nil {
+		for _, ipConfig := range nic.Properties.IPConfigurations {
+			if ipConfig != nil && ipConfig.Properties != nil && ipConfig.Properties.PrivateIPAddress != nil {
 				addresses = append(addresses,
 					corev1.NodeAddress{
 						Type:    corev1.NodeInternalIP,
-						Address: ptr.Deref(ipConfig.PrivateIPAddress, ""),
+						Address: ptr.Deref(ipConfig.Properties.PrivateIPAddress, ""),
 					},
 				)
 			}
 
-			if ipConfig.PublicIPAddress == nil {
+			if ipConfig.Properties.PublicIPAddress == nil {
 				continue
 			}
 			// ID is the only field populated in PublicIPAddress sub-resource.
 			// Thus, we have to go fetch the publicIP with the name.
-			publicIPName := getResourceNameByID(ptr.Deref(ipConfig.PublicIPAddress.ID, ""))
+			publicIPName := getResourceNameByID(ptr.Deref(ipConfig.Properties.PublicIPAddress.ID, ""))
 			publicNodeAddress, err := s.getPublicIPAddress(ctx, publicIPName, rgName)
 			if err != nil {
 				return addresses, err
