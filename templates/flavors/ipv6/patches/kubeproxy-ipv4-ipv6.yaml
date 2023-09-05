@@ -1,0 +1,7 @@
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+metadata:
+  name: ${CLUSTER_NAME}-kube-proxy
+  namespace: kube-system
+spec:
+  clusterCIDR: 2001:1234:5678:9a40::/58,10.244.0.0/16

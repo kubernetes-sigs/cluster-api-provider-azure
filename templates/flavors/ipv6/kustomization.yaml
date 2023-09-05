@@ -3,6 +3,7 @@ resources:
   - ../base
   - ../../azure-cluster-identity
   - machine-deployment.yaml
+  - patches/kubeproxy-ipv4-ipv6.yaml
 
 patchesStrategicMerge:
   - ../../azure-cluster-identity/azurecluster-identity-ref.yaml

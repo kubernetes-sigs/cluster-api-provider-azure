@@ -257,3 +257,11 @@ spec:
       - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
         /etc/resolv.conf
       - systemctl restart systemd-resolved
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+metadata:
+  name: ${CLUSTER_NAME}-kube-proxy
+  namespace: default
+spec:
+  clusterCIDR: 2001:1234:5678:9a40::/58,10.244.0.0/16
