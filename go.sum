@@ -69,8 +69,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/search/armsearch v1.1.0 h1
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/servicebus/armservicebus v1.1.1 h1:h+ZMdUM0/8oVqHjY9+1rupIvT0craBLapKhuzWui9lo=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.0.0 h1:TMEyRFKh1zaSPmoQh3kxK+xRAYVq8guCI/7SMO0F3KY=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.0.0 h1:vsovXlTyKHZXnqzQyt7QMVkwpJBDkHchQL53qXaGBRY=
-github.com/Azure/azure-service-operator/v2 v2.2.0 h1:tTpEB6+umNnN+VG82/nWPG3k7neYUkJDBi7urZTZatw=
-github.com/Azure/azure-service-operator/v2 v2.2.0/go.mod h1:gQZvsZuZmdS7QHHYcwviN0q/AsaE+u7C6Tm2RdhRNv8=
+github.com/Azure/azure-service-operator/v2 v2.3.0 h1:kG0eY4bSrGOdRYTy28PbdpYLuyX6k8uv64vRx/oN4c0=
+github.com/Azure/azure-service-operator/v2 v2.3.0/go.mod h1:q0DFanVTyiTyRqeMu+s16zokLNXsLkCzoD4QcMmdAi0=
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOElx5B5HZ4hJQsoJ/PvUvKRhJHDQXO8P8=
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/Azure/go-autorest v14.2.0+incompatible h1:V5VMDjClD3GiElqLWO7mz2MxNAK/vTfRHdAubSIPRgs=
