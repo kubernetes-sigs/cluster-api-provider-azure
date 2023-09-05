@@ -17,11 +17,23 @@ limitations under the License.
 package converters
 
 import (
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
+
+// ExtendedLocationToNetworkSDKv2 converts an infrav1.ExtendedLocationSpec to an armnetwork.ExtendedLocation.
+func ExtendedLocationToNetworkSDKv2(src *infrav1.ExtendedLocationSpec) *armnetwork.ExtendedLocation {
+	if src == nil {
+		return nil
+	}
+	return &armnetwork.ExtendedLocation{
+		Name: ptr.To(src.Name),
+		Type: ptr.To(armnetwork.ExtendedLocationTypes(src.Type)),
+	}
+}
 
 // ExtendedLocationToNetworkSDK converts infrav1.ExtendedLocationSpec to network.ExtendedLocation.
 func ExtendedLocationToNetworkSDK(src *infrav1.ExtendedLocationSpec) *network.ExtendedLocation {

@@ -100,7 +100,7 @@ func TestGetSubnetAddressesV2(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
-			got := GetSubnetAddressesV2(tt.subnet)
+			got := GetSubnetAddressesV2(&tt.subnet)
 			g.Expect(got).To(Equal(tt.want), fmt.Sprintf("got: %v, want: %v", got, tt.want))
 		})
 	}
