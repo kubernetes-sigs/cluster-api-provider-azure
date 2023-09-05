@@ -4,6 +4,7 @@ namespace: default
 resources:
   - ../../../flavors/dual-stack
   - machine-pool-dualstack.yaml
+  - ../../../caaph/cloud-provider-azure.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml

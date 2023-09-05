@@ -4,6 +4,7 @@ namespace: default
 resources:
   - ../../../flavors/private
   - cni-resource-set.yaml
+  - ../../../caaph/cloud-provider-azure.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml

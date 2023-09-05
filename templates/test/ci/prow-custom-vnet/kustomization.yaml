@@ -4,6 +4,7 @@ namespace: default
 resources:
   - ../../../flavors/default
   - ../prow/mhc.yaml
+  - ../../../caaph/cloud-provider-azure.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml

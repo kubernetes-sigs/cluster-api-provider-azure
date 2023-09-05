@@ -9,6 +9,7 @@ resources:
   - kubeadm-config-template.yaml
   - windows.yaml
   - ../../../azure-cluster-identity
+  - ../../../caaph/cloud-provider-azure.yaml
 patchesStrategicMerge:
   - patches.yaml
   - variables.yaml

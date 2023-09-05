@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/nvidia-gpu
+  - ../../../caaph/cloud-provider-azure.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml

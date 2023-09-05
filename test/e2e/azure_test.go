@@ -80,17 +80,6 @@ var _ = Describe("Workload cluster creation", func() {
 		namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterNamePrefix, bootstrapClusterProxy, artifactFolder)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Initialize bootstrap client to install add-ons")
-		bootstrapClient := bootstrapClusterProxy.GetClient()
-		Expect(bootstrapClient).NotTo(BeNil())
-
-		By("Creating cloud-provider-azure HelmChartProxy")
-		path := cloudProviderAzurePath
-		if useCIArtifacts {
-			path = cloudProviderAzureCIPath
-		}
-		createHelmChartProxyFromFilePath(bootstrapClient, path, namespace.Name)
-
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
 		spClientSecret := os.Getenv(AzureClientSecret)

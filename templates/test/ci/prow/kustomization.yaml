@@ -10,6 +10,7 @@ resources:
   - ../../../azure-cluster-identity
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
   - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
+  - ../../../caaph/cloud-provider-azure.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml

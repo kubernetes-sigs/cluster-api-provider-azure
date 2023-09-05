@@ -4,6 +4,7 @@ namespace: default
 resources:
   - ../../../flavors/ipv6
   - machine-pool-ipv6.yaml
+  - ../../../caaph/cloud-provider-azure.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml

@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/default
+  - ../../../caaph/cloud-provider-azure.yaml
 patchesStrategicMerge:
   - ../patches/azureclusteridentity-azwi.yaml
   - ../patches/tags.yaml

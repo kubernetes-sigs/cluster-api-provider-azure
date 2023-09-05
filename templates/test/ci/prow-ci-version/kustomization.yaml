@@ -4,6 +4,7 @@ namespace: default
 resources:
   - ../prow
   - ../../../addons/metrics-server/metrics-server-resource-set.yaml
+  # TODO: make this the CI version
 patchesStrategicMerge:
   - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
