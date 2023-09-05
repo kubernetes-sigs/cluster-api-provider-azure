@@ -19,8 +19,8 @@ package privatedns
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -28,47 +28,20 @@ import (
 
 // azureRecordsClient contains the Azure go-sdk Client for record sets.
 type azureRecordsClient struct {
-	recordsets privatedns.RecordSetsClient
+	recordsets *armprivatedns.RecordSetsClient
 }
 
-// newRecordSetsClient creates a new record sets client from subscription ID.
-func newRecordSetsClient(auth azure.Authorizer) *azureRecordsClient {
-	recordsClient := privatedns.NewRecordSetsClientWithBaseURI(auth.BaseURI(), auth.SubscriptionID())
-	azure.SetAutoRestClientDefaults(&recordsClient.Client, auth.Authorizer())
-	return &azureRecordsClient{
-		recordsets: recordsClient,
-	}
-}
-
-// CreateOrUpdateAsync creates or updates a record asynchronously.
-// Creating a record set is not a long running operation, so we don't ever return a future.
-func (arc *azureRecordsClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureRecordsClient.CreateOrUpdateAsync")
-	defer done()
-
-	set, ok := parameters.(privatedns.RecordSet)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a privatedns.RecordSet", parameters)
-	}
-
-	// Determine record type.
-	var (
-		recordType privatedns.RecordType
-		aRecords   = set.RecordSetProperties.ARecords
-		aaaRecords = set.RecordSetProperties.AaaaRecords
-	)
-	if aRecords != nil && len(*aRecords) > 0 && (*aRecords)[0].Ipv4Address != nil {
-		recordType = privatedns.A
-	} else if aaaRecords != nil && len(*aaaRecords) > 0 && (*aaaRecords)[0].Ipv6Address != nil {
-		recordType = privatedns.AAAA
-	}
-
-	recordSet, err := arc.recordsets.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), recordType, spec.ResourceName(), set, "", "")
+// newRecordSetsClient creates a record sets client from an authorizer.
+func newRecordSetsClient(auth azure.Authorizer) (*azureRecordsClient, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
 	if err != nil {
-		return nil, nil, err
+		return nil, errors.Wrap(err, "failed to create recordsets client options")
 	}
-
-	return recordSet, nil, err
+	factory, err := armprivatedns.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armprivatedns client factory")
+	}
+	return &azureRecordsClient{factory.NewRecordSetsClient()}, nil
 }
 
 // Get gets the specified record set. Noop for records.
@@ -76,17 +49,37 @@ func (arc *azureRecordsClient) Get(ctx context.Context, spec azure.ResourceSpecG
 	return nil, nil
 }
 
+// CreateOrUpdateAsync creates or updates a record asynchronously.
+// Creating a record set is not a long-running operation, so we don't ever return a future.
+func (arc *azureRecordsClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armprivatedns.RecordSetsClientCreateOrUpdateResponse], err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureRecordsClient.CreateOrUpdateAsync")
+	defer done()
+
+	set, ok := parameters.(armprivatedns.RecordSet)
+	if !ok && parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armprivatedns.RecordSet", parameters)
+	}
+
+	// Determine record type.
+	var (
+		recordType armprivatedns.RecordType
+		aRecords   = set.Properties.ARecords
+		aaaRecords = set.Properties.AaaaRecords
+	)
+	if len(aRecords) > 0 && (aRecords)[0].IPv4Address != nil {
+		recordType = armprivatedns.RecordTypeA
+	} else if len(aaaRecords) > 0 && (aaaRecords)[0].IPv6Address != nil {
+		recordType = armprivatedns.RecordTypeAAAA
+	}
+
+	recordSet, err := arc.recordsets.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), recordType, spec.ResourceName(), set, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	return recordSet, nil, err
+}
+
 // DeleteAsync deletes a record asynchronously. Noop for records.
-func (arc *azureRecordsClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
-	return nil, nil
-}
-
-// IsDone returns true if the long-running operation has completed. Noop for records.
-func (arc *azureRecordsClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
-	return true, nil
-}
-
-// Result fetches the result of a long-running operation future. Noop for records.
-func (arc *azureRecordsClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
+func (arc *azureRecordsClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armprivatedns.RecordSetsClientDeleteResponse], err error) {
 	return nil, nil
 }
