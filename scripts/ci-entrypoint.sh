@@ -151,18 +151,6 @@ get_cidrs() {
     fi
 }
 
-# get_cloud_provider determines if the Cluster is using an intree or external cloud-provider from the KubeadmConfigSpec.
-# any retryable operation in this function must return a non-zero exit code on failure so that we can
-# retry it using a `until get_cloud_provider; do sleep 5; done` pattern;
-# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
-get_cloud_provider() {
-    CLOUD_PROVIDER=$("${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get kubeadmcontrolplane -l cluster.x-k8s.io/cluster-name="${CLUSTER_NAME}" -o=jsonpath='{.items[0].spec.kubeadmConfigSpec.clusterConfiguration.controllerManager.extraArgs.cloud-provider}') || return 1
-    if [[ "${CLOUD_PROVIDER:-}" = "azure" ]]; then
-        IN_TREE="true"
-        export IN_TREE
-    fi
-}
-
 # install_calico installs Calico CNI componentry onto the Cluster
 # any retryable operation in this function must return a non-zero exit code on failure so that we can
 # retry it using a `until install_calico; do sleep 5; done` pattern;
@@ -194,39 +182,6 @@ install_calico() {
         CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
     fi
     "${HELM}" upgrade calico --install --repo https://docs.tigera.io/calico/charts --version "${CALICO_VERSION}" tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace calico-system || return 1
-}
-
-# install_cloud_provider_azure installs OOT cloud-provider-azure componentry onto the Cluster.
-# Any retryable operation in this function must return a non-zero exit code on failure so that we can
-# retry it using a `until install_cloud_provider_azure; do sleep 5; done` pattern;
-# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
-install_cloud_provider_azure() {
-    CLOUD_CONFIG="/etc/kubernetes/azure.json"
-    CONFIG_SECRET_NAME=""
-    ENABLE_DYNAMIC_RELOADING=false
-    if [[ -n "${LOAD_CLOUD_CONFIG_FROM_SECRET:-}" ]]; then
-        CLOUD_CONFIG=""
-        CONFIG_SECRET_NAME="azure-cloud-provider"
-        ENABLE_DYNAMIC_RELOADING=true
-        copy_secret || return 1
-    fi
-
-    CCM_CLUSTER_CIDR="${CIDR0}"
-    if [[ -n "${CIDR1:-}" ]]; then
-        CCM_CLUSTER_CIDR="${CIDR0}\,${CIDR1}"
-    fi
-    echo "CCM cluster CIDR: ${CCM_CLUSTER_CIDR:-}"
-
-    export CCM_LOG_VERBOSITY="${CCM_LOG_VERBOSITY:-4}"
-    echo "Installing cloud-provider-azure components via helm"
-    "${HELM}" upgrade cloud-provider-azure --install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure \
-        --set infra.clusterName="${CLUSTER_NAME}" \
-        --set cloudControllerManager.replicas="${CCM_COUNT}" \
-        --set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}"  \
-        --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
-        --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
-        --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}" \
-        --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}" "${CCM_IMG_ARGS[@]}" || return 1
 }
 
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
@@ -274,15 +229,6 @@ install_addons() {
     until install_calico; do
         sleep 5
     done
-    # install cloud-provider-azure components, if using out-of-tree
-    until get_cloud_provider; do
-        sleep 5
-    done
-    if [[ -z "${IN_TREE:-}" ]]; then
-        until install_cloud_provider_azure; do
-            sleep 5
-        done
-    fi
     # In order to determine the successful outcome of CNI and cloud-provider-azure,
     # we need to wait a little bit for nodes and pods terminal state,
     # so we block successful return upon the cluster being fully operational.
