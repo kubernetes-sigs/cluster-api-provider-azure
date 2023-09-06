@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -63,7 +63,7 @@ func TestZoneSpec_Parameters(t *testing.T) {
 			expectedError: "",
 			spec:          zoneSpec,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(Equal(privatedns.PrivateZone{
+				g.Expect(result).To(Equal(armprivatedns.PrivateZone{
 					Location: ptr.To(azure.Global),
 					Tags: map[string]*string{
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
@@ -75,7 +75,7 @@ func TestZoneSpec_Parameters(t *testing.T) {
 			name:          "existing managed private dns zone",
 			expectedError: "",
 			spec:          zoneSpec,
-			existing: privatedns.PrivateZone{Tags: map[string]*string{
+			existing: armprivatedns.PrivateZone{Tags: map[string]*string{
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
 			}},
 			expect: func(g *WithT, result interface{}) {
@@ -86,16 +86,16 @@ func TestZoneSpec_Parameters(t *testing.T) {
 			name:          "existing unmanaged private dns zone",
 			expectedError: "",
 			spec:          zoneSpec,
-			existing:      privatedns.PrivateZone{},
+			existing:      armprivatedns.PrivateZone{},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
 			},
 		},
 		{
 			name:          "type cast error",
-			expectedError: "string is not a privatedns.PrivateZone",
+			expectedError: "string is not an armprivatedns.PrivateZone",
 			spec:          zoneSpec,
-			existing:      "I'm not privatedns.PrivateZone",
+			existing:      "I'm not armprivatedns.PrivateZone",
 		},
 	}
 

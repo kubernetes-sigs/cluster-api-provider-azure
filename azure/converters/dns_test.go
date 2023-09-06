@@ -19,7 +19,7 @@ package converters
 import (
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/onsi/gomega"
 )
 
@@ -27,22 +27,22 @@ func Test_GetRecordType(t *testing.T) {
 	cases := []struct {
 		name   string
 		ip     string
-		expect privatedns.RecordType
+		expect armprivatedns.RecordType
 	}{
 		{
 			name:   "ipv4",
 			ip:     "10.0.0.4",
-			expect: privatedns.A,
+			expect: armprivatedns.RecordTypeA,
 		},
 		{
 			name:   "ipv6",
 			ip:     "2603:1030:805:2::b",
-			expect: privatedns.AAAA,
+			expect: armprivatedns.RecordTypeAAAA,
 		},
 		{
 			name:   "default",
 			ip:     "",
-			expect: privatedns.A,
+			expect: armprivatedns.RecordTypeA,
 		},
 	}
 

@@ -19,7 +19,7 @@ package privatedns
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -57,16 +57,16 @@ func (s LinkSpec) ResourceGroupName() string {
 // Parameters returns the parameters for the virtual network link.
 func (s LinkSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
-		_, ok := existing.(privatedns.VirtualNetworkLink)
+		_, ok := existing.(armprivatedns.VirtualNetworkLink)
 		if !ok {
-			return nil, errors.Errorf("%T is not a privatedns.VirtualNetworkLink", existing)
+			return nil, errors.Errorf("%T is not an armprivatedns.VirtualNetworkLink", existing)
 		}
 		return nil, nil
 	}
 
-	return privatedns.VirtualNetworkLink{
-		VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
-			VirtualNetwork: &privatedns.SubResource{
+	return armprivatedns.VirtualNetworkLink{
+		Properties: &armprivatedns.VirtualNetworkLinkProperties{
+			VirtualNetwork: &armprivatedns.SubResource{
 				ID: ptr.To(azure.VNetID(s.SubscriptionID, s.VNetResourceGroup, s.VNetName)),
 			},
 			RegistrationEnabled: ptr.To(false),

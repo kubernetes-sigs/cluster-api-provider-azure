@@ -17,17 +17,17 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"k8s.io/utils/net"
 )
 
 // GetRecordType returns the SDK record type to use based on the type of IP to map.
 // Currently only allows type A (IPv4) and AAAA (IPv6) records.
-func GetRecordType(ip string) privatedns.RecordType {
+func GetRecordType(ip string) armprivatedns.RecordType {
 	switch {
 	case net.IsIPv6String(ip):
-		return privatedns.AAAA
+		return armprivatedns.RecordTypeAAAA
 	default:
-		return privatedns.A
+		return armprivatedns.RecordTypeA
 	}
 }

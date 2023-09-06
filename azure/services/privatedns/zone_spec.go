@@ -19,7 +19,7 @@ package privatedns
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -53,14 +53,14 @@ func (s ZoneSpec) ResourceGroupName() string {
 // Parameters returns the parameters for the private dns zone.
 func (s ZoneSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
-		_, ok := existing.(privatedns.PrivateZone)
+		_, ok := existing.(armprivatedns.PrivateZone)
 		if !ok {
-			return nil, errors.Errorf("%T is not a privatedns.PrivateZone", existing)
+			return nil, errors.Errorf("%T is not an armprivatedns.PrivateZone", existing)
 		}
 		return nil, nil
 	}
 
-	return privatedns.PrivateZone{
+	return armprivatedns.PrivateZone{
 		Location: ptr.To(azure.Global),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,

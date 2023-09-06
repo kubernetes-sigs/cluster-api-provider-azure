@@ -19,7 +19,7 @@ package privatedns
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -51,24 +51,24 @@ func (s RecordSpec) ResourceGroupName() string {
 // Parameters returns the parameters for a record set.
 func (s RecordSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
-		if _, ok := existing.(privatedns.RecordSet); !ok {
-			return nil, errors.Errorf("%T is not a privatedns.RecordSet", existing)
+		if _, ok := existing.(armprivatedns.RecordSet); !ok {
+			return nil, errors.Errorf("%T is not an armprivatedns.RecordSet", existing)
 		}
 	}
-	set := privatedns.RecordSet{
-		RecordSetProperties: &privatedns.RecordSetProperties{
+	set := armprivatedns.RecordSet{
+		Properties: &armprivatedns.RecordSetProperties{
 			TTL: ptr.To[int64](300),
 		},
 	}
 	recordType := converters.GetRecordType(s.Record.IP)
 	switch recordType {
-	case privatedns.A:
-		set.RecordSetProperties.ARecords = &[]privatedns.ARecord{{
-			Ipv4Address: &s.Record.IP,
+	case armprivatedns.RecordTypeA:
+		set.Properties.ARecords = []*armprivatedns.ARecord{{
+			IPv4Address: &s.Record.IP,
 		}}
-	case privatedns.AAAA:
-		set.RecordSetProperties.AaaaRecords = &[]privatedns.AaaaRecord{{
-			Ipv6Address: &s.Record.IP,
+	case armprivatedns.RecordTypeAAAA:
+		set.Properties.AaaaRecords = []*armprivatedns.AaaaRecord{{
+			IPv6Address: &s.Record.IP,
 		}}
 	default:
 		return nil, errors.Errorf("unknown record type %s", recordType)

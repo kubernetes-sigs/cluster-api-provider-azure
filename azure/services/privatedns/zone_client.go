@@ -18,44 +18,60 @@ package privatedns
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureZonesClient contains the Azure go-sdk Client for private dns zone.
 type azureZonesClient struct {
-	privatezones privatedns.PrivateZonesClient
+	privatezones *armprivatedns.PrivateZonesClient
 }
 
-// newPrivateZonesClient creates a new private zones client from subscription ID.
-func newPrivateZonesClient(auth azure.Authorizer) *azureZonesClient {
-	c := privatedns.NewPrivateZonesClientWithBaseURI(auth.BaseURI(), auth.SubscriptionID())
-	azure.SetAutoRestClientDefaults(&c.Client, auth.Authorizer())
-	return &azureZonesClient{
-		privatezones: c,
+// newPrivateZonesClient creates a private zones client from an authorizer.
+func newPrivateZonesClient(auth azure.Authorizer) (*azureZonesClient, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create privatezones client options")
 	}
+	factory, err := armprivatedns.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armprivatedns client factory")
+	}
+	return &azureZonesClient{factory.NewPrivateZonesClient()}, nil
+}
+
+// Get gets the specified private dns zone.
+func (azc *azureZonesClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureZonesClient.Get")
+	defer done()
+
+	resp, err := azc.privatezones.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp.PrivateZone, nil
 }
 
 // CreateOrUpdateAsync creates or updates a private dns zone asynchronously.
-// It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// It sends a PUT request to Azure and if accepted without error, the func will return a poller which can be used to track the ongoing
 // progress of the operation.
-func (azc *azureZonesClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
+func (azc *azureZonesClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armprivatedns.PrivateZonesClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureZonesClient.CreateOrUpdateAsync")
 	defer done()
 
-	zone, ok := parameters.(privatedns.PrivateZone)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a privatedns.PrivateZone", parameters)
+	zone, ok := parameters.(armprivatedns.PrivateZone)
+	if !ok && parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armprivatedns.PrivateZone", parameters)
 	}
 
-	createFuture, err := azc.privatezones.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), zone, "", "")
+	opts := &armprivatedns.PrivateZonesClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
+	poller, err = azc.privatezones.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), zone, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -63,36 +79,27 @@ func (azc *azureZonesClient) CreateOrUpdateAsync(ctx context.Context, spec azure
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = createFuture.WaitForCompletionRef(ctx, azc.privatezones.Client)
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	resp, err := poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
-		// if an error occurs, return the future.
+		// if an error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return nil, &createFuture, err
+		return nil, poller, err
 	}
-	result, err = createFuture.Result(azc.privatezones)
-	// if the operation completed, return a nil future
-	return result, nil, err
-}
 
-// Get gets the specified private dns zone.
-func (azc *azureZonesClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureZonesClient.Get")
-	defer done()
-	zone, err := azc.privatezones.Get(ctx, spec.ResourceGroupName(), spec.ResourceName())
-	if err != nil {
-		return privatedns.PrivateZone{}, err
-	}
-	return zone, nil
+	// if the operation completed, return a nil poller
+	return resp.PrivateZone, nil, err
 }
 
 // DeleteAsync deletes a private dns zone asynchronously. DeleteAsync sends a DELETE
-// request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// request to Azure and if accepted without error, the func will return a poller which can be used to track the ongoing
 // progress of the operation.
-func (azc *azureZonesClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
+func (azc *azureZonesClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armprivatedns.PrivateZonesClientDeleteResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureZonesClient.DeleteAsync")
 	defer done()
 
-	deleteFuture, err := azc.privatezones.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+	opts := &armprivatedns.PrivateZonesClientBeginDeleteOptions{ResumeToken: resumeToken}
+	poller, err = azc.privatezones.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -100,54 +107,14 @@ func (azc *azureZonesClient) DeleteAsync(ctx context.Context, spec azure.Resourc
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = deleteFuture.WaitForCompletionRef(ctx, azc.privatezones.Client)
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	_, err = poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
-		// if an error occurs, return the future.
+		// if an error occurs, return the Poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return &deleteFuture, err
+		return poller, err
 	}
-	_, err = deleteFuture.Result(azc.privatezones)
-	// if the operation completed, return a nil future.
+
+	// if the operation completed, return a nil poller.
 	return nil, err
-}
-
-// IsDone returns true if the long-running operation has completed.
-func (azc *azureZonesClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureZonesClient.IsDone")
-	defer done()
-
-	return future.DoneWithContext(ctx, azc.privatezones)
-}
-
-// Result fetches the result of a long-running operation future.
-func (azc *azureZonesClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
-	_, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureZonesClient.Result")
-	defer done()
-
-	if future == nil {
-		return nil, errors.Errorf("cannot get result from nil future")
-	}
-
-	switch futureType {
-	case infrav1.PutFuture:
-		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
-		// Unfortunately the FutureAPI can't be casted directly to PrivateZonesCreateOrUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
-		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
-		var createFuture *privatedns.PrivateZonesCreateOrUpdateFuture
-		jsonData, err := future.MarshalJSON()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal future")
-		}
-		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal future data")
-		}
-		return createFuture.Result(azc.privatezones)
-
-	case infrav1.DeleteFuture:
-		// Delete does not return a result private dns zone.
-		return nil, nil
-
-	default:
-		return nil, errors.Errorf("unknown future type %q", futureType)
-	}
 }
