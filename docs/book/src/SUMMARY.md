@@ -35,6 +35,7 @@
     - [Windows](./topics/windows.md)
     - [Flatcar](./topics/flatcar.md)
     - [WebAssembly / WASI Pods](./topics/wasi.md)
+    - [Workload Identity](./topics/workload-identity.md)
 - [Development](./developers/development.md)
     - [Kubernetes Developers](./developers/kubernetes-developers.md)
     - [Releasing](./developers/releasing.md)
