@@ -70,8 +70,6 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
-					c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType)).Return(fakeResource, nil),
-					r.Parameters(gomockinternal.AContext(), fakeResource).Return(fakeParameters, nil),
 					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(fakeResource, nil, nil),
 					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
 				)
@@ -86,8 +84,6 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
-					c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType)).Return(fakeResource, nil),
-					r.Parameters(gomockinternal.AContext(), fakeResource).Return(fakeParameters, nil),
 					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), nil),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 				)
@@ -101,10 +97,10 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
-					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(nil),
 					c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType)).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound}),
 					r.Parameters(gomockinternal.AContext(), nil).Return(fakeParameters, nil),
-					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), nil),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), "", gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), nil),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 				)
 			},
@@ -117,7 +113,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
-					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(nil),
 					c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType)).Return(nil, errors.New("foo")),
 				)
 			},
@@ -131,7 +127,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
-					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(nil),
 					c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType)).Return(fakeResource, nil),
 					r.Parameters(gomockinternal.AContext(), fakeResource).Return(nil, nil),
 				)
@@ -146,7 +142,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
-					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(nil),
 					c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType)).Return(fakeResource, nil),
 					r.Parameters(gomockinternal.AContext(), fakeResource).Return(nil, errors.New("foo")),
 				)

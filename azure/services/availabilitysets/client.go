@@ -64,7 +64,7 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	defer done()
 
 	availabilitySet, ok := parameters.(armcompute.AvailabilitySet)
-	if !ok {
+	if !ok && parameters != nil {
 		return nil, nil, errors.Errorf("%T is not an armcompute.AvailabilitySet", parameters)
 	}
 

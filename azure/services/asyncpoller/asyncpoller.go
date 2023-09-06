@@ -18,7 +18,6 @@ package asyncpoller
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -73,34 +72,40 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 		resumeToken = t
 	}
 
-	// Get the resource if it already exists, and use it to construct the desired resource parameters.
-	var existingResource interface{}
-	if existing, err := s.Creator.Get(ctx, spec); err != nil && !azure.ResourceNotFound(err) {
-		errWrapped := errors.Wrapf(err, "failed to get existing resource %s/%s (service: %s)", rgName, resourceName, serviceName)
-		return nil, azure.WithTransientError(errWrapped, getRetryAfterFromError(err))
-	} else if err == nil {
-		existingResource = existing
-		log.V(2).Info("successfully got existing resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+	// Only when no long running operation is currently in progress do we need to get the parameters.
+	// The polling implemented by the SDK does not use parameters when a resume token exists.
+	var parameters interface{}
+	if resumeToken == "" {
+		// Get the resource if it already exists, and use it to construct the desired resource parameters.
+		var existingResource interface{}
+		if existing, err := s.Creator.Get(ctx, spec); err != nil && !azure.ResourceNotFound(err) {
+			errWrapped := errors.Wrapf(err, "failed to get existing resource %s/%s (service: %s)", rgName, resourceName, serviceName)
+			return nil, azure.WithTransientError(errWrapped, getRetryAfterFromError(err))
+		} else if err == nil {
+			existingResource = existing
+			log.V(2).Info("successfully got existing resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+		}
+
+		// Construct parameters using the resource spec and information from the existing resource, if there is one.
+		parameters, err = spec.Parameters(ctx, existingResource)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get desired parameters for resource %s/%s (service: %s)", rgName, resourceName, serviceName)
+		} else if parameters == nil {
+			// Nothing to do, don't create or update the resource and return the existing resource.
+			log.V(2).Info("resource up to date", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+			return existingResource, nil
+		}
+
+		// Create or update the resource with the desired parameters.
+		if existingResource != nil {
+			log.V(2).Info("updating resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+		} else {
+			log.V(2).Info("creating resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+		}
 	}
 
-	// Construct parameters using the resource spec and information from the existing resource, if there is one.
-	parameters, err := spec.Parameters(ctx, existingResource)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get desired parameters for resource %s/%s (service: %s)", rgName, resourceName, serviceName)
-	} else if parameters == nil {
-		// Nothing to do, don't create or update the resource and return the existing resource.
-		log.V(2).Info("resource up to date", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
-		return existingResource, nil
-	}
-
-	// Create or update the resource with the desired parameters.
-	logMessageVerbPrefix := "creat"
-	if existingResource != nil {
-		logMessageVerbPrefix = "updat"
-	}
-	log.V(2).Info(fmt.Sprintf("%sing resource", logMessageVerbPrefix), "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	result, poller, err := s.Creator.CreateOrUpdateAsync(ctx, spec, resumeToken, parameters)
-	errWrapped := errors.Wrapf(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, rgName, resourceName, serviceName))
+	errWrapped := errors.Wrapf(err, "failed to create or update resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	if poller != nil {
 		future, err := converters.PollerToFuture(poller, infrav1.PutFuture, serviceName, resourceName, rgName)
 		if err != nil {
@@ -115,7 +120,7 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 	// Once the operation is done, delete the long-running operation state.
 	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
 
-	log.V(2).Info(fmt.Sprintf("successfully %sed resource", logMessageVerbPrefix), "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
+	log.V(2).Info("successfully created or updated resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return result, nil
 }
 

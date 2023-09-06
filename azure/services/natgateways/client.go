@@ -66,7 +66,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	defer done()
 
 	natGateway, ok := parameters.(armnetwork.NatGateway)
-	if !ok {
+	if !ok && parameters != nil {
 		return nil, nil, errors.Errorf("%T is not an armnetwork.NatGateway", parameters)
 	}
 

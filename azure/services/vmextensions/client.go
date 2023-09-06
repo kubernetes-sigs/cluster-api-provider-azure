@@ -66,7 +66,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	defer done()
 
 	vmextension, ok := parameters.(armcompute.VirtualMachineExtension)
-	if !ok {
+	if !ok && parameters != nil {
 		return nil, nil, errors.Errorf("%T is not an armcompute.VirtualMachineExtension", parameters)
 	}
 

@@ -93,7 +93,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	defer done()
 
 	natRule, ok := parameters.(armnetwork.InboundNatRule)
-	if !ok {
+	if !ok && parameters != nil {
 		return nil, nil, errors.Errorf("%T is not an armnetwork.InboundNatRule", parameters)
 	}
 
