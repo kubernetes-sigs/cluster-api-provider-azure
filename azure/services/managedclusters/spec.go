@@ -681,6 +681,14 @@ func computeDiffOfNormalizedClusters(managedCluster armcontainerservice.ManagedC
 			Type:                   existingMC.Identity.Type,
 			UserAssignedIdentities: existingMC.Identity.UserAssignedIdentities,
 		}
+
+		// ClientID and PrincipalID are read-only and should not trigger a diff.
+		for _, id := range existingMCClusterNormalized.Identity.UserAssignedIdentities {
+			if id != nil {
+				id.ClientID = nil
+				id.PrincipalID = nil
+			}
+		}
 	}
 
 	if managedCluster.SKU != nil {
