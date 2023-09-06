@@ -63,15 +63,19 @@ type Service struct {
 }
 
 // New creates a new service.
-func New(scope VMScope) *Service {
+func New(scope VMScope) (*Service, error) {
 	Client := NewClient(scope)
+	identitiesSvc, err := identities.NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Scope:            scope,
 		interfacesGetter: networkinterfaces.NewClient(scope),
 		publicIPsGetter:  publicips.NewClient(scope),
-		identitiesGetter: identities.NewClient(scope),
+		identitiesGetter: identitiesSvc,
 		Reconciler:       async.New(scope, Client, Client),
-	}
+	}, nil
 }
 
 // Name returns the service name.

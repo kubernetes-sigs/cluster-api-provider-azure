@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	msi "github.com/Azure/azure-sdk-for-go/services/msi/mgmt/2018-11-30/msi"
+	armmsi "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/msi/armmsi"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,10 +52,10 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockClient) Get(ctx context.Context, resourceGroupName, name string) (msi.Identity, error) {
+func (m *MockClient) Get(ctx context.Context, resourceGroupName, name string) (armmsi.Identity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, resourceGroupName, name)
-	ret0, _ := ret[0].(msi.Identity)
+	ret0, _ := ret[0].(armmsi.Identity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
