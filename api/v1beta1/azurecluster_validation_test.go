@@ -663,6 +663,33 @@ func TestValidateSecurityRule(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "security rule - invalid sources priority",
+			validRule: SecurityRule{
+				Name:        "allow_apiserver",
+				Description: "Allow K8s API Server",
+				Priority:    4000,
+				Source:      ptr.To("*"),
+				Sources: []*string{
+					ptr.To("*"),
+					ptr.To("unknown"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "security rule - valid sources",
+			validRule: SecurityRule{
+				Name:        "allow_apiserver",
+				Description: "Allow K8s API Server",
+				Priority:    4000,
+				Sources: []*string{
+					ptr.To("*"),
+					ptr.To("unknown"),
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, testCase := range tests {
 		testCase := testCase
@@ -674,9 +701,11 @@ func TestValidateSecurityRule(t *testing.T) {
 				field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("securityGroup").Child("securityRules").Index(0),
 			)
 			if testCase.wantErr {
-				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).NotTo(BeNil())
+				g.Expect(len(err)).To(Equal(1))
 			} else {
-				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).To(BeNil())
+				g.Expect(len(err)).To(Equal(0))
 			}
 		})
 	}

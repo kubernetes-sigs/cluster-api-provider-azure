@@ -284,6 +284,12 @@ spec:
                                                 0 and 65535. Asterix '*' can also
                                                 be used to match all ports.
                                               type: string
+                                            sources:
+                                              description: Sources specifies The CIDR
+                                                or source IP ranges.
+                                              items:
+                                                type: string
+                                              type: array
                                           required:
                                           - description
                                           - direction
@@ -774,6 +780,12 @@ spec:
                                               0 and 65535. Asterix '*' can also be
                                               used to match all ports.
                                             type: string
+                                          sources:
+                                            description: Sources specifies The CIDR
+                                              or source IP ranges.
+                                            items:
+                                              type: string
+                                            type: array
                                         required:
                                         - description
                                         - direction
