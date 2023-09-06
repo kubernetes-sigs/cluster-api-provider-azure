@@ -19,7 +19,7 @@ package subnets
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
@@ -61,9 +61,9 @@ func (s *SubnetSpec) OwnerResourceName() string {
 // Parameters returns the parameters for the subnet.
 func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
 	if existing != nil {
-		existingSubnet, ok := existing.(network.Subnet)
+		existingSubnet, ok := existing.(armnetwork.Subnet)
 		if !ok {
-			return nil, errors.Errorf("%T is not a network.Subnet", existing)
+			return nil, errors.Errorf("%T is not an armnetwork.Subnet", existing)
 		}
 
 		if !s.shouldUpdate(existingSubnet) {
@@ -75,71 +75,71 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing interface{}) (para
 		// TODO: change this to terminal error once we add support for handling them
 		return nil, errors.Errorf("custom vnet was provided but subnet %s is missing", s.Name)
 	}
-	subnetProperties := network.SubnetPropertiesFormat{
-		AddressPrefixes: &s.CIDRs,
+	subnetProperties := armnetwork.SubnetPropertiesFormat{
+		AddressPrefixes: azure.PtrSlice(&s.CIDRs),
 	}
 
 	// workaround needed to avoid SubscriptionNotRegisteredForFeature for feature Microsoft.Network/AllowMultipleAddressPrefixesOnSubnet.
 	if len(s.CIDRs) == 1 {
-		subnetProperties = network.SubnetPropertiesFormat{
+		subnetProperties = armnetwork.SubnetPropertiesFormat{
 			AddressPrefix: &s.CIDRs[0],
 		}
 	}
 
 	if s.RouteTableName != "" {
-		subnetProperties.RouteTable = &network.RouteTable{
+		subnetProperties.RouteTable = &armnetwork.RouteTable{
 			ID: ptr.To(azure.RouteTableID(s.SubscriptionID, s.ResourceGroup, s.RouteTableName)),
 		}
 	}
 
 	if s.NatGatewayName != "" {
-		subnetProperties.NatGateway = &network.SubResource{
+		subnetProperties.NatGateway = &armnetwork.SubResource{
 			ID: ptr.To(azure.NatGatewayID(s.SubscriptionID, s.ResourceGroup, s.NatGatewayName)),
 		}
 	}
 
 	if s.SecurityGroupName != "" {
-		subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
+		subnetProperties.NetworkSecurityGroup = &armnetwork.SecurityGroup{
 			ID: ptr.To(azure.SecurityGroupID(s.SubscriptionID, s.ResourceGroup, s.SecurityGroupName)),
 		}
 	}
 
-	serviceEndpoints := make([]network.ServiceEndpointPropertiesFormat, 0, len(s.ServiceEndpoints))
+	serviceEndpoints := make([]armnetwork.ServiceEndpointPropertiesFormat, 0, len(s.ServiceEndpoints))
 	for _, se := range s.ServiceEndpoints {
 		se := se
-		serviceEndpoints = append(serviceEndpoints, network.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: &se.Locations})
+		serviceEndpoints = append(serviceEndpoints, armnetwork.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: azure.PtrSlice(&se.Locations)})
 	}
-	subnetProperties.ServiceEndpoints = &serviceEndpoints
+	subnetProperties.ServiceEndpoints = azure.PtrSlice(&serviceEndpoints)
 
-	return network.Subnet{
-		SubnetPropertiesFormat: &subnetProperties,
+	return armnetwork.Subnet{
+		Properties: &subnetProperties,
 	}, nil
 }
 
 // shouldUpdate returns true if an existing subnet should be updated.
-func (s *SubnetSpec) shouldUpdate(existingSubnet network.Subnet) bool {
+func (s *SubnetSpec) shouldUpdate(existingSubnet armnetwork.Subnet) bool {
 	// No modifications for non-managed subnets
 	if !s.IsVNetManaged {
 		return false
 	}
 
 	// Update the subnet a NAT Gateway was added for backwards compatibility.
-	if s.NatGatewayName != "" && existingSubnet.SubnetPropertiesFormat.NatGateway == nil {
+	if s.NatGatewayName != "" && existingSubnet.Properties.NatGateway == nil {
 		return true
 	}
 
 	// Update the subnet if the service endpoints changed.
-	if existingSubnet.ServiceEndpoints != nil || len(s.ServiceEndpoints) > 0 {
-		var existingServiceEndpoints []network.ServiceEndpointPropertiesFormat
-		if existingSubnet.ServiceEndpoints != nil {
-			for _, se := range *existingSubnet.ServiceEndpoints {
-				existingServiceEndpoints = append(existingServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: se.Service, Locations: se.Locations})
+	if existingSubnet.Properties.ServiceEndpoints != nil || len(s.ServiceEndpoints) > 0 {
+		var existingServiceEndpoints []armnetwork.ServiceEndpointPropertiesFormat
+		if existingSubnet.Properties.ServiceEndpoints != nil {
+			for _, se := range existingSubnet.Properties.ServiceEndpoints {
+				existingServiceEndpoints = append(existingServiceEndpoints, armnetwork.ServiceEndpointPropertiesFormat{Service: se.Service, Locations: se.Locations})
 			}
 		}
-		newServiceEndpoints := make([]network.ServiceEndpointPropertiesFormat, len(s.ServiceEndpoints))
+		newServiceEndpoints := make([]armnetwork.ServiceEndpointPropertiesFormat, len(s.ServiceEndpoints))
 		for _, se := range s.ServiceEndpoints {
 			se := se
-			newServiceEndpoints = append(newServiceEndpoints, network.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: &se.Locations})
+			newServiceEndpoints = append(newServiceEndpoints, armnetwork.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: azure.PtrSlice(&se.Locations)})
 		}
 
 		diff := cmp.Diff(newServiceEndpoints, existingServiceEndpoints)

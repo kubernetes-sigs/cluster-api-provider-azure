@@ -49,7 +49,7 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 	if scope.UseLegacyGroups {
 		groupsService = groups.New(scope)
 	}
-	managedClustersService, err := managedclusters.New(scope)
+	managedClustersSvc, err := managedclusters.New(scope)
 	if err != nil {
 		return nil, err
 	}
@@ -61,14 +61,18 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 	if err != nil {
 		return nil, err
 	}
+	subnetsSvc, err := subnets.New(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &azureManagedControlPlaneService{
 		kubeclient: scope.Client,
 		scope:      scope,
 		services: []azure.ServiceReconciler{
 			groupsService,
 			virtualnetworks.New(scope),
-			subnets.New(scope),
-			managedClustersService,
+			subnetsSvc,
+			managedClustersSvc,
 			privateEndpointsSvc,
 			tags.New(scope),
 			resourceHealthSvc,
