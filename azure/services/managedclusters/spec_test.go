@@ -358,6 +358,27 @@ func TestParameters(t *testing.T) {
 				g.Expect(result).To(BeNil())
 			},
 		},
+		{
+			name:     "managedcluster exists with UserAssigned identity, no update needed",
+			existing: getExistingClusterWithUserAssignedIdentity(),
+			spec: &ManagedClusterSpec{
+				Name:          "test-managedcluster",
+				ResourceGroup: "test-rg",
+				Location:      "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "standard",
+				Identity: &infrav1.Identity{
+					Type:                           infrav1.ManagedControlPlaneIdentityTypeUserAssigned,
+					UserAssignedIdentityResourceID: "some id",
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+		},
 	}
 	for _, tc := range testcases {
 		tc := tc
@@ -439,6 +460,22 @@ func getExistingCluster() armcontainerservice.ManagedCluster {
 	mc := getSampleManagedCluster()
 	mc.Properties.ProvisioningState = ptr.To("Succeeded")
 	mc.ID = ptr.To("test-id")
+	return mc
+}
+
+func getExistingClusterWithUserAssignedIdentity() armcontainerservice.ManagedCluster {
+	mc := getSampleManagedCluster()
+	mc.Properties.ProvisioningState = ptr.To("Succeeded")
+	mc.ID = ptr.To("test-id")
+	mc.Identity = &armcontainerservice.ManagedClusterIdentity{
+		Type: ptr.To(armcontainerservice.ResourceIdentityTypeUserAssigned),
+		UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
+			"some id": {
+				ClientID:    ptr.To("some client id"),
+				PrincipalID: ptr.To("some principal id"),
+			},
+		},
+	}
 	return mc
 }
 
