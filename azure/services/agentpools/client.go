@@ -35,7 +35,11 @@ type azureClient struct {
 
 // newClient creates a new agentpools client from an authorizer.
 func newClient(scope AgentPoolScope) (*azureClient, error) {
-	opts, err := azure.ARMClientOptions(scope.CloudEnvironment(), azure.CustomPutPatchHeaderPolicy{Getter: scope.AgentPoolSpec()})
+	var headers map[string]string
+	if customHeaders, ok := scope.AgentPoolSpec().(azure.ResourceSpecGetterWithHeaders); ok {
+		headers = customHeaders.CustomHeaders()
+	}
+	opts, err := azure.ARMClientOptions(scope.CloudEnvironment(), azure.CustomPutPatchHeaderPolicy{Headers: headers})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create agentpools client options")
 	}

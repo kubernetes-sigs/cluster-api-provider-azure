@@ -388,17 +388,14 @@ func (p userAgentPolicy) Do(req *policy.Request) (*http.Response, error) {
 // CustomPutPatchHeaderPolicy adds custom headers to a PUT or PATCH request.
 // It implements the policy.Policy interface.
 type CustomPutPatchHeaderPolicy struct {
-	Getter ResourceSpecGetter
+	Headers map[string]string
 }
 
 // Do adds any custom headers to a PUT or PATCH request.
 func (p CustomPutPatchHeaderPolicy) Do(req *policy.Request) (*http.Response, error) {
 	if req.Raw().Method == http.MethodPut || req.Raw().Method == http.MethodPatch {
-		headerSpec, ok := p.Getter.(ResourceSpecGetterWithHeaders)
-		if ok {
-			for key, element := range headerSpec.CustomHeaders() {
-				req.Raw().Header.Set(key, element)
-			}
+		for key, element := range p.Headers {
+			req.Raw().Header.Set(key, element)
 		}
 	}
 

@@ -20,7 +20,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -55,12 +55,12 @@ func (s *NSGSpec) OwnerResourceName() string {
 
 // Parameters returns the parameters for the security group.
 func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
-	securityRules := make([]network.SecurityRule, 0)
+	securityRules := make([]*armnetwork.SecurityRule, 0)
 	newAnnotation := map[string]string{}
 	var etag *string
 
 	if existing != nil {
-		existingNSG, ok := existing.(network.SecurityGroup)
+		existingNSG, ok := existing.(armnetwork.SecurityGroup)
 		if !ok {
 			return nil, errors.Errorf("%T is not a network.SecurityGroup", existing)
 		}
@@ -72,14 +72,14 @@ func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interfa
 
 		for _, rule := range s.SecurityRules {
 			sdkRule := converters.SecurityRuleToSDK(rule)
-			if !ruleExists(*existingNSG.SecurityRules, sdkRule) {
+			if !ruleExists(existingNSG.Properties.SecurityRules, sdkRule) {
 				update = true
 				securityRules = append(securityRules, sdkRule)
 			}
 			newAnnotation[rule.Name] = rule.Description
 		}
 
-		for _, oldRule := range *existingNSG.SecurityRules {
+		for _, oldRule := range existingNSG.Properties.SecurityRules {
 			_, tracked := s.LastAppliedSecurityRules[*oldRule.Name]
 			// If rule is owned by CAPZ and applied last, and not found in the new rules, then it has been deleted
 			if _, ok := newAnnotation[*oldRule.Name]; !ok && tracked {
@@ -103,10 +103,10 @@ func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interfa
 		}
 	}
 
-	return network.SecurityGroup{
+	return armnetwork.SecurityGroup{
 		Location: ptr.To(s.Location),
-		SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-			SecurityRules: &securityRules,
+		Properties: &armnetwork.SecurityGroupPropertiesFormat{
+			SecurityRules: securityRules,
 		},
 		Etag: etag,
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
@@ -119,22 +119,22 @@ func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interfa
 }
 
 // TODO: review this logic and make sure it is what we want. It seems incorrect to skip rules that don't have a certain protocol, etc.
-func ruleExists(rules []network.SecurityRule, rule network.SecurityRule) bool {
+func ruleExists(rules []*armnetwork.SecurityRule, rule *armnetwork.SecurityRule) bool {
 	for _, existingRule := range rules {
 		if !strings.EqualFold(ptr.Deref(existingRule.Name, ""), ptr.Deref(rule.Name, "")) {
 			continue
 		}
-		if !strings.EqualFold(ptr.Deref(existingRule.DestinationPortRange, ""), ptr.Deref(rule.DestinationPortRange, "")) {
+		if !strings.EqualFold(ptr.Deref(existingRule.Properties.DestinationPortRange, ""), ptr.Deref(rule.Properties.DestinationPortRange, "")) {
 			continue
 		}
-		if existingRule.Protocol != network.SecurityRuleProtocolTCP &&
-			existingRule.Access != network.SecurityRuleAccessAllow &&
-			existingRule.Direction != network.SecurityRuleDirectionInbound {
+		if ptr.Deref(existingRule.Properties.Protocol, "") != armnetwork.SecurityRuleProtocolTCP &&
+			ptr.Deref(existingRule.Properties.Access, "") != armnetwork.SecurityRuleAccessAllow &&
+			ptr.Deref(existingRule.Properties.Direction, "") != armnetwork.SecurityRuleDirectionInbound {
 			continue
 		}
-		if !strings.EqualFold(ptr.Deref(existingRule.SourcePortRange, ""), "*") &&
-			!strings.EqualFold(ptr.Deref(existingRule.SourceAddressPrefix, ""), "*") &&
-			!strings.EqualFold(ptr.Deref(existingRule.DestinationAddressPrefix, ""), "*") {
+		if !strings.EqualFold(ptr.Deref(existingRule.Properties.SourcePortRange, ""), "*") &&
+			!strings.EqualFold(ptr.Deref(existingRule.Properties.SourceAddressPrefix, ""), "*") &&
+			!strings.EqualFold(ptr.Deref(existingRule.Properties.DestinationAddressPrefix, ""), "*") {
 			continue
 		}
 		return true

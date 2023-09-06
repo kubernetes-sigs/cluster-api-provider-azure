@@ -17,42 +17,42 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // SecurityRuleToSDK converts a CAPZ security rule to an Azure network security rule.
-func SecurityRuleToSDK(rule infrav1.SecurityRule) network.SecurityRule {
-	secRule := network.SecurityRule{
+func SecurityRuleToSDK(rule infrav1.SecurityRule) *armnetwork.SecurityRule {
+	secRule := &armnetwork.SecurityRule{
 		Name: ptr.To(rule.Name),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
 			Description:              ptr.To(rule.Description),
 			SourceAddressPrefix:      rule.Source,
 			SourcePortRange:          rule.SourcePorts,
 			DestinationAddressPrefix: rule.Destination,
 			DestinationPortRange:     rule.DestinationPorts,
-			Access:                   network.SecurityRuleAccess(rule.Action),
+			Access:                   ptr.To(armnetwork.SecurityRuleAccess(rule.Action)),
 			Priority:                 ptr.To[int32](rule.Priority),
 		},
 	}
 
 	switch rule.Protocol {
 	case infrav1.SecurityGroupProtocolAll:
-		secRule.Protocol = network.SecurityRuleProtocolAsterisk
+		secRule.Properties.Protocol = ptr.To(armnetwork.SecurityRuleProtocolAsterisk)
 	case infrav1.SecurityGroupProtocolTCP:
-		secRule.Protocol = network.SecurityRuleProtocolTCP
+		secRule.Properties.Protocol = ptr.To(armnetwork.SecurityRuleProtocolTCP)
 	case infrav1.SecurityGroupProtocolUDP:
-		secRule.Protocol = network.SecurityRuleProtocolUDP
+		secRule.Properties.Protocol = ptr.To(armnetwork.SecurityRuleProtocolUDP)
 	case infrav1.SecurityGroupProtocolICMP:
-		secRule.Protocol = network.SecurityRuleProtocolIcmp
+		secRule.Properties.Protocol = ptr.To(armnetwork.SecurityRuleProtocolIcmp)
 	}
 
 	switch rule.Direction {
 	case infrav1.SecurityRuleDirectionOutbound:
-		secRule.Direction = network.SecurityRuleDirectionOutbound
+		secRule.Properties.Direction = ptr.To(armnetwork.SecurityRuleDirectionOutbound)
 	case infrav1.SecurityRuleDirectionInbound:
-		secRule.Direction = network.SecurityRuleDirectionInbound
+		secRule.Properties.Direction = ptr.To(armnetwork.SecurityRuleDirectionInbound)
 	}
 
 	return secRule

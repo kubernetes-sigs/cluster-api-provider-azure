@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -98,10 +98,10 @@ func TestParameters(t *testing.T) {
 				ResourceGroup: "test-group",
 				ClusterName:   "my-cluster",
 			},
-			existing: network.SecurityGroup{
+			existing: armnetwork.SecurityGroup{
 				Name: ptr.To("test-nsg"),
-				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-					SecurityRules: &[]network.SecurityRule{
+				Properties: &armnetwork.SecurityGroupPropertiesFormat{
+					SecurityRules: []*armnetwork.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
 						converters.SecurityRuleToSDK(otherRule),
 					},
@@ -123,24 +123,24 @@ func TestParameters(t *testing.T) {
 				ResourceGroup: "test-group",
 				ClusterName:   "my-cluster",
 			},
-			existing: network.SecurityGroup{
+			existing: armnetwork.SecurityGroup{
 				Name:     ptr.To("test-nsg"),
 				Location: ptr.To("test-location"),
 				Etag:     ptr.To("fake-etag"),
-				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-					SecurityRules: &[]network.SecurityRule{
+				Properties: &armnetwork.SecurityGroupPropertiesFormat{
+					SecurityRules: []*armnetwork.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
 						converters.SecurityRuleToSDK(customRule),
 					},
 				},
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
-				g.Expect(result).To(Equal(network.SecurityGroup{
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.SecurityGroup{}))
+				g.Expect(result).To(Equal(armnetwork.SecurityGroup{
 					Location: ptr.To("test-location"),
 					Etag:     ptr.To("fake-etag"),
-					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-						SecurityRules: &[]network.SecurityRule{
+					Properties: &armnetwork.SecurityGroupPropertiesFormat{
+						SecurityRules: []*armnetwork.SecurityRule{
 							converters.SecurityRuleToSDK(otherRule),
 							converters.SecurityRuleToSDK(sshRule),
 							converters.SecurityRuleToSDK(customRule),
@@ -165,24 +165,24 @@ func TestParameters(t *testing.T) {
 				ResourceGroup: "test-group",
 				ClusterName:   "my-cluster",
 			},
-			existing: network.SecurityGroup{
+			existing: armnetwork.SecurityGroup{
 				Name:     ptr.To("test-nsg"),
 				Location: ptr.To("test-location"),
 				Etag:     ptr.To("fake-etag"),
-				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-					SecurityRules: &[]network.SecurityRule{
+				Properties: &armnetwork.SecurityGroupPropertiesFormat{
+					SecurityRules: []*armnetwork.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
 						converters.SecurityRuleToSDK(denyRule),
 					},
 				},
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
-				g.Expect(result).To(Equal(network.SecurityGroup{
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.SecurityGroup{}))
+				g.Expect(result).To(Equal(armnetwork.SecurityGroup{
 					Location: ptr.To("test-location"),
 					Etag:     ptr.To("fake-etag"),
-					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-						SecurityRules: &[]network.SecurityRule{
+					Properties: &armnetwork.SecurityGroupPropertiesFormat{
+						SecurityRules: []*armnetwork.SecurityRule{
 							converters.SecurityRuleToSDK(otherRule),
 							converters.SecurityRuleToSDK(sshRule),
 							converters.SecurityRuleToSDK(denyRule),
@@ -212,12 +212,12 @@ func TestParameters(t *testing.T) {
 					"other_rule":  otherRule,
 				},
 			},
-			existing: network.SecurityGroup{
+			existing: armnetwork.SecurityGroup{
 				Name:     ptr.To("test-nsg"),
 				Location: ptr.To("test-location"),
 				Etag:     ptr.To("fake-etag"),
-				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-					SecurityRules: &[]network.SecurityRule{
+				Properties: &armnetwork.SecurityGroupPropertiesFormat{
+					SecurityRules: []*armnetwork.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
 						converters.SecurityRuleToSDK(customRule),
 						converters.SecurityRuleToSDK(otherRule),
@@ -225,12 +225,12 @@ func TestParameters(t *testing.T) {
 				},
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
-				g.Expect(result).To(Equal(network.SecurityGroup{
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.SecurityGroup{}))
+				g.Expect(result).To(Equal(armnetwork.SecurityGroup{
 					Location: ptr.To("test-location"),
 					Etag:     ptr.To("fake-etag"),
-					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-						SecurityRules: &[]network.SecurityRule{
+					Properties: &armnetwork.SecurityGroupPropertiesFormat{
+						SecurityRules: []*armnetwork.SecurityRule{
 							converters.SecurityRuleToSDK(sshRule),
 							converters.SecurityRuleToSDK(customRule),
 						},
@@ -259,12 +259,12 @@ func TestParameters(t *testing.T) {
 					"deny_rule":   denyRule,
 				},
 			},
-			existing: network.SecurityGroup{
+			existing: armnetwork.SecurityGroup{
 				Name:     ptr.To("test-nsg"),
 				Location: ptr.To("test-location"),
 				Etag:     ptr.To("fake-etag"),
-				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-					SecurityRules: &[]network.SecurityRule{
+				Properties: &armnetwork.SecurityGroupPropertiesFormat{
+					SecurityRules: []*armnetwork.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
 						converters.SecurityRuleToSDK(customRule),
 						converters.SecurityRuleToSDK(denyRule),
@@ -272,12 +272,12 @@ func TestParameters(t *testing.T) {
 				},
 			},
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
-				g.Expect(result).To(Equal(network.SecurityGroup{
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.SecurityGroup{}))
+				g.Expect(result).To(Equal(armnetwork.SecurityGroup{
 					Location: ptr.To("test-location"),
 					Etag:     ptr.To("fake-etag"),
-					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-						SecurityRules: &[]network.SecurityRule{
+					Properties: &armnetwork.SecurityGroupPropertiesFormat{
+						SecurityRules: []*armnetwork.SecurityRule{
 							converters.SecurityRuleToSDK(sshRule),
 							converters.SecurityRuleToSDK(customRule),
 						},
@@ -305,12 +305,12 @@ func TestParameters(t *testing.T) {
 					"custom_rule": customRule,
 				},
 			},
-			existing: network.SecurityGroup{
+			existing: armnetwork.SecurityGroup{
 				Name:     ptr.To("test-nsg"),
 				Location: ptr.To("test-location"),
 				Etag:     ptr.To("fake-etag"),
-				SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-					SecurityRules: &[]network.SecurityRule{
+				Properties: &armnetwork.SecurityGroupPropertiesFormat{
+					SecurityRules: []*armnetwork.SecurityRule{
 						converters.SecurityRuleToSDK(sshRule),
 						converters.SecurityRuleToSDK(customRule),
 						converters.SecurityRuleToSDK(otherRule),
@@ -335,10 +335,10 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(network.SecurityGroup{}))
-				g.Expect(result).To(Equal(network.SecurityGroup{
-					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-						SecurityRules: &[]network.SecurityRule{
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.SecurityGroup{}))
+				g.Expect(result).To(Equal(armnetwork.SecurityGroup{
+					Properties: &armnetwork.SecurityGroupPropertiesFormat{
+						SecurityRules: []*armnetwork.SecurityRule{
 							converters.SecurityRuleToSDK(sshRule),
 							converters.SecurityRuleToSDK(otherRule),
 						},
@@ -374,25 +374,25 @@ func TestParameters(t *testing.T) {
 func TestRuleExists(t *testing.T) {
 	testcases := []struct {
 		name     string
-		rules    []network.SecurityRule
-		rule     network.SecurityRule
+		rules    []*armnetwork.SecurityRule
+		rule     *armnetwork.SecurityRule
 		expected bool
 	}{
 		{
 			name:     "rule doesn't exitst",
-			rules:    []network.SecurityRule{ruleA},
+			rules:    []*armnetwork.SecurityRule{ruleA},
 			rule:     ruleB,
 			expected: false,
 		},
 		{
 			name:     "rule exists",
-			rules:    []network.SecurityRule{ruleA, ruleB},
+			rules:    []*armnetwork.SecurityRule{ruleA, ruleB},
 			rule:     ruleB,
 			expected: true,
 		},
 		{
 			name:     "rule exists but has been modified",
-			rules:    []network.SecurityRule{ruleA, ruleB},
+			rules:    []*armnetwork.SecurityRule{ruleA, ruleB},
 			rule:     ruleBModified,
 			expected: false,
 		},
