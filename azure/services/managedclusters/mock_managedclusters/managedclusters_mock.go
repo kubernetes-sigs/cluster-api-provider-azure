@@ -255,6 +255,18 @@ func (mr *MockManagedClusterScopeMockRecorder) SetLongRunningOperationState(arg0
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockManagedClusterScope)(nil).SetLongRunningOperationState), arg0)
 }
 
+// SetOIDCIssuerProfileStatus mocks base method.
+func (m *MockManagedClusterScope) SetOIDCIssuerProfileStatus(arg0 *v1beta1.OIDCIssuerProfileStatus) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetOIDCIssuerProfileStatus", arg0)
+}
+
+// SetOIDCIssuerProfileStatus indicates an expected call of SetOIDCIssuerProfileStatus.
+func (mr *MockManagedClusterScopeMockRecorder) SetOIDCIssuerProfileStatus(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOIDCIssuerProfileStatus", reflect.TypeOf((*MockManagedClusterScope)(nil).SetOIDCIssuerProfileStatus), arg0)
+}
+
 // SubscriptionID mocks base method.
 func (m *MockManagedClusterScope) SubscriptionID() string {
 	m.ctrl.T.Helper()

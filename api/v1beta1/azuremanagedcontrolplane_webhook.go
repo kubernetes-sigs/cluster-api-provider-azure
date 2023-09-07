@@ -101,6 +101,7 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 	m.setDefaultSubnet()
 	m.setDefaultSku()
 	m.setDefaultAutoScalerProfile()
+	m.setDefaultOIDCIssuerProfile()
 
 	return nil
 }
@@ -254,6 +255,10 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 	}
 
 	if errs := m.validateAPIServerAccessProfileUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateOIDCIssuerProfileUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 
@@ -535,6 +540,25 @@ func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManage
 				m.Spec.VirtualNetwork.ResourceGroup,
 				"Virtual Network Resource Group is immutable"))
 	}
+	return allErrs
+}
+
+// validateOIDCIssuerProfile validates an OIDCIssuerProfile.
+func (m *AzureManagedControlPlane) validateOIDCIssuerProfileUpdate(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if m.Spec.OIDCIssuerProfile != nil && old.Spec.OIDCIssuerProfile != nil {
+		if m.Spec.OIDCIssuerProfile.Enabled != nil && old.Spec.OIDCIssuerProfile.Enabled != nil &&
+			!*m.Spec.OIDCIssuerProfile.Enabled && *old.Spec.OIDCIssuerProfile.Enabled {
+			allErrs = append(allErrs,
+				field.Forbidden(
+					field.NewPath("Spec", "OIDCIssuerProfile", "Enabled"),
+					"cannot be disabled",
+				),
+			)
+		}
+	}
+
 	return allErrs
 }
 

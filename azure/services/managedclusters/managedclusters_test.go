@@ -70,6 +70,10 @@ func TestReconcile(t *testing.T) {
 								ResourceID: ptr.To("kubelet-id"),
 							},
 						},
+						OidcIssuerProfile: &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+							Enabled:   ptr.To(true),
+							IssuerURL: ptr.To("oidc issuer url"),
+						},
 					},
 				}, nil)
 				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
@@ -79,6 +83,10 @@ func TestReconcile(t *testing.T) {
 				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
 				s.SetKubeConfigData([]byte("credentials"))
 				s.SetKubeletIdentity("kubelet-id")
+				s.SetOIDCIssuerProfileStatus(nil)
+				s.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
+					IssuerURL: ptr.To("oidc issuer url"),
+				})
 				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
 			},
 		},

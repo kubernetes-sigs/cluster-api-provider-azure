@@ -56,6 +56,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
 	g.Expect(amcp.Spec.Identity.Type).To(Equal(ManagedControlPlaneIdentityTypeSystemAssigned))
+	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeFalse())
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -70,6 +71,9 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.VirtualNetwork.Name = "fooVnetName"
 	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
 	amcp.Spec.SKU.Tier = PaidManagedControlPlaneTier
+	amcp.Spec.OIDCIssuerProfile = &OIDCIssuerProfile{
+		Enabled: ptr.To(true),
+	}
 
 	err = mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -82,6 +86,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(PaidManagedControlPlaneTier))
+	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeTrue())
 }
 
 func TestValidatingWebhook(t *testing.T) {
@@ -1416,6 +1421,106 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane OIDCIssuerProfile.Enabled false -> false OK",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					OIDCIssuerProfile: &OIDCIssuerProfile{
+						Enabled: ptr.To(false),
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v0.0.0",
+					OIDCIssuerProfile: &OIDCIssuerProfile{
+						Enabled: ptr.To(false),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane OIDCIssuerProfile.Enabled false -> true OK",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					OIDCIssuerProfile: &OIDCIssuerProfile{
+						Enabled: ptr.To(false),
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v0.0.0",
+					OIDCIssuerProfile: &OIDCIssuerProfile{
+						Enabled: ptr.To(true),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane OIDCIssuerProfile.Enabled true -> false err",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					OIDCIssuerProfile: &OIDCIssuerProfile{
+						Enabled: ptr.To(true),
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v0.0.0",
+					OIDCIssuerProfile: &OIDCIssuerProfile{
+						Enabled: ptr.To(false),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane OIDCIssuerProfile.Enabled true -> true OK",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					OIDCIssuerProfile: &OIDCIssuerProfile{
+						Enabled: ptr.To(true),
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v0.0.0",
+					OIDCIssuerProfile: &OIDCIssuerProfile{
+						Enabled: ptr.To(true),
+					},
+				},
+			},
+			wantErr: false,
 		},
 	}
 	client := mockClient{ReturnError: false}

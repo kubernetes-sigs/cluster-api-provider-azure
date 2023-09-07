@@ -45,6 +45,7 @@ type ManagedClusterScope interface {
 	MakeEmptyKubeConfigSecret() corev1.Secret
 	GetKubeConfigData() []byte
 	SetKubeConfigData([]byte)
+	SetOIDCIssuerProfileStatus(*infrav1.OIDCIssuerProfileStatus)
 }
 
 // Service provides operations on azure resources.
@@ -111,6 +112,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// the "before" reflects the correct value.
 		if id := managedCluster.Properties.IdentityProfile[kubeletIdentityKey]; id != nil && id.ResourceID != nil {
 			s.Scope.SetKubeletIdentity(*id.ResourceID)
+		}
+
+		s.Scope.SetOIDCIssuerProfileStatus(nil)
+		if managedCluster.Properties.OidcIssuerProfile != nil && managedCluster.Properties.OidcIssuerProfile.IssuerURL != nil {
+			s.Scope.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
+				IssuerURL: managedCluster.Properties.OidcIssuerProfile.IssuerURL,
+			})
 		}
 	}
 	s.Scope.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, resultErr)

@@ -144,3 +144,13 @@ func (m *AzureManagedControlPlane) setDefaultAutoScalerProfile() {
 		m.Spec.AutoScalerProfile.SkipNodesWithSystemPods = (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsTrue)))
 	}
 }
+
+func (m *AzureManagedControlPlane) setDefaultOIDCIssuerProfile() {
+	if m.Spec.OIDCIssuerProfile == nil {
+		m.Spec.OIDCIssuerProfile = &OIDCIssuerProfile{}
+	}
+
+	if m.Spec.OIDCIssuerProfile.Enabled == nil {
+		m.Spec.OIDCIssuerProfile.Enabled = ptr.To(false)
+	}
+}
