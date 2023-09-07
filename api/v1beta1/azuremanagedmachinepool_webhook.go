@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -363,14 +364,59 @@ func (m *AzureManagedMachinePool) validateOSType() error {
 }
 
 func (m *AzureManagedMachinePool) validateName() error {
-	if m.Spec.OSType != nil && *m.Spec.OSType == WindowsOS &&
-		m.Spec.Name != nil && len(*m.Spec.Name) > 6 {
-		return field.Invalid(
-			field.NewPath("Spec", "Name"),
-			m.Spec.Name,
-			"Windows agent pool name can not be longer than 6 characters.")
+	var name *string
+	var fieldNameMessage string
+	if m.Spec.Name == nil || *m.Spec.Name == "" {
+		name = &m.Name
+		fieldNameMessage = "when spec.name is empty, metadata.name"
+	} else {
+		name = m.Spec.Name
+		fieldNameMessage = "spec.name"
 	}
 
+	if err := validateNameLength(m.Spec.OSType, name, fieldNameMessage); err != nil {
+		return err
+	}
+	return validateNamePattern(name, fieldNameMessage)
+}
+
+func validateNameLength(osType *string, name *string, fieldNameMessage string) error {
+	if osType != nil && *osType == WindowsOS &&
+		name != nil && len(*name) > 6 {
+		return field.Invalid(
+			field.NewPath("Spec", "Name"),
+			name,
+			fmt.Sprintf("For OSType Windows, %s can not be longer than 6 characters.", fieldNameMessage))
+	} else if (osType == nil || *osType == LinuxOS) &&
+		(name != nil && len(*name) > 12) {
+		return field.Invalid(
+			field.NewPath("Spec", "Name"),
+			osType,
+			fmt.Sprintf("For OSType Linux, %s can not be longer than 12 characters.", fieldNameMessage))
+	}
+	return nil
+}
+
+func validateNamePattern(name *string, fieldNameMessage string) error {
+	if name == nil || *name == "" {
+		return nil
+	}
+
+	if !unicode.IsLower(rune((*name)[0])) {
+		return field.Invalid(
+			field.NewPath("Spec", "Name"),
+			name,
+			fmt.Sprintf("%s must begin with a lowercase letter.", fieldNameMessage))
+	}
+
+	for _, char := range *name {
+		if !(unicode.IsLower(char) || unicode.IsNumber(char)) {
+			return field.Invalid(
+				field.NewPath("Spec", "Name"),
+				name,
+				fmt.Sprintf("%s may only contain lowercase alphanumeric characters.", fieldNameMessage))
+		}
+	}
 	return nil
 }
 

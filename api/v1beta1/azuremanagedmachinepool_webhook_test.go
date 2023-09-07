@@ -39,7 +39,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	t.Logf("Testing ammp defaulting webhook with mode system")
 	ammp := &AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "fooName",
+			Name: "fooname",
 		},
 		Spec: AzureManagedMachinePoolSpec{
 			Mode:         "System",
@@ -57,7 +57,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	val, ok := ammp.Labels[LabelAgentPoolMode]
 	g.Expect(ok).To(BeTrue())
 	g.Expect(val).To(Equal("System"))
-	g.Expect(*ammp.Spec.Name).To(Equal("fooName"))
+	g.Expect(*ammp.Spec.Name).To(Equal("fooname"))
 	g.Expect(*ammp.Spec.OSType).To(Equal(LinuxOS))
 
 	t.Logf("Testing ammp defaulting webhook with empty string name specified in Spec")
@@ -65,14 +65,14 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	ammp.Spec.Name = &emptyName
 	err = mw.Default(context.Background(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(*ammp.Spec.Name).To(Equal("fooName"))
+	g.Expect(*ammp.Spec.Name).To(Equal("fooname"))
 
 	t.Logf("Testing ammp defaulting webhook with normal name specified in Spec")
-	normalName := "barName"
+	normalName := "barname"
 	ammp.Spec.Name = &normalName
 	err = mw.Default(context.Background(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(*ammp.Spec.Name).To(Equal("barName"))
+	g.Expect(*ammp.Spec.Name).To(Equal("barname"))
 
 	t.Logf("Testing ammp defaulting webhook with normal OsDiskType specified in Spec")
 	normalOsDiskType := "Ephemeral"
