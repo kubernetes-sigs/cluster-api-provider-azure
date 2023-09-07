@@ -77,12 +77,16 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating vmextensions service")
 	}
+	networkInterfacesSvc, err := networkinterfaces.New(machineScope, cache)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating networkinterfaces service")
+	}
 	ams := &azureMachineService{
 		scope: machineScope,
 		services: []azure.ServiceReconciler{
 			publicips.New(machineScope),
 			inboundnatrulesSvc,
-			networkinterfaces.New(machineScope, cache),
+			networkInterfacesSvc,
 			availabilitySetsSvc,
 			disksSvc,
 			virtualmachinesSvc,
