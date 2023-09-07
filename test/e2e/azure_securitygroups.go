@@ -110,6 +110,7 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 		Name:      input.Cluster.Spec.InfrastructureRef.Name,
 	}, azureCluster)
 	Expect(err).NotTo(HaveOccurred())
+	originalSubnets := azureCluster.Spec.NetworkSpec.Subnets
 
 	var expectedSubnets infrav1.Subnets
 	checkSubnets := func(g Gomega) {
@@ -146,8 +147,11 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 			},
 		},
 	}
-	originalSubnets := azureCluster.Spec.NetworkSpec.Subnets
-	expectedSubnets = originalSubnets
+
+	expectedSubnets = infrav1.Subnets{}
+	for _, subnet := range originalSubnets {
+		expectedSubnets = append(expectedSubnets, subnet)
+	}
 	expectedSubnets = append(expectedSubnets, testSubnet)
 	Eventually(func(g Gomega) {
 		g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(azureCluster), azureCluster)).To(Succeed())
@@ -159,7 +163,10 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 	By("Creating new security rule for the subnet")
 	Expect(len(expectedSubnets)).To(Not(Equal(0)))
 	testSubnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{testSecurityRule, testSecurityRule2}
-	expectedSubnets = originalSubnets
+	expectedSubnets = infrav1.Subnets{}
+	for _, subnet := range originalSubnets {
+		expectedSubnets = append(expectedSubnets, subnet)
+	}
 	expectedSubnets = append(expectedSubnets, testSubnet)
 	Eventually(func(g Gomega) {
 		g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(azureCluster), azureCluster)).To(Succeed())
@@ -171,7 +178,10 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 	By("Deleting security rule from the subnet")
 	Expect(len(expectedSubnets)).To(Not(Equal(0)))
 	testSubnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{testSecurityRule2}
-	expectedSubnets = originalSubnets
+	expectedSubnets = infrav1.Subnets{}
+	for _, subnet := range originalSubnets {
+		expectedSubnets = append(expectedSubnets, subnet)
+	}
 	expectedSubnets = append(expectedSubnets, testSubnet)
 	Eventually(func(g Gomega) {
 		g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(azureCluster), azureCluster)).To(Succeed())
