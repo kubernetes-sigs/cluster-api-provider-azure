@@ -18,34 +18,35 @@ package loadbalancers
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
-	loadbalancers network.LoadBalancersClient
+	loadbalancers *armnetwork.LoadBalancersClient
+	auth          azure.Authorizer
 }
 
-// newClient creates a new load balancer client from subscription ID.
-func newClient(auth azure.Authorizer) *azureClient {
-	c := newLoadBalancersClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &azureClient{c}
-}
+// newClient creates a new load balancer client from an authorizer.
+func newClient(auth azure.Authorizer) (*azureClient, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get load balancer client options")
+	}
 
-// newLoadbalancersClient creates a new load balancer client from subscription ID.
-func newLoadBalancersClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.LoadBalancersClient {
-	loadBalancersClient := network.NewLoadBalancersClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&loadBalancersClient.Client, authorizer)
-	return loadBalancersClient
+	factory, err := armnetwork.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armnetwork client factory")
+	}
+	return &azureClient{factory.NewLoadBalancersClient(), auth}, nil
 }
 
 // Get gets the specified load balancer.
@@ -53,68 +54,77 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.azureClient.Get")
 	defer done()
 
-	return ac.loadbalancers.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+	resp, err := ac.loadbalancers.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.LoadBalancer, nil
 }
 
 // CreateOrUpdateAsync creates or updates a load balancer asynchronously.
-// It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// It sends a PUT request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.LoadBalancersClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.azureClient.CreateOrUpdate")
 	defer done()
 
-	loadBalancer, ok := parameters.(network.LoadBalancer)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a network.LoadBalancer", parameters)
+	loadBalancer, ok := parameters.(armnetwork.LoadBalancer)
+	if !ok && parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armnetwork.LoadBalancer", parameters)
 	}
 
-	var etag string
+	var extraPolicies []policy.Policy
 	if loadBalancer.Etag != nil {
-		etag = *loadBalancer.Etag
+		extraPolicies = append(extraPolicies, azure.CustomPutPatchHeaderPolicy{
+			Headers: map[string]string{
+				"If-Match": *loadBalancer.Etag,
+			},
+		})
 	}
 
-	req, err := ac.loadbalancers.CreateOrUpdatePreparer(ctx, spec.ResourceGroupName(), spec.ResourceName(), loadBalancer)
+	// Create a new client that knows how to add etag headers to the request.
+	clientOpts, err := azure.ARMClientOptions(ac.auth.CloudEnvironment(), extraPolicies...)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "CreateOrUpdate", nil, "Failure preparing request")
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "failed to create loadbalancer client options")
 	}
 
-	if etag != "" {
-		req.Header.Add("If-Match", etag)
-	}
-
-	createFuture, err := ac.loadbalancers.CreateOrUpdateSender(req)
+	factory, err := armnetwork.NewClientFactory(ac.auth.SubscriptionID(), ac.auth.Token(), clientOpts)
 	if err != nil {
-		res := createFuture.Response()
-		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "CreateOrUpdate", res, "Failure sending request")
-		// response body must be closed
-		res.Body.Close()
+		return nil, nil, errors.Wrap(err, "failed to create armnetwork client factory")
+	}
+
+	client := factory.NewLoadBalancersClient()
+	opts := &armnetwork.LoadBalancersClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
+	poller, err = client.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), loadBalancer, opts)
+	if err != nil {
 		return nil, nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = createFuture.WaitForCompletionRef(ctx, ac.loadbalancers.Client)
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	resp, err := poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
-		// if an error occurs, return the future.
-		// this means the long-running operation didn't finish in the specified timeout.
-		return nil, &createFuture, err
+		// if an error occurs, return the poller.
+		// This means the long-running operation didn't finish in the specified timeout.
+		return nil, poller, err
 	}
 
-	result, err = createFuture.Result(ac.loadbalancers)
-	// if the operation completed, return a nil future
-	return result, nil, err
+	// if the operation completed, return nil poller.
+	return resp.LoadBalancer, nil, err
 }
 
 // DeleteAsync deletes a load balancer asynchronously. DeleteAsync sends a DELETE
-// request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
+func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armnetwork.LoadBalancersClientDeleteResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.azureClient.Delete")
 	defer done()
 
-	deleteFuture, err := ac.loadbalancers.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
+	opts := &armnetwork.LoadBalancersClientBeginDeleteOptions{ResumeToken: resumeToken}
+	poller, err = ac.loadbalancers.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -122,54 +132,13 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = deleteFuture.WaitForCompletionRef(ctx, ac.loadbalancers.Client)
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	_, err = poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
-		// if an error occurs, return the future.
+		// if error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return &deleteFuture, err
+		return poller, err
 	}
-	_, err = deleteFuture.Result(ac.loadbalancers)
-	// if the operation completed, return a nil future.
+	// if the operation completed, return nil poller.
 	return nil, err
-}
-
-// IsDone returns true if the long-running operation has completed.
-func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.azureClient.IsDone")
-	defer done()
-
-	return future.DoneWithContext(ctx, ac.loadbalancers)
-}
-
-// Result fetches the result of a long-running operation future.
-func (ac *azureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
-	_, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.azureClient.Result")
-	defer done()
-
-	if future == nil {
-		return nil, errors.Errorf("cannot get result from nil future")
-	}
-
-	switch futureType {
-	case infrav1.PutFuture:
-		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
-		// Unfortunately the FutureAPI can't be casted directly to LoadBalancersCreateOrUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
-		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
-		var createFuture *network.LoadBalancersCreateOrUpdateFuture
-		jsonData, err := future.MarshalJSON()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal future")
-		}
-		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal future data")
-		}
-		return createFuture.Result(ac.loadbalancers)
-
-	case infrav1.DeleteFuture:
-		// Delete does not return a result load balancer
-		return nil, nil
-
-	default:
-		return nil, errors.Errorf("unknown future type %q", futureType)
-	}
 }
