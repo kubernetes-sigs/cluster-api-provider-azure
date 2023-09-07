@@ -249,10 +249,10 @@ func (mr *MockAvailabilitySetScopeMockRecorder) ExtendedLocationType() *gomock.C
 }
 
 // FailureDomains mocks base method.
-func (m *MockAvailabilitySetScope) FailureDomains() []string {
+func (m *MockAvailabilitySetScope) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 

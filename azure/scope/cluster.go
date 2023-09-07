@@ -903,15 +903,18 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 }
 
 // FailureDomains returns the failure domains for the cluster.
-func (s *ClusterScope) FailureDomains() []string {
-	fds := make([]string, len(s.AzureCluster.Status.FailureDomains))
+func (s *ClusterScope) FailureDomains() []*string {
+	fds := make([]*string, len(s.AzureCluster.Status.FailureDomains))
 	i := 0
 	for id := range s.AzureCluster.Status.FailureDomains {
-		fds[i] = id
+		fds[i] = ptr.To(id)
 		i++
 	}
 
-	sort.Strings(fds)
+	// sort in increasing order restoring the original sort.Strings(fds) behavior
+	sort.Slice(fds, func(i, j int) bool {
+		return *fds[i] < *fds[j]
+	})
 
 	return fds
 }

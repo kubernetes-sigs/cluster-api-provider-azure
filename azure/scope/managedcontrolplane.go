@@ -473,8 +473,8 @@ func (s *ManagedControlPlaneScope) CloudProviderConfigOverrides() *infrav1.Cloud
 }
 
 // FailureDomains returns the failure domains for the cluster.
-func (s *ManagedControlPlaneScope) FailureDomains() []string {
-	return []string{}
+func (s *ManagedControlPlaneScope) FailureDomains() []*string {
+	return []*string{}
 }
 
 // ManagedClusterAnnotations returns the annotations for the managed cluster.

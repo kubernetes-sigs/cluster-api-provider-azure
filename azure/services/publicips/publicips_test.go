@@ -47,7 +47,7 @@ var (
 		IsIPv6:         false,
 		ClusterName:    "my-cluster",
 		Location:       "centralIndia",
-		FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+		FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 		AdditionalTags: infrav1.Tags{
 			"Name": "my-publicip-ipv6",
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -60,7 +60,7 @@ var (
 		IsIPv6:         false,
 		ClusterName:    "my-cluster",
 		Location:       "centralIndia",
-		FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+		FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 		AdditionalTags: infrav1.Tags{
 			"Name": "my-publicip-ipv6",
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -73,7 +73,7 @@ var (
 		IsIPv6:         false,
 		ClusterName:    "my-cluster",
 		Location:       "centralIndia",
-		FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+		FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 		AdditionalTags: infrav1.Tags{
 			"Name": "my-publicip-ipv6",
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -86,7 +86,7 @@ var (
 		IsIPv6:         true,
 		ClusterName:    "my-cluster",
 		Location:       "centralIndia",
-		FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+		FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 		AdditionalTags: infrav1.Tags{
 			"Name": "my-publicip-ipv6",
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",

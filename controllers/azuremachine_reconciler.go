@@ -67,7 +67,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	}
 	publicIPsSvc, err := publicips.New(machineScope)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed creating publicips service")
 	}
 	roleAssignmentsSvc, err := roleassignments.New(machineScope)
 	if err != nil {

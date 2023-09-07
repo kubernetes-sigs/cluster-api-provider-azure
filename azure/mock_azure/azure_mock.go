@@ -786,10 +786,10 @@ func (mr *MockClusterDescriberMockRecorder) ExtendedLocationType() *gomock.Call 
 }
 
 // FailureDomains mocks base method.
-func (m *MockClusterDescriber) FailureDomains() []string {
+func (m *MockClusterDescriber) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 
@@ -1242,10 +1242,10 @@ func (mr *MockClusterScoperMockRecorder) ExtendedLocationType() *gomock.Call {
 }
 
 // FailureDomains mocks base method.
-func (m *MockClusterScoper) FailureDomains() []string {
+func (m *MockClusterScoper) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 
@@ -1683,10 +1683,10 @@ func (mr *MockManagedClusterScoperMockRecorder) ExtendedLocationType() *gomock.C
 }
 
 // FailureDomains mocks base method.
-func (m *MockManagedClusterScoper) FailureDomains() []string {
+func (m *MockManagedClusterScoper) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 
