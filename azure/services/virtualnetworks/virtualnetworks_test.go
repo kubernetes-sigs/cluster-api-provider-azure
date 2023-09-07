@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
@@ -62,30 +62,30 @@ var (
 		},
 	}
 
-	customVnet = network.VirtualNetwork{
+	customVnet = armnetwork.VirtualNetwork{
 		ID:   ptr.To("/subscriptions/subscription/resourceGroups/test-group/providers/Microsoft.Network/virtualNetworks/test-vnet"),
 		Name: ptr.To("test-vnet"),
 		Tags: map[string]*string{
 			"foo":       ptr.To("bar"),
 			"something": ptr.To("else"),
 		},
-		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-			AddressSpace: &network.AddressSpace{
-				AddressPrefixes: &[]string{"fake-cidr"},
+		Properties: &armnetwork.VirtualNetworkPropertiesFormat{
+			AddressSpace: &armnetwork.AddressSpace{
+				AddressPrefixes: []*string{ptr.To("fake-cidr")},
 			},
-			Subnets: &[]network.Subnet{
+			Subnets: []*armnetwork.Subnet{
 				{
 					Name: ptr.To("test-subnet"),
-					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+					Properties: &armnetwork.SubnetPropertiesFormat{
 						AddressPrefix: ptr.To("subnet-cidr"),
 					},
 				},
 				{
 					Name: ptr.To("test-subnet-2"),
-					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-						AddressPrefixes: &[]string{
-							"subnet-cidr-1",
-							"subnet-cidr-2",
+					Properties: &armnetwork.SubnetPropertiesFormat{
+						AddressPrefixes: []*string{
+							ptr.To("subnet-cidr-1"),
+							ptr.To("subnet-cidr-2"),
 						},
 					},
 				},

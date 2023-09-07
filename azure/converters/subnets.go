@@ -35,13 +35,15 @@ func GetSubnetAddresses(subnet network.Subnet) []string {
 }
 
 // GetSubnetAddressesV2 returns the address prefixes contained in an SDK v2 subnet.
-func GetSubnetAddressesV2(subnet armnetwork.Subnet) []string {
+func GetSubnetAddressesV2(subnet *armnetwork.Subnet) []string {
 	var addresses []string
 	if subnet.Properties != nil && subnet.Properties.AddressPrefix != nil {
 		addresses = []string{ptr.Deref(subnet.Properties.AddressPrefix, "")}
 	} else if subnet.Properties != nil && subnet.Properties.AddressPrefixes != nil {
 		for _, address := range subnet.Properties.AddressPrefixes {
-			addresses = append(addresses, ptr.Deref(address, ""))
+			if address != nil {
+				addresses = append(addresses, *address)
+			}
 		}
 	}
 	return addresses

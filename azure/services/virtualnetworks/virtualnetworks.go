@@ -19,13 +19,14 @@ package virtualnetworks
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -47,21 +48,25 @@ type VNetScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope VNetScope
-	async.Reconciler
+	asyncpoller.Reconciler
 	async.Getter
 	async.TagsGetter
 }
 
 // New creates a new service.
-func New(scope VNetScope) *Service {
-	client := newClient(scope)
+func New(scope VNetScope) (*Service, error) {
+	client, err := newClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	tagsClient := tags.NewClient(scope)
 	return &Service{
 		Scope:      scope,
 		Getter:     client,
 		TagsGetter: tagsClient,
-		Reconciler: async.New(scope, client, client),
-	}
+		Reconciler: asyncpoller.New[armnetwork.VirtualNetworksClientCreateOrUpdateResponse,
+			armnetwork.VirtualNetworksClientDeleteResponse](scope, client, client),
+	}, nil
 }
 
 // Name returns the service name.
@@ -84,26 +89,30 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	result, err := s.CreateOrUpdateResource(ctx, vnetSpec, serviceName)
 	if err == nil && result != nil {
-		existingVnet, ok := result.(network.VirtualNetwork)
+		existingVnet, ok := result.(armnetwork.VirtualNetwork)
 		if !ok {
-			return errors.Errorf("%T is not a network.VirtualNetwork", result)
+			return errors.Errorf("%T is not an armnetwork.VirtualNetwork", result)
 		}
 		vnet := s.Scope.Vnet()
 		vnet.ID = ptr.Deref(existingVnet.ID, "")
 		vnet.Tags = converters.MapToTags(existingVnet.Tags)
 
 		var prefixes []string
-		if existingVnet.VirtualNetworkPropertiesFormat != nil && existingVnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
-			prefixes = azure.StringSlice(existingVnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
+		if existingVnet.Properties != nil && existingVnet.Properties.AddressSpace != nil {
+			for _, prefix := range existingVnet.Properties.AddressSpace.AddressPrefixes {
+				if prefix != nil {
+					prefixes = append(prefixes, *prefix)
+				}
+			}
 		}
 		vnet.CIDRBlocks = prefixes
 
 		// Update the subnet CIDRs if they already exist.
 		// This makes sure the subnet CIDRs are up to date and there are no validation errors when updating the VNet.
 		// Subnets that are not part of this cluster spec are silently ignored.
-		if existingVnet.Subnets != nil {
-			for _, subnet := range *existingVnet.Subnets {
-				s.Scope.UpdateSubnetCIDRs(ptr.Deref(subnet.Name, ""), converters.GetSubnetAddresses(subnet))
+		if existingVnet.Properties.Subnets != nil {
+			for _, subnet := range existingVnet.Properties.Subnets {
+				s.Scope.UpdateSubnetCIDRs(ptr.Deref(subnet.Name, ""), converters.GetSubnetAddressesV2(subnet))
 			}
 		}
 	}

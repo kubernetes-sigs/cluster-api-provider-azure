@@ -19,9 +19,10 @@ package virtualnetworks
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 )
 
@@ -57,7 +58,7 @@ func (s *VNetSpec) Parameters(ctx context.Context, existing interface{}) (interf
 		// vnet already exists, nothing to update.
 		return nil, nil
 	}
-	return network.VirtualNetwork{
+	return armnetwork.VirtualNetwork{
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
@@ -66,10 +67,10 @@ func (s *VNetSpec) Parameters(ctx context.Context, existing interface{}) (interf
 			Additional:  s.AdditionalTags,
 		})),
 		Location:         ptr.To(s.Location),
-		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
-		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-			AddressSpace: &network.AddressSpace{
-				AddressPrefixes: &s.CIDRs,
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDKv2(s.ExtendedLocation),
+		Properties: &armnetwork.VirtualNetworkPropertiesFormat{
+			AddressSpace: &armnetwork.AddressSpace{
+				AddressPrefixes: azure.PtrSlice(&s.CIDRs),
 			},
 		},
 	}, nil

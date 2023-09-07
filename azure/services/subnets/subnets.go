@@ -95,7 +95,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				return errors.Errorf("%T is not an armnetwork.Subnet", result)
 			}
 			s.Scope.UpdateSubnetID(subnetSpec.ResourceName(), ptr.Deref(subnet.ID, ""))
-			s.Scope.UpdateSubnetCIDRs(subnetSpec.ResourceName(), converters.GetSubnetAddressesV2(subnet))
+			s.Scope.UpdateSubnetCIDRs(subnetSpec.ResourceName(), converters.GetSubnetAddressesV2(&subnet))
 		}
 	}
 

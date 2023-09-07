@@ -402,7 +402,12 @@ func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	ctx := context.Background()
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.IsVnetManaged")
 	defer done()
-	isManaged, err := virtualnetworks.New(s).IsManaged(ctx)
+	virtualNetworksSvc, err := virtualnetworks.New(s)
+	if err != nil {
+		log.Error(err, "failed to create virtualnetworks service")
+		return false
+	}
+	isManaged, err := virtualNetworksSvc.IsManaged(ctx)
 	if err != nil {
 		log.Error(err, "Unable to determine if ManagedControlPlaneScope VNET is managed by capz", "AzureManagedCluster", s.ClusterName())
 	}

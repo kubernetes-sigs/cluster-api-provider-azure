@@ -18,36 +18,32 @@ package virtualnetworks
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/go-autorest/autorest"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureClient contains the Azure go-sdk Client.
 type azureClient struct {
-	virtualnetworks network.VirtualNetworksClient
+	virtualnetworks *armnetwork.VirtualNetworksClient
 }
 
-// newClient creates a new VM client from subscription ID.
-func newClient(auth azure.Authorizer) *azureClient {
-	c := newVirtualNetworksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &azureClient{
-		virtualnetworks: c,
+// newClient creates a new virtual networks client from an authorizer.
+func newClient(auth azure.Authorizer) (*azureClient, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create virtualnetworks client options")
 	}
-}
-
-// newVirtualNetworksClient creates a new vnet client from subscription ID.
-func newVirtualNetworksClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.VirtualNetworksClient {
-	vnetsClient := network.NewVirtualNetworksClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&vnetsClient.Client, authorizer)
-	return vnetsClient
+	factory, err := armnetwork.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armnetwork client factory")
+	}
+	return &azureClient{factory.NewVirtualNetworksClient()}, nil
 }
 
 // Get gets the specified virtual network.
@@ -55,22 +51,27 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.Get")
 	defer done()
 
-	return ac.virtualnetworks.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), "")
+	resp, err := ac.virtualnetworks.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp.VirtualNetwork, nil
 }
 
 // CreateOrUpdateAsync creates or updates a virtual network in the specified resource group asynchronously.
-// It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// It sends a PUT request to Azure and if accepted without error, the func will return a poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, parameters interface{}) (result interface{}, future azureautorest.FutureAPI, err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.CreateOrUpdateAsync")
 	defer done()
 
-	vn, ok := parameters.(network.VirtualNetwork)
-	if !ok {
-		return nil, nil, errors.Errorf("%T is not a network.VirtualNetwork", parameters)
+	vn, ok := parameters.(armnetwork.VirtualNetwork)
+	if !ok && parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armnetwork.VirtualNetwork", parameters)
 	}
 
-	createFuture, err := ac.virtualnetworks.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vn)
+	opts := &armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
+	poller, err = ac.virtualnetworks.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vn, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,25 +79,27 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = createFuture.WaitForCompletionRef(ctx, ac.virtualnetworks.Client)
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	resp, err := poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
-		// if an error occurs, return the future.
+		// if an error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return nil, &createFuture, err
+		return nil, poller, err
 	}
-	result, err = createFuture.Result(ac.virtualnetworks)
-	// if the operation completed, return a nil future.
-	return result, nil, err
+
+	// if the operation completed, return a nil poller
+	return resp.VirtualNetwork, nil, err
 }
 
 // DeleteAsync deletes a virtual network asynchronously. DeleteAsync sends a DELETE
-// request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// request to Azure and if accepted without error, the func will return a poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter) (future azureautorest.FutureAPI, err error) {
+func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.DeleteAsync")
 	defer done()
 
-	deleteFuture, err := ac.virtualnetworks.Delete(ctx, spec.ResourceGroupName(), spec.ResourceName())
+	opts := &armnetwork.VirtualNetworksClientBeginDeleteOptions{ResumeToken: resumeToken}
+	poller, err = ac.virtualnetworks.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -104,54 +107,14 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	err = deleteFuture.WaitForCompletionRef(ctx, ac.virtualnetworks.Client)
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	_, err = poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
-		// if an error occurs, return the future.
+		// if an error occurs, return the Poller.
 		// this means the long-running operation didn't finish in the specified timeout.
-		return &deleteFuture, err
+		return poller, err
 	}
-	_, err = deleteFuture.Result(ac.virtualnetworks)
-	// if the operation completed, return a nil future.
+
+	// if the operation completed, return a nil poller.
 	return nil, err
-}
-
-// IsDone returns true if the long-running operation has completed.
-func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (isDone bool, err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.IsDone")
-	defer done()
-
-	return future.DoneWithContext(ctx, ac.virtualnetworks)
-}
-
-// Result fetches the result of a long-running operation future.
-func (ac *azureClient) Result(ctx context.Context, future azureautorest.FutureAPI, futureType string) (result interface{}, err error) {
-	_, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.azureClient.Result")
-	defer done()
-
-	if future == nil {
-		return nil, errors.Errorf("cannot get result from nil future")
-	}
-
-	switch futureType {
-	case infrav1.PutFuture:
-		// Marshal and Unmarshal the future to put it into the correct future type so we can access the Result function.
-		// Unfortunately the FutureAPI can't be casted directly to VirtualNetworksCreateOrUpdateFuture because it is a azureautorest.Future, which doesn't implement the Result function. See PR #1686 for discussion on alternatives.
-		// It was converted back to a generic azureautorest.Future from the CAPZ infrav1.Future type stored in Status: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/azure/converters/futures.go#L49.
-		var createFuture *network.VirtualNetworksCreateOrUpdateFuture
-		jsonData, err := future.MarshalJSON()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal future")
-		}
-		if err := json.Unmarshal(jsonData, &createFuture); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal future data")
-		}
-		return createFuture.Result(ac.virtualnetworks)
-
-	case infrav1.DeleteFuture:
-		// Delete does not return a result vnet.
-		return nil, nil
-
-	default:
-		return nil, errors.Errorf("unknown future type %q", futureType)
-	}
 }
