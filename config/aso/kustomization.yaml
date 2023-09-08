@@ -12,7 +12,7 @@ patches:
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: capz-system
+        name: azureserviceoperator-system
   - patch: |- # CAPZ will manage ASO's CRDs
       - op: test
         path: /spec/template/spec/containers/0/args/4
