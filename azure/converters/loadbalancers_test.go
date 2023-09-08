@@ -19,7 +19,7 @@ package converters
 import (
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/google/go-cmp/cmp"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -28,12 +28,12 @@ func TestSKUtoSDK(t *testing.T) {
 	tests := []struct {
 		name string
 		sku  infrav1.SKU
-		want network.LoadBalancerSkuName
+		want armnetwork.LoadBalancerSKUName
 	}{
 		{
 			name: "standard sku",
 			sku:  infrav1.SKUStandard,
-			want: network.LoadBalancerSkuNameStandard,
+			want: armnetwork.LoadBalancerSKUNameStandard,
 		},
 		{
 			name: "unknown",
