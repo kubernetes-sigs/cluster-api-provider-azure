@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -80,8 +80,8 @@ var (
 		ResourceGroup: resourceGroup,
 	}
 
-	managedTags = resources.TagsResource{
-		Properties: &resources.Tags{
+	managedTags = armresources.TagsResource{
+		Properties: &armresources.Tags{
 			Tags: map[string]*string{
 				"foo": ptr.To("bar"),
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + clusterName: ptr.To("owned"),
@@ -115,13 +115,13 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
 				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, nil)
@@ -139,7 +139,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, notDoneError)
 				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, notDoneError)
@@ -152,7 +152,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, errFake)
 				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, errFake)
@@ -164,14 +164,14 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, nil)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, nil)
 				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, nil)
@@ -187,13 +187,13 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
 				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, errFake)
@@ -209,13 +209,13 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
 				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, nil)
@@ -231,13 +231,13 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
 				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, notDoneError)
@@ -252,14 +252,14 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, nil)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, nil)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
@@ -274,14 +274,14 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, nil)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
 				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, nil)
@@ -298,13 +298,13 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, notFoundError)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
 				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
 				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, nil)
@@ -400,15 +400,15 @@ func TestDeletePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, nil)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(resources.TagsResource{}, nil)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(resources.TagsResource{}, nil)
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 			},
 		},
@@ -419,7 +419,7 @@ func TestDeletePrivateDNS(t *testing.T) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
-				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(resources.TagsResource{}, nil)
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 
 				s.SubscriptionID().Return("123")

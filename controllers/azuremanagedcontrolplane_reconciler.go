@@ -65,6 +65,10 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 	if err != nil {
 		return nil, err
 	}
+	tagsSvc, err := tags.New(scope)
+	if err != nil {
+		return nil, err
+	}
 	virtualNetworksSvc, err := virtualnetworks.New(scope)
 	if err != nil {
 		return nil, err
@@ -78,7 +82,7 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 			subnetsSvc,
 			managedClustersSvc,
 			privateEndpointsSvc,
-			tags.New(scope),
+			tagsSvc,
 			resourceHealthSvc,
 		},
 	}, nil

@@ -19,7 +19,7 @@ package async
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -44,7 +44,7 @@ type Getter interface {
 
 // TagsGetter is an interface that can get a tags resource.
 type TagsGetter interface {
-	GetAtScope(ctx context.Context, scope string) (result resources.TagsResource, err error)
+	GetAtScope(ctx context.Context, scope string) (result armresources.TagsResource, err error)
 }
 
 // Creator is a client that can create or update a resource asynchronously.

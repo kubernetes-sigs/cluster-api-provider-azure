@@ -64,7 +64,10 @@ func New(scope Scope) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	tagsClient := tags.NewClient(scope)
+	tagsClient, err := tags.NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Scope:      scope,
 		TagsGetter: tagsClient,

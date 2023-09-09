@@ -57,6 +57,12 @@ type ManagedControlPlaneScopeParams struct {
 	ControlPlane        *infrav1.AzureManagedControlPlane
 	ManagedMachinePools []ManagedMachinePool
 	Cache               *ManagedControlPlaneCache
+	VnetDescriber       VnetDescriber
+}
+
+// VnetDescriber answers whether a virtual network is managed or not.
+type VnetDescriber interface {
+	IsManaged(context.Context) (bool, error)
 }
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
@@ -113,6 +119,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		patchHelper:         helper,
 		cache:               params.Cache,
 		UseLegacyGroups:     useLegacyGroups,
+		VnetDescriber:       params.VnetDescriber,
 	}, nil
 }
 
@@ -128,6 +135,7 @@ type ManagedControlPlaneScope struct {
 	ControlPlane        *infrav1.AzureManagedControlPlane
 	ManagedMachinePools []ManagedMachinePool
 	UseLegacyGroups     bool
+	VnetDescriber       VnetDescriber
 }
 
 // ManagedControlPlaneCache stores ManagedControlPlane data locally so we don't have to hit the API multiple times within the same reconcile loop.
@@ -402,15 +410,21 @@ func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	ctx := context.Background()
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.IsVnetManaged")
 	defer done()
-	virtualNetworksSvc, err := virtualnetworks.New(s)
-	if err != nil {
-		log.Error(err, "failed to create virtualnetworks service")
-		return false
+
+	var vnetDescriber = s.VnetDescriber
+	if vnetDescriber == nil {
+		virtualNetworksSvc, err := virtualnetworks.New(s)
+		if err != nil {
+			log.Error(err, "failed to create virtualnetworks service")
+			return false
+		}
+		vnetDescriber = virtualNetworksSvc
 	}
-	isManaged, err := virtualNetworksSvc.IsManaged(ctx)
+	isManaged, err := vnetDescriber.IsManaged(ctx)
 	if err != nil {
 		log.Error(err, "Unable to determine if ManagedControlPlaneScope VNET is managed by capz", "AzureManagedCluster", s.ClusterName())
 	}
+
 	s.cache.isVnetManaged = ptr.To(isManaged)
 	return isManaged
 }

@@ -65,9 +65,17 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating inboundnatrules service")
 	}
+	publicIPsSvc, err := publicips.New(machineScope)
+	if err != nil {
+		return nil, err
+	}
 	roleAssignmentsSvc, err := roleassignments.New(machineScope)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed creating a roleassignments service")
+		return nil, errors.Wrap(err, "failed creating roleassignments service")
+	}
+	tagsSvc, err := tags.New(machineScope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating tags service")
 	}
 	virtualmachinesSvc, err := virtualmachines.New(machineScope)
 	if err != nil {
@@ -84,7 +92,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	ams := &azureMachineService{
 		scope: machineScope,
 		services: []azure.ServiceReconciler{
-			publicips.New(machineScope),
+			publicIPsSvc,
 			inboundnatrulesSvc,
 			networkInterfacesSvc,
 			availabilitySetsSvc,
@@ -92,7 +100,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 			virtualmachinesSvc,
 			roleAssignmentsSvc,
 			vmextensionsSvc,
-			tags.New(machineScope),
+			tagsSvc,
 		},
 		skuCache: cache,
 	}

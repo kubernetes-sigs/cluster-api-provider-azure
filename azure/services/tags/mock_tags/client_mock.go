@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	resources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
+	armresources "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,10 +52,10 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 }
 
 // GetAtScope mocks base method.
-func (m *Mockclient) GetAtScope(arg0 context.Context, arg1 string) (resources.TagsResource, error) {
+func (m *Mockclient) GetAtScope(arg0 context.Context, arg1 string) (armresources.TagsResource, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAtScope", arg0, arg1)
-	ret0, _ := ret[0].(resources.TagsResource)
+	ret0, _ := ret[0].(armresources.TagsResource)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -67,10 +67,10 @@ func (mr *MockclientMockRecorder) GetAtScope(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // UpdateAtScope mocks base method.
-func (m *Mockclient) UpdateAtScope(arg0 context.Context, arg1 string, arg2 resources.TagsPatchResource) (resources.TagsResource, error) {
+func (m *Mockclient) UpdateAtScope(arg0 context.Context, arg1 string, arg2 armresources.TagsPatchResource) (armresources.TagsResource, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAtScope", arg0, arg1, arg2)
-	ret0, _ := ret[0].(resources.TagsResource)
+	ret0, _ := ret[0].(armresources.TagsResource)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -47,15 +47,18 @@ type Service struct {
 }
 
 // New creates a new service.
-func New(scope PublicIPScope) *Service {
+func New(scope PublicIPScope) (*Service, error) {
 	client := NewClient(scope)
-	tagsClient := tags.NewClient(scope)
+	tagsClient, err := tags.NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Scope:      scope,
 		Getter:     client,
 		TagsGetter: tagsClient,
 		Reconciler: async.New(scope, client, client),
-	}
+	}, nil
 }
 
 // Name returns the service name.
