@@ -26,7 +26,6 @@ import (
 
 	runtime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	gomock "go.uber.org/mock/gomock"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -116,10 +115,10 @@ func (mr *MockClientMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // ListInstances mocks base method.
-func (m *MockClient) ListInstances(arg0 context.Context, arg1, arg2 string) ([]compute.VirtualMachineScaleSetVM, error) {
+func (m *MockClient) ListInstances(arg0 context.Context, arg1, arg2 string) ([]armcompute.VirtualMachineScaleSetVM, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListInstances", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]compute.VirtualMachineScaleSetVM)
+	ret0, _ := ret[0].([]armcompute.VirtualMachineScaleSetVM)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

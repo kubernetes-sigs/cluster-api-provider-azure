@@ -49,7 +49,7 @@ import (
 )
 
 type (
-	azureMachinePoolMachineReconcilerFactory func(*scope.MachinePoolMachineScope) azure.Reconciler
+	azureMachinePoolMachineReconcilerFactory func(*scope.MachinePoolMachineScope) (azure.Reconciler, error)
 
 	// AzureMachinePoolMachineController handles Kubernetes change events for AzureMachinePoolMachine resources.
 	AzureMachinePoolMachineController struct {
@@ -253,7 +253,10 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 		return reconcile.Result{}, nil
 	}
 
-	ampms := ampmr.reconcilerFactory(machineScope)
+	ampms, err := ampmr.reconcilerFactory(machineScope)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create AzureMachinePoolMachine reconciler")
+	}
 	if err := ampms.Reconcile(ctx); err != nil {
 		// Handle transient and terminal errors
 		var reconcileError azure.ReconcileError
@@ -268,7 +271,7 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 
-			return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile AzureMachinePool")
+			return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachinePool")
 		}
 
 		return reconcile.Result{}, err
@@ -321,7 +324,10 @@ func (ampmr *AzureMachinePoolMachineController) reconcileDelete(ctx context.Cont
 	// 2) after drained, delete the infrastructure
 	// 3) remove finalizer
 
-	ampms := ampmr.reconcilerFactory(machineScope)
+	ampms, err := ampmr.reconcilerFactory(machineScope)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create AzureMachinePoolMachine reconciler")
+	}
 	if err := ampms.Delete(ctx); err != nil {
 		// Handle transient and terminal errors
 		var reconcileError azure.ReconcileError
@@ -345,11 +351,15 @@ func (ampmr *AzureMachinePoolMachineController) reconcileDelete(ctx context.Cont
 	return reconcile.Result{}, nil
 }
 
-func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) azure.Reconciler {
+func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) (azure.Reconciler, error) {
+	scaleSetVMsSvc, err := scalesetvms.NewService(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &azureMachinePoolMachineReconciler{
 		Scope:              scope,
-		scalesetVMsService: scalesetvms.NewService(scope),
-	}
+		scalesetVMsService: scaleSetVMsSvc,
+	}, nil
 }
 
 // Reconcile will reconcile the state of the Machine Pool Machine with the state of the Azure VMSS VM.

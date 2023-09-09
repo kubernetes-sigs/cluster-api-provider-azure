@@ -104,8 +104,8 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 
 			c.Setup(cb, reconciler.EXPECT())
 			controller := NewAzureMachinePoolMachineController(cb.Build(), nil, 30*time.Second, "foo")
-			controller.reconcilerFactory = func(_ *scope.MachinePoolMachineScope) azure.Reconciler {
-				return reconciler
+			controller.reconcilerFactory = func(_ *scope.MachinePoolMachineScope) (azure.Reconciler, error) {
+				return reconciler, nil
 			}
 			res, err := controller.Reconcile(context.TODO(), ctrl.Request{
 				NamespacedName: types.NamespacedName{

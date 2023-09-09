@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -921,22 +920,22 @@ func fetchDataDiskBasedOnSize(vmSize string) []*armcompute.VirtualMachineScaleSe
 	return dataDisk
 }
 
-func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
-	return []compute.VirtualMachineScaleSetVM{
+func newDefaultInstances() []armcompute.VirtualMachineScaleSetVM {
+	return []armcompute.VirtualMachineScaleSetVM{
 		{
 			ID:         ptr.To("my-vm-id"),
 			InstanceID: ptr.To("my-vm-1"),
 			Name:       ptr.To("my-vm"),
-			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
 				ProvisioningState: ptr.To("Succeeded"),
-				OsProfile: &compute.OSProfile{
+				OSProfile: &armcompute.OSProfile{
 					ComputerName: ptr.To("instance-000001"),
 				},
-				StorageProfile: &compute.StorageProfile{
-					ImageReference: &compute.ImageReference{
+				StorageProfile: &armcompute.StorageProfile{
+					ImageReference: &armcompute.ImageReference{
 						Publisher: ptr.To("fake-publisher"),
 						Offer:     ptr.To("my-offer"),
-						Sku:       ptr.To("sku-id"),
+						SKU:       ptr.To("sku-id"),
 						Version:   ptr.To("1.0"),
 					},
 				},
@@ -946,16 +945,16 @@ func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 			ID:         ptr.To("my-vm-id"),
 			InstanceID: ptr.To("my-vm-2"),
 			Name:       ptr.To("my-vm"),
-			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
 				ProvisioningState: ptr.To("Succeeded"),
-				OsProfile: &compute.OSProfile{
+				OSProfile: &armcompute.OSProfile{
 					ComputerName: ptr.To("instance-000002"),
 				},
-				StorageProfile: &compute.StorageProfile{
-					ImageReference: &compute.ImageReference{
+				StorageProfile: &armcompute.StorageProfile{
+					ImageReference: &armcompute.ImageReference{
 						Publisher: ptr.To("fake-publisher"),
 						Offer:     ptr.To("my-offer"),
-						Sku:       ptr.To("sku-id"),
+						SKU:       ptr.To("sku-id"),
 						Version:   ptr.To("1.0"),
 					},
 				},
