@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -119,7 +119,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 		{
 			name: "azuremachinetemplate with valid osDisk cache type",
 			machineTemplate: createAzureMachineTemplateFromMachine(
-				createMachineWithOsDiskCacheType(string(compute.PossibleCachingTypesValues()[1])),
+				createMachineWithOsDiskCacheType(string(armcompute.PossibleCachingTypesValues()[1])),
 			),
 			wantErr: false,
 		},

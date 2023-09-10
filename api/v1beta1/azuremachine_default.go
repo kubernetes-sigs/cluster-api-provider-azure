@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -78,10 +78,10 @@ func (s *AzureMachineSpec) SetDataDisksDefaults() {
 		}
 		if disk.CachingType == "" {
 			if s.DataDisks[i].ManagedDisk != nil &&
-				s.DataDisks[i].ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
-				s.DataDisks[i].CachingType = string(compute.CachingTypesNone)
+				s.DataDisks[i].ManagedDisk.StorageAccountType == string(armcompute.StorageAccountTypesUltraSSDLRS) {
+				s.DataDisks[i].CachingType = string(armcompute.CachingTypesNone)
 			} else {
-				s.DataDisks[i].CachingType = string(compute.CachingTypesReadWrite)
+				s.DataDisks[i].CachingType = string(armcompute.CachingTypesReadWrite)
 			}
 		}
 	}
