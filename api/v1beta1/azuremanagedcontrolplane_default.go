@@ -30,6 +30,10 @@ const (
 	defaultAKSVnetCIDR = "10.0.0.0/8"
 	// defaultAKSNodeSubnetCIDR is the default Node Subnet CIDR.
 	defaultAKSNodeSubnetCIDR = "10.240.0.0/16"
+	// defaultAKSVnetCIDRForOverlay is the default Vnet CIDR when Azure CNI overlay is enabled.
+	defaultAKSVnetCIDRForOverlay = "10.224.0.0/12"
+	// defaultAKSNodeSubnetCIDRForOverlay is the default Node Subnet CIDR when Azure CNI overlay is enabled.
+	defaultAKSNodeSubnetCIDRForOverlay = "10.224.0.0/16"
 )
 
 // setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane.
@@ -60,6 +64,9 @@ func (m *AzureManagedControlPlane) setDefaultVirtualNetwork() {
 	}
 	if m.Spec.VirtualNetwork.CIDRBlock == "" {
 		m.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDR
+		if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay {
+			m.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDRForOverlay
+		}
 	}
 	if m.Spec.VirtualNetwork.ResourceGroup == "" {
 		m.Spec.VirtualNetwork.ResourceGroup = m.Spec.ResourceGroupName
@@ -73,6 +80,9 @@ func (m *AzureManagedControlPlane) setDefaultSubnet() {
 	}
 	if m.Spec.VirtualNetwork.Subnet.CIDRBlock == "" {
 		m.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDR
+		if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay {
+			m.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDRForOverlay
+		}
 	}
 }
 

@@ -375,6 +375,12 @@ spec:
                 - azure
                 - kubenet
                 type: string
+              networkPluginMode:
+                description: NetworkPluginMode is the mode the network plugin should
+                  use. Allowed value is "overlay".
+                enum:
+                - overlay
+                type: string
               networkPolicy:
                 description: NetworkPolicy used for building Kubernetes network. Allowed
                   values are "azure", "calico". Immutable.
