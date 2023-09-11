@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
@@ -105,7 +105,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 				CachingType: "None",
 				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
-					Option: string(compute.DiffDiskOptionsLocal),
+					Option: string(armcompute.DiffDiskOptionsLocal),
 				},
 				ManagedDisk: &ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
@@ -120,7 +120,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 				CachingType: "None",
 				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
-					Option: string(compute.DiffDiskOptionsLocal),
+					Option: string(armcompute.DiffDiskOptionsLocal),
 				},
 				ManagedDisk: &ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
@@ -193,7 +193,7 @@ func generateNegativeTestCases() []osDiskTestInput {
 				StorageAccountType: "Premium_LRS",
 			},
 			DiffDiskSettings: &DiffDiskSettings{
-				Option: string(compute.DiffDiskOptionsLocal),
+				Option: string(armcompute.DiffDiskOptionsLocal),
 			},
 		},
 	}
@@ -216,7 +216,7 @@ func generateValidOSDisk() OSDisk {
 		ManagedDisk: &ManagedDiskParameters{
 			StorageAccountType: "Premium_LRS",
 		},
-		CachingType: string(compute.PossibleCachingTypesValues()[0]),
+		CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 	}
 }
 
@@ -251,13 +251,13 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix:  "my_other_disk",
 					DiskSizeGB:  64,
 					Lun:         ptr.To[int32](1),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: false,
@@ -269,13 +269,13 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix:  "disk",
 					DiskSizeGB:  64,
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix:  "disk",
 					DiskSizeGB:  64,
 					Lun:         ptr.To[int32](1),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -287,13 +287,13 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix:  "my_other_disk",
 					DiskSizeGB:  64,
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -305,7 +305,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  0,
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -317,7 +317,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix:  "",
 					DiskSizeGB:  0,
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -341,7 +341,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: false,
@@ -356,7 +356,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix: "my_disk_2",
@@ -365,7 +365,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](1),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: false,
@@ -380,7 +380,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 						StorageAccountType: "invalid storage account",
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -392,10 +392,10 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
 					ManagedDisk: &ManagedDiskParameters{
-						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
+						StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.CachingTypesNone),
+					CachingType: string(armcompute.CachingTypesNone),
 				},
 			},
 			wantErr: false,
@@ -407,10 +407,10 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
 					ManagedDisk: &ManagedDiskParameters{
-						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
+						StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.CachingTypesReadWrite),
+					CachingType: string(armcompute.CachingTypesReadWrite),
 				},
 			},
 			wantErr: true,
@@ -422,10 +422,10 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
 					ManagedDisk: &ManagedDiskParameters{
-						StorageAccountType: string(compute.StorageAccountTypesUltraSSDLRS),
+						StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.CachingTypesReadOnly),
+					CachingType: string(armcompute.CachingTypesReadOnly),
 				},
 			},
 			wantErr: true,
@@ -680,7 +680,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix: "my_other_disk",
@@ -689,7 +689,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			oldDisks: []DataDisk{
@@ -700,7 +700,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix: "my_other_disk",
@@ -709,7 +709,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: false,
@@ -724,7 +724,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			oldDisks: []DataDisk{
@@ -735,7 +735,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -756,7 +756,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix:  "my_disk_1",
 					DiskSizeGB:  128,
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -771,7 +771,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			oldDisks: []DataDisk{
@@ -782,7 +782,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix: "my_disk_2",
@@ -791,7 +791,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](2),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -806,7 +806,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 				{
 					NameSuffix: "my_disk_2",
@@ -815,7 +815,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](2),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			oldDisks: []DataDisk{
@@ -826,7 +826,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](0),
-					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,

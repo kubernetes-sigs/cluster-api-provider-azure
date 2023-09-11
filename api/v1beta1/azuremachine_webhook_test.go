@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -104,7 +104,7 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachine with valid osDisk cache type",
-			machine: createMachineWithOsDiskCacheType(string(compute.PossibleCachingTypesValues()[1])),
+			machine: createMachineWithOsDiskCacheType(string(armcompute.PossibleCachingTypesValues()[1])),
 			wantErr: false,
 		},
 		{
@@ -863,7 +863,7 @@ func TestAzureMachine_Default(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cacheTypeNotSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal("None"))
 
-	for _, possibleCachingType := range compute.PossibleCachingTypesValues() {
+	for _, possibleCachingType := range armcompute.PossibleCachingTypesValues() {
 		cacheTypeSpecifiedTest := test{machine: &AzureMachine{ObjectMeta: testObjectMeta, Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
 		err = mw.Default(context.Background(), cacheTypeSpecifiedTest.machine)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -1044,7 +1044,7 @@ func createMachineWithConfidentialCompute(securityEncryptionType SecurityEncrypt
 				SecurityEncryptionType: securityEncryptionType,
 			},
 		},
-		CachingType: string(compute.PossibleCachingTypesValues()[0]),
+		CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 	}
 
 	return &AzureMachine{

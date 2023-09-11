@@ -23,7 +23,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -86,7 +86,7 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 		Expect(amp.Status.Replicas).To(BeNumerically("==", len(amp.Spec.ProviderIDList)))
 		for _, providerID := range amp.Spec.ProviderIDList {
 			switch amp.Spec.OrchestrationMode {
-			case infrav1.OrchestrationModeType(compute.OrchestrationModeFlexible):
+			case infrav1.OrchestrationModeType(armcompute.OrchestrationModeFlexible):
 				Expect(providerID).To(MatchRegexp(regexpFlexibleVM))
 			default:
 				Expect(providerID).To(MatchRegexp(regexpUniformInstance))
