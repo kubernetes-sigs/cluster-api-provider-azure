@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -211,7 +212,7 @@ func getEPHVMSSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Size = vmSizeEPH
 	spec.SKU = resourceskus.SKU{
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.EphemeralOSDisk),
 				Value: ptr.To("True"),
@@ -326,7 +327,7 @@ func getHostEncryptionVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	spec.Size = "VM_SIZE_EAH"
 	spec.SecurityProfile = &infrav1.SecurityProfile{EncryptionAtHost: ptr.To(true)}
 	spec.SKU = resourceskus.SKU{
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.EncryptionAtHost),
 				Value: ptr.To("True"),
@@ -356,7 +357,7 @@ func getEphemeralReadOnlyVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	}
 	spec.OSDisk.CachingType = "ReadOnly"
 	spec.SKU = resourceskus.SKU{
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.EphemeralOSDisk),
 				Value: ptr.To("True"),

@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"k8s.io/utils/ptr"
@@ -45,16 +45,16 @@ var (
 	fakeSku = resourceskus.SKU{
 		Name: ptr.To("Standard_D2v2"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
-		Locations: &[]string{
-			"fake-location",
+		Locations: []*string{
+			ptr.To("fake-location"),
 		},
-		LocationInfo: &[]compute.ResourceSkuLocationInfo{
+		LocationInfo: []*armcompute.ResourceSKULocationInfo{
 			{
 				Location: ptr.To("fake-location"),
-				Zones:    &[]string{"1"},
+				Zones:    []*string{ptr.To("1")},
 			},
 		},
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.AcceleratedNetworking),
 				Value: ptr.To(string(resourceskus.CapabilitySupported)),

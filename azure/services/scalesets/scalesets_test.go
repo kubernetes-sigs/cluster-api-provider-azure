@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
@@ -395,33 +396,33 @@ func TestDeleteVMSS(t *testing.T) {
 	}
 }
 
-func getFakeSkus() []compute.ResourceSku {
-	return []compute.ResourceSku{
+func getFakeSkus() []armcompute.ResourceSKU {
+	return []armcompute.ResourceSKU{
 		{
 			Name:         ptr.To("VM_SIZE"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
-					ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
+					ZoneDetails: []*armcompute.ResourceSKUZoneDetails{
 						{
-							Capabilities: &[]compute.ResourceSkuCapabilities{
+							Capabilities: []*armcompute.ResourceSKUCapabilities{
 								{
 									Name:  ptr.To("UltraSSDAvailable"),
 									Value: ptr.To("True"),
 								},
 							},
-							Name: &[]string{"1", "3"},
+							Name: []*string{ptr.To("1"), ptr.To("3")},
 						},
 					},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
@@ -440,16 +441,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_AN"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilitySupported)),
@@ -468,16 +469,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_1_CPU"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
@@ -496,16 +497,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_1_MEM"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
@@ -524,16 +525,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_EAH"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.VCPUs),
 					Value: ptr.To("4"),
@@ -552,16 +553,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To(vmSizeUSSD),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilitySupported)),
@@ -580,27 +581,27 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_EPH"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
-					ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
+					ZoneDetails: []*armcompute.ResourceSKUZoneDetails{
 						{
-							Capabilities: &[]compute.ResourceSkuCapabilities{
+							Capabilities: []*armcompute.ResourceSKUCapabilities{
 								{
 									Name:  ptr.To("UltraSSDAvailable"),
 									Value: ptr.To("True"),
 								},
 							},
-							Name: &[]string{"1", "3"},
+							Name: []*string{ptr.To("1"), ptr.To("3")},
 						},
 					},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),

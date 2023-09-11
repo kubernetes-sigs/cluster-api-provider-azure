@@ -49,6 +49,7 @@ type TestReconcileInput struct {
 	machineScopeFailureReason capierrors.MachineStatusError
 	ready                     bool
 	cache                     *scope.MachineCache
+	skuCache                  scope.SKUCacher
 	expectedResult            reconcile.Result
 }
 
@@ -154,6 +155,12 @@ func TestAzureMachineReconcile(t *testing.T) {
 	}
 }
 
+type fakeSKUCacher struct{}
+
+func (f fakeSKUCacher) Get(context.Context, string, resourceskus.ResourceType) (resourceskus.SKU, error) {
+	return resourceskus.SKU{}, errors.New("not implemented")
+}
+
 func TestAzureMachineReconcileNormal(t *testing.T) {
 	cases := map[string]TestReconcileInput{
 		"should reconcile normally": {
@@ -171,6 +178,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 		"should fail if failed to initialize machine cache": {
 			createAzureMachineService: getFakeAzureMachineService,
 			cache:                     nil,
+			skuCache:                  fakeSKUCacher{},
 			expectedErr:               "failed to init machine scope cache",
 		},
 		"should fail if identities are not ready": {
@@ -396,6 +404,7 @@ func getReconcileInputs(tc TestReconcileInput) (*AzureMachineReconciler, *scope.
 		AzureMachine: azureMachine,
 		ClusterScope: clusterScope,
 		Cache:        tc.cache,
+		SKUCache:     tc.skuCache,
 	})
 	if err != nil {
 		return nil, nil, nil, err

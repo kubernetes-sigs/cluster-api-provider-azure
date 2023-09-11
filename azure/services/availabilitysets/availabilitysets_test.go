@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -39,7 +38,7 @@ import (
 var (
 	fakeFaultDomainCount = 3
 	fakeSku              = resourceskus.SKU{
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.MaximumPlatformFaultDomainCount),
 				Value: ptr.To(strconv.Itoa(fakeFaultDomainCount)),

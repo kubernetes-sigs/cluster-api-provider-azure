@@ -21,7 +21,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -90,7 +90,7 @@ func TestAzureMachineServiceReconcile(t *testing.T) {
 					svcTwoMock,
 					svcThreeMock,
 				},
-				skuCache: resourceskus.NewStaticCache([]compute.ResourceSku{}, ""),
+				skuCache: resourceskus.NewStaticCache([]armcompute.ResourceSKU{}, ""),
 			}
 
 			err := s.reconcile(context.TODO())
@@ -227,7 +227,7 @@ func TestAzureMachineServiceDelete(t *testing.T) {
 					svcTwoMock,
 					svcThreeMock,
 				},
-				skuCache: resourceskus.NewStaticCache([]compute.ResourceSku{}, ""),
+				skuCache: resourceskus.NewStaticCache([]armcompute.ResourceSKU{}, ""),
 			}
 
 			err := s.delete(context.TODO())
