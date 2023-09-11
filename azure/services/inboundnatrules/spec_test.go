@@ -50,8 +50,8 @@ func TestParameters(t *testing.T) {
 		{
 			name:     "existing is not an InboundNatRule",
 			spec:     fakeInboundNatSpec(true),
-			existing: context.TODO(),
-			errorMsg: "*context.emptyCtx is not an armnetwork.InboundNatRule",
+			existing: "wrong type",
+			errorMsg: "string is not an armnetwork.InboundNatRule",
 		},
 		{
 			name:     "existing InboundNatRule",
