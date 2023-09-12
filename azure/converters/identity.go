@@ -19,6 +19,7 @@ package converters
 import (
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -67,16 +68,16 @@ func UserAssignedIdentitiesToVMSDK(identities []infrav1.UserAssignedIdentity) (m
 	return userIdentitiesMap, nil
 }
 
-// UserAssignedIdentitiesToVMSSSDK converts CAPZ user assigned identities associated with the Virtual Machine Scale Set to Azure SDK identities
+// UserAssignedIdentitiesToVMSSSDK converts CAPZ user-assigned identities associated with the Virtual Machine Scale Set to Azure SDK identities
 // Similar to UserAssignedIdentitiesToVMSDK.
-func UserAssignedIdentitiesToVMSSSDK(identities []infrav1.UserAssignedIdentity) (map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue, error) {
+func UserAssignedIdentitiesToVMSSSDK(identities []infrav1.UserAssignedIdentity) (map[string]*armcompute.UserAssignedIdentitiesValue, error) {
 	if len(identities) == 0 {
 		return nil, ErrUserAssignedIdentitiesNotFound
 	}
-	userIdentitiesMap := make(map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue, len(identities))
+	userIdentitiesMap := make(map[string]*armcompute.UserAssignedIdentitiesValue, len(identities))
 	for _, id := range identities {
 		key := sanitized(id.ProviderID)
-		userIdentitiesMap[key] = &compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{}
+		userIdentitiesMap[key] = &armcompute.UserAssignedIdentitiesValue{}
 	}
 
 	return userIdentitiesMap, nil

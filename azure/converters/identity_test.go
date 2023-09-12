@@ -19,6 +19,7 @@ package converters
 import (
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	. "github.com/onsi/gomega"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -42,7 +43,7 @@ var expectedVMSDKObject = map[string]*compute.VirtualMachineIdentityUserAssigned
 	"/without/prefix": {},
 }
 
-var expectedVMSSSDKObject = map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{
+var expectedVMSSSDKObject = map[string]*armcompute.UserAssignedIdentitiesValue{
 	"/foo":            {},
 	"/bar":            {},
 	"/without/prefix": {},
@@ -148,12 +149,12 @@ func Test_UserAssignedIdentitiesToVMSSSDK(t *testing.T) {
 	cases := []struct {
 		Name           string
 		SubjectFactory []infrav1.UserAssignedIdentity
-		Expect         func(*GomegaWithT, map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue, error)
+		Expect         func(*GomegaWithT, map[string]*armcompute.UserAssignedIdentitiesValue, error)
 	}{
 		{
 			Name:           "ShouldPopulateWithData",
 			SubjectFactory: sampleSubjectFactory,
-			Expect: func(g *GomegaWithT, m map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue, err error) {
+			Expect: func(g *GomegaWithT, m map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
 				g.Expect(err).Should(BeNil())
 				g.Expect(m).Should(Equal(expectedVMSSSDKObject))
 			},
@@ -162,7 +163,7 @@ func Test_UserAssignedIdentitiesToVMSSSDK(t *testing.T) {
 		{
 			Name:           "ShouldFailWithError",
 			SubjectFactory: []infrav1.UserAssignedIdentity{},
-			Expect: func(g *GomegaWithT, m map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue, err error) {
+			Expect: func(g *GomegaWithT, m map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
 				g.Expect(err).Should(Equal(ErrUserAssignedIdentitiesNotFound))
 			},
 		},

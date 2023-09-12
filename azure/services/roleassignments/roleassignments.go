@@ -58,10 +58,14 @@ func New(scope RoleAssignmentScope) (*Service, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create roleassignments service")
 	}
+	scaleSetsClient, err := scalesets.NewClient(scope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create scalesets service")
+	}
 	return &Service{
 		Scope:                        scope,
 		virtualMachinesGetter:        virtualmachines.NewClient(scope),
-		virtualMachineScaleSetGetter: scalesets.NewClient(scope),
+		virtualMachineScaleSetGetter: scaleSetsClient,
 		Reconciler: asyncpoller.New[armauthorization.RoleAssignmentsClientCreateResponse,
 			armauthorization.RoleAssignmentsClientDeleteResponse](scope, client, nil),
 	}, nil

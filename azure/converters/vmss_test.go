@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
@@ -31,28 +32,28 @@ import (
 func Test_SDKToVMSS(t *testing.T) {
 	cases := []struct {
 		Name           string
-		SubjectFactory func(*gomega.GomegaWithT) (compute.VirtualMachineScaleSet, []compute.VirtualMachineScaleSetVM)
+		SubjectFactory func(*gomega.GomegaWithT) (armcompute.VirtualMachineScaleSet, []compute.VirtualMachineScaleSetVM)
 		Expect         func(*gomega.GomegaWithT, azure.VMSS)
 	}{
 		{
 			Name: "ShouldPopulateWithData",
-			SubjectFactory: func(g *gomega.GomegaWithT) (compute.VirtualMachineScaleSet, []compute.VirtualMachineScaleSetVM) {
+			SubjectFactory: func(g *gomega.GomegaWithT) (armcompute.VirtualMachineScaleSet, []compute.VirtualMachineScaleSetVM) {
 				tags := map[string]*string{
 					"foo": ptr.To("bazz"),
 				}
 				zones := []string{"zone0", "zone1"}
-				return compute.VirtualMachineScaleSet{
-						Sku: &compute.Sku{
+				return armcompute.VirtualMachineScaleSet{
+						SKU: &armcompute.SKU{
 							Name:     ptr.To("skuName"),
 							Tier:     ptr.To("skuTier"),
 							Capacity: ptr.To[int64](2),
 						},
-						Zones:    &zones,
+						Zones:    azure.PtrSlice(&zones),
 						ID:       ptr.To("vmssID"),
 						Name:     ptr.To("vmssName"),
 						Location: ptr.To("westus2"),
 						Tags:     tags,
-						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+						Properties: &armcompute.VirtualMachineScaleSetProperties{
 							SinglePlacementGroup: ptr.To(false),
 							ProvisioningState:    ptr.To(string(compute.ProvisioningState1Succeeded)),
 						},
@@ -323,6 +324,115 @@ func Test_SDKImageToImage(t *testing.T) {
 	}
 }
 
+func Test_SDKImageToImageV2(t *testing.T) {
+	cases := []struct {
+		Name         string
+		SDKImageRef  *armcompute.ImageReference
+		IsThirdParty bool
+		Image        infrav1.Image
+	}{
+		{
+			Name: "id image",
+			SDKImageRef: &armcompute.ImageReference{
+				ID: ptr.To("imageID"),
+			},
+			IsThirdParty: false,
+			Image: infrav1.Image{
+				ID: ptr.To("imageID"),
+			},
+		},
+		{
+			Name: "marketplace image",
+			SDKImageRef: &armcompute.ImageReference{
+				Publisher: ptr.To("publisher"),
+				Offer:     ptr.To("offer"),
+				SKU:       ptr.To("sku"),
+				Version:   ptr.To("version"),
+			},
+			IsThirdParty: true,
+			Image: infrav1.Image{
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "publisher",
+						Offer:     "offer",
+						SKU:       "sku",
+					},
+					Version:         "version",
+					ThirdPartyImage: true,
+				},
+			},
+		},
+		{
+			Name: "shared gallery image",
+			SDKImageRef: &armcompute.ImageReference{
+				SharedGalleryImageID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+			},
+			Image: infrav1.Image{
+				SharedGallery: &infrav1.AzureSharedGalleryImage{
+					SubscriptionID: "subscription",
+					ResourceGroup:  "rg",
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "version",
+				},
+			},
+		},
+		{
+			Name: "community gallery image",
+			SDKImageRef: &armcompute.ImageReference{
+				CommunityGalleryImageID: ptr.To("/CommunityGalleries/gallery/Images/image/Versions/version"),
+			},
+			Image: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery: "gallery",
+					Name:    "image",
+					Version: "version",
+				},
+			},
+		},
+		{
+			Name: "compute gallery image",
+			SDKImageRef: &armcompute.ImageReference{
+				ID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+			},
+			Image: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "version",
+					SubscriptionID: ptr.To("subscription"),
+					ResourceGroup:  ptr.To("rg"),
+				},
+			},
+		},
+		{
+			Name: "compute gallery image not formatted as expected",
+			SDKImageRef: &armcompute.ImageReference{
+				ID: ptr.To("/compute/gallery/not/formatted/as/expected"),
+			},
+			Image: infrav1.Image{
+				ID: ptr.To("/compute/gallery/not/formatted/as/expected"),
+			},
+		},
+		{
+			Name: "community gallery image not formatted as expected",
+			SDKImageRef: &armcompute.ImageReference{
+				CommunityGalleryImageID: ptr.To("/community/gallery/not/formatted/as/expected"),
+			},
+			Image: infrav1.Image{},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
+			g := gomega.NewGomegaWithT(t)
+			g.Expect(converters.SDKImageToImageV2(c.SDKImageRef, c.IsThirdParty)).To(gomega.Equal(c.Image))
+		})
+	}
+}
+
 func Test_SDKVMToVMSSVM(t *testing.T) {
 	cases := []struct {
 		Name     string
@@ -414,9 +524,9 @@ func Test_GetOrchestrationMode(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 
 	g.Expect(converters.GetOrchestrationMode(infrav1.FlexibleOrchestrationMode)).
-		To(gomega.Equal(compute.OrchestrationModeFlexible))
+		To(gomega.Equal(armcompute.OrchestrationModeFlexible))
 	g.Expect(converters.GetOrchestrationMode(infrav1.UniformOrchestrationMode)).
-		To(gomega.Equal(compute.OrchestrationModeUniform))
+		To(gomega.Equal(armcompute.OrchestrationModeUniform))
 	g.Expect(converters.GetOrchestrationMode("invalid")).
-		To(gomega.Equal(compute.OrchestrationModeUniform))
+		To(gomega.Equal(armcompute.OrchestrationModeUniform))
 }

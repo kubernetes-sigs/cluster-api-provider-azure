@@ -19,9 +19,38 @@ package converters
 import (
 	"strconv"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
+
+// GetSpotVMOptionsV2 takes the spot vm options
+// and returns the individual vm priority, eviction policy and billing profile.
+func GetSpotVMOptionsV2(spotVMOptions *infrav1.SpotVMOptions, diffDiskSettings *infrav1.DiffDiskSettings) (*armcompute.VirtualMachinePriorityTypes, *armcompute.VirtualMachineEvictionPolicyTypes, *armcompute.BillingProfile, error) {
+	// Spot VM not requested, return zero values to apply defaults
+	if spotVMOptions == nil {
+		return nil, nil, nil, nil
+	}
+	var billingProfile *armcompute.BillingProfile
+	if spotVMOptions.MaxPrice != nil {
+		maxPrice, err := strconv.ParseFloat(spotVMOptions.MaxPrice.AsDec().String(), 64)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		billingProfile = &armcompute.BillingProfile{
+			MaxPrice: &maxPrice,
+		}
+	}
+
+	// Set the spot vm eviction policy if provided.
+	var evictionPolicy *armcompute.VirtualMachineEvictionPolicyTypes
+	if spotVMOptions.EvictionPolicy != nil {
+		evictionPolicy = ptr.To(armcompute.VirtualMachineEvictionPolicyTypes(*spotVMOptions.EvictionPolicy))
+	}
+
+	return ptr.To(armcompute.VirtualMachinePriorityTypesSpot), evictionPolicy, billingProfile, nil
+}
 
 // GetSpotVMOptions takes the spot vm options
 // and returns the individual vm priority, eviction policy and billing profile.

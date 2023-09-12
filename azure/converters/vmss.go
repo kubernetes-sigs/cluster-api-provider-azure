@@ -19,6 +19,7 @@ package converters
 import (
 	"regexp"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"k8s.io/utils/ptr"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
@@ -34,20 +35,20 @@ const (
 )
 
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.
-func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) azure.VMSS {
+func SDKToVMSS(sdkvmss armcompute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) azure.VMSS {
 	vmss := azure.VMSS{
 		ID:    ptr.Deref(sdkvmss.ID, ""),
 		Name:  ptr.Deref(sdkvmss.Name, ""),
-		State: infrav1.ProvisioningState(ptr.Deref(sdkvmss.ProvisioningState, "")),
+		State: infrav1.ProvisioningState(ptr.Deref(sdkvmss.Properties.ProvisioningState, "")),
 	}
 
-	if sdkvmss.Sku != nil {
-		vmss.Sku = ptr.Deref(sdkvmss.Sku.Name, "")
-		vmss.Capacity = ptr.Deref[int64](sdkvmss.Sku.Capacity, 0)
+	if sdkvmss.SKU != nil {
+		vmss.Sku = ptr.Deref(sdkvmss.SKU.Name, "")
+		vmss.Capacity = ptr.Deref[int64](sdkvmss.SKU.Capacity, 0)
 	}
 
-	if sdkvmss.Zones != nil && len(*sdkvmss.Zones) > 0 {
-		vmss.Zones = azure.StringSlice(sdkvmss.Zones)
+	for _, zone := range sdkvmss.Zones {
+		vmss.Zones = append(vmss.Zones, *zone)
 	}
 
 	if len(sdkvmss.Tags) > 0 {
@@ -56,17 +57,18 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 
 	if len(sdkinstances) > 0 {
 		vmss.Instances = make([]azure.VMSSVM, len(sdkinstances))
+		orchestrationMode := ptr.Deref(sdkvmss.Properties.OrchestrationMode, "")
 		for i, vm := range sdkinstances {
 			vmss.Instances[i] = *SDKToVMSSVM(vm)
-			vmss.Instances[i].OrchestrationMode = infrav1.OrchestrationModeType(sdkvmss.OrchestrationMode)
+			vmss.Instances[i].OrchestrationMode = infrav1.OrchestrationModeType(orchestrationMode)
 		}
 	}
 
-	if sdkvmss.VirtualMachineProfile != nil &&
-		sdkvmss.VirtualMachineProfile.StorageProfile != nil &&
-		sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference != nil {
-		imageRef := sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference
-		vmss.Image = SDKImageToImage(imageRef, sdkvmss.Plan != nil)
+	if sdkvmss.Properties.VirtualMachineProfile != nil &&
+		sdkvmss.Properties.VirtualMachineProfile.StorageProfile != nil &&
+		sdkvmss.Properties.VirtualMachineProfile.StorageProfile.ImageReference != nil {
+		imageRef := sdkvmss.Properties.VirtualMachineProfile.StorageProfile.ImageReference
+		vmss.Image = SDKImageToImageV2(imageRef, sdkvmss.Plan != nil)
 	}
 
 	return vmss
@@ -156,6 +158,23 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 	return &instance
 }
 
+// SDKImageToImageV2 converts a SDK image reference to infrav1.Image.
+func SDKImageToImageV2(sdkImageRef *armcompute.ImageReference, isThirdPartyImage bool) infrav1.Image {
+	if sdkImageRef.ID != nil {
+		return IDImageRefToImage(*sdkImageRef.ID)
+	}
+	// community gallery image
+	if sdkImageRef.CommunityGalleryImageID != nil {
+		return cgImageRefToImage(*sdkImageRef.CommunityGalleryImageID)
+	}
+	// shared gallery image
+	if sdkImageRef.SharedGalleryImageID != nil {
+		return sgImageRefToImage(*sdkImageRef.SharedGalleryImageID)
+	}
+	// marketplace image
+	return mpImageRefToImageV2(sdkImageRef, isThirdPartyImage)
+}
+
 // SDKImageToImage converts a SDK image reference to infrav1.Image.
 func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool) infrav1.Image {
 	if sdkImageRef.ID != nil {
@@ -174,11 +193,11 @@ func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool
 }
 
 // GetOrchestrationMode returns the compute.OrchestrationMode for the given infrav1.OrchestrationModeType.
-func GetOrchestrationMode(modeType infrav1.OrchestrationModeType) compute.OrchestrationMode {
+func GetOrchestrationMode(modeType infrav1.OrchestrationModeType) armcompute.OrchestrationMode {
 	if modeType == infrav1.FlexibleOrchestrationMode {
-		return compute.OrchestrationModeFlexible
+		return armcompute.OrchestrationModeFlexible
 	}
-	return compute.OrchestrationModeUniform
+	return armcompute.OrchestrationModeUniform
 }
 
 // IDImageRefToImage converts an ID to a infrav1.Image with ComputerGallery set or ID, depending on the structure of the ID.
@@ -199,6 +218,21 @@ func IDImageRefToImage(id string) infrav1.Image {
 	// specific image
 	return infrav1.Image{
 		ID: &id,
+	}
+}
+
+// mpImageRefToImageV2 converts a marketplace gallery ImageReference to an infrav1.Image.
+func mpImageRefToImageV2(sdkImageRef *armcompute.ImageReference, isThirdPartyImage bool) infrav1.Image {
+	return infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: ptr.Deref(sdkImageRef.Publisher, ""),
+				Offer:     ptr.Deref(sdkImageRef.Offer, ""),
+				SKU:       ptr.Deref(sdkImageRef.SKU, ""),
+			},
+			Version:         ptr.Deref(sdkImageRef.Version, ""),
+			ThirdPartyImage: isThirdPartyImage,
+		},
 	}
 }
 
