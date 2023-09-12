@@ -115,7 +115,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// Subnets that are not part of this cluster spec are silently ignored.
 		if existingVnet.Properties.Subnets != nil {
 			for _, subnet := range existingVnet.Properties.Subnets {
-				s.Scope.UpdateSubnetCIDRs(ptr.Deref(subnet.Name, ""), converters.GetSubnetAddressesV2(subnet))
+				s.Scope.UpdateSubnetCIDRs(ptr.Deref(subnet.Name, ""), converters.GetSubnetAddresses(subnet))
 			}
 		}
 	}

@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -160,9 +161,9 @@ func (s *Service) getVMSSPrincipalID(ctx context.Context) (*string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get principal ID for VMSS")
 	}
-	resultVMSS, ok := resultVMSSIface.(compute.VirtualMachineScaleSet)
+	resultVMSS, ok := resultVMSSIface.(armcompute.VirtualMachineScaleSet)
 	if !ok {
-		return nil, errors.Errorf("%T is not a compute.VirtualMachineScaleSet", resultVMSSIface)
+		return nil, errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", resultVMSSIface)
 	}
 
 	return resultVMSS.Identity.PrincipalID, nil
