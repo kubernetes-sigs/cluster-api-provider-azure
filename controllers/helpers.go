@@ -608,7 +608,10 @@ func ShouldDeleteIndividualResources(ctx context.Context, clusterScope *scope.Cl
 		return true
 	}
 	if clusterScope.UseLegacyGroups {
-		grpSvc := groups.New(clusterScope)
+		grpSvc, err := groups.New(clusterScope)
+		if err != nil {
+			return false
+		}
 		managed, err := grpSvc.IsManaged(ctx)
 		// Since this is a best effort attempt to speed up delete, we don't fail the delete if we can't get the RG status.
 		// Instead, take the long way and delete all resources one by one.

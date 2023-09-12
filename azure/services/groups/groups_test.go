@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -41,16 +41,16 @@ var (
 	}
 	internalError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 	notFoundError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not Found")
-	sampleManagedGroup = resources.Group{
+	sampleManagedGroup = armresources.ResourceGroup{
 		Name:       ptr.To("test-group"),
 		Location:   ptr.To("test-location"),
-		Properties: &resources.GroupProperties{},
+		Properties: &armresources.ResourceGroupProperties{},
 		Tags:       map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": ptr.To("owned")},
 	}
-	sampleBYOGroup = resources.Group{
+	sampleBYOGroup = armresources.ResourceGroup{
 		Name:       ptr.To("test-group"),
 		Location:   ptr.To("test-location"),
-		Properties: &resources.GroupProperties{},
+		Properties: &armresources.ResourceGroupProperties{},
 		Tags:       map[string]*string{"foo": ptr.To("bar")},
 	}
 )
@@ -157,7 +157,7 @@ func TestDeleteGroups(t *testing.T) {
 			expectedError: "could not get resource group management state",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
-				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(resources.Group{}, internalError)
+				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(armresources.ResourceGroup{}, internalError)
 			},
 		},
 		{
@@ -165,7 +165,7 @@ func TestDeleteGroups(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
-				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(resources.Group{}, notFoundError)
+				m.Get(gomockinternal.AContext(), &fakeGroupSpec).Return(armresources.ResourceGroup{}, notFoundError)
 				s.DeleteLongRunningOperationState("test-group", ServiceName, infrav1.DeleteFuture)
 				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
 			},

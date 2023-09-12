@@ -21,6 +21,7 @@ limitations under the License.
 package mock_groups
 
 import (
+	context "context"
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -138,6 +139,21 @@ func (mr *MockGroupScopeMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockGroupScope)(nil).ClusterName))
 }
 
+// CreateOrUpdateResource mocks base method.
+func (m *MockGroupScope) CreateOrUpdateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrUpdateResource", ctx, spec, serviceName)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrUpdateResource indicates an expected call of CreateOrUpdateResource.
+func (mr *MockGroupScopeMockRecorder) CreateOrUpdateResource(ctx, spec, serviceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateResource", reflect.TypeOf((*MockGroupScope)(nil).CreateOrUpdateResource), ctx, spec, serviceName)
+}
+
 // DeleteLongRunningOperationState mocks base method.
 func (m *MockGroupScope) DeleteLongRunningOperationState(arg0, arg1, arg2 string) {
 	m.ctrl.T.Helper()
@@ -148,6 +164,20 @@ func (m *MockGroupScope) DeleteLongRunningOperationState(arg0, arg1, arg2 string
 func (mr *MockGroupScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockGroupScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
+}
+
+// DeleteResource mocks base method.
+func (m *MockGroupScope) DeleteResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteResource", ctx, spec, serviceName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteResource indicates an expected call of DeleteResource.
+func (mr *MockGroupScopeMockRecorder) DeleteResource(ctx, spec, serviceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResource", reflect.TypeOf((*MockGroupScope)(nil).DeleteResource), ctx, spec, serviceName)
 }
 
 // GetLongRunningOperationState mocks base method.

@@ -47,7 +47,11 @@ type azureManagedControlPlaneService struct {
 func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope) (*azureManagedControlPlaneService, error) {
 	var groupsService azure.ServiceReconciler = asogroups.New(scope)
 	if scope.UseLegacyGroups {
-		groupsService = groups.New(scope)
+		svc, err := groups.New(scope)
+		if err != nil {
+			return nil, err
+		}
+		groupsService = svc
 	}
 	managedClustersSvc, err := managedclusters.New(scope)
 	if err != nil {

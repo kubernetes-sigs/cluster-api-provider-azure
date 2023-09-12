@@ -24,9 +24,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	azure "github.com/Azure/go-autorest/autorest/azure"
+	runtime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	armresources "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	gomock "go.uber.org/mock/gomock"
-	azure0 "sigs.k8s.io/cluster-api-provider-azure/azure"
+	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // Mockclient is a mock of client interface.
@@ -53,38 +54,38 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 }
 
 // CreateOrUpdateAsync mocks base method.
-func (m *Mockclient) CreateOrUpdateAsync(ctx context.Context, spec azure0.ResourceSpecGetter, parameters interface{}) (interface{}, azure.FutureAPI, error) {
+func (m *Mockclient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (interface{}, *runtime.Poller[armresources.ResourceGroupsClientCreateOrUpdateResponse], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec, parameters)
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec, resumeToken, parameters)
 	ret0, _ := ret[0].(interface{})
-	ret1, _ := ret[1].(azure.FutureAPI)
+	ret1, _ := ret[1].(*runtime.Poller[armresources.ResourceGroupsClientCreateOrUpdateResponse])
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
 // CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
-func (mr *MockclientMockRecorder) CreateOrUpdateAsync(ctx, spec, parameters interface{}) *gomock.Call {
+func (mr *MockclientMockRecorder) CreateOrUpdateAsync(ctx, spec, resumeToken, parameters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateAsync), ctx, spec, parameters)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateAsync), ctx, spec, resumeToken, parameters)
 }
 
 // DeleteAsync mocks base method.
-func (m *Mockclient) DeleteAsync(ctx context.Context, spec azure0.ResourceSpecGetter) (azure.FutureAPI, error) {
+func (m *Mockclient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAsync", ctx, spec)
-	ret0, _ := ret[0].(azure.FutureAPI)
+	ret := m.ctrl.Call(m, "DeleteAsync", ctx, spec, resumeToken)
+	ret0, _ := ret[0].(*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DeleteAsync indicates an expected call of DeleteAsync.
-func (mr *MockclientMockRecorder) DeleteAsync(ctx, spec interface{}) *gomock.Call {
+func (mr *MockclientMockRecorder) DeleteAsync(ctx, spec, resumeToken interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*Mockclient)(nil).DeleteAsync), ctx, spec)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*Mockclient)(nil).DeleteAsync), ctx, spec, resumeToken)
 }
 
 // Get mocks base method.
-func (m *Mockclient) Get(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (interface{}, error) {
+func (m *Mockclient) Get(arg0 context.Context, arg1 azure.ResourceSpecGetter) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(interface{})
@@ -96,34 +97,4 @@ func (m *Mockclient) Get(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (
 func (mr *MockclientMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockclient)(nil).Get), arg0, arg1)
-}
-
-// IsDone mocks base method.
-func (m *Mockclient) IsDone(ctx context.Context, future azure.FutureAPI) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsDone", ctx, future)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsDone indicates an expected call of IsDone.
-func (mr *MockclientMockRecorder) IsDone(ctx, future interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDone", reflect.TypeOf((*Mockclient)(nil).IsDone), ctx, future)
-}
-
-// Result mocks base method.
-func (m *Mockclient) Result(ctx context.Context, future azure.FutureAPI, futureType string) (interface{}, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Result", ctx, future, futureType)
-	ret0, _ := ret[0].(interface{})
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Result indicates an expected call of Result.
-func (mr *MockclientMockRecorder) Result(ctx, future, futureType interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Result", reflect.TypeOf((*Mockclient)(nil).Result), ctx, future, futureType)
 }

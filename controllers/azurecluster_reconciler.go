@@ -74,7 +74,10 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	}
 	var groupsSvc azure.ServiceReconciler = asogroups.New(scope)
 	if scope.UseLegacyGroups {
-		groupsSvc = groups.New(scope)
+		groupsSvc, err = groups.New(scope)
+		if err != nil {
+			return nil, err
+		}
 	}
 	natGatewaysSvc, err := natgateways.New(scope)
 	if err != nil {

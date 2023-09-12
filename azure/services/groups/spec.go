@@ -19,7 +19,7 @@ package groups
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -56,7 +56,7 @@ func (s *GroupSpec) Parameters(ctx context.Context, existing interface{}) (param
 		// Note that rg tags are updated separately using tags service.
 		return nil, nil
 	}
-	return resources.Group{
+	return armresources.ResourceGroup{
 		Location: ptr.To(s.Location),
 		// User defined additional tags are created with the resource group and updated using tags service.
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{

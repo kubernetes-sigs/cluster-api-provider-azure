@@ -19,12 +19,12 @@ package groups
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -35,7 +35,7 @@ const ServiceName = "group"
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope GroupScope
-	async.Reconciler
+	asyncpoller.Reconciler
 	client
 }
 
@@ -48,13 +48,17 @@ type GroupScope interface {
 }
 
 // New creates a new service.
-func New(scope GroupScope) *Service {
-	client := newClient(scope)
-	return &Service{
-		Scope:      scope,
-		client:     client,
-		Reconciler: async.New(scope, client, client),
+func New(scope GroupScope) (*Service, error) {
+	client, err := newClient(scope)
+	if err != nil {
+		return nil, err
 	}
+	return &Service{
+		Scope:  scope,
+		client: client,
+		Reconciler: asyncpoller.New[armresources.ResourceGroupsClientCreateOrUpdateResponse,
+			armresources.ResourceGroupsClientDeleteResponse](scope, client, client),
+	}, nil
 }
 
 // Name returns the service name.
@@ -125,9 +129,9 @@ func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	group, ok := groupIface.(resources.Group)
+	group, ok := groupIface.(armresources.ResourceGroup)
 	if !ok {
-		return false, errors.Errorf("%T is not a resources.Group", groupIface)
+		return false, errors.Errorf("%T is not a armresources.ResourceGroup", groupIface)
 	}
 
 	tags := converters.MapToTags(group.Tags)
