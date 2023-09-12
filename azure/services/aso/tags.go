@@ -44,18 +44,28 @@ func reconcileTags(t TagsGetterSetter, existing genruntime.MetaObject, parameter
 		}
 	}
 
-	existingTags := t.GetActualTags(existing)
+	existingTags, err := t.GetActualTags(existing)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get actual tags for %s %s/%s", existing.GetObjectKind().GroupVersionKind(), existing.GetNamespace(), existing.GetName())
+	}
 	existingTagsMap := converters.TagsToMap(existingTags)
 
 	_, createdOrUpdated, deleted, newAnnotation := tags.TagsChanged(lastAppliedTags, t.GetAdditionalTags(), existingTagsMap)
-	newTags := maps.Merge(maps.Merge(existingTags, t.GetDesiredTags(parameters)), createdOrUpdated)
+	desiredTags, err := t.GetDesiredTags(parameters)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get desired tags for %s %s/%s", parameters.GetObjectKind().GroupVersionKind(), parameters.GetNamespace(), parameters.GetName())
+	}
+	newTags := maps.Merge(maps.Merge(existingTags, desiredTags), createdOrUpdated)
 	for k := range deleted {
 		delete(newTags, k)
 	}
 	if len(newTags) == 0 {
 		newTags = nil
 	}
-	t.SetTags(parameters, newTags)
+	err = t.SetTags(parameters, newTags)
+	if err != nil {
+		return errors.Wrapf(err, "failed to set tags for %s %s/%s", existing.GetObjectKind().GroupVersionKind(), existing.GetNamespace(), existing.GetName())
+	}
 
 	// We also need to update the annotation even if nothing changed to
 	// ensure it's set immediately following resource creation.

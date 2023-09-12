@@ -18,6 +18,7 @@ package groups
 
 import (
 	"context"
+	"fmt"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
@@ -87,25 +88,38 @@ func (s *GroupSpec) GetAdditionalTags() infrav1.Tags {
 }
 
 // GetDesiredTags implements aso.TagsGetterSetter.
-func (s *GroupSpec) GetDesiredTags(resource genruntime.MetaObject) infrav1.Tags {
+func (s *GroupSpec) GetDesiredTags(resource genruntime.MetaObject) (infrav1.Tags, error) {
 	if resource == nil {
-		return nil
+		return nil, nil
 	}
-	return resource.(*asoresourcesv1.ResourceGroup).Spec.Tags
+	group, ok := resource.(*asoresourcesv1.ResourceGroup)
+	if !ok {
+		return nil, fmt.Errorf("%T is not a ResourceGroup", resource)
+	}
+	return group.Spec.Tags, nil
 }
 
 // GetActualTags implements aso.TagsGetterSetter.
-func (s *GroupSpec) GetActualTags(resource genruntime.MetaObject) infrav1.Tags {
+func (s *GroupSpec) GetActualTags(resource genruntime.MetaObject) (infrav1.Tags, error) {
 	if resource == nil {
-		return nil
+		return nil, nil
 	}
-	return resource.(*asoresourcesv1.ResourceGroup).Status.Tags
+	group, ok := resource.(*asoresourcesv1.ResourceGroup)
+	if !ok {
+		return nil, fmt.Errorf("%T is not a ResourceGroup", resource)
+	}
+	return group.Status.Tags, nil
 }
 
 // SetTags implements aso.TagsGetterSetter.
-func (s *GroupSpec) SetTags(resource genruntime.MetaObject, tags infrav1.Tags) {
+func (s *GroupSpec) SetTags(resource genruntime.MetaObject, tags infrav1.Tags) error {
 	if resource == nil {
-		return
+		return nil
 	}
-	resource.(*asoresourcesv1.ResourceGroup).Spec.Tags = tags
+	group, ok := resource.(*asoresourcesv1.ResourceGroup)
+	if !ok {
+		return fmt.Errorf("%T is not a ResourceGroup", resource)
+	}
+	group.Spec.Tags = tags
+	return nil
 }
