@@ -282,6 +282,24 @@ func TestParameters(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "difference in system node labels with empty labels shouldn't trigger update",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) {
+					pool.NodeLabels = nil
+				},
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *containerservice.AgentPool) {
+					pool.NodeLabels = map[string]*string{
+						"kubernetes.azure.com/scalesetpriority": pointer.String("spot"),
+					}
+				},
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      nil,
+			expectedError: nil,
+		},
+		{
 			name: "parameters with an existing agent pool and update needed on node taints",
 			spec: fakeAgentPool(),
 			existing: sdkFakeAgentPool(
@@ -368,6 +386,15 @@ func TestMergeSystemNodeLabels(t *testing.T) {
 				"hello": pointer.String("world"),
 			},
 			expected: map[string]*string{},
+		},
+		{
+			name:       "delete labels from nil",
+			capzLabels: nil,
+			aksLabels: map[string]*string{
+				"foo":   pointer.String("bar"),
+				"hello": pointer.String("world"),
+			},
+			expected: nil,
 		},
 		{
 			name: "delete one label",
