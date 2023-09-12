@@ -236,10 +236,10 @@ func (mr *MockScaleSetScopeMockRecorder) ExtendedLocationType() *gomock.Call {
 }
 
 // FailureDomains mocks base method.
-func (m *MockScaleSetScope) FailureDomains() []string {
+func (m *MockScaleSetScope) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 

@@ -74,10 +74,14 @@ func New(scope VMScope) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	publicIPsSvc, err := publicips.NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Scope:            scope,
 		interfacesGetter: interfacesSvc,
-		publicIPsGetter:  publicips.NewClient(scope),
+		publicIPsGetter:  publicIPsSvc,
 		identitiesGetter: identitiesSvc,
 		Reconciler:       async.New(scope, Client, Client),
 	}, nil

@@ -249,10 +249,10 @@ func (mr *MockInboundNatScopeMockRecorder) ExtendedLocationType() *gomock.Call {
 }
 
 // FailureDomains mocks base method.
-func (m *MockInboundNatScope) FailureDomains() []string {
+func (m *MockInboundNatScope) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 

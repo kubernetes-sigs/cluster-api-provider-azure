@@ -203,7 +203,7 @@ func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (paramet
 
 	return armnetwork.Interface{
 		Location:         ptr.To(s.Location),
-		ExtendedLocation: converters.ExtendedLocationToNetworkSDKv2(s.ExtendedLocation),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		Properties: &armnetwork.InterfacePropertiesFormat{
 			EnableAcceleratedNetworking: s.AcceleratedNetworking,
 			IPConfigurations:            ipConfigurations,

@@ -19,11 +19,13 @@ package publicips
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -41,14 +43,17 @@ type PublicIPScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope PublicIPScope
-	async.Reconciler
+	asyncpoller.Reconciler
 	async.Getter
 	async.TagsGetter
 }
 
 // New creates a new service.
 func New(scope PublicIPScope) (*Service, error) {
-	client := NewClient(scope)
+	client, err := NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	tagsClient, err := tags.NewClient(scope)
 	if err != nil {
 		return nil, err
@@ -57,7 +62,7 @@ func New(scope PublicIPScope) (*Service, error) {
 		Scope:      scope,
 		Getter:     client,
 		TagsGetter: tagsClient,
-		Reconciler: async.New(scope, client, client),
+		Reconciler: asyncpoller.New[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, armnetwork.PublicIPAddressesClientDeleteResponse](scope, client, client),
 	}, nil
 }
 

@@ -305,10 +305,10 @@ func (mr *MockNatGatewayScopeMockRecorder) ExtendedLocationType() *gomock.Call {
 }
 
 // FailureDomains mocks base method.
-func (m *MockNatGatewayScope) FailureDomains() []string {
+func (m *MockNatGatewayScope) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 
