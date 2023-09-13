@@ -287,7 +287,12 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 	newASOSecret.Data["AZURE_CLIENT_ID"] = []byte(identity.Spec.ClientID)
 
 	// If the identity type is WorkloadIdentity or UserAssignedMSI, then we don't need to fetch the secret so return early
-	if identity.Spec.Type == infrav1.WorkloadIdentity || identity.Spec.Type == infrav1.UserAssignedMSI {
+	if identity.Spec.Type == infrav1.WorkloadIdentity {
+		newASOSecret.Data["AUTH_MODE"] = []byte("workloadidentity")
+		return newASOSecret, nil
+	}
+	if identity.Spec.Type == infrav1.UserAssignedMSI {
+		newASOSecret.Data["AUTH_MODE"] = []byte("podidentity")
 		return newASOSecret, nil
 	}
 

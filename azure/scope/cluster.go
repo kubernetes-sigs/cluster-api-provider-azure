@@ -32,7 +32,6 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
@@ -75,7 +74,6 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		return nil, errors.New("failed to generate new scope from nil AzureCluster")
 	}
 
-	useLegacyGroups := false
 	if params.AzureCluster.Spec.IdentityRef == nil {
 		err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID, params.AzureCluster.Spec.AzureEnvironment)
 		if err != nil {
@@ -90,12 +88,6 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 		}
-
-		// ASO does not yet support per-resource credentials using UserAssignedMSI. Fallback to the legacy SDK
-		// groups service when it is used.
-		if credentialsProvider.Identity.Spec.Type == infrav1.UserAssignedMSI {
-			useLegacyGroups = true
-		}
 	}
 
 	if params.Cache == nil {
@@ -108,13 +100,12 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 	}
 
 	return &ClusterScope{
-		Client:          params.Client,
-		AzureClients:    params.AzureClients,
-		Cluster:         params.Cluster,
-		AzureCluster:    params.AzureCluster,
-		patchHelper:     helper,
-		cache:           params.Cache,
-		UseLegacyGroups: useLegacyGroups,
+		Client:       params.Client,
+		AzureClients: params.AzureClients,
+		Cluster:      params.Cluster,
+		AzureCluster: params.AzureCluster,
+		patchHelper:  helper,
+		cache:        params.Cache,
 	}, nil
 }
 
@@ -125,9 +116,8 @@ type ClusterScope struct {
 	cache       *ClusterCache
 
 	AzureClients
-	Cluster         *clusterv1.Cluster
-	AzureCluster    *infrav1.AzureCluster
-	UseLegacyGroups bool
+	Cluster      *clusterv1.Cluster
+	AzureCluster *infrav1.AzureCluster
 }
 
 // ClusterCache stores ClusterCache data locally so we don't have to hit the API multiple times within the same reconcile loop.
@@ -428,18 +418,8 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 }
 
 // GroupSpec returns the resource group spec.
-func (s *ClusterScope) GroupSpec() azure.ResourceSpecGetter {
+func (s *ClusterScope) GroupSpec() azure.ASOResourceSpecGetter {
 	return &groups.GroupSpec{
-		Name:           s.ResourceGroup(),
-		Location:       s.Location(),
-		ClusterName:    s.ClusterName(),
-		AdditionalTags: s.AdditionalTags(),
-	}
-}
-
-// ASOGroupSpec returns the resource group spec.
-func (s *ClusterScope) ASOGroupSpec() azure.ASOResourceSpecGetter {
-	return &asogroups.GroupSpec{
 		Name:           s.ResourceGroup(),
 		Namespace:      s.Namespace(),
 		Location:       s.Location(),
@@ -1072,20 +1052,6 @@ func (s *ClusterScope) SetAnnotation(key, value string) {
 		s.AzureCluster.Annotations = map[string]string{}
 	}
 	s.AzureCluster.Annotations[key] = value
-}
-
-// TagsSpecs returns the tag specs for the AzureCluster.
-func (s *ClusterScope) TagsSpecs() []azure.TagsSpec {
-	if s.UseLegacyGroups {
-		return []azure.TagsSpec{
-			{
-				Scope:      azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
-				Tags:       s.AdditionalTags(),
-				Annotation: azure.RGTagsLastAppliedAnnotation,
-			},
-		}
-	}
-	return nil
 }
 
 // PrivateEndpointSpecs returns the private endpoint specs.

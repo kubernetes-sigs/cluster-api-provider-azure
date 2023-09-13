@@ -33,7 +33,7 @@ type Reconciler interface {
 // TagsGetterSetter represents an object that supports tags.
 type TagsGetterSetter interface {
 	GetAdditionalTags() infrav1.Tags
-	GetDesiredTags(resource genruntime.MetaObject) infrav1.Tags
-	GetActualTags(resource genruntime.MetaObject) infrav1.Tags
-	SetTags(resource genruntime.MetaObject, tags infrav1.Tags)
+	GetDesiredTags(resource genruntime.MetaObject) (infrav1.Tags, error)
+	GetActualTags(resource genruntime.MetaObject) (infrav1.Tags, error)
+	SetTags(resource genruntime.MetaObject, tags infrav1.Tags) error
 }

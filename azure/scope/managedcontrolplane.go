@@ -30,7 +30,6 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
@@ -79,7 +78,6 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		return nil, errors.New("failed to generate new scope from nil ControlPlane")
 	}
 
-	useLegacyGroups := false
 	if params.ControlPlane.Spec.IdentityRef == nil {
 		if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment); err != nil {
 			return nil, errors.Wrap(err, "failed to create Azure session")
@@ -92,12 +90,6 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 
 		if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, credentialsProvider); err != nil {
 			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
-		}
-
-		// ASO does not yet support per-resource credentials using UserAssignedMSI. Fallback to the legacy SDK
-		// groups service when it is used.
-		if credentialsProvider.Identity.Spec.Type == infrav1.UserAssignedMSI {
-			useLegacyGroups = true
 		}
 	}
 
@@ -118,7 +110,6 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		ManagedMachinePools: params.ManagedMachinePools,
 		patchHelper:         helper,
 		cache:               params.Cache,
-		UseLegacyGroups:     useLegacyGroups,
 		VnetDescriber:       params.VnetDescriber,
 	}, nil
 }
@@ -134,7 +125,6 @@ type ManagedControlPlaneScope struct {
 	Cluster             *clusterv1.Cluster
 	ControlPlane        *infrav1.AzureManagedControlPlane
 	ManagedMachinePools []ManagedMachinePool
-	UseLegacyGroups     bool
 	VnetDescriber       VnetDescriber
 }
 
@@ -262,18 +252,8 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 }
 
 // GroupSpec returns the resource group spec.
-func (s *ManagedControlPlaneScope) GroupSpec() azure.ResourceSpecGetter {
+func (s *ManagedControlPlaneScope) GroupSpec() azure.ASOResourceSpecGetter {
 	return &groups.GroupSpec{
-		Name:           s.ResourceGroup(),
-		Location:       s.Location(),
-		ClusterName:    s.ClusterName(),
-		AdditionalTags: s.AdditionalTags(),
-	}
-}
-
-// ASOGroupSpec returns the resource group spec.
-func (s *ManagedControlPlaneScope) ASOGroupSpec() azure.ASOResourceSpecGetter {
-	return &asogroups.GroupSpec{
 		Name:           s.ResourceGroup(),
 		Namespace:      s.Cluster.Namespace,
 		Location:       s.Location(),
@@ -765,13 +745,6 @@ func (s *ManagedControlPlaneScope) TagsSpecs() []azure.TagsSpec {
 			Tags:       s.AdditionalTags(),
 			Annotation: azure.ManagedClusterTagsLastAppliedAnnotation,
 		},
-	}
-	if s.UseLegacyGroups {
-		specs = append(specs, azure.TagsSpec{
-			Scope:      azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
-			Tags:       s.AdditionalTags(),
-			Annotation: azure.RGTagsLastAppliedAnnotation,
-		})
 	}
 	return specs
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //
-//go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_groups -source ../client.go Client
 //go:generate ../../../../hack/tools/bin/mockgen -destination groups_mock.go -package mock_groups -source ../groups.go GroupScope
-//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt groups_mock.go > _groups_mock.go && mv _groups_mock.go groups_mock.go"
 package mock_groups

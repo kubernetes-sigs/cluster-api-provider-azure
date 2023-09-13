@@ -106,11 +106,12 @@ func (m *MockTagsGetterSetter) EXPECT() *MockTagsGetterSetterMockRecorder {
 }
 
 // GetActualTags mocks base method.
-func (m *MockTagsGetterSetter) GetActualTags(resource genruntime.MetaObject) v1beta1.Tags {
+func (m *MockTagsGetterSetter) GetActualTags(resource genruntime.MetaObject) (v1beta1.Tags, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetActualTags", resource)
 	ret0, _ := ret[0].(v1beta1.Tags)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetActualTags indicates an expected call of GetActualTags.
@@ -134,11 +135,12 @@ func (mr *MockTagsGetterSetterMockRecorder) GetAdditionalTags() *gomock.Call {
 }
 
 // GetDesiredTags mocks base method.
-func (m *MockTagsGetterSetter) GetDesiredTags(resource genruntime.MetaObject) v1beta1.Tags {
+func (m *MockTagsGetterSetter) GetDesiredTags(resource genruntime.MetaObject) (v1beta1.Tags, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDesiredTags", resource)
 	ret0, _ := ret[0].(v1beta1.Tags)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetDesiredTags indicates an expected call of GetDesiredTags.
@@ -148,9 +150,11 @@ func (mr *MockTagsGetterSetterMockRecorder) GetDesiredTags(resource interface{})
 }
 
 // SetTags mocks base method.
-func (m *MockTagsGetterSetter) SetTags(resource genruntime.MetaObject, tags v1beta1.Tags) {
+func (m *MockTagsGetterSetter) SetTags(resource genruntime.MetaObject, tags v1beta1.Tags) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetTags", resource, tags)
+	ret := m.ctrl.Call(m, "SetTags", resource, tags)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // SetTags indicates an expected call of SetTags.

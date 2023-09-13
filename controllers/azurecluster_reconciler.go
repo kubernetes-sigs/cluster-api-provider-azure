@@ -22,7 +22,6 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asogroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
@@ -34,7 +33,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -72,10 +70,6 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, err
 	}
-	var groupsSvc azure.ServiceReconciler = asogroups.New(scope)
-	if scope.UseLegacyGroups {
-		groupsSvc = groups.New(scope)
-	}
 	natGatewaysSvc, err := natgateways.New(scope)
 	if err != nil {
 		return nil, err
@@ -89,10 +83,6 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 		return nil, err
 	}
 	subnetsSvc, err := subnets.New(scope)
-	if err != nil {
-		return nil, err
-	}
-	tagsSvc, err := tags.New(scope)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +101,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	return &azureClusterService{
 		scope: scope,
 		services: []azure.ServiceReconciler{
-			groupsSvc,
+			groups.New(scope),
 			virtualNetworksSvc,
 			securityGroupsSvc,
 			routeTablesSvc,
@@ -123,7 +113,6 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			privateDNSSvc,
 			bastionHostsSvc,
 			privateEndpointsSvc,
-			tagsSvc,
 		},
 		skuCache: skuCache,
 	}, nil
@@ -185,11 +174,7 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 			return errors.Wrap(err, "failed to delete peerings")
 		}
 
-		groupsServiceName := asogroups.ServiceName
-		if s.scope.UseLegacyGroups {
-			groupsServiceName = groups.ServiceName
-		}
-		groupSvc, err := s.getService(groupsServiceName)
+		groupSvc, err := s.getService(groups.ServiceName)
 		if err != nil {
 			return errors.Wrap(err, "failed to get group service")
 		}

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,14 +19,12 @@ package groups
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ServiceName is the name of this service.
@@ -35,25 +33,22 @@ const ServiceName = "group"
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope GroupScope
-	async.Reconciler
-	client
+	aso.Reconciler
 }
 
 // GroupScope defines the scope interface for a group service.
 type GroupScope interface {
-	azure.Authorizer
 	azure.AsyncStatusUpdater
-	GroupSpec() azure.ResourceSpecGetter
+	GroupSpec() azure.ASOResourceSpecGetter
+	GetClient() client.Client
 	ClusterName() string
 }
 
 // New creates a new service.
 func New(scope GroupScope) *Service {
-	client := newClient(scope)
 	return &Service{
 		Scope:      scope,
-		client:     client,
-		Reconciler: async.New(scope, client, client),
+		Reconciler: aso.New(scope.GetClient(), scope.ClusterName()),
 	}
 }
 
@@ -82,7 +77,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the resource group if it is managed by capz.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
@@ -93,43 +88,44 @@ func (s *Service) Delete(ctx context.Context) error {
 		return nil
 	}
 
-	// check that the resource group is not BYO.
-	managed, err := s.IsManaged(ctx)
-	if err != nil {
-		if azure.ResourceNotFound(err) {
-			// already deleted or doesn't exist, cleanup status and return.
-			s.Scope.DeleteLongRunningOperationState(groupSpec.ResourceName(), ServiceName, infrav1.DeleteFuture)
-			s.Scope.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
-			return nil
-		}
-		return errors.Wrap(err, "could not get resource group management state")
-	}
-	if !managed {
-		log.V(2).Info("Skipping resource group deletion in unmanaged mode")
-		return nil
-	}
-
-	err = s.DeleteResource(ctx, groupSpec, ServiceName)
+	err := s.DeleteResource(ctx, groupSpec, ServiceName)
 	s.Scope.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, err)
 	return err
 }
 
-// IsManaged returns true if the resource group has an owned tag with the cluster name as value,
+// IsManaged returns true if the ASO ResourceGroup was created by CAPZ,
 // meaning that the resource group's lifecycle is managed.
 func (s *Service) IsManaged(ctx context.Context) (bool, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.IsManaged")
-	defer done()
+	return aso.IsManaged(ctx, s.Scope.GetClient(), s.Scope.GroupSpec(), s.Scope.ClusterName())
+}
 
+var _ azure.Pauser = (*Service)(nil)
+
+// Pause implements azure.Pauser.
+func (s *Service) Pause(ctx context.Context) error {
 	groupSpec := s.Scope.GroupSpec()
-	groupIface, err := s.client.Get(ctx, groupSpec)
-	if err != nil {
-		return false, err
+	if groupSpec == nil {
+		return nil
 	}
-	group, ok := groupIface.(resources.Group)
-	if !ok {
-		return false, errors.Errorf("%T is not a resources.Group", groupIface)
+	return aso.PauseResource(ctx, s.Scope.GetClient(), groupSpec, s.Scope.ClusterName(), ServiceName)
+}
+
+// ShouldDeleteIndividualResources returns false if the resource group is
+// managed and reconciled by ASO, meaning that we can rely on a single resource
+// group delete operation as opposed to deleting every individual resource.
+func (s *Service) ShouldDeleteIndividualResources(ctx context.Context) bool {
+	// Since this is a best effort attempt to speed up delete, we don't fail the delete if we can't get the RG status.
+	// Instead, take the long way and delete all resources one by one.
+	managed, err := s.IsManaged(ctx)
+	if err != nil || !managed {
+		return true
 	}
 
-	tags := converters.MapToTags(group.Tags)
-	return tags.HasOwned(s.Scope.ClusterName()), nil
+	// For ASO, "managed" only tells us that we're allowed to delete the ASO
+	// resource. We also need to check that deleting the ASO resource will really
+	// delete the underlying resource group by checking the ASO reconcile-policy.
+	spec := s.Scope.GroupSpec()
+	group := spec.ResourceRef()
+	err = s.Scope.GetClient().Get(ctx, client.ObjectKeyFromObject(group), group)
+	return err != nil || group.GetAnnotations()[aso.ReconcilePolicyAnnotation] != aso.ReconcilePolicyManage
 }

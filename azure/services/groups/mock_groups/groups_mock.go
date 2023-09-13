@@ -23,12 +23,11 @@ package mock_groups
 import (
 	reflect "reflect"
 
-	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MockGroupScope is a mock of GroupScope interface.
@@ -52,76 +51,6 @@ func NewMockGroupScope(ctrl *gomock.Controller) *MockGroupScope {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockGroupScope) EXPECT() *MockGroupScopeMockRecorder {
 	return m.recorder
-}
-
-// Authorizer mocks base method.
-func (m *MockGroupScope) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockGroupScopeMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockGroupScope)(nil).Authorizer))
-}
-
-// BaseURI mocks base method.
-func (m *MockGroupScope) BaseURI() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockGroupScopeMockRecorder) BaseURI() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockGroupScope)(nil).BaseURI))
-}
-
-// ClientID mocks base method.
-func (m *MockGroupScope) ClientID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClientID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClientID indicates an expected call of ClientID.
-func (mr *MockGroupScopeMockRecorder) ClientID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientID", reflect.TypeOf((*MockGroupScope)(nil).ClientID))
-}
-
-// ClientSecret mocks base method.
-func (m *MockGroupScope) ClientSecret() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClientSecret")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClientSecret indicates an expected call of ClientSecret.
-func (mr *MockGroupScopeMockRecorder) ClientSecret() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockGroupScope)(nil).ClientSecret))
-}
-
-// CloudEnvironment mocks base method.
-func (m *MockGroupScope) CloudEnvironment() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloudEnvironment")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// CloudEnvironment indicates an expected call of CloudEnvironment.
-func (mr *MockGroupScopeMockRecorder) CloudEnvironment() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockGroupScope)(nil).CloudEnvironment))
 }
 
 // ClusterName mocks base method.
@@ -150,6 +79,20 @@ func (mr *MockGroupScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockGroupScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
 }
 
+// GetClient mocks base method.
+func (m *MockGroupScope) GetClient() client.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(client.Client)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient.
+func (mr *MockGroupScopeMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockGroupScope)(nil).GetClient))
+}
+
 // GetLongRunningOperationState mocks base method.
 func (m *MockGroupScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
@@ -165,10 +108,10 @@ func (mr *MockGroupScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, a
 }
 
 // GroupSpec mocks base method.
-func (m *MockGroupScope) GroupSpec() azure.ResourceSpecGetter {
+func (m *MockGroupScope) GroupSpec() azure.ASOResourceSpecGetter {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GroupSpec")
-	ret0, _ := ret[0].(azure.ResourceSpecGetter)
+	ret0, _ := ret[0].(azure.ASOResourceSpecGetter)
 	return ret0
 }
 
@@ -176,20 +119,6 @@ func (m *MockGroupScope) GroupSpec() azure.ResourceSpecGetter {
 func (mr *MockGroupScopeMockRecorder) GroupSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GroupSpec", reflect.TypeOf((*MockGroupScope)(nil).GroupSpec))
-}
-
-// HashKey mocks base method.
-func (m *MockGroupScope) HashKey() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HashKey")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// HashKey indicates an expected call of HashKey.
-func (mr *MockGroupScopeMockRecorder) HashKey() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockGroupScope)(nil).HashKey))
 }
 
 // SetLongRunningOperationState mocks base method.
@@ -202,48 +131,6 @@ func (m *MockGroupScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 func (mr *MockGroupScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockGroupScope)(nil).SetLongRunningOperationState), arg0)
-}
-
-// SubscriptionID mocks base method.
-func (m *MockGroupScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockGroupScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockGroupScope)(nil).SubscriptionID))
-}
-
-// TenantID mocks base method.
-func (m *MockGroupScope) TenantID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// TenantID indicates an expected call of TenantID.
-func (mr *MockGroupScopeMockRecorder) TenantID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockGroupScope)(nil).TenantID))
-}
-
-// Token mocks base method.
-func (m *MockGroupScope) Token() azcore.TokenCredential {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Token")
-	ret0, _ := ret[0].(azcore.TokenCredential)
-	return ret0
-}
-
-// Token indicates an expected call of Token.
-func (mr *MockGroupScopeMockRecorder) Token() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockGroupScope)(nil).Token))
 }
 
 // UpdateDeleteStatus mocks base method.

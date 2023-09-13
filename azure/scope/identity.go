@@ -299,28 +299,51 @@ func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1
 		return errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
 	}
 
-	azureIdentityBinding := &aadpodv1.AzureIdentityBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AzureIdentityBinding",
-			APIVersion: "aadpodidentity.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-binding", copiedIdentity.Name),
-			Namespace: copiedIdentity.Namespace,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:              clusterMeta.Name,
-				infrav1.ClusterLabelNamespace:           clusterMeta.Namespace,
-				clusterctl.ClusterctlMoveHierarchyLabel: "true",
+	bindings := []*aadpodv1.AzureIdentityBinding{
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "AzureIdentityBinding",
+				APIVersion: "aadpodidentity.k8s.io/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-binding", copiedIdentity.Name),
+				Namespace: copiedIdentity.Namespace,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel:              clusterMeta.Name,
+					infrav1.ClusterLabelNamespace:           clusterMeta.Namespace,
+					clusterctl.ClusterctlMoveHierarchyLabel: "true",
+				},
+			},
+			Spec: aadpodv1.AzureIdentityBindingSpec{
+				AzureIdentity: copiedIdentity.Name,
+				Selector:      infrav1.AzureIdentityBindingSelector, // should be same as selector added on controller
 			},
 		},
-		Spec: aadpodv1.AzureIdentityBindingSpec{
-			AzureIdentity: copiedIdentity.Name,
-			Selector:      infrav1.AzureIdentityBindingSelector, // should be same as selector added on controller
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "AzureIdentityBinding",
+				APIVersion: "aadpodidentity.k8s.io/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-aso-binding", copiedIdentity.Name),
+				Namespace: copiedIdentity.Namespace,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel:              clusterMeta.Name,
+					infrav1.ClusterLabelNamespace:           clusterMeta.Namespace,
+					clusterctl.ClusterctlMoveHierarchyLabel: "true",
+				},
+			},
+			Spec: aadpodv1.AzureIdentityBindingSpec{
+				AzureIdentity: copiedIdentity.Name,
+				Selector:      "aso-manager-binding", // should be same as selector added on controller
+			},
 		},
 	}
-	err = kubeClient.Create(ctx, azureIdentityBinding)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
+	for _, binding := range bindings {
+		err = kubeClient.Create(ctx, binding)
+		if err != nil && !apierrors.IsAlreadyExists(err) {
+			return errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", binding.Name, system.GetManagerNamespace(), err)
+		}
 	}
 
 	return nil
