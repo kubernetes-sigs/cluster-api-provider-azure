@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -29,66 +29,66 @@ import (
 func TestSDKToVM(t *testing.T) {
 	tests := []struct {
 		name string
-		sdk  compute.VirtualMachine
+		sdk  armcompute.VirtualMachine
 		want *VM
 	}{
 		{
 			name: "Basic conversion with required fields",
-			sdk: compute.VirtualMachine{
+			sdk: armcompute.VirtualMachine{
 				ID:   ptr.To("test-vm-id"),
 				Name: ptr.To("test-vm-name"),
-				VirtualMachineProperties: &compute.VirtualMachineProperties{
+				Properties: &armcompute.VirtualMachineProperties{
 					ProvisioningState: ptr.To("Succeeded"),
 				},
 			},
 			want: &VM{
 				ID:    "test-vm-id",
 				Name:  "test-vm-name",
-				State: infrav1.ProvisioningState(compute.ProvisioningStateSucceeded),
+				State: infrav1.ProvisioningState("Succeeded"),
 			},
 		},
 		{
 			name: "Should convert and populate with VMSize",
-			sdk: compute.VirtualMachine{
+			sdk: armcompute.VirtualMachine{
 				ID:   ptr.To("test-vm-id"),
 				Name: ptr.To("test-vm-name"),
-				VirtualMachineProperties: &compute.VirtualMachineProperties{
+				Properties: &armcompute.VirtualMachineProperties{
 					ProvisioningState: ptr.To("Succeeded"),
-					HardwareProfile: &compute.HardwareProfile{
-						VMSize: compute.VirtualMachineSizeTypesStandardA1,
+					HardwareProfile: &armcompute.HardwareProfile{
+						VMSize: ptr.To(armcompute.VirtualMachineSizeTypesStandardA1),
 					},
 				},
 			},
 			want: &VM{
 				ID:     "test-vm-id",
 				Name:   "test-vm-name",
-				State:  infrav1.ProvisioningState(compute.ProvisioningStateSucceeded),
+				State:  infrav1.ProvisioningState("Succeeded"),
 				VMSize: "Standard_A1",
 			},
 		},
 		{
 			name: "Should convert and populate with availability zones",
-			sdk: compute.VirtualMachine{
+			sdk: armcompute.VirtualMachine{
 				ID:   ptr.To("test-vm-id"),
 				Name: ptr.To("test-vm-name"),
-				VirtualMachineProperties: &compute.VirtualMachineProperties{
+				Properties: &armcompute.VirtualMachineProperties{
 					ProvisioningState: ptr.To("Succeeded"),
 				},
-				Zones: &[]string{"1", "2"},
+				Zones: []*string{ptr.To("1"), ptr.To("2")},
 			},
 			want: &VM{
 				ID:               "test-vm-id",
 				Name:             "test-vm-name",
-				State:            infrav1.ProvisioningState(compute.ProvisioningStateSucceeded),
+				State:            infrav1.ProvisioningState("Succeeded"),
 				AvailabilityZone: "1",
 			},
 		},
 		{
 			name: "Should convert and populate with tags",
-			sdk: compute.VirtualMachine{
+			sdk: armcompute.VirtualMachine{
 				ID:   ptr.To("test-vm-id"),
 				Name: ptr.To("test-vm-name"),
-				VirtualMachineProperties: &compute.VirtualMachineProperties{
+				Properties: &armcompute.VirtualMachineProperties{
 					ProvisioningState: ptr.To("Succeeded"),
 				},
 				Tags: map[string]*string{"foo": ptr.To("bar")},
@@ -96,28 +96,28 @@ func TestSDKToVM(t *testing.T) {
 			want: &VM{
 				ID:    "test-vm-id",
 				Name:  "test-vm-name",
-				State: infrav1.ProvisioningState(compute.ProvisioningStateSucceeded),
+				State: infrav1.ProvisioningState("Succeeded"),
 				Tags:  infrav1.Tags{"foo": "bar"},
 			},
 		},
 		{
 			name: "Should convert and populate with all fields",
-			sdk: compute.VirtualMachine{
+			sdk: armcompute.VirtualMachine{
 				ID:   ptr.To("test-vm-id"),
 				Name: ptr.To("test-vm-name"),
-				VirtualMachineProperties: &compute.VirtualMachineProperties{
+				Properties: &armcompute.VirtualMachineProperties{
 					ProvisioningState: ptr.To("Succeeded"),
-					HardwareProfile: &compute.HardwareProfile{
-						VMSize: compute.VirtualMachineSizeTypesStandardA1,
+					HardwareProfile: &armcompute.HardwareProfile{
+						VMSize: ptr.To(armcompute.VirtualMachineSizeTypesStandardA1),
 					},
 				},
-				Zones: &[]string{"1"},
+				Zones: []*string{ptr.To("1")},
 				Tags:  map[string]*string{"foo": ptr.To("bar")},
 			},
 			want: &VM{
 				ID:               "test-vm-id",
 				Name:             "test-vm-name",
-				State:            infrav1.ProvisioningState(compute.ProvisioningStateSucceeded),
+				State:            infrav1.ProvisioningState("Succeeded"),
 				VMSize:           "Standard_A1",
 				AvailabilityZone: "1",
 				Tags:             infrav1.Tags{"foo": "bar"},

@@ -21,14 +21,13 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-func TestGetSpotVMOptionsV2(t *testing.T) {
+func TestGetSpotVMOptions(t *testing.T) {
 	deletePolicy := infrav1.SpotEvictionPolicyDelete
 	type resultParams struct {
 		vmPriorityTypes       *armcompute.VirtualMachinePriorityTypes
@@ -104,102 +103,6 @@ func TestGetSpotVMOptionsV2(t *testing.T) {
 			want: resultParams{
 				vmPriorityTypes:       ptr.To(armcompute.VirtualMachinePriorityTypesSpot),
 				vmEvictionPolicyTypes: ptr.To(armcompute.VirtualMachineEvictionPolicyTypesDelete),
-				billingProfile:        nil,
-			},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			g := NewGomegaWithT(t)
-			result := resultParams{}
-			var err error
-			result.vmPriorityTypes, result.vmEvictionPolicyTypes, result.billingProfile, err = GetSpotVMOptionsV2(tt.spot, tt.diffDiskSettings)
-			g.Expect(result.vmPriorityTypes).To(Equal(tt.want.vmPriorityTypes), fmt.Sprintf("got: %v, want: %v", result.vmPriorityTypes, tt.want.vmPriorityTypes))
-			g.Expect(result.vmEvictionPolicyTypes).To(Equal(tt.want.vmEvictionPolicyTypes), fmt.Sprintf("got: %v, want: %v", result.vmEvictionPolicyTypes, tt.want.vmEvictionPolicyTypes))
-			g.Expect(result.billingProfile).To(Equal(tt.want.billingProfile), fmt.Sprintf("got: %v, want: %v", result.billingProfile, tt.want.billingProfile))
-			g.Expect(err).To(BeNil())
-		})
-	}
-}
-
-func TestGetSpotVMOptions(t *testing.T) {
-	deletePolicy := infrav1.SpotEvictionPolicyDelete
-	type resultParams struct {
-		vmPriorityTypes       compute.VirtualMachinePriorityTypes
-		vmEvictionPolicyTypes compute.VirtualMachineEvictionPolicyTypes
-		billingProfile        *compute.BillingProfile
-	}
-	tests := []struct {
-		name             string
-		spot             *infrav1.SpotVMOptions
-		diffDiskSettings *infrav1.DiffDiskSettings
-		want             resultParams
-	}{
-		{
-			name:             "nil spot",
-			spot:             nil,
-			diffDiskSettings: nil,
-			want: resultParams{
-				vmPriorityTypes:       "",
-				vmEvictionPolicyTypes: "",
-				billingProfile:        nil,
-			},
-		},
-		{
-			name: "spot with nil max price",
-			spot: &infrav1.SpotVMOptions{
-				MaxPrice: nil,
-			},
-			diffDiskSettings: nil,
-			want: resultParams{
-				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: "",
-				billingProfile:        nil,
-			},
-		},
-		{
-			name: "spot with max price",
-			spot: &infrav1.SpotVMOptions{
-				MaxPrice: func(price string) *resource.Quantity {
-					p := resource.MustParse(price)
-					return &p
-				}("1000"),
-			},
-			diffDiskSettings: nil,
-			want: resultParams{
-				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: "",
-				billingProfile: &compute.BillingProfile{
-					MaxPrice: ptr.To[float64](1000),
-				},
-			},
-		},
-		{
-			name: "spot with ephemeral disk",
-			spot: &infrav1.SpotVMOptions{
-				MaxPrice: nil,
-			},
-			diffDiskSettings: &infrav1.DiffDiskSettings{
-				Option: string(compute.DiffDiskOptionsLocal),
-			},
-			want: resultParams{
-				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: "",
-				billingProfile:        nil,
-			},
-		},
-		{
-			name: "spot with eviction policy",
-			spot: &infrav1.SpotVMOptions{
-				MaxPrice:       nil,
-				EvictionPolicy: &deletePolicy,
-			},
-			diffDiskSettings: nil,
-			want: resultParams{
-				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: compute.VirtualMachineEvictionPolicyTypesDelete,
 				billingProfile:        nil,
 			},
 		},

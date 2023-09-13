@@ -159,12 +159,12 @@ func (s *ScaleSetSpec) Parameters(ctx context.Context, existing interface{}) (pa
 		return armcompute.VirtualMachineScaleSet{}, err
 	}
 
-	priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptionsV2(s.SpotVMOptions, s.OSDisk.DiffDiskSettings)
+	priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(s.SpotVMOptions, s.OSDisk.DiffDiskSettings)
 	if err != nil {
 		return armcompute.VirtualMachineScaleSet{}, errors.Wrapf(err, "failed to get Spot VM options")
 	}
 
-	diagnosticsProfile := converters.GetDiagnosticsProfileV2(s.DiagnosticsProfile)
+	diagnosticsProfile := converters.GetDiagnosticsProfile(s.DiagnosticsProfile)
 
 	osProfile, err := s.generateOSProfile(ctx)
 	if err != nil {
@@ -424,7 +424,7 @@ func (s *ScaleSetSpec) generateStorageProfile(ctx context.Context) (*armcompute.
 	if s.VMImage == nil {
 		return nil, errors.Errorf("vm image is nil")
 	}
-	imageRef, err := converters.ImageToSDKv2(s.VMImage)
+	imageRef, err := converters.ImageToSDK(s.VMImage)
 	if err != nil {
 		return nil, err
 	}

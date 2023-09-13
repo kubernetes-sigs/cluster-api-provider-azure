@@ -20,13 +20,12 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-func TestGetDiagnosticsProfileV2(t *testing.T) {
+func TestGetDiagnosticsProfile(t *testing.T) {
 	tests := []struct {
 		name        string
 		diagnostics *infrav1.Diagnostics
@@ -71,75 +70,6 @@ func TestGetDiagnosticsProfileV2(t *testing.T) {
 			},
 			want: &armcompute.DiagnosticsProfile{
 				BootDiagnostics: &armcompute.BootDiagnostics{
-					Enabled: ptr.To(false),
-				},
-			},
-		},
-		{
-			name: "nil diagnostics boot",
-			diagnostics: &infrav1.Diagnostics{
-				Boot: nil,
-			},
-			want: nil,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got := GetDiagnosticsProfileV2(tt.diagnostics)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("GetDiagnosticsProfileV2(%s) mismatch (-want +got):\n%s", tt.name, diff)
-			}
-		})
-	}
-}
-
-func TestGetDiagnosticsProfile(t *testing.T) {
-	tests := []struct {
-		name        string
-		diagnostics *infrav1.Diagnostics
-		want        *compute.DiagnosticsProfile
-	}{
-		{
-			name: "managed diagnostics",
-			diagnostics: &infrav1.Diagnostics{
-				Boot: &infrav1.BootDiagnostics{
-					StorageAccountType: infrav1.ManagedDiagnosticsStorage,
-				},
-			},
-			want: &compute.DiagnosticsProfile{
-				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled: ptr.To(true),
-				},
-			},
-		},
-		{
-			name: "user managed diagnostics",
-			diagnostics: &infrav1.Diagnostics{
-				Boot: &infrav1.BootDiagnostics{
-					StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
-					UserManaged: &infrav1.UserManagedBootDiagnostics{
-						StorageAccountURI: "https://fake",
-					},
-				},
-			},
-			want: &compute.DiagnosticsProfile{
-				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled:    ptr.To(true),
-					StorageURI: ptr.To("https://fake"),
-				},
-			},
-		},
-		{
-			name: "disabled diagnostics",
-			diagnostics: &infrav1.Diagnostics{
-				Boot: &infrav1.BootDiagnostics{
-					StorageAccountType: infrav1.DisabledDiagnosticsStorage,
-				},
-			},
-			want: &compute.DiagnosticsProfile{
-				BootDiagnostics: &compute.BootDiagnostics{
 					Enabled: ptr.To(false),
 				},
 			},

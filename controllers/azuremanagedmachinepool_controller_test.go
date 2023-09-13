@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -357,7 +356,7 @@ func fakeVirtualMachineScaleSet() []armcompute.VirtualMachineScaleSet {
 			Tags:     tags,
 			Properties: &armcompute.VirtualMachineScaleSetProperties{
 				SinglePlacementGroup: ptr.To(false),
-				ProvisioningState:    ptr.To(string(compute.ProvisioningState1Succeeded)),
+				ProvisioningState:    ptr.To("Succeeded"),
 			},
 		},
 	}
