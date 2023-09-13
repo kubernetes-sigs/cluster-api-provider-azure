@@ -19,6 +19,7 @@ package groups
 import (
 	"context"
 
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -34,13 +35,13 @@ const ServiceName = "group"
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope GroupScope
-	aso.Reconciler
+	aso.Reconciler[ASOType]
 }
 
 // GroupScope defines the scope interface for a group service.
 type GroupScope interface {
 	azure.AsyncStatusUpdater
-	GroupSpec() azure.ASOResourceSpecGetter
+	GroupSpec() azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]
 	GetClient() client.Client
 	ClusterName() string
 }
@@ -49,7 +50,7 @@ type GroupScope interface {
 func New(scope GroupScope) *Service {
 	return &Service{
 		Scope:      scope,
-		Reconciler: aso.New(scope.GetClient(), scope.ClusterName()),
+		Reconciler: aso.New[ASOType](scope.GetClient(), scope.ClusterName()),
 	}
 }
 

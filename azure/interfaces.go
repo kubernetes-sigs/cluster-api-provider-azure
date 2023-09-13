@@ -138,14 +138,14 @@ type ResourceSpecGetterWithHeaders interface {
 }
 
 // ASOResourceSpecGetter is an interface for getting all the required information to create/update/delete an Azure resource.
-type ASOResourceSpecGetter interface {
+type ASOResourceSpecGetter[T genruntime.MetaObject] interface {
 	// ResourceRef returns a concrete, named (and namespaced if applicable) ASO
 	// resource type to facilitate a strongly-typed GET.
-	ResourceRef() genruntime.MetaObject
+	ResourceRef() T
 	// Parameters returns a modified object if it points to a non-nil resource.
-	// Otherwise it returns a new value or nil if no updates are needed.
-	Parameters(ctx context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error)
+	// Otherwise it returns an unmodified object if no updates are needed.
+	Parameters(ctx context.Context, existing T) (T, error)
 	// WasManaged returns whether or not the given resource was managed by a
 	// non-ASO-backed CAPZ and should be considered eligible for adoption.
-	WasManaged(genruntime.MetaObject) bool
+	WasManaged(T) bool
 }

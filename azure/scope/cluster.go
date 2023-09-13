@@ -418,7 +418,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 }
 
 // GroupSpec returns the resource group spec.
-func (s *ClusterScope) GroupSpec() azure.ASOResourceSpecGetter {
+func (s *ClusterScope) GroupSpec() azure.ASOResourceSpecGetter[groups.ASOType] {
 	return &groups.GroupSpec{
 		Name:           s.ResourceGroup(),
 		Namespace:      s.Namespace(),

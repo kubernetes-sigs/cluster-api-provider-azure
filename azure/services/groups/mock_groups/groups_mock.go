@@ -23,6 +23,7 @@ package mock_groups
 import (
 	reflect "reflect"
 
+	v1api20200601 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -108,10 +109,10 @@ func (mr *MockGroupScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, a
 }
 
 // GroupSpec mocks base method.
-func (m *MockGroupScope) GroupSpec() azure.ASOResourceSpecGetter {
+func (m *MockGroupScope) GroupSpec() azure.ASOResourceSpecGetter[*v1api20200601.ResourceGroup] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GroupSpec")
-	ret0, _ := ret[0].(azure.ASOResourceSpecGetter)
+	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[*v1api20200601.ResourceGroup])
 	return ret0
 }
 

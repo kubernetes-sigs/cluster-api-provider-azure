@@ -60,19 +60,19 @@ func TestReconcileGroups(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder)
+		expect        func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType])
 	}{
 		{
 			name:          "noop if no group spec is found",
 			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, _ *mock_aso.MockReconcilerMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, _ *mock_aso.MockReconcilerMockRecorder[ASOType]) {
 				s.GroupSpec().Return(nil)
 			},
 		},
 		{
 			name:          "create group succeeds",
 			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType]) {
 				s.GroupSpec().Return(&fakeGroupSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
@@ -81,7 +81,7 @@ func TestReconcileGroups(t *testing.T) {
 		{
 			name:          "create resource group fails",
 			expectedError: "internal error",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType]) {
 				s.GroupSpec().Return(&fakeGroupSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil, errInternal)
 				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, errInternal)
@@ -97,7 +97,7 @@ func TestReconcileGroups(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
-			asoMock := mock_aso.NewMockReconciler(mockCtrl)
+			asoMock := mock_aso.NewMockReconciler[ASOType](mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asoMock.EXPECT())
 
@@ -131,12 +131,12 @@ func TestDeleteGroups(t *testing.T) {
 		name          string
 		clientBuilder func(g Gomega) client.Client
 		expectedError string
-		expect        func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder)
+		expect        func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType])
 	}{
 		{
 			name:          "noop if no group spec is found",
 			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, _ *mock_aso.MockReconcilerMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, _ *mock_aso.MockReconcilerMockRecorder[ASOType]) {
 				s.GroupSpec().Return(nil)
 			},
 		},
@@ -151,7 +151,7 @@ func TestDeleteGroups(t *testing.T) {
 					WithObjects(sampleManagedGroup.DeepCopy()).
 					Build()
 			},
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType]) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
@@ -169,7 +169,7 @@ func TestDeleteGroups(t *testing.T) {
 				return &ErroringDeleteClient{Client: c, err: errInternal}
 			},
 			expectedError: "internal error",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType]) {
 				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(errInternal)
 				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, gomockinternal.ErrStrEq("internal error"))
@@ -186,7 +186,7 @@ func TestDeleteGroups(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
-			asyncMock := mock_aso.NewMockReconciler(mockCtrl)
+			asyncMock := mock_aso.NewMockReconciler[ASOType](mockCtrl)
 
 			var ctrlClient client.Client
 			if tc.clientBuilder != nil {

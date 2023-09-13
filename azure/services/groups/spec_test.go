@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
-	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -31,8 +30,8 @@ func TestParameters(t *testing.T) {
 	tests := []struct {
 		name     string
 		spec     *GroupSpec
-		existing genruntime.MetaObject
-		expected genruntime.MetaObject
+		existing ASOType
+		expected ASOType
 	}{
 		{
 			name: "no existing group",
@@ -67,9 +66,13 @@ func TestParameters(t *testing.T) {
 			},
 		},
 		{
-			name:     "existing group",
-			existing: &asoresourcesv1.ResourceGroup{},
-			expected: nil,
+			name: "existing group",
+			existing: &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{Name: "a unique name"},
+			},
+			expected: &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{Name: "a unique name"},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -92,16 +95,9 @@ func TestWasManaged(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		object   genruntime.MetaObject
+		object   ASOType
 		expected bool
 	}{
-		{
-			name: "wrong type",
-			object: struct {
-				genruntime.MetaObject
-			}{},
-			expected: false,
-		},
 		{
 			name:     "no owned label",
 			object:   &asoresourcesv1.ResourceGroup{},

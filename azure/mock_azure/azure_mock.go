@@ -1969,59 +1969,59 @@ func (mr *MockResourceSpecGetterWithHeadersMockRecorder) ResourceName() *gomock.
 }
 
 // MockASOResourceSpecGetter is a mock of ASOResourceSpecGetter interface.
-type MockASOResourceSpecGetter struct {
+type MockASOResourceSpecGetter[T genruntime.MetaObject] struct {
 	ctrl     *gomock.Controller
-	recorder *MockASOResourceSpecGetterMockRecorder
+	recorder *MockASOResourceSpecGetterMockRecorder[T]
 }
 
 // MockASOResourceSpecGetterMockRecorder is the mock recorder for MockASOResourceSpecGetter.
-type MockASOResourceSpecGetterMockRecorder struct {
-	mock *MockASOResourceSpecGetter
+type MockASOResourceSpecGetterMockRecorder[T genruntime.MetaObject] struct {
+	mock *MockASOResourceSpecGetter[T]
 }
 
 // NewMockASOResourceSpecGetter creates a new mock instance.
-func NewMockASOResourceSpecGetter(ctrl *gomock.Controller) *MockASOResourceSpecGetter {
-	mock := &MockASOResourceSpecGetter{ctrl: ctrl}
-	mock.recorder = &MockASOResourceSpecGetterMockRecorder{mock}
+func NewMockASOResourceSpecGetter[T genruntime.MetaObject](ctrl *gomock.Controller) *MockASOResourceSpecGetter[T] {
+	mock := &MockASOResourceSpecGetter[T]{ctrl: ctrl}
+	mock.recorder = &MockASOResourceSpecGetterMockRecorder[T]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockASOResourceSpecGetter) EXPECT() *MockASOResourceSpecGetterMockRecorder {
+func (m *MockASOResourceSpecGetter[T]) EXPECT() *MockASOResourceSpecGetterMockRecorder[T] {
 	return m.recorder
 }
 
 // Parameters mocks base method.
-func (m *MockASOResourceSpecGetter) Parameters(ctx context.Context, object genruntime.MetaObject) (genruntime.MetaObject, error) {
+func (m *MockASOResourceSpecGetter[T]) Parameters(ctx context.Context, object T) (T, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Parameters", ctx, object)
-	ret0, _ := ret[0].(genruntime.MetaObject)
+	ret0, _ := ret[0].(T)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Parameters indicates an expected call of Parameters.
-func (mr *MockASOResourceSpecGetterMockRecorder) Parameters(ctx, object interface{}) *gomock.Call {
+func (mr *MockASOResourceSpecGetterMockRecorder[T]) Parameters(ctx, object interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).Parameters), ctx, object)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockASOResourceSpecGetter[T])(nil).Parameters), ctx, object)
 }
 
 // ResourceRef mocks base method.
-func (m *MockASOResourceSpecGetter) ResourceRef() genruntime.MetaObject {
+func (m *MockASOResourceSpecGetter[T]) ResourceRef() T {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResourceRef")
-	ret0, _ := ret[0].(genruntime.MetaObject)
+	ret0, _ := ret[0].(T)
 	return ret0
 }
 
 // ResourceRef indicates an expected call of ResourceRef.
-func (mr *MockASOResourceSpecGetterMockRecorder) ResourceRef() *gomock.Call {
+func (mr *MockASOResourceSpecGetterMockRecorder[T]) ResourceRef() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceRef", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).ResourceRef))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceRef", reflect.TypeOf((*MockASOResourceSpecGetter[T])(nil).ResourceRef))
 }
 
 // WasManaged mocks base method.
-func (m *MockASOResourceSpecGetter) WasManaged(arg0 genruntime.MetaObject) bool {
+func (m *MockASOResourceSpecGetter[T]) WasManaged(arg0 T) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WasManaged", arg0)
 	ret0, _ := ret[0].(bool)
@@ -2029,7 +2029,7 @@ func (m *MockASOResourceSpecGetter) WasManaged(arg0 genruntime.MetaObject) bool 
 }
 
 // WasManaged indicates an expected call of WasManaged.
-func (mr *MockASOResourceSpecGetterMockRecorder) WasManaged(arg0 interface{}) *gomock.Call {
+func (mr *MockASOResourceSpecGetterMockRecorder[T]) WasManaged(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WasManaged", reflect.TypeOf((*MockASOResourceSpecGetter)(nil).WasManaged), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WasManaged", reflect.TypeOf((*MockASOResourceSpecGetter[T])(nil).WasManaged), arg0)
 }

@@ -252,7 +252,7 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 }
 
 // GroupSpec returns the resource group spec.
-func (s *ManagedControlPlaneScope) GroupSpec() azure.ASOResourceSpecGetter {
+func (s *ManagedControlPlaneScope) GroupSpec() azure.ASOResourceSpecGetter[groups.ASOType] {
 	return &groups.GroupSpec{
 		Name:           s.ResourceGroup(),
 		Namespace:      s.Cluster.Namespace,
