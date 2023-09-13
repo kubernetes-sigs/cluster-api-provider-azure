@@ -22,7 +22,6 @@ import (
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -83,7 +82,7 @@ func TestReconcileTags(t *testing.T) {
 			g := NewWithT(t)
 
 			mockCtrl := gomock.NewController(t)
-			tag := mock_aso.NewMockTagsGetterSetter(mockCtrl)
+			tag := mock_aso.NewMockTagsGetterSetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 
 			lastAppliedTagsJSON, err := json.Marshal(test.lastAppliedTags)
 			g.Expect(err).NotTo(HaveOccurred())
@@ -94,14 +93,14 @@ func TestReconcileTags(t *testing.T) {
 					tagsLastAppliedAnnotation: string(lastAppliedTagsJSON),
 				})
 			}
-			tag.EXPECT().GetActualTags(existing).Return(test.existingTags, nil)
+			tag.EXPECT().GetActualTags(existing).Return(test.existingTags)
 			tag.EXPECT().GetAdditionalTags().Return(test.additionalTagsSpec)
 
 			parameters := &asoresourcesv1.ResourceGroup{}
-			tag.EXPECT().GetDesiredTags(parameters).Return(test.tagsFromParams, nil)
-			tag.EXPECT().SetTags(parameters, test.expectedTags).Return(nil)
+			tag.EXPECT().GetDesiredTags(parameters).Return(test.tagsFromParams)
+			tag.EXPECT().SetTags(parameters, test.expectedTags)
 
-			err = reconcileTags(tag, existing, parameters)
+			err = reconcileTags[*asoresourcesv1.ResourceGroup](tag, existing, existing != nil, parameters)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(parameters.GetAnnotations()).To(HaveKey(tagsLastAppliedAnnotation))
 		})
@@ -111,7 +110,7 @@ func TestReconcileTags(t *testing.T) {
 		g := NewWithT(t)
 
 		mockCtrl := gomock.NewController(t)
-		tag := mock_aso.NewMockTagsGetterSetter(mockCtrl)
+		tag := mock_aso.NewMockTagsGetterSetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 
 		existing := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
@@ -121,55 +120,7 @@ func TestReconcileTags(t *testing.T) {
 			},
 		}
 
-		err := reconcileTags(tag, existing, nil)
+		err := reconcileTags[*asoresourcesv1.ResourceGroup](tag, existing, existing != nil, nil)
 		g.Expect(err).To(HaveOccurred())
-	})
-
-	t.Run("error getting actual tags", func(t *testing.T) {
-		g := NewWithT(t)
-
-		mockCtrl := gomock.NewController(t)
-		tag := mock_aso.NewMockTagsGetterSetter(mockCtrl)
-
-		existing := &asoresourcesv1.ResourceGroup{}
-		tag.EXPECT().GetActualTags(existing).Return(nil, errors.New("some error"))
-
-		err := reconcileTags(tag, existing, nil)
-		g.Expect(err).To(MatchError(ContainSubstring("some error")))
-	})
-
-	t.Run("error getting desired tags", func(t *testing.T) {
-		g := NewWithT(t)
-
-		mockCtrl := gomock.NewController(t)
-		tag := mock_aso.NewMockTagsGetterSetter(mockCtrl)
-
-		existing := &asoresourcesv1.ResourceGroup{}
-		tag.EXPECT().GetActualTags(existing).Return(nil, nil)
-		tag.EXPECT().GetAdditionalTags().Return(nil)
-
-		parameters := &asoresourcesv1.ResourceGroup{}
-		tag.EXPECT().GetDesiredTags(parameters).Return(nil, errors.New("some error"))
-
-		err := reconcileTags(tag, existing, parameters)
-		g.Expect(err).To(MatchError(ContainSubstring("some error")))
-	})
-
-	t.Run("error setting tags", func(t *testing.T) {
-		g := NewWithT(t)
-
-		mockCtrl := gomock.NewController(t)
-		tag := mock_aso.NewMockTagsGetterSetter(mockCtrl)
-
-		existing := &asoresourcesv1.ResourceGroup{}
-		tag.EXPECT().GetActualTags(existing).Return(nil, nil)
-		tag.EXPECT().GetAdditionalTags().Return(nil)
-
-		parameters := &asoresourcesv1.ResourceGroup{}
-		tag.EXPECT().GetDesiredTags(parameters).Return(nil, nil)
-		tag.EXPECT().SetTags(parameters, nil).Return(errors.New("some error"))
-
-		err := reconcileTags(tag, existing, parameters)
-		g.Expect(err).To(MatchError(ContainSubstring("some error")))
 	})
 }
