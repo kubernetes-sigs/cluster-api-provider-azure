@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -147,9 +147,9 @@ func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachine.Spec.VMSize)
 		}
 
-		m.cache.availabilitySetSKU, err = skuCache.Get(ctx, string(compute.AvailabilitySetSkuTypesAligned), resourceskus.AvailabilitySets)
+		m.cache.availabilitySetSKU, err = skuCache.Get(ctx, string(armcompute.AvailabilitySetSKUTypesAligned), resourceskus.AvailabilitySets)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(compute.AvailabilitySetSkuTypesAligned))
+			return errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(armcompute.AvailabilitySetSKUTypesAligned))
 		}
 	}
 

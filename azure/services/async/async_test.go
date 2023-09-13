@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	. "github.com/onsi/gomega"
@@ -57,8 +57,8 @@ var (
 		ResourceGroup: "test-group",
 		Data:          "ZmFrZSBiNjQgZnV0dXJlIGRhdGEK",
 	}
-	fakeExistingResource   = resources.GenericResource{}
-	fakeResourceParameters = resources.GenericResource{}
+	fakeExistingResource   = armresources.GenericResource{}
+	fakeResourceParameters = armresources.GenericResource{}
 	fakeInternalError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 	fakeNotFoundError      = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not Found")
 	errCtxExceeded         = errors.New("ctx exceeded")
