@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -42,7 +42,7 @@ var (
 		ResourceID:    "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss/virtualMachines/0",
 		IsFlex:        false,
 	}
-	uniformScaleSetVM = compute.VirtualMachineScaleSetVM{
+	uniformScaleSetVM = armcompute.VirtualMachineScaleSetVM{
 		ID: &uniformScaleSetVMSpec.ResourceID,
 	}
 
@@ -59,7 +59,7 @@ var (
 		Name:          flexScaleSetVMSpec.Name,
 		ResourceGroup: flexScaleSetVMSpec.ResourceGroup,
 	}
-	flexScaleSetVM = compute.VirtualMachine{
+	flexScaleSetVM = armcompute.VirtualMachine{
 		Name: &uniformScaleSetVMSpec.Name,
 	}
 

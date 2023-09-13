@@ -23,7 +23,6 @@ import (
 	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -67,7 +66,7 @@ type ScaleSetSpec struct {
 	VMSSExtensionSpecs           []azure.ResourceSpecGetter
 	VMImage                      *infrav1.Image
 	BootstrapData                string
-	VMSSInstances                []compute.VirtualMachineScaleSetVM
+	VMSSInstances                []armcompute.VirtualMachineScaleSetVM
 	MaxSurge                     int
 	ClusterName                  string
 	ShouldPatchCustomData        bool
@@ -275,7 +274,7 @@ func (s *ScaleSetSpec) Parameters(ctx context.Context, existing interface{}) (pa
 }
 
 func hasModelModifyingDifferences(infraVMSS *azure.VMSS, vmss armcompute.VirtualMachineScaleSet) bool {
-	other := converters.SDKToVMSS(vmss, []compute.VirtualMachineScaleSetVM{})
+	other := converters.SDKToVMSS(vmss, []armcompute.VirtualMachineScaleSetVM{})
 	return infraVMSS.HasModelChanges(other)
 }
 

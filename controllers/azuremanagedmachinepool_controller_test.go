@@ -319,16 +319,16 @@ func fakeAgentPool(changes ...func(*agentpools.AgentPoolSpec)) agentpools.AgentP
 	return pool
 }
 
-func fakeVirtualMachineScaleSetVM() []compute.VirtualMachineScaleSetVM {
-	virtualMachineScaleSetVM := []compute.VirtualMachineScaleSetVM{
+func fakeVirtualMachineScaleSetVM() []armcompute.VirtualMachineScaleSetVM {
+	virtualMachineScaleSetVM := []armcompute.VirtualMachineScaleSetVM{
 		{
 			InstanceID: ptr.To("0"),
 			ID:         ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156"),
 			Name:       ptr.To("vm0"),
-			Zones:      &[]string{"zone0"},
-			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-				ProvisioningState: ptr.To(string(compute.ProvisioningState1Succeeded)),
-				OsProfile: &compute.OSProfile{
+			Zones:      []*string{ptr.To("zone0")},
+			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+				ProvisioningState: ptr.To("Succeeded"),
+				OSProfile: &armcompute.OSProfile{
 					ComputerName: ptr.To("instance-000000"),
 				},
 			},

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/pkg/errors"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -49,7 +48,7 @@ type (
 
 	// NodeLister is a service interface for returning generic lists.
 	NodeLister interface {
-		ListInstances(context.Context, string, string) ([]compute.VirtualMachineScaleSetVM, error)
+		ListInstances(context.Context, string, string) ([]armcompute.VirtualMachineScaleSetVM, error)
 		List(context.Context, string) ([]armcompute.VirtualMachineScaleSet, error)
 	}
 )
