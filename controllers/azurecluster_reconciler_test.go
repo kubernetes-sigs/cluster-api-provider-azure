@@ -24,6 +24,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
@@ -199,7 +199,7 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 							infrav1.OwnedByClusterLabelKey: clusterName,
 						},
 						Annotations: map[string]string{
-							aso.ReconcilePolicyAnnotation: aso.ReconcilePolicyManage,
+							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 						},
 					},
 				}
@@ -234,7 +234,7 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 							infrav1.OwnedByClusterLabelKey: clusterName,
 						},
 						Annotations: map[string]string{
-							aso.ReconcilePolicyAnnotation: aso.ReconcilePolicyManage,
+							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 						},
 					},
 				}

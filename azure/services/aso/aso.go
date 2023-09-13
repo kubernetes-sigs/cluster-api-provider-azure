@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/google/go-cmp/cmp"
@@ -36,23 +37,14 @@ import (
 )
 
 const (
-	// ReconcilePolicyAnnotation is the annotation key for ASO's reconcile policy mechanism.
-	ReconcilePolicyAnnotation = "serviceoperator.azure.com/reconcile-policy"
-	// PrePauseReconcilePolicyAnnotation is the annotation key for the value of
-	// ReconcilePolicyAnnotation that was set before pausing.
-	PrePauseReconcilePolicyAnnotation = "sigs.k8s.io/cluster-api-provider-azure-pre-pause-reconcile-policy"
-	// ReconcilePolicySkip indicates changes will not be PUT or DELETEd in Azure from ASO.
-	ReconcilePolicySkip = "skip"
-	// ReconcilePolicyManage indicates changes will be PUT and DELETEd in Azure from ASO.
-	ReconcilePolicyManage = "manage"
+	// prePauseReconcilePolicyAnnotation is the annotation key for the value of
+	// asoannotations.ReconcilePolicy that was set before pausing.
+	prePauseReconcilePolicyAnnotation = "sigs.k8s.io/cluster-api-provider-azure-pre-pause-reconcile-policy"
 
 	requeueInterval = 20 * time.Second
 
 	createOrUpdateFutureType = "ASOCreateOrUpdate"
 	deleteFutureType         = "ASODelete"
-
-	// SecretNameAnnotation is the annotation key for ASO's credentials to use.
-	SecretNameAnnotation = "serviceoperator.azure.com/credential-from"
 )
 
 // Service is an implementation of the Reconciler interface. It handles creation
@@ -108,7 +100,7 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		if cond := conds[i]; cond.Status != metav1.ConditionTrue {
 			switch {
 			case cond.Reason == conditions.ReasonAzureResourceNotFound.Name &&
-				existing.GetAnnotations()[ReconcilePolicyAnnotation] == ReconcilePolicySkip:
+				existing.GetAnnotations()[asoannotations.ReconcilePolicy] == string(asoannotations.ReconcilePolicySkip):
 				// This resource was originally created by CAPZ and a
 				// corresponding Azure resource has been found not to exist, so
 				// CAPZ will tell ASO to adopt the resource by setting its
@@ -171,9 +163,9 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		annotations = make(map[string]string)
 	}
 
-	if prevReconcilePolicy, ok := annotations[PrePauseReconcilePolicyAnnotation]; ok {
-		annotations[ReconcilePolicyAnnotation] = prevReconcilePolicy
-		delete(annotations, PrePauseReconcilePolicyAnnotation)
+	if prevReconcilePolicy, ok := annotations[prePauseReconcilePolicyAnnotation]; ok {
+		annotations[asoannotations.ReconcilePolicy] = prevReconcilePolicy
+		delete(annotations, prePauseReconcilePolicyAnnotation)
 	}
 	if existing == nil {
 		labels[infrav1.OwnedByClusterLabelKey] = s.clusterName
@@ -184,17 +176,17 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		// reconciliation will reveal the resource does not already exist in
 		// Azure and the ASO resource will be adopted by changing this
 		// annotation to "manage".
-		annotations[ReconcilePolicyAnnotation] = ReconcilePolicySkip
+		annotations[asoannotations.ReconcilePolicy] = string(asoannotations.ReconcilePolicySkip)
 	} else {
 		adopt = adopt || spec.WasManaged(existing)
 	}
 	if adopt {
-		annotations[ReconcilePolicyAnnotation] = ReconcilePolicyManage
+		annotations[asoannotations.ReconcilePolicy] = string(asoannotations.ReconcilePolicyManage)
 	}
 
 	// Set the secret name annotation in order to leverage the ASO resource credential scope as defined in
 	// https://azure.github.io/azure-service-operator/guide/authentication/credential-scope/#resource-scope.
-	annotations[SecretNameAnnotation] = aso.GetASOSecretName(s.clusterName)
+	annotations[asoannotations.PerResourceSecret] = aso.GetASOSecretName(s.clusterName)
 
 	if len(labels) == 0 {
 		labels = nil
@@ -327,7 +319,7 @@ func PauseResource(ctx context.Context, ctrlClient client.Client, spec azure.ASO
 	}
 
 	annotations := resource.GetAnnotations()
-	if _, exists := annotations[PrePauseReconcilePolicyAnnotation]; exists {
+	if _, exists := annotations[prePauseReconcilePolicyAnnotation]; exists {
 		log.V(4).Info("resource is already paused")
 		return nil
 	}
@@ -343,8 +335,8 @@ func PauseResource(ctx context.Context, ctrlClient client.Client, spec azure.ASO
 	if annotations == nil {
 		annotations = make(map[string]string, 2)
 	}
-	annotations[PrePauseReconcilePolicyAnnotation] = annotations[ReconcilePolicyAnnotation]
-	annotations[ReconcilePolicyAnnotation] = ReconcilePolicySkip
+	annotations[prePauseReconcilePolicyAnnotation] = annotations[asoannotations.ReconcilePolicy]
+	annotations[asoannotations.ReconcilePolicy] = string(asoannotations.ReconcilePolicySkip)
 	resource.SetAnnotations(annotations)
 
 	return helper.Patch(ctx, resource)
