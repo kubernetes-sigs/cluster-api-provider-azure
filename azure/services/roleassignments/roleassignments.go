@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -48,7 +47,7 @@ type RoleAssignmentScope interface {
 type Service struct {
 	Scope                 RoleAssignmentScope
 	virtualMachinesGetter async.Getter
-	asyncpoller.Reconciler
+	async.Reconciler
 	virtualMachineScaleSetGetter async.Getter
 }
 
@@ -70,7 +69,7 @@ func New(scope RoleAssignmentScope) (*Service, error) {
 		Scope:                        scope,
 		virtualMachinesGetter:        virtualMachinesClient,
 		virtualMachineScaleSetGetter: scaleSetsClient,
-		Reconciler: asyncpoller.New[armauthorization.RoleAssignmentsClientCreateResponse,
+		Reconciler: async.New[armauthorization.RoleAssignmentsClientCreateResponse,
 			armauthorization.RoleAssignmentsClientDeleteResponse](scope, client, nil),
 	}, nil
 }

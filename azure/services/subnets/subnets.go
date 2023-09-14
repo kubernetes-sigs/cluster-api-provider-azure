@@ -25,7 +25,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -45,7 +45,7 @@ type SubnetScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope SubnetScope
-	asyncpoller.Reconciler
+	async.Reconciler
 }
 
 // New creates a new service.
@@ -56,7 +56,7 @@ func New(scope SubnetScope) (*Service, error) {
 	}
 	return &Service{
 		Scope: scope,
-		Reconciler: asyncpoller.New[armnetwork.SubnetsClientCreateOrUpdateResponse,
+		Reconciler: async.New[armnetwork.SubnetsClientCreateOrUpdateResponse,
 			armnetwork.SubnetsClientDeleteResponse](scope, Client, Client),
 	}, nil
 }

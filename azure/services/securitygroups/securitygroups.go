@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -42,7 +42,7 @@ type NSGScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope NSGScope
-	asyncpoller.Reconciler
+	async.Reconciler
 }
 
 // New creates a new service.
@@ -53,7 +53,7 @@ func New(scope NSGScope) (*Service, error) {
 	}
 	return &Service{
 		Scope: scope,
-		Reconciler: asyncpoller.New[armnetwork.SecurityGroupsClientCreateOrUpdateResponse,
+		Reconciler: async.New[armnetwork.SecurityGroupsClientCreateOrUpdateResponse,
 			armnetwork.SecurityGroupsClientDeleteResponse](scope, client, client),
 	}, nil
 }

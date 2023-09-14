@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
@@ -57,7 +56,7 @@ type VMScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope VMScope
-	asyncpoller.Reconciler
+	async.Reconciler
 	interfacesGetter async.Getter
 	publicIPsGetter  async.Getter
 	identitiesGetter identities.Client
@@ -86,7 +85,7 @@ func New(scope VMScope) (*Service, error) {
 		interfacesGetter: interfacesSvc,
 		publicIPsGetter:  publicIPsSvc,
 		identitiesGetter: identitiesSvc,
-		Reconciler: asyncpoller.New[armcompute.VirtualMachinesClientCreateOrUpdateResponse,
+		Reconciler: async.New[armcompute.VirtualMachinesClientCreateOrUpdateResponse,
 			armcompute.VirtualMachinesClientDeleteResponse](scope, Client, Client),
 	}, nil
 }

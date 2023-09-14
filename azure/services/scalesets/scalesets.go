@@ -26,7 +26,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -54,7 +54,7 @@ type (
 		Scope ScaleSetScope
 		Client
 		resourceSKUCache *resourceskus.Cache
-		asyncpoller.Reconciler
+		async.Reconciler
 	}
 )
 
@@ -65,7 +65,7 @@ func New(scope ScaleSetScope, skuCache *resourceskus.Cache) (*Service, error) {
 		return nil, err
 	}
 	return &Service{
-		Reconciler: asyncpoller.New[armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse,
+		Reconciler: async.New[armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse,
 			armcompute.VirtualMachineScaleSetsClientDeleteResponse](scope, client, client),
 		Client:           client,
 		Scope:            scope,

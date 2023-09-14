@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -43,7 +42,7 @@ type PublicIPScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope PublicIPScope
-	asyncpoller.Reconciler
+	async.Reconciler
 	async.Getter
 	async.TagsGetter
 }
@@ -62,7 +61,7 @@ func New(scope PublicIPScope) (*Service, error) {
 		Scope:      scope,
 		Getter:     client,
 		TagsGetter: tagsClient,
-		Reconciler: asyncpoller.New[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, armnetwork.PublicIPAddressesClientDeleteResponse](scope, client, client),
+		Reconciler: async.New[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, armnetwork.PublicIPAddressesClientDeleteResponse](scope, client, client),
 	}, nil
 }
 
