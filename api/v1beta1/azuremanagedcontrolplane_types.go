@@ -191,6 +191,10 @@ type AzureManagedControlPlaneSpec struct {
 	// Immutable.
 	// +optional
 	HTTPProxyConfig *HTTPProxyConfig `json:"httpProxyConfig,omitempty"`
+
+	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+	// +optional
+	OIDCIssuerProfile *OIDCIssuerProfile `json:"oidcIssuerProfile,omitempty"`
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.
@@ -349,6 +353,17 @@ type AzureManagedControlPlaneStatus struct {
 	// next reconciliation loop.
 	// +optional
 	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
+
+	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+	// +optional
+	OIDCIssuerProfile *OIDCIssuerProfileStatus `json:"oidcIssuerProfile,omitempty"`
+}
+
+// OIDCIssuerProfileStatus is the OIDC issuer profile of the Managed Cluster.
+type OIDCIssuerProfileStatus struct {
+	// IssuerURL is the OIDC issuer url of the Managed Cluster.
+	// +optional
+	IssuerURL *string `json:"issuerURL,omitempty"`
 }
 
 // AutoScalerProfile parameters to be applied to the cluster-autoscaler.
@@ -483,6 +498,16 @@ type Identity struct {
 	// UserAssignedIdentityResourceID - Identity ARM resource ID when using user-assigned identity.
 	// +optional
 	UserAssignedIdentityResourceID string `json:"userAssignedIdentityResourceID,omitempty"`
+}
+
+// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/use-oidc-issuer
+type OIDCIssuerProfile struct {
+	// Enabled is whether the OIDC issuer is enabled.
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // +kubebuilder:object:root=true

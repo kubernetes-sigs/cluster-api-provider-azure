@@ -582,6 +582,12 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 		}
 	}
 
+	if s.ControlPlane.Spec.OIDCIssuerProfile != nil {
+		managedClusterSpec.OIDCIssuerProfile = &managedclusters.OIDCIssuerProfile{
+			Enabled: s.ControlPlane.Spec.OIDCIssuerProfile.Enabled,
+		}
+	}
+
 	return &managedClusterSpec
 }
 
@@ -806,4 +812,9 @@ func (s *ManagedControlPlaneScope) PrivateEndpointSpecs() []azure.ResourceSpecGe
 	}
 
 	return privateEndpointSpecs
+}
+
+// SetOIDCIssuerProfileStatus sets the status for the OIDC issuer profile config.
+func (s *ManagedControlPlaneScope) SetOIDCIssuerProfileStatus(oidc *infrav1.OIDCIssuerProfileStatus) {
+	s.ControlPlane.Status.OIDCIssuerProfile = oidc
 }

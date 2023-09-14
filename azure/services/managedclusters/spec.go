@@ -116,6 +116,9 @@ type ManagedClusterSpec struct {
 
 	// HTTPProxyConfig is the HTTP proxy configuration for the cluster.
 	HTTPProxyConfig *HTTPProxyConfig
+
+	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+	OIDCIssuerProfile *OIDCIssuerProfile
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.
@@ -229,6 +232,12 @@ type AutoScalerProfile struct {
 	SkipNodesWithLocalStorage *string
 	// SkipNodesWithSystemPods - The default is true.
 	SkipNodesWithSystemPods *string
+}
+
+// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+type OIDCIssuerProfile struct {
+	// Enabled is whether the OIDC issuer is enabled.
+	Enabled *bool
 }
 
 var _ azure.ResourceSpecGetterWithHeaders = (*ManagedClusterSpec)(nil)
@@ -441,6 +450,12 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 
 		if s.HTTPProxyConfig.NoProxy != nil {
 			managedCluster.Properties.HTTPProxyConfig.NoProxy = azure.PtrSlice(&s.HTTPProxyConfig.NoProxy)
+		}
+	}
+
+	if s.OIDCIssuerProfile != nil {
+		managedCluster.Properties.OidcIssuerProfile = &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+			Enabled: s.OIDCIssuerProfile.Enabled,
 		}
 	}
 
@@ -696,6 +711,17 @@ func computeDiffOfNormalizedClusters(managedCluster armcontainerservice.ManagedC
 	}
 	if existingMC.SKU != nil {
 		existingMCClusterNormalized.SKU = existingMC.SKU
+	}
+
+	if managedCluster.Properties.OidcIssuerProfile != nil {
+		clusterNormalized.Properties.OidcIssuerProfile = &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+			Enabled: managedCluster.Properties.OidcIssuerProfile.Enabled,
+		}
+	}
+	if existingMC.Properties.OidcIssuerProfile != nil {
+		existingMCClusterNormalized.Properties.OidcIssuerProfile = &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+			Enabled: existingMC.Properties.OidcIssuerProfile.Enabled,
+		}
 	}
 
 	diff := cmp.Diff(clusterNormalized, existingMCClusterNormalized)
