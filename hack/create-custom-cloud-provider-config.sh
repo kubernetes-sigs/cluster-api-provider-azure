@@ -25,12 +25,16 @@ source "${REPO_ROOT}/hack/common-vars.sh"
 
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
+# Test cloud provider config with shorter cache ttl
+CLOUD_PROVIDER_CONFIG="https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/tests/k8s-azure/manifest/cluster-api/cloud-config-vmss-short-cache-ttl.json"
 if [[ -n "${CUSTOM_CLOUD_PROVIDER_CONFIG:-}" ]]; then
-  curl --retry 3 -sL -o tmp_azure_json "${CUSTOM_CLOUD_PROVIDER_CONFIG}"
-  envsubst < tmp_azure_json > azure_json
-  "${KUBECTL}" delete secret "${CLUSTER_NAME}-control-plane-azure-json" || true
-  "${KUBECTL}" create secret generic "${CLUSTER_NAME}-control-plane-azure-json" \
-    --from-file=control-plane-azure.json=azure_json \
-    --from-file=worker-node-azure.json=azure_json
-  rm tmp_azure_json azure_json
+  CLOUD_PROVIDER_CONFIG="${CUSTOM_CLOUD_PROVIDER_CONFIG:-}"
 fi
+
+curl --retry 3 -sL -o tmp_azure_json "${CLOUD_PROVIDER_CONFIG}"
+envsubst < tmp_azure_json > azure_json
+"${KUBECTL}" delete secret "${CLUSTER_NAME}-control-plane-azure-json" || true
+"${KUBECTL}" create secret generic "${CLUSTER_NAME}-control-plane-azure-json" \
+  --from-file=control-plane-azure.json=azure_json \
+  --from-file=worker-node-azure.json=azure_json
+rm tmp_azure_json azure_json
