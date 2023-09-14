@@ -29,7 +29,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
@@ -58,8 +57,8 @@ type VMScope interface {
 type Service struct {
 	Scope VMScope
 	asyncpoller.Reconciler
-	interfacesGetter async.Getter
-	publicIPsGetter  async.Getter
+	interfacesGetter asyncpoller.Getter
+	publicIPsGetter  asyncpoller.Getter
 	identitiesGetter identities.Client
 }
 

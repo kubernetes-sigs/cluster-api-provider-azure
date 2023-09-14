@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -41,7 +40,7 @@ type NICScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope NICScope
-	async.Reconciler
+	asyncpoller.Reconciler
 	resourceSKUCache *resourceskus.Cache
 }
 

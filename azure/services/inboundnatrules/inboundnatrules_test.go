@@ -28,7 +28,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules/mock_inboundnatrules"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -88,14 +88,14 @@ func TestReconcileInboundNATRule(t *testing.T) {
 		expectedError string
 		expect        func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 			m *mock_inboundnatrules.MockclientMockRecorder,
-			r *mock_async.MockReconcilerMockRecorder)
+			r *mock_asyncpoller.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no NAT rule specs are found",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{})
@@ -106,7 +106,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
 				m.List(gomockinternal.AContext(), fakeGroupName, fakeLBName).Return(noExistingRules, nil)
@@ -123,7 +123,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
 				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(fakeExistingRules, nil)
@@ -139,7 +139,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.APIServerLBName().AnyTimes().Return("")
 			},
 		},
@@ -148,7 +148,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expectedError: "failed to get existing NAT rules: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
@@ -161,7 +161,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
 				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(fakeExistingRules, nil)
@@ -183,7 +183,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			defer mockCtrl.Finish()
 			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
 			clientMock := mock_inboundnatrules.NewMockclient(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), asyncMock.EXPECT())
 
@@ -209,13 +209,13 @@ func TestDeleteNetworkInterface(t *testing.T) {
 		name          string
 		expectedError string
 		expect        func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-			m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+			m *mock_inboundnatrules.MockclientMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no NAT rules are found",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
@@ -223,7 +223,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			name:          "successfully delete an existing NAT rule",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
@@ -237,7 +237,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			name:          "NAT rule deletion fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
@@ -258,7 +258,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			defer mockCtrl.Finish()
 			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
 			clientMock := mock_inboundnatrules.NewMockclient(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), asyncMock.EXPECT())
 

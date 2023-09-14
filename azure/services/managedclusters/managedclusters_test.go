@@ -26,7 +26,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters/mock_managedclusters"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -38,19 +38,19 @@ func TestReconcile(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if managedcluster spec is nil",
 			expectedError: "",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(nil)
 			},
 		},
 		{
 			name:          "create managed cluster returns an error",
 			expectedError: "some unexpected error occurred",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil, errors.New("some unexpected error occurred"))
 				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("some unexpected error occurred"))
@@ -59,7 +59,7 @@ func TestReconcile(t *testing.T) {
 		{
 			name:          "create managed cluster succeeds",
 			expectedError: "",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
 					Properties: &armcontainerservice.ManagedClusterProperties{
@@ -85,7 +85,7 @@ func TestReconcile(t *testing.T) {
 		{
 			name:          "fail to get managed cluster credentials",
 			expectedError: "failed to get credentials for managed cluster: internal server error",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
 					Properties: &armcontainerservice.ManagedClusterProperties{
@@ -111,7 +111,7 @@ func TestReconcile(t *testing.T) {
 			defer mockCtrl.Finish()
 			scopeMock := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
 			credsGetterMock := mock_managedclusters.NewMockCredentialGetter(mockCtrl)
-			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+			reconcilerMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(credsGetterMock.EXPECT(), scopeMock.EXPECT(), reconcilerMock.EXPECT())
 
@@ -136,19 +136,19 @@ func TestDelete(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no managed cluster spec is found",
 			expectedError: "",
-			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(nil)
 			},
 		},
 		{
 			name:          "successfully delete an existing managed cluster",
 			expectedError: "",
-			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.DeleteResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
@@ -157,7 +157,7 @@ func TestDelete(t *testing.T) {
 		{
 			name:          "managed cluster deletion fails",
 			expectedError: "internal error",
-			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.DeleteResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(errors.New("internal error"))
 				s.UpdateDeleteStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("internal error"))
@@ -173,7 +173,7 @@ func TestDelete(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 

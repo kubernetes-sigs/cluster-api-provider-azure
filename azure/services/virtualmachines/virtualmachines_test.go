@@ -30,7 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities/mock_identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
@@ -123,19 +123,19 @@ func TestReconcileVM(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_asyncpoller.MockGetterMockRecorder, mpip *mock_asyncpoller.MockGetterMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no vm spec is found",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_asyncpoller.MockGetterMockRecorder, mpip *mock_asyncpoller.MockGetterMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(nil)
 			},
 		},
 		{
 			name:          "create vm succeeds",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_asyncpoller.MockGetterMockRecorder, mpip *mock_asyncpoller.MockGetterMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
@@ -151,7 +151,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "creating vm fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_asyncpoller.MockGetterMockRecorder, mpip *mock_asyncpoller.MockGetterMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, internalError)
@@ -161,7 +161,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get network interfaces",
 			expectedError: "failed to fetch VM addresses: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_asyncpoller.MockGetterMockRecorder, mpip *mock_asyncpoller.MockGetterMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
@@ -174,7 +174,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get public IPs",
 			expectedError: "failed to fetch VM addresses: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_asyncpoller.MockGetterMockRecorder, mpip *mock_asyncpoller.MockGetterMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
@@ -196,9 +196,9 @@ func TestReconcileVM(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
-			interfaceMock := mock_async.NewMockGetter(mockCtrl)
-			publicIPMock := mock_async.NewMockGetter(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			interfaceMock := mock_asyncpoller.NewMockGetter(mockCtrl)
+			publicIPMock := mock_asyncpoller.NewMockGetter(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), asyncMock.EXPECT())
 
@@ -224,19 +224,19 @@ func TestDeleteVM(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no vm spec is found",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().Return(nil)
 			},
 		},
 		{
 			name:          "vm doesn't exist",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil)
 				s.SetVMState(infrav1.Deleted)
@@ -246,7 +246,7 @@ func TestDeleteVM(t *testing.T) {
 		{
 			name:          "error occurs when deleting vm",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(internalError)
 				s.SetVMState(infrav1.Deleting)
@@ -256,7 +256,7 @@ func TestDeleteVM(t *testing.T) {
 		{
 			name:          "delete the vm successfully",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.VMSpec().AnyTimes().Return(&fakeVMSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil)
 				s.SetVMState(infrav1.Deleted)
@@ -273,7 +273,7 @@ func TestDeleteVM(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
@@ -376,7 +376,7 @@ func TestCheckUserAssignedIdentities(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 			identitiesMock := mock_identities.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), identitiesMock.EXPECT())

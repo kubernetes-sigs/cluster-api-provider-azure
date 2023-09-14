@@ -26,7 +26,7 @@ import (
 	"go.uber.org/mock/gomock"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints/mock_privateendpoints"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -70,13 +70,13 @@ var (
 func TestReconcilePrivateEndpoint(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "create a private endpoint with automatic approval",
 			expectedError: "",
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return([]azure.ResourceSpecGetter{&fakePrivateEndpoint1})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(&fakePrivateEndpoint1, nil)
 				p.UpdatePutStatus(infrav1.PrivateEndpointsReadyCondition, ServiceName, nil)
@@ -85,7 +85,7 @@ func TestReconcilePrivateEndpoint(t *testing.T) {
 		{
 			name:          "create a private endpoint with manual approval",
 			expectedError: "",
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[1:2])
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePrivateEndpoint2, ServiceName).Return(&fakePrivateEndpoint2, nil)
 				p.UpdatePutStatus(infrav1.PrivateEndpointsReadyCondition, ServiceName, nil)
@@ -94,7 +94,7 @@ func TestReconcilePrivateEndpoint(t *testing.T) {
 		{
 			name:          "create multiple private endpoints",
 			expectedError: "",
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[:2])
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(&fakePrivateEndpoint1, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePrivateEndpoint2, ServiceName).Return(&fakePrivateEndpoint2, nil)
@@ -104,7 +104,7 @@ func TestReconcilePrivateEndpoint(t *testing.T) {
 		{
 			name:          "return error when creating a private endpoint using an empty spec",
 			expectedError: internalError.Error(),
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[3:])
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &emptyPrivateEndpointSpec, ServiceName).Return(nil, internalError)
 				p.UpdatePutStatus(infrav1.PrivateEndpointsReadyCondition, ServiceName, internalError)
@@ -113,7 +113,7 @@ func TestReconcilePrivateEndpoint(t *testing.T) {
 		{
 			name:          "not done error in creating is ignored",
 			expectedError: internalError.Error(),
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[:3])
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(&fakePrivateEndpoint1, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePrivateEndpoint2, ServiceName).Return(&fakePrivateEndpoint2, internalError)
@@ -124,7 +124,7 @@ func TestReconcilePrivateEndpoint(t *testing.T) {
 		{
 			name:          "not done error in creating remains",
 			expectedError: "operation type  on Azure resource / is not done",
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[:3])
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(&fakePrivateEndpoint1, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePrivateEndpoint2, ServiceName).Return(nil, notDoneError)
@@ -142,7 +142,7 @@ func TestReconcilePrivateEndpoint(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_privateendpoints.NewMockPrivateEndpointScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
@@ -165,13 +165,13 @@ func TestReconcilePrivateEndpoint(t *testing.T) {
 func TestDeletePrivateEndpoints(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "delete a private endpoint",
 			expectedError: "",
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[:1])
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(nil)
 				p.UpdateDeleteStatus(infrav1.PrivateEndpointsReadyCondition, ServiceName, nil)
@@ -180,14 +180,14 @@ func TestDeletePrivateEndpoints(t *testing.T) {
 		{
 			name:          "noop if no private endpoints specs are found",
 			expectedError: "",
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, _ *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{
 			name:          "delete multiple private endpoints",
 			expectedError: "",
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[:2])
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint2, ServiceName).Return(nil)
@@ -197,7 +197,7 @@ func TestDeletePrivateEndpoints(t *testing.T) {
 		{
 			name:          "error in deleting peering",
 			expectedError: internalError.Error(),
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[:2])
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint2, ServiceName).Return(internalError)
@@ -207,7 +207,7 @@ func TestDeletePrivateEndpoints(t *testing.T) {
 		{
 			name:          "not done error in deleting is ignored",
 			expectedError: internalError.Error(),
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[:3])
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint2, ServiceName).Return(internalError)
@@ -218,7 +218,7 @@ func TestDeletePrivateEndpoints(t *testing.T) {
 		{
 			name:          "not done error in deleting remains",
 			expectedError: "operation type  on Azure resource / is not done",
-			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_privateendpoints.MockPrivateEndpointScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				p.PrivateEndpointSpecs().Return(fakePrivateEndpointSpecs[:3])
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint1, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePrivateEndpoint2, ServiceName).Return(nil)
@@ -237,7 +237,7 @@ func TestDeletePrivateEndpoints(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_privateendpoints.NewMockPrivateEndpointScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 

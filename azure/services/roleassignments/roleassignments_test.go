@@ -28,7 +28,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments/mock_roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
@@ -65,7 +65,7 @@ var (
 func TestReconcileRoleAssignmentsVM(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_asyncpoller.MockGetterMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 		expectedError string
 	}{
 		{
@@ -73,8 +73,8 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			expectedError: "",
 
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
-				m *mock_async.MockGetterMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				m *mock_asyncpoller.MockGetterMockRecorder,
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return(fakeRoleAssignment1.MachineName)
@@ -93,8 +93,8 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			name:          "error getting VM",
 			expectedError: "failed to assign role to system assigned identity: failed to get principal ID for VM: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
-				m *mock_async.MockGetterMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				m *mock_asyncpoller.MockGetterMockRecorder,
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return(fakeRoleAssignment1.MachineName)
@@ -107,8 +107,8 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			name:          "return error when creating a role assignment",
 			expectedError: "cannot assign role to VirtualMachine system assigned identity: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
-				m *mock_async.MockGetterMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				m *mock_asyncpoller.MockGetterMockRecorder,
+				r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return(fakeRoleAssignment1.MachineName)
@@ -134,8 +134,8 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_roleassignments.NewMockRoleAssignmentScope(mockCtrl)
-			vmGetterMock := mock_async.NewMockGetter(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			vmGetterMock := mock_asyncpoller.NewMockGetter(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), vmGetterMock.EXPECT(), asyncMock.EXPECT())
 
@@ -159,7 +159,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 	testcases := []struct {
 		name   string
-		expect func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder,
+		expect func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder,
 			mvmss *mock_scalesets.MockClientMockRecorder)
 		expectedError string
 	}{
@@ -167,7 +167,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			name:          "create a role assignment",
 			expectedError: "",
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder,
+				r *mock_asyncpoller.MockReconcilerMockRecorder,
 				mvmss *mock_scalesets.MockClientMockRecorder) {
 				s.HasSystemAssignedIdentity().Return(true)
 				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[1:2])
@@ -186,7 +186,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			name:          "error getting VMSS",
 			expectedError: "failed to assign role to system assigned identity: failed to get principal ID for VMSS: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder,
+				r *mock_asyncpoller.MockReconcilerMockRecorder,
 				mvmss *mock_scalesets.MockClientMockRecorder) {
 				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
 				s.ResourceGroup().Return("my-rg")
@@ -200,7 +200,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			name:          "return error when creating a role assignment",
 			expectedError: fmt.Sprintf("cannot assign role to %s system assigned identity: #: Internal Server Error: StatusCode=500", azure.VirtualMachineScaleSet),
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder,
+				r *mock_asyncpoller.MockReconcilerMockRecorder,
 				mvmss *mock_scalesets.MockClientMockRecorder) {
 				s.HasSystemAssignedIdentity().Return(true)
 				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[1:2])
@@ -226,7 +226,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_roleassignments.NewMockRoleAssignmentScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 			vmMock := mock_scalesets.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT(), vmMock.EXPECT())

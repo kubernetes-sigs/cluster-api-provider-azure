@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -42,7 +41,7 @@ type AvailabilitySetScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope AvailabilitySetScope
-	async.Getter
+	asyncpoller.Getter
 	asyncpoller.Reconciler
 	resourceSKUCache *resourceskus.Cache
 }

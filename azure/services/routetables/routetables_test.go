@@ -25,7 +25,7 @@ import (
 	"go.uber.org/mock/gomock"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables/mock_routetables"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -55,12 +55,12 @@ func TestReconcileRouteTables(t *testing.T) {
 		name          string
 		tags          infrav1.Tags
 		expectedError string
-		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no route table specs are found",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{})
 			},
@@ -68,7 +68,7 @@ func TestReconcileRouteTables(t *testing.T) {
 		{
 			name:          "create multiple route tables succeeds",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, nil)
@@ -79,7 +79,7 @@ func TestReconcileRouteTables(t *testing.T) {
 		{
 			name:          "first route table create fails",
 			expectedError: errFake.Error(),
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, errFake)
@@ -90,7 +90,7 @@ func TestReconcileRouteTables(t *testing.T) {
 		{
 			name:          "second route table create not done",
 			expectedError: errFake.Error(),
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil, errFake)
@@ -101,7 +101,7 @@ func TestReconcileRouteTables(t *testing.T) {
 		{
 			name:          "noop if vnet is not managed",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(false)
 			},
 		},
@@ -115,7 +115,7 @@ func TestReconcileRouteTables(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_routetables.NewMockRouteTableScope(mockCtrl)
-			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+			reconcilerMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), reconcilerMock.EXPECT())
 
@@ -140,12 +140,12 @@ func TestDeleteRouteTable(t *testing.T) {
 		name          string
 		tags          infrav1.Tags
 		expectedError string
-		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no route table specs are found",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{})
 			},
@@ -153,7 +153,7 @@ func TestDeleteRouteTable(t *testing.T) {
 		{
 			name:          "delete multiple route tables succeeds",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
 				r.DeleteResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(nil)
@@ -164,7 +164,7 @@ func TestDeleteRouteTable(t *testing.T) {
 		{
 			name:          "first route table delete fails",
 			expectedError: errFake.Error(),
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
 				r.DeleteResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(errFake)
@@ -175,7 +175,7 @@ func TestDeleteRouteTable(t *testing.T) {
 		{
 			name:          "second route table delete not done",
 			expectedError: errFake.Error(),
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{&fakeRT, &fakeRT2})
 				r.DeleteResource(gomockinternal.AContext(), &fakeRT, serviceName).Return(errFake)
@@ -186,7 +186,7 @@ func TestDeleteRouteTable(t *testing.T) {
 		{
 			name:          "noop if vnet is not managed",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().Return(false)
 			},
 		},
@@ -200,7 +200,7 @@ func TestDeleteRouteTable(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_routetables.NewMockRouteTableScope(mockCtrl)
-			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+			reconcilerMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), reconcilerMock.EXPECT())
 

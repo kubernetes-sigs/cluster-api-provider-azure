@@ -25,6 +25,7 @@ import (
 	reflect "reflect"
 
 	runtime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	armresources "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -164,6 +165,44 @@ func (m *MockGetter) Get(ctx context.Context, spec azure.ResourceSpecGetter) (in
 func (mr *MockGetterMockRecorder) Get(ctx, spec interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGetter)(nil).Get), ctx, spec)
+}
+
+// MockTagsGetter is a mock of TagsGetter interface.
+type MockTagsGetter struct {
+	ctrl     *gomock.Controller
+	recorder *MockTagsGetterMockRecorder
+}
+
+// MockTagsGetterMockRecorder is the mock recorder for MockTagsGetter.
+type MockTagsGetterMockRecorder struct {
+	mock *MockTagsGetter
+}
+
+// NewMockTagsGetter creates a new mock instance.
+func NewMockTagsGetter(ctrl *gomock.Controller) *MockTagsGetter {
+	mock := &MockTagsGetter{ctrl: ctrl}
+	mock.recorder = &MockTagsGetterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTagsGetter) EXPECT() *MockTagsGetterMockRecorder {
+	return m.recorder
+}
+
+// GetAtScope mocks base method.
+func (m *MockTagsGetter) GetAtScope(ctx context.Context, scope string) (armresources.TagsResource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAtScope", ctx, scope)
+	ret0, _ := ret[0].(armresources.TagsResource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAtScope indicates an expected call of GetAtScope.
+func (mr *MockTagsGetterMockRecorder) GetAtScope(ctx, scope interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtScope", reflect.TypeOf((*MockTagsGetter)(nil).GetAtScope), ctx, scope)
 }
 
 // MockCreator is a mock of Creator interface.

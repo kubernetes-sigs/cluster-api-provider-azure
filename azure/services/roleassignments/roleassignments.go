@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
@@ -47,9 +46,9 @@ type RoleAssignmentScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope                 RoleAssignmentScope
-	virtualMachinesGetter async.Getter
+	virtualMachinesGetter asyncpoller.Getter
 	asyncpoller.Reconciler
-	virtualMachineScaleSetGetter async.Getter
+	virtualMachineScaleSetGetter asyncpoller.Getter
 }
 
 // New creates a new service.
