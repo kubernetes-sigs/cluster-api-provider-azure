@@ -28,7 +28,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns/mock_privatedns"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -98,20 +98,20 @@ func TestReconcilePrivateDNS(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_privatedns.MockScopeMockRecorder, zoneReconiler, linksReconciler, recordsReconciler *mock_asyncpoller.MockReconcilerMockRecorder,
-			tagsGetter *mock_asyncpoller.MockTagsGetterMockRecorder)
+		expect        func(s *mock_privatedns.MockScopeMockRecorder, zoneReconiler, linksReconciler, recordsReconciler *mock_async.MockReconcilerMockRecorder,
+			tagsGetter *mock_async.MockTagsGetterMockRecorder)
 	}{
 		{
 			name:          "no private dns",
 			expectedError: "",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(nil, nil, nil)
 			},
 		},
 		{
 			name:          "create private dns with multiple links successfully",
 			expectedError: "",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -135,7 +135,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		{
 			name:          "zone creation in progress",
 			expectedError: "operation type resourceType on Azure resource my-rg/resourceName is not done",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -148,7 +148,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		{
 			name:          "zone creation fails",
 			expectedError: "this is an error",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -160,7 +160,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		},
 		{
 			name: "unmanaged zone does not update ready condition",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -183,7 +183,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		{
 			name:          "link 1 creation fails but still proceeds to link 2, and returns the error",
 			expectedError: "this is an error",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -205,7 +205,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		{
 			name:          "link 2 creation fails",
 			expectedError: "this is an error",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -227,7 +227,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		{
 			name:          "link 1 is long running, link 2 fails, it returns the failure of link2",
 			expectedError: "this is an error",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -248,7 +248,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		},
 		{
 			name: "unmanaged link does not update ready condition",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -270,7 +270,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		},
 		{
 			name: "vnet link is considered managed if at least one of the links is managed",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -294,7 +294,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 		{
 			name:          "record creation fails",
 			expectedError: "this is an error",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, z, l, r *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -326,10 +326,10 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_privatedns.NewMockScope(mockCtrl)
-			zoneReconcilerMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
-			vnetLinkReconcilerMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
-			recordReconcilerMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
-			tagsGetterMock := mock_asyncpoller.NewMockTagsGetter(mockCtrl)
+			zoneReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+			vnetLinkReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+			recordReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+			tagsGetterMock := mock_async.NewMockTagsGetter(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), zoneReconcilerMock.EXPECT(), vnetLinkReconcilerMock.EXPECT(), recordReconcilerMock.EXPECT(), tagsGetterMock.EXPECT())
 
@@ -356,19 +356,19 @@ func TestDeletePrivateDNS(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_privatedns.MockScopeMockRecorder, linkReconciler, zoneReconciler *mock_asyncpoller.MockReconcilerMockRecorder, tagsGetter *mock_asyncpoller.MockTagsGetterMockRecorder)
+		expect        func(s *mock_privatedns.MockScopeMockRecorder, linkReconciler, zoneReconciler *mock_async.MockReconcilerMockRecorder, tagsGetter *mock_async.MockTagsGetterMockRecorder)
 	}{
 		{
 			name:          "no private dns",
 			expectedError: "",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(nil, nil, nil)
 			},
 		},
 		{
 			name:          "dns and links deletion succeeds",
 			expectedError: "",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -396,7 +396,7 @@ func TestDeletePrivateDNS(t *testing.T) {
 		{
 			name:          "skips if zone and links are unmanaged",
 			expectedError: "",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -415,7 +415,7 @@ func TestDeletePrivateDNS(t *testing.T) {
 		{
 			name:          "skips if unmanaged, but deletes the next resource if it is managed",
 			expectedError: "",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -440,7 +440,7 @@ func TestDeletePrivateDNS(t *testing.T) {
 		{
 			name:          "link1 is deleted, link2 is long running. It returns not done error",
 			expectedError: "operation type resourceType on Azure resource my-rg/resourceName is not done",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1})
 
 				s.SubscriptionID().Return("123")
@@ -460,7 +460,7 @@ func TestDeletePrivateDNS(t *testing.T) {
 		{
 			name:          "link1 deletion fails and link2 is long running, returns the more pressing error",
 			expectedError: "this is an error",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1})
 
 				s.SubscriptionID().Return("123")
@@ -480,7 +480,7 @@ func TestDeletePrivateDNS(t *testing.T) {
 		{
 			name:          "links are deleted, zone is long running",
 			expectedError: "operation type resourceType on Azure resource my-rg/resourceName is not done",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -509,7 +509,7 @@ func TestDeletePrivateDNS(t *testing.T) {
 		{
 			name:          "links are deleted, zone deletion fails with error",
 			expectedError: "this is an error",
-			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_asyncpoller.MockReconcilerMockRecorder, tg *mock_asyncpoller.MockTagsGetterMockRecorder) {
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
 
 				s.SubscriptionID().Return("123")
@@ -546,9 +546,9 @@ func TestDeletePrivateDNS(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_privatedns.NewMockScope(mockCtrl)
-			vnetLinkReconcilerMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
-			zoneReconcilerMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
-			tagsGetterMock := mock_asyncpoller.NewMockTagsGetter(mockCtrl)
+			vnetLinkReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+			zoneReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+			tagsGetterMock := mock_async.NewMockTagsGetter(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), vnetLinkReconcilerMock.EXPECT(), zoneReconcilerMock.EXPECT(), tagsGetterMock.EXPECT())
 

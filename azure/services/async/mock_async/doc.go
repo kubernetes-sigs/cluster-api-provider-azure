@@ -16,6 +16,6 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //
-//go:generate ../../../../hack/tools/bin/mockgen -destination asyncpoller_mock.go -package mock_asyncpoller -source ../interfaces.go FutureHandler
-//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt asyncpoller_mock.go > _asyncpoller_mock.go && mv _asyncpoller_mock.go asyncpoller_mock.go"
-package mock_asyncpoller
+//go:generate ../../../../hack/tools/bin/mockgen -destination async_mock.go -package mock_async -source ../interfaces.go FutureHandler
+//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt async_mock.go > _async_mock.go && mv _async_mock.go async_mock.go"
+package mock_async

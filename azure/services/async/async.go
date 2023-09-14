@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package asyncpoller
+package async
 
 import (
 	"context"
@@ -54,7 +54,7 @@ func New[C, D any](scope FutureScope, createClient Creator[C], deleteClient Dele
 
 // CreateOrUpdateResource creates a new resource or updates an existing one asynchronously.
 func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (result interface{}, err error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "asyncpoller.Service.CreateOrUpdateResource")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.CreateOrUpdateResource")
 	defer done()
 
 	resourceName := spec.ResourceName()
@@ -126,7 +126,7 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 
 // DeleteResource deletes a resource asynchronously.
 func (s *Service[C, D]) DeleteResource(ctx context.Context, spec azure.ResourceSpecGetter, serviceName string) (err error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "asyncpoller.Service.DeleteResource")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "async.Service.DeleteResource")
 	defer done()
 
 	resourceName := spec.ResourceName()

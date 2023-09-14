@@ -25,7 +25,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -47,9 +47,9 @@ type VNetScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope VNetScope
-	asyncpoller.Reconciler
-	asyncpoller.Getter
-	asyncpoller.TagsGetter
+	async.Reconciler
+	async.Getter
+	async.TagsGetter
 }
 
 // New creates a new service.
@@ -66,7 +66,7 @@ func New(scope VNetScope) (*Service, error) {
 		Scope:      scope,
 		Getter:     client,
 		TagsGetter: tagsClient,
-		Reconciler: asyncpoller.New[armnetwork.VirtualNetworksClientCreateOrUpdateResponse,
+		Reconciler: async.New[armnetwork.VirtualNetworksClientCreateOrUpdateResponse,
 			armnetwork.VirtualNetworksClientDeleteResponse](scope, client, client),
 	}, nil
 }

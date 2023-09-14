@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -40,7 +40,7 @@ type NICScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope NICScope
-	asyncpoller.Reconciler
+	async.Reconciler
 	resourceSKUCache *resourceskus.Cache
 }
 
@@ -52,7 +52,7 @@ func New(scope NICScope, skuCache *resourceskus.Cache) (*Service, error) {
 	}
 	return &Service{
 		Scope: scope,
-		Reconciler: asyncpoller.New[armnetwork.InterfacesClientCreateOrUpdateResponse,
+		Reconciler: async.New[armnetwork.InterfacesClientCreateOrUpdateResponse,
 			armnetwork.InterfacesClientDeleteResponse](scope, client, client),
 		resourceSKUCache: skuCache,
 	}, nil

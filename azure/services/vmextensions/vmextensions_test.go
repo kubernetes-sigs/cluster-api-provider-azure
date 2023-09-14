@@ -27,7 +27,7 @@ import (
 	"go.uber.org/mock/gomock"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions/mock_vmextensions"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -66,12 +66,12 @@ func TestReconcileVMExtension(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
+		expect        func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "extension is in succeeded state",
 			expectedError: "",
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
@@ -80,7 +80,7 @@ func TestReconcileVMExtension(t *testing.T) {
 		{
 			name:          "extension is in failed state",
 			expectedError: extensionFailedError.Error(),
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, gomockinternal.ErrStrEq(extensionFailedError.Error()))
@@ -89,7 +89,7 @@ func TestReconcileVMExtension(t *testing.T) {
 		{
 			name:          "extension is still creating",
 			expectedError: extensionNotDoneError.Error(),
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, notDoneError)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, gomockinternal.ErrStrEq(extensionNotDoneError.Error()))
@@ -98,7 +98,7 @@ func TestReconcileVMExtension(t *testing.T) {
 		{
 			name:          "reconcile multiple extensions",
 			expectedError: "",
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1, &extensionSpec2})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &extensionSpec2, serviceName).Return(nil, nil)
@@ -108,7 +108,7 @@ func TestReconcileVMExtension(t *testing.T) {
 		{
 			name:          "error creating the first extension",
 			expectedError: extensionFailedError.Error(),
-			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.VMExtensionSpecs().Return([]azure.ResourceSpecGetter{&extensionSpec1, &extensionSpec2})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &extensionSpec1, serviceName).Return(nil, internalError)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &extensionSpec2, serviceName).Return(nil, nil)
@@ -125,7 +125,7 @@ func TestReconcileVMExtension(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_vmextensions.NewMockVMExtensionScope(mockCtrl)
-			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 

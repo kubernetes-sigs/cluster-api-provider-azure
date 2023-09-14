@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -41,8 +41,8 @@ type AvailabilitySetScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope AvailabilitySetScope
-	asyncpoller.Getter
-	asyncpoller.Reconciler
+	async.Getter
+	async.Reconciler
 	resourceSKUCache *resourceskus.Cache
 }
 
@@ -56,7 +56,7 @@ func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) (*Service, er
 		Scope:            scope,
 		Getter:           client,
 		resourceSKUCache: skuCache,
-		Reconciler: asyncpoller.New[armcompute.AvailabilitySetsClientCreateOrUpdateResponse,
+		Reconciler: async.New[armcompute.AvailabilitySetsClientCreateOrUpdateResponse,
 			armcompute.AvailabilitySetsClientDeleteResponse](scope, client, client),
 	}, nil
 }

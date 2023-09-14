@@ -24,7 +24,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -52,7 +52,7 @@ type AgentPoolScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	scope AgentPoolScope
-	asyncpoller.Reconciler
+	async.Reconciler
 }
 
 // New creates a new service.
@@ -63,7 +63,7 @@ func New(scope AgentPoolScope) (*Service, error) {
 	}
 	return &Service{
 		scope: scope,
-		Reconciler: asyncpoller.New[armcontainerservice.AgentPoolsClientCreateOrUpdateResponse,
+		Reconciler: async.New[armcontainerservice.AgentPoolsClientCreateOrUpdateResponse,
 			armcontainerservice.AgentPoolsClientDeleteResponse](scope, client, client),
 	}, nil
 }

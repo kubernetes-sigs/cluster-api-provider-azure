@@ -29,7 +29,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets/mock_subnets"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
@@ -205,19 +205,19 @@ func TestReconcileSubnets(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
+		expect        func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no subnet specs are found",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
 		{
 			name:          "create subnet",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
 
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(fakeSubnet1, nil)
@@ -231,7 +231,7 @@ func TestReconcileSubnets(t *testing.T) {
 		{
 			name:          "create multiple subnets",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeSubnetSpec2})
 
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(fakeSubnet1, nil)
@@ -249,7 +249,7 @@ func TestReconcileSubnets(t *testing.T) {
 		{
 			name:          "don't update ready condition when subnet not managed",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpecNotManaged})
 
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpecNotManaged, serviceName).Return(fakeSubnetNotManaged, nil)
@@ -262,7 +262,7 @@ func TestReconcileSubnets(t *testing.T) {
 		{
 			name:          "create ipv6 subnet",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeIpv6SubnetSpec})
 
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeIpv6SubnetSpec, serviceName).Return(fakeIpv6Subnet, nil)
@@ -276,7 +276,7 @@ func TestReconcileSubnets(t *testing.T) {
 		{
 			name:          "create multiple ipv6 subnets",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeIpv6SubnetSpec, &fakeIpv6SubnetSpecCP})
 
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeIpv6SubnetSpec, serviceName).Return(fakeIpv6Subnet, nil)
@@ -294,7 +294,7 @@ func TestReconcileSubnets(t *testing.T) {
 		{
 			name:          "fail to create subnet",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil, internalError)
 
@@ -305,7 +305,7 @@ func TestReconcileSubnets(t *testing.T) {
 		{
 			name:          "create returns a non subnet",
 			expectedError: notASubnetErr.Error(),
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(notASubnet, nil)
 			},
@@ -313,7 +313,7 @@ func TestReconcileSubnets(t *testing.T) {
 		{
 			name:          "fail to create subnets",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeSubnetSpec2})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil, internalError)
 
@@ -336,7 +336,7 @@ func TestReconcileSubnets(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_subnets.NewMockSubnetScope(mockCtrl)
-			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
@@ -360,12 +360,12 @@ func TestDeleteSubnets(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
+		expect        func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "noop if no subnet specs are found",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().AnyTimes().Return(true)
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{})
 			},
@@ -373,7 +373,7 @@ func TestDeleteSubnets(t *testing.T) {
 		{
 			name:          "subnets deleted successfully",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().AnyTimes().Return(true)
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeSubnetSpec2})
 				r.DeleteResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil)
@@ -384,7 +384,7 @@ func TestDeleteSubnets(t *testing.T) {
 		{
 			name:          "node subnet and controlplane subnet deleted successfully",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().AnyTimes().Return(true)
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1, &fakeCtrlPlaneSubnetSpec})
 				r.DeleteResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(nil)
@@ -395,14 +395,14 @@ func TestDeleteSubnets(t *testing.T) {
 		{
 			name:          "skip delete if vnet is not managed",
 			expectedError: "",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().AnyTimes().Return(false)
 			},
 		},
 		{
 			name:          "fail delete subnet",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.IsVnetManaged().AnyTimes().Return(true)
 				s.SubnetSpecs().Return([]azure.ResourceSpecGetter{&fakeSubnetSpec1})
 				r.DeleteResource(gomockinternal.AContext(), &fakeSubnetSpec1, serviceName).Return(internalError)
@@ -419,7 +419,7 @@ func TestDeleteSubnets(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_subnets.NewMockSubnetScope(mockCtrl)
-			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 

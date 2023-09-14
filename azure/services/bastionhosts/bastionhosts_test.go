@@ -26,7 +26,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	mock_bastionhosts "sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts/mocks_bastionhosts"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -53,12 +53,12 @@ func TestReconcileBastionHosts(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
+		expect        func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "bastion successfully created",
 			expectedError: "",
-			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(&fakeAzureBastionSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAzureBastionSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.BastionHostReadyCondition, serviceName, nil)
@@ -67,14 +67,14 @@ func TestReconcileBastionHosts(t *testing.T) {
 		{
 			name:          "no bastion spec found",
 			expectedError: "",
-			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(nil)
 			},
 		},
 		{
 			name:          "fail to create a bastion",
 			expectedError: internalError.Error(),
-			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(&fakeAzureBastionSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAzureBastionSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.BastionHostReadyCondition, serviceName, internalError)
@@ -90,7 +90,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_bastionhosts.NewMockBastionScope(mockCtrl)
-			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 
@@ -114,12 +114,12 @@ func TestDeleteBastionHost(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder)
+		expect        func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "successfully delete an existing bastion host",
 			expectedError: "",
-			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(&fakeAzureBastionSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeAzureBastionSpec, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.BastionHostReadyCondition, serviceName, nil)
@@ -128,7 +128,7 @@ func TestDeleteBastionHost(t *testing.T) {
 		{
 			name:          "bastion host deletion fails",
 			expectedError: internalError.Error(),
-			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(&fakeAzureBastionSpec)
 				r.DeleteResource(gomockinternal.AContext(), &fakeAzureBastionSpec, serviceName).Return(internalError)
 				s.UpdateDeleteStatus(infrav1.BastionHostReadyCondition, serviceName, internalError)
@@ -137,7 +137,7 @@ func TestDeleteBastionHost(t *testing.T) {
 		{
 			name:          "no bastion spec found",
 			expectedError: "",
-			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_asyncpoller.MockReconcilerMockRecorder) {
+			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AzureBastionSpec().Return(nil)
 			},
 		},
@@ -151,7 +151,7 @@ func TestDeleteBastionHost(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_bastionhosts.NewMockBastionScope(mockCtrl)
-			asyncMock := mock_asyncpoller.NewMockReconciler(mockCtrl)
+			asyncMock := mock_async.NewMockReconciler(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
 

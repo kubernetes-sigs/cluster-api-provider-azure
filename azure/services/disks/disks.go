@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -39,7 +39,7 @@ type DiskScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope DiskScope
-	asyncpoller.Reconciler
+	async.Reconciler
 }
 
 // New creates a disks service.
@@ -50,7 +50,7 @@ func New(scope DiskScope) (*Service, error) {
 	}
 	return &Service{
 		Scope: scope,
-		Reconciler: asyncpoller.New[armcompute.DisksClientCreateOrUpdateResponse,
+		Reconciler: async.New[armcompute.DisksClientCreateOrUpdateResponse,
 			armcompute.DisksClientDeleteResponse](scope, nil, client),
 	}, nil
 }

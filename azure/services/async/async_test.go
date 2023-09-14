@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package asyncpoller
+package async
 
 import (
 	"context"
@@ -35,7 +35,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller/mock_asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -45,13 +45,13 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 		serviceName    string
 		expectedError  string
 		expectedResult interface{}
-		expect         func(g *WithT, s *mock_asyncpoller.MockFutureScopeMockRecorder, c *mock_asyncpoller.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder)
+		expect         func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder)
 	}{
 		{
 			name:          "invalid future",
 			serviceName:   serviceName,
 			expectedError: "could not decode future data, resetting long-running operation state",
-			expect: func(g *WithT, s *mock_asyncpoller.MockFutureScopeMockRecorder, c *mock_asyncpoller.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -65,7 +65,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			serviceName:    serviceName,
 			expectedError:  "",
 			expectedResult: fakeResource,
-			expect: func(g *WithT, s *mock_asyncpoller.MockFutureScopeMockRecorder, c *mock_asyncpoller.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -79,7 +79,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			name:          "operation in progress",
 			serviceName:   serviceName,
 			expectedError: "operation type PUT on Azure resource mock-resourcegroup/mock-resource is not done. Object will be requeued after 15s",
-			expect: func(g *WithT, s *mock_asyncpoller.MockFutureScopeMockRecorder, c *mock_asyncpoller.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -93,7 +93,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			name:          "get returns resource not found error",
 			serviceName:   serviceName,
 			expectedError: "operation type PUT on Azure resource mock-resourcegroup/mock-resource is not done. Object will be requeued after 15s",
-			expect: func(g *WithT, s *mock_asyncpoller.MockFutureScopeMockRecorder, c *mock_asyncpoller.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -109,7 +109,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			name:          "get returns unexpected error",
 			serviceName:   serviceName,
 			expectedError: "failed to get existing resource mock-resourcegroup/mock-resource (service: mock-service): foo. Object will be requeued after 15s",
-			expect: func(g *WithT, s *mock_asyncpoller.MockFutureScopeMockRecorder, c *mock_asyncpoller.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -123,7 +123,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			serviceName:    serviceName,
 			expectedError:  "",
 			expectedResult: fakeResource,
-			expect: func(g *WithT, s *mock_asyncpoller.MockFutureScopeMockRecorder, c *mock_asyncpoller.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -138,7 +138,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			serviceName:    serviceName,
 			expectedError:  "failed to get desired parameters for resource mock-resourcegroup/mock-resource (service: mock-service): foo",
 			expectedResult: nil,
-			expect: func(g *WithT, s *mock_asyncpoller.MockFutureScopeMockRecorder, c *mock_asyncpoller.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -158,8 +158,8 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
-			scopeMock := mock_asyncpoller.NewMockFutureScope(mockCtrl)
-			creatorMock := mock_asyncpoller.NewMockCreator[MockCreator](mockCtrl)
+			scopeMock := mock_async.NewMockFutureScope(mockCtrl)
+			creatorMock := mock_async.NewMockCreator[MockCreator](mockCtrl)
 			svc := New[MockCreator, MockDeleter](scopeMock, creatorMock, nil)
 			specMock := mock_azure.NewMockResourceSpecGetter(mockCtrl)
 
@@ -187,13 +187,13 @@ func TestServiceDeleteResource(t *testing.T) {
 		serviceName    string
 		expectedError  string
 		expectedResult interface{}
-		expect         func(s *mock_asyncpoller.MockFutureScopeMockRecorder, d *mock_asyncpoller.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder)
+		expect         func(s *mock_async.MockFutureScopeMockRecorder, d *mock_async.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder)
 	}{
 		{
 			name:          "invalid future",
 			serviceName:   serviceName,
 			expectedError: "could not decode future data",
-			expect: func(s *mock_asyncpoller.MockFutureScopeMockRecorder, d *mock_asyncpoller.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(s *mock_async.MockFutureScopeMockRecorder, d *mock_async.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -206,7 +206,7 @@ func TestServiceDeleteResource(t *testing.T) {
 			name:          "valid future",
 			serviceName:   serviceName,
 			expectedError: "",
-			expect: func(s *mock_asyncpoller.MockFutureScopeMockRecorder, d *mock_asyncpoller.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+			expect: func(s *mock_async.MockFutureScopeMockRecorder, d *mock_async.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
@@ -226,8 +226,8 @@ func TestServiceDeleteResource(t *testing.T) {
 			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
-			scopeMock := mock_asyncpoller.NewMockFutureScope(mockCtrl)
-			deleterMock := mock_asyncpoller.NewMockDeleter[MockDeleter](mockCtrl)
+			scopeMock := mock_async.NewMockFutureScope(mockCtrl)
+			deleterMock := mock_async.NewMockDeleter[MockDeleter](mockCtrl)
 			svc := New[MockCreator, MockDeleter](scopeMock, nil, deleterMock)
 			specMock := mock_azure.NewMockResourceSpecGetter(mockCtrl)
 
