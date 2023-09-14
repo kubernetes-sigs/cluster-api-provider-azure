@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -37,7 +37,7 @@ var sampleSubjectFactory = []infrav1.UserAssignedIdentity{
 	},
 }
 
-var expectedVMSDKObject = map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{
+var expectedVMSDKObject = map[string]*armcompute.UserAssignedIdentitiesValue{
 	"/foo":            {},
 	"/bar":            {},
 	"/without/prefix": {},
@@ -54,15 +54,15 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 		Name         string
 		identityType infrav1.VMIdentity
 		uami         []infrav1.UserAssignedIdentity
-		Expect       func(*GomegaWithT, *compute.VirtualMachineIdentity, error)
+		Expect       func(*GomegaWithT, *armcompute.VirtualMachineIdentity, error)
 	}{
 		{
 			Name:         "Should return a system assigned identity when identity is system assigned",
 			identityType: infrav1.VMIdentitySystemAssigned,
-			Expect: func(g *GomegaWithT, m *compute.VirtualMachineIdentity, err error) {
+			Expect: func(g *GomegaWithT, m *armcompute.VirtualMachineIdentity, err error) {
 				g.Expect(err).Should(BeNil())
-				g.Expect(m).Should(Equal(&compute.VirtualMachineIdentity{
-					Type: compute.ResourceIdentityTypeSystemAssigned,
+				g.Expect(m).Should(Equal(&armcompute.VirtualMachineIdentity{
+					Type: ptr.To(armcompute.ResourceIdentityTypeSystemAssigned),
 				}))
 			},
 		},
@@ -70,11 +70,11 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 			Name:         "Should return user assigned identities when identity is user assigned",
 			identityType: infrav1.VMIdentityUserAssigned,
 			uami:         []infrav1.UserAssignedIdentity{{ProviderID: "my-uami-1"}, {ProviderID: "my-uami-2"}},
-			Expect: func(g *GomegaWithT, m *compute.VirtualMachineIdentity, err error) {
+			Expect: func(g *GomegaWithT, m *armcompute.VirtualMachineIdentity, err error) {
 				g.Expect(err).Should(BeNil())
-				g.Expect(m).Should(Equal(&compute.VirtualMachineIdentity{
-					Type: compute.ResourceIdentityTypeUserAssigned,
-					UserAssignedIdentities: map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{
+				g.Expect(m).Should(Equal(&armcompute.VirtualMachineIdentity{
+					Type: ptr.To(armcompute.ResourceIdentityTypeUserAssigned),
+					UserAssignedIdentities: map[string]*armcompute.UserAssignedIdentitiesValue{
 						"my-uami-1": {},
 						"my-uami-2": {},
 					},
@@ -85,14 +85,14 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 			Name:         "Should fail when no user assigned identities are specified and identity is user assigned",
 			identityType: infrav1.VMIdentityUserAssigned,
 			uami:         []infrav1.UserAssignedIdentity{},
-			Expect: func(g *GomegaWithT, m *compute.VirtualMachineIdentity, err error) {
+			Expect: func(g *GomegaWithT, m *armcompute.VirtualMachineIdentity, err error) {
 				g.Expect(err.Error()).Should(ContainSubstring(ErrUserAssignedIdentitiesNotFound.Error()))
 			},
 		},
 		{
 			Name:         "Should return nil if no known identity is specified",
 			identityType: "",
-			Expect: func(g *GomegaWithT, m *compute.VirtualMachineIdentity, err error) {
+			Expect: func(g *GomegaWithT, m *armcompute.VirtualMachineIdentity, err error) {
 				g.Expect(err).Should(BeNil())
 				g.Expect(m).Should(BeNil())
 			},
@@ -114,12 +114,12 @@ func Test_UserAssignedIdentitiesToVMSDK(t *testing.T) {
 	cases := []struct {
 		Name           string
 		SubjectFactory []infrav1.UserAssignedIdentity
-		Expect         func(*GomegaWithT, map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue, error)
+		Expect         func(*GomegaWithT, map[string]*armcompute.UserAssignedIdentitiesValue, error)
 	}{
 		{
 			Name:           "ShouldPopulateWithData",
 			SubjectFactory: sampleSubjectFactory,
-			Expect: func(g *GomegaWithT, m map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue, err error) {
+			Expect: func(g *GomegaWithT, m map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
 				g.Expect(err).Should(BeNil())
 				g.Expect(m).Should(Equal(expectedVMSDKObject))
 			},
@@ -128,7 +128,7 @@ func Test_UserAssignedIdentitiesToVMSDK(t *testing.T) {
 		{
 			Name:           "ShouldFailWithError",
 			SubjectFactory: []infrav1.UserAssignedIdentity{},
-			Expect: func(g *GomegaWithT, m map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue, err error) {
+			Expect: func(g *GomegaWithT, m map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
 				g.Expect(err).Should(Equal(ErrUserAssignedIdentitiesNotFound))
 			},
 		},

@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -223,7 +222,7 @@ func getEPHVMSSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	}
 	spec.SpotVMOptions = &infrav1.SpotVMOptions{}
 	spec.OSDisk.DiffDiskSettings = &infrav1.DiffDiskSettings{
-		Option: string(compute.DiffDiskOptionsLocal),
+		Option: string(armcompute.DiffDiskOptionsLocal),
 	}
 	vmss := newDefaultVMSS(vmSizeEPH)
 	vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.DiffDiskSettings = &armcompute.DiffDiskSettings{

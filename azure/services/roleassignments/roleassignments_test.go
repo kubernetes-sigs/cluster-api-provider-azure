@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -82,8 +81,8 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 				s.HasSystemAssignedIdentity().Return(true)
 				s.RoleAssignmentResourceType().Return("VirtualMachine")
 				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[:1])
-				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
-					Identity: &compute.VirtualMachineIdentity{
+				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(armcompute.VirtualMachine{
+					Identity: &armcompute.VirtualMachineIdentity{
 						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)
@@ -101,7 +100,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 				s.Name().Return(fakeRoleAssignment1.MachineName)
 				s.HasSystemAssignedIdentity().Return(true)
 				s.RoleAssignmentResourceType().Return("VirtualMachine")
-				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
+				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(armcompute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
 			},
 		},
 		{
@@ -116,8 +115,8 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 				s.RoleAssignmentResourceType().Return("VirtualMachine")
 				s.HasSystemAssignedIdentity().Return(true)
 				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[0:1])
-				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(compute.VirtualMachine{
-					Identity: &compute.VirtualMachineIdentity{
+				m.Get(gomockinternal.AContext(), &fakeVMSpec).Return(armcompute.VirtualMachine{
+					Identity: &armcompute.VirtualMachineIdentity{
 						PrincipalID: &fakePrincipalID,
 					},
 				}, nil)

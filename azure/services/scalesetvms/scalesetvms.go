@@ -26,7 +26,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -49,7 +48,7 @@ type (
 	Service struct {
 		Scope ScaleSetVMScope
 		asyncpoller.Reconciler
-		VMReconciler async.Reconciler
+		VMReconciler asyncpoller.Reconciler
 	}
 )
 
@@ -59,12 +58,16 @@ func NewService(scope ScaleSetVMScope) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	vmClient := virtualmachines.NewClient(scope)
+	vmClient, err := virtualmachines.NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		Reconciler: asyncpoller.New[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse,
 			armcompute.VirtualMachineScaleSetVMsClientDeleteResponse](scope, client, client),
-		VMReconciler: async.New(scope, vmClient, vmClient),
-		Scope:        scope,
+		VMReconciler: asyncpoller.New[armcompute.VirtualMachinesClientCreateOrUpdateResponse,
+			armcompute.VirtualMachinesClientDeleteResponse](scope, vmClient, vmClient),
+		Scope: scope,
 	}, nil
 }
 

@@ -21,8 +21,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
@@ -224,16 +223,16 @@ func TestParameters(t *testing.T) {
 		{
 			name:     "fails if existing is not a VirtualMachine",
 			spec:     &VMSpec{},
-			existing: network.VirtualNetwork{},
+			existing: armnetwork.VirtualNetwork{},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
 			},
-			expectedError: "network.VirtualNetwork is not a compute.VirtualMachine",
+			expectedError: "armnetwork.VirtualNetwork is not an armcompute.VirtualMachine",
 		},
 		{
 			name:     "returns nil if vm already exists",
 			spec:     &VMSpec{},
-			existing: compute.VirtualMachine{},
+			existing: armcompute.VirtualMachine{},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
 			},
@@ -265,9 +264,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).Identity.Type).To(Equal(compute.ResourceIdentityTypeSystemAssigned))
-				g.Expect(result.(compute.VirtualMachine).Identity.UserAssignedIdentities).To(BeEmpty())
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Identity.Type).To(Equal(ptr.To(armcompute.ResourceIdentityTypeSystemAssigned)))
+				g.Expect(result.(armcompute.VirtualMachine).Identity.UserAssignedIdentities).To(BeEmpty())
 			},
 			expectedError: "",
 		},
@@ -287,9 +286,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).Identity.Type).To(Equal(compute.ResourceIdentityTypeUserAssigned))
-				g.Expect(result.(compute.VirtualMachine).Identity.UserAssignedIdentities).To(Equal(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{"my-user-id": {}}))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Identity.Type).To(Equal(ptr.To(armcompute.ResourceIdentityTypeUserAssigned)))
+				g.Expect(result.(armcompute.VirtualMachine).Identity.UserAssignedIdentities).To(Equal(map[string]*armcompute.UserAssignedIdentitiesValue{"my-user-id": {}}))
 			},
 			expectedError: "",
 		},
@@ -308,9 +307,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).Priority).To(Equal(compute.VirtualMachinePriorityTypesSpot))
-				g.Expect(result.(compute.VirtualMachine).BillingProfile).To(BeNil())
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.Priority).To(Equal(ptr.To(armcompute.VirtualMachinePriorityTypesSpot)))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.BillingProfile).To(BeNil())
 			},
 			expectedError: "",
 		},
@@ -330,10 +329,10 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).Priority).To(Equal(compute.VirtualMachinePriorityTypesSpot))
-				g.Expect(result.(compute.VirtualMachine).EvictionPolicy).To(Equal(compute.VirtualMachineEvictionPolicyTypesDelete))
-				g.Expect(result.(compute.VirtualMachine).BillingProfile).To(BeNil())
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.Priority).To(Equal(ptr.To(armcompute.VirtualMachinePriorityTypesSpot)))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.EvictionPolicy).To(Equal(ptr.To(armcompute.VirtualMachineEvictionPolicyTypesDelete)))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.BillingProfile).To(BeNil())
 			},
 			expectedError: "",
 		},
@@ -351,18 +350,18 @@ func TestParameters(t *testing.T) {
 					OSType:     "Windows",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 					},
 				},
 				SKU: validSKU,
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).VirtualMachineProperties.StorageProfile.OsDisk.OsType).To(Equal(compute.OperatingSystemTypesWindows))
-				g.Expect(*result.(compute.VirtualMachine).VirtualMachineProperties.OsProfile.AdminPassword).Should(HaveLen(123))
-				g.Expect(*result.(compute.VirtualMachine).VirtualMachineProperties.OsProfile.AdminUsername).Should(Equal("capi"))
-				g.Expect(*result.(compute.VirtualMachine).VirtualMachineProperties.OsProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(Equal(false))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.OSType).To(Equal(ptr.To(armcompute.OperatingSystemTypesWindows)))
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.OSProfile.AdminPassword).Should(HaveLen(123))
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.OSProfile.AdminUsername).Should(Equal("capi"))
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.OSProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(Equal(false))
 			},
 			expectedError: "",
 		},
@@ -378,7 +377,7 @@ func TestParameters(t *testing.T) {
 				Image:      &infrav1.Image{ID: ptr.To("fake-image-id")},
 				OSDisk: infrav1.OSDisk{
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 						DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
 							ID: "my-diskencryptionset-id",
 						},
@@ -388,8 +387,8 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).VirtualMachineProperties.StorageProfile.OsDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(ptr.To("my-diskencryptionset-id")))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(ptr.To("my-diskencryptionset-id")))
 			},
 			expectedError: "",
 		},
@@ -408,8 +407,8 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(*result.(compute.VirtualMachine).VirtualMachineProperties.SecurityProfile.EncryptionAtHost).To(Equal(true))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.EncryptionAtHost).To(Equal(true))
 			},
 			expectedError: "",
 		},
@@ -428,9 +427,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).Zones).To(BeNil())
-				g.Expect(result.(compute.VirtualMachine).AvailabilitySet.ID).To(Equal(ptr.To("fake-availability-set-id")))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Zones).To(BeNil())
+				g.Expect(result.(armcompute.VirtualMachine).Properties.AvailabilitySet.ID).To(Equal(ptr.To("fake-availability-set-id")))
 			},
 			expectedError: "",
 		},
@@ -446,10 +445,10 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 					},
 					DiffDiskSettings: &infrav1.DiffDiskSettings{
-						Option: string(compute.DiffDiskOptionsLocal),
+						Option: string(armcompute.DiffDiskOptionsLocal),
 					},
 				},
 				Image: &infrav1.Image{ID: ptr.To("fake-image-id")},
@@ -457,8 +456,8 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.OsDisk.DiffDiskSettings.Option).To(Equal(compute.DiffDiskOptionsLocal))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.DiffDiskSettings.Option).To(Equal(ptr.To(armcompute.DiffDiskOptionsLocal)))
 			},
 			expectedError: "",
 		},
@@ -484,9 +483,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(*result.(compute.VirtualMachine).SecurityProfile.UefiSettings.SecureBootEnabled).To(BeTrue())
-				g.Expect(*result.(compute.VirtualMachine).SecurityProfile.UefiSettings.VTpmEnabled).To(BeTrue())
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.UefiSettings.SecureBootEnabled).To(BeTrue())
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.UefiSettings.VTpmEnabled).To(BeTrue())
 			},
 			expectedError: "",
 		},
@@ -505,7 +504,7 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 						SecurityProfile: &infrav1.VMDiskSecurityProfile{
 							SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
 						},
@@ -522,9 +521,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.OsDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType).To(Equal(compute.SecurityEncryptionTypesVMGuestStateOnly))
-				g.Expect(*result.(compute.VirtualMachine).SecurityProfile.UefiSettings.VTpmEnabled).To(BeTrue())
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType).To(Equal(ptr.To(armcompute.SecurityEncryptionTypesVMGuestStateOnly)))
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.UefiSettings.VTpmEnabled).To(BeTrue())
 			},
 			expectedError: "",
 		},
@@ -543,7 +542,7 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 						SecurityProfile: &infrav1.VMDiskSecurityProfile{
 							SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
 						},
@@ -599,7 +598,7 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 					},
 				},
 				SecurityProfile: &infrav1.SecurityProfile{
@@ -682,7 +681,7 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 						SecurityProfile: &infrav1.VMDiskSecurityProfile{
 							SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
 						},
@@ -718,7 +717,7 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 						SecurityProfile: &infrav1.VMDiskSecurityProfile{
 							SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
 						},
@@ -754,7 +753,7 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 						SecurityProfile: &infrav1.VMDiskSecurityProfile{
 							SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
 						},
@@ -789,7 +788,7 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 						SecurityProfile: &infrav1.VMDiskSecurityProfile{
 							SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
 						},
@@ -821,10 +820,10 @@ func TestParameters(t *testing.T) {
 					OSType:     "Linux",
 					DiskSizeGB: ptr.To[int32](128),
 					ManagedDisk: &infrav1.ManagedDiskParameters{
-						StorageAccountType: "Premium_LRS",
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 					},
 					DiffDiskSettings: &infrav1.DiffDiskSettings{
-						Option: string(compute.DiffDiskOptionsLocal),
+						Option: string(armcompute.DiffDiskOptionsLocal),
 					},
 				},
 				Image: &infrav1.Image{ID: ptr.To("fake-image-id")},
@@ -893,14 +892,14 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Offer).To(Equal(ptr.To("my-offer")))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Publisher).To(Equal(ptr.To("fake-publisher")))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Sku).To(Equal(ptr.To("sku-id")))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.Version).To(Equal(ptr.To("1.0")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Name).To(Equal(ptr.To("sku-id")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Publisher).To(Equal(ptr.To("fake-publisher")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Product).To(Equal(ptr.To("my-offer")))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.ImageReference.Offer).To(Equal(ptr.To("my-offer")))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.ImageReference.Publisher).To(Equal(ptr.To("fake-publisher")))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.ImageReference.SKU).To(Equal(ptr.To("sku-id")))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.ImageReference.Version).To(Equal(ptr.To("1.0")))
+				g.Expect(result.(armcompute.VirtualMachine).Plan.Name).To(Equal(ptr.To("sku-id")))
+				g.Expect(result.(armcompute.VirtualMachine).Plan.Publisher).To(Equal(ptr.To("fake-publisher")))
+				g.Expect(result.(armcompute.VirtualMachine).Plan.Product).To(Equal(ptr.To("my-offer")))
 			},
 			expectedError: "",
 		},
@@ -928,11 +927,11 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).StorageProfile.ImageReference.ID).To(Equal(ptr.To("/subscriptions/fake-sub-id/resourceGroups/fake-rg/providers/Microsoft.Compute/galleries/fake-gallery/images/fake-name/versions/1.0")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Name).To(Equal(ptr.To("sku-id")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Publisher).To(Equal(ptr.To("fake-publisher")))
-				g.Expect(result.(compute.VirtualMachine).Plan.Product).To(Equal(ptr.To("my-offer")))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.ImageReference.ID).To(Equal(ptr.To("/subscriptions/fake-sub-id/resourceGroups/fake-rg/providers/Microsoft.Compute/galleries/fake-gallery/images/fake-name/versions/1.0")))
+				g.Expect(result.(armcompute.VirtualMachine).Plan.Name).To(Equal(ptr.To("sku-id")))
+				g.Expect(result.(armcompute.VirtualMachine).Plan.Publisher).To(Equal(ptr.To("fake-publisher")))
+				g.Expect(result.(armcompute.VirtualMachine).Plan.Product).To(Equal(ptr.To("my-offer")))
 			},
 			expectedError: "",
 		},
@@ -958,7 +957,7 @@ func TestParameters(t *testing.T) {
 						DiskSizeGB: 128,
 						Lun:        ptr.To[int32](1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+							StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 					{
@@ -966,7 +965,7 @@ func TestParameters(t *testing.T) {
 						DiskSizeGB: 128,
 						Lun:        ptr.To[int32](2),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
-							StorageAccountType: "Premium_LRS",
+							StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 						},
 					},
 					{
@@ -974,7 +973,7 @@ func TestParameters(t *testing.T) {
 						DiskSizeGB: 128,
 						Lun:        ptr.To[int32](3),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
-							StorageAccountType: "Premium_LRS",
+							StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
 							DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
 								ID: "my_id",
 							},
@@ -985,47 +984,47 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
-				expectedDataDisks := &[]compute.DataDisk{
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
+				expectedDataDisks := []*armcompute.DataDisk{
 					{
 						Lun:          ptr.To[int32](0),
 						Name:         ptr.To("my-ultra-ssd-vm_mydisk"),
-						CreateOption: "Empty",
+						CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 						DiskSizeGB:   ptr.To[int32](64),
 					},
 					{
 						Lun:          ptr.To[int32](1),
 						Name:         ptr.To("my-ultra-ssd-vm_myDiskWithUltraDisk"),
-						CreateOption: "Empty",
+						CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 						DiskSizeGB:   ptr.To[int32](128),
-						ManagedDisk: &compute.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+						ManagedDisk: &armcompute.ManagedDiskParameters{
+							StorageAccountType: ptr.To(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 					{
 						Lun:          ptr.To[int32](2),
 						Name:         ptr.To("my-ultra-ssd-vm_myDiskWithManagedDisk"),
-						CreateOption: "Empty",
+						CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 						DiskSizeGB:   ptr.To[int32](128),
-						ManagedDisk: &compute.ManagedDiskParameters{
-							StorageAccountType: "Premium_LRS",
+						ManagedDisk: &armcompute.ManagedDiskParameters{
+							StorageAccountType: ptr.To(armcompute.StorageAccountTypesPremiumLRS),
 						},
 					},
 					{
 						Lun:          ptr.To[int32](3),
 						Name:         ptr.To("my-ultra-ssd-vm_managedDiskWithEncryption"),
-						CreateOption: "Empty",
+						CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 						DiskSizeGB:   ptr.To[int32](128),
-						ManagedDisk: &compute.ManagedDiskParameters{
-							StorageAccountType: "Premium_LRS",
-							DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
+						ManagedDisk: &armcompute.ManagedDiskParameters{
+							StorageAccountType: ptr.To(armcompute.StorageAccountTypesPremiumLRS),
+							DiskEncryptionSet: &armcompute.DiskEncryptionSetParameters{
 								ID: ptr.To("my_id"),
 							},
 						},
 					},
 				}
-				g.Expect(gomockinternal.DiffEq(expectedDataDisks).Matches(result.(compute.VirtualMachine).StorageProfile.DataDisks)).To(BeTrue(), cmp.Diff(expectedDataDisks, result.(compute.VirtualMachine).StorageProfile.DataDisks))
+				g.Expect(gomockinternal.DiffEq(expectedDataDisks).Matches(result.(armcompute.VirtualMachine).Properties.StorageProfile.DataDisks)).To(BeTrue(), cmp.Diff(expectedDataDisks, result.(armcompute.VirtualMachine).Properties.StorageProfile.DataDisks))
 			},
 			expectedError: "",
 		},
@@ -1046,7 +1045,7 @@ func TestParameters(t *testing.T) {
 						DiskSizeGB: 128,
 						Lun:        ptr.To[int32](1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+							StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 				},
@@ -1078,7 +1077,7 @@ func TestParameters(t *testing.T) {
 						DiskSizeGB: 128,
 						Lun:        ptr.To[int32](1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+							StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 				},
@@ -1086,20 +1085,20 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(false)))
-				expectedDataDisks := &[]compute.DataDisk{
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(false)))
+				expectedDataDisks := []*armcompute.DataDisk{
 					{
 						Lun:          ptr.To[int32](1),
 						Name:         ptr.To("my-ultra-ssd-vm_myDiskWithUltraDisk"),
-						CreateOption: "Empty",
+						CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 						DiskSizeGB:   ptr.To[int32](128),
-						ManagedDisk: &compute.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+						ManagedDisk: &armcompute.ManagedDiskParameters{
+							StorageAccountType: ptr.To(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 				}
-				g.Expect(gomockinternal.DiffEq(expectedDataDisks).Matches(result.(compute.VirtualMachine).StorageProfile.DataDisks)).To(BeTrue(), cmp.Diff(expectedDataDisks, result.(compute.VirtualMachine).StorageProfile.DataDisks))
+				g.Expect(gomockinternal.DiffEq(expectedDataDisks).Matches(result.(armcompute.VirtualMachine).Properties.StorageProfile.DataDisks)).To(BeTrue(), cmp.Diff(expectedDataDisks, result.(armcompute.VirtualMachine).Properties.StorageProfile.DataDisks))
 			},
 			expectedError: "",
 		},
@@ -1120,7 +1119,7 @@ func TestParameters(t *testing.T) {
 						DiskSizeGB: 128,
 						Lun:        ptr.To[int32](1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+							StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 				},
@@ -1128,20 +1127,20 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
-				expectedDataDisks := &[]compute.DataDisk{
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
+				expectedDataDisks := []*armcompute.DataDisk{
 					{
 						Lun:          ptr.To[int32](1),
 						Name:         ptr.To("my-ultra-ssd-vm_myDiskWithUltraDisk"),
-						CreateOption: "Empty",
+						CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 						DiskSizeGB:   ptr.To[int32](128),
-						ManagedDisk: &compute.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+						ManagedDisk: &armcompute.ManagedDiskParameters{
+							StorageAccountType: ptr.To(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 				}
-				g.Expect(gomockinternal.DiffEq(expectedDataDisks).Matches(result.(compute.VirtualMachine).StorageProfile.DataDisks)).To(BeTrue(), cmp.Diff(expectedDataDisks, result.(compute.VirtualMachine).StorageProfile.DataDisks))
+				g.Expect(gomockinternal.DiffEq(expectedDataDisks).Matches(result.(armcompute.VirtualMachine).Properties.StorageProfile.DataDisks)).To(BeTrue(), cmp.Diff(expectedDataDisks, result.(armcompute.VirtualMachine).Properties.StorageProfile.DataDisks))
 			},
 			expectedError: "",
 		},
@@ -1165,7 +1164,7 @@ func TestParameters(t *testing.T) {
 						DiskSizeGB: 128,
 						Lun:        ptr.To[int32](1),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+							StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 				},
@@ -1173,20 +1172,20 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
-				expectedDataDisks := &[]compute.DataDisk{
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
+				expectedDataDisks := []*armcompute.DataDisk{
 					{
 						Lun:          ptr.To[int32](1),
 						Name:         ptr.To("my-ultra-ssd-vm_myDiskWithUltraDisk"),
-						CreateOption: "Empty",
+						CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 						DiskSizeGB:   ptr.To[int32](128),
-						ManagedDisk: &compute.ManagedDiskParameters{
-							StorageAccountType: "UltraSSD_LRS",
+						ManagedDisk: &armcompute.ManagedDiskParameters{
+							StorageAccountType: ptr.To(armcompute.StorageAccountTypesUltraSSDLRS),
 						},
 					},
 				}
-				g.Expect(gomockinternal.DiffEq(expectedDataDisks).Matches(result.(compute.VirtualMachine).StorageProfile.DataDisks)).To(BeTrue(), cmp.Diff(expectedDataDisks, result.(compute.VirtualMachine).StorageProfile.DataDisks))
+				g.Expect(gomockinternal.DiffEq(expectedDataDisks).Matches(result.(armcompute.VirtualMachine).Properties.StorageProfile.DataDisks)).To(BeTrue(), cmp.Diff(expectedDataDisks, result.(armcompute.VirtualMachine).Properties.StorageProfile.DataDisks))
 			},
 			expectedError: "",
 		},
@@ -1208,8 +1207,8 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
 			},
 			expectedError: "",
 		},
@@ -1231,8 +1230,8 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(false)))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(false)))
 			},
 			expectedError: "",
 		},
@@ -1256,9 +1255,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(false)))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(false)))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
 			},
 			expectedError: "",
 		},
@@ -1282,9 +1281,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
 			},
 			expectedError: "",
 		},
@@ -1311,9 +1310,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(ptr.To("aaa")))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(ptr.To("aaa")))
 			},
 			expectedError: "",
 		},
@@ -1340,9 +1339,9 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(compute.VirtualMachine{}))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
-				g.Expect(result.(compute.VirtualMachine).DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(ptr.To("aaa")))
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(ptr.To("aaa")))
 			},
 			expectedError: "",
 		},

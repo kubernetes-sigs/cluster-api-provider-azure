@@ -17,11 +17,10 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // VM describes an Azure virtual machine.
@@ -47,19 +46,19 @@ type VM struct {
 }
 
 // SDKToVM converts an Azure SDK VirtualMachine to the CAPZ VM type.
-func SDKToVM(v compute.VirtualMachine) *VM {
+func SDKToVM(v armcompute.VirtualMachine) *VM {
 	vm := &VM{
 		ID:    ptr.Deref(v.ID, ""),
 		Name:  ptr.Deref(v.Name, ""),
-		State: infrav1.ProvisioningState(ptr.Deref(v.ProvisioningState, "")),
+		State: infrav1.ProvisioningState(ptr.Deref(v.Properties.ProvisioningState, "")),
 	}
 
-	if v.VirtualMachineProperties != nil && v.VirtualMachineProperties.HardwareProfile != nil {
-		vm.VMSize = string(v.VirtualMachineProperties.HardwareProfile.VMSize)
+	if v.Properties != nil && v.Properties.HardwareProfile != nil && v.Properties.HardwareProfile.VMSize != nil {
+		vm.VMSize = string(*v.Properties.HardwareProfile.VMSize)
 	}
 
-	if v.Zones != nil && len(*v.Zones) > 0 {
-		vm.AvailabilityZone = azure.StringSlice(v.Zones)[0]
+	if len(v.Zones) > 0 && v.Zones[0] != nil {
+		vm.AvailabilityZone = *v.Zones[0]
 	}
 
 	if len(v.Tags) > 0 {

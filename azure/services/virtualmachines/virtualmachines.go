@@ -20,9 +20,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -31,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
@@ -57,7 +57,7 @@ type VMScope interface {
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope VMScope
-	async.Reconciler
+	asyncpoller.Reconciler
 	interfacesGetter async.Getter
 	publicIPsGetter  async.Getter
 	identitiesGetter identities.Client
@@ -65,7 +65,10 @@ type Service struct {
 
 // New creates a new service.
 func New(scope VMScope) (*Service, error) {
-	Client := NewClient(scope)
+	Client, err := NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	identitiesSvc, err := identities.NewClient(scope)
 	if err != nil {
 		return nil, err
@@ -83,7 +86,8 @@ func New(scope VMScope) (*Service, error) {
 		interfacesGetter: interfacesSvc,
 		publicIPsGetter:  publicIPsSvc,
 		identitiesGetter: identitiesSvc,
-		Reconciler:       async.New(scope, Client, Client),
+		Reconciler: asyncpoller.New[armcompute.VirtualMachinesClientCreateOrUpdateResponse,
+			armcompute.VirtualMachinesClientDeleteResponse](scope, Client, Client),
 	}, nil
 }
 
@@ -110,9 +114,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// Set the DiskReady condition here since the disk gets created with the VM.
 	s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)
 	if err == nil && result != nil {
-		vm, ok := result.(compute.VirtualMachine)
+		vm, ok := result.(armcompute.VirtualMachine)
 		if !ok {
-			return errors.Errorf("%T is not a compute.VirtualMachine", result)
+			return errors.Errorf("%T is not an armcompute.VirtualMachine", result)
 		}
 		infraVM := converters.SDKToVM(vm)
 		// Transform the VM resource representation to conform to the cloud-provider-azure representation
@@ -197,7 +201,7 @@ func (s *Service) checkUserAssignedIdentities(ctx context.Context, specIdentitie
 	return nil
 }
 
-func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, rgName string) ([]corev1.NodeAddress, error) {
+func (s *Service) getAddresses(ctx context.Context, vm armcompute.VirtualMachine, rgName string) ([]corev1.NodeAddress, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.getAddresses")
 	defer done()
 
@@ -207,10 +211,10 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine, r
 			Address: ptr.Deref(vm.Name, ""),
 		},
 	}
-	if vm.NetworkProfile.NetworkInterfaces == nil {
+	if vm.Properties.NetworkProfile.NetworkInterfaces == nil {
 		return addresses, nil
 	}
-	for _, nicRef := range *vm.NetworkProfile.NetworkInterfaces {
+	for _, nicRef := range vm.Properties.NetworkProfile.NetworkInterfaces {
 		// The full ID includes the name at the very end. Split the string and pull the last element
 		// Ex: /subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Network/networkInterfaces/$NICNAME
 		// We'll check to see if ID is nil and bail early if we don't have it
@@ -277,13 +281,13 @@ func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName st
 		return retAddress, err
 	}
 
-	publicIP, ok := result.(network.PublicIPAddress)
+	publicIP, ok := result.(armnetwork.PublicIPAddress)
 	if !ok {
-		return retAddress, errors.Errorf("%T is not a network.PublicIPAddress", result)
+		return retAddress, errors.Errorf("%T is not an armnetwork.PublicIPAddress", result)
 	}
 
 	retAddress.Type = corev1.NodeExternalIP
-	retAddress.Address = ptr.Deref(publicIP.IPAddress, "")
+	retAddress.Address = ptr.Deref(publicIP.Properties.IPAddress, "")
 
 	return retAddress, nil
 }
