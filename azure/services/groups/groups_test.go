@@ -27,189 +27,30 @@ import (
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups/mock_groups"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var (
-	fakeGroupSpec = GroupSpec{
-		Name:           "test-group",
-		Namespace:      "test-group-ns",
-		Location:       "test-location",
-		ClusterName:    "test-cluster",
-		AdditionalTags: map[string]string{"foo": "bar"},
-	}
-	errInternal        = errors.New("internal error")
-	sampleManagedGroup = &asoresourcesv1.ResourceGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-group",
-			Namespace: "test-group-ns",
-		},
-		Spec: asoresourcesv1.ResourceGroup_Spec{
-			Location: ptr.To("test-location"),
-		},
-	}
-)
-
-func TestReconcileGroups(t *testing.T) {
-	testcases := []struct {
-		name          string
-		expectedError string
-		expect        func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType])
-	}{
-		{
-			name:          "noop if no group spec is found",
-			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, _ *mock_aso.MockReconcilerMockRecorder[ASOType]) {
-				s.GroupSpec().Return(nil)
-			},
-		},
-		{
-			name:          "create group succeeds",
-			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType]) {
-				s.GroupSpec().Return(&fakeGroupSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil, nil)
-				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
-			},
-		},
-		{
-			name:          "create resource group fails",
-			expectedError: "internal error",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType]) {
-				s.GroupSpec().Return(&fakeGroupSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil, errInternal)
-				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, errInternal)
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
-			asoMock := mock_aso.NewMockReconciler[ASOType](mockCtrl)
-
-			tc.expect(scopeMock.EXPECT(), asoMock.EXPECT())
-
-			s := &Service{
-				Scope:      scopeMock,
-				Reconciler: asoMock,
-			}
-
-			err := s.Reconcile(context.TODO())
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(ContainSubstring(tc.expectedError)))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-		})
-	}
+func TestPostReconcileHook(t *testing.T) {
+	g := NewGomegaWithT(t)
+	mockCtrl := gomock.NewController(t)
+	scope := mock_groups.NewMockGroupScope(mockCtrl)
+	inErr := errors.New("input error")
+	scope.EXPECT().UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, inErr)
+	err := postReconcileHook(scope, nil, inErr)
+	g.Expect(err).To(Equal(inErr))
 }
 
-type ErroringDeleteClient struct {
-	client.Client
-	err error
-}
-
-func (e *ErroringDeleteClient) Delete(_ context.Context, _ client.Object, _ ...client.DeleteOption) error {
-	return e.err
-}
-
-func TestDeleteGroups(t *testing.T) {
-	testcases := []struct {
-		name          string
-		clientBuilder func(g Gomega) client.Client
-		expectedError string
-		expect        func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType])
-	}{
-		{
-			name:          "noop if no group spec is found",
-			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, _ *mock_aso.MockReconcilerMockRecorder[ASOType]) {
-				s.GroupSpec().Return(nil)
-			},
-		},
-		{
-			name:          "delete operation is successful for managed resource group",
-			expectedError: "",
-			clientBuilder: func(g Gomega) client.Client {
-				scheme := runtime.NewScheme()
-				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
-				return fakeclient.NewClientBuilder().
-					WithScheme(scheme).
-					WithObjects(sampleManagedGroup.DeepCopy()).
-					Build()
-			},
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType]) {
-				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
-				r.DeleteResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, nil)
-			},
-		},
-		{
-			name: "error occurs when deleting resource group",
-			clientBuilder: func(g Gomega) client.Client {
-				scheme := runtime.NewScheme()
-				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
-				c := fakeclient.NewClientBuilder().
-					WithScheme(scheme).
-					WithObjects(sampleManagedGroup.DeepCopy()).
-					Build()
-				return &ErroringDeleteClient{Client: c, err: errInternal}
-			},
-			expectedError: "internal error",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, r *mock_aso.MockReconcilerMockRecorder[ASOType]) {
-				s.GroupSpec().AnyTimes().Return(&fakeGroupSpec)
-				r.DeleteResource(gomockinternal.AContext(), &fakeGroupSpec, ServiceName).Return(errInternal)
-				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, gomockinternal.ErrStrEq("internal error"))
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-
-			t.Parallel()
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
-			asyncMock := mock_aso.NewMockReconciler[ASOType](mockCtrl)
-
-			var ctrlClient client.Client
-			if tc.clientBuilder != nil {
-				ctrlClient = tc.clientBuilder(g)
-			}
-
-			scopeMock.EXPECT().GetClient().Return(ctrlClient).AnyTimes()
-			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
-
-			s := &Service{
-				Scope:      scopeMock,
-				Reconciler: asyncMock,
-			}
-
-			err := s.Delete(context.TODO())
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-		})
-	}
+func TestPostDeleteHook(t *testing.T) {
+	g := NewGomegaWithT(t)
+	mockCtrl := gomock.NewController(t)
+	scope := mock_groups.NewMockGroupScope(mockCtrl)
+	inErr := errors.New("input error")
+	scope.EXPECT().UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, inErr)
+	err := postDeleteHook(scope, inErr)
+	g.Expect(err).To(Equal(inErr))
 }
 
 func TestShouldDeleteIndividualResources(t *testing.T) {

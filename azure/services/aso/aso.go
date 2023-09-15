@@ -53,17 +53,17 @@ type deepCopier[T any] interface {
 	DeepCopy() T
 }
 
-// Service is an implementation of the Reconciler interface. It handles creation
+// CreatorDeleter is an implementation of the Reconciler interface. It handles creation
 // and deletion of resources using ASO.
-type Service[T deepCopier[T]] struct {
+type CreatorDeleter[T deepCopier[T]] struct {
 	client.Client
 
 	clusterName string
 }
 
 // New creates a new ASO service.
-func New[T deepCopier[T]](ctrlClient client.Client, clusterName string) *Service[T] {
-	return &Service[T]{
+func New[T deepCopier[T]](ctrlClient client.Client, clusterName string) *CreatorDeleter[T] {
+	return &CreatorDeleter[T]{
 		Client:      ctrlClient,
 		clusterName: clusterName,
 	}
@@ -71,7 +71,7 @@ func New[T deepCopier[T]](ctrlClient client.Client, clusterName string) *Service
 
 // CreateOrUpdateResource implements the logic for creating a new or updating an
 // existing resource with ASO.
-func (s *Service[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (result T, err error) {
+func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (result T, err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.CreateOrUpdateResource")
 	defer done()
 
@@ -232,7 +232,7 @@ func (s *Service[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOR
 }
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.
-func (s *Service[T]) DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error) {
+func (s *CreatorDeleter[T]) DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.DeleteResource")
 	defer done()
 

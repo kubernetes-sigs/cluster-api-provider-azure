@@ -28,6 +28,7 @@ import (
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MockReconciler is a mock of Reconciler interface.
@@ -157,4 +158,55 @@ func (m *MockTagsGetterSetter[T]) SetTags(resource T, tags v1beta1.Tags) {
 func (mr *MockTagsGetterSetterMockRecorder[T]) SetTags(resource, tags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTags", reflect.TypeOf((*MockTagsGetterSetter[T])(nil).SetTags), resource, tags)
+}
+
+// MockScope is a mock of Scope interface.
+type MockScope struct {
+	ctrl     *gomock.Controller
+	recorder *MockScopeMockRecorder
+}
+
+// MockScopeMockRecorder is the mock recorder for MockScope.
+type MockScopeMockRecorder struct {
+	mock *MockScope
+}
+
+// NewMockScope creates a new mock instance.
+func NewMockScope(ctrl *gomock.Controller) *MockScope {
+	mock := &MockScope{ctrl: ctrl}
+	mock.recorder = &MockScopeMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockScope) EXPECT() *MockScopeMockRecorder {
+	return m.recorder
+}
+
+// ClusterName mocks base method.
+func (m *MockScope) ClusterName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClusterName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockScopeMockRecorder) ClusterName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockScope)(nil).ClusterName))
+}
+
+// GetClient mocks base method.
+func (m *MockScope) GetClient() client.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(client.Client)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient.
+func (mr *MockScopeMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockScope)(nil).GetClient))
 }

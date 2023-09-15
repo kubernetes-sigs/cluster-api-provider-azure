@@ -24,8 +24,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -35,81 +33,42 @@ const ServiceName = "group"
 // Service provides operations on Azure resources.
 type Service struct {
 	Scope GroupScope
-	aso.Reconciler[ASOType]
+	*aso.Service[ASOType, GroupScope]
 }
 
 // GroupScope defines the scope interface for a group service.
 type GroupScope interface {
 	azure.AsyncStatusUpdater
+	aso.Scope
 	GroupSpec() azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]
-	GetClient() client.Client
-	ClusterName() string
 }
 
 // New creates a new service.
 func New(scope GroupScope) *Service {
+	svc := aso.NewService[ASOType](ServiceName, scope)
+	svc.Spec = scope.GroupSpec()
+	svc.PostReconcileHook = postReconcileHook
+	svc.PostDeleteHook = postDeleteHook
 	return &Service{
-		Scope:      scope,
-		Reconciler: aso.New[ASOType](scope.GetClient(), scope.ClusterName()),
+		Scope:   scope,
+		Service: svc,
 	}
 }
 
-// Name returns the service name.
-func (s *Service) Name() string {
-	return ServiceName
-}
-
-// Reconcile idempotently creates or updates a resource group.
-func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Reconcile")
-	defer done()
-
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
-	defer cancel()
-
-	groupSpec := s.Scope.GroupSpec()
-	if groupSpec == nil {
-		return nil
-	}
-
-	_, err := s.CreateOrUpdateResource(ctx, groupSpec, ServiceName)
-	s.Scope.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, err)
+func postReconcileHook(scope GroupScope, _ ASOType, err error) error {
+	scope.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, err)
 	return err
 }
 
-// Delete deletes the resource group if it is managed by capz.
-func (s *Service) Delete(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.Service.Delete")
-	defer done()
-
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
-	defer cancel()
-
-	groupSpec := s.Scope.GroupSpec()
-	if groupSpec == nil {
-		return nil
-	}
-
-	err := s.DeleteResource(ctx, groupSpec, ServiceName)
-	s.Scope.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, err)
+func postDeleteHook(scope GroupScope, err error) error {
+	scope.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, err)
 	return err
 }
 
 // IsManaged returns true if the ASO ResourceGroup was created by CAPZ,
 // meaning that the resource group's lifecycle is managed.
 func (s *Service) IsManaged(ctx context.Context) (bool, error) {
-	return aso.IsManaged(ctx, s.Scope.GetClient(), s.Scope.GroupSpec(), s.Scope.ClusterName())
-}
-
-var _ azure.Pauser = (*Service)(nil)
-
-// Pause implements azure.Pauser.
-func (s *Service) Pause(ctx context.Context) error {
-	groupSpec := s.Scope.GroupSpec()
-	if groupSpec == nil {
-		return nil
-	}
-	return aso.PauseResource(ctx, s.Scope.GetClient(), groupSpec, s.Scope.ClusterName(), ServiceName)
+	return aso.IsManaged(ctx, s.Scope.GetClient(), s.Spec, s.Scope.ClusterName())
 }
 
 // ShouldDeleteIndividualResources returns false if the resource group is
@@ -126,8 +85,7 @@ func (s *Service) ShouldDeleteIndividualResources(ctx context.Context) bool {
 	// For ASO, "managed" only tells us that we're allowed to delete the ASO
 	// resource. We also need to check that deleting the ASO resource will really
 	// delete the underlying resource group by checking the ASO reconcile-policy.
-	spec := s.Scope.GroupSpec()
-	group := spec.ResourceRef()
+	group := s.Spec.ResourceRef()
 	err = s.Scope.GetClient().Get(ctx, client.ObjectKeyFromObject(group), group)
 	return err != nil || group.GetAnnotations()[asoannotations.ReconcilePolicy] != string(asoannotations.ReconcilePolicyManage)
 }
