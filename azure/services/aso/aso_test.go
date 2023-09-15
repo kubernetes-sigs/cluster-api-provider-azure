@@ -1207,7 +1207,9 @@ func TestPauseResource(t *testing.T) {
 			spec := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 			test.expect(spec.EXPECT())
 
-			err := PauseResource[*asoresourcesv1.ResourceGroup](ctx, ctrlClient, spec, clusterName, svcName)
+			s := New[*asoresourcesv1.ResourceGroup](ctrlClient, clusterName)
+
+			err := s.PauseResource(ctx, spec, svcName)
 			if test.expectedErr != "" {
 				g.Expect(err.Error()).To(ContainSubstring(test.expectedErr))
 			} else {

@@ -39,7 +39,7 @@ func TestPostReconcileHook(t *testing.T) {
 	scope := mock_groups.NewMockGroupScope(mockCtrl)
 	inErr := errors.New("input error")
 	scope.EXPECT().UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, inErr)
-	err := postReconcileHook(scope, nil, inErr)
+	err := postReconcileHook(scope, inErr)
 	g.Expect(err).To(Equal(inErr))
 }
 

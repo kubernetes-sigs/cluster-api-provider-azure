@@ -46,7 +46,7 @@ type GroupScope interface {
 // New creates a new service.
 func New(scope GroupScope) *Service {
 	svc := aso.NewService[ASOType](ServiceName, scope)
-	svc.Spec = scope.GroupSpec()
+	svc.Specs = []azure.ASOResourceSpecGetter[ASOType]{scope.GroupSpec()}
 	svc.PostReconcileHook = postReconcileHook
 	svc.PostDeleteHook = postDeleteHook
 	return &Service{
@@ -55,7 +55,7 @@ func New(scope GroupScope) *Service {
 	}
 }
 
-func postReconcileHook(scope GroupScope, _ ASOType, err error) error {
+func postReconcileHook(scope GroupScope, err error) error {
 	scope.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, err)
 	return err
 }
@@ -68,7 +68,7 @@ func postDeleteHook(scope GroupScope, err error) error {
 // IsManaged returns true if the ASO ResourceGroup was created by CAPZ,
 // meaning that the resource group's lifecycle is managed.
 func (s *Service) IsManaged(ctx context.Context) (bool, error) {
-	return aso.IsManaged(ctx, s.Scope.GetClient(), s.Spec, s.Scope.ClusterName())
+	return aso.IsManaged(ctx, s.Scope.GetClient(), s.Specs[0], s.Scope.ClusterName())
 }
 
 // ShouldDeleteIndividualResources returns false if the resource group is
@@ -85,7 +85,7 @@ func (s *Service) ShouldDeleteIndividualResources(ctx context.Context) bool {
 	// For ASO, "managed" only tells us that we're allowed to delete the ASO
 	// resource. We also need to check that deleting the ASO resource will really
 	// delete the underlying resource group by checking the ASO reconcile-policy.
-	group := s.Spec.ResourceRef()
+	group := s.Specs[0].ResourceRef()
 	err = s.Scope.GetClient().Get(ctx, client.ObjectKeyFromObject(group), group)
 	return err != nil || group.GetAnnotations()[asoannotations.ReconcilePolicy] != string(asoannotations.ReconcilePolicyManage)
 }

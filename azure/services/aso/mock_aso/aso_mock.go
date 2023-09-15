@@ -83,6 +83,20 @@ func (mr *MockReconcilerMockRecorder[T]) DeleteResource(ctx, spec, serviceName i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResource", reflect.TypeOf((*MockReconciler[T])(nil).DeleteResource), ctx, spec, serviceName)
 }
 
+// PauseResource mocks base method.
+func (m *MockReconciler[T]) PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PauseResource", ctx, spec, serviceName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PauseResource indicates an expected call of PauseResource.
+func (mr *MockReconcilerMockRecorder[T]) PauseResource(ctx, spec, serviceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PauseResource", reflect.TypeOf((*MockReconciler[T])(nil).PauseResource), ctx, spec, serviceName)
+}
+
 // MockTagsGetterSetter is a mock of TagsGetterSetter interface.
 type MockTagsGetterSetter[T genruntime.MetaObject] struct {
 	ctrl     *gomock.Controller

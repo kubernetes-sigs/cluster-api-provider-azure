@@ -294,7 +294,7 @@ func ownedByCluster(labels map[string]string, clusterName string) bool {
 }
 
 // PauseResource pauses an ASO resource by updating its `reconcile-policy` to `skip`.
-func PauseResource[T genruntime.MetaObject](ctx context.Context, ctrlClient client.Client, spec azure.ASOResourceSpecGetter[T], clusterName string, serviceName string) error {
+func (s *CreatorDeleter[T]) PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.PauseResource")
 	defer done()
 
@@ -304,10 +304,10 @@ func PauseResource[T genruntime.MetaObject](ctx context.Context, ctrlClient clie
 
 	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
 
-	if err := ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
+	if err := s.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
 		return err
 	}
-	if !ownedByCluster(resource.GetLabels(), clusterName) {
+	if !ownedByCluster(resource.GetLabels(), s.clusterName) {
 		log.V(4).Info("Skipping pause of unmanaged resource")
 		return nil
 	}
@@ -321,7 +321,7 @@ func PauseResource[T genruntime.MetaObject](ctx context.Context, ctrlClient clie
 	log.V(4).Info("Pausing resource")
 
 	var helper *patch.Helper
-	helper, err := patch.NewHelper(resource, ctrlClient)
+	helper, err := patch.NewHelper(resource, s.Client)
 	if err != nil {
 		return errors.Errorf("failed to init patch helper: %v", err)
 	}
