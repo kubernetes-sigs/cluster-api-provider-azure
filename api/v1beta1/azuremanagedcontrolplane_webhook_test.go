@@ -53,7 +53,9 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
+	g.Expect(amcp.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDR))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
+	g.Expect(amcp.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDR))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
 	g.Expect(amcp.Spec.Identity.Type).To(Equal(ManagedControlPlaneIdentityTypeSystemAssigned))
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeFalse())
@@ -87,6 +89,24 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(PaidManagedControlPlaneTier))
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeTrue())
+
+	t.Logf("Testing amcp defaulting webhook with overlay")
+	amcp = &AzureManagedControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fooName",
+		},
+		Spec: AzureManagedControlPlaneSpec{
+			ResourceGroupName: "fooRg",
+			Location:          "fooLocation",
+			Version:           "1.17.5",
+			SSHPublicKey:      ptr.To(""),
+			NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+		},
+	}
+	err = mcpw.Default(context.Background(), amcp)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(amcp.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDRForOverlay))
+	g.Expect(amcp.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDRForOverlay))
 }
 
 func TestValidatingWebhook(t *testing.T) {
@@ -666,6 +686,30 @@ func TestValidatingWebhook(t *testing.T) {
 				},
 			},
 			expectErr: true,
+		},
+		{
+			name: "overlay cannot be used with kubenet",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					Version:           "v1.24.1",
+					NetworkPlugin:     ptr.To("kubenet"),
+					NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "overlay can be used with azure",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					Version:           "v1.24.1",
+					NetworkPlugin:     ptr.To("azure"),
+					NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+				},
+			},
+			expectErr: false,
 		},
 	}
 
@@ -1421,6 +1465,49 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "NetworkPluginMode cannot change to \"overlay\" when NetworkPolicy is set",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					NetworkPolicy:     ptr.To("anything"),
+					NetworkPluginMode: nil,
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "NetworkPluginMode can change to \"overlay\" when NetworkPolicy is not set",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					NetworkPolicy:     nil,
+					NetworkPluginMode: nil,
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+					Version:           "v0.0.0",
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "AzureManagedControlPlane OIDCIssuerProfile.Enabled false -> false OK",

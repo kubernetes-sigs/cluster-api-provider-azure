@@ -66,6 +66,9 @@ type ManagedClusterSpec struct {
 	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet'. Defaults to azure.
 	NetworkPlugin string
 
+	// NetworkPluginMode is the mode the network plugin should use.
+	NetworkPluginMode *infrav1.NetworkPluginMode
+
 	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'.
 	NetworkPolicy string
 
@@ -351,6 +354,10 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 		}
 	}
 
+	if s.NetworkPluginMode != nil {
+		managedCluster.Properties.NetworkProfile.NetworkPluginMode = ptr.To(armcontainerservice.NetworkPluginMode(*s.NetworkPluginMode))
+	}
+
 	if s.PodCIDR != "" {
 		managedCluster.Properties.NetworkProfile.PodCidr = &s.PodCIDR
 	}
@@ -590,12 +597,18 @@ func computeDiffOfNormalizedClusters(managedCluster armcontainerservice.ManagedC
 		}
 	}
 
-	if managedCluster.Properties.NetworkProfile != nil {
-		propertiesNormalized.NetworkProfile.LoadBalancerProfile = managedCluster.Properties.NetworkProfile.LoadBalancerProfile
-	}
-
 	if existingMC.Properties.NetworkProfile != nil {
 		existingMCPropertiesNormalized.NetworkProfile.LoadBalancerProfile = existingMC.Properties.NetworkProfile.LoadBalancerProfile
+
+		existingMCPropertiesNormalized.NetworkProfile.NetworkPluginMode = existingMC.Properties.NetworkProfile.NetworkPluginMode
+	}
+	if managedCluster.Properties.NetworkProfile != nil {
+		propertiesNormalized.NetworkProfile.LoadBalancerProfile = managedCluster.Properties.NetworkProfile.LoadBalancerProfile
+
+		propertiesNormalized.NetworkProfile.NetworkPluginMode = managedCluster.Properties.NetworkProfile.NetworkPluginMode
+		if propertiesNormalized.NetworkProfile.NetworkPluginMode == nil {
+			propertiesNormalized.NetworkProfile.NetworkPluginMode = existingMCPropertiesNormalized.NetworkProfile.NetworkPluginMode
+		}
 	}
 
 	if managedCluster.Properties.APIServerAccessProfile != nil {

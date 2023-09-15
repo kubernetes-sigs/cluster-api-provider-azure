@@ -258,6 +258,10 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := m.validateNetworkPluginModeUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if errs := m.validateOIDCIssuerProfileUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
@@ -285,6 +289,7 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 		m.validateManagedClusterNetwork,
 		m.validateAutoScalerProfile,
 		m.validateIdentity,
+		m.validateNetworkPluginMode,
 	}
 
 	var errs []error
@@ -543,6 +548,17 @@ func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManage
 	return allErrs
 }
 
+// validateNetworkPluginModeUpdate validates update to NetworkPluginMode.
+func (m *AzureManagedControlPlane) validateNetworkPluginModeUpdate(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay && old.Spec.NetworkPolicy != nil {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("Spec", "NetworkPluginMode"), fmt.Sprintf("%q NetworkPolicyMode cannot be enabled when NetworkPolicy is set", NetworkPluginModeOverlay)))
+	}
+
+	return allErrs
+}
+
 // validateOIDCIssuerProfile validates an OIDCIssuerProfile.
 func (m *AzureManagedControlPlane) validateOIDCIssuerProfileUpdate(old *AzureManagedControlPlane) field.ErrorList {
 	var allErrs field.ErrorList
@@ -729,6 +745,23 @@ func (m *AzureManagedControlPlane) validateIdentity(_ client.Client) error {
 				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "Identity", "UserAssignedIdentityResourceID"), m.Spec.Identity.UserAssignedIdentityResourceID, "should be empty if Identity.Type is SystemAssigned"))
 			}
 		}
+	}
+
+	if len(allErrs) > 0 {
+		return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+	}
+
+	return nil
+}
+
+// validateNetworkPluginMode validates a NetworkPluginMode.
+func (m *AzureManagedControlPlane) validateNetworkPluginMode(_ client.Client) error {
+	var allErrs field.ErrorList
+
+	const kubenet = "kubenet"
+	if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay &&
+		ptr.Deref(m.Spec.NetworkPlugin, "") == kubenet {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "NetworkPluginMode"), m.Spec.NetworkPluginMode, fmt.Sprintf("cannot be set to %q when NetworkPlugin is %q", NetworkPluginModeOverlay, kubenet)))
 	}
 
 	if len(allErrs) > 0 {

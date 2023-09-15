@@ -62,6 +62,18 @@ const (
 	ManagedControlPlaneIdentityTypeUserAssigned ManagedControlPlaneIdentityType = ManagedControlPlaneIdentityType(VMIdentityUserAssigned)
 )
 
+// NetworkPluginMode is the mode the network plugin should use.
+type NetworkPluginMode string
+
+const (
+	// NetworkPluginModeOverlay is used with networkPlugin=azure, pods are given IPs from the PodCIDR address space but use Azure
+	// Routing Domains rather than Kubenet's method of route tables.
+	// See also [AKS doc].
+	//
+	// [AKS doc]: https://aka.ms/aks/azure-cni-overlay
+	NetworkPluginModeOverlay NetworkPluginMode = "overlay"
+)
+
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
@@ -109,6 +121,12 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=azure;kubenet
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
+
+	// NetworkPluginMode is the mode the network plugin should use.
+	// Allowed value is "overlay".
+	// +kubebuilder:validation:Enum=overlay
+	// +optional
+	NetworkPluginMode *NetworkPluginMode `json:"networkPluginMode,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
 	// Allowed values are "azure", "calico".

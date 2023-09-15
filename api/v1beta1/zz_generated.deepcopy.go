@@ -1165,6 +1165,11 @@ func (in *AzureManagedControlPlaneSpec) DeepCopyInto(out *AzureManagedControlPla
 		*out = new(string)
 		**out = **in
 	}
+	if in.NetworkPluginMode != nil {
+		in, out := &in.NetworkPluginMode, &out.NetworkPluginMode
+		*out = new(NetworkPluginMode)
+		**out = **in
+	}
 	if in.NetworkPolicy != nil {
 		in, out := &in.NetworkPolicy, &out.NetworkPolicy
 		*out = new(string)
