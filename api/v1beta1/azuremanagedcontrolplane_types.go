@@ -213,6 +213,11 @@ type AzureManagedControlPlaneSpec struct {
 	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
 	// +optional
 	OIDCIssuerProfile *OIDCIssuerProfile `json:"oidcIssuerProfile,omitempty"`
+
+	// DNSPrefix allows the user to customize dns prefix.
+	// Immutable.
+	// +optional
+	DNSPrefix *string `json:"dnsPrefix,omitempty"`
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.

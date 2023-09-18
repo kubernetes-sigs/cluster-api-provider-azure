@@ -164,3 +164,9 @@ func (m *AzureManagedControlPlane) setDefaultOIDCIssuerProfile() {
 		m.Spec.OIDCIssuerProfile.Enabled = ptr.To(false)
 	}
 }
+
+func (m *AzureManagedControlPlane) setDefaultDNSPrefix() {
+	if m.Spec.DNSPrefix == nil {
+		m.Spec.DNSPrefix = ptr.To(m.Name)
+	}
+}

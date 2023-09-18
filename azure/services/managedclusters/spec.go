@@ -122,6 +122,9 @@ type ManagedClusterSpec struct {
 
 	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
 	OIDCIssuerProfile *OIDCIssuerProfile
+
+	// DNSPrefix allows the user to customize dns prefix.
+	DNSPrefix *string
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.
@@ -326,7 +329,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 		Properties: &armcontainerservice.ManagedClusterProperties{
 			NodeResourceGroup: &s.NodeResourceGroup,
 			EnableRBAC:        ptr.To(true),
-			DNSPrefix:         &s.Name,
+			DNSPrefix:         s.DNSPrefix,
 			KubernetesVersion: &s.Version,
 
 			ServicePrincipalProfile: &armcontainerservice.ManagedClusterServicePrincipalProfile{
