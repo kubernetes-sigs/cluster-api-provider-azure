@@ -265,6 +265,36 @@ spec:
   ...
 ```
 
+### Disable Local Accounts in AKS when using Azure Active Directory
+
+When deploying an AKS cluster, local accounts are enabled by default. 
+Even when you enable RBAC or Azure AD integration,
+--admin access still exists as a non-auditable backdoor option.
+Disabling local accounts closes the backdoor access to the cluster
+Example to disable local accounts for AAD enabled cluster.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  ...
+spec:
+  aadProfile:
+    managed: true
+    adminGroupObjectIDs:
+    -  00000000-0000-0000-0000-000000000000 # group object id created in azure.
+  disableLocalAccounts: true  
+  ...
+```
+
+Note: CAPZ and CAPI requires access to the target cluster to maintain and manage the cluster. 
+Disabling local accounts will cut off direct access to the target cluster. 
+CAPZ and CAPI can access target cluster only via the Service Principal, 
+hence the user has to provide appropriate access to the Service Principal to access the target cluster. 
+User can do that by adding the Service Principal to the appropriate group defined in Azure and 
+add the corresponding group ID in `spec.aadProfile.adminGroupObjectIDs`. 
+CAPI and CAPZ will be able to authenticate via AAD while accessing the target cluster.
+
 ## Features
 
 AKS clusters deployed from CAPZ currently only support a limited,

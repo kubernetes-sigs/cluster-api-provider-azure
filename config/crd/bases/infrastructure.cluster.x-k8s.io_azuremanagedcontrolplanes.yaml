@@ -239,6 +239,10 @@ spec:
                 - host
                 - port
                 type: object
+              disableLocalAccounts:
+                description: DisableLocalAccounts disables getting static credentials
+                  for this cluster when set. Expected to only be used for AAD clusters.
+                type: boolean
               dnsPrefix:
                 description: DNSPrefix allows the user to customize dns prefix. Immutable.
                 type: string

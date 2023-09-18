@@ -33,6 +33,14 @@ import (
 )
 
 var fakeManagedClusterSpec = &ManagedClusterSpec{Name: "my-managedcluster", ResourceGroup: "my-rg"}
+var fakeManagedClusterSpecWithAAD = &ManagedClusterSpec{
+	Name:          "my-managedcluster",
+	ResourceGroup: "my-rg",
+	AADProfile: &AADProfile{
+		Managed:             true,
+		AdminGroupObjectIDs: []string{"000000-000000-000000-000000"},
+	},
+}
 
 func TestReconcile(t *testing.T) {
 	testcases := []struct {
@@ -60,6 +68,7 @@ func TestReconcile(t *testing.T) {
 			name:          "create managed cluster succeeds",
 			expectedError: "",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				var userKubeConfigData []byte
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
 					Properties: &armcontainerservice.ManagedClusterProperties{
@@ -80,8 +89,49 @@ func TestReconcile(t *testing.T) {
 					Host: "my-managedcluster-fqdn",
 					Port: 443,
 				})
+				s.IsAADEnabled().Return(false)
+				s.AreLocalAccountsDisabled().Return(false)
 				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
-				s.SetKubeConfigData([]byte("credentials"))
+				s.SetAdminKubeconfigData([]byte("credentials"))
+				s.SetUserKubeconfigData(userKubeConfigData)
+				s.SetKubeletIdentity("kubelet-id")
+				s.SetOIDCIssuerProfileStatus(nil)
+				s.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
+					IssuerURL: ptr.To("oidc issuer url"),
+				})
+				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
+			},
+		},
+		{
+			name:          "create managed cluster succeeds with user kubeconfig",
+			expectedError: "",
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec().Return(fakeManagedClusterSpecWithAAD)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpecWithAAD, serviceName).Return(armcontainerservice.ManagedCluster{
+					Properties: &armcontainerservice.ManagedClusterProperties{
+						Fqdn:              ptr.To("my-managedcluster-fqdn"),
+						ProvisioningState: ptr.To("Succeeded"),
+						IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
+							kubeletIdentityKey: {
+								ResourceID: ptr.To("kubelet-id"),
+							},
+						},
+						OidcIssuerProfile: &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+							Enabled:   ptr.To(true),
+							IssuerURL: ptr.To("oidc issuer url"),
+						},
+					},
+				}, nil)
+				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
+					Host: "my-managedcluster-fqdn",
+					Port: 443,
+				})
+				s.IsAADEnabled().Return(true)
+				s.AreLocalAccountsDisabled().Return(false)
+				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
+				m.GetUserCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials-user"), nil)
+				s.SetAdminKubeconfigData([]byte("credentials"))
+				s.SetUserKubeconfigData([]byte("credentials-user"))
 				s.SetKubeletIdentity("kubelet-id")
 				s.SetOIDCIssuerProfileStatus(nil)
 				s.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
@@ -92,7 +142,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name:          "fail to get managed cluster credentials",
-			expectedError: "failed to get credentials for managed cluster: internal server error",
+			expectedError: "error while reconciling adminKubeConfigData: failed to get credentials for managed cluster: internal server error",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
@@ -105,6 +155,8 @@ func TestReconcile(t *testing.T) {
 					Host: "my-managedcluster-fqdn",
 					Port: 443,
 				})
+				s.IsAADEnabled().Return(false)
+				s.AreLocalAccountsDisabled().Return(false)
 				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte(""), errors.New("internal server error"))
 			},
 		},

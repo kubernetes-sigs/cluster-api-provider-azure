@@ -222,31 +222,6 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, err)
 	}
 
-	if old.Spec.AADProfile != nil {
-		if m.Spec.AADProfile == nil {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "AADProfile"),
-					m.Spec.AADProfile,
-					"field cannot be nil, cannot disable AADProfile"))
-		} else {
-			if !m.Spec.AADProfile.Managed && old.Spec.AADProfile.Managed {
-				allErrs = append(allErrs,
-					field.Invalid(
-						field.NewPath("Spec", "AADProfile.Managed"),
-						m.Spec.AADProfile.Managed,
-						"cannot set AADProfile.Managed to false"))
-			}
-			if len(m.Spec.AADProfile.AdminGroupObjectIDs) == 0 {
-				allErrs = append(allErrs,
-					field.Invalid(
-						field.NewPath("Spec", "AADProfile.AdminGroupObjectIDs"),
-						m.Spec.AADProfile.AdminGroupObjectIDs,
-						"length of AADProfile.AdminGroupObjectIDs cannot be zero"))
-			}
-		}
-	}
-
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "DNSPrefix"),
 		m.Spec.DNSPrefix,
@@ -274,6 +249,10 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 	}
 
 	if errs := m.validateNetworkPluginModeUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateAADProfileUpdateAndLocalAccounts(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 
@@ -306,6 +285,7 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 		m.validateIdentity,
 		m.validateNetworkPluginMode,
 		m.validateDNSPrefix,
+		m.validateDisableLocalAccounts,
 	}
 
 	var errs []error
@@ -336,6 +316,14 @@ func (m *AzureManagedControlPlane) validateDNSPrefix(_ client.Client) error {
 		field.Invalid(field.NewPath("Spec", "DNSPrefix"), *m.Spec.DNSPrefix, "DNSPrefix is invalid, does not match regex: "+pattern),
 	}
 	return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+}
+
+// validateVersion disabling local accounts for AAD based clusters.
+func (m *AzureManagedControlPlane) validateDisableLocalAccounts(_ client.Client) error {
+	if m.Spec.DisableLocalAccounts != nil && m.Spec.AADProfile == nil {
+		return errors.New("DisableLocalAccounts should be set only for AAD enabled clusters")
+	}
+	return nil
 }
 
 // validateVersion validates the Kubernetes version.
@@ -590,6 +578,58 @@ func (m *AzureManagedControlPlane) validateNetworkPluginModeUpdate(old *AzureMan
 
 	if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay && old.Spec.NetworkPolicy != nil {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("Spec", "NetworkPluginMode"), fmt.Sprintf("%q NetworkPolicyMode cannot be enabled when NetworkPolicy is set", NetworkPluginModeOverlay)))
+	}
+
+	return allErrs
+}
+
+// validateAADProfileUpdateAndLocalAccounts validates updates for AADProfile.
+func (m *AzureManagedControlPlane) validateAADProfileUpdateAndLocalAccounts(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.Spec.AADProfile != nil {
+		if m.Spec.AADProfile == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "AADProfile"),
+					m.Spec.AADProfile,
+					"field cannot be nil, cannot disable AADProfile"))
+		} else {
+			if !m.Spec.AADProfile.Managed && old.Spec.AADProfile.Managed {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile.Managed"),
+						m.Spec.AADProfile.Managed,
+						"cannot set AADProfile.Managed to false"))
+			}
+			if len(m.Spec.AADProfile.AdminGroupObjectIDs) == 0 {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile.AdminGroupObjectIDs"),
+						m.Spec.AADProfile.AdminGroupObjectIDs,
+						"length of AADProfile.AdminGroupObjectIDs cannot be zero"))
+			}
+		}
+	}
+
+	if old.Spec.DisableLocalAccounts == nil &&
+		m.Spec.DisableLocalAccounts != nil &&
+		m.Spec.AADProfile == nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "DisableLocalAccounts"),
+				m.Spec.DisableLocalAccounts,
+				"DisableLocalAccounts can be set only for AAD enabled clusters"))
+	}
+
+	if old.Spec.DisableLocalAccounts != nil {
+		// Prevent DisableLocalAccounts modification if it was already set to some value
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("Spec", "DisableLocalAccounts"),
+			m.Spec.DisableLocalAccounts,
+			old.Spec.DisableLocalAccounts,
+		); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	return allErrs
