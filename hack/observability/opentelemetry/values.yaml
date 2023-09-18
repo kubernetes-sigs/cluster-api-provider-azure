@@ -1,10 +1,8 @@
 config:
   exporters:
     azuremonitor: {}
-    jaeger:
-      endpoint: jaeger-all-in-one:14250
-      tls:
-        insecure: true
+    otlphttp:
+      endpoint: http://jaeger-all-in-one:4318
   extensions:
     health_check: {}
     memory_ballast: {}
@@ -20,14 +18,14 @@ config:
         exporters:
           - logging
           - azuremonitor
-          - jaeger
+          - otlphttp
         receivers:
           - otlp
 
 image:
   repository: otel/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
-  tag: 0.84.0
+  tag: 0.86.0
 command:
   name: otelcol-contrib
 
