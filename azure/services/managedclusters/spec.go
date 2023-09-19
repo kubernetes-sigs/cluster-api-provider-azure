@@ -66,6 +66,9 @@ type ManagedClusterSpec struct {
 	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet'. Defaults to azure.
 	NetworkPlugin string
 
+	// NetworkPluginMode is the mode the network plugin should use.
+	NetworkPluginMode *infrav1.NetworkPluginMode
+
 	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'.
 	NetworkPolicy string
 
@@ -116,6 +119,9 @@ type ManagedClusterSpec struct {
 
 	// HTTPProxyConfig is the HTTP proxy configuration for the cluster.
 	HTTPProxyConfig *HTTPProxyConfig
+
+	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+	OIDCIssuerProfile *OIDCIssuerProfile
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.
@@ -231,6 +237,12 @@ type AutoScalerProfile struct {
 	SkipNodesWithSystemPods *string
 }
 
+// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+type OIDCIssuerProfile struct {
+	// Enabled is whether the OIDC issuer is enabled.
+	Enabled *bool
+}
+
 var _ azure.ResourceSpecGetterWithHeaders = (*ManagedClusterSpec)(nil)
 
 // ResourceName returns the name of the AKS cluster.
@@ -342,6 +354,10 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 		}
 	}
 
+	if s.NetworkPluginMode != nil {
+		managedCluster.Properties.NetworkProfile.NetworkPluginMode = ptr.To(armcontainerservice.NetworkPluginMode(*s.NetworkPluginMode))
+	}
+
 	if s.PodCIDR != "" {
 		managedCluster.Properties.NetworkProfile.PodCidr = &s.PodCIDR
 	}
@@ -441,6 +457,12 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 
 		if s.HTTPProxyConfig.NoProxy != nil {
 			managedCluster.Properties.HTTPProxyConfig.NoProxy = azure.PtrSlice(&s.HTTPProxyConfig.NoProxy)
+		}
+	}
+
+	if s.OIDCIssuerProfile != nil {
+		managedCluster.Properties.OidcIssuerProfile = &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+			Enabled: s.OIDCIssuerProfile.Enabled,
 		}
 	}
 
@@ -575,12 +597,18 @@ func computeDiffOfNormalizedClusters(managedCluster armcontainerservice.ManagedC
 		}
 	}
 
-	if managedCluster.Properties.NetworkProfile != nil {
-		propertiesNormalized.NetworkProfile.LoadBalancerProfile = managedCluster.Properties.NetworkProfile.LoadBalancerProfile
-	}
-
 	if existingMC.Properties.NetworkProfile != nil {
 		existingMCPropertiesNormalized.NetworkProfile.LoadBalancerProfile = existingMC.Properties.NetworkProfile.LoadBalancerProfile
+
+		existingMCPropertiesNormalized.NetworkProfile.NetworkPluginMode = existingMC.Properties.NetworkProfile.NetworkPluginMode
+	}
+	if managedCluster.Properties.NetworkProfile != nil {
+		propertiesNormalized.NetworkProfile.LoadBalancerProfile = managedCluster.Properties.NetworkProfile.LoadBalancerProfile
+
+		propertiesNormalized.NetworkProfile.NetworkPluginMode = managedCluster.Properties.NetworkProfile.NetworkPluginMode
+		if propertiesNormalized.NetworkProfile.NetworkPluginMode == nil {
+			propertiesNormalized.NetworkProfile.NetworkPluginMode = existingMCPropertiesNormalized.NetworkProfile.NetworkPluginMode
+		}
 	}
 
 	if managedCluster.Properties.APIServerAccessProfile != nil {
@@ -696,6 +724,17 @@ func computeDiffOfNormalizedClusters(managedCluster armcontainerservice.ManagedC
 	}
 	if existingMC.SKU != nil {
 		existingMCClusterNormalized.SKU = existingMC.SKU
+	}
+
+	if managedCluster.Properties.OidcIssuerProfile != nil {
+		clusterNormalized.Properties.OidcIssuerProfile = &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+			Enabled: managedCluster.Properties.OidcIssuerProfile.Enabled,
+		}
+	}
+	if existingMC.Properties.OidcIssuerProfile != nil {
+		existingMCClusterNormalized.Properties.OidcIssuerProfile = &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+			Enabled: existingMC.Properties.OidcIssuerProfile.Enabled,
+		}
 	}
 
 	diff := cmp.Diff(clusterNormalized, existingMCClusterNormalized)

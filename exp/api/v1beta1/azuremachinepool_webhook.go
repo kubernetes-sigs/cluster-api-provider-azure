@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -298,7 +298,7 @@ func (amp *AzureMachinePool) ValidateDiagnostics() error {
 func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() error {
 	return func() error {
 		// Only Flexible orchestration mode requires validation.
-		if amp.Spec.OrchestrationMode == infrav1.OrchestrationModeType(compute.OrchestrationModeFlexible) {
+		if amp.Spec.OrchestrationMode == infrav1.OrchestrationModeType(armcompute.OrchestrationModeFlexible) {
 			parent, err := azureutil.FindParentMachinePoolWithRetry(amp.Name, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to find parent MachinePool")

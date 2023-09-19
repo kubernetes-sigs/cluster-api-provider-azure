@@ -20,14 +20,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-func TestExtendedLocationToNetworkSDKv2(t *testing.T) {
+func TestExtendedLocationToNetworkSDK(t *testing.T) {
 	tests := []struct {
 		name string
 		args *infrav1.ExtendedLocationSpec
@@ -52,38 +51,6 @@ func TestExtendedLocationToNetworkSDKv2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ExtendedLocationToNetworkSDKv2(tt.args); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ExtendedLocationToNetworkSDKv2() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestExtendedLocationToNetworkSDK(t *testing.T) {
-	tests := []struct {
-		name string
-		args *infrav1.ExtendedLocationSpec
-		want *network.ExtendedLocation
-	}{
-		{
-			name: "normal extendedLocation instance",
-			args: &infrav1.ExtendedLocationSpec{
-				Name: "value",
-				Type: "Edge",
-			},
-			want: &network.ExtendedLocation{
-				Name: ptr.To("value"),
-				Type: network.ExtendedLocationTypes("Edge"),
-			},
-		},
-		{
-			name: "nil extendedLocation properties",
-			args: nil,
-			want: nil,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
 			if got := ExtendedLocationToNetworkSDK(tt.args); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ExtendedLocationToNetworkSDK() = %v, want %v", got, tt.want)
 			}
@@ -95,7 +62,7 @@ func TestExtendedLocationToComputeSDK(t *testing.T) {
 	tests := []struct {
 		name string
 		args *infrav1.ExtendedLocationSpec
-		want *compute.ExtendedLocation
+		want *armcompute.ExtendedLocation
 	}{
 		{
 			name: "normal extendedLocation instance",
@@ -103,9 +70,9 @@ func TestExtendedLocationToComputeSDK(t *testing.T) {
 				Name: "value",
 				Type: "Edge",
 			},
-			want: &compute.ExtendedLocation{
+			want: &armcompute.ExtendedLocation{
 				Name: ptr.To("value"),
-				Type: compute.ExtendedLocationTypes("Edge"),
+				Type: ptr.To(armcompute.ExtendedLocationTypes("Edge")),
 			},
 		},
 		{

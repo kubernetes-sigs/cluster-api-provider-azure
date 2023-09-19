@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -42,7 +42,7 @@ type InboundNatScope interface {
 type Service struct {
 	Scope InboundNatScope
 	client
-	asyncpoller.Reconciler
+	async.Reconciler
 }
 
 // New creates a new service.
@@ -54,7 +54,7 @@ func New(scope InboundNatScope) (*Service, error) {
 	return &Service{
 		Scope:  scope,
 		client: client,
-		Reconciler: asyncpoller.New[armnetwork.InboundNatRulesClientCreateOrUpdateResponse,
+		Reconciler: async.New[armnetwork.InboundNatRulesClientCreateOrUpdateResponse,
 			armnetwork.InboundNatRulesClientDeleteResponse](scope, client, client),
 	}, nil
 }

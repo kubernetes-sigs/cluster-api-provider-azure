@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	guuid "github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -222,19 +222,19 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with Flexible orchestration mode",
-			amp:     createMachinePoolWithOrchestrationMode(compute.OrchestrationModeFlexible),
+			amp:     createMachinePoolWithOrchestrationMode(armcompute.OrchestrationModeFlexible),
 			version: "v1.26.0",
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with Flexible orchestration mode and invalid Kubernetes version",
-			amp:     createMachinePoolWithOrchestrationMode(compute.OrchestrationModeFlexible),
+			amp:     createMachinePoolWithOrchestrationMode(armcompute.OrchestrationModeFlexible),
 			version: "v1.25.6",
 			wantErr: true,
 		},
 		{
 			name:          "azuremachinepool with Flexible orchestration mode and invalid Kubernetes version, no owner",
-			amp:           createMachinePoolWithOrchestrationMode(compute.OrchestrationModeFlexible),
+			amp:           createMachinePoolWithOrchestrationMode(armcompute.OrchestrationModeFlexible),
 			version:       "v1.25.6",
 			ownerNotFound: true,
 			wantErr:       true,
@@ -631,7 +631,7 @@ func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) 
 	}
 }
 
-func createMachinePoolWithOrchestrationMode(mode compute.OrchestrationMode) *AzureMachinePool {
+func createMachinePoolWithOrchestrationMode(mode armcompute.OrchestrationMode) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			OrchestrationMode: infrav1.OrchestrationModeType(mode),

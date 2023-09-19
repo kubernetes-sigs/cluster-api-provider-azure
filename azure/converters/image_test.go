@@ -19,7 +19,7 @@ package converters
 import (
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -29,7 +29,7 @@ func Test_ImageToPlan(t *testing.T) {
 	cases := []struct {
 		name   string
 		image  *infrav1.Image
-		expect func(*GomegaWithT, *compute.Plan)
+		expect func(*GomegaWithT, *armcompute.Plan)
 	}{
 		{
 			name: "Should return a plan for a Community Gallery image with plan details",
@@ -42,8 +42,8 @@ func Test_ImageToPlan(t *testing.T) {
 					},
 				},
 			},
-			expect: func(g *GomegaWithT, result *compute.Plan) {
-				g.Expect(result).To(Equal(&compute.Plan{
+			expect: func(g *GomegaWithT, result *armcompute.Plan) {
+				g.Expect(result).To(Equal(&armcompute.Plan{
 					Name:      ptr.To("my-sku"),
 					Publisher: ptr.To("my-publisher"),
 					Product:   ptr.To("my-offer"),
@@ -64,8 +64,8 @@ func Test_ImageToPlan(t *testing.T) {
 					SKU:            ptr.To("my-sku"),
 				},
 			},
-			expect: func(g *GomegaWithT, result *compute.Plan) {
-				g.Expect(result).To(Equal(&compute.Plan{
+			expect: func(g *GomegaWithT, result *armcompute.Plan) {
+				g.Expect(result).To(Equal(&armcompute.Plan{
 					Name:      ptr.To("my-sku"),
 					Publisher: ptr.To("my-publisher"),
 					Product:   ptr.To("my-offer"),
@@ -83,7 +83,7 @@ func Test_ImageToPlan(t *testing.T) {
 					Version:        "v1.0.0",
 				},
 			},
-			expect: func(g *GomegaWithT, result *compute.Plan) {
+			expect: func(g *GomegaWithT, result *armcompute.Plan) {
 				g.Expect(result).To(BeNil())
 			},
 		},
@@ -100,7 +100,7 @@ func Test_ImageToPlan(t *testing.T) {
 					ThirdPartyImage: false,
 				},
 			},
-			expect: func(g *GomegaWithT, result *compute.Plan) {
+			expect: func(g *GomegaWithT, result *armcompute.Plan) {
 				g.Expect(result).To(BeNil())
 			},
 		},
@@ -117,8 +117,8 @@ func Test_ImageToPlan(t *testing.T) {
 					ThirdPartyImage: true,
 				},
 			},
-			expect: func(g *GomegaWithT, result *compute.Plan) {
-				g.Expect(result).To(Equal(&compute.Plan{
+			expect: func(g *GomegaWithT, result *armcompute.Plan) {
+				g.Expect(result).To(Equal(&armcompute.Plan{
 					Name:      ptr.To("my-sku"),
 					Publisher: ptr.To("my-publisher"),
 					Product:   ptr.To("my-offer"),
@@ -130,7 +130,7 @@ func Test_ImageToPlan(t *testing.T) {
 			image: &infrav1.Image{
 				ID: ptr.To("fake/image/id"),
 			},
-			expect: func(g *GomegaWithT, result *compute.Plan) {
+			expect: func(g *GomegaWithT, result *armcompute.Plan) {
 				g.Expect(result).To(BeNil())
 			},
 		},
@@ -151,7 +151,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 	cases := []struct {
 		name   string
 		image  *infrav1.Image
-		expect func(*GomegaWithT, *compute.ImageReference, error)
+		expect func(*GomegaWithT, *armcompute.ImageReference, error)
 	}{
 		{
 			name: "Should return parsed compute gallery image id",
@@ -164,9 +164,9 @@ func Test_ComputeImageToSDK(t *testing.T) {
 					Version:        "my-version",
 				},
 			},
-			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
 				g.Expect(err).Should(BeNil())
-				g.Expect(result).To(Equal(&compute.ImageReference{
+				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
 				}))
 			},
@@ -182,9 +182,9 @@ func Test_ComputeImageToSDK(t *testing.T) {
 					Version:        "my-version",
 				},
 			},
-			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
 				g.Expect(err).Should(BeNil())
-				g.Expect(result).To(Equal(&compute.ImageReference{
+				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
 				}))
 			},
@@ -198,9 +198,9 @@ func Test_ComputeImageToSDK(t *testing.T) {
 					Version: "my-version",
 				},
 			},
-			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
 				g.Expect(err).Should(BeNil())
-				g.Expect(result).To(Equal(&compute.ImageReference{
+				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					CommunityGalleryImageID: ptr.To("/CommunityGalleries/my-gallery/Images/my-image/Versions/my-version"),
 				}))
 			},
@@ -211,7 +211,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 				ComputeGallery: nil,
 				SharedGallery:  nil,
 			},
-			expect: func(g *GomegaWithT, result *compute.ImageReference, err error) {
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
 				g.Expect(err).ShouldNot(BeNil())
 			},
 		},
@@ -223,6 +223,121 @@ func Test_ComputeImageToSDK(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 			result, err := computeImageToSDK(c.image)
+			c.expect(g, result, err)
+		})
+	}
+}
+
+func Test_ImageToSDK(t *testing.T) {
+	cases := []struct {
+		name   string
+		image  *infrav1.Image
+		expect func(*GomegaWithT, *armcompute.ImageReference, error)
+	}{
+		{
+			name: "Should return parsed compute gallery image id",
+			image: &infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					ResourceGroup:  ptr.To("my-resourcegroup"),
+					SubscriptionID: ptr.To("my-subscription-id"),
+					Gallery:        "my-gallery",
+					Name:           "my-image",
+					Version:        "my-version",
+				},
+			},
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(result).To(Equal(&armcompute.ImageReference{
+					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
+				}))
+			},
+		},
+		{
+			name: "Should return parsed shared gallery image id",
+			image: &infrav1.Image{
+				SharedGallery: &infrav1.AzureSharedGalleryImage{
+					ResourceGroup:  "my-resourcegroup",
+					SubscriptionID: "my-subscription-id",
+					Gallery:        "my-gallery",
+					Name:           "my-image",
+					Version:        "my-version",
+				},
+			},
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(result).To(Equal(&armcompute.ImageReference{
+					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
+				}))
+			},
+		},
+		{
+			name: "Should return parsed community gallery image id",
+			image: &infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery: "my-gallery",
+					Name:    "my-image",
+					Version: "my-version",
+				},
+			},
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(result).To(Equal(&armcompute.ImageReference{
+					CommunityGalleryImageID: ptr.To("/CommunityGalleries/my-gallery/Images/my-image/Versions/my-version"),
+				}))
+			},
+		},
+		{
+			name: "Should return error if SharedGallery and ComputeGallery are nil",
+			image: &infrav1.Image{
+				ComputeGallery: nil,
+				SharedGallery:  nil,
+			},
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
+				g.Expect(err).ShouldNot(BeNil())
+			},
+		},
+		{
+			name: "Should return specific image if ID is set",
+			image: &infrav1.Image{
+				ID: ptr.To("my-image-id"),
+			},
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(result).To(Equal(&armcompute.ImageReference{
+					ID: ptr.To("my-image-id"),
+				}))
+			},
+		},
+		{
+			name: "Should return Marketplace image if Marketplace is set",
+			image: &infrav1.Image{
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "my-publisher",
+						Offer:     "my-offer",
+						SKU:       "my-sku",
+					},
+					Version: "v0.5.0",
+				},
+			},
+			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
+				g.Expect(err).Should(BeNil())
+				g.Expect(result).To(Equal(&armcompute.ImageReference{
+					Offer:     ptr.To("my-offer"),
+					Publisher: ptr.To("my-publisher"),
+					SKU:       ptr.To("my-sku"),
+					Version:   ptr.To("v0.5.0"),
+				}))
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			result, err := ImageToSDK(c.image)
 			c.expect(g, result, err)
 		})
 	}

@@ -20,11 +20,10 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -48,7 +47,7 @@ type RoleAssignmentScope interface {
 type Service struct {
 	Scope                 RoleAssignmentScope
 	virtualMachinesGetter async.Getter
-	asyncpoller.Reconciler
+	async.Reconciler
 	virtualMachineScaleSetGetter async.Getter
 }
 
@@ -58,11 +57,19 @@ func New(scope RoleAssignmentScope) (*Service, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create roleassignments service")
 	}
+	scaleSetsClient, err := scalesets.NewClient(scope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create scalesets service")
+	}
+	virtualMachinesClient, err := virtualmachines.NewClient(scope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create virtualmachines service")
+	}
 	return &Service{
 		Scope:                        scope,
-		virtualMachinesGetter:        virtualmachines.NewClient(scope),
-		virtualMachineScaleSetGetter: scalesets.NewClient(scope),
-		Reconciler: asyncpoller.New[armauthorization.RoleAssignmentsClientCreateResponse,
+		virtualMachinesGetter:        virtualMachinesClient,
+		virtualMachineScaleSetGetter: scaleSetsClient,
+		Reconciler: async.New[armauthorization.RoleAssignmentsClientCreateResponse,
 			armauthorization.RoleAssignmentsClientDeleteResponse](scope, client, nil),
 	}, nil
 }
@@ -135,9 +142,9 @@ func (s *Service) getVMPrincipalID(ctx context.Context) (*string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get principal ID for VM")
 	}
-	resultVM, ok := resultVMIface.(compute.VirtualMachine)
+	resultVM, ok := resultVMIface.(armcompute.VirtualMachine)
 	if !ok {
-		return nil, errors.Errorf("%T is not a compute.VirtualMachine", resultVMIface)
+		return nil, errors.Errorf("%T is not an armcompute.VirtualMachine", resultVMIface)
 	}
 	return resultVM.Identity.PrincipalID, nil
 }
@@ -156,9 +163,9 @@ func (s *Service) getVMSSPrincipalID(ctx context.Context) (*string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get principal ID for VMSS")
 	}
-	resultVMSS, ok := resultVMSSIface.(compute.VirtualMachineScaleSet)
+	resultVMSS, ok := resultVMSSIface.(armcompute.VirtualMachineScaleSet)
 	if !ok {
-		return nil, errors.Errorf("%T is not a compute.VirtualMachineScaleSet", resultVMSSIface)
+		return nil, errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", resultVMSSIface)
 	}
 
 	return resultVMSS.Identity.PrincipalID, nil

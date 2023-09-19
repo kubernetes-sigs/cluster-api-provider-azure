@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -39,9 +39,9 @@ var (
 		"my-rg",
 	}
 
-	fakeVMSSExtensionParams = compute.VirtualMachineScaleSetExtension{
+	fakeVMSSExtensionParams = armcompute.VirtualMachineScaleSetExtension{
 		Name: ptr.To("my-vm-extension"),
-		VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+		Properties: &armcompute.VirtualMachineScaleSetExtensionProperties{
 			Publisher:          ptr.To("my-publisher"),
 			Type:               ptr.To("my-vm-extension"),
 			TypeHandlerVersion: ptr.To("1.0"),

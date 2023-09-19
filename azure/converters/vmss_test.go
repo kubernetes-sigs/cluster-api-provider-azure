@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -31,41 +31,41 @@ import (
 func Test_SDKToVMSS(t *testing.T) {
 	cases := []struct {
 		Name           string
-		SubjectFactory func(*gomega.GomegaWithT) (compute.VirtualMachineScaleSet, []compute.VirtualMachineScaleSetVM)
+		SubjectFactory func(*gomega.GomegaWithT) (armcompute.VirtualMachineScaleSet, []armcompute.VirtualMachineScaleSetVM)
 		Expect         func(*gomega.GomegaWithT, azure.VMSS)
 	}{
 		{
 			Name: "ShouldPopulateWithData",
-			SubjectFactory: func(g *gomega.GomegaWithT) (compute.VirtualMachineScaleSet, []compute.VirtualMachineScaleSetVM) {
+			SubjectFactory: func(g *gomega.GomegaWithT) (armcompute.VirtualMachineScaleSet, []armcompute.VirtualMachineScaleSetVM) {
 				tags := map[string]*string{
 					"foo": ptr.To("bazz"),
 				}
 				zones := []string{"zone0", "zone1"}
-				return compute.VirtualMachineScaleSet{
-						Sku: &compute.Sku{
+				return armcompute.VirtualMachineScaleSet{
+						SKU: &armcompute.SKU{
 							Name:     ptr.To("skuName"),
 							Tier:     ptr.To("skuTier"),
 							Capacity: ptr.To[int64](2),
 						},
-						Zones:    &zones,
+						Zones:    azure.PtrSlice(&zones),
 						ID:       ptr.To("vmssID"),
 						Name:     ptr.To("vmssName"),
 						Location: ptr.To("westus2"),
 						Tags:     tags,
-						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+						Properties: &armcompute.VirtualMachineScaleSetProperties{
 							SinglePlacementGroup: ptr.To(false),
-							ProvisioningState:    ptr.To(string(compute.ProvisioningState1Succeeded)),
+							ProvisioningState:    ptr.To("Succeeded"),
 						},
 					},
-					[]compute.VirtualMachineScaleSetVM{
+					[]armcompute.VirtualMachineScaleSetVM{
 						{
 							InstanceID: ptr.To("0"),
 							ID:         ptr.To("vm/0"),
 							Name:       ptr.To("vm0"),
-							Zones:      &[]string{"zone0"},
-							VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-								ProvisioningState: ptr.To(string(compute.ProvisioningState1Succeeded)),
-								OsProfile: &compute.OSProfile{
+							Zones:      []*string{ptr.To("zone0")},
+							Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+								ProvisioningState: ptr.To("Succeeded"),
+								OSProfile: &armcompute.OSProfile{
 									ComputerName: ptr.To("instance-000000"),
 								},
 							},
@@ -74,10 +74,10 @@ func Test_SDKToVMSS(t *testing.T) {
 							InstanceID: ptr.To("1"),
 							ID:         ptr.To("vm/1"),
 							Name:       ptr.To("vm1"),
-							Zones:      &[]string{"zone1"},
-							VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-								ProvisioningState: ptr.To(string(compute.ProvisioningState1Succeeded)),
-								OsProfile: &compute.OSProfile{
+							Zones:      []*string{ptr.To("zone1")},
+							Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+								ProvisioningState: ptr.To("Succeeded"),
+								OSProfile: &armcompute.OSProfile{
 									ComputerName: ptr.To("instance-000001"),
 								},
 							},
@@ -127,12 +127,12 @@ func Test_SDKToVMSS(t *testing.T) {
 func Test_SDKToVMSSVM(t *testing.T) {
 	cases := []struct {
 		Name        string
-		SDKInstance compute.VirtualMachineScaleSetVM
+		SDKInstance armcompute.VirtualMachineScaleSetVM
 		VMSSVM      *azure.VMSSVM
 	}{
 		{
 			Name: "minimal VM",
-			SDKInstance: compute.VirtualMachineScaleSetVM{
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
 				ID: ptr.To("vm/0"),
 			},
 			VMSSVM: &azure.VMSSVM{
@@ -141,9 +141,9 @@ func Test_SDKToVMSSVM(t *testing.T) {
 		},
 		{
 			Name: "VM with nil properties",
-			SDKInstance: compute.VirtualMachineScaleSetVM{
-				ID:                                 ptr.To("vm/0.5"),
-				VirtualMachineScaleSetVMProperties: nil,
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
+				ID:         ptr.To("vm/0.5"),
+				Properties: nil,
 			},
 			VMSSVM: &azure.VMSSVM{
 				ID: "vm/0.5",
@@ -151,11 +151,11 @@ func Test_SDKToVMSSVM(t *testing.T) {
 		},
 		{
 			Name: "VM with state",
-			SDKInstance: compute.VirtualMachineScaleSetVM{
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
 				ID: ptr.To("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
-				VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-					ProvisioningState: ptr.To(string(compute.ProvisioningState1Succeeded)),
-					OsProfile:         &compute.OSProfile{ComputerName: ptr.To("instance-000000")},
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					ProvisioningState: ptr.To(string("Succeeded")),
+					OSProfile:         &armcompute.OSProfile{ComputerName: ptr.To("instance-000000")},
 				},
 			},
 			VMSSVM: &azure.VMSSVM{
@@ -166,12 +166,12 @@ func Test_SDKToVMSSVM(t *testing.T) {
 		},
 		{
 			Name: "VM with storage",
-			SDKInstance: compute.VirtualMachineScaleSetVM{
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
 				ID: ptr.To("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
-				VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-					OsProfile: &compute.OSProfile{ComputerName: ptr.To("instance-000001")},
-					StorageProfile: &compute.StorageProfile{
-						ImageReference: &compute.ImageReference{
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					OSProfile: &armcompute.OSProfile{ComputerName: ptr.To("instance-000001")},
+					StorageProfile: &armcompute.StorageProfile{
+						ImageReference: &armcompute.ImageReference{
 							ID: ptr.To("imageID"),
 						},
 					},
@@ -188,12 +188,12 @@ func Test_SDKToVMSSVM(t *testing.T) {
 		},
 		{
 			Name: "VM with zones",
-			SDKInstance: compute.VirtualMachineScaleSetVM{
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
 				ID: ptr.To("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
-				VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-					OsProfile: &compute.OSProfile{ComputerName: ptr.To("instance-000002")},
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					OSProfile: &armcompute.OSProfile{ComputerName: ptr.To("instance-000002")},
 				},
-				Zones: &[]string{"zone0", "zone1"},
+				Zones: []*string{ptr.To("zone0"), ptr.To("zone1")},
 			},
 			VMSSVM: &azure.VMSSVM{
 				ID:               "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
@@ -217,13 +217,13 @@ func Test_SDKToVMSSVM(t *testing.T) {
 func Test_SDKImageToImage(t *testing.T) {
 	cases := []struct {
 		Name         string
-		SDKImageRef  *compute.ImageReference
+		SDKImageRef  *armcompute.ImageReference
 		IsThirdParty bool
 		Image        infrav1.Image
 	}{
 		{
 			Name: "id image",
-			SDKImageRef: &compute.ImageReference{
+			SDKImageRef: &armcompute.ImageReference{
 				ID: ptr.To("imageID"),
 			},
 			IsThirdParty: false,
@@ -233,10 +233,10 @@ func Test_SDKImageToImage(t *testing.T) {
 		},
 		{
 			Name: "marketplace image",
-			SDKImageRef: &compute.ImageReference{
+			SDKImageRef: &armcompute.ImageReference{
 				Publisher: ptr.To("publisher"),
 				Offer:     ptr.To("offer"),
-				Sku:       ptr.To("sku"),
+				SKU:       ptr.To("sku"),
 				Version:   ptr.To("version"),
 			},
 			IsThirdParty: true,
@@ -254,7 +254,7 @@ func Test_SDKImageToImage(t *testing.T) {
 		},
 		{
 			Name: "shared gallery image",
-			SDKImageRef: &compute.ImageReference{
+			SDKImageRef: &armcompute.ImageReference{
 				SharedGalleryImageID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
 			},
 			Image: infrav1.Image{
@@ -269,7 +269,7 @@ func Test_SDKImageToImage(t *testing.T) {
 		},
 		{
 			Name: "community gallery image",
-			SDKImageRef: &compute.ImageReference{
+			SDKImageRef: &armcompute.ImageReference{
 				CommunityGalleryImageID: ptr.To("/CommunityGalleries/gallery/Images/image/Versions/version"),
 			},
 			Image: infrav1.Image{
@@ -282,7 +282,7 @@ func Test_SDKImageToImage(t *testing.T) {
 		},
 		{
 			Name: "compute gallery image",
-			SDKImageRef: &compute.ImageReference{
+			SDKImageRef: &armcompute.ImageReference{
 				ID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
 			},
 			Image: infrav1.Image{
@@ -297,7 +297,7 @@ func Test_SDKImageToImage(t *testing.T) {
 		},
 		{
 			Name: "compute gallery image not formatted as expected",
-			SDKImageRef: &compute.ImageReference{
+			SDKImageRef: &armcompute.ImageReference{
 				ID: ptr.To("/compute/gallery/not/formatted/as/expected"),
 			},
 			Image: infrav1.Image{
@@ -306,7 +306,7 @@ func Test_SDKImageToImage(t *testing.T) {
 		},
 		{
 			Name: "community gallery image not formatted as expected",
-			SDKImageRef: &compute.ImageReference{
+			SDKImageRef: &armcompute.ImageReference{
 				CommunityGalleryImageID: ptr.To("/community/gallery/not/formatted/as/expected"),
 			},
 			Image: infrav1.Image{},
@@ -326,12 +326,12 @@ func Test_SDKImageToImage(t *testing.T) {
 func Test_SDKVMToVMSSVM(t *testing.T) {
 	cases := []struct {
 		Name     string
-		Subject  compute.VirtualMachine
+		Subject  armcompute.VirtualMachine
 		Expected *azure.VMSSVM
 	}{
 		{
 			Name: "minimal VM",
-			Subject: compute.VirtualMachine{
+			Subject: armcompute.VirtualMachine{
 				ID: ptr.To("vmID1"),
 			},
 			Expected: &azure.VMSSVM{
@@ -340,14 +340,14 @@ func Test_SDKVMToVMSSVM(t *testing.T) {
 		},
 		{
 			Name: "VM with zones",
-			Subject: compute.VirtualMachine{
+			Subject: armcompute.VirtualMachine{
 				ID: ptr.To("vmID2"),
-				VirtualMachineProperties: &compute.VirtualMachineProperties{
-					OsProfile: &compute.OSProfile{
+				Properties: &armcompute.VirtualMachineProperties{
+					OSProfile: &armcompute.OSProfile{
 						ComputerName: ptr.To("vmwithzones"),
 					},
 				},
-				Zones: &[]string{"zone0", "zone1"},
+				Zones: []*string{ptr.To("zone0"), ptr.To("zone1")},
 			},
 			Expected: &azure.VMSSVM{
 				ID:               "vmID2",
@@ -358,14 +358,14 @@ func Test_SDKVMToVMSSVM(t *testing.T) {
 		},
 		{
 			Name: "VM with storage",
-			Subject: compute.VirtualMachine{
+			Subject: armcompute.VirtualMachine{
 				ID: ptr.To("vmID3"),
-				VirtualMachineProperties: &compute.VirtualMachineProperties{
-					OsProfile: &compute.OSProfile{
+				Properties: &armcompute.VirtualMachineProperties{
+					OSProfile: &armcompute.OSProfile{
 						ComputerName: ptr.To("vmwithstorage"),
 					},
-					StorageProfile: &compute.StorageProfile{
-						ImageReference: &compute.ImageReference{
+					StorageProfile: &armcompute.StorageProfile{
+						ImageReference: &armcompute.ImageReference{
 							ID: ptr.To("imageID"),
 						},
 					},
@@ -382,10 +382,10 @@ func Test_SDKVMToVMSSVM(t *testing.T) {
 		},
 		{
 			Name: "VM with provisioning state",
-			Subject: compute.VirtualMachine{
+			Subject: armcompute.VirtualMachine{
 				ID: ptr.To("vmID4"),
-				VirtualMachineProperties: &compute.VirtualMachineProperties{
-					OsProfile: &compute.OSProfile{
+				Properties: &armcompute.VirtualMachineProperties{
+					OSProfile: &armcompute.OSProfile{
 						ComputerName: ptr.To("vmwithstate"),
 					},
 					ProvisioningState: ptr.To("Succeeded"),
@@ -414,9 +414,9 @@ func Test_GetOrchestrationMode(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 
 	g.Expect(converters.GetOrchestrationMode(infrav1.FlexibleOrchestrationMode)).
-		To(gomega.Equal(compute.OrchestrationModeFlexible))
+		To(gomega.Equal(armcompute.OrchestrationModeFlexible))
 	g.Expect(converters.GetOrchestrationMode(infrav1.UniformOrchestrationMode)).
-		To(gomega.Equal(compute.OrchestrationModeUniform))
+		To(gomega.Equal(armcompute.OrchestrationModeUniform))
 	g.Expect(converters.GetOrchestrationMode("invalid")).
-		To(gomega.Equal(compute.OrchestrationModeUniform))
+		To(gomega.Equal(armcompute.OrchestrationModeUniform))
 }

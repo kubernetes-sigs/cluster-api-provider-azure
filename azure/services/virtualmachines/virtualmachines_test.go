@@ -21,9 +21,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -56,13 +55,13 @@ var (
 		Image:             &infrav1.Image{ID: ptr.To("fake-image-id")},
 		BootstrapData:     "fake data",
 	}
-	fakeExistingVM = compute.VirtualMachine{
+	fakeExistingVM = armcompute.VirtualMachine{
 		ID:   ptr.To("subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm"),
 		Name: ptr.To("test-vm-name"),
-		VirtualMachineProperties: &compute.VirtualMachineProperties{
+		Properties: &armcompute.VirtualMachineProperties{
 			ProvisioningState: ptr.To("Succeeded"),
-			NetworkProfile: &compute.NetworkProfile{
-				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
+			NetworkProfile: &armcompute.NetworkProfile{
+				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
 					{
 						ID: ptr.To("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/nic-1"),
 					},
@@ -92,8 +91,8 @@ var (
 		Name:          "pip-1",
 		ResourceGroup: "test-group",
 	}
-	fakePublicIPs = network.PublicIPAddress{
-		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+	fakePublicIPs = armnetwork.PublicIPAddress{
+		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
 			IPAddress: ptr.To("10.0.0.6"),
 		},
 	}
@@ -183,7 +182,7 @@ func TestReconcileVM(t *testing.T) {
 				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 				s.SetAnnotation("cluster-api-provider-azure", "true")
 				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
-				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(network.PublicIPAddress{}, internalError)
+				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(armnetwork.PublicIPAddress{}, internalError)
 			},
 		},
 	}

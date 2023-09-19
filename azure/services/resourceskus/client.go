@@ -19,8 +19,7 @@ package resourceskus
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -28,45 +27,44 @@ import (
 
 // Client wraps go-sdk.
 type Client interface {
-	List(context.Context, string) ([]compute.ResourceSku, error)
+	List(context.Context, string) ([]armcompute.ResourceSKU, error)
 }
 
 // AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
-	skus compute.ResourceSkusClient
+	skus *armcompute.ResourceSKUsClient
 }
 
 var _ Client = &AzureClient{}
 
-// NewClient creates a new Resource SKUs client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
-	return &AzureClient{
-		skus: newResourceSkusClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
+// NewClient creates a new Resource SKUs client from an authorizer.
+func NewClient(auth azure.Authorizer) (*AzureClient, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create resourceskus client options")
 	}
-}
-
-// newResourceSkusClient creates a new Resource SKUs client from subscription ID.
-func newResourceSkusClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.ResourceSkusClient {
-	c := compute.NewResourceSkusClientWithBaseURI(baseURI, subscriptionID)
-	azure.SetAutoRestClientDefaults(&c.Client, authorizer)
-	return c
+	factory, err := armcompute.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armcompute client factory")
+	}
+	return &AzureClient{factory.NewResourceSKUsClient()}, nil
 }
 
 // List returns all Resource SKUs available to the subscription.
-func (ac *AzureClient) List(ctx context.Context, filter string) ([]compute.ResourceSku, error) {
+func (ac *AzureClient) List(ctx context.Context, filter string) ([]armcompute.ResourceSKU, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourceskus.AzureClient.List")
 	defer done()
 
-	iter, err := ac.skus.ListComplete(ctx, filter, "true")
-	if err != nil {
-		return nil, errors.Wrap(err, "could not list resource skus")
-	}
-
-	var skus []compute.ResourceSku
-	for iter.NotDone() {
-		skus = append(skus, iter.Value())
-		if err := iter.NextWithContext(ctx); err != nil {
+	var skus []armcompute.ResourceSKU
+	opts := armcompute.ResourceSKUsClientListOptions{Filter: &filter}
+	pager := ac.skus.NewListPager(&opts)
+	for pager.More() {
+		resp, err := pager.NextPage(ctx)
+		if err != nil {
 			return skus, errors.Wrap(err, "could not iterate resource skus")
+		}
+		for _, sku := range resp.Value {
+			skus = append(skus, *sku)
 		}
 	}
 

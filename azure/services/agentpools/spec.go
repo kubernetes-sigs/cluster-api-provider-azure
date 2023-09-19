@@ -257,10 +257,8 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		// We do a just-in-time merge of existent kubernetes.azure.com-prefixed labels
 		// So that we don't unintentionally delete them
 		// See https://github.com/Azure/AKS/issues/3152
-		if normalizedProfile.Properties.NodeLabels != nil {
-			nodeLabels = mergeSystemNodeLabels(normalizedProfile.Properties.NodeLabels, existingPool.Properties.NodeLabels)
-			normalizedProfile.Properties.NodeLabels = nodeLabels
-		}
+		nodeLabels = mergeSystemNodeLabels(normalizedProfile.Properties.NodeLabels, existingPool.Properties.NodeLabels)
+		normalizedProfile.Properties.NodeLabels = nodeLabels
 
 		// Compute a diff to check if we require an update
 		diff := cmp.Diff(normalizedProfile, existingProfile)
@@ -389,11 +387,18 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 // into the local capz label set.
 func mergeSystemNodeLabels(capz, aks map[string]*string) map[string]*string {
 	ret := capz
+	if ret == nil {
+		ret = make(map[string]*string)
+	}
 	// Look for labels returned from the AKS node pool API that begin with kubernetes.azure.com
 	for aksNodeLabelKey := range aks {
 		if azureutil.IsAzureSystemNodeLabelKey(aksNodeLabelKey) {
 			ret[aksNodeLabelKey] = aks[aksNodeLabelKey]
 		}
+	}
+	// Preserve nil-ness of capz
+	if capz == nil && len(ret) == 0 {
+		ret = nil
 	}
 	return ret
 }

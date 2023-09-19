@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -57,6 +57,7 @@ type MachineScopeParams struct {
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 	Cache        *MachineCache
+	SKUCache     SKUCacher
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -84,6 +85,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		patchHelper:   helper,
 		ClusterScoper: params.ClusterScope,
 		cache:         params.Cache,
+		skuCache:      params.SKUCache,
 	}, nil
 }
 
@@ -96,6 +98,12 @@ type MachineScope struct {
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 	cache        *MachineCache
+	skuCache     SKUCacher
+}
+
+// SKUCacher fetches a SKU from its cache.
+type SKUCacher interface {
+	Get(context.Context, string, resourceskus.ResourceType) (resourceskus.SKU, error)
 }
 
 // MachineCache stores common machine information so we don't have to hit the API multiple times within the same reconcile loop.
@@ -125,9 +133,13 @@ func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 			return err
 		}
 
-		skuCache, err := resourceskus.GetCache(m, m.Location())
-		if err != nil {
-			return err
+		skuCache := m.skuCache
+		if skuCache == nil {
+			cache, err := resourceskus.GetCache(m, m.Location())
+			if err != nil {
+				return err
+			}
+			skuCache = cache
 		}
 
 		m.cache.VMSKU, err = skuCache.Get(ctx, m.AzureMachine.Spec.VMSize, resourceskus.VirtualMachines)
@@ -135,9 +147,9 @@ func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachine.Spec.VMSize)
 		}
 
-		m.cache.availabilitySetSKU, err = skuCache.Get(ctx, string(compute.AvailabilitySetSkuTypesAligned), resourceskus.AvailabilitySets)
+		m.cache.availabilitySetSKU, err = skuCache.Get(ctx, string(armcompute.AvailabilitySetSKUTypesAligned), resourceskus.AvailabilitySets)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(compute.AvailabilitySetSkuTypesAligned))
+			return errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(armcompute.AvailabilitySetSKUTypesAligned))
 		}
 	}
 

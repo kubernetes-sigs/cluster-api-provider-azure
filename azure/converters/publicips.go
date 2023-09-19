@@ -17,22 +17,22 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-// IPTagsToSDK converts a CAPZ IP tag to an Azure SDK IP tag.
-func IPTagsToSDK(ipTags []infrav1.IPTag) *[]network.IPTag {
+// IPTagsToSDK converts a CAPZ IP tag to an Azure SDK v2 IP tag.
+func IPTagsToSDK(ipTags []infrav1.IPTag) []*armnetwork.IPTag {
 	if len(ipTags) == 0 {
 		return nil
 	}
-	skdIPTags := make([]network.IPTag, len(ipTags))
+	skdIPTags := make([]*armnetwork.IPTag, len(ipTags))
 	for i, ipTag := range ipTags {
-		skdIPTags[i] = network.IPTag{
+		skdIPTags[i] = &armnetwork.IPTag{
 			IPTagType: ptr.To(ipTag.Type),
 			Tag:       ptr.To(ipTag.Tag),
 		}
 	}
-	return &skdIPTags
+	return skdIPTags
 }

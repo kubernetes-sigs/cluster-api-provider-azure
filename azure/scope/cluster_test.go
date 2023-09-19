@@ -398,7 +398,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -477,7 +477,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -490,7 +490,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -503,7 +503,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -567,7 +567,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -634,7 +634,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -722,7 +722,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -735,7 +735,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
@@ -2612,19 +2612,19 @@ func TestAPIServerPort(t *testing.T) {
 func TestFailureDomains(t *testing.T) {
 	tests := []struct {
 		name                 string
-		expectFailureDomains []string
+		expectFailureDomains []*string
 		clusterName          string
 		azureClusterStatus   infrav1.AzureClusterStatus
 	}{
 		{
 			name:                 "Empty azure cluster status",
-			expectFailureDomains: []string{},
+			expectFailureDomains: []*string{},
 			clusterName:          "my-cluster",
 		},
 
 		{
 			name:                 "Single failure domain present in azure cluster status",
-			expectFailureDomains: []string{"failure-domain-id"},
+			expectFailureDomains: []*string{ptr.To("failure-domain-id")},
 			clusterName:          "my-cluster",
 			azureClusterStatus: infrav1.AzureClusterStatus{
 				FailureDomains: map[string]clusterv1.FailureDomainSpec{
@@ -2634,7 +2634,7 @@ func TestFailureDomains(t *testing.T) {
 		},
 		{
 			name:                 "Multiple failure domains present in azure cluster status",
-			expectFailureDomains: []string{"failure-domain-id-1", "failure-domain-id-2", "failure-domain-id-3"},
+			expectFailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 			clusterName:          "my-cluster",
 			azureClusterStatus: infrav1.AzureClusterStatus{
 				FailureDomains: map[string]clusterv1.FailureDomainSpec{

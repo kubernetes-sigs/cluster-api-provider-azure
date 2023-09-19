@@ -90,7 +90,7 @@ type ClusterDescriber interface {
 	AdditionalTags() infrav1.Tags
 	AvailabilitySetEnabled() bool
 	CloudProviderConfigOverrides() *infrav1.CloudProviderConfigOverrides
-	FailureDomains() []string
+	FailureDomains() []*string
 }
 
 // AsyncStatusUpdater is an interface used to keep track of long running operations in Status that has Conditions and Futures.

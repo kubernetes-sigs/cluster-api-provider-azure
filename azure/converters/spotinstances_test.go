@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
@@ -30,9 +30,9 @@ import (
 func TestGetSpotVMOptions(t *testing.T) {
 	deletePolicy := infrav1.SpotEvictionPolicyDelete
 	type resultParams struct {
-		vmPriorityTypes       compute.VirtualMachinePriorityTypes
-		vmEvictionPolicyTypes compute.VirtualMachineEvictionPolicyTypes
-		billingProfile        *compute.BillingProfile
+		vmPriorityTypes       *armcompute.VirtualMachinePriorityTypes
+		vmEvictionPolicyTypes *armcompute.VirtualMachineEvictionPolicyTypes
+		billingProfile        *armcompute.BillingProfile
 	}
 	tests := []struct {
 		name             string
@@ -45,8 +45,8 @@ func TestGetSpotVMOptions(t *testing.T) {
 			spot:             nil,
 			diffDiskSettings: nil,
 			want: resultParams{
-				vmPriorityTypes:       "",
-				vmEvictionPolicyTypes: "",
+				vmPriorityTypes:       nil,
+				vmEvictionPolicyTypes: nil,
 				billingProfile:        nil,
 			},
 		},
@@ -57,8 +57,8 @@ func TestGetSpotVMOptions(t *testing.T) {
 			},
 			diffDiskSettings: nil,
 			want: resultParams{
-				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: "",
+				vmPriorityTypes:       ptr.To(armcompute.VirtualMachinePriorityTypesSpot),
+				vmEvictionPolicyTypes: nil,
 				billingProfile:        nil,
 			},
 		},
@@ -72,9 +72,9 @@ func TestGetSpotVMOptions(t *testing.T) {
 			},
 			diffDiskSettings: nil,
 			want: resultParams{
-				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: "",
-				billingProfile: &compute.BillingProfile{
+				vmPriorityTypes:       ptr.To(armcompute.VirtualMachinePriorityTypesSpot),
+				vmEvictionPolicyTypes: nil,
+				billingProfile: &armcompute.BillingProfile{
 					MaxPrice: ptr.To[float64](1000),
 				},
 			},
@@ -85,11 +85,11 @@ func TestGetSpotVMOptions(t *testing.T) {
 				MaxPrice: nil,
 			},
 			diffDiskSettings: &infrav1.DiffDiskSettings{
-				Option: string(compute.DiffDiskOptionsLocal),
+				Option: string(armcompute.DiffDiskOptionsLocal),
 			},
 			want: resultParams{
-				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: "",
+				vmPriorityTypes:       ptr.To(armcompute.VirtualMachinePriorityTypesSpot),
+				vmEvictionPolicyTypes: nil,
 				billingProfile:        nil,
 			},
 		},
@@ -101,8 +101,8 @@ func TestGetSpotVMOptions(t *testing.T) {
 			},
 			diffDiskSettings: nil,
 			want: resultParams{
-				vmPriorityTypes:       compute.VirtualMachinePriorityTypesSpot,
-				vmEvictionPolicyTypes: compute.VirtualMachineEvictionPolicyTypesDelete,
+				vmPriorityTypes:       ptr.To(armcompute.VirtualMachinePriorityTypesSpot),
+				vmEvictionPolicyTypes: ptr.To(armcompute.VirtualMachineEvictionPolicyTypesDelete),
 				billingProfile:        nil,
 			},
 		},

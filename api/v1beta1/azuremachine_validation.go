@@ -20,7 +20,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -334,7 +334,7 @@ func validateManagedDisksUpdate(oldDiskParams, newDiskParams *ManagedDiskParamet
 func validateStorageAccountType(storageAccountType string, fieldPath *field.Path, isOSDisk bool) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if isOSDisk && storageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
+	if isOSDisk && storageAccountType == string(armcompute.StorageAccountTypesUltraSSDLRS) {
 		allErrs = append(allErrs, field.Invalid(fieldPath.Child("managedDisks").Child("storageAccountType"), storageAccountType, "UltraSSD_LRS can only be used with data disks, it cannot be used with OS Disks"))
 	}
 
@@ -343,12 +343,12 @@ func validateStorageAccountType(storageAccountType string, fieldPath *field.Path
 		return allErrs
 	}
 
-	for _, possibleStorageAccountType := range compute.PossibleDiskStorageAccountTypesValues() {
+	for _, possibleStorageAccountType := range armcompute.PossibleDiskStorageAccountTypesValues() {
 		if string(possibleStorageAccountType) == storageAccountType {
 			return allErrs
 		}
 	}
-	allErrs = append(allErrs, field.Invalid(fieldPath, "", fmt.Sprintf("allowed values are %v", compute.PossibleDiskStorageAccountTypesValues())))
+	allErrs = append(allErrs, field.Invalid(fieldPath, "", fmt.Sprintf("allowed values are %v", armcompute.PossibleDiskStorageAccountTypesValues())))
 	return allErrs
 }
 
@@ -356,19 +356,19 @@ func validateCachingType(cachingType string, fieldPath *field.Path, managedDisk 
 	allErrs := field.ErrorList{}
 	cachingTypeChildPath := fieldPath.Child("CachingType")
 
-	if managedDisk != nil && managedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
-		if cachingType != string(compute.CachingTypesNone) {
-			allErrs = append(allErrs, field.Invalid(cachingTypeChildPath, cachingType, fmt.Sprintf("cachingType '%s' is not supported when storageAccountType is '%s'. Allowed values are: '%s'", cachingType, compute.StorageAccountTypesUltraSSDLRS, compute.CachingTypesNone)))
+	if managedDisk != nil && managedDisk.StorageAccountType == string(armcompute.StorageAccountTypesUltraSSDLRS) {
+		if cachingType != string(armcompute.CachingTypesNone) {
+			allErrs = append(allErrs, field.Invalid(cachingTypeChildPath, cachingType, fmt.Sprintf("cachingType '%s' is not supported when storageAccountType is '%s'. Allowed values are: '%s'", cachingType, armcompute.StorageAccountTypesUltraSSDLRS, armcompute.CachingTypesNone)))
 		}
 	}
 
-	for _, possibleCachingType := range compute.PossibleCachingTypesValues() {
+	for _, possibleCachingType := range armcompute.PossibleCachingTypesValues() {
 		if string(possibleCachingType) == cachingType {
 			return allErrs
 		}
 	}
 
-	allErrs = append(allErrs, field.Invalid(cachingTypeChildPath, cachingType, fmt.Sprintf("allowed values are %v", compute.PossibleCachingTypesValues())))
+	allErrs = append(allErrs, field.Invalid(cachingTypeChildPath, cachingType, fmt.Sprintf("allowed values are %v", armcompute.PossibleCachingTypesValues())))
 	return allErrs
 }
 

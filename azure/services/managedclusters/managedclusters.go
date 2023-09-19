@@ -25,7 +25,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -45,12 +45,13 @@ type ManagedClusterScope interface {
 	MakeEmptyKubeConfigSecret() corev1.Secret
 	GetKubeConfigData() []byte
 	SetKubeConfigData([]byte)
+	SetOIDCIssuerProfileStatus(*infrav1.OIDCIssuerProfileStatus)
 }
 
 // Service provides operations on azure resources.
 type Service struct {
 	Scope ManagedClusterScope
-	asyncpoller.Reconciler
+	async.Reconciler
 	CredentialGetter
 }
 
@@ -62,7 +63,7 @@ func New(scope ManagedClusterScope) (*Service, error) {
 	}
 	return &Service{
 		Scope: scope,
-		Reconciler: asyncpoller.New[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse,
+		Reconciler: async.New[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse,
 			armcontainerservice.ManagedClustersClientDeleteResponse](scope, client, client),
 		CredentialGetter: client,
 	}, nil
@@ -111,6 +112,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// the "before" reflects the correct value.
 		if id := managedCluster.Properties.IdentityProfile[kubeletIdentityKey]; id != nil && id.ResourceID != nil {
 			s.Scope.SetKubeletIdentity(*id.ResourceID)
+		}
+
+		s.Scope.SetOIDCIssuerProfileStatus(nil)
+		if managedCluster.Properties.OidcIssuerProfile != nil && managedCluster.Properties.OidcIssuerProfile.IssuerURL != nil {
+			s.Scope.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
+				IssuerURL: managedCluster.Properties.OidcIssuerProfile.IssuerURL,
+			})
 		}
 	}
 	s.Scope.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, resultErr)

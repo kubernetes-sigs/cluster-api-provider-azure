@@ -453,8 +453,8 @@ func (s *ManagedControlPlaneScope) CloudProviderConfigOverrides() *infrav1.Cloud
 }
 
 // FailureDomains returns the failure domains for the cluster.
-func (s *ManagedControlPlaneScope) FailureDomains() []string {
-	return []string{}
+func (s *ManagedControlPlaneScope) FailureDomains() []*string {
+	return []*string{}
 }
 
 // ManagedClusterAnnotations returns the annotations for the managed cluster.
@@ -484,6 +484,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 		OutboundType:                s.ControlPlane.Spec.OutboundType,
 		Identity:                    s.ControlPlane.Spec.Identity,
 		KubeletUserAssignedIdentity: s.ControlPlane.Spec.KubeletUserAssignedIdentity,
+		NetworkPluginMode:           s.ControlPlane.Spec.NetworkPluginMode,
 	}
 
 	if s.ControlPlane.Spec.SSHPublicKey != nil {
@@ -579,6 +580,12 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 			HTTPSProxy: s.ControlPlane.Spec.HTTPProxyConfig.HTTPSProxy,
 			NoProxy:    s.ControlPlane.Spec.HTTPProxyConfig.NoProxy,
 			TrustedCA:  s.ControlPlane.Spec.HTTPProxyConfig.TrustedCA,
+		}
+	}
+
+	if s.ControlPlane.Spec.OIDCIssuerProfile != nil {
+		managedClusterSpec.OIDCIssuerProfile = &managedclusters.OIDCIssuerProfile{
+			Enabled: s.ControlPlane.Spec.OIDCIssuerProfile.Enabled,
 		}
 	}
 
@@ -806,4 +813,9 @@ func (s *ManagedControlPlaneScope) PrivateEndpointSpecs() []azure.ResourceSpecGe
 	}
 
 	return privateEndpointSpecs
+}
+
+// SetOIDCIssuerProfileStatus sets the status for the OIDC issuer profile config.
+func (s *ManagedControlPlaneScope) SetOIDCIssuerProfileStatus(oidc *infrav1.OIDCIssuerProfileStatus) {
+	s.ControlPlane.Status.OIDCIssuerProfile = oidc
 }

@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -59,14 +59,18 @@ type (
 )
 
 // New creates a new service.
-func New(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
-	client := NewClient(scope)
+func New(scope ScaleSetScope, skuCache *resourceskus.Cache) (*Service, error) {
+	client, err := NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
-		Reconciler:       async.New(scope, client, client),
+		Reconciler: async.New[armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse,
+			armcompute.VirtualMachineScaleSetsClientDeleteResponse](scope, client, client),
 		Client:           client,
 		Scope:            scope,
 		resourceSKUCache: skuCache,
-	}
+	}, nil
 }
 
 // Name returns the service name.
@@ -110,9 +114,9 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, err)
 
 	if err == nil && result != nil {
-		vmss, ok := result.(compute.VirtualMachineScaleSet)
+		vmss, ok := result.(armcompute.VirtualMachineScaleSet)
 		if !ok {
-			return errors.Errorf("%T is not a compute.VirtualMachineScaleSet", result)
+			return errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", result)
 		}
 
 		fetchedVMSS := converters.SDKToVMSS(vmss, scaleSetSpec.VMSSInstances)
@@ -218,7 +222,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 		// Check support for ultra disks as data disks.
 		for _, disks := range scaleSetSpec.DataDisks {
 			if disks.ManagedDisk != nil &&
-				disks.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) &&
+				disks.ManagedDisk.StorageAccountType == string(armcompute.StorageAccountTypesUltraSSDLRS) &&
 				!hasLocationCapability {
 				return azure.WithTerminalError(err)
 			}
@@ -278,9 +282,9 @@ func (s *Service) getVirtualMachineScaleSet(ctx context.Context, spec azure.Reso
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get existing VMSS")
 	}
-	vmss, ok := vmssResult.(compute.VirtualMachineScaleSet)
+	vmss, ok := vmssResult.(armcompute.VirtualMachineScaleSet)
 	if !ok {
-		return nil, errors.Errorf("%T is not a compute.VirtualMachineScaleSet", vmssResult)
+		return nil, errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", vmssResult)
 	}
 
 	vmssInstances, err := s.Client.ListInstances(ctx, spec.ResourceGroupName(), spec.ResourceName())

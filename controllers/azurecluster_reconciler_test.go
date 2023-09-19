@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	. "github.com/onsi/gomega"
@@ -91,7 +91,7 @@ func TestAzureClusterServiceReconcile(t *testing.T) {
 					svcTwoMock,
 					svcThreeMock,
 				},
-				skuCache: resourceskus.NewStaticCache([]compute.ResourceSku{}, ""),
+				skuCache: resourceskus.NewStaticCache([]armcompute.ResourceSKU{}, ""),
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -359,7 +359,7 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 					svcTwoMock,
 					svcThreeMock,
 				},
-				skuCache: resourceskus.NewStaticCache([]compute.ResourceSku{}, ""),
+				skuCache: resourceskus.NewStaticCache([]armcompute.ResourceSKU{}, ""),
 			}
 
 			err := s.Delete(context.TODO())

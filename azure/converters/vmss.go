@@ -19,7 +19,7 @@ package converters
 import (
 	"regexp"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"k8s.io/utils/ptr"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -34,20 +34,20 @@ const (
 )
 
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.
-func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) azure.VMSS {
+func SDKToVMSS(sdkvmss armcompute.VirtualMachineScaleSet, sdkinstances []armcompute.VirtualMachineScaleSetVM) azure.VMSS {
 	vmss := azure.VMSS{
 		ID:    ptr.Deref(sdkvmss.ID, ""),
 		Name:  ptr.Deref(sdkvmss.Name, ""),
-		State: infrav1.ProvisioningState(ptr.Deref(sdkvmss.ProvisioningState, "")),
+		State: infrav1.ProvisioningState(ptr.Deref(sdkvmss.Properties.ProvisioningState, "")),
 	}
 
-	if sdkvmss.Sku != nil {
-		vmss.Sku = ptr.Deref(sdkvmss.Sku.Name, "")
-		vmss.Capacity = ptr.Deref[int64](sdkvmss.Sku.Capacity, 0)
+	if sdkvmss.SKU != nil {
+		vmss.Sku = ptr.Deref(sdkvmss.SKU.Name, "")
+		vmss.Capacity = ptr.Deref[int64](sdkvmss.SKU.Capacity, 0)
 	}
 
-	if sdkvmss.Zones != nil && len(*sdkvmss.Zones) > 0 {
-		vmss.Zones = azure.StringSlice(sdkvmss.Zones)
+	for _, zone := range sdkvmss.Zones {
+		vmss.Zones = append(vmss.Zones, *zone)
 	}
 
 	if len(sdkvmss.Tags) > 0 {
@@ -56,16 +56,17 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 
 	if len(sdkinstances) > 0 {
 		vmss.Instances = make([]azure.VMSSVM, len(sdkinstances))
+		orchestrationMode := ptr.Deref(sdkvmss.Properties.OrchestrationMode, "")
 		for i, vm := range sdkinstances {
 			vmss.Instances[i] = *SDKToVMSSVM(vm)
-			vmss.Instances[i].OrchestrationMode = infrav1.OrchestrationModeType(sdkvmss.OrchestrationMode)
+			vmss.Instances[i].OrchestrationMode = infrav1.OrchestrationModeType(orchestrationMode)
 		}
 	}
 
-	if sdkvmss.VirtualMachineProfile != nil &&
-		sdkvmss.VirtualMachineProfile.StorageProfile != nil &&
-		sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference != nil {
-		imageRef := sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference
+	if sdkvmss.Properties.VirtualMachineProfile != nil &&
+		sdkvmss.Properties.VirtualMachineProfile.StorageProfile != nil &&
+		sdkvmss.Properties.VirtualMachineProfile.StorageProfile.ImageReference != nil {
+		imageRef := sdkvmss.Properties.VirtualMachineProfile.StorageProfile.ImageReference
 		vmss.Image = SDKImageToImage(imageRef, sdkvmss.Plan != nil)
 	}
 
@@ -73,32 +74,32 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 }
 
 // SDKVMToVMSSVM converts an Azure SDK VM to a VMSS VM.
-func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine, mode infrav1.OrchestrationModeType) *azure.VMSSVM {
+func SDKVMToVMSSVM(sdkInstance armcompute.VirtualMachine, mode infrav1.OrchestrationModeType) *azure.VMSSVM {
 	instance := azure.VMSSVM{
 		ID: ptr.Deref(sdkInstance.ID, ""),
 	}
 
-	if sdkInstance.VirtualMachineProperties == nil {
+	if sdkInstance.Properties == nil {
 		return &instance
 	}
 
 	instance.State = infrav1.Creating
-	if sdkInstance.ProvisioningState != nil {
-		instance.State = infrav1.ProvisioningState(ptr.Deref(sdkInstance.ProvisioningState, ""))
+	if sdkInstance.Properties.ProvisioningState != nil {
+		instance.State = infrav1.ProvisioningState(ptr.Deref(sdkInstance.Properties.ProvisioningState, ""))
 	}
 
-	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
-		instance.Name = *sdkInstance.OsProfile.ComputerName
+	if sdkInstance.Properties.OSProfile != nil && sdkInstance.Properties.OSProfile.ComputerName != nil {
+		instance.Name = *sdkInstance.Properties.OSProfile.ComputerName
 	}
 
-	if sdkInstance.StorageProfile != nil && sdkInstance.StorageProfile.ImageReference != nil {
-		imageRef := sdkInstance.StorageProfile.ImageReference
+	if sdkInstance.Properties.StorageProfile != nil && sdkInstance.Properties.StorageProfile.ImageReference != nil {
+		imageRef := sdkInstance.Properties.StorageProfile.ImageReference
 		instance.Image = SDKImageToImage(imageRef, sdkInstance.Plan != nil)
 	}
 
-	if sdkInstance.Zones != nil && len(*sdkInstance.Zones) > 0 {
+	if len(sdkInstance.Zones) > 0 {
 		// An instance should have only 1 zone, so use the first item of the slice.
-		instance.AvailabilityZone = azure.StringSlice(sdkInstance.Zones)[0]
+		instance.AvailabilityZone = *sdkInstance.Zones[0]
 	}
 
 	instance.OrchestrationMode = mode
@@ -107,7 +108,7 @@ func SDKVMToVMSSVM(sdkInstance compute.VirtualMachine, mode infrav1.Orchestratio
 }
 
 // SDKToVMSSVM converts an Azure SDK VirtualMachineScaleSetVM into an infrav1exp.VMSSVM.
-func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
+func SDKToVMSSVM(sdkInstance armcompute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 	// Convert resourceGroup Name ID ( ProviderID in capz objects )
 	var convertedID string
 	convertedID, err := azprovider.ConvertResourceGroupNameToLower(ptr.Deref(sdkInstance.ID, ""))
@@ -120,44 +121,44 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 		InstanceID: ptr.Deref(sdkInstance.InstanceID, ""),
 	}
 
-	if sdkInstance.VirtualMachineScaleSetVMProperties == nil {
+	if sdkInstance.Properties == nil {
 		return &instance
 	}
 
 	instance.State = infrav1.Creating
-	if sdkInstance.ProvisioningState != nil {
-		instance.State = infrav1.ProvisioningState(ptr.Deref(sdkInstance.ProvisioningState, ""))
+	if sdkInstance.Properties.ProvisioningState != nil {
+		instance.State = infrav1.ProvisioningState(ptr.Deref(sdkInstance.Properties.ProvisioningState, ""))
 	}
 
-	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
-		instance.Name = *sdkInstance.OsProfile.ComputerName
+	if sdkInstance.Properties.OSProfile != nil && sdkInstance.Properties.OSProfile.ComputerName != nil {
+		instance.Name = *sdkInstance.Properties.OSProfile.ComputerName
 	}
 
 	if sdkInstance.Resources != nil {
-		for _, r := range *sdkInstance.Resources {
-			if r.ProvisioningState != nil && r.Name != nil &&
+		for _, r := range sdkInstance.Resources {
+			if r.Properties.ProvisioningState != nil && r.Name != nil &&
 				(*r.Name == azure.BootstrappingExtensionLinux || *r.Name == azure.BootstrappingExtensionWindows) {
-				instance.BootstrappingState = infrav1.ProvisioningState(ptr.Deref(r.ProvisioningState, ""))
+				instance.BootstrappingState = infrav1.ProvisioningState(ptr.Deref(r.Properties.ProvisioningState, ""))
 				break
 			}
 		}
 	}
 
-	if sdkInstance.StorageProfile != nil && sdkInstance.StorageProfile.ImageReference != nil {
-		imageRef := sdkInstance.StorageProfile.ImageReference
+	if sdkInstance.Properties.StorageProfile != nil && sdkInstance.Properties.StorageProfile.ImageReference != nil {
+		imageRef := sdkInstance.Properties.StorageProfile.ImageReference
 		instance.Image = SDKImageToImage(imageRef, sdkInstance.Plan != nil)
 	}
 
-	if sdkInstance.Zones != nil && len(*sdkInstance.Zones) > 0 {
+	if len(sdkInstance.Zones) > 0 {
 		// an instance should only have 1 zone, so we select the first item of the slice
-		instance.AvailabilityZone = azure.StringSlice(sdkInstance.Zones)[0]
+		instance.AvailabilityZone = *sdkInstance.Zones[0]
 	}
 
 	return &instance
 }
 
 // SDKImageToImage converts a SDK image reference to infrav1.Image.
-func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool) infrav1.Image {
+func SDKImageToImage(sdkImageRef *armcompute.ImageReference, isThirdPartyImage bool) infrav1.Image {
 	if sdkImageRef.ID != nil {
 		return IDImageRefToImage(*sdkImageRef.ID)
 	}
@@ -174,11 +175,11 @@ func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool
 }
 
 // GetOrchestrationMode returns the compute.OrchestrationMode for the given infrav1.OrchestrationModeType.
-func GetOrchestrationMode(modeType infrav1.OrchestrationModeType) compute.OrchestrationMode {
+func GetOrchestrationMode(modeType infrav1.OrchestrationModeType) armcompute.OrchestrationMode {
 	if modeType == infrav1.FlexibleOrchestrationMode {
-		return compute.OrchestrationModeFlexible
+		return armcompute.OrchestrationModeFlexible
 	}
-	return compute.OrchestrationModeUniform
+	return armcompute.OrchestrationModeUniform
 }
 
 // IDImageRefToImage converts an ID to a infrav1.Image with ComputerGallery set or ID, depending on the structure of the ID.
@@ -203,13 +204,13 @@ func IDImageRefToImage(id string) infrav1.Image {
 }
 
 // mpImageRefToImage converts a marketplace gallery ImageReference to an infrav1.Image.
-func mpImageRefToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool) infrav1.Image {
+func mpImageRefToImage(sdkImageRef *armcompute.ImageReference, isThirdPartyImage bool) infrav1.Image {
 	return infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			ImagePlan: infrav1.ImagePlan{
 				Publisher: ptr.Deref(sdkImageRef.Publisher, ""),
 				Offer:     ptr.Deref(sdkImageRef.Offer, ""),
-				SKU:       ptr.Deref(sdkImageRef.Sku, ""),
+				SKU:       ptr.Deref(sdkImageRef.SKU, ""),
 			},
 			Version:         ptr.Deref(sdkImageRef.Version, ""),
 			ThirdPartyImage: isThirdPartyImage,

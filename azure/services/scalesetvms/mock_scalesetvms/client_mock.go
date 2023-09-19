@@ -24,9 +24,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	azure "github.com/Azure/go-autorest/autorest/azure"
+	runtime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	gomock "go.uber.org/mock/gomock"
-	azure0 "sigs.k8s.io/cluster-api-provider-azure/azure"
+	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // Mockclient is a mock of client interface.
@@ -52,23 +53,39 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 	return m.recorder
 }
 
-// DeleteAsync mocks base method.
-func (m *Mockclient) DeleteAsync(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (azure.FutureAPI, error) {
+// CreateOrUpdateAsync mocks base method.
+func (m *Mockclient) CreateOrUpdateAsync(arg0 context.Context, arg1 azure.ResourceSpecGetter, arg2 string, arg3 interface{}) (interface{}, *runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1)
-	ret0, _ := ret[0].(azure.FutureAPI)
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(*runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse])
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
+func (mr *MockclientMockRecorder) CreateOrUpdateAsync(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateAsync), arg0, arg1, arg2, arg3)
+}
+
+// DeleteAsync mocks base method.
+func (m *Mockclient) DeleteAsync(arg0 context.Context, arg1 azure.ResourceSpecGetter, arg2 string) (*runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientDeleteResponse], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientDeleteResponse])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DeleteAsync indicates an expected call of DeleteAsync.
-func (mr *MockclientMockRecorder) DeleteAsync(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockclientMockRecorder) DeleteAsync(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*Mockclient)(nil).DeleteAsync), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*Mockclient)(nil).DeleteAsync), arg0, arg1, arg2)
 }
 
 // Get mocks base method.
-func (m *Mockclient) Get(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (interface{}, error) {
+func (m *Mockclient) Get(arg0 context.Context, arg1 azure.ResourceSpecGetter) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(interface{})
@@ -80,19 +97,4 @@ func (m *Mockclient) Get(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (
 func (mr *MockclientMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockclient)(nil).Get), arg0, arg1)
-}
-
-// IsDone mocks base method.
-func (m *Mockclient) IsDone(ctx context.Context, future azure.FutureAPI) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsDone", ctx, future)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsDone indicates an expected call of IsDone.
-func (mr *MockclientMockRecorder) IsDone(ctx, future interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDone", reflect.TypeOf((*Mockclient)(nil).IsDone), ctx, future)
 }

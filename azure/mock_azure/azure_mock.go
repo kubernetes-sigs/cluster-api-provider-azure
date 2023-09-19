@@ -786,10 +786,10 @@ func (mr *MockClusterDescriberMockRecorder) ExtendedLocationType() *gomock.Call 
 }
 
 // FailureDomains mocks base method.
-func (m *MockClusterDescriber) FailureDomains() []string {
+func (m *MockClusterDescriber) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 
@@ -1242,10 +1242,10 @@ func (mr *MockClusterScoperMockRecorder) ExtendedLocationType() *gomock.Call {
 }
 
 // FailureDomains mocks base method.
-func (m *MockClusterScoper) FailureDomains() []string {
+func (m *MockClusterScoper) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 
@@ -1683,10 +1683,10 @@ func (mr *MockManagedClusterScoperMockRecorder) ExtendedLocationType() *gomock.C
 }
 
 // FailureDomains mocks base method.
-func (m *MockManagedClusterScoper) FailureDomains() []string {
+func (m *MockManagedClusterScoper) FailureDomains() []*string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]*string)
 	return ret0
 }
 
@@ -1992,18 +1992,18 @@ func (m *MockASOResourceSpecGetter[T]) EXPECT() *MockASOResourceSpecGetterMockRe
 }
 
 // Parameters mocks base method.
-func (m *MockASOResourceSpecGetter[T]) Parameters(ctx context.Context, object T) (T, error) {
+func (m *MockASOResourceSpecGetter[T]) Parameters(ctx context.Context, existing T) (T, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Parameters", ctx, object)
+	ret := m.ctrl.Call(m, "Parameters", ctx, existing)
 	ret0, _ := ret[0].(T)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Parameters indicates an expected call of Parameters.
-func (mr *MockASOResourceSpecGetterMockRecorder[T]) Parameters(ctx, object interface{}) *gomock.Call {
+func (mr *MockASOResourceSpecGetterMockRecorder[T]) Parameters(ctx, existing interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockASOResourceSpecGetter[T])(nil).Parameters), ctx, object)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parameters", reflect.TypeOf((*MockASOResourceSpecGetter[T])(nil).Parameters), ctx, existing)
 }
 
 // ResourceRef mocks base method.

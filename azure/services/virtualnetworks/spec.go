@@ -67,7 +67,7 @@ func (s *VNetSpec) Parameters(ctx context.Context, existing interface{}) (interf
 			Additional:  s.AdditionalTags,
 		})),
 		Location:         ptr.To(s.Location),
-		ExtendedLocation: converters.ExtendedLocationToNetworkSDKv2(s.ExtendedLocation),
+		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
 		Properties: &armnetwork.VirtualNetworkPropertiesFormat{
 			AddressSpace: &armnetwork.AddressSpace{
 				AddressPrefixes: azure.PtrSlice(&s.CIDRs),

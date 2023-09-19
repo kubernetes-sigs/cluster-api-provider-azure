@@ -21,12 +21,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 )
 
@@ -52,7 +53,7 @@ var (
 	nilDiagnosticsProfileSpec, nilDiagnosticsProfileVMSS                               = getNilDiagnosticsProfileVMSS()
 )
 
-func getDefaultVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getDefaultVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 		NameSuffix: "my_disk_with_ultra_disks",
@@ -64,12 +65,12 @@ func getDefaultVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	})
 
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 	return spec, vmss
 }
 
-func getDefaultWindowsVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getDefaultWindowsVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newWindowsVMSSSpec()
 	// Do we want this here?
 	spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
@@ -81,23 +82,23 @@ func getDefaultWindowsVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 		},
 	})
 	vmss := newDefaultWindowsVMSS()
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 	return spec, vmss
 }
 
-func getAcceleratedNetworkingVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getAcceleratedNetworkingVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Size = "VM_SIZE_AN"
 	spec.AcceleratedNetworking = ptr.To(true)
 	spec.NetworkInterfaces[0].AcceleratedNetworking = ptr.To(true)
 	vmss := newDefaultVMSS("VM_SIZE_AN")
-	(*vmss.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations)[0].VirtualMachineScaleSetNetworkConfigurationProperties.EnableAcceleratedNetworking = ptr.To(true)
+	vmss.Properties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations[0].Properties.EnableAcceleratedNetworking = ptr.To(true)
 
 	return spec, vmss
 }
 
-func getCustomSubnetVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getCustomSubnetVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Size = "VM_SIZE_AN"
 	spec.AcceleratedNetworking = ptr.To(true)
@@ -108,23 +109,23 @@ func getCustomSubnetVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 		},
 	}
 	customSubnetVMSS := newDefaultVMSS("VM_SIZE_AN")
-	netConfigs := customSubnetVMSS.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
-	(*netConfigs)[0].Name = ptr.To("my-vmss-nic-0")
-	(*netConfigs)[0].EnableIPForwarding = ptr.To(true)
-	(*netConfigs)[0].EnableAcceleratedNetworking = ptr.To(true)
-	nic1IPConfigs := (*netConfigs)[0].IPConfigurations
-	(*nic1IPConfigs)[0].Name = ptr.To("ipConfig0")
-	(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
-	(*nic1IPConfigs)[0].Subnet = &compute.APIEntityReference{
+	netConfigs := customSubnetVMSS.Properties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
+	netConfigs[0].Name = ptr.To("my-vmss-nic-0")
+	netConfigs[0].Properties.EnableIPForwarding = ptr.To(true)
+	netConfigs[0].Properties.EnableAcceleratedNetworking = ptr.To(true)
+	nic1IPConfigs := netConfigs[0].Properties.IPConfigurations
+	nic1IPConfigs[0].Name = ptr.To("ipConfig0")
+	nic1IPConfigs[0].Properties.PrivateIPAddressVersion = ptr.To(armcompute.IPVersionIPv4)
+	nic1IPConfigs[0].Properties.Subnet = &armcompute.APIEntityReference{
 		ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/somesubnet"),
 	}
-	(*netConfigs)[0].EnableAcceleratedNetworking = ptr.To(true)
-	(*netConfigs)[0].Primary = ptr.To(true)
+	netConfigs[0].Properties.EnableAcceleratedNetworking = ptr.To(true)
+	netConfigs[0].Properties.Primary = ptr.To(true)
 
 	return spec, customSubnetVMSS
 }
 
-func getCustomNetworkingVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getCustomNetworkingVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.NetworkInterfaces = []infrav1.NetworkInterface{
 		{
@@ -147,49 +148,50 @@ func getCustomNetworkingVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 		},
 	})
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
-	netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
-	(*netConfigs)[0].Name = ptr.To("my-vmss-nic-0")
-	(*netConfigs)[0].EnableIPForwarding = ptr.To(true)
-	nic1IPConfigs := (*netConfigs)[0].IPConfigurations
-	(*nic1IPConfigs)[0].Name = ptr.To("ipConfig0")
-	(*nic1IPConfigs)[0].PrivateIPAddressVersion = compute.IPVersionIPv4
-	(*netConfigs)[0].EnableAcceleratedNetworking = ptr.To(true)
-	(*netConfigs)[0].Primary = ptr.To(true)
-	vmssIPConfigs := []compute.VirtualMachineScaleSetIPConfiguration{
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	netConfigs := vmss.Properties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
+	netConfigs[0].Name = ptr.To("my-vmss-nic-0")
+	netConfigs[0].Properties.EnableIPForwarding = ptr.To(true)
+	nic1IPConfigs := netConfigs[0].Properties.IPConfigurations
+	nic1IPConfigs[0].Name = ptr.To("ipConfig0")
+	nic1IPConfigs[0].Properties.PrivateIPAddressVersion = ptr.To(armcompute.IPVersionIPv4)
+	netConfigs[0].Properties.EnableAcceleratedNetworking = ptr.To(true)
+	netConfigs[0].Properties.Primary = ptr.To(true)
+	vmssIPConfigs := []armcompute.VirtualMachineScaleSetIPConfiguration{
 		{
 			Name: ptr.To("ipConfig0"),
-			VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+			Properties: &armcompute.VirtualMachineScaleSetIPConfigurationProperties{
 				Primary:                 ptr.To(true),
-				PrivateIPAddressVersion: compute.IPVersionIPv4,
-				Subnet: &compute.APIEntityReference{
+				PrivateIPAddressVersion: ptr.To(armcompute.IPVersionIPv4),
+				Subnet: &armcompute.APIEntityReference{
 					ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
 				},
 			},
 		},
 		{
 			Name: ptr.To("ipConfig1"),
-			VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
-				PrivateIPAddressVersion: compute.IPVersionIPv4,
-				Subnet: &compute.APIEntityReference{
+			Properties: &armcompute.VirtualMachineScaleSetIPConfigurationProperties{
+				PrivateIPAddressVersion: ptr.To(armcompute.IPVersionIPv4),
+				Subnet: &armcompute.APIEntityReference{
 					ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet2"),
 				},
 			},
 		},
 	}
-	*netConfigs = append(*netConfigs, compute.VirtualMachineScaleSetNetworkConfiguration{
+	netConfigs = append(netConfigs, &armcompute.VirtualMachineScaleSetNetworkConfiguration{
 		Name: ptr.To("my-vmss-nic-1"),
-		VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
+		Properties: &armcompute.VirtualMachineScaleSetNetworkConfigurationProperties{
 			EnableAcceleratedNetworking: ptr.To(true),
-			IPConfigurations:            &vmssIPConfigs,
+			IPConfigurations:            azure.PtrSlice(&vmssIPConfigs),
 			EnableIPForwarding:          ptr.To(true),
 		},
 	})
+	vmss.Properties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations = netConfigs
 
 	return spec, vmss
 }
 
-func getSpotVMVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getSpotVMVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 		NameSuffix: "my_disk_with_ultra_disks",
@@ -201,17 +203,17 @@ func getSpotVMVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	})
 	spec.SpotVMOptions = &infrav1.SpotVMOptions{}
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Properties.VirtualMachineProfile.Priority = ptr.To(armcompute.VirtualMachinePriorityTypesSpot)
 
 	return spec, vmss
 }
 
-func getEPHVMSSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getEPHVMSSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Size = vmSizeEPH
 	spec.SKU = resourceskus.SKU{
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.EphemeralOSDisk),
 				Value: ptr.To("True"),
@@ -220,30 +222,30 @@ func getEPHVMSSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	}
 	spec.SpotVMOptions = &infrav1.SpotVMOptions{}
 	spec.OSDisk.DiffDiskSettings = &infrav1.DiffDiskSettings{
-		Option: string(compute.DiffDiskOptionsLocal),
+		Option: string(armcompute.DiffDiskOptionsLocal),
 	}
 	vmss := newDefaultVMSS(vmSizeEPH)
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
-		Option: compute.DiffDiskOptionsLocal,
+	vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.DiffDiskSettings = &armcompute.DiffDiskSettings{
+		Option: ptr.To(armcompute.DiffDiskOptionsLocal),
 	}
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
+	vmss.Properties.VirtualMachineProfile.Priority = ptr.To(armcompute.VirtualMachinePriorityTypesSpot)
 
 	return spec, vmss
 }
 
-func getEvictionPolicyVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getEvictionPolicyVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Size = vmSizeEPH
 	deletePolicy := infrav1.SpotEvictionPolicyDelete
 	spec.SpotVMOptions = &infrav1.SpotVMOptions{EvictionPolicy: &deletePolicy}
 	vmss := newDefaultVMSS(vmSizeEPH)
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.VirtualMachineEvictionPolicyTypesDelete
+	vmss.Properties.VirtualMachineProfile.Priority = ptr.To(armcompute.VirtualMachinePriorityTypesSpot)
+	vmss.Properties.VirtualMachineProfile.EvictionPolicy = ptr.To(armcompute.VirtualMachineEvictionPolicyTypesDelete)
 
 	return spec, vmss
 }
 
-func getMaxPriceVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getMaxPriceVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	maxPrice := resource.MustParse("0.001")
 	spec.SpotVMOptions = &infrav1.SpotVMOptions{
@@ -258,16 +260,16 @@ func getMaxPriceVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 		},
 	})
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.BillingProfile = &compute.BillingProfile{
+	vmss.Properties.VirtualMachineProfile.Priority = ptr.To(armcompute.VirtualMachinePriorityTypesSpot)
+	vmss.Properties.VirtualMachineProfile.BillingProfile = &armcompute.BillingProfile{
 		MaxPrice: ptr.To[float64](0.001),
 	}
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 	return spec, vmss
 }
 
-func getEncryptionVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getEncryptionVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.OSDisk.ManagedDisk.DiskEncryptionSet = &infrav1.DiskEncryptionSetParameters{
 		ID: "my-diskencryptionset-id",
@@ -281,11 +283,11 @@ func getEncryptionVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 		},
 	})
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
-	osdisk := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk
-	osdisk.ManagedDisk = &compute.VirtualMachineScaleSetManagedDiskParameters{
-		StorageAccountType: "Premium_LRS",
-		DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	osdisk := vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk
+	osdisk.ManagedDisk = &armcompute.VirtualMachineScaleSetManagedDiskParameters{
+		StorageAccountType: ptr.To(armcompute.StorageAccountTypesPremiumLRS),
+		DiskEncryptionSet: &armcompute.DiskEncryptionSetParameters{
 			ID: ptr.To("my-diskencryptionset-id"),
 		},
 	}
@@ -293,7 +295,7 @@ func getEncryptionVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	return spec, vmss
 }
 
-func getUserIdentityVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getUserIdentityVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
 		NameSuffix: "my_disk_with_ultra_disks",
@@ -310,10 +312,10 @@ func getUserIdentityVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 		},
 	}
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
-	vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
-		Type: compute.ResourceIdentityTypeUserAssigned,
-		UserAssignedIdentities: map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Identity = &armcompute.VirtualMachineScaleSetIdentity{
+		Type: ptr.To(armcompute.ResourceIdentityTypeUserAssigned),
+		UserAssignedIdentities: map[string]*armcompute.UserAssignedIdentitiesValue{
 			"/subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1": {},
 		},
 	}
@@ -321,12 +323,12 @@ func getUserIdentityVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	return spec, vmss
 }
 
-func getHostEncryptionVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getHostEncryptionVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Size = "VM_SIZE_EAH"
 	spec.SecurityProfile = &infrav1.SecurityProfile{EncryptionAtHost: ptr.To(true)}
 	spec.SKU = resourceskus.SKU{
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.EncryptionAtHost),
 				Value: ptr.To("True"),
@@ -334,10 +336,10 @@ func getHostEncryptionVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 		},
 	}
 	vmss := newDefaultVMSS("VM_SIZE_EAH")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.SecurityProfile = &compute.SecurityProfile{
+	vmss.Properties.VirtualMachineProfile.SecurityProfile = &armcompute.SecurityProfile{
 		EncryptionAtHost: ptr.To(true),
 	}
-	vmss.Sku.Name = ptr.To(spec.Size)
+	vmss.SKU.Name = ptr.To(spec.Size)
 
 	return spec, vmss
 }
@@ -348,7 +350,7 @@ func getHostEncryptionUnsupportedSpec() ScaleSetSpec {
 	return spec
 }
 
-func getEphemeralReadOnlyVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getEphemeralReadOnlyVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Size = "VM_SIZE_EPH"
 	spec.OSDisk.DiffDiskSettings = &infrav1.DiffDiskSettings{
@@ -356,7 +358,7 @@ func getEphemeralReadOnlyVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	}
 	spec.OSDisk.CachingType = "ReadOnly"
 	spec.SKU = resourceskus.SKU{
-		Capabilities: &[]compute.ResourceSkuCapabilities{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
 			{
 				Name:  ptr.To(resourceskus.EphemeralOSDisk),
 				Value: ptr.To("True"),
@@ -365,15 +367,15 @@ func getEphemeralReadOnlyVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
 	}
 
 	vmss := newDefaultVMSS("VM_SIZE_EPH")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
-		Option: compute.DiffDiskOptionsLocal,
+	vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.DiffDiskSettings = &armcompute.DiffDiskSettings{
+		Option: ptr.To(armcompute.DiffDiskOptionsLocal),
 	}
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.Caching = compute.CachingTypesReadOnly
+	vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.Caching = ptr.To(armcompute.CachingTypesReadOnly)
 
 	return spec, vmss
 }
 
-func getExistingDefaultVMSS() (s ScaleSetSpec, existing compute.VirtualMachineScaleSet, result compute.VirtualMachineScaleSet) {
+func getExistingDefaultVMSS() (s ScaleSetSpec, existing armcompute.VirtualMachineScaleSet, result armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Capacity = 2
 	spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
@@ -398,22 +400,22 @@ func getExistingDefaultVMSS() (s ScaleSetSpec, existing compute.VirtualMachineSc
 	}
 
 	existingVMSS := newDefaultExistingVMSS("VM_SIZE")
-	existingVMSS.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
-	existingVMSS.Sku.Capacity = ptr.To[int64](2)
-	existingVMSS.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	existingVMSS.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	existingVMSS.SKU.Capacity = ptr.To[int64](2)
+	existingVMSS.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 	clone := newDefaultExistingVMSS("VM_SIZE")
-	clone.Sku.Capacity = ptr.To[int64](3)
-	clone.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
-	clone.VirtualMachineProfile.NetworkProfile = nil
+	clone.SKU.Capacity = ptr.To[int64](3)
+	clone.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	clone.Properties.VirtualMachineProfile.NetworkProfile = nil
 
-	clone.VirtualMachineProfile.StorageProfile.ImageReference.Version = ptr.To("2.0")
-	clone.VirtualMachineProfile.NetworkProfile = nil
+	clone.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Version = ptr.To("2.0")
+	clone.Properties.VirtualMachineProfile.NetworkProfile = nil
 
 	return spec, existingVMSS, clone
 }
 
-func getUserManagedAndStorageAcccountDiagnosticsVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getUserManagedAndStorageAcccountDiagnosticsVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	storageURI := "https://fakeurl"
 	spec := newDefaultVMSSSpec()
 	spec.DiagnosticsProfile = &infrav1.Diagnostics{
@@ -437,16 +439,16 @@ func getUserManagedAndStorageAcccountDiagnosticsVMSS() (ScaleSetSpec, compute.Vi
 	spec.MaxSurge = 1
 
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
+	vmss.Properties.VirtualMachineProfile.DiagnosticsProfile = &armcompute.DiagnosticsProfile{BootDiagnostics: &armcompute.BootDiagnostics{
 		Enabled:    ptr.To(true),
 		StorageURI: &storageURI,
 	}}
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 	return spec, vmss
 }
 
-func getManagedDiagnosticsVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getManagedDiagnosticsVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.DiagnosticsProfile = &infrav1.Diagnostics{
 		Boot: &infrav1.BootDiagnostics{
@@ -464,15 +466,15 @@ func getManagedDiagnosticsVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) 
 	spec.VMSSInstances = newDefaultInstances()
 
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
+	vmss.Properties.VirtualMachineProfile.DiagnosticsProfile = &armcompute.DiagnosticsProfile{BootDiagnostics: &armcompute.BootDiagnostics{
 		Enabled: ptr.To(true),
 	}}
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 	return spec, vmss
 }
 
-func getDisabledDiagnosticsVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getDisabledDiagnosticsVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.DiagnosticsProfile = &infrav1.Diagnostics{
 		Boot: &infrav1.BootDiagnostics{
@@ -490,15 +492,15 @@ func getDisabledDiagnosticsVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet)
 	spec.VMSSInstances = newDefaultInstances()
 
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = &compute.DiagnosticsProfile{BootDiagnostics: &compute.BootDiagnostics{
+	vmss.Properties.VirtualMachineProfile.DiagnosticsProfile = &armcompute.DiagnosticsProfile{BootDiagnostics: &armcompute.BootDiagnostics{
 		Enabled: ptr.To(false),
 	}}
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 	return spec, vmss
 }
 
-func getNilDiagnosticsProfileVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSet) {
+func getNilDiagnosticsProfileVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.DiagnosticsProfile = nil
 
@@ -513,9 +515,9 @@ func getNilDiagnosticsProfileVMSS() (ScaleSetSpec, compute.VirtualMachineScaleSe
 	spec.VMSSInstances = newDefaultInstances()
 
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.DiagnosticsProfile = nil
+	vmss.Properties.VirtualMachineProfile.DiagnosticsProfile = nil
 
-	vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
+	vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 
 	return spec, vmss
 }
@@ -691,11 +693,11 @@ func TestScaleSetParameters(t *testing.T) {
 				if tc.expected == nil {
 					g.Expect(param).To(BeNil())
 				} else {
-					result, ok := param.(compute.VirtualMachineScaleSet)
+					result, ok := param.(armcompute.VirtualMachineScaleSet)
 					if !ok {
 						t.Fatalf("expected type VirtualMachineScaleSet, got %T", param)
 					}
-					result.VirtualMachineProfile.OsProfile.AdminPassword = nil // Override this field as it's randomly generated. We can't set anything in tc.expected to match it.
+					result.Properties.VirtualMachineProfile.OSProfile.AdminPassword = nil // Override this field as it's randomly generated. We can't set anything in tc.expected to match it.
 
 					if !reflect.DeepEqual(tc.expected, result) {
 						t.Errorf("Diff between actual result and expected result:\n%s", cmp.Diff(result, tc.expected))

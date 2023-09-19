@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -317,16 +318,16 @@ func fakeAgentPool(changes ...func(*agentpools.AgentPoolSpec)) agentpools.AgentP
 	return pool
 }
 
-func fakeVirtualMachineScaleSetVM() []compute.VirtualMachineScaleSetVM {
-	virtualMachineScaleSetVM := []compute.VirtualMachineScaleSetVM{
+func fakeVirtualMachineScaleSetVM() []armcompute.VirtualMachineScaleSetVM {
+	virtualMachineScaleSetVM := []armcompute.VirtualMachineScaleSetVM{
 		{
 			InstanceID: ptr.To("0"),
 			ID:         ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156"),
 			Name:       ptr.To("vm0"),
-			Zones:      &[]string{"zone0"},
-			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
-				ProvisioningState: ptr.To(string(compute.ProvisioningState1Succeeded)),
-				OsProfile: &compute.OSProfile{
+			Zones:      []*string{ptr.To("zone0")},
+			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+				ProvisioningState: ptr.To("Succeeded"),
+				OSProfile: &armcompute.OSProfile{
 					ComputerName: ptr.To("instance-000000"),
 				},
 			},
@@ -335,27 +336,27 @@ func fakeVirtualMachineScaleSetVM() []compute.VirtualMachineScaleSetVM {
 	return virtualMachineScaleSetVM
 }
 
-func fakeVirtualMachineScaleSet() []compute.VirtualMachineScaleSet {
+func fakeVirtualMachineScaleSet() []armcompute.VirtualMachineScaleSet {
 	tags := map[string]*string{
 		"foo":      ptr.To("bazz"),
 		"poolName": ptr.To("fake-agent-pool-name"),
 	}
 	zones := []string{"zone0", "zone1"}
-	virtualMachineScaleSet := []compute.VirtualMachineScaleSet{
+	virtualMachineScaleSet := []armcompute.VirtualMachineScaleSet{
 		{
-			Sku: &compute.Sku{
+			SKU: &armcompute.SKU{
 				Name:     ptr.To("skuName"),
 				Tier:     ptr.To("skuTier"),
 				Capacity: ptr.To[int64](2),
 			},
-			Zones:    &zones,
+			Zones:    azure.PtrSlice(&zones),
 			ID:       ptr.To("vmssID"),
 			Name:     ptr.To("vmssName"),
 			Location: ptr.To("westus2"),
 			Tags:     tags,
-			VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+			Properties: &armcompute.VirtualMachineScaleSetProperties{
 				SinglePlacementGroup: ptr.To(false),
-				ProvisioningState:    ptr.To(string(compute.ProvisioningState1Succeeded)),
+				ProvisioningState:    ptr.To("Succeeded"),
 			},
 		},
 	}

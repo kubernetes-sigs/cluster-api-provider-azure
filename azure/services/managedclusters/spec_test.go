@@ -68,9 +68,13 @@ func TestParameters(t *testing.T) {
 				Tags: map[string]string{
 					"test-tag": "test-value",
 				},
-				Version:         "v1.22.0",
-				LoadBalancerSKU: "standard",
-				SSHPublicKey:    base64.StdEncoding.EncodeToString([]byte("test-ssh-key")),
+				Version:           "v1.22.0",
+				LoadBalancerSKU:   "standard",
+				SSHPublicKey:      base64.StdEncoding.EncodeToString([]byte("test-ssh-key")),
+				NetworkPluginMode: ptr.To(infrav1.NetworkPluginModeOverlay),
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
 					return []azure.ResourceSpecGetter{
 						&agentpools.AgentPoolSpec{
@@ -118,6 +122,9 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 			},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
@@ -159,6 +166,9 @@ func TestParameters(t *testing.T) {
 				Tags:            nil,
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 			},
 			expect: func(g *WithT, result interface{}) {
 				// Additional tags are handled by azure/services/tags, so a diff
@@ -176,7 +186,10 @@ func TestParameters(t *testing.T) {
 				Tags:            nil,
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
-				SSHPublicKey:    base64.StdEncoding.EncodeToString([]byte("test-ssh-key")),
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				SSHPublicKey: base64.StdEncoding.EncodeToString([]byte("test-ssh-key")),
 				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
 					return []azure.ResourceSpecGetter{
 						&agentpools.AgentPoolSpec{
@@ -207,6 +220,9 @@ func TestParameters(t *testing.T) {
 				Tags:            nil,
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 				HTTPProxyConfig: &HTTPProxyConfig{
 					HTTPProxy:  ptr.To("http://proxy.com"),
 					HTTPSProxy: ptr.To("https://proxy.com"),
@@ -231,6 +247,9 @@ func TestParameters(t *testing.T) {
 				Tags:            nil,
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 				HTTPProxyConfig: &HTTPProxyConfig{
 					NoProxy: []string{"noproxy1", "noproxy2"},
 				},
@@ -254,7 +273,10 @@ func TestParameters(t *testing.T) {
 				Tags:            nil,
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
-				SSHPublicKey:    "",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				SSHPublicKey: "",
 				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
 					return []azure.ResourceSpecGetter{
 						&agentpools.AgentPoolSpec{
@@ -286,6 +308,9 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 				APIServerAccessProfile: &APIServerAccessProfile{
 					AuthorizedIPRanges: func() []string {
 						var arr []string
@@ -309,6 +334,9 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 			},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
@@ -328,6 +356,9 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 				APIServerAccessProfile: &APIServerAccessProfile{
 					AuthorizedIPRanges: []string{"192.168.0.1/32, 192.168.0.2/32, 192.168.0.3/32"},
 				},
@@ -350,6 +381,9 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 				APIServerAccessProfile: &APIServerAccessProfile{
 					AuthorizedIPRanges: []string{"192.168.0.1/32, 192.168.0.2/32, 192.168.0.3/32"},
 				},
@@ -370,6 +404,9 @@ func TestParameters(t *testing.T) {
 				},
 				Version:         "v1.22.0",
 				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
 				Identity: &infrav1.Identity{
 					Type:                           infrav1.ManagedControlPlaneIdentityTypeUserAssigned,
 					UserAssignedIdentityResourceID: "some id",
@@ -377,6 +414,75 @@ func TestParameters(t *testing.T) {
 			},
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeNil())
+			},
+		},
+		{
+			name: "setting networkPluginMode from nil to \"overlay\" will update",
+			existing: func() armcontainerservice.ManagedCluster {
+				c := getExistingCluster()
+				c.Properties.NetworkProfile.NetworkPluginMode = nil
+				return c
+			}(),
+			spec: &ManagedClusterSpec{
+				Name:          "test-managedcluster",
+				ResourceGroup: "test-rg",
+				Location:      "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				NetworkPluginMode: ptr.To(infrav1.NetworkPluginModeOverlay),
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				g.Expect(result.(armcontainerservice.ManagedCluster).Properties.NetworkProfile.NetworkPluginMode).NotTo(BeNil())
+				g.Expect(*result.(armcontainerservice.ManagedCluster).Properties.NetworkProfile.NetworkPluginMode).To(Equal(armcontainerservice.NetworkPluginModeOverlay))
+			},
+		},
+		{
+			name:     "setting networkPluginMode from \"overlay\" to nil doesn't require update",
+			existing: getExistingCluster(),
+			spec: &ManagedClusterSpec{
+				Name:          "test-managedcluster",
+				ResourceGroup: "test-rg",
+				Location:      "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				NetworkPluginMode: nil,
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+		},
+		{
+			name:     "update needed when oidc issuer profile enabled changes",
+			existing: getExistingCluster(),
+			spec: &ManagedClusterSpec{
+				Name:          "test-managedcluster",
+				ResourceGroup: "test-rg",
+				Location:      "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(false),
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				g.Expect(*result.(armcontainerservice.ManagedCluster).Properties.OidcIssuerProfile.Enabled).To(BeFalse())
 			},
 		},
 	}
@@ -527,7 +633,11 @@ func getSampleManagedCluster() armcontainerservice.ManagedCluster {
 			NodeResourceGroup:       ptr.To("test-node-rg"),
 			EnableRBAC:              ptr.To(true),
 			NetworkProfile: &armcontainerservice.NetworkProfile{
-				LoadBalancerSKU: ptr.To(armcontainerservice.LoadBalancerSKUStandard),
+				LoadBalancerSKU:   ptr.To(armcontainerservice.LoadBalancerSKUStandard),
+				NetworkPluginMode: ptr.To(armcontainerservice.NetworkPluginModeOverlay),
+			},
+			OidcIssuerProfile: &armcontainerservice.ManagedClusterOIDCIssuerProfile{
+				Enabled: ptr.To(true),
 			},
 		},
 		Identity: &armcontainerservice.ManagedClusterIdentity{

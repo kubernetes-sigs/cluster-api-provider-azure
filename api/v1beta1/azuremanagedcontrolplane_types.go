@@ -62,6 +62,18 @@ const (
 	ManagedControlPlaneIdentityTypeUserAssigned ManagedControlPlaneIdentityType = ManagedControlPlaneIdentityType(VMIdentityUserAssigned)
 )
 
+// NetworkPluginMode is the mode the network plugin should use.
+type NetworkPluginMode string
+
+const (
+	// NetworkPluginModeOverlay is used with networkPlugin=azure, pods are given IPs from the PodCIDR address space but use Azure
+	// Routing Domains rather than Kubenet's method of route tables.
+	// See also [AKS doc].
+	//
+	// [AKS doc]: https://aka.ms/aks/azure-cni-overlay
+	NetworkPluginModeOverlay NetworkPluginMode = "overlay"
+)
+
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
@@ -109,6 +121,12 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=azure;kubenet
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
+
+	// NetworkPluginMode is the mode the network plugin should use.
+	// Allowed value is "overlay".
+	// +kubebuilder:validation:Enum=overlay
+	// +optional
+	NetworkPluginMode *NetworkPluginMode `json:"networkPluginMode,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
 	// Allowed values are "azure", "calico".
@@ -191,6 +209,10 @@ type AzureManagedControlPlaneSpec struct {
 	// Immutable.
 	// +optional
 	HTTPProxyConfig *HTTPProxyConfig `json:"httpProxyConfig,omitempty"`
+
+	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+	// +optional
+	OIDCIssuerProfile *OIDCIssuerProfile `json:"oidcIssuerProfile,omitempty"`
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.
@@ -349,6 +371,17 @@ type AzureManagedControlPlaneStatus struct {
 	// next reconciliation loop.
 	// +optional
 	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
+
+	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+	// +optional
+	OIDCIssuerProfile *OIDCIssuerProfileStatus `json:"oidcIssuerProfile,omitempty"`
+}
+
+// OIDCIssuerProfileStatus is the OIDC issuer profile of the Managed Cluster.
+type OIDCIssuerProfileStatus struct {
+	// IssuerURL is the OIDC issuer url of the Managed Cluster.
+	// +optional
+	IssuerURL *string `json:"issuerURL,omitempty"`
 }
 
 // AutoScalerProfile parameters to be applied to the cluster-autoscaler.
@@ -483,6 +516,16 @@ type Identity struct {
 	// UserAssignedIdentityResourceID - Identity ARM resource ID when using user-assigned identity.
 	// +optional
 	UserAssignedIdentityResourceID string `json:"userAssignedIdentityResourceID,omitempty"`
+}
+
+// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/use-oidc-issuer
+type OIDCIssuerProfile struct {
+	// Enabled is whether the OIDC issuer is enabled.
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // +kubebuilder:object:root=true

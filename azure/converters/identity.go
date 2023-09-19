@@ -19,8 +19,9 @@ package converters
 import (
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
@@ -29,10 +30,10 @@ import (
 var ErrUserAssignedIdentitiesNotFound = errors.New("the user-assigned identity provider ids must not be null or empty for 'UserAssigned' identity type")
 
 // VMIdentityToVMSDK converts CAPZ VM identity to Azure SDK identity.
-func VMIdentityToVMSDK(identity infrav1.VMIdentity, uami []infrav1.UserAssignedIdentity) (*compute.VirtualMachineIdentity, error) {
+func VMIdentityToVMSDK(identity infrav1.VMIdentity, uami []infrav1.UserAssignedIdentity) (*armcompute.VirtualMachineIdentity, error) {
 	if identity == infrav1.VMIdentitySystemAssigned {
-		return &compute.VirtualMachineIdentity{
-			Type: compute.ResourceIdentityTypeSystemAssigned,
+		return &armcompute.VirtualMachineIdentity{
+			Type: ptr.To(armcompute.ResourceIdentityTypeSystemAssigned),
 		}, nil
 	}
 
@@ -42,8 +43,8 @@ func VMIdentityToVMSDK(identity infrav1.VMIdentity, uami []infrav1.UserAssignedI
 			return nil, errors.Wrap(err, "failed to assign VM identity")
 		}
 
-		return &compute.VirtualMachineIdentity{
-			Type:                   compute.ResourceIdentityTypeUserAssigned,
+		return &armcompute.VirtualMachineIdentity{
+			Type:                   ptr.To(armcompute.ResourceIdentityTypeUserAssigned),
 			UserAssignedIdentities: userIdentitiesMap,
 		}, nil
 	}
@@ -54,29 +55,29 @@ func VMIdentityToVMSDK(identity infrav1.VMIdentity, uami []infrav1.UserAssignedI
 // UserAssignedIdentitiesToVMSDK converts CAPZ user assigned identities associated with the Virtual Machine to Azure SDK identities
 // The user identity dictionary key references will be ARM resource ids in the form:
 // '/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'.
-func UserAssignedIdentitiesToVMSDK(identities []infrav1.UserAssignedIdentity) (map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue, error) {
+func UserAssignedIdentitiesToVMSDK(identities []infrav1.UserAssignedIdentity) (map[string]*armcompute.UserAssignedIdentitiesValue, error) {
 	if len(identities) == 0 {
 		return nil, ErrUserAssignedIdentitiesNotFound
 	}
-	userIdentitiesMap := make(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue, len(identities))
+	userIdentitiesMap := make(map[string]*armcompute.UserAssignedIdentitiesValue, len(identities))
 	for _, id := range identities {
 		key := sanitized(id.ProviderID)
-		userIdentitiesMap[key] = &compute.VirtualMachineIdentityUserAssignedIdentitiesValue{}
+		userIdentitiesMap[key] = &armcompute.UserAssignedIdentitiesValue{}
 	}
 
 	return userIdentitiesMap, nil
 }
 
-// UserAssignedIdentitiesToVMSSSDK converts CAPZ user assigned identities associated with the Virtual Machine Scale Set to Azure SDK identities
+// UserAssignedIdentitiesToVMSSSDK converts CAPZ user-assigned identities associated with the Virtual Machine Scale Set to Azure SDK identities
 // Similar to UserAssignedIdentitiesToVMSDK.
-func UserAssignedIdentitiesToVMSSSDK(identities []infrav1.UserAssignedIdentity) (map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue, error) {
+func UserAssignedIdentitiesToVMSSSDK(identities []infrav1.UserAssignedIdentity) (map[string]*armcompute.UserAssignedIdentitiesValue, error) {
 	if len(identities) == 0 {
 		return nil, ErrUserAssignedIdentitiesNotFound
 	}
-	userIdentitiesMap := make(map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue, len(identities))
+	userIdentitiesMap := make(map[string]*armcompute.UserAssignedIdentitiesValue, len(identities))
 	for _, id := range identities {
 		key := sanitized(id.ProviderID)
-		userIdentitiesMap[key] = &compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{}
+		userIdentitiesMap[key] = &armcompute.UserAssignedIdentitiesValue{}
 	}
 
 	return userIdentitiesMap, nil

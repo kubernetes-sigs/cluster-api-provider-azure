@@ -1,8 +1,19 @@
 # Kubernetes Cluster API Provider Azure
 
-[![Go Report Card](https://goreportcard.com/badge/kubernetes-sigs/cluster-api-provider-azure)](https://goreportcard.com/report/kubernetes-sigs/cluster-api-provider-azure)
-
+<p align="center">
 <img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100">
+</p>
+<p align="center">
+<!-- go doc / reference card -->
+<a href="https://pkg.go.dev/sigs.k8s.io/cluster-api-provider-azure">
+<img src="https://godoc.org/sigs.k8s.io/cluster-api-provider-azure?status.svg"></a>
+<!-- goreportcard badge -->
+<a href="https://goreportcard.com/report/kubernetes-sigs/cluster-api-provider-azure">
+<img src="https://goreportcard.com/badge/kubernetes-sigs/cluster-api-provider-azure"></a>
+<!-- join kubernetes slack channel for cluster-api-azure-provider -->
+<a href="https://kubernetes.slack.com/messages/CEX9HENG7">
+<img src="https://img.shields.io/badge/join%20slack-%23cluster--api--azure-brightgreen"></a>
+</p>
 
 ------
 
@@ -23,7 +34,6 @@ Check out the [Cluster API Quick Start][quickstart] to create your first Kuberne
 
 See the [flavors documentation][flavors_doc] to know which cluster templates are provided by CAPZ.
 
-
 ## Getting Help
 
 If you need help with CAPZ, please visit the [#cluster-api-azure][slack] channel on Slack, open a [GitHub issue](#github-issues), or join us at [Office Hours](#office-hours).
@@ -40,7 +50,6 @@ Currently, CAPZ is compatible only with the `v1beta1` version of CAPI (v1.0.x). 
 
 The Azure provider is able to install and manage the [versions of Kubernetes supported by the Cluster API (CAPI) project](https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions).
 
-
 #### Managed Clusters (AKS)
 
 Managed Clusters (AKS) follow their own [Kubernetes version support policy](https://learn.microsoft.com/azure/aks/supported-kubernetes-versions?tabs=azure-cli#kubernetes-version-support-policy). Please use the Azure portal or CLI to [find the versions supported in your cluster's location](https://learn.microsoft.com/azure/aks/supported-kubernetes-versions?tabs=azure-cli#azure-portal-and-cli-versions).
@@ -54,7 +63,6 @@ For more information on Kubernetes version support, see the [Cluster API book](h
 Please see our [Book](https://capz.sigs.k8s.io) for in-depth user documentation.
 
 Additional docs can be found in the `/docs` directory, and the [index is here](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/docs/README.md).
-
 
 ## Getting involved and contributing
 

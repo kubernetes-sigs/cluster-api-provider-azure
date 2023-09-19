@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -53,14 +53,22 @@ type (
 )
 
 // NewService creates a new service.
-func NewService(scope ScaleSetVMScope) *Service {
-	client := newClient(scope)
-	vmClient := virtualmachines.NewClient(scope)
-	return &Service{
-		Reconciler:   async.New(scope, client, client),
-		VMReconciler: async.New(scope, vmClient, vmClient),
-		Scope:        scope,
+func NewService(scope ScaleSetVMScope) (*Service, error) {
+	client, err := newClient(scope)
+	if err != nil {
+		return nil, err
 	}
+	vmClient, err := virtualmachines.NewClient(scope)
+	if err != nil {
+		return nil, err
+	}
+	return &Service{
+		Reconciler: async.New[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse,
+			armcompute.VirtualMachineScaleSetVMsClientDeleteResponse](scope, client, client),
+		VMReconciler: async.New[armcompute.VirtualMachinesClientCreateOrUpdateResponse,
+			armcompute.VirtualMachinesClientDeleteResponse](scope, vmClient, vmClient),
+		Scope: scope,
+	}, nil
 }
 
 // Name returns the service name.
@@ -105,15 +113,15 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	if scaleSetVMSpec.IsFlex {
-		vm, ok := result.(compute.VirtualMachine)
+		vm, ok := result.(armcompute.VirtualMachine)
 		if !ok {
-			return errors.Errorf("%T is not of type compute.VirtualMachine", result)
+			return errors.Errorf("%T is not of type armcompute.VirtualMachine", result)
 		}
 		s.Scope.SetVMSSVM(converters.SDKVMToVMSSVM(vm, infrav1.FlexibleOrchestrationMode))
 	} else {
-		instance, ok := result.(compute.VirtualMachineScaleSetVM)
+		instance, ok := result.(armcompute.VirtualMachineScaleSetVM)
 		if !ok {
-			return errors.Errorf("%T is not of type compute.VirtualMachineScaleSetVM", result)
+			return errors.Errorf("%T is not of type armcompute.VirtualMachineScaleSetVM", result)
 		}
 		s.Scope.SetVMSSVM(converters.SDKToVMSSVM(instance))
 	}

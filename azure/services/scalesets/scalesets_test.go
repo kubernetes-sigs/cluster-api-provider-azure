@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -82,7 +82,7 @@ func getDefaultVMSSSpec() azure.ResourceSpecGetter {
 	return &defaultSpec
 }
 
-func getResultVMSS() compute.VirtualMachineScaleSet {
+func getResultVMSS() armcompute.VirtualMachineScaleSet {
 	resultVMSS := newDefaultVMSS("VM_SIZE")
 	resultVMSS.ID = ptr.To(defaultVMSSID)
 
@@ -350,7 +350,7 @@ func TestDeleteVMSS(t *testing.T) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
 				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
-				m.Get(gomockinternal.AContext(), &defaultSpec).Return(compute.VirtualMachineScaleSet{}, notFoundError)
+				m.Get(gomockinternal.AContext(), &defaultSpec).Return(armcompute.VirtualMachineScaleSet{}, notFoundError)
 			},
 		},
 		{
@@ -360,7 +360,7 @@ func TestDeleteVMSS(t *testing.T) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
 				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(internalError)
 				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError)
-				m.Get(gomockinternal.AContext(), &defaultSpec).Return(compute.VirtualMachineScaleSet{}, notFoundError)
+				m.Get(gomockinternal.AContext(), &defaultSpec).Return(armcompute.VirtualMachineScaleSet{}, notFoundError)
 			},
 		},
 	}
@@ -395,33 +395,33 @@ func TestDeleteVMSS(t *testing.T) {
 	}
 }
 
-func getFakeSkus() []compute.ResourceSku {
-	return []compute.ResourceSku{
+func getFakeSkus() []armcompute.ResourceSKU {
+	return []armcompute.ResourceSKU{
 		{
 			Name:         ptr.To("VM_SIZE"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
-					ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
+					ZoneDetails: []*armcompute.ResourceSKUZoneDetails{
 						{
-							Capabilities: &[]compute.ResourceSkuCapabilities{
+							Capabilities: []*armcompute.ResourceSKUCapabilities{
 								{
 									Name:  ptr.To("UltraSSDAvailable"),
 									Value: ptr.To("True"),
 								},
 							},
-							Name: &[]string{"1", "3"},
+							Name: []*string{ptr.To("1"), ptr.To("3")},
 						},
 					},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
@@ -440,16 +440,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_AN"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilitySupported)),
@@ -468,16 +468,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_1_CPU"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
@@ -496,16 +496,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_1_MEM"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
@@ -524,16 +524,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_EAH"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.VCPUs),
 					Value: ptr.To("4"),
@@ -552,16 +552,16 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To(vmSizeUSSD),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilitySupported)),
@@ -580,27 +580,27 @@ func getFakeSkus() []compute.ResourceSku {
 			Name:         ptr.To("VM_SIZE_EPH"),
 			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
 			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
-			Locations: &[]string{
-				"test-location",
+			Locations: []*string{
+				ptr.To("test-location"),
 			},
-			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
 				{
 					Location: ptr.To("test-location"),
-					Zones:    &[]string{"1", "3"},
-					ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
+					ZoneDetails: []*armcompute.ResourceSKUZoneDetails{
 						{
-							Capabilities: &[]compute.ResourceSkuCapabilities{
+							Capabilities: []*armcompute.ResourceSKUCapabilities{
 								{
 									Name:  ptr.To("UltraSSDAvailable"),
 									Value: ptr.To("True"),
 								},
 							},
-							Name: &[]string{"1", "3"},
+							Name: []*string{ptr.To("1"), ptr.To("3")},
 						},
 					},
 				},
 			},
-			Capabilities: &[]compute.ResourceSkuCapabilities{
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
 				{
 					Name:  ptr.To(resourceskus.AcceleratedNetworking),
 					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
@@ -713,52 +713,52 @@ func newWindowsVMSSSpec() ScaleSetSpec {
 	return vmss
 }
 
-func newDefaultExistingVMSS(vmSize string) compute.VirtualMachineScaleSet {
+func newDefaultExistingVMSS(vmSize string) armcompute.VirtualMachineScaleSet {
 	vmss := newDefaultVMSS(vmSize)
 	vmss.ID = ptr.To("subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 	return vmss
 }
 
-func newDefaultWindowsVMSS() compute.VirtualMachineScaleSet {
+func newDefaultWindowsVMSS() armcompute.VirtualMachineScaleSet {
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.OsType = compute.OperatingSystemTypesWindows
-	vmss.VirtualMachineProfile.OsProfile.LinuxConfiguration = nil
-	vmss.VirtualMachineProfile.OsProfile.WindowsConfiguration = &compute.WindowsConfiguration{
+	vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.OSType = ptr.To(armcompute.OperatingSystemTypesWindows)
+	vmss.Properties.VirtualMachineProfile.OSProfile.LinuxConfiguration = nil
+	vmss.Properties.VirtualMachineProfile.OSProfile.WindowsConfiguration = &armcompute.WindowsConfiguration{
 		EnableAutomaticUpdates: ptr.To(false),
 	}
 	return vmss
 }
 
-func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
+func newDefaultVMSS(vmSize string) armcompute.VirtualMachineScaleSet {
 	dataDisk := fetchDataDiskBasedOnSize(vmSize)
-	return compute.VirtualMachineScaleSet{
+	return armcompute.VirtualMachineScaleSet{
 		Location: ptr.To("test-location"),
 		Tags: map[string]*string{
 			"Name": ptr.To(defaultVMSSName),
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
 			"sigs.k8s.io_cluster-api-provider-azure_role":               ptr.To("node"),
 		},
-		Sku: &compute.Sku{
+		SKU: &armcompute.SKU{
 			Name:     ptr.To(vmSize),
 			Tier:     ptr.To("Standard"),
 			Capacity: ptr.To[int64](2),
 		},
-		Zones: &[]string{"1", "3"},
-		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+		Zones: []*string{ptr.To("1"), ptr.To("3")},
+		Properties: &armcompute.VirtualMachineScaleSetProperties{
 			SinglePlacementGroup: ptr.To(false),
-			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.UpgradeModeManual,
+			UpgradePolicy: &armcompute.UpgradePolicy{
+				Mode: ptr.To(armcompute.UpgradeModeManual),
 			},
 			Overprovision:     ptr.To(false),
-			OrchestrationMode: compute.OrchestrationModeUniform,
-			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
-				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
+			OrchestrationMode: ptr.To(armcompute.OrchestrationModeUniform),
+			VirtualMachineProfile: &armcompute.VirtualMachineScaleSetVMProfile{
+				OSProfile: &armcompute.VirtualMachineScaleSetOSProfile{
 					ComputerNamePrefix: ptr.To(defaultVMSSName),
 					AdminUsername:      ptr.To(azure.DefaultUserName),
 					CustomData:         ptr.To("fake-bootstrap-data"),
-					LinuxConfiguration: &compute.LinuxConfiguration{
-						SSH: &compute.SSHConfiguration{
-							PublicKeys: &[]compute.SSHPublicKey{
+					LinuxConfiguration: &armcompute.LinuxConfiguration{
+						SSH: &armcompute.SSHConfiguration{
+							PublicKeys: []*armcompute.SSHPublicKey{
 								{
 									Path:    ptr.To("/home/capi/.ssh/authorized_keys"),
 									KeyData: ptr.To("fakesshkey\n"),
@@ -768,52 +768,52 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 						DisablePasswordAuthentication: ptr.To(true),
 					},
 				},
-				ScheduledEventsProfile: &compute.ScheduledEventsProfile{
-					TerminateNotificationProfile: &compute.TerminateNotificationProfile{
+				ScheduledEventsProfile: &armcompute.ScheduledEventsProfile{
+					TerminateNotificationProfile: &armcompute.TerminateNotificationProfile{
 						NotBeforeTimeout: ptr.To("PT7M"),
 						Enable:           ptr.To(true),
 					},
 				},
-				StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
-					ImageReference: &compute.ImageReference{
+				StorageProfile: &armcompute.VirtualMachineScaleSetStorageProfile{
+					ImageReference: &armcompute.ImageReference{
 						Publisher: ptr.To("fake-publisher"),
 						Offer:     ptr.To("my-offer"),
-						Sku:       ptr.To("sku-id"),
+						SKU:       ptr.To("sku-id"),
 						Version:   ptr.To("1.0"),
 					},
-					OsDisk: &compute.VirtualMachineScaleSetOSDisk{
-						OsType:       "Linux",
-						CreateOption: "FromImage",
+					OSDisk: &armcompute.VirtualMachineScaleSetOSDisk{
+						OSType:       ptr.To(armcompute.OperatingSystemTypesLinux),
+						CreateOption: ptr.To(armcompute.DiskCreateOptionTypesFromImage),
 						DiskSizeGB:   ptr.To[int32](120),
-						ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-							StorageAccountType: "Premium_LRS",
+						ManagedDisk: &armcompute.VirtualMachineScaleSetManagedDiskParameters{
+							StorageAccountType: ptr.To(armcompute.StorageAccountTypesPremiumLRS),
 						},
 					},
 					DataDisks: dataDisk,
 				},
-				DiagnosticsProfile: &compute.DiagnosticsProfile{
-					BootDiagnostics: &compute.BootDiagnostics{
+				DiagnosticsProfile: &armcompute.DiagnosticsProfile{
+					BootDiagnostics: &armcompute.BootDiagnostics{
 						Enabled: ptr.To(true),
 					},
 				},
-				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
-					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
+				NetworkProfile: &armcompute.VirtualMachineScaleSetNetworkProfile{
+					NetworkInterfaceConfigurations: []*armcompute.VirtualMachineScaleSetNetworkConfiguration{
 						{
 							Name: ptr.To("my-vmss-nic-0"),
-							VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
+							Properties: &armcompute.VirtualMachineScaleSetNetworkConfigurationProperties{
 								Primary:                     ptr.To(true),
 								EnableAcceleratedNetworking: ptr.To(false),
 								EnableIPForwarding:          ptr.To(true),
-								IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
+								IPConfigurations: []*armcompute.VirtualMachineScaleSetIPConfiguration{
 									{
 										Name: ptr.To("ipConfig0"),
-										VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
-											Subnet: &compute.APIEntityReference{
+										Properties: &armcompute.VirtualMachineScaleSetIPConfigurationProperties{
+											Subnet: &armcompute.APIEntityReference{
 												ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
 											},
 											Primary:                         ptr.To(true),
-											PrivateIPAddressVersion:         compute.IPVersionIPv4,
-											LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
+											PrivateIPAddressVersion:         ptr.To(armcompute.IPVersionIPv4),
+											LoadBalancerBackendAddressPools: []*armcompute.SubResource{{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
 										},
 									},
 								},
@@ -821,11 +821,11 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 						},
 					},
 				},
-				ExtensionProfile: &compute.VirtualMachineScaleSetExtensionProfile{
-					Extensions: &[]compute.VirtualMachineScaleSetExtension{
+				ExtensionProfile: &armcompute.VirtualMachineScaleSetExtensionProfile{
+					Extensions: []*armcompute.VirtualMachineScaleSetExtension{
 						{
 							Name: ptr.To("someExtension"),
-							VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+							Properties: &armcompute.VirtualMachineScaleSetExtensionProperties{
 								Publisher:          ptr.To("somePublisher"),
 								Type:               ptr.To("someExtension"),
 								TypeHandlerVersion: ptr.To("someVersion"),
@@ -840,38 +840,38 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 					},
 				},
 			},
-			// AdditionalCapabilities: &compute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)},
+			// AdditionalCapabilities: &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)},
 		},
 	}
 }
 
-func fetchDataDiskBasedOnSize(vmSize string) *[]compute.VirtualMachineScaleSetDataDisk {
-	var dataDisk *[]compute.VirtualMachineScaleSetDataDisk
+func fetchDataDiskBasedOnSize(vmSize string) []*armcompute.VirtualMachineScaleSetDataDisk {
+	var dataDisk []*armcompute.VirtualMachineScaleSetDataDisk
 	if vmSize == "VM_SIZE" {
-		dataDisk = &[]compute.VirtualMachineScaleSetDataDisk{
+		dataDisk = []*armcompute.VirtualMachineScaleSetDataDisk{
 			{
 				Lun:          ptr.To[int32](0),
 				Name:         ptr.To("my-vmss_my_disk"),
-				CreateOption: "Empty",
+				CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 				DiskSizeGB:   ptr.To[int32](128),
 			},
 			{
 				Lun:          ptr.To[int32](1),
 				Name:         ptr.To("my-vmss_my_disk_with_managed_disk"),
-				CreateOption: "Empty",
+				CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 				DiskSizeGB:   ptr.To[int32](128),
-				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-					StorageAccountType: "Standard_LRS",
+				ManagedDisk: &armcompute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: ptr.To(armcompute.StorageAccountTypesStandardLRS),
 				},
 			},
 			{
 				Lun:          ptr.To[int32](2),
 				Name:         ptr.To("my-vmss_managed_disk_with_encryption"),
-				CreateOption: "Empty",
+				CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 				DiskSizeGB:   ptr.To[int32](128),
-				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-					StorageAccountType: "Standard_LRS",
-					DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
+				ManagedDisk: &armcompute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: ptr.To(armcompute.StorageAccountTypesStandardLRS),
+					DiskEncryptionSet: &armcompute.DiskEncryptionSetParameters{
 						ID: ptr.To("encryption_id"),
 					},
 				},
@@ -879,38 +879,38 @@ func fetchDataDiskBasedOnSize(vmSize string) *[]compute.VirtualMachineScaleSetDa
 			{
 				Lun:          ptr.To[int32](3),
 				Name:         ptr.To("my-vmss_my_disk_with_ultra_disks"),
-				CreateOption: "Empty",
+				CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 				DiskSizeGB:   ptr.To[int32](128),
-				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-					StorageAccountType: "UltraSSD_LRS",
+				ManagedDisk: &armcompute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: ptr.To(armcompute.StorageAccountTypesUltraSSDLRS),
 				},
 			},
 		}
 	} else {
-		dataDisk = &[]compute.VirtualMachineScaleSetDataDisk{
+		dataDisk = []*armcompute.VirtualMachineScaleSetDataDisk{
 			{
 				Lun:          ptr.To[int32](0),
 				Name:         ptr.To("my-vmss_my_disk"),
-				CreateOption: "Empty",
+				CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 				DiskSizeGB:   ptr.To[int32](128),
 			},
 			{
 				Lun:          ptr.To[int32](1),
 				Name:         ptr.To("my-vmss_my_disk_with_managed_disk"),
-				CreateOption: "Empty",
+				CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 				DiskSizeGB:   ptr.To[int32](128),
-				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-					StorageAccountType: "Standard_LRS",
+				ManagedDisk: &armcompute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: ptr.To(armcompute.StorageAccountTypesStandardLRS),
 				},
 			},
 			{
 				Lun:          ptr.To[int32](2),
 				Name:         ptr.To("my-vmss_managed_disk_with_encryption"),
-				CreateOption: "Empty",
+				CreateOption: ptr.To(armcompute.DiskCreateOptionTypesEmpty),
 				DiskSizeGB:   ptr.To[int32](128),
-				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-					StorageAccountType: "Standard_LRS",
-					DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
+				ManagedDisk: &armcompute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: ptr.To(armcompute.StorageAccountTypesStandardLRS),
+					DiskEncryptionSet: &armcompute.DiskEncryptionSetParameters{
 						ID: ptr.To("encryption_id"),
 					},
 				},
@@ -920,22 +920,22 @@ func fetchDataDiskBasedOnSize(vmSize string) *[]compute.VirtualMachineScaleSetDa
 	return dataDisk
 }
 
-func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
-	return []compute.VirtualMachineScaleSetVM{
+func newDefaultInstances() []armcompute.VirtualMachineScaleSetVM {
+	return []armcompute.VirtualMachineScaleSetVM{
 		{
 			ID:         ptr.To("my-vm-id"),
 			InstanceID: ptr.To("my-vm-1"),
 			Name:       ptr.To("my-vm"),
-			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
 				ProvisioningState: ptr.To("Succeeded"),
-				OsProfile: &compute.OSProfile{
+				OSProfile: &armcompute.OSProfile{
 					ComputerName: ptr.To("instance-000001"),
 				},
-				StorageProfile: &compute.StorageProfile{
-					ImageReference: &compute.ImageReference{
+				StorageProfile: &armcompute.StorageProfile{
+					ImageReference: &armcompute.ImageReference{
 						Publisher: ptr.To("fake-publisher"),
 						Offer:     ptr.To("my-offer"),
-						Sku:       ptr.To("sku-id"),
+						SKU:       ptr.To("sku-id"),
 						Version:   ptr.To("1.0"),
 					},
 				},
@@ -945,16 +945,16 @@ func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 			ID:         ptr.To("my-vm-id"),
 			InstanceID: ptr.To("my-vm-2"),
 			Name:       ptr.To("my-vm"),
-			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
 				ProvisioningState: ptr.To("Succeeded"),
-				OsProfile: &compute.OSProfile{
+				OSProfile: &armcompute.OSProfile{
 					ComputerName: ptr.To("instance-000002"),
 				},
-				StorageProfile: &compute.StorageProfile{
-					ImageReference: &compute.ImageReference{
+				StorageProfile: &armcompute.StorageProfile{
+					ImageReference: &armcompute.ImageReference{
 						Publisher: ptr.To("fake-publisher"),
 						Offer:     ptr.To("my-offer"),
-						Sku:       ptr.To("sku-id"),
+						SKU:       ptr.To("sku-id"),
 						Version:   ptr.To("1.0"),
 					},
 				},

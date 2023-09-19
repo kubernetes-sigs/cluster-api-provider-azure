@@ -23,7 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -89,7 +89,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: async.DefaultPollerFrequency}
 	resp, err := poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
 		// If an error occurs, return the poller.
@@ -118,7 +118,7 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
 	defer cancel()
 
-	pollOpts := &runtime.PollUntilDoneOptions{Frequency: asyncpoller.DefaultPollerFrequency}
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: async.DefaultPollerFrequency}
 	_, err = poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
 		// If an error occurs, return the poller.

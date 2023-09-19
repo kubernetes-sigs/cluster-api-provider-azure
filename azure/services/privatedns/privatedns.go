@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/asyncpoller"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -45,9 +44,9 @@ type Scope interface {
 type Service struct {
 	Scope              Scope
 	TagsGetter         async.TagsGetter
-	zoneReconciler     asyncpoller.Reconciler
-	vnetLinkReconciler asyncpoller.Reconciler
-	recordReconciler   asyncpoller.Reconciler
+	zoneReconciler     async.Reconciler
+	vnetLinkReconciler async.Reconciler
+	recordReconciler   async.Reconciler
 }
 
 // New creates a new private dns service.
@@ -71,11 +70,11 @@ func New(scope Scope) (*Service, error) {
 	return &Service{
 		Scope:      scope,
 		TagsGetter: tagsClient,
-		zoneReconciler: asyncpoller.New[armprivatedns.PrivateZonesClientCreateOrUpdateResponse,
+		zoneReconciler: async.New[armprivatedns.PrivateZonesClientCreateOrUpdateResponse,
 			armprivatedns.PrivateZonesClientDeleteResponse](scope, zoneClient, zoneClient),
-		vnetLinkReconciler: asyncpoller.New[armprivatedns.VirtualNetworkLinksClientCreateOrUpdateResponse,
+		vnetLinkReconciler: async.New[armprivatedns.VirtualNetworkLinksClientCreateOrUpdateResponse,
 			armprivatedns.VirtualNetworkLinksClientDeleteResponse](scope, vnetLinkClient, vnetLinkClient),
-		recordReconciler: asyncpoller.New[armprivatedns.RecordSetsClientCreateOrUpdateResponse,
+		recordReconciler: async.New[armprivatedns.RecordSetsClientCreateOrUpdateResponse,
 			armprivatedns.RecordSetsClientDeleteResponse](scope, recordSetsClient, recordSetsClient),
 	}, nil
 }

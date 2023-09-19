@@ -20,7 +20,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -36,7 +36,7 @@ type PublicIPSpec struct {
 	IsIPv6           bool
 	Location         string
 	ExtendedLocation *infrav1.ExtendedLocationSpec
-	FailureDomains   []string
+	FailureDomains   []*string
 	AdditionalTags   infrav1.Tags
 	IPTags           []infrav1.IPTag
 }
@@ -59,44 +59,44 @@ func (s *PublicIPSpec) OwnerResourceName() string {
 // Parameters returns the parameters for the public IP.
 func (s *PublicIPSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
-		if _, ok := existing.(network.PublicIPAddress); !ok {
-			return nil, errors.Errorf("%T is not a network.PublicIPAddress", existing)
+		if _, ok := existing.(armnetwork.PublicIPAddress); !ok {
+			return nil, errors.Errorf("%T is not an armnetwork.PublicIPAddress", existing)
 		}
 		// public IP already exists
 		return nil, nil
 	}
 
-	addressVersion := network.IPVersionIPv4
+	addressVersion := armnetwork.IPVersionIPv4
 	if s.IsIPv6 {
-		addressVersion = network.IPVersionIPv6
+		addressVersion = armnetwork.IPVersionIPv6
 	}
 
 	// only set DNS properties if there is a DNS name specified
-	var dnsSettings *network.PublicIPAddressDNSSettings
+	var dnsSettings *armnetwork.PublicIPAddressDNSSettings
 	if s.DNSName != "" {
-		dnsSettings = &network.PublicIPAddressDNSSettings{
+		dnsSettings = &armnetwork.PublicIPAddressDNSSettings{
 			DomainNameLabel: ptr.To(strings.Split(s.DNSName, ".")[0]),
 			Fqdn:            ptr.To(s.DNSName),
 		}
 	}
 
-	return network.PublicIPAddress{
+	return armnetwork.PublicIPAddress{
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Name:        ptr.To(s.Name),
 			Additional:  s.AdditionalTags,
 		})),
-		Sku:              &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		SKU:              &armnetwork.PublicIPAddressSKU{Name: ptr.To(armnetwork.PublicIPAddressSKUNameStandard)},
 		Name:             ptr.To(s.Name),
 		Location:         ptr.To(s.Location),
 		ExtendedLocation: converters.ExtendedLocationToNetworkSDK(s.ExtendedLocation),
-		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			PublicIPAddressVersion:   addressVersion,
-			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
+		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+			PublicIPAddressVersion:   &addressVersion,
+			PublicIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodStatic),
 			DNSSettings:              dnsSettings,
 			IPTags:                   converters.IPTagsToSDK(s.IPTags),
 		},
-		Zones: &s.FailureDomains,
+		Zones: s.FailureDomains,
 	}, nil
 }

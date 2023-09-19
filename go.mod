@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/Azure/aad-pod-identity v1.8.17
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.2
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2 v2.1.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.1.0
@@ -41,7 +41,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.40.0
 	go.opentelemetry.io/otel/trace v1.17.0
 	go.uber.org/mock v0.2.0
-	golang.org/x/crypto v0.12.0
+	golang.org/x/crypto v0.13.0
 	golang.org/x/mod v0.12.0
 	golang.org/x/text v0.13.0
 	k8s.io/api v0.27.2
@@ -178,8 +178,8 @@ require (
 	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect

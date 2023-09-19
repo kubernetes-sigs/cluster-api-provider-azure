@@ -19,14 +19,14 @@ package converters
 import (
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // ImageToSDK converts a CAPZ Image (as RawExtension) to a Azure SDK Image Reference.
-func ImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
+func ImageToSDK(image *infrav1.Image) (*armcompute.ImageReference, error) {
 	if image.ID != nil {
 		return specificImageToSDK(image)
 	}
@@ -40,23 +40,23 @@ func ImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	return nil, errors.New("unable to convert image as no options set")
 }
 
-func mpImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
-	return &compute.ImageReference{
+func mpImageToSDK(image *infrav1.Image) (*armcompute.ImageReference, error) {
+	return &armcompute.ImageReference{
 		Publisher: &image.Marketplace.Publisher,
 		Offer:     &image.Marketplace.Offer,
-		Sku:       &image.Marketplace.SKU,
+		SKU:       &image.Marketplace.SKU,
 		Version:   &image.Marketplace.Version,
 	}, nil
 }
 
-func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
+func computeImageToSDK(image *infrav1.Image) (*armcompute.ImageReference, error) {
 	if image.ComputeGallery == nil && image.SharedGallery == nil {
 		return nil, errors.New("unable to convert compute image to SDK as SharedGallery or ComputeGallery fields are not set")
 	}
 
 	idTemplate := "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s"
 	if image.SharedGallery != nil {
-		return &compute.ImageReference{
+		return &armcompute.ImageReference{
 			ID: ptr.To(fmt.Sprintf(idTemplate,
 				image.SharedGallery.SubscriptionID,
 				image.SharedGallery.ResourceGroup,
@@ -70,7 +70,7 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	// For private Azure Compute Gallery consumption both resource group and subscription ID must be provided.
 	// If they are not, we assume use of community gallery.
 	if image.ComputeGallery.ResourceGroup != nil && image.ComputeGallery.SubscriptionID != nil {
-		return &compute.ImageReference{
+		return &armcompute.ImageReference{
 			ID: ptr.To(fmt.Sprintf(idTemplate,
 				ptr.Deref(image.ComputeGallery.SubscriptionID, ""),
 				ptr.Deref(image.ComputeGallery.ResourceGroup, ""),
@@ -81,7 +81,7 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 		}, nil
 	}
 
-	return &compute.ImageReference{
+	return &armcompute.ImageReference{
 		CommunityGalleryImageID: ptr.To(fmt.Sprintf("/CommunityGalleries/%s/Images/%s/Versions/%s",
 			image.ComputeGallery.Gallery,
 			image.ComputeGallery.Name,
@@ -89,17 +89,17 @@ func computeImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	}, nil
 }
 
-func specificImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
-	return &compute.ImageReference{
+func specificImageToSDK(image *infrav1.Image) (*armcompute.ImageReference, error) {
+	return &armcompute.ImageReference{
 		ID: image.ID,
 	}, nil
 }
 
 // ImageToPlan converts a CAPZ Image to an Azure Compute Plan.
-func ImageToPlan(image *infrav1.Image) *compute.Plan {
+func ImageToPlan(image *infrav1.Image) *armcompute.Plan {
 	// Plan is needed when using a Shared Gallery image with Plan details.
 	if image.SharedGallery != nil && image.SharedGallery.Publisher != nil && image.SharedGallery.SKU != nil && image.SharedGallery.Offer != nil {
-		return &compute.Plan{
+		return &armcompute.Plan{
 			Publisher: image.SharedGallery.Publisher,
 			Name:      image.SharedGallery.SKU,
 			Product:   image.SharedGallery.Offer,
@@ -108,7 +108,7 @@ func ImageToPlan(image *infrav1.Image) *compute.Plan {
 
 	// Plan is needed for third party Marketplace images.
 	if image.Marketplace != nil && image.Marketplace.ThirdPartyImage {
-		return &compute.Plan{
+		return &armcompute.Plan{
 			Publisher: ptr.To(image.Marketplace.Publisher),
 			Name:      ptr.To(image.Marketplace.SKU),
 			Product:   ptr.To(image.Marketplace.Offer),
@@ -117,7 +117,7 @@ func ImageToPlan(image *infrav1.Image) *compute.Plan {
 
 	// Plan is needed when using a Azure Compute Gallery image with Plan details.
 	if image.ComputeGallery != nil && image.ComputeGallery.Plan != nil {
-		return &compute.Plan{
+		return &armcompute.Plan{
 			Publisher: ptr.To(image.ComputeGallery.Plan.Publisher),
 			Name:      ptr.To(image.ComputeGallery.Plan.SKU),
 			Product:   ptr.To(image.ComputeGallery.Plan.Offer),

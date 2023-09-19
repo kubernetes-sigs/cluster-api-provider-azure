@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	azprovider "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -48,8 +48,8 @@ type (
 
 	// NodeLister is a service interface for returning generic lists.
 	NodeLister interface {
-		ListInstances(context.Context, string, string) ([]compute.VirtualMachineScaleSetVM, error)
-		List(context.Context, string) ([]compute.VirtualMachineScaleSet, error)
+		ListInstances(context.Context, string, string) ([]armcompute.VirtualMachineScaleSetVM, error)
+		List(context.Context, string) ([]armcompute.VirtualMachineScaleSet, error)
 	}
 )
 
@@ -83,11 +83,14 @@ func newAzureManagedMachinePoolService(scope *scope.ManagedMachinePoolScope) (*a
 	if err != nil {
 		return nil, err
 	}
-
+	scaleSetsClient, err := scalesets.NewClient(scaleSetAuthorizer)
+	if err != nil {
+		return nil, err
+	}
 	return &azureManagedMachinePoolService{
 		scope:         scope,
 		agentPoolsSvc: agentPoolsSvc,
-		scaleSetsSvc:  scalesets.NewClient(scaleSetAuthorizer),
+		scaleSetsSvc:  scaleSetsClient,
 	}, nil
 }
 
@@ -121,7 +124,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to list vmss in resource group %s", nodeResourceGroup)
 	}
 
-	var match *compute.VirtualMachineScaleSet
+	var match *armcompute.VirtualMachineScaleSet
 	for _, ss := range vmss {
 		ss := ss
 		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == agentPoolName {
