@@ -106,19 +106,22 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 
 	result, poller, err := s.Creator.CreateOrUpdateAsync(ctx, spec, resumeToken, parameters)
 	errWrapped := errors.Wrapf(err, "failed to create or update resource %s/%s (service: %s)", rgName, resourceName, serviceName)
-	if poller != nil {
+	if poller != nil && azure.IsContextDeadlineExceededOrCanceledError(err) {
 		future, err := converters.PollerToFuture(poller, infrav1.PutFuture, serviceName, resourceName, rgName)
 		if err != nil {
 			return nil, errWrapped
 		}
 		s.Scope.SetLongRunningOperationState(future)
 		return nil, azure.WithTransientError(azure.NewOperationNotDoneError(future), requeueTime())
-	} else if err != nil {
-		return nil, errWrapped
 	}
 
-	// Once the operation is done, delete the long-running operation state.
+	// Once the operation is done, delete the long-running operation state. Even if the operation ended with
+	// an error, clear out any lingering state to try the operation again.
 	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
+
+	if err != nil {
+		return nil, errWrapped
+	}
 
 	log.V(2).Info("successfully created or updated resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return result, nil
@@ -147,19 +150,22 @@ func (s *Service[C, D]) DeleteResource(ctx context.Context, spec azure.ResourceS
 	// Delete the resource.
 	log.V(2).Info("deleting resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	poller, err := s.Deleter.DeleteAsync(ctx, spec, resumeToken)
-	if poller != nil {
+	if poller != nil && azure.IsContextDeadlineExceededOrCanceledError(err) {
 		future, err := converters.PollerToFuture(poller, infrav1.DeleteFuture, serviceName, resourceName, rgName)
 		if err != nil {
 			return errors.Wrap(err, "failed to convert poller to future")
 		}
 		s.Scope.SetLongRunningOperationState(future)
 		return azure.WithTransientError(azure.NewOperationNotDoneError(future), requeueTime())
-	} else if err != nil && !azure.ResourceNotFound(err) {
-		return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	}
 
-	// Once the operation is done, delete the long-running operation state.
+	// Once the operation is done, delete the long-running operation state. Even if the operation ended with
+	// an error, clear out any lingering state to try the operation again.
 	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
+
+	if err != nil && !azure.ResourceNotFound(err) {
+		return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
+	}
 
 	log.V(2).Info("successfully deleted resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return nil
