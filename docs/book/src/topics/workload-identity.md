@@ -36,22 +36,22 @@ generated `sa.pub`. This ENV var will be used in the upcoming step.
 
 - Create and upload Discovery and JWKS document using this [link](https://azure.github.io/azure-workload-identity/docs/installation/self-managed-clusters/oidc-issuer.html)
 
-- At this stage, you will need to create a federated identity credential.
-  - You can create that either with Azure AD application or user-assigned
+- At this stage, you will need to create TWO federated identity credentials: one for CAPZ and one for ASO.
+  - You can create those either with Azure AD application or user-assigned
     identity. Please note that user assigned identity will need to be created
     regardless because cloud provider azure integration is not yet done. The
     steps are mentioned in the next section of workload cluster creation.
   - The next list items links to steps on creating the federated
-    identity credential. You will need to set up several environment
-    variables:
-    - `SERVICE_ACCOUNT_NAMESPACE` : Namespace where the capz-manager pod
-      will run.
-    - `SERVICE_ACCOUNT_NAME` : Name of the capz-manager k8s service account.
+    identity credentials. You will need to set up several environment
+    variables for each one:
+    - `SERVICE_ACCOUNT_NAMESPACE` : Namespace where the capz-manager and
+      azureserviceoperator-controller-manager pods will run.
+    - `SERVICE_ACCOUNT_NAME` : Name of the capz-manager or azureserviceoperator-default k8s service account.
     - `SERVICE_ACCOUNT_ISSUER` : This is the path of the Azure storage
       container which you created in the previous step which is:
       `"https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER}/"`
 
-  - Create a federated identity credential using the steps outlined [here](https://azure.github.io/azure-workload-identity/docs/topics/federated-identity-credential.html)
+  - Create federated identity credentials for each of CAPZ and ASO using the steps outlined [here](https://azure.github.io/azure-workload-identity/docs/topics/federated-identity-credential.html)
     You can either use `user-assigned-identity` or `AD application` to create federated identity credential and add `contributor` role to it.
 
 - Create a Kind cluster with necessary flags with the following command:
