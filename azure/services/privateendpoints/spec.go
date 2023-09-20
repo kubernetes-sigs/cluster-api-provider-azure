@@ -84,21 +84,17 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 		},
 	}
 
-	if s.CustomNetworkInterfaceName != "" {
-		privateEndpointProperties.CustomNetworkInterfaceName = ptr.To(s.CustomNetworkInterfaceName)
-	}
+	privateEndpointProperties.CustomNetworkInterfaceName = ptr.To(s.CustomNetworkInterfaceName)
 
-	if len(s.PrivateIPAddresses) > 0 {
-		privateIPAddresses := make([]*armnetwork.PrivateEndpointIPConfiguration, 0, len(s.PrivateIPAddresses))
-		for _, address := range s.PrivateIPAddresses {
-			ipConfig := &armnetwork.PrivateEndpointIPConfigurationProperties{PrivateIPAddress: ptr.To(address)}
+	privateIPAddresses := make([]*armnetwork.PrivateEndpointIPConfiguration, 0, len(s.PrivateIPAddresses))
+	for _, address := range s.PrivateIPAddresses {
+		ipConfig := &armnetwork.PrivateEndpointIPConfigurationProperties{PrivateIPAddress: ptr.To(address)}
 
-			privateIPAddresses = append(privateIPAddresses, &armnetwork.PrivateEndpointIPConfiguration{
-				Properties: ipConfig,
-			})
-		}
-		privateEndpointProperties.IPConfigurations = privateIPAddresses
+		privateIPAddresses = append(privateIPAddresses, &armnetwork.PrivateEndpointIPConfiguration{
+			Properties: ipConfig,
+		})
 	}
+	privateEndpointProperties.IPConfigurations = privateIPAddresses
 
 	privateLinkServiceConnections := make([]*armnetwork.PrivateLinkServiceConnection, 0, len(s.PrivateLinkServiceConnections))
 	for _, privateLinkServiceConnection := range s.PrivateLinkServiceConnections {
@@ -127,15 +123,15 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 		privateEndpointProperties.ManualPrivateLinkServiceConnections = []*armnetwork.PrivateLinkServiceConnection{}
 	}
 
-	applicationSecurityGroups := make([]*armnetwork.ApplicationSecurityGroup, 0, len(s.ApplicationSecurityGroups))
+	applicationSecurityGroups := make([]armnetwork.ApplicationSecurityGroup, 0, len(s.ApplicationSecurityGroups))
 
 	for _, applicationSecurityGroup := range s.ApplicationSecurityGroups {
-		applicationSecurityGroups = append(applicationSecurityGroups, &armnetwork.ApplicationSecurityGroup{
+		applicationSecurityGroups = append(applicationSecurityGroups, armnetwork.ApplicationSecurityGroup{
 			ID: ptr.To(applicationSecurityGroup),
 		})
 	}
 
-	privateEndpointProperties.ApplicationSecurityGroups = applicationSecurityGroups
+	privateEndpointProperties.ApplicationSecurityGroups = azure.PtrSlice(&applicationSecurityGroups)
 
 	newPrivateEndpoint := armnetwork.PrivateEndpoint{
 		Name:       ptr.To(s.Name),
@@ -163,7 +159,7 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 			return nil, azure.WithTransientError(errors.Errorf("Unable to update existing private endpoint in non-terminal state. Service Endpoint must be in one of the following provisioning states: Canceled, Failed, or Succeeded. Actual state: %s", ps), 20*time.Second)
 		}
 
-		normalizedExistingPE := normalizePrivateEndpoint(existingPE)
+		normalizedExistingPE := normalizePrivateEndpoint(existingPE, newPrivateEndpoint)
 		normalizedExistingPE = sortSlicesPrivateEndpoint(normalizedExistingPE)
 
 		newPrivateEndpoint = sortSlicesPrivateEndpoint(newPrivateEndpoint)
@@ -180,7 +176,7 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existing interface
 	return newPrivateEndpoint, nil
 }
 
-func normalizePrivateEndpoint(existingPE armnetwork.PrivateEndpoint) armnetwork.PrivateEndpoint {
+func normalizePrivateEndpoint(existingPE, newPrivateEndpoint armnetwork.PrivateEndpoint) armnetwork.PrivateEndpoint {
 	normalizedExistingPE := armnetwork.PrivateEndpoint{
 		Name:     existingPE.Name,
 		Location: existingPE.Location,
@@ -188,8 +184,8 @@ func normalizePrivateEndpoint(existingPE armnetwork.PrivateEndpoint) armnetwork.
 			Subnet: &armnetwork.Subnet{
 				ID: existingPE.Properties.Subnet.ID,
 				Properties: &armnetwork.SubnetPropertiesFormat{
-					PrivateEndpointNetworkPolicies:    existingPE.Properties.Subnet.Properties.PrivateEndpointNetworkPolicies,
-					PrivateLinkServiceNetworkPolicies: existingPE.Properties.Subnet.Properties.PrivateLinkServiceNetworkPolicies,
+					PrivateEndpointNetworkPolicies:    newPrivateEndpoint.Properties.Subnet.Properties.PrivateEndpointNetworkPolicies,
+					PrivateLinkServiceNetworkPolicies: newPrivateEndpoint.Properties.Subnet.Properties.PrivateLinkServiceNetworkPolicies,
 				},
 			},
 			ApplicationSecurityGroups:  existingPE.Properties.ApplicationSecurityGroups,
@@ -197,6 +193,10 @@ func normalizePrivateEndpoint(existingPE armnetwork.PrivateEndpoint) armnetwork.
 			CustomNetworkInterfaceName: existingPE.Properties.CustomNetworkInterfaceName,
 		},
 		Tags: existingPE.Tags,
+	}
+	if existingPE.Properties != nil && existingPE.Properties.Subnet != nil && existingPE.Properties.Subnet.Properties != nil {
+		normalizedExistingPE.Properties.Subnet.Properties.PrivateEndpointNetworkPolicies = existingPE.Properties.Subnet.Properties.PrivateEndpointNetworkPolicies
+		normalizedExistingPE.Properties.Subnet.Properties.PrivateLinkServiceNetworkPolicies = existingPE.Properties.Subnet.Properties.PrivateLinkServiceNetworkPolicies
 	}
 
 	existingPrivateLinkServiceConnections := make([]*armnetwork.PrivateLinkServiceConnection, 0, len(existingPE.Properties.PrivateLinkServiceConnections))
