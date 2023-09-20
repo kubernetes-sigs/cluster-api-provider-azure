@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
@@ -303,7 +304,7 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string, cpu
 		// Go on Ubuntu 20.04. The issue is being tracked here: https://github.com/golang/go/issues/58550
 		// TODO: Remove this once the issue is fixed, or when Ubuntu 20.04 is no longer supported.
 		extensionVersion := "1.0"
-		if cpuArchitectureType == "arm64" {
+		if cpuArchitectureType == string(armcompute.ArchitectureTypesArm64) {
 			extensionVersion = "1.1.1"
 		}
 		return &ExtensionSpec{
