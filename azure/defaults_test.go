@@ -321,11 +321,11 @@ func TestGetBootstrappingVMExtension(t *testing.T) {
 			expectedVersion: "1.0",
 		},
 		{
-			name:            "Linux OS, Public Cloud, arm64 CPU Architecture",
+			name:            "Linux OS, Public Cloud, ARM64 CPU Architecture",
 			osType:          LinuxOS,
 			cloud:           PublicCloudName,
 			vmName:          "test-vm",
-			cpuArchitecture: "arm64",
+			cpuArchitecture: "Arm64",
 			expectedVersion: "1.1.1",
 		},
 		{
