@@ -326,7 +326,7 @@ func TestGetBootstrappingVMExtension(t *testing.T) {
 			cloud:           PublicCloudName,
 			vmName:          "test-vm",
 			cpuArchitecture: "Arm64",
-			expectedVersion: "1.1.1",
+			expectedVersion: "1.1",
 		},
 		{
 			name:            "Windows OS, Public Cloud",
