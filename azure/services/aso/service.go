@@ -62,7 +62,10 @@ func (s *Service[T, S]) Reconcile(ctx context.Context) error {
 
 	// We go through the list of Specs to reconcile each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
-	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
+	// Order of precedence (highest -> lowest) is:
+	//   - error that is not an operationNotDoneError (i.e. error creating)
+	//   - operationNotDoneError (i.e. creating in progress)
+	//   - no error (i.e. created)
 	var resultErr error
 	for _, spec := range s.Specs {
 		result, err := s.CreateOrUpdateResource(ctx, spec, s.Name())
@@ -88,9 +91,12 @@ func (s *Service[T, S]) Delete(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
-	// We go through the list of SubnetSpecs to delete each one, independently of the resultErr of the previous one.
+	// We go through the list of Specs to delete each one, independently of the resultErr of the previous one.
 	// If multiple errors occur, we return the most pressing one.
-	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error deleting) -> operationNotDoneError (i.e. deleting in progress) -> no error (i.e. deleted)
+	// Order of precedence (highest -> lowest) is:
+	//   - error that is not an operationNotDoneError (i.e. error deleting)
+	//   - operationNotDoneError (i.e. deleting in progress)
+	//   - no error (i.e. deleted)
 	var resultErr error
 	for _, spec := range s.Specs {
 		err := s.DeleteResource(ctx, spec, s.Name())
