@@ -177,13 +177,7 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.ScaleSetSpec")
 	defer done()
 
-	shouldPatchCustomData := false
-	if m.HasReplicasExternallyManaged(ctx) {
-		shouldPatchCustomData = m.cache.HasBootstrapDataChanges
-		log.V(4).Info("has bootstrap data changed?", "shouldPatchCustomData", shouldPatchCustomData)
-	}
-
-	return &scalesets.ScaleSetSpec{
+	spec := &scalesets.ScaleSetSpec{
 		Name:                         m.Name(),
 		ResourceGroup:                m.ResourceGroup(),
 		Size:                         m.AzureMachinePool.Spec.Template.VMSize,
@@ -209,16 +203,26 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 		OrchestrationMode:            m.AzureMachinePool.Spec.OrchestrationMode,
 		Location:                     m.AzureMachinePool.Spec.Location,
 		SubscriptionID:               m.SubscriptionID(),
-		VMSSExtensionSpecs:           m.VMSSExtensionSpecs(),
 		HasReplicasExternallyManaged: m.HasReplicasExternallyManaged(ctx),
 		ClusterName:                  m.ClusterName(),
 		AdditionalTags:               m.AzureMachinePool.Spec.AdditionalTags,
-		SKU:                          m.cache.VMSKU,
-		VMImage:                      m.cache.VMImage,
-		BootstrapData:                m.cache.BootstrapData,
-		ShouldPatchCustomData:        shouldPatchCustomData,
-		MaxSurge:                     m.cache.MaxSurge,
 	}
+
+	if m.cache != nil {
+		if m.HasReplicasExternallyManaged(ctx) {
+			spec.ShouldPatchCustomData = m.cache.HasBootstrapDataChanges
+			log.V(4).Info("has bootstrap data changed?", "shouldPatchCustomData", spec.ShouldPatchCustomData)
+		}
+		spec.VMSSExtensionSpecs = m.VMSSExtensionSpecs()
+		spec.SKU = m.cache.VMSKU
+		spec.VMImage = m.cache.VMImage
+		spec.BootstrapData = m.cache.BootstrapData
+		spec.MaxSurge = m.cache.MaxSurge
+	} else {
+		log.V(4).Info("machinepool cache is nil, this is only expected when deleting a machinepool")
+	}
+
+	return spec
 }
 
 // Name returns the Azure Machine Pool Name.
