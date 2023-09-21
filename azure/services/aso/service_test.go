@@ -291,7 +291,7 @@ func TestServiceDelete(t *testing.T) {
 		g.Expect(err).To(MatchError("non-not done error"))
 	})
 
-	t.Run("CreateOrUpdateResource returns error and runs PostDeleteHook", func(t *testing.T) {
+	t.Run("DeleteResource returns error and runs PostDeleteHook", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		mockCtrl := gomock.NewController(t)
