@@ -23,7 +23,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,14 +48,14 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	auth, err := settings.GetAuthorizer()
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	managedclustersClient := containerservice.NewManagedClustersClient(subscriptionID)
-	managedclustersClient.Authorizer = auth
+	managedclustersClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
-	agentpoolsClient := containerservice.NewAgentPoolsClient(subscriptionID)
-	agentpoolsClient.Authorizer = auth
+	agentpoolsClient, err := armcontainerservice.NewAgentPoolsClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
 	mgmtClient := bootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
@@ -74,9 +75,9 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 		defer wg.Done()
 
 		nonAdditionalTagKeys := map[string]struct{}{}
-		managedcluster, err := managedclustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name)
+		resp, err := managedclustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, nil)
 		Expect(err).NotTo(HaveOccurred())
-		for k := range managedcluster.Tags {
+		for k := range resp.ManagedCluster.Tags {
 			if _, exists := infraControlPlane.Spec.AdditionalTags[k]; !exists {
 				nonAdditionalTagKeys[k] = struct{}{}
 			}
@@ -84,9 +85,9 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 
 		var expectedTags infrav1.Tags
 		checkTags := func(g Gomega) {
-			managedcluster, err := managedclustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name)
+			resp, err := managedclustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, nil)
 			g.Expect(err).NotTo(HaveOccurred())
-			actualTags := converters.MapToTags(managedcluster.Tags)
+			actualTags := converters.MapToTags(resp.ManagedCluster.Tags)
 			// Ignore tags not originally specified in spec.additionalTags
 			for k := range nonAdditionalTagKeys {
 				delete(actualTags, k)
@@ -158,9 +159,9 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 			}, ammp)).To(Succeed())
 
 			nonAdditionalTagKeys := map[string]struct{}{}
-			agentpool, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name)
+			resp, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name, nil)
 			Expect(err).NotTo(HaveOccurred())
-			for k := range agentpool.Tags {
+			for k := range resp.AgentPool.Properties.Tags {
 				if _, exists := infraControlPlane.Spec.AdditionalTags[k]; !exists {
 					nonAdditionalTagKeys[k] = struct{}{}
 				}
@@ -168,9 +169,9 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 
 			var expectedTags infrav1.Tags
 			checkTags := func(g Gomega) {
-				agentpool, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name)
+				resp, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name, nil)
 				g.Expect(err).NotTo(HaveOccurred())
-				actualTags := converters.MapToTags(agentpool.Tags)
+				actualTags := converters.MapToTags(resp.AgentPool.Properties.Tags)
 				// Ignore tags not originally specified in spec.additionalTags
 				for k := range nonAdditionalTagKeys {
 					delete(actualTags, k)
