@@ -32,7 +32,8 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	testEnv *env.TestEnvironment
+	testEnv       *env.TestEnvironment
+	testEnvCancel func()
 )
 
 func TestAPIs(t *testing.T) {
@@ -64,10 +65,13 @@ var _ = BeforeSuite(func() {
 
 	// +kubebuilder:scaffold:scheme
 
+	ctx, cancel := context.WithCancel(context.Background())
+	testEnvCancel = cancel
+
 	By("starting the manager")
 	go func() {
 		defer GinkgoRecover()
-		Expect(testEnv.StartManager()).To(Succeed())
+		Expect(testEnv.StartManager(ctx)).To(Succeed())
 	}()
 
 	Eventually(func() bool {
@@ -80,6 +84,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	testEnvCancel()
 	if testEnv != nil {
 		By("tearing down the test environment")
 		Expect(testEnv.Stop()).To(Succeed())
