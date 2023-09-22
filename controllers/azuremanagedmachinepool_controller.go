@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -329,6 +330,16 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Cont
 		}
 
 		if err := svc.Delete(ctx); err != nil {
+			// Handle transient errors
+			var reconcileError azure.ReconcileError
+			if errors.As(err, &reconcileError) && reconcileError.IsTransient() {
+				if azure.IsOperationNotDoneError(reconcileError) {
+					log.V(2).Info(fmt.Sprintf("AzureManagedMachinePool delete not done: %s", reconcileError.Error()))
+				} else {
+					log.V(2).Info("transient failure to delete AzureManagedMachinePool, retrying")
+				}
+				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
+			}
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 		}
 		// Machine pool successfully deleted, remove the finalizer.
