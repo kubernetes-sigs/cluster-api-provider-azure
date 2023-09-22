@@ -22,7 +22,8 @@ package e2e
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -50,7 +50,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	auth, err := azureutil.GetAuthorizer(settings)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	mgmtClient := bootstrapClusterProxy.GetClient()
@@ -62,24 +62,25 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 
 	resourceGroupName := infraControlPlane.Spec.ResourceGroupName
 
-	publicIPPrefixClient := network.NewPublicIPPrefixesClient(subscriptionID)
-	publicIPPrefixClient.Authorizer = auth
+	publicIPPrefixClient, err := armnetwork.NewPublicIPPrefixesClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating public IP prefix with 2 addresses")
-	publicIPPrefixFuture, err := publicIPPrefixClient.CreateOrUpdate(ctx, resourceGroupName, input.Cluster.Name, network.PublicIPPrefix{
+	poller, err := publicIPPrefixClient.BeginCreateOrUpdate(ctx, resourceGroupName, input.Cluster.Name, armnetwork.PublicIPPrefix{
 		Location: ptr.To(infraControlPlane.Spec.Location),
-		Sku: &network.PublicIPPrefixSku{
-			Name: network.PublicIPPrefixSkuNameStandard,
+		SKU: &armnetwork.PublicIPPrefixSKU{
+			Name: ptr.To(armnetwork.PublicIPPrefixSKUNameStandard),
 		},
-		PublicIPPrefixPropertiesFormat: &network.PublicIPPrefixPropertiesFormat{
+		Properties: &armnetwork.PublicIPPrefixPropertiesFormat{
 			PrefixLength: ptr.To[int32](31), // In bits. This provides 2 addresses.
 		},
-	})
+	}, nil)
 	Expect(err).NotTo(HaveOccurred())
-	var publicIPPrefix network.PublicIPPrefix
+	var publicIPPrefix armnetwork.PublicIPPrefix
 	Eventually(func(g Gomega) {
-		publicIPPrefix, err = publicIPPrefixFuture.Result(publicIPPrefixClient)
-		g.Expect(err).NotTo(HaveOccurred())
+		resp, err := poller.PollUntilDone(ctx, nil)
+		Expect(err).NotTo(HaveOccurred())
+		publicIPPrefix = resp.PublicIPPrefix
 	}, input.WaitIntervals...).Should(Succeed(), "failed to create public IP prefix")
 
 	By("Creating node pool with 2 nodes")

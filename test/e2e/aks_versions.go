@@ -23,12 +23,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -74,17 +75,15 @@ func byClusterOptions(name, namespace string) []client.ListOption {
 // If the desired version is not available, we check for any available patch version using desired version's Major.Minor semver release.
 // If no versions are available in the desired version's Major.Minor semver release, we return an error.
 func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, location, version string) (string, error) {
-	settings, err := auth.GetSettingsFromEnvironment()
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get settings from environment")
+		return "", errors.Wrap(err, "failed to create a default credential")
 	}
-	authorizer, err := azureutil.GetAuthorizer(settings)
+	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, cred, nil)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create an Authorizer")
+		return "", errors.Wrap(err, "failed to create a ContainerServices client")
 	}
-	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
-	containerServiceClient.Authorizer = authorizer
-	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
+	result, err := managedClustersClient.ListKubernetesVersions(ctx, location, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to list Orchestrators")
 	}
@@ -106,21 +105,26 @@ func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, locatio
 	baseVersion := fmt.Sprintf("%s.0", semver.MajorMinor(version))
 	maxVersion := fmt.Sprintf("%s.0", semver.MajorMinor(version))
 	var foundWorkingVersion bool
-	for _, o := range *result.Orchestrators {
-		orchVersion := *o.OrchestratorVersion
-		// semver comparisons require a "v" prefix
-		if orchVersion[:1] != "v" {
-			orchVersion = fmt.Sprintf("v%s", *o.OrchestratorVersion)
-		}
-		// if the inputted version matches with an available AKS version we can return immediately
-		if orchVersion == version && !latestStableVersionDesired {
-			return version, nil
-		}
+	for _, minor := range result.KubernetesVersionListResult.Values {
+		for patch := range minor.PatchVersions {
+			orchVersion := patch
 
-		// or, keep track of the highest aks version for a given major.minor
-		if semver.MajorMinor(orchVersion) == semver.MajorMinor(maxVersion) && semver.Compare(orchVersion, maxVersion) >= 0 {
-			maxVersion = orchVersion
-			foundWorkingVersion = true
+			// semver comparisons require a "v" prefix
+			if patch[:1] != "v" {
+				orchVersion = "v" + patch
+			}
+			if semver.MajorMinor(orchVersion) != semver.MajorMinor(baseVersion) {
+				continue
+			}
+			// if the inputted version matches with an available AKS version we can return immediately
+			if orchVersion == version && !latestStableVersionDesired {
+				return version, nil
+			}
+			// or, keep track of the highest aks version for a given major.minor
+			if semver.Compare(orchVersion, maxVersion) >= 0 {
+				maxVersion = orchVersion
+				foundWorkingVersion = true
+			}
 		}
 	}
 
@@ -144,33 +148,32 @@ func GetNextLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID
 }
 
 func getLatestStableAKSKubernetesVersionOffset(ctx context.Context, subscriptionID, location string, offset int) (string, error) {
-	settings, err := auth.GetSettingsFromEnvironment()
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get settings from environment")
+		return "", errors.Wrap(err, "failed to create a default credential")
 	}
-	authorizer, err := azureutil.GetAuthorizer(settings)
+	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, cred, nil)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create an Authorizer")
+		return "", errors.Wrap(err, "failed to create a ContainerServices client")
 	}
-	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
-	containerServiceClient.Authorizer = authorizer
-	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
+	result, err := managedClustersClient.ListKubernetesVersions(ctx, location, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to list Orchestrators")
 	}
 
 	var orchestratorversions []string
 	var foundWorkingVersion bool
-	var orchVersion string
+	var version string
 	var maxVersion string
 
-	for _, o := range *result.Orchestrators {
-		orchVersion = *o.OrchestratorVersion
-		// semver comparisons require a "v" prefix
-		if orchVersion[:1] != "v" && o.IsPreview == nil {
-			orchVersion = fmt.Sprintf("v%s", *o.OrchestratorVersion)
+	for _, minor := range result.KubernetesVersionListResult.Values {
+		for patch := range minor.PatchVersions {
+			// semver comparisons require a "v" prefix
+			if patch[:1] != "v" && !ptr.Deref(minor.IsPreview, false) {
+				version = "v" + patch
+			}
+			orchestratorversions = append(orchestratorversions, version)
 		}
-		orchestratorversions = append(orchestratorversions, orchVersion)
 	}
 	semver.Sort(orchestratorversions)
 	maxVersion = orchestratorversions[len(orchestratorversions)-1-offset]

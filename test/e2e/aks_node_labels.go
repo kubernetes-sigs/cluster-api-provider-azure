@@ -23,7 +23,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,11 +48,11 @@ func AKSNodeLabelsSpec(ctx context.Context, inputGetter func() AKSNodeLabelsSpec
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	auth, err := settings.GetAuthorizer()
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	agentpoolsClient := containerservice.NewAgentPoolsClient(subscriptionID)
-	agentpoolsClient.Authorizer = auth
+	agentpoolsClient, err := armcontainerservice.NewAgentPoolsClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
 	mgmtClient := bootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
@@ -79,13 +80,14 @@ func AKSNodeLabelsSpec(ctx context.Context, inputGetter func() AKSNodeLabelsSpec
 
 			var expectedLabels map[string]string
 			checkLabels := func(g Gomega) {
-				agentpool, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name)
+				resp, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name, nil)
 				g.Expect(err).NotTo(HaveOccurred())
 
+				agentpool := resp.AgentPool
 				var actualLabels map[string]string
-				if agentpool.NodeLabels != nil {
+				if agentpool.Properties.NodeLabels != nil {
 					actualLabels = make(map[string]string)
-					for k, v := range agentpool.NodeLabels {
+					for k, v := range agentpool.Properties.NodeLabels {
 						actualLabels[k] = ptr.Deref(v, "")
 					}
 				}
