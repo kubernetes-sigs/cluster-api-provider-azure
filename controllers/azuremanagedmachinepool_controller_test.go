@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -93,6 +95,22 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			},
 			Verify: func(g *WithT, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
+			},
+		},
+		{
+			name: "Reconcile delete transient error",
+			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, _ *MockNodeListerMockRecorder) {
+				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
+				reconciler.Delete(gomock2.AContext()).Return(azure.WithTransientError(errors.New("transient"), 76*time.Second))
+				agentpools.Name()
+				ammp.DeletionTimestamp = &metav1.Time{
+					Time: time.Now(),
+				}
+				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
+			},
+			Verify: func(g *WithT, result ctrl.Result, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(result.RequeueAfter).To(Equal(76 * time.Second))
 			},
 		},
 	}
