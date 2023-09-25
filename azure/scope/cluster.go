@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
@@ -326,17 +327,18 @@ func (s *ClusterScope) RouteTableSpecs() []azure.ResourceSpecGetter {
 }
 
 // NatGatewaySpecs returns the node NAT gateway.
-func (s *ClusterScope) NatGatewaySpecs() []azure.ResourceSpecGetter {
+func (s *ClusterScope) NatGatewaySpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway] {
 	natGatewaySet := make(map[string]struct{})
-	var natGateways []azure.ResourceSpecGetter
+	var natGateways []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]
 
 	// We ignore the control plane NAT gateway, as we will always use a LB to enable egress on the control plane.
 	for _, subnet := range s.NodeSubnets() {
 		if subnet.IsNatGatewayEnabled() {
 			if _, ok := natGatewaySet[subnet.NatGateway.Name]; !ok {
-				natGatewaySet[subnet.NatGateway.Name] = struct{}{} // empty struct to represent hash set
-				natGateways = append(natGateways, &natgateways.NatGatewaySpec{
+				natGatewaySet[subnet.NatGateway.Name] = struct{}{}             // empty struct to represent hash set
+				natGateways = append(natGateways, &natgateways.NatGatewaySpec{ // TODO: remove it later. natgateways.NatGatewaySpec implements azure.ASOResourceSpecGetter interface methods.
 					Name:           subnet.NatGateway.Name,
+					Namespace:      s.Namespace(),
 					ResourceGroup:  s.ResourceGroup(),
 					SubscriptionID: s.SubscriptionID(),
 					Location:       s.Location(),
