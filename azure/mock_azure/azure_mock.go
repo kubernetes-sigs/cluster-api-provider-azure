@@ -161,21 +161,6 @@ func (mr *MockServiceReconcilerMockRecorder) Delete(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockServiceReconciler)(nil).Delete), ctx)
 }
 
-// IsManaged mocks base method.
-func (m *MockServiceReconciler) IsManaged(ctx context.Context) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsManaged", ctx)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsManaged indicates an expected call of IsManaged.
-func (mr *MockServiceReconcilerMockRecorder) IsManaged(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsManaged", reflect.TypeOf((*MockServiceReconciler)(nil).IsManaged), ctx)
-}
-
 // Name mocks base method.
 func (m *MockServiceReconciler) Name() string {
 	m.ctrl.T.Helper()

@@ -18,7 +18,6 @@ package groups
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
@@ -28,30 +27,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups/mock_groups"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
-
-func TestPostReconcileHook(t *testing.T) {
-	g := NewGomegaWithT(t)
-	mockCtrl := gomock.NewController(t)
-	scope := mock_groups.NewMockGroupScope(mockCtrl)
-	inErr := errors.New("input error")
-	scope.EXPECT().UpdatePutStatus(infrav1.ResourceGroupReadyCondition, ServiceName, inErr)
-	err := postReconcileHook(scope, inErr)
-	g.Expect(err).To(Equal(inErr))
-}
-
-func TestPostDeleteHook(t *testing.T) {
-	g := NewGomegaWithT(t)
-	mockCtrl := gomock.NewController(t)
-	scope := mock_groups.NewMockGroupScope(mockCtrl)
-	inErr := errors.New("input error")
-	scope.EXPECT().UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, ServiceName, inErr)
-	err := postDeleteHook(scope, inErr)
-	g.Expect(err).To(Equal(inErr))
-}
 
 func TestShouldDeleteIndividualResources(t *testing.T) {
 	tests := []struct {
@@ -64,7 +44,7 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 			name:    "error checking if group is managed",
 			objects: nil,
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder) {
-				s.GroupSpec().Return(&GroupSpec{}).AnyTimes()
+				s.GroupSpecs().Return([]azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{&GroupSpec{}}).AnyTimes()
 				s.ClusterName().Return("").AnyTimes()
 			},
 			expected: true,
@@ -83,9 +63,11 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 				},
 			},
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder) {
-				s.GroupSpec().Return(&GroupSpec{
-					Name:      "name",
-					Namespace: "namespace",
+				s.GroupSpecs().Return([]azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+					&GroupSpec{
+						Name:      "name",
+						Namespace: "namespace",
+					},
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
 			},
@@ -108,9 +90,11 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 				},
 			},
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder) {
-				s.GroupSpec().Return(&GroupSpec{
-					Name:      "name",
-					Namespace: "namespace",
+				s.GroupSpecs().Return([]azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+					&GroupSpec{
+						Name:      "name",
+						Namespace: "namespace",
+					},
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
 			},
@@ -133,9 +117,11 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 				},
 			},
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder) {
-				s.GroupSpec().Return(&GroupSpec{
-					Name:      "name",
-					Namespace: "namespace",
+				s.GroupSpecs().Return([]azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+					&GroupSpec{
+						Name:      "name",
+						Namespace: "namespace",
+					},
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
 			},

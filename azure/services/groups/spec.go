@@ -26,9 +26,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 )
 
-// ASOType aliases the ASO object type managed by the service.
-type ASOType = *asoresourcesv1.ResourceGroup
-
 // GroupSpec defines the specification for a Resource Group.
 type GroupSpec struct {
 	Name           string
@@ -40,7 +37,7 @@ type GroupSpec struct {
 }
 
 // ResourceRef implements aso.ResourceSpecGetter.
-func (s *GroupSpec) ResourceRef() ASOType {
+func (s *GroupSpec) ResourceRef() *asoresourcesv1.ResourceGroup {
 	return &asoresourcesv1.ResourceGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.Name,
@@ -50,7 +47,7 @@ func (s *GroupSpec) ResourceRef() ASOType {
 }
 
 // Parameters implements aso.ResourceSpecGetter.
-func (s *GroupSpec) Parameters(ctx context.Context, existing ASOType) (ASOType, error) {
+func (s *GroupSpec) Parameters(ctx context.Context, existing *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
 	if existing != nil {
 		return existing, nil
 	}
@@ -73,11 +70,11 @@ func (s *GroupSpec) Parameters(ctx context.Context, existing ASOType) (ASOType, 
 }
 
 // WasManaged implements azure.ASOResourceSpecGetter.
-func (s *GroupSpec) WasManaged(resource ASOType) bool {
+func (s *GroupSpec) WasManaged(resource *asoresourcesv1.ResourceGroup) bool {
 	return infrav1.Tags(resource.Status.Tags).HasOwned(s.ClusterName)
 }
 
-var _ aso.TagsGetterSetter[ASOType] = (*GroupSpec)(nil)
+var _ aso.TagsGetterSetter[*asoresourcesv1.ResourceGroup] = (*GroupSpec)(nil)
 
 // GetAdditionalTags implements aso.TagsGetterSetter.
 func (s *GroupSpec) GetAdditionalTags() infrav1.Tags {
@@ -85,16 +82,16 @@ func (s *GroupSpec) GetAdditionalTags() infrav1.Tags {
 }
 
 // GetDesiredTags implements aso.TagsGetterSetter.
-func (*GroupSpec) GetDesiredTags(resource ASOType) infrav1.Tags {
+func (*GroupSpec) GetDesiredTags(resource *asoresourcesv1.ResourceGroup) infrav1.Tags {
 	return resource.Spec.Tags
 }
 
 // GetActualTags implements aso.TagsGetterSetter.
-func (*GroupSpec) GetActualTags(resource ASOType) infrav1.Tags {
+func (*GroupSpec) GetActualTags(resource *asoresourcesv1.ResourceGroup) infrav1.Tags {
 	return resource.Status.Tags
 }
 
 // SetTags implements aso.TagsGetterSetter.
-func (*GroupSpec) SetTags(resource ASOType, tags infrav1.Tags) {
+func (*GroupSpec) SetTags(resource *asoresourcesv1.ResourceGroup, tags infrav1.Tags) {
 	resource.Spec.Tags = tags
 }

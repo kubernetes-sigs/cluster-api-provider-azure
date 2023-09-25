@@ -42,6 +42,7 @@ type TagsGetterSetter[T genruntime.MetaObject] interface {
 
 // Scope represents the common functionality related to all scopes needed for ASO services.
 type Scope interface {
+	azure.AsyncStatusUpdater
 	GetClient() client.Client
 	ClusterName() string
 }

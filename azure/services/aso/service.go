@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // Service provides operations on Azure resources.
@@ -31,6 +32,7 @@ type Service[T deepCopier[T], S Scope] struct {
 	Scope S
 	Specs []azure.ASOResourceSpecGetter[T]
 
+	ConditionType                  clusterv1.ConditionType
 	PostCreateOrUpdateResourceHook func(scope S, result T, err error)
 	PostReconcileHook              func(scope S, err error) error
 	PostDeleteHook                 func(scope S, err error) error
@@ -78,8 +80,9 @@ func (s *Service[T, S]) Reconcile(ctx context.Context) error {
 	}
 
 	if s.PostReconcileHook != nil {
-		return s.PostReconcileHook(s.Scope, resultErr)
+		resultErr = s.PostReconcileHook(s.Scope, resultErr)
 	}
+	s.Scope.UpdatePutStatus(s.ConditionType, s.Name(), resultErr)
 	return resultErr
 }
 
@@ -106,8 +109,9 @@ func (s *Service[T, S]) Delete(ctx context.Context) error {
 	}
 
 	if s.PostDeleteHook != nil {
-		return s.PostDeleteHook(s.Scope, resultErr)
+		resultErr = s.PostDeleteHook(s.Scope, resultErr)
 	}
+	s.Scope.UpdateDeleteStatus(s.ConditionType, s.Name(), resultErr)
 	return resultErr
 }
 

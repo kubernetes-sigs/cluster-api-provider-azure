@@ -71,7 +71,7 @@ func New[T deepCopier[T]](ctrlClient client.Client, clusterName string) *Creator
 
 // CreateOrUpdateResource implements the logic for creating a new or updating an
 // existing resource with ASO.
-func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (result T, err error) {
+func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (T, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.CreateOrUpdateResource")
 	defer done()
 

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
@@ -251,15 +252,17 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 	}
 }
 
-// GroupSpec returns the resource group spec.
-func (s *ManagedControlPlaneScope) GroupSpec() azure.ASOResourceSpecGetter[groups.ASOType] {
-	return &groups.GroupSpec{
-		Name:           s.ResourceGroup(),
-		Namespace:      s.Cluster.Namespace,
-		Location:       s.Location(),
-		ClusterName:    s.ClusterName(),
-		AdditionalTags: s.AdditionalTags(),
-		Owner:          *metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
+// GroupSpecs returns the resource group spec.
+func (s *ManagedControlPlaneScope) GroupSpecs() []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup] {
+	return []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+		&groups.GroupSpec{
+			Name:           s.ResourceGroup(),
+			Namespace:      s.Cluster.Namespace,
+			Location:       s.Location(),
+			ClusterName:    s.ClusterName(),
+			AdditionalTags: s.AdditionalTags(),
+			Owner:          *metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
+		},
 	}
 }
 

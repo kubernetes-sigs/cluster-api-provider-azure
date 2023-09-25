@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -417,15 +418,17 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 	return subnetSpecs
 }
 
-// GroupSpec returns the resource group spec.
-func (s *ClusterScope) GroupSpec() azure.ASOResourceSpecGetter[groups.ASOType] {
-	return &groups.GroupSpec{
-		Name:           s.ResourceGroup(),
-		Namespace:      s.Namespace(),
-		Location:       s.Location(),
-		ClusterName:    s.ClusterName(),
-		AdditionalTags: s.AdditionalTags(),
-		Owner:          *metav1.NewControllerRef(s.AzureCluster, infrav1.GroupVersion.WithKind("AzureCluster")),
+// GroupSpecs returns the resource group spec.
+func (s *ClusterScope) GroupSpecs() []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup] {
+	return []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+		&groups.GroupSpec{
+			Name:           s.ResourceGroup(),
+			Namespace:      s.Namespace(),
+			Location:       s.Location(),
+			ClusterName:    s.ClusterName(),
+			AdditionalTags: s.AdditionalTags(),
+			Owner:          *metav1.NewControllerRef(s.AzureCluster, infrav1.GroupVersion.WithKind("AzureCluster")),
+		},
 	}
 }
 

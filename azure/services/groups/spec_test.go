@@ -30,8 +30,8 @@ func TestParameters(t *testing.T) {
 	tests := []struct {
 		name     string
 		spec     *GroupSpec
-		existing ASOType
-		expected ASOType
+		existing *asoresourcesv1.ResourceGroup
+		expected *asoresourcesv1.ResourceGroup
 	}{
 		{
 			name: "no existing group",
@@ -95,7 +95,7 @@ func TestWasManaged(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		object   ASOType
+		object   *asoresourcesv1.ResourceGroup
 		expected bool
 	}{
 		{
