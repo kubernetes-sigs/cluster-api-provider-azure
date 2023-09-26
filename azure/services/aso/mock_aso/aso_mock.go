@@ -36,31 +36,31 @@ import (
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// MockReconciler is a mock of Reconciler interface.
-type MockReconciler[T genruntime.MetaObject] struct {
+// Mockreconciler is a mock of reconciler interface.
+type Mockreconciler[T genruntime.MetaObject] struct {
 	ctrl     *gomock.Controller
-	recorder *MockReconcilerMockRecorder[T]
+	recorder *MockreconcilerMockRecorder[T]
 }
 
-// MockReconcilerMockRecorder is the mock recorder for MockReconciler.
-type MockReconcilerMockRecorder[T genruntime.MetaObject] struct {
-	mock *MockReconciler[T]
+// MockreconcilerMockRecorder is the mock recorder for Mockreconciler.
+type MockreconcilerMockRecorder[T genruntime.MetaObject] struct {
+	mock *Mockreconciler[T]
 }
 
-// NewMockReconciler creates a new mock instance.
-func NewMockReconciler[T genruntime.MetaObject](ctrl *gomock.Controller) *MockReconciler[T] {
-	mock := &MockReconciler[T]{ctrl: ctrl}
-	mock.recorder = &MockReconcilerMockRecorder[T]{mock}
+// NewMockreconciler creates a new mock instance.
+func NewMockreconciler[T genruntime.MetaObject](ctrl *gomock.Controller) *Mockreconciler[T] {
+	mock := &Mockreconciler[T]{ctrl: ctrl}
+	mock.recorder = &MockreconcilerMockRecorder[T]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockReconciler[T]) EXPECT() *MockReconcilerMockRecorder[T] {
+func (m *Mockreconciler[T]) EXPECT() *MockreconcilerMockRecorder[T] {
 	return m.recorder
 }
 
 // CreateOrUpdateResource mocks base method.
-func (m *MockReconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (T, error) {
+func (m *Mockreconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (T, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrUpdateResource", ctx, spec, serviceName)
 	ret0, _ := ret[0].(T)
@@ -69,13 +69,13 @@ func (m *MockReconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azu
 }
 
 // CreateOrUpdateResource indicates an expected call of CreateOrUpdateResource.
-func (mr *MockReconcilerMockRecorder[T]) CreateOrUpdateResource(ctx, spec, serviceName any) *gomock.Call {
+func (mr *MockreconcilerMockRecorder[T]) CreateOrUpdateResource(ctx, spec, serviceName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateResource", reflect.TypeOf((*MockReconciler[T])(nil).CreateOrUpdateResource), ctx, spec, serviceName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateResource", reflect.TypeOf((*Mockreconciler[T])(nil).CreateOrUpdateResource), ctx, spec, serviceName)
 }
 
 // DeleteResource mocks base method.
-func (m *MockReconciler[T]) DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
+func (m *Mockreconciler[T]) DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteResource", ctx, spec, serviceName)
 	ret0, _ := ret[0].(error)
@@ -83,13 +83,13 @@ func (m *MockReconciler[T]) DeleteResource(ctx context.Context, spec azure.ASORe
 }
 
 // DeleteResource indicates an expected call of DeleteResource.
-func (mr *MockReconcilerMockRecorder[T]) DeleteResource(ctx, spec, serviceName any) *gomock.Call {
+func (mr *MockreconcilerMockRecorder[T]) DeleteResource(ctx, spec, serviceName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResource", reflect.TypeOf((*MockReconciler[T])(nil).DeleteResource), ctx, spec, serviceName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResource", reflect.TypeOf((*Mockreconciler[T])(nil).DeleteResource), ctx, spec, serviceName)
 }
 
 // PauseResource mocks base method.
-func (m *MockReconciler[T]) PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
+func (m *Mockreconciler[T]) PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PauseResource", ctx, spec, serviceName)
 	ret0, _ := ret[0].(error)
@@ -97,9 +97,9 @@ func (m *MockReconciler[T]) PauseResource(ctx context.Context, spec azure.ASORes
 }
 
 // PauseResource indicates an expected call of PauseResource.
-func (mr *MockReconcilerMockRecorder[T]) PauseResource(ctx, spec, serviceName any) *gomock.Call {
+func (mr *MockreconcilerMockRecorder[T]) PauseResource(ctx, spec, serviceName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PauseResource", reflect.TypeOf((*MockReconciler[T])(nil).PauseResource), ctx, spec, serviceName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PauseResource", reflect.TypeOf((*Mockreconciler[T])(nil).PauseResource), ctx, spec, serviceName)
 }
 
 // MockTagsGetterSetter is a mock of TagsGetterSetter interface.

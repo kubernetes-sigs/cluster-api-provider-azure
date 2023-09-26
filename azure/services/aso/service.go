@@ -20,14 +20,14 @@ import (
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	reconcilerutil "sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // Service provides operations on Azure resources.
 type Service[T deepCopier[T], S Scope] struct {
-	Reconciler[T]
+	reconciler[T]
 
 	Scope S
 	Specs []azure.ASOResourceSpecGetter[T]
@@ -45,7 +45,7 @@ func NewService[T deepCopier[T], S Scope](name string, scope S) *Service[T, S] {
 	return &Service[T, S]{
 		name:       name,
 		Scope:      scope,
-		Reconciler: New[T](scope.GetClient(), scope.ClusterName()),
+		reconciler: New[T](scope.GetClient(), scope.ClusterName()),
 	}
 }
 
@@ -59,7 +59,7 @@ func (s *Service[T, S]) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "aso.Service.Reconcile")
 	defer done()
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	ctx, cancel := context.WithTimeout(ctx, reconcilerutil.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
 	// We go through the list of Specs to reconcile each one, independently of the result of the previous one.
@@ -91,7 +91,7 @@ func (s *Service[T, S]) Delete(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "aso.Service.Delete")
 	defer done()
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureServiceReconcileTimeout)
+	ctx, cancel := context.WithTimeout(ctx, reconcilerutil.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
 	// We go through the list of Specs to delete each one, independently of the resultErr of the previous one.

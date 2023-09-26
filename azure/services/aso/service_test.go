@@ -50,12 +50,12 @@ func TestServiceReconcile(t *testing.T) {
 		}
 
 		reconcileErr := errors.New("CreateOrUpdateResource error")
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil, reconcileErr)
 		scope.EXPECT().UpdatePutStatus(conditionType, serviceName, reconcileErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -78,14 +78,14 @@ func TestServiceReconcile(t *testing.T) {
 			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
 		}
 
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil, nil)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[1], serviceName).Return(nil, nil)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil, nil)
 		scope.EXPECT().UpdatePutStatus(conditionType, serviceName, nil)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -109,14 +109,14 @@ func TestServiceReconcile(t *testing.T) {
 		}
 
 		reconcileErr := azure.NewOperationNotDoneError(&infrav1.Future{})
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil, nil)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[1], serviceName).Return(nil, reconcileErr)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil, nil)
 		scope.EXPECT().UpdatePutStatus(conditionType, serviceName, reconcileErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -140,14 +140,14 @@ func TestServiceReconcile(t *testing.T) {
 		}
 
 		reconcileErr := errors.New("non-not done error")
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil, azure.NewOperationNotDoneError(&infrav1.Future{}))
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[1], serviceName).Return(nil, reconcileErr)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil, azure.NewOperationNotDoneError(&infrav1.Future{}))
 		scope.EXPECT().UpdatePutStatus(conditionType, serviceName, reconcileErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -170,7 +170,7 @@ func TestServiceReconcile(t *testing.T) {
 
 		reconcileErr := errors.New("CreateOrUpdateResource error")
 		postErr := errors.New("PostReconcile error")
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[0], serviceName).Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "a very special name",
@@ -179,7 +179,7 @@ func TestServiceReconcile(t *testing.T) {
 		scope.EXPECT().UpdatePutStatus(conditionType, serviceName, postErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -213,12 +213,12 @@ func TestServiceDelete(t *testing.T) {
 		}
 
 		deleteErr := errors.New("DeleteResource error")
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(deleteErr)
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, deleteErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -241,14 +241,14 @@ func TestServiceDelete(t *testing.T) {
 			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
 		}
 
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1], serviceName).Return(nil)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil)
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, nil)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -272,14 +272,14 @@ func TestServiceDelete(t *testing.T) {
 		}
 
 		deleteErr := azure.NewOperationNotDoneError(&infrav1.Future{})
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1], serviceName).Return(deleteErr)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil)
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, deleteErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -303,14 +303,14 @@ func TestServiceDelete(t *testing.T) {
 		}
 
 		deleteErr := errors.New("non-not done error")
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(azure.NewOperationNotDoneError(&infrav1.Future{}))
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1], serviceName).Return(deleteErr)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2], serviceName).Return(azure.NewOperationNotDoneError(&infrav1.Future{}))
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, deleteErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -333,12 +333,12 @@ func TestServiceDelete(t *testing.T) {
 
 		deleteErr := errors.New("DeleteResource error")
 		postErr := errors.New("PostDeleteHook error")
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(deleteErr)
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, postErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -368,13 +368,13 @@ func TestServicePause(t *testing.T) {
 			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
 		}
 
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil)
 		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[1], serviceName).Return(nil)
 		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,
@@ -404,12 +404,12 @@ func TestServicePause(t *testing.T) {
 			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
 		}
 
-		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
+		reconciler := mock_aso.NewMockreconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil)
 		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[1], serviceName).Return(errors.New("Pause error"))
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
-			Reconciler:    reconciler,
+			reconciler:    reconciler,
 			Scope:         scope,
 			Specs:         specs,
 			name:          serviceName,

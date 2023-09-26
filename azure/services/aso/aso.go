@@ -53,17 +53,17 @@ type deepCopier[T any] interface {
 	DeepCopy() T
 }
 
-// CreatorDeleter is an implementation of the Reconciler interface. It handles creation
+// Reconciler is an implementation of the Reconciler interface. It handles creation
 // and deletion of resources using ASO.
-type CreatorDeleter[T deepCopier[T]] struct {
+type Reconciler[T deepCopier[T]] struct {
 	client.Client
 
 	clusterName string
 }
 
 // New creates a new ASO service.
-func New[T deepCopier[T]](ctrlClient client.Client, clusterName string) *CreatorDeleter[T] {
-	return &CreatorDeleter[T]{
+func New[T deepCopier[T]](ctrlClient client.Client, clusterName string) *Reconciler[T] {
+	return &Reconciler[T]{
 		Client:      ctrlClient,
 		clusterName: clusterName,
 	}
@@ -71,7 +71,7 @@ func New[T deepCopier[T]](ctrlClient client.Client, clusterName string) *Creator
 
 // CreateOrUpdateResource implements the logic for creating a new or updating an
 // existing resource with ASO.
-func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (T, error) {
+func (r *Reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (T, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.CreateOrUpdateResource")
 	defer done()
 
@@ -85,7 +85,7 @@ func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azu
 	var existing T
 	var zero T // holds the zero value, to be returned with non-nil errors.
 	resourceExists := false
-	if err := s.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return zero, errors.Wrapf(err, "failed to get existing resource %s/%s (service: %s)", resourceNamespace, resourceName, serviceName)
 		}
@@ -94,7 +94,7 @@ func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azu
 		resourceExists = true
 		log.V(2).Info("successfully got existing resource")
 
-		if !ownedByCluster(existing.GetLabels(), s.clusterName) {
+		if !ownedByCluster(existing.GetLabels(), r.clusterName) {
 			log.V(4).Info("skipping reconcile for unmanaged resource")
 			return existing, nil
 		}
@@ -169,7 +169,7 @@ func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azu
 		delete(annotations, prePauseReconcilePolicyAnnotation)
 	}
 	if !resourceExists {
-		labels[infrav1.OwnedByClusterLabelKey] = s.clusterName
+		labels[infrav1.OwnedByClusterLabelKey] = r.clusterName
 		// Create the ASO resource with "skip" in case a matching resource
 		// already exists in Azure, in which case CAPZ will assume it is managed
 		// by the user and ASO should not actively reconcile changes to the ASO
@@ -187,7 +187,7 @@ func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azu
 
 	// Set the secret name annotation in order to leverage the ASO resource credential scope as defined in
 	// https://azure.github.io/azure-service-operator/guide/authentication/credential-scope/#resource-scope.
-	annotations[asoannotations.PerResourceSecret] = aso.GetASOSecretName(s.clusterName)
+	annotations[asoannotations.PerResourceSecret] = aso.GetASOSecretName(r.clusterName)
 
 	if len(labels) == 0 {
 		labels = nil
@@ -212,13 +212,13 @@ func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azu
 	log.V(2).Info(logMessageVerbPrefix+"ing resource", "diff", diff)
 	if resourceExists {
 		var helper *patch.Helper
-		helper, err = patch.NewHelper(existing, s.Client)
+		helper, err = patch.NewHelper(existing, r.Client)
 		if err != nil {
 			return zero, errors.Errorf("failed to init patch helper: %v", err)
 		}
 		err = helper.Patch(ctx, parameters)
 	} else {
-		err = s.Client.Create(ctx, parameters)
+		err = r.Client.Create(ctx, parameters)
 	}
 	if err == nil {
 		// Resources need to be requeued to wait for the create or update to finish.
@@ -232,7 +232,7 @@ func (s *CreatorDeleter[T]) CreateOrUpdateResource(ctx context.Context, spec azu
 }
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.
-func (s *CreatorDeleter[T]) DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error) {
+func (r *Reconciler[T]) DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.DeleteResource")
 	defer done()
 
@@ -242,7 +242,7 @@ func (s *CreatorDeleter[T]) DeleteResource(ctx context.Context, spec azure.ASORe
 
 	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
 
-	managed, err := IsManaged(ctx, s.Client, spec, s.clusterName)
+	managed, err := IsManaged(ctx, r.Client, spec, r.clusterName)
 	if apierrors.IsNotFound(err) {
 		// already deleted
 		log.V(2).Info("successfully deleted resource")
@@ -257,7 +257,7 @@ func (s *CreatorDeleter[T]) DeleteResource(ctx context.Context, spec azure.ASORe
 	}
 
 	log.V(2).Info("deleting resource")
-	err = s.Client.Delete(ctx, resource)
+	err = r.Client.Delete(ctx, resource)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// already deleted
@@ -294,7 +294,7 @@ func ownedByCluster(labels map[string]string, clusterName string) bool {
 }
 
 // PauseResource pauses an ASO resource by updating its `reconcile-policy` to `skip`.
-func (s *CreatorDeleter[T]) PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
+func (r *Reconciler[T]) PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.PauseResource")
 	defer done()
 
@@ -304,10 +304,10 @@ func (s *CreatorDeleter[T]) PauseResource(ctx context.Context, spec azure.ASORes
 
 	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
 
-	if err := s.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
 		return err
 	}
-	if !ownedByCluster(resource.GetLabels(), s.clusterName) {
+	if !ownedByCluster(resource.GetLabels(), r.clusterName) {
 		log.V(4).Info("Skipping pause of unmanaged resource")
 		return nil
 	}
@@ -321,7 +321,7 @@ func (s *CreatorDeleter[T]) PauseResource(ctx context.Context, spec azure.ASORes
 	log.V(4).Info("Pausing resource")
 
 	var helper *patch.Helper
-	helper, err := patch.NewHelper(resource, s.Client)
+	helper, err := patch.NewHelper(resource, r.Client)
 	if err != nil {
 		return errors.Errorf("failed to init patch helper: %v", err)
 	}

@@ -25,8 +25,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Reconciler is a generic interface used to perform reconciliation of Azure resources backed by ASO.
-type Reconciler[T genruntime.MetaObject] interface {
+// reconciler is a generic interface used to perform reconciliation of Azure resources backed by ASO.
+type reconciler[T genruntime.MetaObject] interface {
 	CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (result T, err error)
 	DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error)
 	PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error)
