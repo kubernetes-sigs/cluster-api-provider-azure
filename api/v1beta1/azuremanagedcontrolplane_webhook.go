@@ -96,6 +96,12 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "setDefaultSSHPublicKey failed")
 	}
 
+	// PaidManagedControlPlaneTier has been replaced with StandardManagedControlPlaneTier since v2023-02-01.
+	if m.Spec.SKU != nil && m.Spec.SKU.Tier == PaidManagedControlPlaneTier {
+		m.Spec.SKU.Tier = StandardManagedControlPlaneTier
+		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Info("Paid SKU tier is deprecated and has been replaced by Standard")
+	}
+
 	m.setDefaultNodeResourceGroupName()
 	m.setDefaultVirtualNetwork()
 	m.setDefaultSubnet()

@@ -262,14 +262,17 @@ type AddonProfile struct {
 }
 
 // AzureManagedControlPlaneSkuTier - Tier of a managed cluster SKU.
-// +kubebuilder:validation:Enum=Free;Paid
+// +kubebuilder:validation:Enum=Free;Paid;Standard
 type AzureManagedControlPlaneSkuTier string
 
 const (
 	// FreeManagedControlPlaneTier is the free tier of AKS without corresponding SLAs.
 	FreeManagedControlPlaneTier AzureManagedControlPlaneSkuTier = "Free"
 	// PaidManagedControlPlaneTier is the paid tier of AKS with corresponding SLAs.
+	// Deprecated. It has been replaced with StandardManagedControlPlaneTier.
 	PaidManagedControlPlaneTier AzureManagedControlPlaneSkuTier = "Paid"
+	// StandardManagedControlPlaneTier is the standard tier of AKS with corresponding SLAs.
+	StandardManagedControlPlaneTier AzureManagedControlPlaneSkuTier = "Standard"
 )
 
 // AKSSku - AKS SKU.
