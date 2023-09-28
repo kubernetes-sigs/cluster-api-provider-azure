@@ -130,7 +130,7 @@ spec:
   networkPolicy: azure # or calico
   networkPlugin: azure # or kubenet
   sku:
-    tier: Free # or Paid
+    tier: Free # or Standard
   addonProfiles:
   - name: azureKeyvaultSecretsProvider
     enabled: true

@@ -87,7 +87,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("fooNodeRg"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
-	g.Expect(amcp.Spec.SKU.Tier).To(Equal(PaidManagedControlPlaneTier))
+	g.Expect(amcp.Spec.SKU.Tier).To(Equal(StandardManagedControlPlaneTier))
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeTrue())
 
 	t.Logf("Testing amcp defaulting webhook with overlay")
