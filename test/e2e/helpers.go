@@ -35,7 +35,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-02/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo/v2"
@@ -55,7 +56,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -759,38 +759,38 @@ func resolveFlatcarVersion(config *clusterctl.E2EConfig, versions semver.Version
 }
 
 // newImagesClient returns a new VM images client using environmental settings for auth.
-func newImagesClient() compute.VirtualMachineImagesClient {
+func newImagesClient() *armcompute.VirtualMachineImagesClient {
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := azureutil.GetAuthorizer(settings)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	imagesClient := compute.NewVirtualMachineImagesClient(subscriptionID)
-	imagesClient.Authorizer = authorizer
+	imagesClient, err := armcompute.NewVirtualMachineImagesClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
 	return imagesClient
 }
 
-func newCommunityGalleryImagesClient() compute.CommunityGalleryImagesClient {
+func newCommunityGalleryImagesClient() *armcompute.CommunityGalleryImagesClient {
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := azureutil.GetAuthorizer(settings)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	communityGalleryImagesClient := compute.NewCommunityGalleryImagesClient(subscriptionID)
-	communityGalleryImagesClient.Authorizer = authorizer
+	communityGalleryImagesClient, err := armcompute.NewCommunityGalleryImagesClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
 	return communityGalleryImagesClient
 }
 
-func newCommunityGalleryImageVersionsClient() compute.CommunityGalleryImageVersionsClient {
+func newCommunityGalleryImageVersionsClient() *armcompute.CommunityGalleryImageVersionsClient {
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := azureutil.GetAuthorizer(settings)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	communityGalleryImageVersionsClient := compute.NewCommunityGalleryImageVersionsClient(subscriptionID)
-	communityGalleryImageVersionsClient.Authorizer = authorizer
+	communityGalleryImageVersionsClient, err := armcompute.NewCommunityGalleryImageVersionsClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
 	return communityGalleryImageVersionsClient
 }
@@ -803,31 +803,31 @@ func getVersionsInOffer(ctx context.Context, location, publisher, offer string) 
 	capiVersion := regexp.MustCompile(`^(\d)(\d{1,2})\.(\d{1,2})\.\d{8}$`)
 	oldCapiSku := regexp.MustCompile(`^k8s-(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)-[a-z]*.*$`)
 	imagesClient := newImagesClient()
-	skus, err := imagesClient.ListSkus(ctx, location, publisher, offer)
+	resp, err := imagesClient.ListSKUs(ctx, location, publisher, offer, nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	if skus.Value != nil {
-		versions = make(map[string]semver.Version, len(*skus.Value))
-		for _, sku := range *skus.Value {
-			res, err := imagesClient.List(ctx, location, publisher, offer, *sku.Name, "", nil, "")
-			Expect(err).NotTo(HaveOccurred())
-			// Don't use SKUs without existing images. See https://github.com/Azure/azure-cli/issues/20115.
-			if res.Value != nil && len(*res.Value) > 0 {
-				// New SKUs don't contain the Kubernetes version and are named like "ubuntu-2004-gen1".
-				if match := capiSku.FindStringSubmatch(*sku.Name); len(match) > 0 {
-					for _, vmImage := range *res.Value {
-						// Versions are named like "121.13.20220601", for Kubernetes v1.21.13 published on June 1, 2022.
-						match = capiVersion.FindStringSubmatch(*vmImage.Name)
-						stringVer := fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3])
-						versions[stringVer] = semver.MustParse(stringVer)
-					}
-					continue
-				}
-				// Old SKUs before 1.21.12, 1.22.9, or 1.23.6 are named like "k8s-1dot21dot2-ubuntu-2004".
-				if match := oldCapiSku.FindStringSubmatch(*sku.Name); len(match) > 0 {
+	skus := resp.VirtualMachineImageResourceArray
+
+	versions = make(map[string]semver.Version, len(skus))
+	for _, sku := range skus {
+		res, err := imagesClient.List(ctx, location, publisher, offer, *sku.Name, nil)
+		Expect(err).NotTo(HaveOccurred())
+		// Don't use SKUs without existing images. See https://github.com/Azure/azure-cli/issues/20115.
+		if len(res.VirtualMachineImageResourceArray) > 0 {
+			// New SKUs don't contain the Kubernetes version and are named like "ubuntu-2004-gen1".
+			if match := capiSku.FindStringSubmatch(*sku.Name); len(match) > 0 {
+				for _, vmImage := range res.VirtualMachineImageResourceArray {
+					// Versions are named like "121.13.20220601", for Kubernetes v1.21.13 published on June 1, 2022.
+					match = capiVersion.FindStringSubmatch(*vmImage.Name)
 					stringVer := fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3])
 					versions[stringVer] = semver.MustParse(stringVer)
 				}
+				continue
+			}
+			// Old SKUs before 1.21.12, 1.22.9, or 1.23.6 are named like "k8s-1dot21dot2-ubuntu-2004".
+			if match := oldCapiSku.FindStringSubmatch(*sku.Name); len(match) > 0 {
+				stringVer := fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3])
+				versions[stringVer] = semver.MustParse(stringVer)
 			}
 		}
 	}
@@ -867,15 +867,15 @@ func getFlatcarVersions(ctx context.Context, location, galleryName, k8sVersion s
 	Logf("Finding Flatcar versions in community gallery %q in location %q for image %q", galleryName, location, image)
 	var versions semver.Versions
 	communityGalleryImageVersionsClient := newCommunityGalleryImageVersionsClient()
-	imageVersionsIterator, err := communityGalleryImageVersionsClient.List(ctx, location, galleryName, image)
-	Expect(err).NotTo(HaveOccurred())
-	imageVersions := imageVersionsIterator.Response()
-
-	if imageVersions.Value == nil {
-		return versions
+	var imageVersions []*armcompute.CommunityGalleryImageVersion
+	pager := communityGalleryImageVersionsClient.NewListPager(location, galleryName, image, nil)
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		imageVersions = append(imageVersions, nextResult.Value...)
 	}
 
-	for _, imageVersion := range *imageVersions.Value {
+	for _, imageVersion := range imageVersions {
 		versions = append(versions, semver.MustParse(*imageVersion.Name))
 	}
 
@@ -888,20 +888,24 @@ func getFlatcarK8sVersions(ctx context.Context, location, communityGalleryName s
 	k8sVersion := regexp.MustCompile(`flatcar-stable-amd64-capi-v(\d+)\.(\d+).(\d+)`)
 	communityGalleryImagesClient := newCommunityGalleryImagesClient()
 	communityGalleryImageVersionsClient := newCommunityGalleryImageVersionsClient()
-	imagesIterator, err := communityGalleryImagesClient.ListComplete(ctx, location, communityGalleryName)
-	Expect(err).NotTo(HaveOccurred())
-	images := imagesIterator.Response()
-
-	if images.Value == nil {
-		return versions
+	var images []*armcompute.CommunityGalleryImage
+	pager := communityGalleryImagesClient.NewListPager(location, communityGalleryName, nil)
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		images = append(images, nextResult.Value...)
 	}
 
-	for _, image := range *images.Value {
-		resIterator, err := communityGalleryImageVersionsClient.List(ctx, location, communityGalleryName, *image.Name)
-		Expect(err).NotTo(HaveOccurred())
-		res := resIterator.Response()
+	for _, image := range images {
+		var imageVersions []*armcompute.CommunityGalleryImageVersion
+		pager := communityGalleryImageVersionsClient.NewListPager(location, communityGalleryName, *image.Name, nil)
+		for pager.More() {
+			nextResult, err := pager.NextPage(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			imageVersions = append(imageVersions, nextResult.Value...)
+		}
 
-		if res.Value == nil || len(*res.Value) == 0 {
+		if len(imageVersions) == 0 {
 			continue
 		}
 
