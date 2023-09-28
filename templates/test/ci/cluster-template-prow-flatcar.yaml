@@ -96,6 +96,8 @@ spec:
                 contents: |
                   [Unit]
                   After=oem-cloudinit.service
+                  # kubeadm must run after containerd - see https://github.com/kubernetes-sigs/image-builder/issues/939.
+                  After=containerd.service
           # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
           storage:
             disks:
@@ -223,6 +225,8 @@ spec:
                   contents: |
                     [Unit]
                     After=oem-cloudinit.service
+                    # kubeadm must run after containerd - see https://github.com/kubernetes-sigs/image-builder/issues/939.
+                    After=containerd.service
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
