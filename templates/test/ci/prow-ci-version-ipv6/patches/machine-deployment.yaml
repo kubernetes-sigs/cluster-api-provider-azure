@@ -1,0 +1,38 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      postKubeadmCommands:
+        # This frees up :53 on the host for the coredns pods
+        - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+        - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+        - systemctl restart systemd-resolved
+      joinConfiguration:
+        nodeRegistration:
+          name: '{{ ds.meta_data["local_hostname"] }}'
+          kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-provider: external
+            cluster-dns: "[fd00::10]"
+      clusterConfiguration:
+        apiServer:
+          extraArgs:
+            bind-address: "::"
+        controllerManager:
+          extraArgs:
+            bind-address: "::"
+        scheduler:
+          extraArgs:
+            bind-address: "::"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      enableIPForwarding: true

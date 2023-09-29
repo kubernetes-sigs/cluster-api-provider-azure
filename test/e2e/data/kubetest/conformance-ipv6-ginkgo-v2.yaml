@@ -1,5 +1,5 @@
-ginkgo.focus: \[Feature\:IPv6DualStack\]
-ginkgo.skip: \[Feature\:SCTPConnectivity\]
+ginkgo.focus: \[Feature\:Networking-IPv6\]
+ginkgo.skip: \[Feature\:SCTPConnectivity\]|\[Experimental\]
 disable-log-dump: true
 ginkgo.progress: true
 ginkgo.slowSpecThreshold: 120.0

@@ -2,18 +2,21 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
-    cni: calico
+    cni: calico-ipv6
     cni-windows: ${CLUSTER_NAME}-calico
-    containerd-logger: enabled
-    csi-proxy: enabled
-    metrics-server: enabled
+    containerd-logger: disabled
+    csi-proxy: disabled
+    metrics-server: disabled
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+      - 2001:1234:5678:9a40::/58
+    services:
+      cidrBlocks:
+      - fd00::/108
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
@@ -40,11 +43,20 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     subnets:
-    - name: control-plane-subnet
+    - cidrBlocks:
+      - 10.0.0.0/16
+      - 2001:1234:5678:9abc::/64
+      name: control-plane-subnet
       role: control-plane
-    - name: node-subnet
+    - cidrBlocks:
+      - 10.1.0.0/16
+      - 2001:1234:5678:9abd::/64
+      name: node-subnet
       role: node
     vnet:
+      cidrBlocks:
+      - 10.0.0.0/8
+      - 2001:1234:5678:9a00::/56
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -59,14 +71,18 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
+          bind-address: '::'
           cloud-provider: external
           feature-gates: ${K8S_FEATURE_GATES:-""}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
-          allocate-node-cidrs: "false"
+          allocate-node-cidrs: "true"
+          bind-address: '::'
           cloud-provider: external
+          cluster-cidr: 2001:1234:5678:9a40::/58
           cluster-name: ${CLUSTER_NAME}
+          configure-cloud-routes: "true"
           feature-gates: HPAContainerMetrics=true
           v: "4"
       etcd:
@@ -75,6 +91,9 @@ spec:
           extraArgs:
             quota-backend-bytes: "8589934592"
       kubernetesVersion: ci/${CI_VERSION}
+      scheduler:
+        extraArgs:
+          bind-address: '::'
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -165,21 +184,34 @@ spec:
       path: /tmp/kubeadm-bootstrap.sh
       permissions: "0744"
     initConfiguration:
+      localAPIEndpoint:
+        advertiseAddress: '::'
+        bindPort: 6443
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-provider: external
+          cluster-dns: fd00::10
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
+      controlPlane:
+        localAPIEndpoint:
+          advertiseAddress: '::'
+          bindPort: 6443
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-provider: external
+          cluster-dns: fd00::10
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands: []
+    postKubeadmCommands:
+    - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+    - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+      /etc/resolv.conf
+    - systemctl restart systemd-resolved
     preKubeadmCommands:
     - bash -c /tmp/kubeadm-bootstrap.sh
     verbosity: 5
@@ -203,6 +235,7 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
+      enableIPForwarding: true
       image:
         marketplace:
           offer: capi
@@ -249,6 +282,7 @@ metadata:
 spec:
   template:
     spec:
+      enableIPForwarding: true
       image:
         marketplace:
           offer: capi
@@ -278,6 +312,16 @@ metadata:
 spec:
   template:
     spec:
+      clusterConfiguration:
+        apiServer:
+          extraArgs:
+            bind-address: '::'
+        controllerManager:
+          extraArgs:
+            bind-address: '::'
+        scheduler:
+          extraArgs:
+            bind-address: '::'
       files:
       - contentFrom:
           secret:
@@ -355,171 +399,16 @@ spec:
           kubeletExtraArgs:
             azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-provider: external
+            cluster-dns: '[fd00::10]'
           name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+      - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+        /etc/resolv.conf
+      - systemctl restart systemd-resolved
       preKubeadmCommands:
       - bash -c /tmp/kubeadm-bootstrap.sh
       verbosity: 5
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineDeployment
-metadata:
-  name: ${CLUSTER_NAME}-md-win
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
-  selector: {}
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-win
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-win
-      version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachineTemplate
-metadata:
-  annotations:
-    runtime: containerd
-  name: ${CLUSTER_NAME}-md-win
-  namespace: default
-spec:
-  template:
-    metadata:
-      annotations:
-        runtime: containerd
-        windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
-    spec:
-      image:
-        marketplace:
-          offer: capi-windows
-          publisher: cncf-upstream
-          sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
-          version: latest
-      osDisk:
-        diskSizeGB: 128
-        managedDisk:
-          storageAccountType: Premium_LRS
-        osType: Windows
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfigTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-win
-  namespace: default
-spec:
-  template:
-    spec:
-      files:
-      - contentFrom:
-          secret:
-            key: worker-node-azure.json
-            name: ${CLUSTER_NAME}-md-win-azure-json
-        owner: root:root
-        path: c:/k/azure.json
-        permissions: "0644"
-      - content: |-
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
-        path: C:/defender-exclude-calico.ps1
-        permissions: "0744"
-      - content: |
-          # /tmp is assumed created and required for upstream e2e tests to pass
-          New-Item -ItemType Directory -Force -Path C:\tmp\
-        path: C:/create-temp-folder.ps1
-        permissions: "0744"
-      - content: |
-          $ErrorActionPreference = 'Stop'
-
-          $$CONTAINERD_URL="${WINDOWS_CONTAINERD_URL}"
-          if($$CONTAINERD_URL -ne ""){
-            # Kubelet service depends on contianerd service so make a best effort attempt to stop it
-            Stop-Service kubelet -Force -ErrorAction SilentlyContinue
-            Stop-Service containerd -Force
-            echo "downloading containerd: $$CONTAINERD_URL"
-            curl.exe --retry 10 --retry-delay 5 -L "$$CONTAINERD_URL" --output "c:/k/containerd.tar.gz"
-            tar.exe -zxvf c:/k/containerd.tar.gz -C "c:/Program Files/containerd" --strip-components 1
-
-            Start-Service containerd
-          }
-
-          containerd.exe --version
-          containerd-shim-runhcs-v1.exe --version
-        path: C:/replace-containerd.ps1
-        permissions: "0744"
-      - content: |
-          mkdir -Force c:/localdumps
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpCount /t REG_DWORD /d 50 /f
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpType /t REG_DWORD /d 2 /f
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpFolder /t REG_EXPAND_SZ /d "c:/LocalDumps" /f
-          # Enable sftp so we can copy crash dump files during log collection of stfp
-          $sshd_config = "$env:ProgramData\ssh\sshd_config"
-          if (-not (Test-Path $sshd_config)) { mkdir -Force $sshd_config }
-          Add-Content -Path $sshd_config "Subsystem sftp              sftp-server.exe"
-          sc.exe stop sshd
-          sc.exe start sshd
-        path: C:/collect-hns-crashes.ps1
-        permissions: "0744"
-      - content: |
-          $ErrorActionPreference = 'Stop'
-
-          Stop-Service kubelet -Force
-
-          $$CI_VERSION="${CI_VERSION}"
-          if($$CI_VERSION -ne "")
-          {
-            $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-            $$ci_url="https://storage.googleapis.com/k8s-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
-            foreach ( $$binary in $$binaries )
-            {
-              echo "downloading binary: $$ci_url/$$binary.exe"
-              curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
-            }
-          }
-
-          # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
-          # that is applied at at this stage (windows-kubeproxy-ci.yaml)
-          ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
-          ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
-
-          kubeadm.exe version -o=short
-          kubectl.exe version --client=true --short=true
-          kubelet.exe --version
-          kube-proxy.exe --version
-        path: C:/replace-ci-binaries.ps1
-        permissions: "0744"
-      joinConfiguration:
-        nodeRegistration:
-          criSocket: npipe:////./pipe/containerd-containerd
-          kubeletExtraArgs:
-            azure-container-registry-config: c:/k/azure.json
-            cloud-provider: external
-            feature-gates: ${NODE_FEATURE_GATES:-""}
-            v: "2"
-            windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
-          name: '{{ ds.meta_data["local_hostname"] }}'
-      postKubeadmCommands:
-      - nssm set kubelet start SERVICE_AUTO_START
-      - powershell C:/defender-exclude-calico.ps1
-      preKubeadmCommands:
-      - powershell C:/create-temp-folder.ps1
-      - powershell C:/replace-containerd.ps1
-      - powershell C:/collect-hns-crashes.ps1
-      - powershell C:/replace-ci-binaries.ps1
-      users:
-      - groups: Administrators
-        name: capi
-        sshAuthorizedKeys:
-        - ${AZURE_SSH_PUBLIC_KEY:=""}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineHealthCheck
@@ -536,20 +425,6 @@ spec:
   - status: "True"
     timeout: 30s
     type: E2ENodeUnhealthy
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: ${CLUSTER_NAME}-calico-windows
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      cni-windows: ${CLUSTER_NAME}-calico
-  resources:
-  - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-calico-windows
-  strategy: ApplyOnce
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
@@ -594,225 +469,6 @@ spec:
   - kind: ConfigMap
     name: containerd-logger-${CLUSTER_NAME}
   strategy: ApplyOnce
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: calico
-  namespace: default
-spec:
-  chartName: tigera-operator
-  clusterSelector:
-    matchLabels:
-      cni: calico
-  namespace: tigera-operator
-  releaseName: projectcalico
-  repoURL: https://docs.tigera.io/calico/charts
-  valuesTemplate: |-
-    installation:
-      cni:
-        type: Calico
-      calicoNetwork:
-        bgp: Disabled
-        mtu: 1350
-        ipPools:
-        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
-        - cidr: {{ $cidr }}
-          encapsulation: VXLAN{{end}}
----
-apiVersion: v1
-data:
-  kube-proxy-patch: |-
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: windows-kubeproxy-ci
-      namespace: kube-system
-    data:
-      KUBEPROXY_PATH: "c:/k/kube-proxy.exe"
-  proxy: |
-    apiVersion: apps/v1
-    kind: DaemonSet
-    metadata:
-      labels:
-        k8s-app: kube-proxy
-      name: kube-proxy-windows
-      namespace: kube-system
-    spec:
-      selector:
-        matchLabels:
-          k8s-app: kube-proxy-windows
-      template:
-        metadata:
-          labels:
-            k8s-app: kube-proxy-windows
-        spec:
-          serviceAccountName: kube-proxy
-          securityContext:
-            windowsOptions:
-              hostProcess: true
-              runAsUserName: "NT AUTHORITY\\system"
-          hostNetwork: true
-          containers:
-          - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess
-            args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1"]
-            workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/"
-            name: kube-proxy
-            env:
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: spec.nodeName
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: KUBEPROXY_PATH
-              valueFrom:
-                configMapKeyRef:
-                  name: windows-kubeproxy-ci
-                  key: KUBEPROXY_PATH
-                  optional: true
-            volumeMounts:
-            - mountPath: /var/lib/kube-proxy
-              name: kube-proxy
-          nodeSelector:
-            kubernetes.io/os: windows
-          tolerations:
-          - key: CriticalAddonsOnly
-            operator: Exists
-          - operator: Exists
-          volumes:
-          - configMap:
-              name: kube-proxy
-            name: kube-proxy
-      updateStrategy:
-        type: RollingUpdate
-  windows-cni: "# strictAffinity required for windows\napiVersion: crd.projectcalico.org/v1\nkind:
-    IPAMConfig\nmetadata:\n  name: default\nspec:\n  autoAllocateBlocks: true\n  strictAffinity:
-    true\n---\nkind: ConfigMap\napiVersion: v1\nmetadata:\n  name: calico-static-rules\n
-    \ namespace: calico-system\n  labels:\n    tier: node\n    app: calico\ndata:\n
-    \ static-rules.json: |\n    {\n      \"Provider\": \"azure\",\n      \"Version\":
-    \"0.1\",\n      \"Rules\": [\n        {\n          \"Name\": \"EndpointPolicy\",\n
-    \         \"Rule\": {\n              \"Id\": \"wireserver\",\n              \"Type\":
-    \"ACL\",\n              \"Protocol\": 6,\n              \"Action\": \"Block\",\n
-    \             \"Direction\": \"Out\",\n              \"RemoteAddresses\": \"168.63.129.16/32\",\n
-    \             \"RemotePorts\": \"80\",\n              \"Priority\": 200,\n              \"RuleType\":
-    \"Switch\"\n            }\n          }\n      ]\n    } \n---\nkind: ConfigMap\napiVersion:
-    v1\nmetadata:\n  name: calico-config-windows\n  namespace: calico-system\n  labels:\n
-    \   tier: node\n    app: calico\ndata:\n  veth_mtu: \"1350\"\n  \n  cni_network_config:
-    |\n    {\n      \"name\": \"Calico\",\n      \"cniVersion\": \"0.3.1\",\n      \"plugins\":
-    [\n        {\n          \"windows_use_single_network\": true,\n          \"type\":
-    \"calico\",\n          \"mode\": \"vxlan\",\n          \"nodename\": \"__KUBERNETES_NODE_NAME__\",\n
-    \         \"nodename_file_optional\": true,\n          \"log_file_path\": \"c:/cni.log\",\n
-    \         \"log_level\": \"debug\",\n\n          \"vxlan_mac_prefix\": \"0E-2A\",\n
-    \         \"vxlan_vni\": 4096,\n          \"mtu\": __CNI_MTU__,\n          \"policy\":
-    {\n            \"type\": \"k8s\"\n          },\n\n          \"log_level\": \"info\",\n\n
-    \         \"capabilities\": {\"dns\": true},\n          \"DNS\":  {\n            \"Search\":
-    \ [\n              \"svc.cluster.local\"\n            ]\n          },\n\n          \"datastore_type\":
-    \"kubernetes\",\n\n          \"kubernetes\": {\n            \"kubeconfig\": \"__KUBECONFIG_FILEPATH__\"\n
-    \         },\n\n          \"ipam\": {\n            \"type\": \"calico-ipam\",\n
-    \           \"subnet\": \"usePodCidr\"\n          },\n\n          \"policies\":
-    \ [\n            {\n              \"Name\":  \"EndpointPolicy\",\n              \"Value\":
-    \ {\n                \"Type\":  \"OutBoundNAT\",\n                \"ExceptionList\":
-    \ [\n                  \"__K8S_SERVICE_CIDR__\"\n                ]\n              }\n
-    \           },\n            {\n              \"Name\":  \"EndpointPolicy\",\n
-    \             \"Value\":  {\n                \"Type\":  \"SDNROUTE\",\n                \"DestinationPrefix\":
-    \ \"__K8S_SERVICE_CIDR__\",\n                \"NeedEncap\":  true\n              }\n
-    \           }\n          ]\n        }\n      ]\n\n    }\n---\napiVersion: apps/v1\nkind:
-    DaemonSet\nmetadata:\n  name: calico-node-windows\n  labels:\n    tier: node\n
-    \   app: calico\n  namespace: calico-system\nspec:\n  selector:\n    matchLabels:\n
-    \     app: calico\n  template:\n    metadata:\n      labels:\n        tier: node\n
-    \       app: calico\n    spec:\n      affinity:\n        nodeAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n
-    \           nodeSelectorTerms:\n              - matchExpressions:\n                  -
-    key: kubernetes.io/os\n                    operator: In\n                    values:\n
-    \                     - windows\n                  - key: kubernetes.io/arch\n
-    \                   operator: In\n                    values:\n                      -
-    amd64\n      securityContext:\n        windowsOptions:\n          hostProcess:
-    true\n          runAsUserName: \"NT AUTHORITY\\\\system\"\n      hostNetwork:
-    true\n      serviceAccountName: calico-node\n      tolerations:\n      - operator:
-    Exists\n        effect: NoSchedule\n        # Mark the pod as a critical add-on
-    for rescheduling.\n      - key: CriticalAddonsOnly\n        operator: Exists\n
-    \     - effect: NoExecute\n        operator: Exists\n      initContainers:\n        #
-    This container installs the CNI binaries\n        # and CNI network config file
-    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.26.1-hostprocess\n
-    \         args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1\"]\n
-    \         imagePullPolicy: Always\n          env:\n            # Name of the CNI
-    config file to create.\n            - name: CNI_CONF_NAME\n              value:
-    \"10-calico.conflist\"\n            # The CNI network config to install on each
-    node.\n            - name: CNI_NETWORK_CONFIG\n              valueFrom:\n                configMapKeyRef:\n
-    \                 name: calico-config-windows\n                  key: cni_network_config\n
-    \           # Set the hostname based on the k8s node name.\n            - name:
-    KUBERNETES_NODE_NAME\n              valueFrom:\n                fieldRef:\n                  fieldPath:
-    spec.nodeName\n            # CNI MTU Config variable\n            - name: CNI_MTU\n
-    \             valueFrom:\n                configMapKeyRef:\n                  name:
-    calico-config-windows\n                  key: veth_mtu\n            # Prevents
-    the container from sleeping forever.\n            - name: SLEEP\n              value:
-    \"false\"\n            - name: K8S_SERVICE_CIDR\n              value: \"10.96.0.0/12\"\n
-    \         volumeMounts:\n            - mountPath: /host/opt/cni/bin\n              name:
-    cni-bin-dir\n            - mountPath: /host/etc/cni/net.d\n              name:
-    cni-net-dir\n            - name: kubeadm-config\n              mountPath: /etc/kubeadm-config/\n
-    \         securityContext:\n            windowsOptions:\n              hostProcess:
-    true\n              runAsUserName: \"NT AUTHORITY\\\\system\"\n      containers:\n
-    \     - name: calico-node-startup\n        image: sigwindowstools/calico-node:v3.26.1-hostprocess\n
-    \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1\"]\n
-    \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        imagePullPolicy:
-    Always\n        volumeMounts:\n        - name: calico-config-windows\n          mountPath:
-    /etc/kube-calico-windows/\n        env:\n        - name: POD_NAME\n          valueFrom:\n
-    \           fieldRef:\n              apiVersion: v1\n              fieldPath:
-    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
-    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
-    name: CNI_IPAM_TYPE\n          value: \"calico-ipam\"\n        - name: CALICO_NETWORKING_BACKEND\n
-    \         value: \"vxlan\"\n        - name: KUBECONFIG\n          value: \"C:/etc/cni/net.d/calico-kubeconfig\"\n
-    \       - name: VXLAN_VNI\n          value: \"4096\"\n      - name: calico-node-felix\n
-    \       image: sigwindowstools/calico-node:v3.26.1-hostprocess\n        args:
-    [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1\"]\n        imagePullPolicy:
-    Always\n        workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/\"\n        volumeMounts:\n
-    \       - name: calico-config-windows\n          mountPath: /etc/kube-calico-windows/\n
-    \       - name: calico-static-rules\n          mountPath: /calico/static-rules.json\n
-    \         subPath: static-rules.json\n        env:\n        - name: POD_NAME\n
-    \         valueFrom:\n            fieldRef:\n              apiVersion: v1\n              fieldPath:
-    metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n
-    \             apiVersion: v1\n              fieldPath: metadata.namespace\n        -
-    name: VXLAN_VNI\n          value: \"4096\"\n        - name: KUBECONFIG\n          value:
-    \"C:/etc/cni/net.d/calico-kubeconfig\"\n      volumes:\n      - name: calico-config-windows\n
-    \       configMap:\n          name: calico-config-windows\n      - name: calico-static-rules\n
-    \       configMap:\n          name: calico-static-rules\n      # Used to install
-    CNI.\n      - name: cni-bin-dir\n        hostPath:\n          path: /opt/cni/bin\n
-    \     - name: cni-net-dir\n        hostPath:\n          path: /etc/cni/net.d\n
-    \     - name: kubeadm-config\n        configMap:\n          name: kubeadm-config\n---\napiVersion:
-    apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: ipamconfigs.crd.projectcalico.org\nspec:\n
-    \ group: crd.projectcalico.org\n  names:\n    kind: IPAMConfig\n    listKind:
-    IPAMConfigList\n    plural: ipamconfigs\n    singular: ipamconfig\n  preserveUnknownFields:
-    false\n  scope: Cluster\n  versions:\n  - name: v1\n    schema:\n      openAPIV3Schema:\n
-    \       properties:\n          apiVersion:\n            description: 'APIVersion
-    defines the versioned schema of this representation\n              of an object.
-    Servers should convert recognized schemas to the latest\n              internal
-    value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'\n
-    \           type: string\n          kind:\n            description: 'Kind is a
-    string value representing the REST resource this\n              object represents.
-    Servers may infer this from the endpoint the client\n              submits requests
-    to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'\n
-    \           type: string\n          metadata:\n            type: object\n          spec:\n
-    \           description: IPAMConfigSpec contains the specification for an IPAMConfig\n
-    \             resource.\n            properties:\n              autoAllocateBlocks:\n
-    \               type: boolean\n              maxBlocksPerHost:\n                description:
-    MaxBlocksPerHost, if non-zero, is the max number of blocks\n                  that
-    can be affine to each host.\n                maximum: 2147483647\n                minimum:
-    0\n                type: integer\n              strictAffinity:\n                type:
-    boolean\n            required:\n            - autoAllocateBlocks\n            -
-    strictAffinity\n            type: object\n        type: object\n    served: true\n
-    \   storage: true\nstatus:\n  acceptedNames:\n    kind: \"\"\n    plural: \"\"\n
-    \ conditions: []\n  storedVersions: []\n"
-kind: ConfigMap
-metadata:
-  annotations:
-    note: generated
-  labels:
-    type: generated
-  name: cni-${CLUSTER_NAME}-calico-windows
-  namespace: default
 ---
 apiVersion: v1
 data:
@@ -1201,3 +857,32 @@ metadata:
     type: generated
   name: metrics-server-${CLUSTER_NAME}
   namespace: default
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: calico-ipv6
+  namespace: default
+spec:
+  chartName: tigera-operator
+  clusterSelector:
+    matchLabels:
+      cni: calico-ipv6
+  namespace: tigera-operator
+  releaseName: projectcalico
+  repoURL: https://docs.tigera.io/calico/charts
+  valuesTemplate: |-
+    installation:
+      cni:
+        type: Calico
+        ipam:
+          type: HostLocal
+      calicoNetwork:
+        bgp: Disabled
+        mtu: 1350
+        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
+        - blockSize: 122
+          cidr: {{ $cidr }}
+          encapsulation: None
+          natOutgoing: Enabled
+          nodeSelector: all(){{end}}

@@ -118,6 +118,15 @@ var _ = Describe("Conformance Tests", func() {
 			}
 		}
 
+		// use the ipv6 flavor if ipv6 IP family is specified.
+		if e2eConfig.GetVariable(capi_e2e.IPFamily) == "IPv6" {
+			flavor += "-ipv6"
+			kubetestConfigFilePath = strings.Replace(kubetestConfigFilePath, ".yaml", "-ipv6.yaml", 1)
+		} else if e2eConfig.GetVariable(capi_e2e.IPFamily) == "dual" {
+			flavor += "-dual-stack"
+			kubetestConfigFilePath = strings.Replace(kubetestConfigFilePath, ".yaml", "-dual-stack.yaml", 1)
+		}
+
 		// Starting with Kubernetes v1.25, the kubetest config file needs to be compatible with Ginkgo V2.
 		v125 := semver.MustParse("1.25.0-alpha.0.0")
 		v, err := semver.ParseTolerant(kubernetesVersion)
