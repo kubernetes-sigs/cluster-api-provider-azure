@@ -27,6 +27,7 @@ package mock_groups
 import (
 	reflect "reflect"
 
+	v1api20200601 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -111,18 +112,18 @@ func (mr *MockGroupScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockGroupScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
 }
 
-// GroupSpec mocks base method.
-func (m *MockGroupScope) GroupSpec() azure.ASOResourceSpecGetter {
+// GroupSpecs mocks base method.
+func (m *MockGroupScope) GroupSpecs() []azure.ASOResourceSpecGetter[*v1api20200601.ResourceGroup] {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GroupSpec")
-	ret0, _ := ret[0].(azure.ASOResourceSpecGetter)
+	ret := m.ctrl.Call(m, "GroupSpecs")
+	ret0, _ := ret[0].([]azure.ASOResourceSpecGetter[*v1api20200601.ResourceGroup])
 	return ret0
 }
 
-// GroupSpec indicates an expected call of GroupSpec.
-func (mr *MockGroupScopeMockRecorder) GroupSpec() *gomock.Call {
+// GroupSpecs indicates an expected call of GroupSpecs.
+func (mr *MockGroupScopeMockRecorder) GroupSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GroupSpec", reflect.TypeOf((*MockGroupScope)(nil).GroupSpec))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GroupSpecs", reflect.TypeOf((*MockGroupScope)(nil).GroupSpecs))
 }
 
 // SetLongRunningOperationState mocks base method.
