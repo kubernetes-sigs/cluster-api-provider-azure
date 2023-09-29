@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: 1.22.0
+appVersion: "1.47"
 description: Jaeger all-in-one helm chart for Kubernetes
 home: https://github.com/hansehe/jaeger-all-in-one
 icon: https://raw.githubusercontent.com/hansehe/jaeger-all-in-one/master/helm/jaeger.png
@@ -13,4 +13,4 @@ name: jaeger-all-in-one
 sources:
 - https://github.com/hansehe/jaeger-all-in-one
 type: application
-version: 0.1.5
+version: 0.1.11

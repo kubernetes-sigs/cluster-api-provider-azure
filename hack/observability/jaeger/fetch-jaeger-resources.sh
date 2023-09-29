@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CHART_RELEASE=${CHART_RELEASE:-0.1.5}
+CHART_RELEASE=${CHART_RELEASE:-0.1.11}
 JAEGER_ROOT=$(dirname "${BASH_SOURCE[0]}")
 CHART_ROOT=$JAEGER_ROOT/chart
 
