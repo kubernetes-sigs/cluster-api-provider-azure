@@ -37,10 +37,19 @@ Common labels
 {{- define "jaeger-all-in-one.labels" -}}
 helm.sh/chart: {{ include "jaeger-all-in-one.chart" . }}
 {{ include "jaeger-all-in-one.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
+app.kubernetes.io/version: "{{ include "jaeger-all-in-one.jaegerVersion" . }}"
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end -}}
+
+{{/*
+Version is either the Chart's AppVersion or the image versionOverride, if specified
+*/}}
+{{- define "jaeger-all-in-one.jaegerVersion" -}}
+{{- if ne .Values.image.versionOverride "*" -}}
+{{- .Values.image.versionOverride -}}
+{{- else -}}
+{{ .Chart.AppVersion }}
+{{- end -}}
 {{- end -}}
 
 {{/*

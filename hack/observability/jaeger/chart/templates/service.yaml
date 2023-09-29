@@ -3,6 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "jaeger-all-in-one.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "jaeger-all-in-one.labels" . | nindent 4 }}
   {{- with .Values.service.annotations }}
@@ -28,6 +29,16 @@ spec:
       targetPort: http-configs
       protocol: TCP
       name: http-configs
+    {{- if .Values.enableHttpOpenTelemetryCollector }}
+    - port: 4317
+      targetPort: http-otlp-grpc
+      protocol: TCP
+      name: http-otlp-grpc
+    - port: 4318
+      targetPort: http-otlp
+      protocol: TCP
+      name: http-otlp
+    {{- end }}
     - port: {{ .Values.service.port }}
       targetPort: http-ui
       protocol: TCP
@@ -49,7 +60,7 @@ spec:
       targetPort: http-zipkin
       protocol: TCP
       name: http-zipkin
-    {{- end }}  
+    {{- end }}
   selector:
     {{- include "jaeger-all-in-one.selectorLabels" . | nindent 4 }}
 {{- end }}

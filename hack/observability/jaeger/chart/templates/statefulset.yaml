@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "jaeger-all-in-one.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "jaeger-all-in-one.labels" . | nindent 4 }}
 spec:
@@ -38,7 +39,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ include "jaeger-all-in-one.jaegerVersion" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: udp-com-thr
@@ -53,6 +54,14 @@ spec:
             - name: http-configs
               containerPort: 5778
               protocol: TCP
+            {{- if .Values.enableHttpOpenTelemetryCollector }}
+            - name: http-otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: http-otlp
+              containerPort: 4318
+              protocol: TCP
+            {{- end }}
             - name: http-ui
               containerPort: 16686
               protocol: TCP
@@ -69,7 +78,7 @@ spec:
             - name: http-zipkin
               containerPort: 9411
               protocol: TCP
-            {{- end }}  
+            {{- end }}
           {{- if .Values.volume.enabled }}
           volumeMounts:
             - mountPath: "/badger"
@@ -90,10 +99,14 @@ spec:
           - name: {{ $key }}
             value: {{ $value | quote }}
           {{- end }}
+          {{- if .Values.enableHttpOpenTelemetryCollector }}
+          - name: COLLECTOR_OTLP_ENABLED
+            value: "true"
+          {{- end }}
           {{- if .Values.enableHttpZipkinCollector }}
           - name: COLLECTOR_ZIPKIN_HOST_PORT
-            value: "9411"
-          {{- end }}  
+            value: ":9411"
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
