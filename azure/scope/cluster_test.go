@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
@@ -44,7 +45,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func specToString(spec azure.ResourceSpecGetter) string {
+func specToString(spec any) string {
 	var sb strings.Builder
 	sb.WriteString("{ ")
 	sb.WriteString(fmt.Sprintf("%+v ", spec))
@@ -52,7 +53,7 @@ func specToString(spec azure.ResourceSpecGetter) string {
 	return sb.String()
 }
 
-func specArrayToString(specs []azure.ResourceSpecGetter) string {
+func specArrayToString[T any](specs []T) string {
 	var sb strings.Builder
 	sb.WriteString("[\n")
 	for _, spec := range specs {
@@ -867,7 +868,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		clusterScope ClusterScope
-		want         []azure.ResourceSpecGetter
+		want         []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]
 	}{
 		{
 			name: "returns nil if no subnets are specified",
@@ -929,7 +930,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ResourceSpecGetter{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]{
 				&natgateways.NatGatewaySpec{
 					Name:           "fake-nat-gateway-1",
 					ResourceGroup:  "my-rg",
@@ -940,6 +941,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 						Name: "44.78.67.90",
 					},
 					AdditionalTags: make(infrav1.Tags),
+					IsVnetManaged:  true,
 				},
 			},
 		},
@@ -1007,7 +1009,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ResourceSpecGetter{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]{
 				&natgateways.NatGatewaySpec{
 					Name:           "fake-nat-gateway-1",
 					ResourceGroup:  "my-rg",
@@ -1018,6 +1020,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 						Name: "44.78.67.90",
 					},
 					AdditionalTags: make(infrav1.Tags),
+					IsVnetManaged:  true,
 				},
 			},
 		},
@@ -1084,7 +1087,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ResourceSpecGetter{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]{
 				&natgateways.NatGatewaySpec{
 					Name:           "fake-nat-gateway-1",
 					ResourceGroup:  "my-rg",
@@ -1095,6 +1098,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 						Name: "44.78.67.90",
 					},
 					AdditionalTags: make(infrav1.Tags),
+					IsVnetManaged:  true,
 				},
 			},
 		},
@@ -1106,6 +1110,78 @@ func TestNatGatewaySpecs(t *testing.T) {
 			t.Parallel()
 			if got := tt.clusterScope.NatGatewaySpecs(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NatGatewaySpecs() = %s, want %s", specArrayToString(got), specArrayToString(tt.want))
+			}
+		})
+	}
+}
+
+func TestSetNatGatewayIDInSubnets(t *testing.T) {
+	tests := []struct {
+		name          string
+		clusterScope  ClusterScope
+		asoNatgateway *asonetworkv1.NatGateway
+	}{
+		{
+			name: "sets nat gateway id in the matching subnet",
+			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{
+							Subnets: infrav1.Subnets{
+								{
+									SubnetClassSpec: infrav1.SubnetClassSpec{
+										Name: "fake-subnet-1",
+									},
+									NatGateway: infrav1.NatGateway{
+										NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
+											Name: "fake-nat-gateway-1",
+										},
+									},
+								},
+								{
+									SubnetClassSpec: infrav1.SubnetClassSpec{
+										Name: "fake-subnet-2",
+									},
+									NatGateway: infrav1.NatGateway{
+										NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
+											Name: "fake-nat-gateway-2",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			asoNatgateway: &asonetworkv1.NatGateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake-nat-gateway-1",
+				},
+				Status: asonetworkv1.NatGateway_STATUS{
+					Id: ptr.To("dummy-id-1"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
+			tt.clusterScope.SetNatGatewayIDInSubnets(tt.asoNatgateway.Name, *tt.asoNatgateway.Status.Id)
+			for _, subnet := range tt.clusterScope.AzureCluster.Spec.NetworkSpec.Subnets {
+				if subnet.NatGateway.Name == tt.asoNatgateway.Name {
+					g.Expect(subnet.NatGateway.ID).To(Equal(*tt.asoNatgateway.Status.Id))
+				} else {
+					g.Expect(subnet.NatGateway.ID).To(Equal(""))
+				}
 			}
 		})
 	}

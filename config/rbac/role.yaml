@@ -262,6 +262,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - network.azure.com
+  resources:
+  - natgateways
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - network.azure.com
+  resources:
+  - natgateways/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - resources.azure.com
   resources:
   - resourcegroups
