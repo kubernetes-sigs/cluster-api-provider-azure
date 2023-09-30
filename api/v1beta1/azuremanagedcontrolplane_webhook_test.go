@@ -48,7 +48,6 @@ func TestDefaultingWebhook(t *testing.T) {
 	err := mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal("azure"))
-	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal("Standard"))
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
 	g.Expect(*amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))
@@ -64,10 +63,8 @@ func TestDefaultingWebhook(t *testing.T) {
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
-	lbSKU := "Basic"
 	netPol := "azure"
 	amcp.Spec.NetworkPlugin = &netPlug
-	amcp.Spec.LoadBalancerSKU = &lbSKU
 	amcp.Spec.NetworkPolicy = &netPol
 	amcp.Spec.Version = "9.99.99"
 	amcp.Spec.SSHPublicKey = nil
@@ -83,7 +80,6 @@ func TestDefaultingWebhook(t *testing.T) {
 	err = mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal(netPlug))
-	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal(lbSKU))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal(netPol))
 	g.Expect(amcp.Spec.Version).To(Equal("v9.99.99"))
 	g.Expect(amcp.Spec.SSHPublicKey).To(BeNil())
@@ -233,9 +229,9 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						ManagedOutboundIPs:     ptr.To[int32](10),
-						AllocatedOutboundPorts: ptr.To[int32](1000),
-						IdleTimeoutInMinutes:   ptr.To[int32](60),
+						ManagedOutboundIPs:     ptr.To(10),
+						AllocatedOutboundPorts: ptr.To(1000),
+						IdleTimeoutInMinutes:   ptr.To(60),
 					},
 				},
 			},
@@ -248,7 +244,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						ManagedOutboundIPs: ptr.To[int32](200),
+						ManagedOutboundIPs: ptr.To(200),
 					},
 				},
 			},
@@ -261,7 +257,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						AllocatedOutboundPorts: ptr.To[int32](80000),
+						AllocatedOutboundPorts: ptr.To(80000),
 					},
 				},
 			},
@@ -274,7 +270,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						IdleTimeoutInMinutes: ptr.To[int32](600),
+						IdleTimeoutInMinutes: ptr.To(600),
 					},
 				},
 			},
@@ -287,7 +283,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.21.2",
 					LoadBalancerProfile: &LoadBalancerProfile{
-						ManagedOutboundIPs: ptr.To[int32](1),
+						ManagedOutboundIPs: ptr.To(1),
 						OutboundIPs: []string{
 							"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/foo-bar/providers/Microsoft.Network/publicIPAddresses/my-public-ip",
 						},
@@ -1328,14 +1324,14 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP:    ptr.To("192.168.0.10"),
-					LoadBalancerSKU: ptr.To("Standard"),
+					LoadBalancerSKU: ptr.To(LoadBalancerSKUStandard),
 					Version:         "v1.18.0",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP:    ptr.To("192.168.0.10"),
-					LoadBalancerSKU: ptr.To("Basic"),
+					LoadBalancerSKU: ptr.To(LoadBalancerSKUBasic),
 					Version:         "v1.18.0",
 				},
 			},
@@ -1346,7 +1342,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					DNSServiceIP:    ptr.To("192.168.0.10"),
-					LoadBalancerSKU: ptr.To("Standard"),
+					LoadBalancerSKU: ptr.To(LoadBalancerSKUStandard),
 					Version:         "v1.18.0",
 				},
 			},

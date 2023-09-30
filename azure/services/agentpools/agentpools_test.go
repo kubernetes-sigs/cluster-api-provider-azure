@@ -18,158 +18,60 @@ package agentpools
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-var internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
+func TestPostCreateOrUpdateResourceHook(t *testing.T) {
+	t.Run("error creating or updating", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+		mockCtrl := gomock.NewController(t)
+		scope := mock_agentpools.NewMockAgentPoolScope(mockCtrl)
 
-func TestReconcileAgentPools(t *testing.T) {
-	testcases := []struct {
-		name          string
-		expectedError string
-		expect        func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
-	}{
-		{
-			name:          "agent pool successfully created with autoscaling enabled",
-			expectedError: "",
-			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				fakeAgentPoolSpec := fakeAgentPool()
-				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(sdkFakeAgentPool(sdkWithAutoscaling(true), sdkWithCount(1)), nil)
-				s.SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")
-				s.SetCAPIMachinePoolReplicas(ptr.To[int32](1))
-				s.UpdatePutStatus(infrav1.AgentPoolsReadyCondition, serviceName, nil)
+		err := postCreateOrUpdateResourceHook(context.Background(), scope, nil, errors.New("an error"))
+		g.Expect(err).To(HaveOccurred())
+	})
+
+	t.Run("successful create or update, autoscaling disabled", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+		mockCtrl := gomock.NewController(t)
+		scope := mock_agentpools.NewMockAgentPoolScope(mockCtrl)
+
+		scope.EXPECT().RemoveCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation)
+
+		managedCluster := &asocontainerservicev1.ManagedClustersAgentPool{
+			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
+				EnableAutoScaling: ptr.To(false),
 			},
-		},
-		{
-			name:          "agent pool successfully created with autoscaling disabled",
-			expectedError: "",
-			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				fakeAgentPoolSpec := fakeAgentPool()
-				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(sdkFakeAgentPool(sdkWithAutoscaling(false), sdkWithCount(1)), nil)
-				s.RemoveCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation)
+		}
 
-				s.UpdatePutStatus(infrav1.AgentPoolsReadyCondition, serviceName, nil)
+		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("successful create or update, autoscaling enabled", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+		mockCtrl := gomock.NewController(t)
+		scope := mock_agentpools.NewMockAgentPoolScope(mockCtrl)
+
+		scope.EXPECT().SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")
+		scope.EXPECT().SetCAPIMachinePoolReplicas(ptr.To(1234))
+
+		managedCluster := &asocontainerservicev1.ManagedClustersAgentPool{
+			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
+				EnableAutoScaling: ptr.To(true),
+				Count:             ptr.To(1234),
 			},
-		},
-		{
-			name:          "no agent pool spec found",
-			expectedError: "",
-			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.AgentPoolSpec().Return(nil)
-			},
-		},
-		{
-			name:          "fail to create a agent pool",
-			expectedError: internalError.Error(),
-			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				fakeAgentPoolSpec := fakeAgentPool()
-				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(nil, internalError)
-				s.UpdatePutStatus(infrav1.AgentPoolsReadyCondition, serviceName, internalError)
-			},
-		},
-	}
+		}
 
-	for _, tc := range testcases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-			t.Parallel()
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-			scopeMock := mock_agentpools.NewMockAgentPoolScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
-
-			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
-
-			s := &Service{
-				scope:      scopeMock,
-				Reconciler: asyncMock,
-			}
-
-			err := s.Reconcile(context.TODO())
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-		})
-	}
-}
-
-func TestDeleteAgentPools(t *testing.T) {
-	testcases := []struct {
-		name          string
-		expectedError string
-		expect        func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
-	}{
-		{
-			name:          "existing agent pool successfully deleted",
-			expectedError: "",
-			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				fakeAgentPoolSpec := fakeAgentPool()
-				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
-				r.DeleteResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.AgentPoolsReadyCondition, serviceName, nil)
-			},
-		},
-		{
-			name:          "no agent pool spec found",
-			expectedError: "",
-			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.AgentPoolSpec().Return(nil)
-			},
-		},
-		{
-			name:          "fail to delete a agent pool",
-			expectedError: internalError.Error(),
-			expect: func(s *mock_agentpools.MockAgentPoolScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				fakeAgentPoolSpec := fakeAgentPool()
-				s.AgentPoolSpec().Return(&fakeAgentPoolSpec)
-				r.DeleteResource(gomockinternal.AContext(), &fakeAgentPoolSpec, serviceName).Return(internalError)
-				s.UpdateDeleteStatus(infrav1.AgentPoolsReadyCondition, serviceName, internalError)
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-			t.Parallel()
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-			scopeMock := mock_agentpools.NewMockAgentPoolScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
-
-			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
-
-			s := &Service{
-				scope:      scopeMock,
-				Reconciler: asyncMock,
-			}
-
-			err := s.Delete(context.TODO())
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-		})
-	}
+		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		g.Expect(err).NotTo(HaveOccurred())
+	})
 }

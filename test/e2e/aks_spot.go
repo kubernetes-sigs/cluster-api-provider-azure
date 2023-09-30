@@ -54,8 +54,8 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 	Expect(err).NotTo(HaveOccurred())
 
 	scaling := infrav1.ManagedMachinePoolScaling{
-		MaxSize: ptr.To[int32](9),
-		MinSize: ptr.To[int32](0),
+		MaxSize: ptr.To(9),
+		MinSize: ptr.To(0),
 	}
 	spotMaxPrice := resource.MustParse("123.456789")
 

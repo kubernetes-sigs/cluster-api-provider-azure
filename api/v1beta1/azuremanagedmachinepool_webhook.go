@@ -19,23 +19,19 @@ package v1beta1
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
@@ -81,10 +77,6 @@ func (mw *azureManagedMachinePoolWebhook) Default(ctx context.Context, obj runti
 
 	if m.Spec.OSType == nil {
 		m.Spec.OSType = ptr.To(DefaultOSType)
-	}
-
-	if ptr.Deref(m.Spec.ScaleSetPriority, "") == string(armcontainerservice.ScaleSetPrioritySpot) && m.Spec.SpotMaxPrice == nil {
-		m.Spec.SpotMaxPrice = ptr.To(resource.MustParse("-1"))
 	}
 
 	return nil
@@ -195,17 +187,6 @@ func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, ol
 		old.Spec.EnableEncryptionAtHost,
 		m.Spec.EnableEncryptionAtHost); err != nil && old.Spec.EnableEncryptionAtHost != nil {
 		allErrs = append(allErrs, err)
-	}
-
-	// custom headers are immutable
-	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, CustomHeaderPrefix)
-	newCustomHeaders := maps.FilterByKeyPrefix(m.ObjectMeta.Annotations, CustomHeaderPrefix)
-	if !reflect.DeepEqual(oldCustomHeaders, newCustomHeaders) {
-		allErrs = append(allErrs,
-			field.Invalid(
-				field.NewPath("metadata", "annotations"),
-				m.ObjectMeta.Annotations,
-				fmt.Sprintf("annotations with '%s' prefix are immutable", CustomHeaderPrefix)))
 	}
 
 	if !webhookutils.EnsureStringSlicesAreEquivalent(m.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {
@@ -355,7 +336,7 @@ func (m *AzureManagedMachinePool) validateLastSystemNodePool(cli client.Client) 
 
 func (m *AzureManagedMachinePool) validateMaxPods() error {
 	if m.Spec.MaxPods != nil {
-		if ptr.Deref[int32](m.Spec.MaxPods, 0) < 10 || ptr.Deref[int32](m.Spec.MaxPods, 0) > 250 {
+		if ptr.Deref(m.Spec.MaxPods, 0) < 10 || ptr.Deref(m.Spec.MaxPods, 0) > 250 {
 			return field.Invalid(
 				field.NewPath("Spec", "MaxPods"),
 				m.Spec.MaxPods,
@@ -501,12 +482,12 @@ func (m *AzureManagedMachinePool) validateKubeletConfig() error {
 			}
 		}
 		if m.Spec.KubeletConfig.ImageGcHighThreshold != nil && m.Spec.KubeletConfig.ImageGcLowThreshold != nil {
-			if ptr.Deref[int32](m.Spec.KubeletConfig.ImageGcLowThreshold, 0) > ptr.Deref[int32](m.Spec.KubeletConfig.ImageGcHighThreshold, 0) {
+			if ptr.Deref(m.Spec.KubeletConfig.ImageGcLowThreshold, 0) > ptr.Deref(m.Spec.KubeletConfig.ImageGcHighThreshold, 0) {
 				return field.Invalid(
 					field.NewPath("Spec", "KubeletConfig", "ImageGcLowThreshold"),
 					m.Spec.KubeletConfig.ImageGcLowThreshold,
 					fmt.Sprintf("must not be greater than ImageGcHighThreshold, ImageGcLowThreshold=%d, ImageGcHighThreshold=%d",
-						ptr.Deref[int32](m.Spec.KubeletConfig.ImageGcLowThreshold, 0), ptr.Deref[int32](m.Spec.KubeletConfig.ImageGcHighThreshold, 0)))
+						ptr.Deref(m.Spec.KubeletConfig.ImageGcLowThreshold, 0), ptr.Deref(m.Spec.KubeletConfig.ImageGcHighThreshold, 0)))
 			}
 		}
 		for _, val := range m.Spec.KubeletConfig.AllowedUnsafeSysctls {

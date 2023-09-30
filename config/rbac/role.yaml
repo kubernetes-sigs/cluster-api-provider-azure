@@ -92,6 +92,46 @@ rules:
   - list
   - watch
 - apiGroups:
+  - containerservice.azure.com
+  resources:
+  - managedclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - containerservice.azure.com
+  resources:
+  - managedclusters/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - containerservice.azure.com
+  resources:
+  - managedclustersagentpools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - containerservice.azure.com
+  resources:
+  - managedclustersagentpools/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - ""
   resources:
   - nodes

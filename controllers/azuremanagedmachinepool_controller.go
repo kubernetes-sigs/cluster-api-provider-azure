@@ -130,6 +130,8 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups=containerservice.azure.com,resources=managedclustersagentpools,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=containerservice.azure.com,resources=managedclustersagentpools/status,verbs=get;list;watch
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {

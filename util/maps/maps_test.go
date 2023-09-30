@@ -22,65 +22,6 @@ import (
 	"github.com/onsi/gomega"
 )
 
-func TestFilterByKeyPrefix(t *testing.T) {
-	cases := []struct {
-		Name     string
-		Input    map[string]string
-		Prefix   string
-		Expected map[string]string
-	}{
-		{
-			Name: "TestMixed",
-			Input: map[string]string{
-				"prefix-key1": "value1",
-				"prefix-key2": "value2",
-				"PrEfIx-key3": "value3",
-				"prefix-":     "value4",
-				"":            "value5",
-				"foobar":      "value6",
-				"prefix-key4": "",
-			},
-			Prefix: "prefix-",
-			Expected: map[string]string{
-				"key1": "value1",
-				"key2": "value2",
-				"key4": "",
-			},
-		},
-		{
-			Name:     "WithEmptyInput",
-			Input:    map[string]string{},
-			Prefix:   "prefix-",
-			Expected: map[string]string{},
-		},
-		{
-			Name:     "WithNilInput",
-			Input:    nil,
-			Prefix:   "prefix-",
-			Expected: map[string]string{},
-		},
-		{
-			Name: "WithEmptyPrefix",
-			Input: map[string]string{
-				"prefix-key1": "value1",
-			},
-			Prefix: "",
-			Expected: map[string]string{
-				"prefix-key1": "value1",
-			},
-		},
-	}
-
-	for _, c := range cases {
-		c := c
-		t.Run(c.Name, func(t *testing.T) {
-			t.Parallel()
-			g := gomega.NewWithT(t)
-			g.Expect(FilterByKeyPrefix(c.Input, c.Prefix)).To(gomega.Equal(c.Expected))
-		})
-	}
-}
-
 func TestMerge(t *testing.T) {
 	tests := []struct {
 		name      string

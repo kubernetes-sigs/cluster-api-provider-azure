@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +43,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.ResourceSpecGetter
+		Expected azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 	}{
 		{
 			Name: "Without Autoscaling",
@@ -71,12 +71,13 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 
 				Name:         "pool0",
+				AzureName:    "pool0",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -104,15 +105,16 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:              "pool1",
+				AzureName:         "pool1",
+				Namespace:         "default",
 				SKU:               "Standard_D2s_v3",
 				Mode:              "User",
 				Cluster:           "cluster1",
 				Replicas:          1,
 				EnableAutoScaling: true,
-				MinCount:          ptr.To[int32](2),
-				MaxCount:          ptr.To[int32](10),
+				MinCount:          ptr.To(2),
+				MaxCount:          ptr.To(10),
 				VnetSubnetID:      "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:           map[string]string{},
 			},
 		},
 	}
@@ -141,7 +143,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.ResourceSpecGetter
+		Expected azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 	}{
 		{
 			Name: "Without node labels",
@@ -168,12 +170,13 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
+				AzureName:    "pool0",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -202,16 +205,17 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
-				Name:     "pool1",
-				SKU:      "Standard_D2s_v3",
-				Mode:     "System",
-				Cluster:  "cluster1",
-				Replicas: 1,
-				NodeLabels: map[string]*string{
-					"custom": ptr.To("default"),
+				Name:      "pool1",
+				AzureName: "pool1",
+				Namespace: "default",
+				SKU:       "Standard_D2s_v3",
+				Mode:      "System",
+				Cluster:   "cluster1",
+				Replicas:  1,
+				NodeLabels: map[string]string{
+					"custom": "default",
 				},
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -240,7 +244,7 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.ResourceSpecGetter
+		Expected azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 	}{
 		{
 			Name: "Without additional tags",
@@ -267,12 +271,13 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
+				AzureName:    "pool0",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -301,16 +306,17 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
-				Name:     "pool1",
-				SKU:      "Standard_D2s_v3",
-				Mode:     "System",
-				Cluster:  "cluster1",
-				Replicas: 1,
+				Name:      "pool1",
+				AzureName: "pool1",
+				Namespace: "default",
+				SKU:       "Standard_D2s_v3",
+				Mode:      "System",
+				Cluster:   "cluster1",
+				Replicas:  1,
 				AdditionalTags: map[string]string{
 					"environment": "production",
 				},
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -339,7 +345,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.ResourceSpecGetter
+		Expected azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 	}{
 		{
 			Name: "Without MaxPods",
@@ -366,12 +372,13 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
+				AzureName:    "pool0",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -399,13 +406,14 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
+				AzureName:    "pool1",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "System",
 				Cluster:      "cluster1",
 				Replicas:     1,
-				MaxPods:      ptr.To[int32](12),
+				MaxPods:      ptr.To(12),
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -434,7 +442,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.ResourceSpecGetter
+		Expected azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 	}{
 		{
 			Name: "Without taints",
@@ -462,12 +470,13 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 
 				Name:         "pool0",
+				AzureName:    "pool0",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -501,13 +510,14 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
+				AzureName:    "pool1",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
 				NodeTaints:   []string{"key1=value1:NoSchedule"},
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -536,7 +546,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.ResourceSpecGetter
+		Expected azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 	}{
 		{
 			Name: "Without OsDiskType",
@@ -563,12 +573,13 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
+				AzureName:    "pool0",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -591,18 +602,19 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 				},
 				ManagedMachinePool: ManagedMachinePool{
 					MachinePool:      getMachinePool("pool1"),
-					InfraMachinePool: getAzureMachinePoolWithOsDiskType("pool1", string(armcontainerservice.OSDiskTypeEphemeral)),
+					InfraMachinePool: getAzureMachinePoolWithOsDiskType("pool1", string(asocontainerservicev1.OSDiskType_Ephemeral)),
 				},
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
+				AzureName:    "pool1",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
-				OsDiskType:   ptr.To(string(armcontainerservice.OSDiskTypeEphemeral)),
+				OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Ephemeral)),
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -631,7 +643,7 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.ResourceSpecGetter
+		Expected azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 	}{
 		{
 			Name: "Without Vnet and SubnetName",
@@ -658,12 +670,13 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
+				AzureName:    "pool0",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -698,12 +711,13 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
+				AzureName:    "pool1",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-vnet-subnet",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -738,12 +752,13 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
+				AzureName:    "pool1",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet",
-				Headers:      map[string]string{},
 			},
 		},
 	}
@@ -773,7 +788,7 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedMachinePoolScopeParams
-		Expected azure.ResourceSpecGetter
+		Expected azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 	}{
 		{
 			Name: "Without KubeletDiskType",
@@ -800,12 +815,13 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
+				AzureName:    "pool0",
+				Namespace:    "default",
 				SKU:          "Standard_D2s_v3",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
 				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:      map[string]string{},
 			},
 		},
 		{
@@ -833,13 +849,14 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 			},
 			Expected: &agentpools.AgentPoolSpec{
 				Name:            "pool1",
+				AzureName:       "pool1",
+				Namespace:       "default",
 				SKU:             "Standard_D2s_v3",
 				Mode:            "User",
 				Cluster:         "cluster1",
 				Replicas:        1,
 				KubeletDiskType: (*infrav1.KubeletDiskType)(ptr.To("Temporary")),
 				VnetSubnetID:    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-				Headers:         map[string]string{},
 			},
 		},
 	}
@@ -884,18 +901,18 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 	}
 }
 
-func getAzureMachinePoolWithScaling(name string, min, max int32) *infrav1.AzureManagedMachinePool {
+func getAzureMachinePoolWithScaling(name string, min, max int) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.Scaling = &infrav1.ManagedMachinePoolScaling{
-		MinSize: ptr.To[int32](min),
-		MaxSize: ptr.To[int32](max),
+		MinSize: ptr.To(min),
+		MaxSize: ptr.To(max),
 	}
 	return managedPool
 }
 
-func getAzureMachinePoolWithMaxPods(name string, maxPods int32) *infrav1.AzureManagedMachinePool {
+func getAzureMachinePoolWithMaxPods(name string, maxPods int) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeSystem)
-	managedPool.Spec.MaxPods = ptr.To[int32](maxPods)
+	managedPool.Spec.MaxPods = ptr.To(maxPods)
 	return managedPool
 }
 

@@ -28,10 +28,12 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	v1api20230201 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MockAgentPoolScope is a mock of AgentPoolScope interface.
@@ -71,25 +73,11 @@ func (mr *MockAgentPoolScopeMockRecorder) AdditionalTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockAgentPoolScope)(nil).AdditionalTags))
 }
 
-// AgentPoolAnnotations mocks base method.
-func (m *MockAgentPoolScope) AgentPoolAnnotations() map[string]string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AgentPoolAnnotations")
-	ret0, _ := ret[0].(map[string]string)
-	return ret0
-}
-
-// AgentPoolAnnotations indicates an expected call of AgentPoolAnnotations.
-func (mr *MockAgentPoolScopeMockRecorder) AgentPoolAnnotations() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgentPoolAnnotations", reflect.TypeOf((*MockAgentPoolScope)(nil).AgentPoolAnnotations))
-}
-
 // AgentPoolSpec mocks base method.
-func (m *MockAgentPoolScope) AgentPoolSpec() azure.ResourceSpecGetter {
+func (m *MockAgentPoolScope) AgentPoolSpec() azure.ASOResourceSpecGetter[*v1api20230201.ManagedClustersAgentPool] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AgentPoolSpec")
-	ret0, _ := ret[0].(azure.ResourceSpecGetter)
+	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[*v1api20230201.ManagedClustersAgentPool])
 	return ret0
 }
 
@@ -265,6 +253,20 @@ func (mr *MockAgentPoolScopeMockRecorder) FailureDomains() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockAgentPoolScope)(nil).FailureDomains))
 }
 
+// GetClient mocks base method.
+func (m *MockAgentPoolScope) GetClient() client.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(client.Client)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient.
+func (mr *MockAgentPoolScopeMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockAgentPoolScope)(nil).GetClient))
+}
+
 // GetLongRunningOperationState mocks base method.
 func (m *MockAgentPoolScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
@@ -410,7 +412,7 @@ func (mr *MockAgentPoolScopeMockRecorder) SetCAPIMachinePoolAnnotation(key, valu
 }
 
 // SetCAPIMachinePoolReplicas mocks base method.
-func (m *MockAgentPoolScope) SetCAPIMachinePoolReplicas(replicas *int32) {
+func (m *MockAgentPoolScope) SetCAPIMachinePoolReplicas(replicas *int) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetCAPIMachinePoolReplicas", replicas)
 }

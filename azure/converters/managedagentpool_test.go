@@ -19,7 +19,8 @@ package converters
 import (
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 )
@@ -27,63 +28,67 @@ import (
 func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 	cases := []struct {
 		name   string
-		pool   armcontainerservice.AgentPool
-		expect func(*GomegaWithT, armcontainerservice.ManagedClusterAgentPoolProfile)
+		pool   *asocontainerservicev1.ManagedClustersAgentPool
+		expect func(*GomegaWithT, asocontainerservicev1.ManagedClusterAgentPoolProfile)
 	}{
 		{
 			name: "Should set all values correctly",
-			pool: armcontainerservice.AgentPool{
-				Name: ptr.To("agentpool1"),
-				Properties: &armcontainerservice.ManagedClusterAgentPoolProfileProperties{
-					VMSize:              ptr.To("Standard_D2s_v3"),
-					OSType:              ptr.To(armcontainerservice.OSTypeLinux),
-					OSDiskSizeGB:        ptr.To[int32](100),
-					Count:               ptr.To[int32](2),
-					Type:                ptr.To(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
+			pool: &asocontainerservicev1.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+					AzureName:           "agentpool1",
+					VmSize:              ptr.To("Standard_D2s_v3"),
+					OsType:              ptr.To(asocontainerservicev1.OSType_Linux),
+					OsDiskSizeGB:        ptr.To[asocontainerservicev1.ContainerServiceOSDisk](100),
+					Count:               ptr.To(2),
+					Type:                ptr.To(asocontainerservicev1.AgentPoolType_VirtualMachineScaleSets),
 					OrchestratorVersion: ptr.To("1.22.6"),
-					VnetSubnetID:        ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123"),
-					Mode:                ptr.To(armcontainerservice.AgentPoolModeUser),
-					EnableAutoScaling:   ptr.To(true),
-					MaxCount:            ptr.To[int32](5),
-					MinCount:            ptr.To[int32](2),
-					NodeTaints:          []*string{ptr.To("key1=value1:NoSchedule")},
-					AvailabilityZones:   []*string{ptr.To("zone1")},
-					MaxPods:             ptr.To[int32](60),
-					OSDiskType:          ptr.To(armcontainerservice.OSDiskTypeManaged),
-					NodeLabels: map[string]*string{
-						"custom": ptr.To("default"),
+					VnetSubnetReference: &genruntime.ResourceReference{
+						ARMID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123",
 					},
-					Tags: map[string]*string{
-						"custom": ptr.To("default"),
+					Mode:              ptr.To(asocontainerservicev1.AgentPoolMode_User),
+					EnableAutoScaling: ptr.To(true),
+					MaxCount:          ptr.To(5),
+					MinCount:          ptr.To(2),
+					NodeTaints:        []string{"key1=value1:NoSchedule"},
+					AvailabilityZones: []string{"zone1"},
+					MaxPods:           ptr.To(60),
+					OsDiskType:        ptr.To(asocontainerservicev1.OSDiskType_Managed),
+					NodeLabels: map[string]string{
+						"custom": "default",
+					},
+					Tags: map[string]string{
+						"custom": "default",
 					},
 					EnableFIPS:             ptr.To(true),
 					EnableEncryptionAtHost: ptr.To(true),
 				},
 			},
 
-			expect: func(g *GomegaWithT, result armcontainerservice.ManagedClusterAgentPoolProfile) {
-				g.Expect(result).To(Equal(armcontainerservice.ManagedClusterAgentPoolProfile{
+			expect: func(g *GomegaWithT, result asocontainerservicev1.ManagedClusterAgentPoolProfile) {
+				g.Expect(result).To(Equal(asocontainerservicev1.ManagedClusterAgentPoolProfile{
 					Name:                ptr.To("agentpool1"),
-					VMSize:              ptr.To("Standard_D2s_v3"),
-					OSType:              ptr.To(armcontainerservice.OSTypeLinux),
-					OSDiskSizeGB:        ptr.To[int32](100),
-					Count:               ptr.To[int32](2),
-					Type:                ptr.To(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
+					VmSize:              ptr.To("Standard_D2s_v3"),
+					OsType:              ptr.To(asocontainerservicev1.OSType_Linux),
+					OsDiskSizeGB:        ptr.To[asocontainerservicev1.ContainerServiceOSDisk](100),
+					Count:               ptr.To(2),
+					Type:                ptr.To(asocontainerservicev1.AgentPoolType_VirtualMachineScaleSets),
 					OrchestratorVersion: ptr.To("1.22.6"),
-					VnetSubnetID:        ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123"),
-					Mode:                ptr.To(armcontainerservice.AgentPoolModeUser),
-					EnableAutoScaling:   ptr.To(true),
-					MaxCount:            ptr.To[int32](5),
-					MinCount:            ptr.To[int32](2),
-					NodeTaints:          []*string{ptr.To("key1=value1:NoSchedule")},
-					AvailabilityZones:   []*string{ptr.To("zone1")},
-					MaxPods:             ptr.To[int32](60),
-					OSDiskType:          ptr.To(armcontainerservice.OSDiskTypeManaged),
-					NodeLabels: map[string]*string{
-						"custom": ptr.To("default"),
+					VnetSubnetReference: &genruntime.ResourceReference{
+						ARMID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123",
 					},
-					Tags: map[string]*string{
-						"custom": ptr.To("default"),
+					Mode:              ptr.To(asocontainerservicev1.AgentPoolMode_User),
+					EnableAutoScaling: ptr.To(true),
+					MaxCount:          ptr.To(5),
+					MinCount:          ptr.To(2),
+					NodeTaints:        []string{"key1=value1:NoSchedule"},
+					AvailabilityZones: []string{"zone1"},
+					MaxPods:           ptr.To(60),
+					OsDiskType:        ptr.To(asocontainerservicev1.OSDiskType_Managed),
+					NodeLabels: map[string]string{
+						"custom": "default",
+					},
+					Tags: map[string]string{
+						"custom": "default",
 					},
 					EnableFIPS:             ptr.To(true),
 					EnableEncryptionAtHost: ptr.To(true),

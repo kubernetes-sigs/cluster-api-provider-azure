@@ -82,8 +82,8 @@ func AKSAutoscaleSpec(ctx context.Context, inputGetter func() AKSAutoscaleSpecIn
 			} else {
 				enabling = "Enabling"
 				ammp.Spec.Scaling = &infrav1.ManagedMachinePoolScaling{
-					MinSize: ptr.To[int32](1),
-					MaxSize: ptr.To[int32](2),
+					MinSize: ptr.To(1),
+					MaxSize: ptr.To(2),
 				}
 			}
 			By(enabling + " autoscaling")
