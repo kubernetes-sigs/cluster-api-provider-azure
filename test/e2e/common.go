@@ -28,7 +28,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
@@ -40,7 +41,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmv1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -209,11 +209,11 @@ func ExpectResourceGroupToBe404(ctx context.Context) {
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := azureutil.GetAuthorizer(settings)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	groupsClient := resources.NewGroupsClient(subscriptionID)
-	groupsClient.Authorizer = authorizer
-	_, err = groupsClient.Get(ctx, os.Getenv(AzureResourceGroup))
+	groupsClient, err := armresources.NewResourceGroupsClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = groupsClient.Get(ctx, os.Getenv(AzureResourceGroup), nil)
 	Expect(azure.ResourceNotFound(err)).To(BeTrue(), "The resource group in Azure still exists. After deleting the cluster all of the Azure resources should also be deleted.")
 }
 

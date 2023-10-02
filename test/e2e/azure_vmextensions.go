@@ -22,7 +22,8 @@ package e2e
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -73,8 +74,6 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	auth, err := azureutil.GetAuthorizer(settings)
-	Expect(err).NotTo(HaveOccurred())
 
 	if len(machineList.Items) > 0 {
 		By("Creating a mapping of machine IDs to array of expected VM extensions")
@@ -86,31 +85,39 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 		}
 
 		By("Creating a VM and VM extension client")
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		Expect(err).NotTo(HaveOccurred())
+
 		// create a VM client
-		vmClient := compute.NewVirtualMachinesClient(subscriptionID)
-		vmClient.Authorizer = auth
+		vmClient, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		// create a VM extension client
-		vmExtensionsClient := compute.NewVirtualMachineExtensionsClient(subscriptionID)
-		vmExtensionsClient.Authorizer = auth
+		vmExtensionsClient, err := armcompute.NewVirtualMachineExtensionsClient(subscriptionID, cred, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		// get the resource group name
 		resource, err := azureutil.ParseResourceID(*machineList.Items[0].Spec.ProviderID)
 		Expect(err).NotTo(HaveOccurred())
 
-		vmListResults, err := vmClient.List(ctx, resource.ResourceGroupName, "")
-		Expect(err).NotTo(HaveOccurred())
+		var vms []*armcompute.VirtualMachine
+		pager := vmClient.NewListPager(resource.ResourceGroupName, nil)
+		for pager.More() {
+			nextResult, err := pager.NextPage(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			vms = append(vms, nextResult.Value...)
+		}
 
 		By("Verifying specified VM extensions are created on Azure")
-		for _, machine := range vmListResults.Values() {
-			vmExtensionListResult, err := vmExtensionsClient.List(ctx, resource.ResourceGroupName, *machine.Name, "")
+		for _, machine := range vms {
+			vmExtensionListResult, err := vmExtensionsClient.List(ctx, resource.ResourceGroupName, *machine.Name, nil)
 			Expect(err).NotTo(HaveOccurred())
-			vmExtensionList := *vmExtensionListResult.Value
+			vmExtensionList := vmExtensionListResult.Value
 			var vmExtensionNames []string
 			for _, vmExtension := range vmExtensionList {
 				vmExtensionNames = append(vmExtensionNames, *vmExtension.Name)
 			}
-			osName := string(machine.VirtualMachineProperties.StorageProfile.OsDisk.OsType)
+			osName := string(*machine.Properties.StorageProfile.OSDisk.OSType)
 			Expect(vmExtensionNames).To(ContainElements("CAPZ." + osName + ".Bootstrapping"))
 			Expect(vmExtensionNames).To(ContainElements(expectedVMExtensionMap[*machine.ID]))
 		}
@@ -133,31 +140,43 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 		}
 
 		By("Creating a VMSS and VMSS extension client")
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		Expect(err).NotTo(HaveOccurred())
+
 		// create a VMSS client
-		vmssClient := compute.NewVirtualMachineScaleSetsClient(subscriptionID)
-		vmssClient.Authorizer = auth
+		vmssClient, err := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		// create a VMSS extension client
-		vmssExtensionsClient := compute.NewVirtualMachineScaleSetExtensionsClient(subscriptionID)
-		vmssExtensionsClient.Authorizer = auth
+		vmssExtensionsClient, err := armcompute.NewVirtualMachineScaleSetExtensionsClient(subscriptionID, cred, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		// get the resource group name
 		resource, err := azureutil.ParseResourceID(machinePoolList.Items[0].Spec.ProviderID)
 		Expect(err).NotTo(HaveOccurred())
 
-		vmssListResults, err := vmssClient.List(ctx, resource.ResourceGroupName)
-		Expect(err).NotTo(HaveOccurred())
+		var vmsses []*armcompute.VirtualMachineScaleSet
+		pager := vmssClient.NewListPager(resource.ResourceGroupName, nil)
+		for pager.More() {
+			nextResult, err := pager.NextPage(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			vmsses = append(vmsses, nextResult.Value...)
+		}
 
 		By("Verifying VMSS extensions are created on Azure")
-		for _, machinePool := range vmssListResults.Values() {
-			vmssExtensionListResult, err := vmssExtensionsClient.List(ctx, resource.ResourceGroupName, *machinePool.Name)
-			Expect(err).NotTo(HaveOccurred())
-			vmssExtensionList := vmssExtensionListResult.Values()
+		for _, machinePool := range vmsses {
+			var vmssExts []*armcompute.VirtualMachineScaleSetExtension
+			pager := vmssExtensionsClient.NewListPager(resource.ResourceGroupName, *machinePool.Name, nil)
+			for pager.More() {
+				nextResult, err := pager.NextPage(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				vmssExts = append(vmssExts, nextResult.Value...)
+			}
 			var vmssExtensionNames []string
-			for _, vmssExtension := range vmssExtensionList {
+			for _, vmssExtension := range vmssExts {
 				vmssExtensionNames = append(vmssExtensionNames, *vmssExtension.Name)
 			}
-			osName := string(machinePool.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.OsType)
+			osName := string(*machinePool.Properties.VirtualMachineProfile.StorageProfile.OSDisk.OSType)
 			Expect(vmssExtensionNames).To(ContainElements("CAPZ." + osName + ".Bootstrapping"))
 			Expect(vmssExtensionNames).To(ContainElements(expectedVMSSExtensionMap[*machinePool.ID]))
 		}

@@ -28,7 +28,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -420,10 +421,13 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 		return errors.Wrap(err, "failed to get settings from environment")
 	}
 
-	vmClient := compute.NewVirtualMachinesClient(settings.GetSubscriptionID())
-	vmClient.Authorizer, err = azureutil.GetAuthorizer(settings)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to get authorizer")
+		return errors.Wrap(err, "failed to get default azure credential")
+	}
+	vmClient, err := armcompute.NewVirtualMachinesClient(settings.GetSubscriptionID(), cred, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create virtual machines client")
 	}
 
 	bootDiagnostics, err := vmClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroupName, resource.Name, nil)
@@ -431,7 +435,7 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
 
-	return writeBootLog(bootDiagnostics, outputPath)
+	return writeBootLog(bootDiagnostics.RetrieveBootDiagnosticsDataResult, outputPath)
 }
 
 // collectVMSSBootLog collects boot logs of the scale set by using azure boot diagnostics.
@@ -452,10 +456,13 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 		return errors.Wrap(err, "failed to get settings from environment")
 	}
 
-	vmssClient := compute.NewVirtualMachineScaleSetVMsClient(settings.GetSubscriptionID())
-	vmssClient.Authorizer, err = azureutil.GetAuthorizer(settings)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to get authorizer")
+		return errors.Wrap(err, "failed to get default azure credential")
+	}
+	vmssClient, err := armcompute.NewVirtualMachineScaleSetVMsClient(settings.GetSubscriptionID(), cred, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create virtual machine scale set VMs client")
 	}
 
 	bootDiagnostics, err := vmssClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroupName, resource.Name, instanceID, nil)
@@ -463,10 +470,10 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
 
-	return writeBootLog(bootDiagnostics, outputPath)
+	return writeBootLog(bootDiagnostics.RetrieveBootDiagnosticsDataResult, outputPath)
 }
 
-func writeBootLog(bootDiagnostics compute.RetrieveBootDiagnosticsDataResult, outputPath string) error {
+func writeBootLog(bootDiagnostics armcompute.RetrieveBootDiagnosticsDataResult, outputPath string) error {
 	var err error
 	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, *bootDiagnostics.SerialConsoleLogBlobURI, http.NoBody)
 	if err != nil {

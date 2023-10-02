@@ -22,7 +22,8 @@ package e2e
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -75,26 +76,31 @@ func AzureEdgeZoneClusterSpec(ctx context.Context, inputGetter func() AzureEdgeZ
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
 	subscriptionID := settings.GetSubscriptionID()
-	auth, err := settings.GetAuthorizer()
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	if len(machineList.Items) > 0 {
 		By("Creating a VM client")
 		// create a VM client
-		vmClient := compute.NewVirtualMachinesClient(subscriptionID)
-		vmClient.Authorizer = auth
+		vmClient, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		// get the resource group name
 		resource, err := azureutil.ParseResourceID(*machineList.Items[0].Spec.ProviderID)
 		Expect(err).NotTo(HaveOccurred())
 
-		vmListResults, err := vmClient.List(ctx, resource.ResourceGroupName, "")
-		Expect(err).NotTo(HaveOccurred())
+		var vms []*armcompute.VirtualMachine
+		pager := vmClient.NewListPager(resource.ResourceGroupName, nil)
+		for pager.More() {
+			nextResult, err := pager.NextPage(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			vms = append(vms, nextResult.Value...)
+		}
 
 		By("Verifying VMs' extendedLocation property is correct")
-		for _, machine := range vmListResults.Values() {
+		for _, machine := range vms {
 			Expect(*machine.ExtendedLocation.Name).To(Equal(extendedLocationName))
-			Expect(string(machine.ExtendedLocation.Type)).To(Equal(extendedLocationType))
+			Expect(string(*machine.ExtendedLocation.Type)).To(Equal(extendedLocationType))
 		}
 	}
 }
