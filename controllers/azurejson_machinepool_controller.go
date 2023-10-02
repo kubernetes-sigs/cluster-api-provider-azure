@@ -30,6 +30,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -174,7 +175,15 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 	// Construct secret for this machine
 	userAssignedIdentityIfExists := ""
 	if len(azureMachinePool.Spec.UserAssignedIdentities) > 0 {
-		userAssignedIdentityIfExists = azureMachinePool.Spec.UserAssignedIdentities[0].ProviderID
+		idsClient, err := identities.NewClient(clusterScope)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "failed to create identities client")
+		}
+		userAssignedIdentityIfExists, err = idsClient.GetClientID(
+			ctx, azureMachinePool.Spec.UserAssignedIdentities[0].ProviderID)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "failed to get user-assigned identity ClientID")
+		}
 	}
 
 	apiVersion, kind := infrav1.GroupVersion.WithKind("AzureMachinePool").ToAPIVersionAndKind()
