@@ -29,6 +29,7 @@ import (
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 func fakeAgentPool(changes ...func(*AgentPoolSpec)) AgentPoolSpec {
@@ -123,6 +124,12 @@ func sdkWithCount(count int32) func(*containerservice.AgentPool) {
 func sdkWithProvisioningState(state string) func(*containerservice.AgentPool) {
 	return func(pool *containerservice.AgentPool) {
 		pool.ManagedClusterAgentPoolProfileProperties.ProvisioningState = pointer.String(state)
+	}
+}
+
+func sdkWithNodeTaints(nodeTaints *[]string) func(*containerservice.AgentPool) {
+	return func(pool *containerservice.AgentPool) {
+		pool.ManagedClusterAgentPoolProfileProperties.NodeTaints = nodeTaints
 	}
 }
 
@@ -293,6 +300,38 @@ func TestParameters(t *testing.T) {
 					pool.NodeLabels = map[string]*string{
 						"kubernetes.azure.com/scalesetpriority": pointer.String("spot"),
 					}
+				},
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      nil,
+			expectedError: nil,
+		},
+		{
+			name: "difference in non-system node taints with empty taints should trigger update",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) {
+					pool.NodeTaints = nil
+				},
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *containerservice.AgentPool) {
+					pool.NodeTaints = &[]string{"fake-taint"}
+				},
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      sdkFakeAgentPool(sdkWithNodeTaints(nil)),
+			expectedError: nil,
+		},
+		{
+			name: "difference in system node taints with empty taints shouldn't trigger update",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) {
+					pool.NodeTaints = nil
+				},
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *containerservice.AgentPool) {
+					pool.NodeTaints = &[]string{azureutil.AzureSystemNodeLabelPrefix + "-fake-taint"}
 				},
 				sdkWithProvisioningState("Succeeded"),
 			),
