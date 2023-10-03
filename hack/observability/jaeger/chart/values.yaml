@@ -23,7 +23,7 @@ environmentVariables:
   BADGER_DIRECTORY_KEY: /badger/key
 
 enableHttpZipkinCollector: false
-enableHttpOpenTelemetryCollector: false
+enableHttpOpenTelemetryCollector: true
 
 serviceAccount:
   # Specifies whether a service account should be created
