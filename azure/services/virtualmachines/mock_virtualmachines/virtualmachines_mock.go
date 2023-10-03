@@ -28,7 +28,6 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -57,20 +56,6 @@ func NewMockVMScope(ctrl *gomock.Controller) *MockVMScope {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVMScope) EXPECT() *MockVMScopeMockRecorder {
 	return m.recorder
-}
-
-// Authorizer mocks base method.
-func (m *MockVMScope) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockVMScopeMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockVMScope)(nil).Authorizer))
 }
 
 // BaseURI mocks base method.

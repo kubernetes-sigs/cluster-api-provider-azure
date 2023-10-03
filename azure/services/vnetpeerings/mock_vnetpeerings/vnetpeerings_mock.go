@@ -28,7 +28,6 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -56,20 +55,6 @@ func NewMockVnetPeeringScope(ctrl *gomock.Controller) *MockVnetPeeringScope {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVnetPeeringScope) EXPECT() *MockVnetPeeringScopeMockRecorder {
 	return m.recorder
-}
-
-// Authorizer mocks base method.
-func (m *MockVnetPeeringScope) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockVnetPeeringScopeMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockVnetPeeringScope)(nil).Authorizer))
 }
 
 // BaseURI mocks base method.

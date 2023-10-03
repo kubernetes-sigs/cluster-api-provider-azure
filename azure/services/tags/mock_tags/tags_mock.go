@@ -28,7 +28,6 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -69,20 +68,6 @@ func (m *MockTagScope) AnnotationJSON(arg0 string) (map[string]any, error) {
 func (mr *MockTagScopeMockRecorder) AnnotationJSON(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnotationJSON", reflect.TypeOf((*MockTagScope)(nil).AnnotationJSON), arg0)
-}
-
-// Authorizer mocks base method.
-func (m *MockTagScope) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockTagScopeMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockTagScope)(nil).Authorizer))
 }
 
 // BaseURI mocks base method.

@@ -28,7 +28,6 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -70,20 +69,6 @@ func (m *MockPublicIPScope) AdditionalTags() v1beta1.Tags {
 func (mr *MockPublicIPScopeMockRecorder) AdditionalTags() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockPublicIPScope)(nil).AdditionalTags))
-}
-
-// Authorizer mocks base method.
-func (m *MockPublicIPScope) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockPublicIPScopeMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockPublicIPScope)(nil).Authorizer))
 }
 
 // AvailabilitySetEnabled mocks base method.

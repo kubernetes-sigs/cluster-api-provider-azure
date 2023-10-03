@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/net"
@@ -129,11 +128,6 @@ type ClusterCache struct {
 // BaseURI returns the Azure ResourceManagerEndpoint.
 func (s *ClusterScope) BaseURI() string {
 	return s.ResourceManagerEndpoint
-}
-
-// Authorizer returns the Azure client Authorizer which is used for SDKv1 services.
-func (s *ClusterScope) Authorizer() autorest.Authorizer {
-	return s.AzureClients.Authorizer
 }
 
 // GetClient returns the controller-runtime client.

@@ -265,7 +265,6 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	clusterScope := mock_azure.NewMockClusterScoper(mockCtrl)
-	clusterScope.EXPECT().Authorizer().AnyTimes()
 	clusterScope.EXPECT().BaseURI().AnyTimes()
 	clusterScope.EXPECT().Location().AnyTimes()
 	clusterScope.EXPECT().SubscriptionID().AnyTimes()

@@ -30,7 +30,6 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
-	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -210,20 +209,6 @@ func NewMockAuthorizer(ctrl *gomock.Controller) *MockAuthorizer {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAuthorizer) EXPECT() *MockAuthorizerMockRecorder {
 	return m.recorder
-}
-
-// Authorizer mocks base method.
-func (m *MockAuthorizer) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockAuthorizerMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockAuthorizer)(nil).Authorizer))
 }
 
 // BaseURI mocks base method.
@@ -618,20 +603,6 @@ func (m *MockClusterDescriber) AdditionalTags() v1beta1.Tags {
 func (mr *MockClusterDescriberMockRecorder) AdditionalTags() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockClusterDescriber)(nil).AdditionalTags))
-}
-
-// Authorizer mocks base method.
-func (m *MockClusterDescriber) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockClusterDescriberMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockClusterDescriber)(nil).Authorizer))
 }
 
 // AvailabilitySetEnabled mocks base method.
@@ -1046,20 +1017,6 @@ func (m *MockClusterScoper) AdditionalTags() v1beta1.Tags {
 func (mr *MockClusterScoperMockRecorder) AdditionalTags() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockClusterScoper)(nil).AdditionalTags))
-}
-
-// Authorizer mocks base method.
-func (m *MockClusterScoper) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockClusterScoperMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockClusterScoper)(nil).Authorizer))
 }
 
 // AvailabilitySetEnabled mocks base method.
@@ -1515,20 +1472,6 @@ func (m *MockManagedClusterScoper) AdditionalTags() v1beta1.Tags {
 func (mr *MockManagedClusterScoperMockRecorder) AdditionalTags() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockManagedClusterScoper)(nil).AdditionalTags))
-}
-
-// Authorizer mocks base method.
-func (m *MockManagedClusterScoper) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockManagedClusterScoperMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockManagedClusterScoper)(nil).Authorizer))
 }
 
 // AvailabilitySetEnabled mocks base method.

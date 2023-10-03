@@ -21,7 +21,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
-	"github.com/Azure/go-autorest/autorest"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -43,8 +42,8 @@ type ServiceReconciler interface {
 	Reconciler
 }
 
-// Authorizer is an interface which can get the subscription ID, base URI, and authorizer for an Azure service.
-// The Authorizer field is used by SDKv1 services while the Token is used by SDKv2 services.
+// Authorizer is an interface which can get details such as subscription ID, base URI, and token
+// for authorizing to an Azure service.
 type Authorizer interface {
 	SubscriptionID() string
 	ClientID() string
@@ -52,7 +51,6 @@ type Authorizer interface {
 	CloudEnvironment() string
 	TenantID() string
 	BaseURI() string
-	Authorizer() autorest.Authorizer
 	HashKey() string
 	Token() azcore.TokenCredential
 }
