@@ -24,7 +24,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -72,17 +71,13 @@ func AzureEdgeZoneClusterSpec(ctx context.Context, inputGetter func() AzureEdgeZ
 	extendedLocationType := input.E2EConfig.GetVariable(AzureExtendedLocationType)
 	extendedLocationName := input.E2EConfig.GetVariable(AzureExtendedLocationName)
 
-	// get subscription id
-	settings, err := auth.GetSettingsFromEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	if len(machineList.Items) > 0 {
 		By("Creating a VM client")
 		// create a VM client
-		vmClient, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+		vmClient, err := armcompute.NewVirtualMachinesClient(getSubscriptionID(Default), cred, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		// get the resource group name

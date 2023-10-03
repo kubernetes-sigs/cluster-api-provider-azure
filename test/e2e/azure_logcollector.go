@@ -30,7 +30,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -416,16 +415,17 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 		return errors.Wrap(err, "failed to parse resource id")
 	}
 
-	settings, err := auth.GetSettingsFromEnvironment()
-	if err != nil {
-		return errors.Wrap(err, "failed to get settings from environment")
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	if subscriptionID == "" {
+		return errors.New("AZURE_SUBSCRIPTION_ID is not set")
 	}
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get default azure credential")
 	}
-	vmClient, err := armcompute.NewVirtualMachinesClient(settings.GetSubscriptionID(), cred, nil)
+
+	vmClient, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to create virtual machines client")
 	}
@@ -451,16 +451,16 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 
 	Logf("Collecting boot logs for VMSS instance %s of scale set %s\n", instanceID, resource.Name)
 
-	settings, err := auth.GetSettingsFromEnvironment()
-	if err != nil {
-		return errors.Wrap(err, "failed to get settings from environment")
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	if subscriptionID == "" {
+		return errors.New("AZURE_SUBSCRIPTION_ID is not set")
 	}
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get default azure credential")
 	}
-	vmssClient, err := armcompute.NewVirtualMachineScaleSetVMsClient(settings.GetSubscriptionID(), cred, nil)
+	vmssClient, err := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to create virtual machine scale set VMs client")
 	}

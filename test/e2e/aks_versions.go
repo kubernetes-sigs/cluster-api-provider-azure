@@ -25,7 +25,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
@@ -38,12 +37,10 @@ import (
 // GetAKSKubernetesVersion gets the kubernetes version for AKS clusters as specified by the environment variable defined by versionVar.
 func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfig, versionVar string) (string, error) {
 	e2eAKSVersion := e2eConfig.GetVariable(versionVar)
-
 	location := e2eConfig.GetVariable(AzureLocation)
+	subscriptionID := getSubscriptionID(Default)
 
-	settings, err := auth.GetSettingsFromEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
+	var err error
 	var maxVersion string
 	switch e2eAKSVersion {
 	case "latest":
