@@ -401,7 +401,6 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	clusterMock := mock_azure.NewMockClusterScoper(mockCtrl)
-	clusterMock.EXPECT().Authorizer().AnyTimes()
 	clusterMock.EXPECT().Location().AnyTimes()
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().CloudEnvironment().AnyTimes()

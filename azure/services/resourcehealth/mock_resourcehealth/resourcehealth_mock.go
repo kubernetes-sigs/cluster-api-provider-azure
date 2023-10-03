@@ -28,7 +28,6 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	conditions "sigs.k8s.io/cluster-api/util/conditions"
@@ -55,20 +54,6 @@ func NewMockResourceHealthScope(ctrl *gomock.Controller) *MockResourceHealthScop
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockResourceHealthScope) EXPECT() *MockResourceHealthScopeMockRecorder {
 	return m.recorder
-}
-
-// Authorizer mocks base method.
-func (m *MockResourceHealthScope) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockResourceHealthScopeMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockResourceHealthScope)(nil).Authorizer))
 }
 
 // AvailabilityStatusResource mocks base method.
