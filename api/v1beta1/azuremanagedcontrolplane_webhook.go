@@ -108,6 +108,7 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 	m.setDefaultSku()
 	m.setDefaultAutoScalerProfile()
 	m.setDefaultOIDCIssuerProfile()
+	m.setDefaultDNSPrefix()
 
 	return nil
 }
@@ -246,6 +247,14 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		}
 	}
 
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "DNSPrefix"),
+		m.Spec.DNSPrefix,
+		old.Spec.DNSPrefix,
+	); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	// Consider removing this once moves out of preview
 	// Updating outboundType after cluster creation (PREVIEW)
 	// https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype#updating-outboundtype-after-cluster-creation-preview
@@ -296,6 +305,7 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 		m.validateAutoScalerProfile,
 		m.validateIdentity,
 		m.validateNetworkPluginMode,
+		m.validateDNSPrefix,
 	}
 
 	var errs []error
@@ -306,6 +316,26 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 	}
 
 	return kerrors.NewAggregate(errs)
+}
+
+func (m *AzureManagedControlPlane) validateDNSPrefix(_ client.Client) error {
+	if m.Spec.DNSPrefix == nil {
+		return nil
+	}
+
+	// Regex pattern for DNS prefix validation
+	// 1. Between 1 and 54 characters long: {1,54}
+	// 2. Alphanumerics and hyphens: [a-zA-Z0-9-]
+	// 3. Start and end with alphanumeric: ^[a-zA-Z0-9].*[a-zA-Z0-9]$
+	pattern := `^[a-zA-Z0-9][a-zA-Z0-9-]{0,52}[a-zA-Z0-9]$`
+	regex := regexp.MustCompile(pattern)
+	if regex.MatchString(ptr.Deref(m.Spec.DNSPrefix, "")) {
+		return nil
+	}
+	allErrs := field.ErrorList{
+		field.Invalid(field.NewPath("Spec", "DNSPrefix"), *m.Spec.DNSPrefix, "DNSPrefix is invalid, does not match regex: "+pattern),
+	}
+	return kerrors.NewAggregate(allErrs.ToAggregate().Errors())
 }
 
 // validateVersion validates the Kubernetes version.

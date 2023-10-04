@@ -589,7 +589,6 @@ func getSampleManagedCluster() armcontainerservice.ManagedCluster {
 	return armcontainerservice.ManagedCluster{
 		Properties: &armcontainerservice.ManagedClusterProperties{
 			KubernetesVersion: ptr.To("v1.22.0"),
-			DNSPrefix:         ptr.To("test-managedcluster"),
 			AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 				{
 					Name:         ptr.To("test-agentpool-0"),

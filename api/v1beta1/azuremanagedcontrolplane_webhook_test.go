@@ -59,6 +59,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
 	g.Expect(amcp.Spec.Identity.Type).To(Equal(ManagedControlPlaneIdentityTypeSystemAssigned))
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeFalse())
+	g.Expect(amcp.Spec.DNSPrefix).ToNot(BeNil())
+	g.Expect(*amcp.Spec.DNSPrefix).To(Equal(amcp.Name))
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -76,6 +78,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.OIDCIssuerProfile = &OIDCIssuerProfile{
 		Enabled: ptr.To(true),
 	}
+	amcp.Spec.DNSPrefix = ptr.To("test-prefix")
 
 	err = mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -89,7 +92,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(StandardManagedControlPlaneTier))
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeTrue())
-
+	g.Expect(amcp.Spec.DNSPrefix).ToNot(BeNil())
+	g.Expect(*amcp.Spec.DNSPrefix).To(Equal("test-prefix"))
 	t.Logf("Testing amcp defaulting webhook with overlay")
 	amcp = &AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
@@ -777,6 +781,76 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			amcp:     createAzureManagedControlPlane("192.168.0.10", "honk.version", generateSSHPublicKey(true)),
 			wantErr:  true,
 			errorLen: 1,
+		},
+		{
+			name: "Testing inValid DNSPrefix for starting with invalid characters",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("-thisi$"),
+					Version:   "v1.17.8",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Testing inValid DNSPrefix with more then 54 characters",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("thisisaverylong$^clusternameconsistingofmorethan54characterswhichshouldbeinvalid"),
+					Version:   "v1.17.8",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Testing inValid DNSPrefix with underscore",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("no_underscore"),
+					Version:   "v1.17.8",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Testing inValid DNSPrefix with special characters",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("no-dollar$@%"),
+					Version:   "v1.17.8",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Testing Valid DNSPrefix with hyphen characters",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("hyphen-allowed"),
+					Version:   "v1.17.8",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Testing Valid DNSPrefix with hyphen characters",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("palette-test07"),
+					Version:   "v1.17.8",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Testing valid DNSPrefix ",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("thisisavlerylongclu7l0sternam3leconsistingofmorethan54"),
+					Version:   "v1.17.8",
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "invalid name with microsoft",
@@ -1605,6 +1679,86 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					OIDCIssuerProfile: &OIDCIssuerProfile{
 						Enabled: ptr.To(true),
 					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane DNSPrefix is immutable error",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("capz-aks-1"),
+					Version:   "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("capz-aks"),
+					Version:   "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane DNSPrefix is immutable no error",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("capz-aks"),
+					Version:   "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("capz-aks"),
+					Version:   "v1.18.0",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane DNSPrefix is immutable error nil -> capz-aks",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: nil,
+					Version:   "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("capz-aks"),
+					Version:   "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane DNSPrefix is immutable error nil -> empty",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: nil,
+					Version:   "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To(""),
+					Version:   "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane DNSPrefix is immutable no error nil -> nil",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: nil,
+					Version:   "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: nil,
+					Version:   "v1.18.0",
 				},
 			},
 			wantErr: false,

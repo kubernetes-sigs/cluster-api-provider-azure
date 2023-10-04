@@ -482,6 +482,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 		Identity:                    s.ControlPlane.Spec.Identity,
 		KubeletUserAssignedIdentity: s.ControlPlane.Spec.KubeletUserAssignedIdentity,
 		NetworkPluginMode:           s.ControlPlane.Spec.NetworkPluginMode,
+		DNSPrefix:                   s.ControlPlane.Spec.DNSPrefix,
 	}
 
 	if s.ControlPlane.Spec.SSHPublicKey != nil {

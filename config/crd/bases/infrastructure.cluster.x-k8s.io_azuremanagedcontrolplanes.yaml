@@ -239,6 +239,9 @@ spec:
                 - host
                 - port
                 type: object
+              dnsPrefix:
+                description: DNSPrefix allows the user to customize dns prefix. Immutable.
+                type: string
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
                   DNS service. It must be within the Kubernetes service address range
