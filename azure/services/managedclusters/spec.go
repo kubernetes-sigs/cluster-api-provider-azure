@@ -614,13 +614,13 @@ func computeDiffOfNormalizedClusters(managedCluster armcontainerservice.ManagedC
 		}
 	}
 
-	if managedCluster.Properties.APIServerAccessProfile != nil {
+	if managedCluster.Properties.APIServerAccessProfile != nil && managedCluster.Properties.APIServerAccessProfile.AuthorizedIPRanges != nil {
 		propertiesNormalized.APIServerAccessProfile = &armcontainerservice.ManagedClusterAPIServerAccessProfile{
 			AuthorizedIPRanges: managedCluster.Properties.APIServerAccessProfile.AuthorizedIPRanges,
 		}
 	}
 
-	if existingMC.Properties.APIServerAccessProfile != nil {
+	if existingMC.Properties.APIServerAccessProfile != nil && existingMC.Properties.APIServerAccessProfile.AuthorizedIPRanges != nil {
 		existingMCPropertiesNormalized.APIServerAccessProfile = &armcontainerservice.ManagedClusterAPIServerAccessProfile{
 			AuthorizedIPRanges: existingMC.Properties.APIServerAccessProfile.AuthorizedIPRanges,
 		}
