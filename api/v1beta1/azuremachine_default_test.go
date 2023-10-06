@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -90,6 +91,13 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 		Identity:                   VMIdentitySystemAssigned,
 		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{},
 	}}}
+	bothDeprecatedRoleAssignmentNameAndSystemAssignedIdentityRoleTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		Identity:           VMIdentitySystemAssigned,
+		RoleAssignmentName: existingRoleAssignmentName,
+		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			Name: existingRoleAssignmentName,
+		},
+	}}}
 
 	roleAssignmentExistTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
 	g.Expect(roleAssignmentExistTest.machine.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
@@ -111,6 +119,44 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 	g.Expect(err).To(Not(HaveOccurred()))
 	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
 	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, ContributorRoleID)))
+
+	bothDeprecatedRoleAssignmentNameAndSystemAssignedIdentityRoleTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
+	g.Expect(bothDeprecatedRoleAssignmentNameAndSystemAssignedIdentityRoleTest.machine.Spec.RoleAssignmentName).To(Not(BeEmpty()))
+	g.Expect(bothDeprecatedRoleAssignmentNameAndSystemAssignedIdentityRoleTest.machine.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
+}
+
+func TestAzureMachineSpec_SetSpotEvictionPolicyDefaults(t *testing.T) {
+	deallocatePolicy := SpotEvictionPolicyDeallocate
+	deletePolicy := SpotEvictionPolicyDelete
+
+	g := NewWithT(t)
+
+	type test struct {
+		machine *AzureMachine
+	}
+
+	spotVMOptionsExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		SpotVMOptions: &SpotVMOptions{
+			MaxPrice: &resource.Quantity{Format: "vmoptions-0"},
+		},
+	}}}
+
+	localDiffDiskSettingsExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		SpotVMOptions: &SpotVMOptions{
+			MaxPrice: &resource.Quantity{},
+		},
+		OSDisk: OSDisk{
+			DiffDiskSettings: &DiffDiskSettings{
+				Option: "Local",
+			},
+		},
+	}}}
+
+	spotVMOptionsExistTest.machine.Spec.SetSpotEvictionPolicyDefaults()
+	g.Expect(spotVMOptionsExistTest.machine.Spec.SpotVMOptions.EvictionPolicy).To(Equal(&deallocatePolicy))
+
+	localDiffDiskSettingsExistTest.machine.Spec.SetSpotEvictionPolicyDefaults()
+	g.Expect(localDiffDiskSettingsExistTest.machine.Spec.SpotVMOptions.EvictionPolicy).To(Equal(&deletePolicy))
 }
 
 func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
