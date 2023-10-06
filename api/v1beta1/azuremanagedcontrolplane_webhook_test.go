@@ -1556,6 +1556,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
+					NetworkPolicy:     ptr.To("anything"),
 					NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
 				},
 			},
@@ -1577,6 +1578,29 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureManagedControlPlaneSpec{
+					NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+					Version:           "v0.0.0",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "NetworkPolicy is allowed when NetworkPluginMode is not changed",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					NetworkPolicy:     ptr.To("anything"),
+					NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					NetworkPolicy:     ptr.To("anything"),
 					NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
 					Version:           "v0.0.0",
 				},
