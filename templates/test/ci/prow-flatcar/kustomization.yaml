@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/flatcar/
+  - ../../../addons/cluster-api-helm/calico.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
+  - ../patches/cluster-label.yaml

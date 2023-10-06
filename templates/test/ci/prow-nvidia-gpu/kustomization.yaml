@@ -3,10 +3,12 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/nvidia-gpu
+  - ../../../addons/cluster-api-helm/calico.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/azurecluster-gpu.yaml
+  - ../patches/cluster-label.yaml
 patches:
 - path: patches/node-storage-type.yaml
   target:

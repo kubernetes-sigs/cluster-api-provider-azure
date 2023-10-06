@@ -4,6 +4,8 @@ namespace: default
 resources:
   - ../../../flavors/ipv6
   - machine-pool-ipv6.yaml
+  - ../../../addons/cluster-api-helm/calico-ipv6.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
+  - patches/cluster-label.yaml
