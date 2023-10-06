@@ -794,7 +794,22 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "invalidtest: updating subnet name from empty to non empty",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					NetworkInterfaces: []NetworkInterface{{SubnetName: ""}},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					NetworkInterfaces: []NetworkInterface{{SubnetName: "subnet1"}},
+				},
+			},
+			wantErr: true,
+		},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mw := &azureMachineWebhook{}
