@@ -558,8 +558,10 @@ func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManage
 func (m *AzureManagedControlPlane) validateNetworkPluginModeUpdate(old *AzureManagedControlPlane) field.ErrorList {
 	var allErrs field.ErrorList
 
-	if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay && old.Spec.NetworkPolicy != nil {
-		allErrs = append(allErrs, field.Forbidden(field.NewPath("Spec", "NetworkPluginMode"), fmt.Sprintf("%q NetworkPolicyMode cannot be enabled when NetworkPolicy is set", NetworkPluginModeOverlay)))
+	if ptr.Deref(old.Spec.NetworkPluginMode, "") != NetworkPluginModeOverlay &&
+		ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay &&
+		old.Spec.NetworkPolicy != nil {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("Spec", "NetworkPluginMode"), fmt.Sprintf("%q NetworkPluginMode cannot be enabled when NetworkPolicy is set", NetworkPluginModeOverlay)))
 	}
 
 	return allErrs
