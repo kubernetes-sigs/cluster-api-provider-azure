@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/default
+  - ../../../addons/cluster-api-helm/calico.yaml
 patchesStrategicMerge:
   - ../patches/azureclusteridentity-azwi.yaml
   - ../patches/tags.yaml
@@ -10,3 +11,4 @@ patchesStrategicMerge:
   - ../patches/apiserver.yaml
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
+  - ../patches/cluster-label.yaml

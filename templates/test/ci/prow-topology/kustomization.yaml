@@ -5,9 +5,11 @@ resources:
   - ../../../flavors/clusterclass/cluster.yaml
   - cni-resource-set.yaml
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
+  - ../../../addons/cluster-api-helm/calico.yaml
 patchesStrategicMerge:
   - ../patches/windows-containerd-labels.yaml
   - cluster.yaml
+  - ../patches/cluster-label.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     files:

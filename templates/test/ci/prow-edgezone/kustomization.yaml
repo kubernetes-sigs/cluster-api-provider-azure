@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/edgezone
+  - ../../../addons/cluster-api-helm/calico.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
@@ -13,3 +14,4 @@ patchesStrategicMerge:
   - patches/standardssd-disk.yaml
   - patches/machine-type.yaml
   - patches/kubernetes-version.yaml
+  - ../patches/cluster-label.yaml

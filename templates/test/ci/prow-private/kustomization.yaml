@@ -4,16 +4,17 @@ namespace: default
 resources:
   - ../../../flavors/private
   - cni-resource-set.yaml
+  - ../../../addons/cluster-api-helm/calico.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
-  - patches/cluster-cni.yaml
   - patches/bastion.yaml
   - patches/vnet-peerings.yaml
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
   - ../prow-intree-cloud-provider/patches/intree-cp.yaml # TODO: remove once CAPI supports Helm addons
   - ../prow-intree-cloud-provider/patches/intree-md-0.yaml # TODO: remove once CAPI supports Helm addons
+  - ../patches/cluster-label.yaml
 patches:
   - path: patches/user-assigned.yaml
     target:

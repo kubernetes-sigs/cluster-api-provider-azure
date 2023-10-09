@@ -4,8 +4,10 @@ namespace: default
 resources:
   - ../../../flavors/dual-stack
   - machine-pool-dualstack.yaml
+  - ../../../addons/cluster-api-helm/calico-dual-stack.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - patches/azure-machine-template-control-plane.yaml
   - patches/azure-machine-template.yaml
+  - patches/cluster-label.yaml

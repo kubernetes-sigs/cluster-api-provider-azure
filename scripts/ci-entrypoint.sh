@@ -163,11 +163,11 @@ get_cloud_provider() {
     fi
 }
 
-# install_calico installs Calico CNI componentry onto the Cluster
+# copy_kubeadm_config_map copies the kubeadm configmap into the calico-system namespace.
 # any retryable operation in this function must return a non-zero exit code on failure so that we can
-# retry it using a `until install_calico; do sleep 5; done` pattern;
+# retry it using a `until copy_kubeadm_config_map; do sleep 5; done` pattern;
 # and any statement must be idempotent so that subsequent retry attempts can make forward progress.
-install_calico() {
+copy_kubeadm_config_map() {
     # Copy the kubeadm configmap to the calico-system namespace.
     # This is a workaround needed for the calico-node-windows daemonset
     # to be able to run in the calico-system namespace.
@@ -177,23 +177,6 @@ install_calico() {
     if ! "${KUBECTL}" get configmap kubeadm-config --namespace=calico-system; then
         "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | "${KUBECTL}" apply -f - || return 1
     fi
-    # install Calico CNI
-    CALICO_VERSION=$(make get-calico-version)
-    echo "Installing Calico CNI ${CALICO_VERSION} via helm"
-    if [[ "${CIDR0:-}" =~ .*:.* ]]; then
-        echo "Cluster CIDR is IPv6"
-        CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico-ipv6/values.yaml"
-        CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
-    elif [[ "${CIDR1:-}" =~ .*:.* ]]; then
-        echo "Cluster CIDR is dual-stack"
-        CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico-dual-stack/values.yaml"
-        CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0},installation.calicoNetwork.ipPools[1].cidr=${CIDR1}"
-    else
-        echo "Cluster CIDR is IPv4"
-        CALICO_VALUES_FILE="${REPO_ROOT}/templates/addons/calico/values.yaml"
-        CIDR_STRING_VALUES="installation.calicoNetwork.ipPools[0].cidr=${CIDR0}"
-    fi
-    "${HELM}" upgrade calico --install --repo https://docs.tigera.io/calico/charts --version "${CALICO_VERSION}" tigera-operator -f "${CALICO_VALUES_FILE}" --set-string "${CIDR_STRING_VALUES}" --namespace calico-system || return 1
 }
 
 # install_cloud_provider_azure installs OOT cloud-provider-azure componentry onto the Cluster.
@@ -271,7 +254,7 @@ install_addons() {
     done
     # export the target cluster KUBECONFIG if not already set
     export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
-    until install_calico; do
+    until copy_kubeadm_config_map; do
         sleep 5
     done
     # install cloud-provider-azure components, if using out-of-tree

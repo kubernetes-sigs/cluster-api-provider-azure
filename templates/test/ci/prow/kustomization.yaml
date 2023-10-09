@@ -10,6 +10,7 @@ resources:
   - ../../../azure-cluster-identity
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
   - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
+  - ../../../addons/cluster-api-helm/calico.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
@@ -20,6 +21,7 @@ patchesStrategicMerge:
   - ../patches/windows-feature-gates.yaml
   - ../patches/windows-containerd-labels.yaml
   - ../patches/windows-server-version.yaml
+  - ../patches/cluster-label.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io

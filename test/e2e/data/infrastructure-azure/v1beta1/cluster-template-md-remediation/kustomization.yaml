@@ -3,7 +3,9 @@ bases:
   - ../bases/md.yaml
   - mhc.yaml
   - ../bases/azure-cluster-identity.yaml
+  - ../bases/calico.yaml
 
 patchesStrategicMerge:
 - ./md.yaml
 - ../patches/azurecluster-identity-ref.yaml
+- ../patches/cluster-label.yaml
