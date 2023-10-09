@@ -20,332 +20,205 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 var (
-	privateEndpoint1 = infrav1.PrivateEndpointSpec{
-		Name:                          "test-private-endpoint1",
-		ApplicationSecurityGroups:     []string{"asg1"},
-		PrivateLinkServiceConnections: []infrav1.PrivateLinkServiceConnection{{PrivateLinkServiceID: "testPl", RequestMessage: "Please approve my connection."}},
-		ManualApproval:                false,
+	fakePrivateEndpoint = PrivateEndpointSpec{
+		Name:                       "test_private_endpoint_1",
+		Namespace:                  "test_ns",
+		ResourceGroup:              "test_rg",
+		Location:                   "test_location",
+		CustomNetworkInterfaceName: "test_if_name",
+		PrivateIPAddresses:         []string{"1.2.3.4", "5.6.7.8"},
+		SubnetID:                   "test_subnet_id",
+		ApplicationSecurityGroups:  []string{"test_asg1", "test_asg2"},
+		ManualApproval:             false,
+		PrivateLinkServiceConnections: []PrivateLinkServiceConnection{
+			{
+				Name:                 "test_plsc_1",
+				PrivateLinkServiceID: "test_pl",
+				RequestMessage:       "Please approve my connection.",
+				GroupIDs:             []string{"aa", "bb"}},
+		},
+		AdditionalTags: infrav1.Tags{"test_tag1": "test_value1", "test_tag2": "test_value2"},
+		ClusterName:    "test_cluster",
 	}
 
-	privateEndpoint1Manual = infrav1.PrivateEndpointSpec{
-		Name:                          "test-private-endpoint-manual",
-		ApplicationSecurityGroups:     []string{"asg1"},
-		PrivateLinkServiceConnections: []infrav1.PrivateLinkServiceConnection{{PrivateLinkServiceID: "testPl", RequestMessage: "Please approve my connection.", GroupIDs: []string{"aa", "bb"}}},
-		ManualApproval:                true,
-		CustomNetworkInterfaceName:    "test-if-name",
-		PrivateIPAddresses:            []string{"10.0.0.1", "10.0.0.2"},
-		Location:                      "test-location",
+	fakeExtendedLocation = asonetworkv1.ExtendedLocation{
+		Name: ptr.To("extended_location_name"),
+		Type: ptr.To(asonetworkv1.ExtendedLocationType_EdgeZone),
 	}
 
-	privateEndpoint2 = infrav1.PrivateEndpointSpec{
-		Name:                          "test-private-endpoint2",
-		ApplicationSecurityGroups:     []string{"asg1"},
-		PrivateLinkServiceConnections: []infrav1.PrivateLinkServiceConnection{{PrivateLinkServiceID: "testPl", RequestMessage: "Please approve my connection.", GroupIDs: []string{"aa", "bb"}}},
-		ManualApproval:                false,
-		CustomNetworkInterfaceName:    "test-if-name",
-		PrivateIPAddresses:            []string{"10.0.0.1", "10.0.0.2"},
-		Location:                      "test-location",
+	fakeASOPrivateEndpoint = asonetworkv1.PrivateEndpoint{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fakePrivateEndpoint.Name,
+			Namespace: fakePrivateEndpoint.Namespace,
+		},
+		Spec: asonetworkv1.PrivateEndpoint_Spec{
+			ApplicationSecurityGroups: []asonetworkv1.ApplicationSecurityGroupSpec_PrivateEndpoint_SubResourceEmbedded{
+				{
+					Reference: &genruntime.ResourceReference{
+						ARMID: fakePrivateEndpoint.ApplicationSecurityGroups[0],
+					},
+				},
+				{
+					Reference: &genruntime.ResourceReference{
+						ARMID: fakePrivateEndpoint.ApplicationSecurityGroups[1],
+					},
+				},
+			},
+			AzureName: fakePrivateEndpoint.Name,
+			PrivateLinkServiceConnections: []asonetworkv1.PrivateLinkServiceConnection{{
+				Name: ptr.To(fakePrivateEndpoint.PrivateLinkServiceConnections[0].Name),
+				PrivateLinkServiceReference: &genruntime.ResourceReference{
+					ARMID: fakePrivateEndpoint.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
+				},
+				GroupIds:       fakePrivateEndpoint.PrivateLinkServiceConnections[0].GroupIDs,
+				RequestMessage: ptr.To(fakePrivateEndpoint.PrivateLinkServiceConnections[0].RequestMessage),
+			}},
+			Owner: &genruntime.KnownResourceReference{
+				Name: fakePrivateEndpoint.ResourceGroup,
+			},
+			Subnet: &asonetworkv1.Subnet_PrivateEndpoint_SubResourceEmbedded{
+				Reference: &genruntime.ResourceReference{
+					ARMID: fakePrivateEndpoint.SubnetID,
+				},
+			},
+			IpConfigurations: []asonetworkv1.PrivateEndpointIPConfiguration{
+				{
+					PrivateIPAddress: ptr.To(fakePrivateEndpoint.PrivateIPAddresses[0]),
+				},
+				{
+					PrivateIPAddress: ptr.To(fakePrivateEndpoint.PrivateIPAddresses[1]),
+				},
+			},
+			CustomNetworkInterfaceName: ptr.To(fakePrivateEndpoint.CustomNetworkInterfaceName),
+			Location:                   ptr.To(fakePrivateEndpoint.Location),
+			Tags:                       map[string]string{"sigs.k8s.io_cluster-api-provider-azure_cluster_test_cluster": "owned", "Name": "test_private_endpoint_1", "test_tag1": "test_value1", "test_tag2": "test_value2"},
+		},
+	}
+
+	fakeASOPrivateEndpointsStatus = asonetworkv1.PrivateEndpoint_STATUS_PrivateEndpoint_SubResourceEmbedded{
+		ApplicationSecurityGroups: []asonetworkv1.ApplicationSecurityGroup_STATUS_PrivateEndpoint_SubResourceEmbedded{
+			{
+				Id: ptr.To(fakePrivateEndpoint.ApplicationSecurityGroups[0]),
+			},
+			{
+				Id: ptr.To(fakePrivateEndpoint.ApplicationSecurityGroups[1]),
+			},
+		},
+		Name: ptr.To(fakePrivateEndpoint.Name),
+		// ... other fields truncated for brevity
 	}
 )
+
+func getASOPrivateEndpoint(changes ...func(*asonetworkv1.PrivateEndpoint)) *asonetworkv1.PrivateEndpoint {
+	privateEndpoint := fakeASOPrivateEndpoint.DeepCopy()
+	for _, change := range changes {
+		change(privateEndpoint)
+	}
+	return privateEndpoint
+}
 
 func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          *PrivateEndpointSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      *asonetworkv1.PrivateEndpoint
+		expect        func(g *WithT, result asonetworkv1.PrivateEndpoint)
 		expectedError string
 	}{
 		{
-			name: "PrivateEndpoint already exists with the same config",
-			spec: &PrivateEndpointSpec{
-				Name:                      privateEndpoint1.Name,
-				ResourceGroup:             "test-group",
-				ClusterName:               "my-cluster",
-				ApplicationSecurityGroups: privateEndpoint1.ApplicationSecurityGroups,
-				PrivateLinkServiceConnections: []PrivateLinkServiceConnection{{
-					Name:                 privateEndpoint1.PrivateLinkServiceConnections[0].Name,
-					GroupIDs:             privateEndpoint1.PrivateLinkServiceConnections[0].GroupIDs,
-					PrivateLinkServiceID: privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
-					RequestMessage:       privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage,
-				}},
-				SubnetID: "test-subnet",
-			},
-			// See https://learn.microsoft.com/en-us/rest/api/virtualnetwork/private-endpoints/get?tabs=Go for more options
-			existing: armnetwork.PrivateEndpoint{
-				Name: ptr.To("test-private-endpoint1"),
-				Properties: &armnetwork.PrivateEndpointProperties{
-					Subnet: &armnetwork.Subnet{
-						ID: ptr.To("test-subnet"),
-					},
-					ApplicationSecurityGroups: []*armnetwork.ApplicationSecurityGroup{{
-						ID: ptr.To("asg1"),
-					}},
-					CustomNetworkInterfaceName: ptr.To(""),
-					IPConfigurations:           []*armnetwork.PrivateEndpointIPConfiguration{},
-					PrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{{
-						Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
-						Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
-							GroupIDs:             nil,
-							RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
-						},
-					}},
-					ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{},
-					ProvisioningState:                   ptr.To(armnetwork.ProvisioningStateSucceeded),
-				},
-				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint1")},
-			},
-			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeNil())
-			},
-		},
-		{
-			name: "PrivateEndpoint without AppplicationSecurityGroups already exists with the same config",
-			spec: &PrivateEndpointSpec{
-				Name:                      privateEndpoint1.Name,
-				ResourceGroup:             "test-group",
-				ClusterName:               "my-cluster",
-				ApplicationSecurityGroups: nil,
-				PrivateLinkServiceConnections: []PrivateLinkServiceConnection{{
-					Name:                 privateEndpoint1.PrivateLinkServiceConnections[0].Name,
-					GroupIDs:             privateEndpoint1.PrivateLinkServiceConnections[0].GroupIDs,
-					PrivateLinkServiceID: privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
-					RequestMessage:       privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage,
-				}},
-				SubnetID: "test-subnet",
-			},
-			// See https://learn.microsoft.com/en-us/rest/api/virtualnetwork/private-endpoints/get?tabs=Go for more options
-			existing: armnetwork.PrivateEndpoint{
-				Name: ptr.To("test-private-endpoint1"),
-				Properties: &armnetwork.PrivateEndpointProperties{
-					Subnet: &armnetwork.Subnet{
-						ID: ptr.To("test-subnet"),
-					},
-					ApplicationSecurityGroups:  nil,
-					CustomNetworkInterfaceName: ptr.To(""),
-					IPConfigurations:           []*armnetwork.PrivateEndpointIPConfiguration{},
-					PrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{{
-						Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
-						Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
-							GroupIDs:             nil,
-							RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
-						},
-					}},
-					ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{},
-					ProvisioningState:                   ptr.To(armnetwork.ProvisioningStateSucceeded),
-				},
-				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint1")},
-			},
-			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeNil())
-			},
-		},
-		{
-			name: "PrivateEndpoint with manual approval already exists with the same config",
-			spec: &PrivateEndpointSpec{
-				Name:                      privateEndpoint1Manual.Name,
-				ResourceGroup:             "test-group",
-				ClusterName:               "my-cluster",
-				ApplicationSecurityGroups: privateEndpoint1Manual.ApplicationSecurityGroups,
-				PrivateLinkServiceConnections: []PrivateLinkServiceConnection{{
-					Name:                 privateEndpoint1Manual.PrivateLinkServiceConnections[0].Name,
-					GroupIDs:             privateEndpoint1Manual.PrivateLinkServiceConnections[0].GroupIDs,
-					PrivateLinkServiceID: privateEndpoint1Manual.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
-					RequestMessage:       privateEndpoint1Manual.PrivateLinkServiceConnections[0].RequestMessage,
-				}},
-				SubnetID:       "test-subnet",
-				ManualApproval: privateEndpoint1Manual.ManualApproval,
-			},
-			// See https://learn.microsoft.com/en-us/rest/api/virtualnetwork/private-endpoints/get?tabs=Go for more options
-			existing: armnetwork.PrivateEndpoint{
-				Name: ptr.To("test-private-endpoint-manual"),
-				Properties: &armnetwork.PrivateEndpointProperties{
-					Subnet: &armnetwork.Subnet{
-						ID: ptr.To("test-subnet"),
-					},
-					ApplicationSecurityGroups: []*armnetwork.ApplicationSecurityGroup{{
-						ID: ptr.To("asg1"),
-					}},
-					CustomNetworkInterfaceName: ptr.To(""),
-					IPConfigurations:           []*armnetwork.PrivateEndpointIPConfiguration{},
-					ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{{
-						Name: ptr.To(privateEndpoint1Manual.PrivateLinkServiceConnections[0].Name),
-						Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: ptr.To(privateEndpoint1Manual.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
-							GroupIDs:             []*string{ptr.To("aa"), ptr.To("bb")},
-							RequestMessage:       ptr.To(privateEndpoint1Manual.PrivateLinkServiceConnections[0].RequestMessage),
-						},
-					}},
-					PrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{},
-					ProvisioningState:             ptr.To(armnetwork.ProvisioningStateSucceeded),
-				},
-				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint-manual")},
-			},
-			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeNil())
-			},
-		},
-		{
-			name: "PrivateEndpoint already exists, but missing an IP address",
-			spec: &PrivateEndpointSpec{
-				Name:                      privateEndpoint2.Name,
-				Location:                  privateEndpoint2.Location,
-				ResourceGroup:             "test-group",
-				ClusterName:               "my-cluster",
-				ApplicationSecurityGroups: privateEndpoint2.ApplicationSecurityGroups,
-				PrivateLinkServiceConnections: []PrivateLinkServiceConnection{{
-					Name:                 privateEndpoint2.PrivateLinkServiceConnections[0].Name,
-					GroupIDs:             privateEndpoint2.PrivateLinkServiceConnections[0].GroupIDs,
-					PrivateLinkServiceID: privateEndpoint2.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
-					RequestMessage:       privateEndpoint2.PrivateLinkServiceConnections[0].RequestMessage,
-				}},
-				SubnetID:                   "test-subnet",
-				PrivateIPAddresses:         privateEndpoint2.PrivateIPAddresses,
-				CustomNetworkInterfaceName: "test-if-name",
-			},
-			existing: armnetwork.PrivateEndpoint{
-				Name:     ptr.To("test-private-endpoint2"),
-				Location: ptr.To("test-location"),
-				Properties: &armnetwork.PrivateEndpointProperties{
-					Subnet: &armnetwork.Subnet{
-						ID: ptr.To("test-subnet"),
-					},
-					ApplicationSecurityGroups: []*armnetwork.ApplicationSecurityGroup{{
-						ID: ptr.To("asg1"),
-					}},
-					PrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{{
-						Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
-						Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
-							GroupIDs:             []*string{ptr.To("aa"), ptr.To("bb")},
-							RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
-						},
-					}},
-					ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{},
-					ProvisioningState:                   ptr.To(armnetwork.ProvisioningStateSucceeded),
-					IPConfigurations: []*armnetwork.PrivateEndpointIPConfiguration{
-						{
-							Properties: &armnetwork.PrivateEndpointIPConfigurationProperties{
-								PrivateIPAddress: ptr.To("10.0.0.1"),
-							},
-						},
-					},
-					CustomNetworkInterfaceName: ptr.To("test-if-name"),
-				},
-				Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint2")},
-			},
-			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateEndpoint{}))
-				g.Expect(result).To(Equal(armnetwork.PrivateEndpoint{
-					Name:     ptr.To("test-private-endpoint2"),
-					Location: ptr.To("test-location"),
-					Properties: &armnetwork.PrivateEndpointProperties{
-						Subnet: &armnetwork.Subnet{
-							ID: ptr.To("test-subnet"),
-							Properties: &armnetwork.SubnetPropertiesFormat{
-								PrivateEndpointNetworkPolicies:    ptr.To(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled),
-								PrivateLinkServiceNetworkPolicies: ptr.To(armnetwork.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled),
-							},
-						},
-						ApplicationSecurityGroups: []*armnetwork.ApplicationSecurityGroup{{
-							ID: ptr.To("asg1"),
-						}},
-						PrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{{
-							Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
-							Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
-								PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
-								GroupIDs:             []*string{ptr.To("aa"), ptr.To("bb")},
-								RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
-							},
-						}},
-						ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{},
-						IPConfigurations: []*armnetwork.PrivateEndpointIPConfiguration{
-							{
-								Properties: &armnetwork.PrivateEndpointIPConfigurationProperties{
-									PrivateIPAddress: ptr.To("10.0.0.1"),
-								},
-							},
-							{
-								Properties: &armnetwork.PrivateEndpointIPConfigurationProperties{
-									PrivateIPAddress: ptr.To("10.0.0.2"),
-								},
-							},
-						},
-						CustomNetworkInterfaceName: ptr.To("test-if-name"),
-					},
-					Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint2")},
-				}))
-			},
-		},
-		{
-			name: "PrivateEndpoint doesn't exist",
-			spec: &PrivateEndpointSpec{
-				Name:                      privateEndpoint2.Name,
-				Location:                  privateEndpoint2.Location,
-				ResourceGroup:             "test-group",
-				ClusterName:               "my-cluster",
-				ApplicationSecurityGroups: privateEndpoint2.ApplicationSecurityGroups,
-				PrivateLinkServiceConnections: []PrivateLinkServiceConnection{{
-					Name:                 privateEndpoint2.PrivateLinkServiceConnections[0].Name,
-					GroupIDs:             privateEndpoint2.PrivateLinkServiceConnections[0].GroupIDs,
-					PrivateLinkServiceID: privateEndpoint2.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
-					RequestMessage:       privateEndpoint2.PrivateLinkServiceConnections[0].RequestMessage,
-				}},
-				SubnetID:                   "test-subnet",
-				PrivateIPAddresses:         privateEndpoint2.PrivateIPAddresses,
-				CustomNetworkInterfaceName: "test-if-name",
-			},
+			name:     "Creating a new PrivateEndpoint",
+			spec:     ptr.To(fakePrivateEndpoint),
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
-				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateEndpoint{}))
-				g.Expect(result).To(Equal(armnetwork.PrivateEndpoint{
-					Name:     ptr.To("test-private-endpoint2"),
-					Location: ptr.To("test-location"),
-					Properties: &armnetwork.PrivateEndpointProperties{
-						Subnet: &armnetwork.Subnet{
-							ID: ptr.To("test-subnet"),
-							Properties: &armnetwork.SubnetPropertiesFormat{
-								PrivateEndpointNetworkPolicies:    ptr.To(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled),
-								PrivateLinkServiceNetworkPolicies: ptr.To(armnetwork.VirtualNetworkPrivateLinkServiceNetworkPoliciesEnabled),
-							},
-						},
-						ApplicationSecurityGroups: []*armnetwork.ApplicationSecurityGroup{{
-							ID: ptr.To("asg1"),
-						}},
-						PrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{{
-							Name: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].Name),
-							Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
-								PrivateLinkServiceID: ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].PrivateLinkServiceID),
-								GroupIDs:             []*string{ptr.To("aa"), ptr.To("bb")},
-								RequestMessage:       ptr.To(privateEndpoint1.PrivateLinkServiceConnections[0].RequestMessage),
-							},
-						}},
-						ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{},
-						IPConfigurations: []*armnetwork.PrivateEndpointIPConfiguration{
-							{
-								Properties: &armnetwork.PrivateEndpointIPConfigurationProperties{
-									PrivateIPAddress: ptr.To("10.0.0.1"),
-								},
-							},
-							{
-								Properties: &armnetwork.PrivateEndpointIPConfigurationProperties{
-									PrivateIPAddress: ptr.To("10.0.0.2"),
-								},
-							},
-						},
-						CustomNetworkInterfaceName: ptr.To("test-if-name"),
+			expect: func(g *WithT, result asonetworkv1.PrivateEndpoint) {
+				g.Expect(result).To(Not(BeNil()))
+
+				// ObjectMeta is populated later in the codeflow
+				g.Expect(result.ObjectMeta).To(Equal(metav1.ObjectMeta{}))
+
+				// Spec is populated from the spec passed in
+				g.Expect(result.Spec).To(Equal(getASOPrivateEndpoint().Spec))
+			},
+		},
+		{
+			name: "user updates to private endpoints Extended Location should be accepted",
+			spec: ptr.To(fakePrivateEndpoint),
+			existing: getASOPrivateEndpoint(
+				// user added ExtendedLocation
+				func(endpoint *asonetworkv1.PrivateEndpoint) {
+					endpoint.Spec.ExtendedLocation = fakeExtendedLocation.DeepCopy()
+				},
+				// user added Status
+				func(endpoint *asonetworkv1.PrivateEndpoint) {
+					endpoint.Status = fakeASOPrivateEndpointsStatus
+				},
+			),
+			expect: func(g *WithT, result asonetworkv1.PrivateEndpoint) {
+				g.Expect(result).To(Not(BeNil()))
+				resultantASOPrivateEndpoint := getASOPrivateEndpoint(
+					func(endpoint *asonetworkv1.PrivateEndpoint) {
+						endpoint.Spec.ExtendedLocation = fakeExtendedLocation.DeepCopy()
 					},
-					Tags: map[string]*string{"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"), "Name": ptr.To("test-private-endpoint2")},
-				}))
+				)
+
+				// ObjectMeta should be carried over from existing private endpoint.
+				g.Expect(result.ObjectMeta).To(Equal(resultantASOPrivateEndpoint.ObjectMeta))
+
+				// Extended location addition is accepted.
+				g.Expect(result.Spec).To(Equal(resultantASOPrivateEndpoint.Spec))
+
+				// Status should be carried over.
+				g.Expect(result.Status).To(Equal(fakeASOPrivateEndpointsStatus))
+			},
+		},
+		{
+			name: "user updates ASO's private endpoint resource and capz should overwrite it",
+			spec: ptr.To(fakePrivateEndpoint),
+			existing: getASOPrivateEndpoint(
+				// add ExtendedLocation
+				func(endpoint *asonetworkv1.PrivateEndpoint) {
+					endpoint.Spec.ExtendedLocation = fakeExtendedLocation.DeepCopy()
+				},
+
+				// User also updates private IP addresses and location.
+				// This change should be overwritten by CAPZ.
+				func(endpoint *asonetworkv1.PrivateEndpoint) {
+					endpoint.Spec.IpConfigurations = []asonetworkv1.PrivateEndpointIPConfiguration{
+						{
+							PrivateIPAddress: ptr.To("9.9.9.9"),
+						},
+					}
+					endpoint.Spec.Location = ptr.To("new_location")
+				},
+				// add Status
+				func(endpoint *asonetworkv1.PrivateEndpoint) {
+					endpoint.Status = fakeASOPrivateEndpointsStatus
+				},
+			),
+			expect: func(g *WithT, result asonetworkv1.PrivateEndpoint) {
+				g.Expect(result).NotTo(BeNil())
+				resultantASOPrivateEndpoint := getASOPrivateEndpoint(
+					func(endpoint *asonetworkv1.PrivateEndpoint) {
+						endpoint.Spec.ExtendedLocation = fakeExtendedLocation.DeepCopy()
+					},
+				)
+
+				// user changes except ExtendedLocation should be overwritten by CAPZ.
+				g.Expect(result.ObjectMeta).To(Equal(resultantASOPrivateEndpoint.ObjectMeta))
+
+				// Extended location addition is accepted.
+				g.Expect(result.Spec).To(Equal(resultantASOPrivateEndpoint.Spec))
+
+				// Status should be carried over.
+				g.Expect(result.Status).To(Equal(fakeASOPrivateEndpointsStatus))
 			},
 		},
 	}
@@ -363,7 +236,7 @@ func TestParameters(t *testing.T) {
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
-			tc.expect(g, result)
+			tc.expect(g, *result)
 		})
 	}
 }

@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
@@ -3384,6 +3385,249 @@ func TestVNetPeerings(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.VnetPeeringSpecs()
 			g.Expect(tc.want).To(Equal(got))
+		})
+	}
+}
+
+func TestPrivateEndpointSpecs(t *testing.T) {
+	tests := []struct {
+		name         string
+		clusterScope ClusterScope
+		want         []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint]
+	}{
+		{
+			name: "returns empty private endpoints list if no subnets are specified",
+			clusterScope: ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{
+							Subnets: infrav1.Subnets{},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			want: make([]azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint], 0),
+		},
+		{
+			name: "returns empty private endpoints list if no private endpoints are specified",
+			clusterScope: ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{
+							Subnets: []infrav1.SubnetSpec{
+								{
+									SubnetClassSpec: infrav1.SubnetClassSpec{
+										PrivateEndpoints: infrav1.PrivateEndpoints{},
+									},
+								},
+							},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			want: make([]azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint], 0),
+		},
+		{
+			name: "returns list of private endpoint specs if private endpoints are specified",
+			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-cluster",
+						Namespace: "dummy-ns",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "dummy-rg",
+						NetworkSpec: infrav1.NetworkSpec{
+							Subnets: []infrav1.SubnetSpec{
+								{
+									ID: "dummy-subnet-id",
+									SubnetClassSpec: infrav1.SubnetClassSpec{
+										PrivateEndpoints: []infrav1.PrivateEndpointSpec{
+											{
+												Name:                       "my-private-endpoint",
+												Location:                   "westus2",
+												CustomNetworkInterfaceName: "my-custom-nic",
+												PrivateIPAddresses: []string{
+													"IP1",
+													"IP2",
+												},
+												ApplicationSecurityGroups: []string{
+													"ASG1",
+													"ASG2",
+												},
+												PrivateLinkServiceConnections: []infrav1.PrivateLinkServiceConnection{
+													{
+														Name:                 "my-pls-connection",
+														RequestMessage:       "my-request-message",
+														PrivateLinkServiceID: "my-pls-id",
+														GroupIDs: []string{
+															"my-group-id-1",
+														},
+													},
+												},
+											},
+											{
+												Name:                       "my-private-endpoint-2",
+												Location:                   "westus2",
+												CustomNetworkInterfaceName: "my-custom-nic-2",
+												PrivateIPAddresses: []string{
+													"IP3",
+													"IP4",
+												},
+												ApplicationSecurityGroups: []string{
+													"ASG3",
+													"ASG4",
+												},
+												PrivateLinkServiceConnections: []infrav1.PrivateLinkServiceConnection{
+													{
+														Name:                 "my-pls-connection",
+														RequestMessage:       "my-request-message",
+														PrivateLinkServiceID: "my-pls-id",
+														GroupIDs: []string{
+															"my-group-id-1",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									ID: "dummy-subnet-id-2",
+									SubnetClassSpec: infrav1.SubnetClassSpec{
+										PrivateEndpoints: []infrav1.PrivateEndpointSpec{
+											{
+												Name:                       "my-private-endpoint-3",
+												Location:                   "westus2",
+												CustomNetworkInterfaceName: "my-custom-nic-3",
+												PrivateIPAddresses: []string{
+													"IP5",
+													"IP6",
+												},
+												ApplicationSecurityGroups: []string{
+													"ASG5",
+													"ASG6",
+												},
+												PrivateLinkServiceConnections: []infrav1.PrivateLinkServiceConnection{
+													{
+														Name:                 "my-pls-connection",
+														RequestMessage:       "my-request-message",
+														PrivateLinkServiceID: "my-pls-id",
+														GroupIDs: []string{
+															"my-group-id-1",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint]{
+				&privateendpoints.PrivateEndpointSpec{
+					Name:                       "my-private-endpoint",
+					Namespace:                  "dummy-ns",
+					ResourceGroup:              "dummy-rg",
+					Location:                   "westus2",
+					CustomNetworkInterfaceName: "my-custom-nic",
+					PrivateIPAddresses: []string{
+						"IP1",
+						"IP2",
+					},
+					SubnetID: "dummy-subnet-id",
+					ApplicationSecurityGroups: []string{
+						"ASG1",
+						"ASG2",
+					},
+					ClusterName: "my-cluster",
+					PrivateLinkServiceConnections: []privateendpoints.PrivateLinkServiceConnection{
+						{
+							Name:                 "my-pls-connection",
+							RequestMessage:       "my-request-message",
+							PrivateLinkServiceID: "my-pls-id",
+							GroupIDs: []string{
+								"my-group-id-1",
+							},
+						},
+					},
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+				&privateendpoints.PrivateEndpointSpec{
+					Name:                       "my-private-endpoint-2",
+					Namespace:                  "dummy-ns",
+					ResourceGroup:              "dummy-rg",
+					Location:                   "westus2",
+					CustomNetworkInterfaceName: "my-custom-nic-2",
+					PrivateIPAddresses: []string{
+						"IP3",
+						"IP4",
+					},
+					SubnetID: "dummy-subnet-id",
+					ApplicationSecurityGroups: []string{
+						"ASG3",
+						"ASG4",
+					},
+					ClusterName: "my-cluster",
+					PrivateLinkServiceConnections: []privateendpoints.PrivateLinkServiceConnection{
+						{
+							Name:                 "my-pls-connection",
+							RequestMessage:       "my-request-message",
+							PrivateLinkServiceID: "my-pls-id",
+							GroupIDs: []string{
+								"my-group-id-1",
+							},
+						},
+					},
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+				&privateendpoints.PrivateEndpointSpec{
+					Name:                       "my-private-endpoint-3",
+					Namespace:                  "dummy-ns",
+					ResourceGroup:              "dummy-rg",
+					Location:                   "westus2",
+					CustomNetworkInterfaceName: "my-custom-nic-3",
+					PrivateIPAddresses: []string{
+						"IP5",
+						"IP6",
+					},
+					SubnetID: "dummy-subnet-id-2",
+					ApplicationSecurityGroups: []string{
+						"ASG5",
+						"ASG6",
+					},
+					ClusterName: "my-cluster",
+					PrivateLinkServiceConnections: []privateendpoints.PrivateLinkServiceConnection{
+						{
+							Name:                 "my-pls-connection",
+							RequestMessage:       "my-request-message",
+							PrivateLinkServiceID: "my-pls-id",
+							GroupIDs: []string{
+								"my-group-id-1",
+							},
+						},
+					},
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := tt.clusterScope.PrivateEndpointSpecs(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("PrivateEndpointSpecs() = %s, want %s", specArrayToString(got), specArrayToString(tt.want))
+			}
 		})
 	}
 }

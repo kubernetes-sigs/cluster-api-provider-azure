@@ -65,10 +65,6 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	if err != nil {
 		return nil, err
 	}
-	privateEndpointsSvc, err := privateendpoints.New(scope)
-	if err != nil {
-		return nil, err
-	}
 	publicIPsSvc, err := publicips.New(scope)
 	if err != nil {
 		return nil, err
@@ -106,8 +102,8 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			vnetPeeringsSvc,
 			loadbalancersSvc,
 			privateDNSSvc,
+			privateendpoints.New(scope),
 			bastionhosts.New(scope),
-			privateEndpointsSvc,
 		},
 		skuCache: skuCache,
 	}

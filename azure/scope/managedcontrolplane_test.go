@@ -18,9 +18,12 @@ package scope
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -1024,6 +1028,179 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 			g.Expect(err).To(Succeed())
 			localAccountsDisabled := s.AreLocalAccountsDisabled()
 			g.Expect(localAccountsDisabled).To(Equal(c.Expected))
+		})
+	}
+}
+
+func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Input    ManagedControlPlaneScopeParams
+		Expected []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint]
+		Err      string
+	}{
+		{
+			Name: "returns empty private endpoints list if no subnets are specified",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{},
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
+					},
+				},
+			},
+			Expected: make([]azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint], 0),
+		},
+		{
+			Name: "returns empty private endpoints list if no private endpoints are specified",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+									Subnet: infrav1.ManagedControlPlaneSubnet{
+										PrivateEndpoints: infrav1.PrivateEndpoints{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Expected: make([]azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint], 0),
+		},
+		{
+			Name: "returns list of private endpoint specs if private endpoints are specified",
+			Input: ManagedControlPlaneScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-cluster",
+						Namespace: "dummy-ns",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-cluster",
+						Namespace: "dummy-ns",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000001",
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								ResourceGroup: "dummy-rg",
+								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+									Name: "vnet1",
+									Subnet: infrav1.ManagedControlPlaneSubnet{
+										Name: "subnet1",
+										PrivateEndpoints: infrav1.PrivateEndpoints{
+											{
+												Name:     "my-private-endpoint",
+												Location: "westus2",
+												PrivateLinkServiceConnections: []infrav1.PrivateLinkServiceConnection{
+													{
+														Name:                 "my-pls-connection",
+														PrivateLinkServiceID: "my-pls-id",
+														GroupIDs: []string{
+															"my-group-id-1",
+														},
+														RequestMessage: "my-request-message",
+													},
+												},
+												CustomNetworkInterfaceName: "my-custom-nic",
+												PrivateIPAddresses: []string{
+													"IP1",
+													"IP2",
+												},
+												ApplicationSecurityGroups: []string{
+													"ASG1",
+													"ASG2",
+												},
+												ManualApproval: true,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Expected: []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint]{
+				&privateendpoints.PrivateEndpointSpec{
+					Name:                       "my-private-endpoint",
+					Namespace:                  "dummy-ns",
+					ResourceGroup:              "dummy-rg",
+					Location:                   "westus2",
+					CustomNetworkInterfaceName: "my-custom-nic",
+					PrivateIPAddresses: []string{
+						"IP1",
+						"IP2",
+					},
+					SubnetID: "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/dummy-rg/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1",
+					ApplicationSecurityGroups: []string{
+						"ASG1",
+						"ASG2",
+					},
+					ClusterName: "my-cluster",
+					PrivateLinkServiceConnections: []privateendpoints.PrivateLinkServiceConnection{
+						{
+							Name:                 "my-pls-connection",
+							RequestMessage:       "my-request-message",
+							PrivateLinkServiceID: "my-pls-id",
+							GroupIDs: []string{
+								"my-group-id-1",
+							},
+						},
+					},
+					ManualApproval: true,
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			s := &ManagedControlPlaneScope{
+				ControlPlane: c.Input.ControlPlane,
+				Cluster:      c.Input.Cluster,
+			}
+			if got := s.PrivateEndpointSpecs(); !reflect.DeepEqual(got, c.Expected) {
+				t.Errorf("PrivateEndpointSpecs() = %s, want %s", specArrayToString(got), specArrayToString(c.Expected))
+			}
 		})
 	}
 }

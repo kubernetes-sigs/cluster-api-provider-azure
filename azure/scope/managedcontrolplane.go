@@ -24,6 +24,7 @@ import (
 	"time"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
@@ -860,12 +861,13 @@ func (s *ManagedControlPlaneScope) AvailabilityStatusFilter(cond *clusterv1.Cond
 }
 
 // PrivateEndpointSpecs returns the private endpoint specs.
-func (s *ManagedControlPlaneScope) PrivateEndpointSpecs() []azure.ResourceSpecGetter {
-	privateEndpointSpecs := make([]azure.ResourceSpecGetter, len(s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints))
+func (s *ManagedControlPlaneScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint] {
+	privateEndpointSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint], 0, len(s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints))
 
 	for _, privateEndpoint := range s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints {
 		privateEndpointSpec := &privateendpoints.PrivateEndpointSpec{
 			Name:                       privateEndpoint.Name,
+			Namespace:                  s.Cluster.Namespace,
 			ResourceGroup:              s.VNetSpec().ResourceGroupName(),
 			Location:                   privateEndpoint.Location,
 			CustomNetworkInterfaceName: privateEndpoint.CustomNetworkInterfaceName,
@@ -891,7 +893,6 @@ func (s *ManagedControlPlaneScope) PrivateEndpointSpecs() []azure.ResourceSpecGe
 			}
 			privateEndpointSpec.PrivateLinkServiceConnections = append(privateEndpointSpec.PrivateLinkServiceConnections, pl)
 		}
-
 		privateEndpointSpecs = append(privateEndpointSpecs, privateEndpointSpec)
 	}
 
