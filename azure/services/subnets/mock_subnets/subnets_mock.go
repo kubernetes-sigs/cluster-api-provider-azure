@@ -27,11 +27,12 @@ package mock_subnets
 import (
 	reflect "reflect"
 
-	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	v1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MockSubnetScope is a mock of SubnetScope interface.
@@ -57,60 +58,18 @@ func (m *MockSubnetScope) EXPECT() *MockSubnetScopeMockRecorder {
 	return m.recorder
 }
 
-// BaseURI mocks base method.
-func (m *MockSubnetScope) BaseURI() string {
+// ClusterName mocks base method.
+func (m *MockSubnetScope) ClusterName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
+	ret := m.ctrl.Call(m, "ClusterName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockSubnetScopeMockRecorder) BaseURI() *gomock.Call {
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockSubnetScopeMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockSubnetScope)(nil).BaseURI))
-}
-
-// ClientID mocks base method.
-func (m *MockSubnetScope) ClientID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClientID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClientID indicates an expected call of ClientID.
-func (mr *MockSubnetScopeMockRecorder) ClientID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientID", reflect.TypeOf((*MockSubnetScope)(nil).ClientID))
-}
-
-// ClientSecret mocks base method.
-func (m *MockSubnetScope) ClientSecret() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClientSecret")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClientSecret indicates an expected call of ClientSecret.
-func (mr *MockSubnetScopeMockRecorder) ClientSecret() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockSubnetScope)(nil).ClientSecret))
-}
-
-// CloudEnvironment mocks base method.
-func (m *MockSubnetScope) CloudEnvironment() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloudEnvironment")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// CloudEnvironment indicates an expected call of CloudEnvironment.
-func (mr *MockSubnetScopeMockRecorder) CloudEnvironment() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockSubnetScope)(nil).CloudEnvironment))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockSubnetScope)(nil).ClusterName))
 }
 
 // DeleteLongRunningOperationState mocks base method.
@@ -123,6 +82,20 @@ func (m *MockSubnetScope) DeleteLongRunningOperationState(arg0, arg1, arg2 strin
 func (mr *MockSubnetScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockSubnetScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
+}
+
+// GetClient mocks base method.
+func (m *MockSubnetScope) GetClient() client.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(client.Client)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient.
+func (mr *MockSubnetScopeMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockSubnetScope)(nil).GetClient))
 }
 
 // GetLongRunningOperationState mocks base method.
@@ -139,34 +112,6 @@ func (mr *MockSubnetScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockSubnetScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
 }
 
-// HashKey mocks base method.
-func (m *MockSubnetScope) HashKey() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HashKey")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// HashKey indicates an expected call of HashKey.
-func (mr *MockSubnetScopeMockRecorder) HashKey() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockSubnetScope)(nil).HashKey))
-}
-
-// IsVnetManaged mocks base method.
-func (m *MockSubnetScope) IsVnetManaged() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockSubnetScopeMockRecorder) IsVnetManaged() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockSubnetScope)(nil).IsVnetManaged))
-}
-
 // SetLongRunningOperationState mocks base method.
 func (m *MockSubnetScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 	m.ctrl.T.Helper()
@@ -180,10 +125,10 @@ func (mr *MockSubnetScopeMockRecorder) SetLongRunningOperationState(arg0 any) *g
 }
 
 // SubnetSpecs mocks base method.
-func (m *MockSubnetScope) SubnetSpecs() []azure.ResourceSpecGetter {
+func (m *MockSubnetScope) SubnetSpecs() []azure.ASOResourceSpecGetter[*v1api20201101.VirtualNetworksSubnet] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubnetSpecs")
-	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
+	ret0, _ := ret[0].([]azure.ASOResourceSpecGetter[*v1api20201101.VirtualNetworksSubnet])
 	return ret0
 }
 
@@ -191,48 +136,6 @@ func (m *MockSubnetScope) SubnetSpecs() []azure.ResourceSpecGetter {
 func (mr *MockSubnetScopeMockRecorder) SubnetSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubnetSpecs", reflect.TypeOf((*MockSubnetScope)(nil).SubnetSpecs))
-}
-
-// SubscriptionID mocks base method.
-func (m *MockSubnetScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockSubnetScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockSubnetScope)(nil).SubscriptionID))
-}
-
-// TenantID mocks base method.
-func (m *MockSubnetScope) TenantID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// TenantID indicates an expected call of TenantID.
-func (mr *MockSubnetScopeMockRecorder) TenantID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockSubnetScope)(nil).TenantID))
-}
-
-// Token mocks base method.
-func (m *MockSubnetScope) Token() azcore.TokenCredential {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Token")
-	ret0, _ := ret[0].(azcore.TokenCredential)
-	return ret0
-}
-
-// Token indicates an expected call of Token.
-func (mr *MockSubnetScopeMockRecorder) Token() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockSubnetScope)(nil).Token))
 }
 
 // UpdateDeleteStatus mocks base method.

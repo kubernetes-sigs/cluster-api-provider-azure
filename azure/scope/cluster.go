@@ -25,7 +25,8 @@ import (
 	"strconv"
 	"strings"
 
-	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
+	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -319,9 +320,9 @@ func (s *ClusterScope) RouteTableSpecs() []azure.ResourceSpecGetter {
 }
 
 // NatGatewaySpecs returns the node NAT gateway.
-func (s *ClusterScope) NatGatewaySpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway] {
+func (s *ClusterScope) NatGatewaySpecs() []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway] {
 	natGatewaySet := make(map[string]struct{})
-	var natGateways []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]
+	var natGateways []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]
 
 	// We ignore the control plane NAT gateway, as we will always use a LB to enable egress on the control plane.
 	for _, subnet := range s.NodeSubnets() {
@@ -368,17 +369,18 @@ func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
 }
 
 // SubnetSpecs returns the subnets specs.
-func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
+func (s *ClusterScope) SubnetSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet] {
 	numberOfSubnets := len(s.AzureCluster.Spec.NetworkSpec.Subnets)
 	if s.IsAzureBastionEnabled() {
 		numberOfSubnets++
 	}
 
-	subnetSpecs := make([]azure.ResourceSpecGetter, 0, numberOfSubnets)
+	subnetSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet], 0, numberOfSubnets)
 
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		subnetSpec := &subnets.SubnetSpec{
 			Name:              subnet.Name,
+			Namespace:         s.Namespace(),
 			ResourceGroup:     s.ResourceGroup(),
 			SubscriptionID:    s.SubscriptionID(),
 			CIDRs:             subnet.CIDRBlocks,
@@ -387,7 +389,6 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 			IsVNetManaged:     s.IsVnetManaged(),
 			RouteTableName:    subnet.RouteTable.Name,
 			SecurityGroupName: subnet.SecurityGroup.Name,
-			Role:              subnet.Role,
 			NatGatewayName:    subnet.NatGateway.Name,
 			ServiceEndpoints:  subnet.ServiceEndpoints,
 		}
@@ -398,6 +399,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 		azureBastionSubnet := s.AzureCluster.Spec.BastionSpec.AzureBastion.Subnet
 		subnetSpecs = append(subnetSpecs, &subnets.SubnetSpec{
 			Name:              azureBastionSubnet.Name,
+			Namespace:         s.Namespace(),
 			ResourceGroup:     s.ResourceGroup(),
 			SubscriptionID:    s.SubscriptionID(),
 			CIDRs:             azureBastionSubnet.CIDRBlocks,
@@ -406,7 +408,6 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 			IsVNetManaged:     s.IsVnetManaged(),
 			SecurityGroupName: azureBastionSubnet.SecurityGroup.Name,
 			RouteTableName:    azureBastionSubnet.RouteTable.Name,
-			Role:              azureBastionSubnet.Role,
 			ServiceEndpoints:  azureBastionSubnet.ServiceEndpoints,
 		})
 	}
@@ -416,16 +417,28 @@ func (s *ClusterScope) SubnetSpecs() []azure.ResourceSpecGetter {
 
 // GroupSpecs returns the resource group spec.
 func (s *ClusterScope) GroupSpecs() []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup] {
-	return []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+	owner := *metav1.NewControllerRef(s.AzureCluster, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind))
+	specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
 		&groups.GroupSpec{
 			Name:           s.ResourceGroup(),
 			Namespace:      s.Namespace(),
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
-			Owner:          *metav1.NewControllerRef(s.AzureCluster, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind)),
+			Owner:          owner,
 		},
 	}
+	if s.Vnet().ResourceGroup != s.ResourceGroup() {
+		specs = append(specs, &groups.GroupSpec{
+			Name:           s.Vnet().ResourceGroup,
+			Namespace:      s.Namespace(),
+			Location:       s.Location(),
+			ClusterName:    s.ClusterName(),
+			AdditionalTags: s.AdditionalTags(),
+			Owner:          owner,
+		})
+	}
+	return specs
 }
 
 // VnetPeeringSpecs returns the virtual network peering specs.
@@ -464,10 +477,11 @@ func (s *ClusterScope) VnetPeeringSpecs() []azure.ResourceSpecGetter {
 }
 
 // VNetSpec returns the virtual network spec.
-func (s *ClusterScope) VNetSpec() azure.ResourceSpecGetter {
+func (s *ClusterScope) VNetSpec() azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetwork] {
 	return &virtualnetworks.VNetSpec{
 		ResourceGroup:    s.Vnet().ResourceGroup,
 		Name:             s.Vnet().Name,
+		Namespace:        s.Namespace(),
 		CIDRs:            s.Vnet().CIDRBlocks,
 		ExtendedLocation: s.ExtendedLocation(),
 		Location:         s.Location(),
@@ -537,7 +551,7 @@ func (s *ClusterScope) AzureBastion() *infrav1.AzureBastion {
 }
 
 // AzureBastionSpec returns the bastion spec.
-func (s *ClusterScope) AzureBastionSpec() azure.ASOResourceSpecGetter[*asonetworkv1.BastionHost] {
+func (s *ClusterScope) AzureBastionSpec() azure.ASOResourceSpecGetter[*asonetworkv1api20220701.BastionHost] {
 	if s.IsAzureBastionEnabled() {
 		subnetID := azure.SubnetID(s.SubscriptionID(), s.ResourceGroup(), s.Vnet().Name, s.AzureBastion().Subnet.Name)
 		publicIPID := azure.PublicIPID(s.SubscriptionID(), s.ResourceGroup(), s.AzureBastion().PublicIP.Name)
@@ -1067,7 +1081,7 @@ func (s *ClusterScope) SetAnnotation(key, value string) {
 }
 
 // PrivateEndpointSpecs returns the private endpoint specs.
-func (s *ClusterScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint] {
+func (s *ClusterScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateEndpoint] {
 	subnetsList := s.AzureCluster.Spec.NetworkSpec.Subnets
 	numberOfSubnets := len(subnetsList)
 	if s.IsAzureBastionEnabled() {
@@ -1077,7 +1091,7 @@ func (s *ClusterScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*aso
 
 	// privateEndpointSpecs will be an empty list if no private endpoints were found.
 	// We pre-allocate the list to avoid unnecessary allocations during append.
-	privateEndpointSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint], 0, numberOfSubnets)
+	privateEndpointSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateEndpoint], 0, numberOfSubnets)
 
 	for _, subnet := range subnetsList {
 		for _, privateEndpoint := range subnet.PrivateEndpoints {
