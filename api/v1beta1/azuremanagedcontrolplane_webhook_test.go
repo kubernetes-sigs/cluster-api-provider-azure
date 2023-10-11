@@ -124,6 +124,46 @@ func TestValidatingWebhook(t *testing.T) {
 		expectErr bool
 	}{
 		{
+			name: "InValid Version ..",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: ptr.To("192.168.0.0"),
+					Version:      "..",
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "InValid Version v1.20.",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: ptr.To("192.168.0.0"),
+					Version:      "v1.20.",
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "InValid Version v1.20.a",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: ptr.To("192.168.0.0"),
+					Version:      "v1.20.a",
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Valid Version",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: ptr.To("192.168.0.0"),
+					Version:      "v1.17",
+				},
+			},
+			expectErr: false,
+		},
+		{
 			name: "Testing valid DNSServiceIP",
 			amcp: AzureManagedControlPlane{
 				ObjectMeta: getAMCPMetaData(),

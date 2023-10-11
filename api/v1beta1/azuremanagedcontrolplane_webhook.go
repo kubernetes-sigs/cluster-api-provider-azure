@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	kubeSemver                 = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
+	kubeSemver                 = regexp.MustCompile(`^v\d+\.\d+(\.\d+)?$`)
 	rMaxNodeProvisionTime      = regexp.MustCompile(`^(\d+)m$`)
 	rScaleDownTime             = regexp.MustCompile(`^(\d+)m$`)
 	rScaleDownDelayAfterDelete = regexp.MustCompile(`^(\d+)s$`)
