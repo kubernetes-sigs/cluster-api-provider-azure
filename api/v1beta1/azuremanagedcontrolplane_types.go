@@ -218,6 +218,9 @@ type AzureManagedControlPlaneSpec struct {
 	// Immutable.
 	// +optional
 	DNSPrefix *string `json:"dnsPrefix,omitempty"`
+	// DisableLocalAccounts disables getting static credentials for this cluster when set. Expected to only be used for AAD clusters.
+	// +optional
+	DisableLocalAccounts *bool `json:"disableLocalAccounts,omitempty"`
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.

@@ -922,6 +922,30 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "DisableLocalAccounts cannot be set for non AAD clusters",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version:              "v1.21.2",
+					DisableLocalAccounts: ptr.To[bool](true),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "DisableLocalAccounts can be set for AAD clusters",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					AADProfile: &AADProfile{
+						Managed:             true,
+						AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+					},
+					DisableLocalAccounts: ptr.To[bool](true),
+				},
+			},
+			wantErr: false,
+		},
 	}
 	client := mockClient{ReturnError: false}
 	for _, tc := range tests {
@@ -1740,6 +1764,94 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "DisableLocalAccounts can be set only for AAD enabled clusters",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						Managed:             true,
+						AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version:              "v1.18.0",
+					DisableLocalAccounts: ptr.To[bool](true),
+					AADProfile: &AADProfile{
+						Managed:             true,
+						AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "DisableLocalAccounts cannot be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						Managed:             true,
+						AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+					},
+					DisableLocalAccounts: ptr.To[bool](true),
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						Managed:             true,
+						AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "DisableLocalAccounts cannot be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						Managed:             true,
+						AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+					},
+					DisableLocalAccounts: ptr.To[bool](true),
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version:              "v1.18.0",
+					DisableLocalAccounts: ptr.To[bool](false),
+					AADProfile: &AADProfile{
+						Managed:             true,
+						AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "AzureManagedControlPlane DNSPrefix is immutable error nil -> capz-aks",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
@@ -1751,6 +1863,27 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					DNSPrefix: ptr.To("capz-aks"),
 					Version:   "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "DisableLocalAccounts cannot be set for non AAD clusters",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					Version:              "v1.18.0",
+					DisableLocalAccounts: ptr.To[bool](true),
 				},
 			},
 			wantErr: true,

@@ -116,10 +116,11 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 
 // ManagedControlPlaneScope defines the basic context for an actuator to operate upon.
 type ManagedControlPlaneScope struct {
-	Client         client.Client
-	patchHelper    *patch.Helper
-	kubeConfigData []byte
-	cache          *ManagedControlPlaneCache
+	Client              client.Client
+	patchHelper         *patch.Helper
+	adminKubeConfigData []byte
+	userKubeConfigData  []byte
+	cache               *ManagedControlPlaneCache
 
 	AzureClients
 	Cluster             *clusterv1.Cluster
@@ -459,6 +460,24 @@ func (s *ManagedControlPlaneScope) ManagedClusterAnnotations() map[string]string
 	return s.ControlPlane.Annotations
 }
 
+// AreLocalAccountsDisabled checks if local accounts are disabled for aad enabled managed clusters.
+func (s *ManagedControlPlaneScope) AreLocalAccountsDisabled() bool {
+	if s.IsAADEnabled() &&
+		s.ControlPlane.Spec.DisableLocalAccounts != nil &&
+		*s.ControlPlane.Spec.DisableLocalAccounts {
+		return true
+	}
+	return false
+}
+
+// IsAADEnabled checks if azure active directory is enabled for managed clusters.
+func (s *ManagedControlPlaneScope) IsAADEnabled() bool {
+	if s.ControlPlane.Spec.AADProfile != nil && s.ControlPlane.Spec.AADProfile.Managed {
+		return true
+	}
+	return false
+}
+
 // ManagedClusterSpec returns the managed cluster spec.
 func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter {
 	managedClusterSpec := managedclusters.ManagedClusterSpec{
@@ -512,6 +531,9 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 			Managed:             s.ControlPlane.Spec.AADProfile.Managed,
 			EnableAzureRBAC:     s.ControlPlane.Spec.AADProfile.Managed,
 			AdminGroupObjectIDs: s.ControlPlane.Spec.AADProfile.AdminGroupObjectIDs,
+		}
+		if s.ControlPlane.Spec.DisableLocalAccounts != nil {
+			managedClusterSpec.DisableLocalAccounts = s.ControlPlane.Spec.DisableLocalAccounts
 		}
 	}
 
@@ -640,14 +662,24 @@ func (s *ManagedControlPlaneScope) MakeEmptyKubeConfigSecret() corev1.Secret {
 	}
 }
 
-// GetKubeConfigData returns a []byte that contains kubeconfig.
-func (s *ManagedControlPlaneScope) GetKubeConfigData() []byte {
-	return s.kubeConfigData
+// GetAdminKubeconfigData returns admin kubeconfig.
+func (s *ManagedControlPlaneScope) GetAdminKubeconfigData() []byte {
+	return s.adminKubeConfigData
 }
 
-// SetKubeConfigData sets kubeconfig data.
-func (s *ManagedControlPlaneScope) SetKubeConfigData(kubeConfigData []byte) {
-	s.kubeConfigData = kubeConfigData
+// SetAdminKubeconfigData sets admin kubeconfig data.
+func (s *ManagedControlPlaneScope) SetAdminKubeconfigData(kubeConfigData []byte) {
+	s.adminKubeConfigData = kubeConfigData
+}
+
+// GetUserKubeconfigData returns user kubeconfig, required when using AAD with AKS cluster.
+func (s *ManagedControlPlaneScope) GetUserKubeconfigData() []byte {
+	return s.userKubeConfigData
+}
+
+// SetUserKubeconfigData sets userKubeconfig data.
+func (s *ManagedControlPlaneScope) SetUserKubeconfigData(kubeConfigData []byte) {
+	s.userKubeConfigData = kubeConfigData
 }
 
 // SetKubeletIdentity sets the ID of the user-assigned identity for kubelet if not already set.
