@@ -101,13 +101,16 @@ func DiscoverAndWaitForAKSControlPlaneReady(ctx context.Context, input DiscoverA
 	Expect(controlPlane).NotTo(BeNil())
 
 	Logf("Waiting for all AKS machines in the %s/%s 'system' node pool to exist", controlPlane.Namespace, controlPlane.Name)
-	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
+	waitForControlPlaneAndMachinesReadyInput := WaitForControlPlaneAndMachinesReadyInput{
 		Lister:       input.Lister,
 		Getter:       input.Getter,
 		ControlPlane: controlPlane,
 		ClusterName:  input.Cluster.Name,
 		Namespace:    input.Cluster.Namespace,
-	}, intervals...)
+	}
+	WaitForAllControlPlaneAndMachinesToExist(ctx, waitForControlPlaneAndMachinesReadyInput, intervals...)
+	Logf("Waiting to verify that all AzureManagedMachinePools are in a stable state")
+	WaitForAKSMachinePoolsToStabilize(ctx, waitForControlPlaneAndMachinesReadyInput, intervals...)
 }
 
 // GetAzureManagedControlPlaneByClusterInput contains the fields the required for fetching the azure managed control plane.
@@ -207,4 +210,35 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 
 		return false
 	}, intervals...).Should(Equal(true), "System machine pools not detected")
+}
+
+// WaitForAKSMachinePoolsToStabilize waits for a certain number of machines in the "system" node pool to exist.
+func WaitForAKSMachinePoolsToStabilize(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, intervals ...interface{}) {
+	var specName = "azuremanagedmachinepools-stabilize"
+	// First we wait for all AzureManagedMachinePools to be in a Ready state
+	Eventually(func(g Gomega) {
+		listOptions := client.InNamespace(input.Namespace)
+		ammpList := &infrav1.AzureManagedMachinePoolList{}
+
+		err := input.Lister.List(ctx, ammpList, listOptions)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		for _, pool := range ammpList.Items {
+			g.Expect(pool.Status.Ready).To(BeTrue())
+		}
+
+	}, intervals...).Should(Succeed())
+	// Then we wait for a time to verify that no pool re-enters a non-Ready state
+	Consistently(func(g Gomega) {
+		listOptions := client.InNamespace(input.Namespace)
+		ammpList := &infrav1.AzureManagedMachinePoolList{}
+
+		err := input.Lister.List(ctx, ammpList, listOptions)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		for _, pool := range ammpList.Items {
+			g.Expect(pool.Status.Ready).To(BeTrue())
+		}
+
+	}, e2eConfig.GetIntervals(specName, "wait-machines-provisioned-stability")...).Should(Succeed())
 }
