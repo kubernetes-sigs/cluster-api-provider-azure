@@ -531,6 +531,7 @@ Optional settings are:
 | `WINDOWS`            | `false`       | Run conformance against Windows nodes                                                              |
 | `CONFORMANCE_NODES`  | `1`           | Number of parallel ginkgo nodes to run                                                             |
 | `CONFORMANCE_FLAVOR` | `""`          | The flavor of the cluster to run conformance against. If not set, the default flavor will be used. |
+| `IP_FAMILY`          | `IPv4`        | Set to `IPv6` to run conformance against single-stack IPv6, or `dual` for dual-stack.              |
 
 With the following environment variables defined, you can build a CAPZ cluster from the HEAD of Kubernetes main branch or release branch, and run the Conformance test suite against it.
 
