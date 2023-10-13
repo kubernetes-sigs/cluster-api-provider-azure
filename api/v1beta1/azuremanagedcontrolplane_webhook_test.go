@@ -94,6 +94,9 @@ func TestDefaultingWebhook(t *testing.T) {
 	}
 	amcp.Spec.DNSPrefix = ptr.To("test-prefix")
 	amcp.Spec.FleetsMember = &FleetsMember{}
+	amcp.Spec.AutoUpgradeProfile = &ManagedClusterAutoUpgradeProfile{
+		UpgradeChannel: ptr.To(UpgradeChannelPatch),
+	}
 
 	err = mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -109,6 +112,9 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.DNSPrefix).ToNot(BeNil())
 	g.Expect(*amcp.Spec.DNSPrefix).To(Equal("test-prefix"))
 	g.Expect(amcp.Spec.FleetsMember.Name).To(Equal("fooCluster"))
+	g.Expect(amcp.Spec.AutoUpgradeProfile).ToNot(BeNil())
+	g.Expect(amcp.Spec.AutoUpgradeProfile.UpgradeChannel).ToNot(BeNil())
+	g.Expect(*amcp.Spec.AutoUpgradeProfile.UpgradeChannel).To(Equal(UpgradeChannelPatch))
 
 	t.Logf("Testing amcp defaulting webhook with overlay")
 	amcp = &AzureManagedControlPlane{
@@ -120,6 +126,9 @@ func TestDefaultingWebhook(t *testing.T) {
 				Location:          "fooLocation",
 				Version:           "1.17.5",
 				NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+				AutoUpgradeProfile: &ManagedClusterAutoUpgradeProfile{
+					UpgradeChannel: ptr.To(UpgradeChannelRapid),
+				},
 			},
 			ResourceGroupName: "fooRg",
 			SSHPublicKey:      ptr.To(""),
@@ -129,6 +138,9 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(amcp.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDRForOverlay))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDRForOverlay))
+	g.Expect(amcp.Spec.AutoUpgradeProfile).ToNot(BeNil())
+	g.Expect(amcp.Spec.AutoUpgradeProfile.UpgradeChannel).ToNot(BeNil())
+	g.Expect(*amcp.Spec.AutoUpgradeProfile.UpgradeChannel).To(Equal(UpgradeChannelRapid))
 }
 
 func TestValidateVersion(t *testing.T) {
@@ -1653,6 +1665,124 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane invalid version downgrade change",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.0",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane invalid version downgrade change",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+				Status: AzureManagedControlPlaneStatus{
+					AutoUpgradeVersion: "v1.18.3",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane Autoupgrade cannot be set to nil",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:   ptr.To("192.168.0.10"),
+						SubscriptionID: "212ec1q8",
+						Version:        "v1.18.0",
+						AutoUpgradeProfile: &ManagedClusterAutoUpgradeProfile{
+							UpgradeChannel: ptr.To(UpgradeChannelStable),
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:   ptr.To("192.168.0.10"),
+						SubscriptionID: "212ec1q8",
+						Version:        "v1.18.0",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane Autoupgrade cannot be set to nil",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:   ptr.To("192.168.0.10"),
+						SubscriptionID: "212ec1q8",
+						Version:        "v1.18.0",
+						AutoUpgradeProfile: &ManagedClusterAutoUpgradeProfile{
+							UpgradeChannel: ptr.To(UpgradeChannelStable),
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:       ptr.To("192.168.0.10"),
+						SubscriptionID:     "212ec1q8",
+						Version:            "v1.18.0",
+						AutoUpgradeProfile: &ManagedClusterAutoUpgradeProfile{},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane Autoupgrade is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:   ptr.To("192.168.0.10"),
+						SubscriptionID: "212ec1q8",
+						Version:        "v1.18.0",
+						AutoUpgradeProfile: &ManagedClusterAutoUpgradeProfile{
+							UpgradeChannel: ptr.To(UpgradeChannelStable),
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:   ptr.To("192.168.0.10"),
+						SubscriptionID: "212ec1q8",
+						Version:        "v1.18.0",
+						AutoUpgradeProfile: &ManagedClusterAutoUpgradeProfile{
+							UpgradeChannel: ptr.To(UpgradeChannelNone),
+						},
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "AzureManagedControlPlane SubscriptionID is immutable",

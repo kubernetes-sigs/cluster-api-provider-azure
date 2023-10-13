@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
@@ -258,6 +259,14 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := m.validateAutoUpgradeProfile(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := m.validateK8sVersionUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if errs := m.validateOIDCIssuerProfileUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
@@ -344,7 +353,7 @@ func (m *AzureManagedControlPlane) validateDNSPrefix(_ client.Client) field.Erro
 	return allErrs
 }
 
-// validateVersion disabling local accounts for AAD based clusters.
+// validateDisableLocalAccounts disabling local accounts for AAD based clusters.
 func (m *AzureManagedControlPlane) validateDisableLocalAccounts(_ client.Client) field.ErrorList {
 	if m.Spec.DisableLocalAccounts != nil && m.Spec.AADProfile == nil {
 		return field.ErrorList{
@@ -508,6 +517,42 @@ func validateManagedClusterNetwork(cli client.Client, labels map[string]string, 
 		allErrs = append(allErrs, errs...)
 	}
 
+	return allErrs
+}
+
+// validateAutoUpgradeProfile validates auto upgrade profile.
+func (m *AzureManagedControlPlane) validateAutoUpgradeProfile(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.Spec.AutoUpgradeProfile != nil {
+		if old.Spec.AutoUpgradeProfile.UpgradeChannel != nil && (m.Spec.AutoUpgradeProfile == nil || m.Spec.AutoUpgradeProfile.UpgradeChannel == nil) {
+			// Prevent AutoUpgradeProfile.UpgradeChannel to be set to nil.
+			// Unsetting the field is not allowed.
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "AutoUpgradeProfile", "UpgradeChannel"),
+					old.Spec.AutoUpgradeProfile.UpgradeChannel,
+					"field cannot be set to nil, to disable auto upgrades set the channel to none."))
+		}
+	}
+	return allErrs
+}
+
+// validateK8sVersionUpdate validates K8s version.
+func (m *AzureManagedControlPlane) validateK8sVersionUpdate(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+	if hv := versions.GetHigherK8sVersion(m.Spec.Version, old.Spec.Version); hv != m.Spec.Version {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "Version"),
+			m.Spec.Version, "field version cannot be downgraded"),
+		)
+	}
+
+	if old.Status.AutoUpgradeVersion != "" && m.Spec.Version != old.Spec.Version {
+		if hv := versions.GetHigherK8sVersion(m.Spec.Version, old.Status.AutoUpgradeVersion); hv != m.Spec.Version {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "Version"),
+				m.Spec.Version, "version is auto-upgraded to "+old.Status.AutoUpgradeVersion+", cannot be downgraded"),
+			)
+		}
+	}
 	return allErrs
 }
 

@@ -248,6 +248,16 @@ func TestControlPlaneTemplateUpdateWebhook(t *testing.T) {
 			}),
 			wantErr: false,
 		},
+		{
+			name: "AzureManagedControlPlane invalid version downgrade change",
+			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.Version = "v1.18.0"
+			}),
+			controlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.Version = "v1.17.0"
+			}),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

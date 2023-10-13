@@ -33,6 +33,38 @@ const (
 	PrivateDNSZoneModeNone string = "None"
 )
 
+// UpgradeChannel determines the type of upgrade channel for automatically upgrading the cluster.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/auto-upgrade-cluster
+type UpgradeChannel string
+
+const (
+	// UpgradeChannelNodeImage automatically upgrades the node image to the latest version available.
+	// Consider using nodeOSUpgradeChannel instead as that allows you to configure node OS patching separate from Kubernetes version patching.
+	UpgradeChannelNodeImage UpgradeChannel = "node-image"
+
+	// UpgradeChannelNone disables auto-upgrades and keeps the cluster at its current version of Kubernetes.
+	UpgradeChannelNone UpgradeChannel = "none"
+
+	// UpgradeChannelPatch automatically upgrades the cluster to the latest supported patch version when it becomes available
+	// while keeping the minor version the same. For example, if a cluster is running version 1.17.7 while versions 1.17.9, 1.18.4,
+	// 1.18.6, and 1.19.1 are available, the cluster will be upgraded to 1.17.9.
+	UpgradeChannelPatch UpgradeChannel = "patch"
+
+	// UpgradeChannelRapid automatically upgrades the cluster to the latest supported patch release on the latest supported minor
+	// version. In cases where the cluster is at a version of Kubernetes that is at an N-2 minor version where N is the latest
+	// supported minor version, the cluster first upgrades to the latest supported patch version on N-1 minor version. For example,
+	// if a cluster is running version 1.17.7 while versions 1.17.9, 1.18.4, 1.18.6, and 1.19.1 are available, the cluster
+	// will first be upgraded to 1.18.6 and then to 1.19.1.
+	UpgradeChannelRapid UpgradeChannel = "rapid"
+
+	// UpgradeChannelStable automatically upgrade the cluster to the latest supported patch release on minor version N-1, where
+	// N is the latest supported minor version. For example, if a cluster is running version 1.17.7 while versions 1.17.9, 1.18.4,
+	// 1.18.6, and 1.19.1 are available, the cluster will be upgraded to 1.18.6.
+	UpgradeChannelStable UpgradeChannel = "stable"
+)
+
 // ManagedControlPlaneOutboundType enumerates the values for the managed control plane OutboundType.
 type ManagedControlPlaneOutboundType string
 
@@ -249,6 +281,11 @@ type ManagedControlPlaneSubnet struct {
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.
 type AzureManagedControlPlaneStatus struct {
+	// AutoUpgradeVersion is the Kubernetes version populated after auto-upgrade based on the upgrade channel.
+	// +kubebuilder:validation:MinLength=2
+	// +optional
+	AutoUpgradeVersion string `json:"autoUpgradeVersion,omitempty"`
+
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready,omitempty"`
