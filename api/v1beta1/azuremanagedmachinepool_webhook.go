@@ -25,8 +25,10 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -78,6 +80,10 @@ func (mw *azureManagedMachinePoolWebhook) Default(ctx context.Context, obj runti
 
 	if m.Spec.OSType == nil {
 		m.Spec.OSType = ptr.To(DefaultOSType)
+	}
+
+	if ptr.Deref(m.Spec.ScaleSetPriority, "") == string(armcontainerservice.ScaleSetPrioritySpot) && m.Spec.SpotMaxPrice == nil {
+		m.Spec.SpotMaxPrice = ptr.To(resource.MustParse("-1"))
 	}
 
 	return nil
