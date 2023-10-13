@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -320,9 +321,9 @@ func (s *ClusterScope) RouteTableSpecs() []azure.ResourceSpecGetter {
 }
 
 // NatGatewaySpecs returns the node NAT gateway.
-func (s *ClusterScope) NatGatewaySpecs() []azure.ResourceSpecGetter {
+func (s *ClusterScope) NatGatewaySpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway] {
 	natGatewaySet := make(map[string]struct{})
-	var natGateways []azure.ResourceSpecGetter
+	var natGateways []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]
 
 	// We ignore the control plane NAT gateway, as we will always use a LB to enable egress on the control plane.
 	for _, subnet := range s.NodeSubnets() {
@@ -331,6 +332,7 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.ResourceSpecGetter {
 				natGatewaySet[subnet.NatGateway.Name] = struct{}{} // empty struct to represent hash set
 				natGateways = append(natGateways, &natgateways.NatGatewaySpec{
 					Name:           subnet.NatGateway.Name,
+					Namespace:      s.Namespace(),
 					ResourceGroup:  s.ResourceGroup(),
 					SubscriptionID: s.SubscriptionID(),
 					Location:       s.Location(),
@@ -339,6 +341,8 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.ResourceSpecGetter {
 						Name: subnet.NatGateway.NatGatewayIP.Name,
 					},
 					AdditionalTags: s.AdditionalTags(),
+					// We need to know if the VNet is managed to decide if this NAT Gateway was-managed or not.
+					IsVnetManaged: s.IsVnetManaged(),
 				})
 			}
 		}

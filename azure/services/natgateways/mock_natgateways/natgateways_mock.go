@@ -28,10 +28,12 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	v1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MockNatGatewayScope is a mock of NatGatewayScope interface.
@@ -307,6 +309,20 @@ func (mr *MockNatGatewayScopeMockRecorder) FailureDomains() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockNatGatewayScope)(nil).FailureDomains))
 }
 
+// GetClient mocks base method.
+func (m *MockNatGatewayScope) GetClient() client.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(client.Client)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient.
+func (mr *MockNatGatewayScopeMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockNatGatewayScope)(nil).GetClient))
+}
+
 // GetLongRunningOperationState mocks base method.
 func (m *MockNatGatewayScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
@@ -406,10 +422,10 @@ func (mr *MockNatGatewayScopeMockRecorder) Location() *gomock.Call {
 }
 
 // NatGatewaySpecs mocks base method.
-func (m *MockNatGatewayScope) NatGatewaySpecs() []azure.ResourceSpecGetter {
+func (m *MockNatGatewayScope) NatGatewaySpecs() []azure.ASOResourceSpecGetter[*v1api20220701.NatGateway] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NatGatewaySpecs")
-	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
+	ret0, _ := ret[0].([]azure.ASOResourceSpecGetter[*v1api20220701.NatGateway])
 	return ret0
 }
 
