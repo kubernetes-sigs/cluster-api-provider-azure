@@ -22,6 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilfeature "k8s.io/component-base/featuregate/testing"
@@ -59,6 +60,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	g.Expect(val).To(Equal("System"))
 	g.Expect(*ammp.Spec.Name).To(Equal("fooName"))
 	g.Expect(*ammp.Spec.OSType).To(Equal(LinuxOS))
+	g.Expect(ammp.Spec.SpotMaxPrice).To(BeNil())
 
 	t.Logf("Testing ammp defaulting webhook with empty string name specified in Spec")
 	emptyName := ""
@@ -80,6 +82,18 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	err = mw.Default(context.Background(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*ammp.Spec.OsDiskType).To(Equal("Ephemeral"))
+
+	t.Logf("Testing ammp defaulting webhook with scaleSetPriority Spot")
+	ammp.Spec.ScaleSetPriority = ptr.To(string(armcontainerservice.ScaleSetPrioritySpot))
+	err = mw.Default(context.Background(), ammp)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(ammp.Spec.SpotMaxPrice.Equal(resource.MustParse("-1"))).To(BeTrue())
+
+	t.Logf("Testing ammp defaulting webhook with scaleSetPriority Spot with max price set")
+	ammp.Spec.SpotMaxPrice = ptr.To(resource.MustParse("100"))
+	err = mw.Default(context.Background(), ammp)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(ammp.Spec.SpotMaxPrice.Equal(resource.MustParse("100"))).To(BeTrue())
 }
 
 func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
