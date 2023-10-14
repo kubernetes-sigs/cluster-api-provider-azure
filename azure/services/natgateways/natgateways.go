@@ -17,6 +17,8 @@ limitations under the License.
 package natgateways
 
 import (
+	"context"
+
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -51,10 +53,14 @@ func New(scope NatGatewayScope) *Service {
 	}
 }
 
-func postCreateOrUpdateResourceHook(scope NatGatewayScope, result *asonetworkv1.NatGateway, err error) {
+func postCreateOrUpdateResourceHook(_ context.Context, scope NatGatewayScope, result *asonetworkv1.NatGateway, err error) error {
+	if err != nil {
+		return err
+	}
 	// TODO: ideally we wouldn't need to set the subnet spec based on the result of the create operation
 	// result only gets populated when the resource is created or if it already exists
 	if result != nil && result.Status.Id != nil {
 		scope.SetNatGatewayIDInSubnets(result.Name, *result.Status.Id)
 	}
+	return nil
 }

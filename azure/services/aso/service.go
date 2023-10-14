@@ -34,9 +34,9 @@ type Service[T deepCopier[T], S Scope] struct {
 	Specs []azure.ASOResourceSpecGetter[T]
 
 	ConditionType                  clusterv1.ConditionType
-	PostCreateOrUpdateResourceHook func(scope S, result T, err error)
-	PostReconcileHook              func(scope S, err error) error
-	PostDeleteHook                 func(scope S, err error) error
+	PostCreateOrUpdateResourceHook func(ctx context.Context, scope S, result T, err error) error
+	PostReconcileHook              func(ctx context.Context, scope S, err error) error
+	PostDeleteHook                 func(ctx context.Context, scope S, err error) error
 
 	name string
 }
@@ -72,16 +72,16 @@ func (s *Service[T, S]) Reconcile(ctx context.Context) error {
 	var resultErr error
 	for _, spec := range s.Specs {
 		result, err := s.CreateOrUpdateResource(ctx, spec, s.Name())
+		if s.PostCreateOrUpdateResourceHook != nil {
+			err = s.PostCreateOrUpdateResourceHook(ctx, s.Scope, result, err)
+		}
 		if err != nil && (!azure.IsOperationNotDoneError(err) || resultErr == nil) {
 			resultErr = err
-		}
-		if s.PostCreateOrUpdateResourceHook != nil {
-			s.PostCreateOrUpdateResourceHook(s.Scope, result, err)
 		}
 	}
 
 	if s.PostReconcileHook != nil {
-		resultErr = s.PostReconcileHook(s.Scope, resultErr)
+		resultErr = s.PostReconcileHook(ctx, s.Scope, resultErr)
 	}
 	s.Scope.UpdatePutStatus(s.ConditionType, s.Name(), resultErr)
 	return resultErr
@@ -110,7 +110,7 @@ func (s *Service[T, S]) Delete(ctx context.Context) error {
 	}
 
 	if s.PostDeleteHook != nil {
-		resultErr = s.PostDeleteHook(s.Scope, resultErr)
+		resultErr = s.PostDeleteHook(ctx, s.Scope, resultErr)
 	}
 	s.Scope.UpdateDeleteStatus(s.ConditionType, s.Name(), resultErr)
 	return resultErr
