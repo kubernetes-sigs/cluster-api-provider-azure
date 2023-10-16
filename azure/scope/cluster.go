@@ -876,7 +876,15 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 	if s.AzureCluster.Status.FailureDomains == nil {
 		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains)
 	}
-	s.AzureCluster.Status.FailureDomains[id] = spec
+
+	if len(s.AzureCluster.Spec.FailureDomains) == 0 {
+		s.AzureCluster.Status.FailureDomains[id] = spec
+		return
+	}
+
+	if _, ok := s.AzureCluster.Spec.FailureDomains[id]; ok {
+		s.AzureCluster.Status.FailureDomains[id] = spec
+	}
 }
 
 // FailureDomains returns the failure domains for the cluster.
