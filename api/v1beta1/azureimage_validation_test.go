@@ -223,3 +223,68 @@ func createTestImageByID(imageID string) *Image {
 		ID: &imageID,
 	}
 }
+
+func TestValidateSingleDetailsOnly(t *testing.T) {
+	testCases := map[string]struct {
+		image          *Image
+		expectedErrors field.ErrorList
+	}{
+		"image.Marketplace != nil, image details are found": {
+			image: &Image{
+				ID: ptr.To("ID1234"),
+				Marketplace: &AzureMarketplaceImage{
+					ImagePlan: ImagePlan{
+						Offer:     "OFFER",
+						Publisher: "PUBLISHER",
+						SKU:       "SKU",
+					},
+					Version: "1.0.0",
+				},
+			},
+			expectedErrors: field.ErrorList{
+				{
+					Type:     "FieldValueForbidden",
+					Field:    "image.Marketplace",
+					BadValue: "",
+					Detail:   "Marketplace cannot be used as an image ID has been specified",
+				},
+			},
+		},
+		"image.Marketplace == nil, image.ComputeGallery != nil, image details are found": {
+			image: &Image{
+				ID: ptr.To("ID1234"),
+				ComputeGallery: &AzureComputeGalleryImage{
+					Name:           "IMAGENAME",
+					Gallery:        "GALLERY9876",
+					Version:        "1.0.0",
+					SubscriptionID: ptr.To("SUB1234"),
+					ResourceGroup:  ptr.To("RG1234"),
+				},
+			},
+			expectedErrors: field.ErrorList{
+				{
+					Type:     "FieldValueForbidden",
+					Field:    "image.ComputeGallery",
+					BadValue: "",
+					Detail:   "ComputeGallery cannot be used as an image ID. Marketplace or SharedGallery images has been specified",
+				},
+			},
+		},
+		"image.Marketplace == nil, image.ComputeGallery == nil, image details not found": {
+			image: &Image{},
+			expectedErrors: field.ErrorList{
+				{
+					Type:     "FieldValueRequired",
+					Field:    "image",
+					BadValue: "",
+					Detail:   "You must supply an ID, Marketplace or ComputeGallery image details",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		g := NewWithT(t)
+		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(Equal(tc.expectedErrors))
+	}
+}
