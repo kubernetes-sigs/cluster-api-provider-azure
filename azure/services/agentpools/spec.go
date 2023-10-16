@@ -388,40 +388,53 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 
 // mergeSystemNodeLabels appends any kubernetes.azure.com-prefixed labels from the AKS label set
 // into the local capz label set.
-func mergeSystemNodeLabels(capz, aks map[string]*string) map[string]*string {
-	ret := capz
-	if ret == nil {
+func mergeSystemNodeLabels(capzLabels, aksLabels map[string]*string) map[string]*string {
+	// if both are nil, return nil for no change
+	if capzLabels == nil && aksLabels == nil {
+		return nil
+	}
+
+	// Either one of the capzLabels or aksLabels is nil.
+	// Prioritize capzLabels if it is not nil.
+	var ret map[string]*string
+	if capzLabels != nil {
+		ret = capzLabels
+	} else {
 		ret = make(map[string]*string)
 	}
+
 	// Look for labels returned from the AKS node pool API that begin with kubernetes.azure.com
-	for aksNodeLabelKey := range aks {
+	for aksNodeLabelKey := range aksLabels {
 		if azureutil.IsAzureSystemNodeLabelKey(aksNodeLabelKey) {
-			ret[aksNodeLabelKey] = aks[aksNodeLabelKey]
+			ret[aksNodeLabelKey] = aksLabels[aksNodeLabelKey]
 		}
 	}
-	// Preserve nil-ness of capz
-	if capz == nil && len(ret) == 0 {
-		ret = nil
-	}
+
+	// if no labels are found, ret will be an empty map to clear out the NodeLabels at AKS API
 	return ret
 }
 
 // mergeSystemNodeTaints appends any kubernetes.azure.com-prefixed taints from the AKS taint set
 // into the local capz taint set.
-func mergeSystemNodeTaints(capz, aks []*string) []*string {
-	ret := capz
-	if ret == nil {
+func mergeSystemNodeTaints(capzNodeTaints, aksNodeTaints []*string) []*string {
+	if capzNodeTaints == nil && aksNodeTaints == nil {
+		return nil
+	}
+
+	var ret []*string
+	if capzNodeTaints != nil {
+		ret = capzNodeTaints
+	} else {
 		ret = make([]*string, 0)
 	}
+
 	// Look for taints returned from the AKS node pool API that begin with kubernetes.azure.com
-	for _, aksNodeTaint := range aks {
+	for _, aksNodeTaint := range aksNodeTaints {
 		if azureutil.IsAzureSystemNodeLabelKey(*aksNodeTaint) {
 			ret = append(ret, aksNodeTaint)
 		}
 	}
-	// Preserve nil-ness of capz
-	if capz == nil && len(ret) == 0 {
-		ret = nil
-	}
+
+	// if no taints are found, ret will be an empty array to clear out the nodeTaints at AKS API
 	return ret
 }
