@@ -68,6 +68,10 @@ const (
 	deprecatedManagerCredsWarning = "You're using deprecated functionality: " +
 		"Using Azure credentials from the manager environment is deprecated and will be removed in future releases. " +
 		"Please specify an AzureClusterIdentity for the AzureCluster instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html "
+	// ToDo: Find a way to make this configurable for a user.
+	// This is the path where the projected service account token should be present for
+	// cloud provider azure.
+	aadFederatedTokenFilePath = "/var/run/secrets/azure/tokens/azure-identity-token" //nolint:gosec // Path of projected service account token
 )
 
 type (
@@ -203,6 +207,8 @@ func GetCloudProviderSecret(d azure.ClusterScoper, namespace, name string, owner
 		controlPlaneConfig, workerNodeConfig = userAssignedIdentityCloudProviderConfig(d, userIdentityID)
 	case infrav1.VMIdentityNone:
 		controlPlaneConfig, workerNodeConfig = newCloudProviderConfig(d)
+	case infrav1.VMIdentityWorkloadIdentity:
+		controlPlaneConfig, workerNodeConfig = workloadIdentityCloudProviderConfig(d)
 	}
 
 	// Enable VMSS Flexible nodes if MachinePools are enabled
@@ -242,6 +248,19 @@ func systemAssignedIdentityCloudProviderConfig(d azure.ClusterScoper) (cpConfig 
 	workerConfig.AadClientID = ""
 	workerConfig.AadClientSecret = ""
 	workerConfig.UseManagedIdentityExtension = true
+	return controlPlaneConfig, workerConfig
+}
+
+func workloadIdentityCloudProviderConfig(d azure.ClusterScoper) (cpConfig *CloudProviderConfig, wkConfig *CloudProviderConfig) {
+	controlPlaneConfig, workerConfig := newCloudProviderConfig(d)
+	// secret is not needed in workload identity.
+	controlPlaneConfig.AadClientSecret = ""
+	controlPlaneConfig.UseFederatedWorkloadIdentityExtension = true
+	controlPlaneConfig.AADFederatedTokenFile = aadFederatedTokenFilePath
+
+	workerConfig.AadClientSecret = ""
+	workerConfig.UseFederatedWorkloadIdentityExtension = true
+	workerConfig.AADFederatedTokenFile = aadFederatedTokenFilePath
 	return controlPlaneConfig, workerConfig
 }
 
@@ -343,6 +362,12 @@ type CloudProviderConfig struct {
 	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
 	EnableVmssFlexNodes          bool   `json:"enableVmssFlexNodes,omitempty"`
 	UserAssignedIdentityID       string `json:"userAssignedIdentityID,omitempty"`
+	// AADFederatedTokenFile is the path of AAD federated token file
+	// Cloud provider azure should be deployed by projecting service account
+	// token volume as part of their pod spec
+	AADFederatedTokenFile string `json:"aadFederatedTokenFile,omitempty"`
+	// Use workload identity federation for the virtual machine to access Azure ARM APIs
+	UseFederatedWorkloadIdentityExtension bool `json:"useFederatedWorkloadIdentityExtension,omitempty"`
 	CloudProviderRateLimitConfig
 	BackOffConfig
 }

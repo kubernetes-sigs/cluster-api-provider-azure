@@ -96,6 +96,7 @@ spec:
                 - None
                 - SystemAssigned
                 - UserAssigned
+                - WorkloadIdentity
                 type: string
               location:
                 description: Location is the Azure region location e.g. westus2

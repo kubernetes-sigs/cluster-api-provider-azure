@@ -534,7 +534,7 @@ type AzureSharedGalleryImage struct {
 }
 
 // VMIdentity defines the identity of the virtual machine, if configured.
-// +kubebuilder:validation:Enum=None;SystemAssigned;UserAssigned
+// +kubebuilder:validation:Enum=None;SystemAssigned;UserAssigned;WorkloadIdentity
 type VMIdentity string
 
 const (
@@ -544,6 +544,8 @@ const (
 	VMIdentitySystemAssigned VMIdentity = "SystemAssigned"
 	// VMIdentityUserAssigned ...
 	VMIdentityUserAssigned VMIdentity = "UserAssigned"
+	// VMIdentityWorkloadIdentity ...
+	VMIdentityWorkloadIdentity VMIdentity = "WorkloadIdentity"
 )
 
 // SpotEvictionPolicy defines the eviction policy for spot VMs, if configured.
