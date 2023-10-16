@@ -1,6 +1,6 @@
 # Overview
 
-This section provides examples for addons for self-managed clusters. For manged cluster addons, please go to the [managed cluster specifications](https://capz.sigs.k8s.io/topics/managedcluster.html#specification).
+This section provides examples for addons for self-managed clusters. For managed cluster addons, please go to the [managed cluster specifications](https://capz.sigs.k8s.io/topics/managedcluster.html#specification).
 
 Self managed cluster addon options covered here:
 

@@ -68,7 +68,7 @@ const (
 
 const (
 	// DefaultWindowsOsAndVersion is the default Windows Server version to use when
-	// genearating default images for Windows nodes.
+	// generating default images for Windows nodes.
 	DefaultWindowsOsAndVersion = "windows-2019"
 )
 
