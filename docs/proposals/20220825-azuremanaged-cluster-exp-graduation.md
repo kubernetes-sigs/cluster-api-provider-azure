@@ -22,7 +22,7 @@ see-also:
 
 ## Summary
 
-`AzureManagedCluster` and its corresponding set of CRDs (we will refer to these CRDs as simply "`AzureManagedCluster`" in this document) is a CAPZ-native implementation of Azure Managed Kubernetes (AKS). Because there is no standard set of Cluster API resource definitions for a "Managed Kubernetes cluster", it is left up to the provider to re-use the existing Cluster API specification (for example, the `Cluster` and its to-be-implemented-by-provider properties such as `ControlPlaneEndpoint`, `ControlPlaneRef` and `InfrastructureRef`). As a result, CAPZ implemented "`AzureManagedCluster`" with an API contract designation of "experimental", to allow for rapid prototyping and discovery.
+`AzureManagedCluster` and its corresponding set of CRDs (we will refer to these CRDs as simply "`AzureManagedCluster`" in this document) is a CAPZ-native implementation of Azure Managed Kubernetes (AKS). Because there is no standard set of Cluster API resource definitions for a "Managed Kubernetes cluster", it is left up to the provider to reuse the existing Cluster API specification (for example, the `Cluster` and its to-be-implemented-by-provider properties such as `ControlPlaneEndpoint`, `ControlPlaneRef` and `InfrastructureRef`). As a result, CAPZ implemented "`AzureManagedCluster`" with an API contract designation of "experimental", to allow for rapid prototyping and discovery.
 
 With the recent adoption of "`AzureManagedCluster`" by the CAPZ community for practical, real-world use, we want to identify the set of outstanding items that may prevent graduation from experimental, and address each one of them, so that future adoption can be unlocked, and users can confidently build resilient systems on top of a stable API.
 
@@ -119,7 +119,7 @@ Ref:
 
 ### Dependency upon (currently experimental) MachinePool spec (Status: DONE, won't take dependency)
 
-At present we re-use the Cluster API `MachinePool` specification (as `AzureManagedMachinePool`) to implement AKS node pools running on Azure VMSS. A consideration here is that `MachinePool` is considered experimental, and behind a feature flag, by Cluster API. Do we want to add the graduation of `MachinePool` out of experimental as a prerequisite for graduating "`AzureManagedCluster`" out of experimental?
+At present we reuse the Cluster API `MachinePool` specification (as `AzureManagedMachinePool`) to implement AKS node pools running on Azure VMSS. A consideration here is that `MachinePool` is considered experimental, and behind a feature flag, by Cluster API. Do we want to add the graduation of `MachinePool` out of experimental as a prerequisite for graduating "`AzureManagedCluster`" out of experimental?
 
 We are tracking a concrete Cluster API implementation of `MachinePoolMachine` [here](https://github.com/kubernetes-sigs/cluster-api/pull/6089).
 
