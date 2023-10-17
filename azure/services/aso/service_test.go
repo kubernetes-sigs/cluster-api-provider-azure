@@ -169,14 +169,15 @@ func TestServiceReconcile(t *testing.T) {
 		}
 
 		reconcileErr := errors.New("CreateOrUpdateResource error")
-		postErr := errors.New("PostReconcile error")
+		postResourceErr := errors.New("PostCreateOrUpdateResource error")
+		postReconcileErr := errors.New("PostReconcile error")
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
 		reconciler.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), specs[0], serviceName).Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "a very special name",
 			},
 		}, reconcileErr)
-		scope.EXPECT().UpdatePutStatus(conditionType, serviceName, postErr)
+		scope.EXPECT().UpdatePutStatus(conditionType, serviceName, postReconcileErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
 			Reconciler:    reconciler,
@@ -184,20 +185,21 @@ func TestServiceReconcile(t *testing.T) {
 			Specs:         specs,
 			name:          serviceName,
 			ConditionType: conditionType,
-			PostCreateOrUpdateResourceHook: func(scopeParam *mock_aso.MockScope, result *asoresourcesv1.ResourceGroup, err error) {
+			PostCreateOrUpdateResourceHook: func(_ context.Context, scopeParam *mock_aso.MockScope, result *asoresourcesv1.ResourceGroup, err error) error {
 				g.Expect(scopeParam).To(BeIdenticalTo(scope))
 				g.Expect(result.Name).To(Equal("a very special name"))
 				g.Expect(err).To(MatchError(reconcileErr))
+				return postResourceErr
 			},
-			PostReconcileHook: func(scopeParam *mock_aso.MockScope, err error) error {
+			PostReconcileHook: func(_ context.Context, scopeParam *mock_aso.MockScope, err error) error {
 				g.Expect(scopeParam).To(BeIdenticalTo(scope))
-				g.Expect(err).To(MatchError(reconcileErr))
-				return postErr
+				g.Expect(err).To(MatchError(postResourceErr))
+				return postReconcileErr
 			},
 		}
 
 		err := s.Reconcile(context.Background())
-		g.Expect(err).To(MatchError(postErr))
+		g.Expect(err).To(MatchError(postReconcileErr))
 	})
 }
 
@@ -343,7 +345,7 @@ func TestServiceDelete(t *testing.T) {
 			Specs:         specs,
 			name:          serviceName,
 			ConditionType: conditionType,
-			PostDeleteHook: func(scopeParam *mock_aso.MockScope, err error) error {
+			PostDeleteHook: func(_ context.Context, scopeParam *mock_aso.MockScope, err error) error {
 				g.Expect(scopeParam).To(BeIdenticalTo(scope))
 				g.Expect(err).To(MatchError(deleteErr))
 				return postErr
