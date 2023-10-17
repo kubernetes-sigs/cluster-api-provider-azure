@@ -18,9 +18,13 @@ package aso
 
 import (
 	"encoding/json"
+	"reflect"
 
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
@@ -33,6 +37,7 @@ const tagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-a
 
 // reconcileTags modifies parameters in place to update its tags and its last-applied annotation.
 func reconcileTags(t TagsGetterSetter, existing genruntime.MetaObject, parameters genruntime.MetaObject) error {
+	var existingTags infrav1.Tags
 	lastAppliedTags := map[string]interface{}{}
 	if existing != nil {
 		lastAppliedTagsJSON := existing.GetAnnotations()[tagsLastAppliedAnnotation]
@@ -42,14 +47,29 @@ func reconcileTags(t TagsGetterSetter, existing genruntime.MetaObject, parameter
 				return errors.Wrapf(err, "failed to unmarshal JSON from %s annotation", tagsLastAppliedAnnotation)
 			}
 		}
+
+		var err error
+		existingTags, err = t.GetActualTags(existing)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get actual tags for %s %s/%s", existing.GetObjectKind().GroupVersionKind(), existing.GetNamespace(), existing.GetName())
+		}
+		desiredTags, err := t.GetDesiredTags(existing)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get desired tags for %s %s/%s", existing.GetObjectKind().GroupVersionKind(), existing.GetNamespace(), existing.GetName())
+		}
+		// Wait for tags to converge so we know for sure which ones are deleted from additionalTags (and
+		// should be deleted) and which were added manually (and should be kept).
+		if !reflect.DeepEqual(desiredTags, existingTags) &&
+			existing.GetAnnotations()[asoannotations.ReconcilePolicy] == string(asoannotations.ReconcilePolicyManage) {
+			return azure.WithTransientError(azure.NewOperationNotDoneError(&infrav1.Future{
+				Type:          createOrUpdateFutureType,
+				ResourceGroup: existing.GetNamespace(),
+				Name:          existing.GetName(),
+			}), requeueInterval)
+		}
 	}
 
-	existingTags, err := t.GetActualTags(existing)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get actual tags for %s %s/%s", existing.GetObjectKind().GroupVersionKind(), existing.GetNamespace(), existing.GetName())
-	}
 	existingTagsMap := converters.TagsToMap(existingTags)
-
 	_, createdOrUpdated, deleted, newAnnotation := tags.TagsChanged(lastAppliedTags, t.GetAdditionalTags(), existingTagsMap)
 	desiredTags, err := t.GetDesiredTags(parameters)
 	if err != nil {
