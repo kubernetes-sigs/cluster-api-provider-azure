@@ -81,6 +81,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 
 	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
 
+	var readyErr error
 	var adopt bool
 	var existing T
 	var zero T // holds the zero value, to be returned with non-nil errors.
@@ -105,7 +106,6 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		if !readyExists {
 			return zero, azure.WithTransientError(errors.New("ready status unknown"), requeueInterval)
 		}
-		var readyErr error
 		if cond := conds[i]; cond.Status != metav1.ConditionTrue {
 			switch {
 			case cond.Reason == conditions.ReasonAzureResourceNotFound.Name &&
@@ -133,9 +133,10 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 
 			if readyErr != nil {
 				if conds[i].Severity == conditions.ConditionSeverityError {
-					return zero, azure.WithTerminalError(readyErr)
+					readyErr = azure.WithTerminalError(readyErr)
+				} else {
+					readyErr = azure.WithTransientError(readyErr, requeueInterval)
 				}
-				return zero, azure.WithTransientError(readyErr, requeueInterval)
 			}
 		}
 	}
@@ -200,6 +201,11 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 
 	diff := cmp.Diff(existing, parameters)
 	if diff == "" {
+		if readyErr != nil {
+			// Only return this error when the resource is up to date in order to permit updates from
+			// Parameters which may fix the resource's current state.
+			return zero, readyErr
+		}
 		log.V(2).Info("resource up to date")
 		return existing, nil
 	}
