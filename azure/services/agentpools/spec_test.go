@@ -156,6 +156,12 @@ func sdkWithNodeTaints(nodeTaints []*string) func(*armcontainerservice.AgentPool
 	}
 }
 
+func sdkWithNodeLabels(nodeLabels map[string]*string) func(*armcontainerservice.AgentPool) {
+	return func(pool *armcontainerservice.AgentPool) {
+		pool.Properties.NodeLabels = nodeLabels
+	}
+}
+
 func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
@@ -365,6 +371,27 @@ func TestParameters(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "difference in system node labels with empty label at CAPZ and non-nil label at AKS should preserve AKS K8s label",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) {
+					pool.NodeLabels = nil
+				},
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *armcontainerservice.AgentPool) {
+					pool.Properties.NodeLabels = map[string]*string{
+						"fake-label":                            ptr.To("fake-value"),
+						"kubernetes.azure.com/scalesetpriority": ptr.To("spot"),
+					}
+				},
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected: sdkFakeAgentPool(sdkWithNodeLabels(map[string]*string{
+				"kubernetes.azure.com/scalesetpriority": ptr.To("spot"),
+			})),
+			expectedError: nil,
+		},
+		{
 			name: "difference in non-system node taints with empty taints should trigger update",
 			spec: fakeAgentPool(
 				func(pool *AgentPoolSpec) {
@@ -377,7 +404,7 @@ func TestParameters(t *testing.T) {
 				},
 				sdkWithProvisioningState("Succeeded"),
 			),
-			expected:      sdkFakeAgentPool(sdkWithNodeTaints(nil)),
+			expected:      sdkFakeAgentPool(sdkWithNodeTaints(make([]*string, 0))),
 			expectedError: nil,
 		},
 		{
@@ -394,6 +421,25 @@ func TestParameters(t *testing.T) {
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      nil,
+			expectedError: nil,
+		},
+		{
+			name: "difference in system node taints with empty taints at CAPZ and non-nil taints at AKS should preserve K8s taints",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) {
+					pool.NodeTaints = nil
+				},
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *armcontainerservice.AgentPool) {
+					pool.Properties.NodeTaints = []*string{
+						ptr.To(azureutil.AzureSystemNodeLabelPrefix + "-fake-taint"),
+						ptr.To("fake-old-taint"),
+					}
+				},
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      sdkFakeAgentPool(sdkWithNodeTaints([]*string{ptr.To(azureutil.AzureSystemNodeLabelPrefix + "-fake-taint")})),
 			expectedError: nil,
 		},
 		{
@@ -432,6 +478,18 @@ func TestParameters(t *testing.T) {
 			),
 			existing: sdkFakeAgentPool(
 				func(pool *armcontainerservice.AgentPool) { pool.Properties.NodeTaints = nil },
+				sdkWithProvisioningState("Succeeded"),
+			),
+			expected:      nil,
+			expectedError: nil,
+		},
+		{
+			name: "empty node labels should not trigger an update",
+			spec: fakeAgentPool(
+				func(pool *AgentPoolSpec) { pool.NodeLabels = nil },
+			),
+			existing: sdkFakeAgentPool(
+				func(pool *armcontainerservice.AgentPool) { pool.Properties.NodeLabels = nil },
 				sdkWithProvisioningState("Succeeded"),
 			),
 			expected:      nil,
@@ -493,7 +551,16 @@ func TestMergeSystemNodeLabels(t *testing.T) {
 				"foo":   ptr.To("bar"),
 				"hello": ptr.To("world"),
 			},
-			expected: nil,
+			expected: map[string]*string{},
+		},
+		{
+			name:       "labels are nil when both the capz and aks labels are nil",
+			capzLabels: nil,
+			aksLabels: map[string]*string{
+				"foo":   ptr.To("bar"),
+				"hello": ptr.To("world"),
+			},
+			expected: map[string]*string{},
 		},
 		{
 			name: "delete one label",
