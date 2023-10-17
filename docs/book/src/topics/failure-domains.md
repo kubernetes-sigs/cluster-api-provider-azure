@@ -128,6 +128,21 @@ spec:
 
 ```
 
+If you can't use `Machine` (or `MachineDeployment`) to explicitly place your VMs (for example, `KubeadmControlPlane` does not accept those as an object reference but rather uses `AzureMachineTemplate` directly), then you can opt to restrict the announcement of discovered failure domains from the cluster's status itself.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: my-cluster
+  namespace: default
+spec:
+  location: eastus
+  failureDomains:
+    1:
+      controlPlane: true
+```
+
 ### Using Virtual Machine Scale Sets
 
 You can use an `AzureMachinePool` object to deploy a Virtual Machine Scale Set which automatically distributes VM instances across the configured availability zones.
