@@ -37,7 +37,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -760,36 +759,27 @@ func resolveFlatcarVersion(config *clusterctl.E2EConfig, versions semver.Version
 
 // newImagesClient returns a new VM images client using environmental settings for auth.
 func newImagesClient() *armcompute.VirtualMachineImagesClient {
-	settings, err := auth.GetSettingsFromEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	imagesClient, err := armcompute.NewVirtualMachineImagesClient(subscriptionID, cred, nil)
+	imagesClient, err := armcompute.NewVirtualMachineImagesClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	return imagesClient
 }
 
 func newCommunityGalleryImagesClient() *armcompute.CommunityGalleryImagesClient {
-	settings, err := auth.GetSettingsFromEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	communityGalleryImagesClient, err := armcompute.NewCommunityGalleryImagesClient(subscriptionID, cred, nil)
+	communityGalleryImagesClient, err := armcompute.NewCommunityGalleryImagesClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	return communityGalleryImagesClient
 }
 
 func newCommunityGalleryImageVersionsClient() *armcompute.CommunityGalleryImageVersionsClient {
-	settings, err := auth.GetSettingsFromEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	communityGalleryImageVersionsClient, err := armcompute.NewCommunityGalleryImageVersionsClient(subscriptionID, cred, nil)
+	communityGalleryImageVersionsClient, err := armcompute.NewCommunityGalleryImageVersionsClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	return communityGalleryImageVersionsClient
@@ -945,4 +935,10 @@ func CopyConfigMap(ctx context.Context, input clusterctl.ApplyCustomClusterTempl
 			g.Expect(err).To(Succeed())
 		}
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
+}
+
+func getSubscriptionID(g Gomega) string {
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	g.Expect(subscriptionID).NotTo(BeEmpty())
+	return subscriptionID
 }

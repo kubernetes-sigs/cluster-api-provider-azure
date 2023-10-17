@@ -30,7 +30,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
@@ -206,12 +205,9 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 // ExpectResourceGroupToBe404 performs a GET request to Azure to determine if the cluster resource group still exists.
 // If it does still exist, it means the cluster was not deleted and is leaking Azure resources.
 func ExpectResourceGroupToBe404(ctx context.Context) {
-	settings, err := auth.GetSettingsFromEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	groupsClient, err := armresources.NewResourceGroupsClient(subscriptionID, cred, nil)
+	groupsClient, err := armresources.NewResourceGroupsClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 	_, err = groupsClient.Get(ctx, os.Getenv(AzureResourceGroup), nil)
 	Expect(azure.ResourceNotFound(err)).To(BeTrue(), "The resource group in Azure still exists. After deleting the cluster all of the Azure resources should also be deleted.")
