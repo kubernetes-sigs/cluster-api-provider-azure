@@ -710,7 +710,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		specMock.MockTagsGetterSetter.EXPECT().GetActualTags(gomock.Any()).Return(nil)
 		specMock.MockTagsGetterSetter.EXPECT().GetAdditionalTags().Return(nil)
-		specMock.MockTagsGetterSetter.EXPECT().GetDesiredTags(gomock.Any()).Return(nil)
+		specMock.MockTagsGetterSetter.EXPECT().GetDesiredTags(gomock.Any()).Return(nil).Times(2)
 		specMock.MockTagsGetterSetter.EXPECT().SetTags(gomock.Any(), gomock.Any())
 
 		ctx := context.Background()
