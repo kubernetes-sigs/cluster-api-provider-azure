@@ -9,7 +9,7 @@ resources:
 patchesStrategicMerge:
   - ../patches/windows-containerd-labels.yaml
   - cluster.yaml
-  - ../patches/cluster-label.yaml
+  - ../patches/cluster-label-calico.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     files:

@@ -11,4 +11,4 @@ patchesStrategicMerge:
   - ../patches/apiserver.yaml
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
-  - ../patches/cluster-label.yaml
+  - ../patches/cluster-label-calico.yaml

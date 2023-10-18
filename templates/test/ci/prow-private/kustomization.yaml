@@ -14,7 +14,7 @@ patchesStrategicMerge:
   - ../patches/uami-control-plane.yaml
   - ../prow-intree-cloud-provider/patches/intree-cp.yaml # TODO: remove once CAPI supports Helm addons
   - ../prow-intree-cloud-provider/patches/intree-md-0.yaml # TODO: remove once CAPI supports Helm addons
-  - ../patches/cluster-label.yaml
+  - ../patches/cluster-label-calico.yaml
 patches:
   - path: patches/user-assigned.yaml
     target:

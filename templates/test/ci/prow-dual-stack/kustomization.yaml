@@ -10,4 +10,4 @@ patchesStrategicMerge:
   - ../patches/controller-manager.yaml
   - patches/azure-machine-template-control-plane.yaml
   - patches/azure-machine-template.yaml
-  - patches/cluster-label.yaml
+  - patches/cluster-label-calico-dual-stack.yaml

@@ -13,7 +13,7 @@ patchesStrategicMerge:
   - ../patches/controller-manager.yaml
   - ../patches/machine-pool-worker-counts.yaml
   - ../patches/windows-containerd-labels.yaml
-  - ../patches/cluster-label.yaml
+  - ../patches/cluster-label-calico.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     files:

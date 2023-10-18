@@ -8,7 +8,7 @@ patchesStrategicMerge:
   - ../../../flavors/dual-stack/patches/dual-stack.yaml
   - ../../../flavors/dual-stack/patches/controlplane-azuremachinetemplate.yaml
   - ../../../flavors/dual-stack/patches/kubeadm-controlplane.yaml
-  - ../prow-dual-stack/patches/cluster-label.yaml
+  - ../prow-dual-stack/patches/cluster-label-calico-dual-stack.yaml
   - patches/machine-deployment.yaml
   - ../patches/windows-addons-disabled.yaml
 patches:

@@ -7,4 +7,4 @@ bases:
 patchesStrategicMerge:
 - ./cluster-with-kcp.yaml
 - ../patches/azurecluster-identity-ref.yaml
-- ../patches/cluster-label.yaml
+- ../patches/cluster-label-calico.yaml
