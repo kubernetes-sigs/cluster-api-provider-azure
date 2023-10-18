@@ -168,6 +168,10 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 	defer done()
 
 	nodeLabels := s.NodeLabels
+	var nodeTaints *[]string
+	if len(s.NodeTaints) > 0 {
+		nodeTaints = &s.NodeTaints
+	}
 	if existing != nil {
 		existingPool, ok := existing.(containerservice.AgentPool)
 		if !ok {
@@ -243,6 +247,9 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 		nodeLabels = mergeSystemNodeLabels(normalizedProfile.NodeLabels, existingPool.NodeLabels)
 		normalizedProfile.NodeLabels = nodeLabels
 
+		nodeTaints = mergeSystemNodeTaints(normalizedProfile.NodeTaints, existingPool.NodeTaints)
+		normalizedProfile.NodeTaints = nodeTaints
+
 		// Compute a diff to check if we require an update
 		diff := cmp.Diff(normalizedProfile, existingProfile)
 		if diff == "" {
@@ -256,10 +263,6 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 	var availabilityZones *[]string
 	if len(s.AvailabilityZones) > 0 {
 		availabilityZones = &s.AvailabilityZones
-	}
-	var nodeTaints *[]string
-	if len(s.NodeTaints) > 0 {
-		nodeTaints = &s.NodeTaints
 	}
 	var sku *string
 	if s.SKU != "" {
@@ -383,4 +386,30 @@ func mergeSystemNodeLabels(capz, aks map[string]*string) map[string]*string {
 		ret = nil
 	}
 	return ret
+}
+
+// mergeSystemNodeTaints appends any kubernetes.azure.com-prefixed taints from the AKS taint set
+// into the local capz taint set.
+func mergeSystemNodeTaints(capz, aks *[]string) *[]string {
+	var ret []string
+	if capz != nil {
+		ret = *capz
+	}
+	if ret == nil {
+		ret = make([]string, 0)
+	}
+	// Look for labels returned from the AKS node pool API that begin with kubernetes.azure.com
+	if aks != nil {
+		for _, aksNodeTaint := range *aks {
+			if azureutil.IsAzureSystemNodeLabelKey(aksNodeTaint) {
+				ret = append(ret, aksNodeTaint)
+			}
+		}
+	}
+
+	// Preserve nil-ness of capz
+	if capz == nil && len(ret) == 0 {
+		return nil
+	}
+	return &ret
 }
