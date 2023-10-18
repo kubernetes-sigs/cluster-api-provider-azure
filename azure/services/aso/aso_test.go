@@ -175,6 +175,10 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Namespace: "namespace",
 			},
 		})
+		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+			return group, nil
+		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
@@ -183,6 +187,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Namespace: "namespace",
 				Labels: map[string]string{
 					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
@@ -203,6 +210,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		var recerr azure.ReconcileError
 		g.Expect(errors.As(err, &recerr)).To(BeTrue())
 		g.Expect(recerr.IsTransient()).To(BeTrue())
+		g.Expect(recerr.IsTerminal()).To(BeFalse())
 	})
 
 	t.Run("resource is not ready in reconciling state", func(t *testing.T) {
@@ -223,6 +231,10 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Namespace: "namespace",
 			},
 		})
+		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+			return group, nil
+		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
@@ -231,6 +243,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Namespace: "namespace",
 				Labels: map[string]string{
 					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
@@ -268,6 +283,10 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Namespace: "namespace",
 			},
 		})
+		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+			return group, nil
+		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
@@ -276,6 +295,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Namespace: "namespace",
 				Labels: map[string]string{
 					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
@@ -296,6 +318,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		var recerr azure.ReconcileError
 		g.Expect(errors.As(err, &recerr)).To(BeTrue())
 		g.Expect(recerr.IsTerminal()).To(BeTrue())
+		g.Expect(recerr.IsTransient()).To(BeFalse())
 	})
 
 	t.Run("error getting existing resource", func(t *testing.T) {

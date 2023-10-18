@@ -75,6 +75,7 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 
 	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
 
+	var readyErr error
 	var adopt bool
 	var existing genruntime.MetaObject
 	if err := s.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
@@ -96,7 +97,6 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 		if !readyExists {
 			return nil, azure.WithTransientError(errors.New("ready status unknown"), requeueInterval)
 		}
-		var readyErr error
 		if cond := conds[i]; cond.Status != metav1.ConditionTrue {
 			switch {
 			case cond.Reason == conditions.ReasonAzureResourceNotFound.Name &&
@@ -124,9 +124,10 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 
 			if readyErr != nil {
 				if conds[i].Severity == conditions.ConditionSeverityError {
-					return nil, azure.WithTerminalError(readyErr)
+					readyErr = azure.WithTerminalError(readyErr)
+				} else {
+					readyErr = azure.WithTransientError(readyErr, requeueInterval)
 				}
-				return nil, azure.WithTransientError(readyErr, requeueInterval)
 			}
 		}
 	}
@@ -199,6 +200,11 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 
 	diff := cmp.Diff(existing, parameters)
 	if diff == "" {
+		if readyErr != nil {
+			// Only return this error when the resource is up to date in order to permit updates from
+			// Parameters which may fix the resource's current state.
+			return nil, readyErr
+		}
 		log.V(2).Info("resource up to date")
 		return existing, nil
 	}
