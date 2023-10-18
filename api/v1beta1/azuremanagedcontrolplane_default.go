@@ -56,7 +56,6 @@ func (m *AzureManagedControlPlane) setDefaultResourceGroupName() {
 	if m.Spec.ResourceGroupName == "" {
 		if clusterName, ok := m.Labels[clusterv1.ClusterNameLabel]; ok {
 			m.Spec.ResourceGroupName = clusterName
-			fmt.Printf("WILLIE ResourceGroupName is empty, defaulting to %s\n", m.Spec.ResourceGroupName)
 		}
 	}
 }
