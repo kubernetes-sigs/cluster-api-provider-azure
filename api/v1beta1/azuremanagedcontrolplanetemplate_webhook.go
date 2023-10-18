@@ -31,11 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// AzureManagedControlPlaneTemplateImmutableMsg is the message used for errors on fields that are immutable.
-const AzureManagedControlPlaneTemplateImmutableMsg = "AzureManagedControlPlaneTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/change-clusterclass.html"
-
-// SetupAzureManagedControlPlaneTemplateWithManager will set up the webhook to be managed by the specified manager.
-func SetupAzureManagedControlPlaneTemplateWithManager(mgr ctrl.Manager) error {
+// SetupAzureManagedControlPlaneTemplateWebhookWithManager will set up the webhook to be managed by the specified manager.
+func SetupAzureManagedControlPlaneTemplateWebhookWithManager(mgr ctrl.Manager) error {
 	mcpw := &azureManagedControlPlaneTemplateWebhook{Client: mgr.GetClient()}
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedControlPlaneTemplate{}).
@@ -67,7 +64,7 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateCreate(ctx context.
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
-	// NOTE: AzureManagedControlPlane relies upon MachinePools, which is behind a feature gate flag.
+	// NOTE: AzureManagedControlPlaneTemplate relies upon MachinePools, which is behind a feature gate flag.
 	// The webhook must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
 		return nil, field.Forbidden(
@@ -91,42 +88,42 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "SubscriptionID"),
+		field.NewPath("Spec", "Template", "Spec", "SubscriptionID"),
 		old.Spec.Template.Spec.SubscriptionID,
 		mcp.Spec.Template.Spec.SubscriptionID); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "Location"),
+		field.NewPath("Spec", "Template", "Spec", "Location"),
 		old.Spec.Template.Spec.Location,
 		mcp.Spec.Template.Spec.Location); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "DNSServiceIP"),
+		field.NewPath("Spec", "Template", "Spec", "DNSServiceIP"),
 		old.Spec.Template.Spec.DNSServiceIP,
 		mcp.Spec.Template.Spec.DNSServiceIP); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "NetworkPlugin"),
+		field.NewPath("Spec", "Template", "Spec", "NetworkPlugin"),
 		old.Spec.Template.Spec.NetworkPlugin,
 		mcp.Spec.Template.Spec.NetworkPlugin); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "NetworkPolicy"),
+		field.NewPath("Spec", "Template", "Spec", "NetworkPolicy"),
 		old.Spec.Template.Spec.NetworkPolicy,
 		mcp.Spec.Template.Spec.NetworkPolicy); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "LoadBalancerSKU"),
+		field.NewPath("Spec", "Template", "Spec", "LoadBalancerSKU"),
 		old.Spec.Template.Spec.LoadBalancerSKU,
 		mcp.Spec.Template.Spec.LoadBalancerSKU); err != nil {
 		allErrs = append(allErrs, err)
@@ -136,21 +133,21 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 		if mcp.Spec.Template.Spec.AADProfile == nil {
 			allErrs = append(allErrs,
 				field.Invalid(
-					field.NewPath("Spec", "AADProfile"),
+					field.NewPath("Spec", "Template", "Spec", "AADProfile"),
 					mcp.Spec.Template.Spec.AADProfile,
 					"field cannot be nil, cannot disable AADProfile"))
 		} else {
 			if !mcp.Spec.Template.Spec.AADProfile.Managed && old.Spec.Template.Spec.AADProfile.Managed {
 				allErrs = append(allErrs,
 					field.Invalid(
-						field.NewPath("Spec", "AADProfile.Managed"),
+						field.NewPath("Spec", "Template", "Spec", "AADProfile.Managed"),
 						mcp.Spec.Template.Spec.AADProfile.Managed,
 						"cannot set AADProfile.Managed to false"))
 			}
 			if len(mcp.Spec.Template.Spec.AADProfile.AdminGroupObjectIDs) == 0 {
 				allErrs = append(allErrs,
 					field.Invalid(
-						field.NewPath("Spec", "AADProfile.AdminGroupObjectIDs"),
+						field.NewPath("Spec", "Template", "Spec", "AADProfile.AdminGroupObjectIDs"),
 						mcp.Spec.Template.Spec.AADProfile.AdminGroupObjectIDs,
 						"length of AADProfile.AdminGroupObjectIDs cannot be zero"))
 			}
@@ -161,7 +158,7 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 	// Updating outboundType after cluster creation (PREVIEW)
 	// https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype#updating-outboundtype-after-cluster-creation-preview
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "OutboundType"),
+		field.NewPath("Spec", "Template", "Spec", "OutboundType"),
 		old.Spec.Template.Spec.OutboundType,
 		mcp.Spec.Template.Spec.OutboundType); err != nil {
 		allErrs = append(allErrs, err)

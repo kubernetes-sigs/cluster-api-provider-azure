@@ -165,6 +165,28 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: default.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - azuremanagedmachinepooltemplates
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool
   failurePolicy: Fail
   name: default.azuremachinepool.infrastructure.cluster.x-k8s.io
@@ -402,6 +424,29 @@ webhooks:
     - DELETE
     resources:
     - azuremanagedmachinepools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: validation.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - azuremanagedmachinepooltemplates
   sideEffects: None
 - admissionReviewVersions:
   - v1

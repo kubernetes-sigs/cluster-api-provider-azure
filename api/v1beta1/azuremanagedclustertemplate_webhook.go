@@ -17,20 +17,19 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
-
-// AzureManagedClusterTemplateImmutableMsg is the message used for errors on fields that are immutable.
-const AzureManagedClusterTemplateImmutableMsg = "AzureManagedClusterTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/change-clusterclass.html"
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *AzureManagedClusterTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -58,18 +57,25 @@ func (r *AzureManagedClusterTemplate) ValidateCreate() (admission.Warnings, erro
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedClusterTemplate) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
-	var allErrs field.ErrorList
 	old := oldRaw.(*AzureManagedClusterTemplate)
-	if !reflect.DeepEqual(r.Spec.Template.Spec, old.Spec.Template.Spec) {
+	var allErrs field.ErrorList
+
+	// custom headers are immutable
+	oldCustomHeaders := maps.FilterByKeyPrefix(old.ObjectMeta.Annotations, CustomHeaderPrefix)
+	newCustomHeaders := maps.FilterByKeyPrefix(r.ObjectMeta.Annotations, CustomHeaderPrefix)
+	if !reflect.DeepEqual(oldCustomHeaders, newCustomHeaders) {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("AzureManagedClusterTemplate", "spec", "template", "spec"), rScanInterval, AzureManagedClusterTemplateImmutableMsg),
-		)
+			field.Invalid(
+				field.NewPath("metadata", "annotations"),
+				r.ObjectMeta.Annotations,
+				fmt.Sprintf("annotations with '%s' prefix are immutable", CustomHeaderPrefix)))
 	}
 
-	if len(allErrs) == 0 {
-		return nil, nil
+	if len(allErrs) != 0 {
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedClusterTemplate").GroupKind(), r.Name, allErrs)
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedClusterTemplate").GroupKind(), r.Name, allErrs)
+
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.

@@ -36,12 +36,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// AzureManagedMachinePoolTemplateImmutableMsg is the message used for errors on fields that are immutable.
-const AzureManagedMachinePoolTemplateImmutableMsg = "AzureManagedMachinePoolTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/change-clusterclass.html"
-
-// SetupAzureManagedMachinePoolTemplateWithManager will set up the webhook to be managed by the specified manager.
-func SetupAzureManagedMachinePoolTemplateWithManager(mgr ctrl.Manager) error {
-	mpw := &AzureManagedMachinePoolTemplateWebhook{Client: mgr.GetClient()}
+// SetupAzureManagedMachinePoolTemplateWebhookWithManager will set up the webhook to be managed by the specified manager.
+func SetupAzureManagedMachinePoolTemplateWebhookWithManager(mgr ctrl.Manager) error {
+	mpw := &azureManagedMachinePoolTemplateWebhook{Client: mgr.GetClient()}
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedMachinePoolTemplate{}).
 		WithDefaulter(mpw).
@@ -49,15 +46,14 @@ func SetupAzureManagedMachinePoolTemplateWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,versions=v1beta1,name=validation.azuremanagedmachinepooltemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
-// +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,versions=v1beta1,name=default.azuremanagedmachinepooltemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+//+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,verbs=create;update,versions=v1beta1,name=default.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-type AzureManagedMachinePoolTemplateWebhook struct {
+type azureManagedMachinePoolTemplateWebhook struct {
 	Client client.Client
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mpw *AzureManagedMachinePoolTemplateWebhook) Default(ctx context.Context, obj runtime.Object) error {
+func (mpw *azureManagedMachinePoolTemplateWebhook) Default(ctx context.Context, obj runtime.Object) error {
 	mp, ok := obj.(*AzureManagedMachinePoolTemplate)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
@@ -78,8 +74,10 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) Default(ctx context.Context, 
 	return nil
 }
 
+//+kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,versions=v1beta1,name=validation.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (mpw *azureManagedMachinePoolTemplateWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	mp, ok := obj.(*AzureManagedMachinePoolTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
@@ -96,45 +94,45 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateCreate(ctx context.Co
 
 	errs = append(errs, validateMaxPods(
 		mp.Spec.Template.Spec.MaxPods,
-		field.NewPath("Spec", "MaxPods")))
+		field.NewPath("Spec", "Template", "Spec", "MaxPods")))
 
 	errs = append(errs, validateOSType(
 		mp.Spec.Template.Spec.Mode,
 		mp.Spec.Template.Spec.OSType,
-		field.NewPath("Spec", "OSType")))
+		field.NewPath("Spec", "Template", "Spec", "OSType")))
 
 	errs = append(errs, validateAgentPoolName(
 		mp.Spec.Template.Spec.OSType,
 		mp.Spec.Template.Spec.Name,
-		field.NewPath("Spec", "Name")))
+		field.NewPath("Spec", "Template", "Spec", "Name")))
 
 	errs = append(errs, validateNodeLabels(
 		mp.Spec.Template.Spec.NodeLabels,
-		field.NewPath("Spec", "NodeLabels")))
+		field.NewPath("Spec", "Template", "Spec", "NodeLabels")))
 
 	errs = append(errs, validateNodePublicIPPrefixID(
 		mp.Spec.Template.Spec.NodePublicIPPrefixID,
-		field.NewPath("Spec", "NodePublicIPPrefixID")))
+		field.NewPath("Spec", "Template", "Spec", "NodePublicIPPrefixID")))
 
 	errs = append(errs, validateEnableNodePublicIP(
 		mp.Spec.Template.Spec.EnableNodePublicIP,
 		mp.Spec.Template.Spec.NodePublicIPPrefixID,
-		field.NewPath("Spec", "EnableNodePublicIP")))
+		field.NewPath("Spec", "Template", "Spec", "EnableNodePublicIP")))
 
 	errs = append(errs, validateKubeletConfig(
 		mp.Spec.Template.Spec.KubeletConfig,
-		field.NewPath("Spec", "KubeletConfig")))
+		field.NewPath("Spec", "Template", "Spec", "KubeletConfig")))
 
 	errs = append(errs, validateLinuxOSConfig(
 		mp.Spec.Template.Spec.LinuxOSConfig,
 		mp.Spec.Template.Spec.KubeletConfig,
-		field.NewPath("Spec", "LinuxOSConfig")))
+		field.NewPath("Spec", "Template", "Spec", "LinuxOSConfig")))
 
 	return nil, kerrors.NewAggregate(errs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (mpw *azureManagedMachinePoolTemplateWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	old, ok := oldObj.(*AzureManagedMachinePoolTemplate)
 	if !ok {
@@ -291,7 +289,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(ctx context.Co
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (mpw *azureManagedMachinePoolTemplateWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	mp, ok := obj.(*AzureManagedMachinePoolTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
