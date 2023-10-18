@@ -18,10 +18,13 @@ package aso
 
 import (
 	"encoding/json"
+	"reflect"
 
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
@@ -47,6 +50,16 @@ func reconcileTags[T genruntime.MetaObject](t TagsGetterSetter[T], existing T, r
 		}
 
 		existingTags = t.GetActualTags(existing)
+		// Wait for tags to converge so we know for sure which ones are deleted from additionalTags (and
+		// should be deleted) and which were added manually (and should be kept).
+		if !reflect.DeepEqual(t.GetDesiredTags(existing), existingTags) &&
+			existing.GetAnnotations()[asoannotations.ReconcilePolicy] == string(asoannotations.ReconcilePolicyManage) {
+			return azure.WithTransientError(azure.NewOperationNotDoneError(&infrav1.Future{
+				Type:          createOrUpdateFutureType,
+				ResourceGroup: existing.GetNamespace(),
+				Name:          existing.GetName(),
+			}), requeueInterval)
+		}
 	}
 
 	existingTagsMap := converters.TagsToMap(existingTags)
