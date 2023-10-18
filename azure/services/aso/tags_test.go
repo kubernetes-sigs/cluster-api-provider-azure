@@ -21,11 +21,13 @@ import (
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
 )
 
@@ -44,6 +46,7 @@ func TestReconcileTags(t *testing.T) {
 				"oldAdditionalTag": "oldAdditionalVal",
 			},
 			existingTags: infrav1.Tags{
+				"oldAdditionalTag": "oldAdditionalVal",
 				"nonAdditionalTag": "nonAdditionalVal",
 			},
 			additionalTagsSpec: infrav1.Tags{
@@ -95,6 +98,7 @@ func TestReconcileTags(t *testing.T) {
 				})
 			}
 			tag.EXPECT().GetActualTags(existing).Return(test.existingTags, nil)
+			tag.EXPECT().GetDesiredTags(existing).Return(test.existingTags, nil)
 			tag.EXPECT().GetAdditionalTags().Return(test.additionalTagsSpec)
 
 			parameters := &asoresourcesv1.ResourceGroup{}
@@ -146,6 +150,7 @@ func TestReconcileTags(t *testing.T) {
 
 		existing := &asoresourcesv1.ResourceGroup{}
 		tag.EXPECT().GetActualTags(existing).Return(nil, nil)
+		tag.EXPECT().GetDesiredTags(existing).Return(nil, nil)
 		tag.EXPECT().GetAdditionalTags().Return(nil)
 
 		parameters := &asoresourcesv1.ResourceGroup{}
@@ -163,6 +168,7 @@ func TestReconcileTags(t *testing.T) {
 
 		existing := &asoresourcesv1.ResourceGroup{}
 		tag.EXPECT().GetActualTags(existing).Return(nil, nil)
+		tag.EXPECT().GetDesiredTags(existing).Return(nil, nil)
 		tag.EXPECT().GetAdditionalTags().Return(nil)
 
 		parameters := &asoresourcesv1.ResourceGroup{}
@@ -171,5 +177,28 @@ func TestReconcileTags(t *testing.T) {
 
 		err := reconcileTags(tag, existing, parameters)
 		g.Expect(err).To(MatchError(ContainSubstring("some error")))
+	})
+
+	t.Run("existing tags not up to date", func(t *testing.T) {
+		g := NewWithT(t)
+
+		mockCtrl := gomock.NewController(t)
+		tag := mock_aso.NewMockTagsGetterSetter(mockCtrl)
+
+		existing := &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
+				},
+			},
+		}
+		tag.EXPECT().GetActualTags(existing).Return(infrav1.Tags{"new": "value"}, nil)
+		tag.EXPECT().GetDesiredTags(existing).Return(infrav1.Tags{"old": "tag"}, nil)
+
+		err := reconcileTags(tag, existing, nil)
+		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue())
+		var recerr azure.ReconcileError
+		g.Expect(errors.As(err, &recerr)).To(BeTrue())
+		g.Expect(recerr.IsTransient()).To(BeTrue())
 	})
 }
