@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -89,19 +90,203 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
-	if !reflect.DeepEqual(mcp.Spec.Template.Spec, old.Spec.Template.Spec) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("AzureManagedControlPlaneTemplate", "spec", "template", "spec"), mcp, AzureManagedControlPlaneTemplateImmutableMsg),
-		)
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "SubscriptionID"),
+		old.Spec.Template.Spec.SubscriptionID,
+		mcp.Spec.Template.Spec.SubscriptionID); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "Location"),
+		old.Spec.Template.Spec.Location,
+		mcp.Spec.Template.Spec.Location); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "DNSServiceIP"),
+		old.Spec.Template.Spec.DNSServiceIP,
+		mcp.Spec.Template.Spec.DNSServiceIP); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "NetworkPlugin"),
+		old.Spec.Template.Spec.NetworkPlugin,
+		mcp.Spec.Template.Spec.NetworkPlugin); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "NetworkPolicy"),
+		old.Spec.Template.Spec.NetworkPolicy,
+		mcp.Spec.Template.Spec.NetworkPolicy); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "LoadBalancerSKU"),
+		old.Spec.Template.Spec.LoadBalancerSKU,
+		mcp.Spec.Template.Spec.LoadBalancerSKU); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if old.Spec.Template.Spec.AADProfile != nil {
+		if mcp.Spec.Template.Spec.AADProfile == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "AADProfile"),
+					mcp.Spec.Template.Spec.AADProfile,
+					"field cannot be nil, cannot disable AADProfile"))
+		} else {
+			if !mcp.Spec.Template.Spec.AADProfile.Managed && old.Spec.Template.Spec.AADProfile.Managed {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile.Managed"),
+						mcp.Spec.Template.Spec.AADProfile.Managed,
+						"cannot set AADProfile.Managed to false"))
+			}
+			if len(mcp.Spec.Template.Spec.AADProfile.AdminGroupObjectIDs) == 0 {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile.AdminGroupObjectIDs"),
+						mcp.Spec.Template.Spec.AADProfile.AdminGroupObjectIDs,
+						"length of AADProfile.AdminGroupObjectIDs cannot be zero"))
+			}
+		}
+	}
+
+	// Consider removing this once moves out of preview
+	// Updating outboundType after cluster creation (PREVIEW)
+	// https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype#updating-outboundtype-after-cluster-creation-preview
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "OutboundType"),
+		old.Spec.Template.Spec.OutboundType,
+		mcp.Spec.Template.Spec.OutboundType); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if errs := mcp.validateVirtualNetworkTemplateUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := mcp.validateAPIServerAccessProfileTemplateUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
 	}
 
 	if len(allErrs) == 0 {
-		return nil, nil
+		return nil, mcp.validateManagedControlPlaneTemplate(mcpw.Client)
 	}
+
 	return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlaneTemplate").GroupKind(), mcp.Name, allErrs)
+}
+
+// Validate the Azure Managed Control Plane Template and return an aggregate error.
+func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate(cli client.Client) error {
+	var allErrs field.ErrorList
+
+	allErrs = append(allErrs, validateDNSServiceIP(
+		mcp.Spec.Template.Spec.DNSServiceIP,
+		field.NewPath("spec").Child("template").Child("spec").Child("DNSServiceIP"))...)
+
+	allErrs = append(allErrs, validateVersion(
+		mcp.Spec.Template.Spec.Version,
+		field.NewPath("spec").Child("template").Child("spec").Child("Version"))...)
+
+	allErrs = append(allErrs, validateLoadBalancerProfile(
+		mcp.Spec.Template.Spec.LoadBalancerProfile,
+		field.NewPath("spec").Child("template").Child("spec").Child("LoadBalancerProfile"))...)
+
+	allErrs = append(allErrs, validateManagedClusterNetwork(
+		cli,
+		mcp.Labels,
+		mcp.Namespace,
+		mcp.Spec.Template.Spec.DNSServiceIP,
+		mcp.Spec.Template.Spec.VirtualNetwork.Subnet,
+		field.NewPath("spec").Child("template").Child("spec"))...)
+
+	allErrs = append(allErrs, validateName(mcp.Name, field.NewPath("Name"))...)
+
+	allErrs = append(allErrs, validateAutoScalerProfile(mcp.Spec.Template.Spec.AutoScalerProfile, field.NewPath("spec").Child("template").Child("spec").Child("AutoScalerProfile"))...)
+
+	return allErrs.ToAggregate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateDelete(ctx context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
+}
+
+// validateVirtualNetworkTemplateUpdate validates update to VirtualNetworkTemplate.
+func (m *AzureManagedControlPlaneTemplate) validateVirtualNetworkTemplateUpdate(old *AzureManagedControlPlaneTemplate) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.Spec.Template.Spec.VirtualNetwork.Name != m.Spec.Template.Spec.VirtualNetwork.Name {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "Template", "Spec", "VirtualNetwork.Name"),
+				m.Spec.Template.Spec.VirtualNetwork.Name,
+				"Virtual Network Name is immutable"))
+	}
+
+	if old.Spec.Template.Spec.VirtualNetwork.CIDRBlock != m.Spec.Template.Spec.VirtualNetwork.CIDRBlock {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "Template", "Spec", "VirtualNetwork.CIDRBlock"),
+				m.Spec.Template.Spec.VirtualNetwork.CIDRBlock,
+				"Virtual Network CIDRBlock is immutable"))
+	}
+
+	if old.Spec.Template.Spec.VirtualNetwork.Subnet.Name != m.Spec.Template.Spec.VirtualNetwork.Subnet.Name {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "Template", "Spec", "VirtualNetwork.Subnet.Name"),
+				m.Spec.Template.Spec.VirtualNetwork.Subnet.Name,
+				"Subnet Name is immutable"))
+	}
+
+	// NOTE: This only works because we force the user to set the CIDRBlock for both the
+	// managed and unmanaged Vnets. If we ever update the subnet cidr based on what's
+	// actually set in the subnet, and it is different from what's in the Spec, for
+	// unmanaged Vnets like we do with the AzureCluster this logic will break.
+	if old.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock != m.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "Template", "Spec", "VirtualNetwork.Subnet.CIDRBlock"),
+				m.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock,
+				"Subnet CIDRBlock is immutable"))
+	}
+
+	return allErrs
+}
+
+// validateAPIServerAccessProfileTemplateUpdate validates update to APIServerAccessProfileTemplate.
+func (m *AzureManagedControlPlaneTemplate) validateAPIServerAccessProfileTemplateUpdate(old *AzureManagedControlPlaneTemplate) field.ErrorList {
+	var allErrs field.ErrorList
+
+	newAPIServerAccessProfileNormalized := &APIServerAccessProfile{}
+	oldAPIServerAccessProfileNormalized := &APIServerAccessProfile{}
+	if m.Spec.Template.Spec.APIServerAccessProfile != nil {
+		newAPIServerAccessProfileNormalized = &APIServerAccessProfile{
+			EnablePrivateCluster:           m.Spec.Template.Spec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 m.Spec.Template.Spec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: m.Spec.Template.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+	}
+	if old.Spec.Template.Spec.APIServerAccessProfile != nil {
+		oldAPIServerAccessProfileNormalized = &APIServerAccessProfile{
+			EnablePrivateCluster:           old.Spec.Template.Spec.APIServerAccessProfile.EnablePrivateCluster,
+			PrivateDNSZone:                 old.Spec.Template.Spec.APIServerAccessProfile.PrivateDNSZone,
+			EnablePrivateClusterPublicFQDN: old.Spec.Template.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
+		}
+	}
+
+	if !reflect.DeepEqual(newAPIServerAccessProfileNormalized, oldAPIServerAccessProfileNormalized) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "Template", "Spec", "APIServerAccessProfile"),
+				m.Spec.Template.Spec.APIServerAccessProfile, "fields (except for AuthorizedIPRanges) are immutable"),
+		)
+	}
+
+	return allErrs
 }
