@@ -1292,7 +1292,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			_ = AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.cluster, tc.ammp).Build()
-			err := tc.ammp.validateLastSystemNodePool(fakeClient)
+			err := validateLastSystemNodePool(fakeClient, tc.ammp.Spec.NodeLabels, tc.ammp.Namespace)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

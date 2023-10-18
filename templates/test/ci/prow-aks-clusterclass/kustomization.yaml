@@ -3,7 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/aks-clusterclass
-  - ../../../flavors/aks-clusterclass-cluster
+  - ../../../flavors/aks-topology
 patchesStrategicMerge:
   - patches/tags-aks-clusterclass.yaml
   - patches/aks-clusterclass-pool0.yaml
