@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -83,9 +82,7 @@ const (
 
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
-	// Version defines the desired Kubernetes version.
-	// +kubebuilder:validation:MinLength:=2
-	Version string `json:"version"`
+	AzureManagedControlPlaneClassSpec `json:",inline"`
 
 	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
 	// Immutable.
@@ -98,55 +95,10 @@ type AzureManagedControlPlaneSpec struct {
 	// +optional
 	NodeResourceGroupName string `json:"nodeResourceGroupName,omitempty"`
 
-	// VirtualNetwork describes the vnet for the AKS cluster. Will be created if it does not exist.
-	// Immutable except for `subnet`.
-	// +optional
-	VirtualNetwork ManagedControlPlaneVirtualNetwork `json:"virtualNetwork,omitempty"`
-
-	// SubscriptionID is the GUID of the Azure subscription to hold this cluster.
-	// Immutable.
-	// +optional
-	SubscriptionID string `json:"subscriptionID,omitempty"`
-
-	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
-	// Immutable.
-	Location string `json:"location"`
-
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// Immutable, populated by the AKS API at create.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
-
-	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
-	// ones added by default.
-	// +optional
-	AdditionalTags Tags `json:"additionalTags,omitempty"`
-
-	// NetworkPlugin used for building Kubernetes network.
-	// Allowed values are "azure", "kubenet".
-	// Immutable.
-	// +kubebuilder:validation:Enum=azure;kubenet;none
-	// +optional
-	NetworkPlugin *string `json:"networkPlugin,omitempty"`
-
-	// NetworkPluginMode is the mode the network plugin should use.
-	// Allowed value is "overlay".
-	// +kubebuilder:validation:Enum=overlay
-	// +optional
-	NetworkPluginMode *NetworkPluginMode `json:"networkPluginMode,omitempty"`
-
-	// NetworkPolicy used for building Kubernetes network.
-	// Allowed values are "azure", "calico".
-	// Immutable.
-	// +kubebuilder:validation:Enum=azure;calico
-	// +optional
-	NetworkPolicy *string `json:"networkPolicy,omitempty"`
-
-	// Outbound configuration used by Nodes.
-	// Immutable.
-	// +kubebuilder:validation:Enum=loadBalancer;managedNATGateway;userAssignedNATGateway;userDefinedRouting
-	// +optional
-	OutboundType *ManagedControlPlaneOutboundType `json:"outboundType,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
 	// Use empty string to autogenerate new key. Use null value to not set key.
@@ -154,80 +106,10 @@ type AzureManagedControlPlaneSpec struct {
 	// +optional
 	SSHPublicKey *string `json:"sshPublicKey,omitempty"`
 
-	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
-	// It must be within the Kubernetes service address range specified in serviceCidr.
-	// Immutable.
-	// +optional
-	DNSServiceIP *string `json:"dnsServiceIP,omitempty"`
-
-	// LoadBalancerSKU is the SKU of the loadBalancer to be provisioned.
-	// Immutable.
-	// +kubebuilder:validation:Enum=Basic;Standard
-	// +kubebuilder:default:=Standard
-	// +optional
-	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
-
-	// IdentityRef is a reference to a AzureClusterIdentity to be used when reconciling this cluster
-	IdentityRef *corev1.ObjectReference `json:"identityRef"`
-
-	// AadProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
-	// +optional
-	AADProfile *AADProfile `json:"aadProfile,omitempty"`
-
-	// AddonProfiles are the profiles of managed cluster add-on.
-	// +optional
-	AddonProfiles []AddonProfile `json:"addonProfiles,omitempty"`
-
-	// SKU is the SKU of the AKS to be provisioned.
-	// +optional
-	SKU *AKSSku `json:"sku,omitempty"`
-
-	// LoadBalancerProfile is the profile of the cluster load balancer.
-	// +optional
-	LoadBalancerProfile *LoadBalancerProfile `json:"loadBalancerProfile,omitempty"`
-
-	// APIServerAccessProfile is the access profile for AKS API server.
-	// Immutable except for `authorizedIPRanges`.
-	// +optional
-	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
-
-	// AutoscalerProfile is the parameters to be applied to the cluster-autoscaler when enabled
-	// +optional
-	AutoScalerProfile *AutoScalerProfile `json:"autoscalerProfile,omitempty"`
-
-	// AzureEnvironment is the name of the AzureCloud to be used.
-	// The default value that would be used by most users is "AzurePublicCloud", other values are:
-	// - ChinaCloud: "AzureChinaCloud"
-	// - PublicCloud: "AzurePublicCloud"
-	// - USGovernmentCloud: "AzureUSGovernmentCloud"
-	// +optional
-	AzureEnvironment string `json:"azureEnvironment,omitempty"`
-
-	// Identity configuration used by the AKS control plane.
-	// +optional
-	Identity *Identity `json:"identity,omitempty"`
-
-	// KubeletUserAssignedIdentity is the user-assigned identity for kubelet.
-	// For authentication with Azure Container Registry.
-	// +optional
-	KubeletUserAssignedIdentity string `json:"kubeletUserAssignedIdentity,omitempty"`
-
-	// HTTPProxyConfig is the HTTP proxy configuration for the cluster.
-	// Immutable.
-	// +optional
-	HTTPProxyConfig *HTTPProxyConfig `json:"httpProxyConfig,omitempty"`
-
-	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
-	// +optional
-	OIDCIssuerProfile *OIDCIssuerProfile `json:"oidcIssuerProfile,omitempty"`
-
 	// DNSPrefix allows the user to customize dns prefix.
 	// Immutable.
 	// +optional
 	DNSPrefix *string `json:"dnsPrefix,omitempty"`
-	// DisableLocalAccounts disables getting static credentials for this cluster when set. Expected to only be used for AAD clusters.
-	// +optional
-	DisableLocalAccounts *bool `json:"disableLocalAccounts,omitempty"`
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.
@@ -331,28 +213,17 @@ type APIServerAccessProfile struct {
 	// AuthorizedIPRanges - Authorized IP Ranges to kubernetes API server.
 	// +optional
 	AuthorizedIPRanges []string `json:"authorizedIPRanges,omitempty"`
-	// EnablePrivateCluster - Whether to create the cluster as a private cluster or not.
-	// +optional
-	EnablePrivateCluster *bool `json:"enablePrivateCluster,omitempty"`
-	// PrivateDNSZone - Private dns zone mode for private cluster.
-	// +kubebuilder:validation:Enum=System;None
-	// +optional
-	PrivateDNSZone *string `json:"privateDNSZone,omitempty"`
-	// EnablePrivateClusterPublicFQDN - Whether to create additional public FQDN for private cluster or not.
-	// +optional
-	EnablePrivateClusterPublicFQDN *bool `json:"enablePrivateClusterPublicFQDN,omitempty"`
+
+	APIServerAccessProfileClassSpec `json:",inline"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
 type ManagedControlPlaneVirtualNetwork struct {
-	Name      string `json:"name"`
-	CIDRBlock string `json:"cidrBlock"`
-	// Immutable except for `serviceEndpoints`.
-	// +optional
-	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
 	// ResourceGroup is the name of the Azure resource group for the VNet and Subnet.
 	// +optional
 	ResourceGroup string `json:"resourceGroup,omitempty"`
+
+	ManagedControlPlaneVirtualNetworkClassSpec `json:",inline"`
 }
 
 // ManagedControlPlaneSubnet describes a subnet for an AKS cluster.
@@ -393,6 +264,10 @@ type AzureManagedControlPlaneStatus struct {
 	// OIDCIssuerProfile is the OIDC issuer profile of the Managed Cluster.
 	// +optional
 	OIDCIssuerProfile *OIDCIssuerProfileStatus `json:"oidcIssuerProfile,omitempty"`
+
+	// Version defines the Kubernetes version for the control plane instance.
+	// +optional
+	Version string `json:"version"`
 }
 
 // OIDCIssuerProfileStatus is the OIDC issuer profile of the Managed Cluster.

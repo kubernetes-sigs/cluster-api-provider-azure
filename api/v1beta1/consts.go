@@ -170,4 +170,6 @@ const (
 	AzureManagedControlPlaneKind = "AzureManagedControlPlane"
 	// AzureClusterIdentityKind indicates the kind of an AzureClusterIdentity.
 	AzureClusterIdentityKind = "AzureClusterIdentity"
+	// AzureNetworkPluginName is the name of the Azure network plugin.
+	AzureNetworkPluginName = "azure"
 )

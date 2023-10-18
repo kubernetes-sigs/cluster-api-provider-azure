@@ -1,0 +1,67 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePoolTemplate
+metadata:
+  name: "${CLUSTER_NAME}-pool1"
+spec:
+  template:
+    spec:
+      maxPods: 64
+      osDiskType: "Ephemeral"
+      osDiskSizeGB: 40
+      enableNodePublicIP: false
+      scaleSetPriority: Regular
+      taints:
+        - effect: NoSchedule
+          key: type
+          value: shared
+      nodeLabels:
+        "type": "shared"
+      name: pool1
+      sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
+      kubeletConfig:
+        cpuManagerPolicy: "static"
+        cpuCfsQuota: true
+        cpuCfsQuotaPeriod: "110ms"
+        imageGcHighThreshold: 70
+        imageGcLowThreshold: 50
+        topologyManagerPolicy: "best-effort"
+        allowedUnsafeSysctls:
+          - "net.*"
+          - "kernel.msg*"
+        failSwapOn: false
+        containerLogMaxSizeMB: 500
+        containerLogMaxFiles: 50
+        podMaxPids: 2048
+      linuxOSConfig:
+        swapFileSizeMB: 1500
+        sysctls:
+          fsAioMaxNr: 65536
+          fsFileMax: 709620
+          fsInotifyMaxUserWatches: 1048576
+          fsNrOpen: 1048576
+          kernelThreadsMax: 55601
+          netCoreNetdevMaxBacklog: 1000
+          netCoreOptmemMax: 20480
+          netCoreRmemDefault: 212992
+          netCoreRmemMax: 212992
+          netCoreSomaxconn: 16384
+          netCoreWmemDefault: 212992
+          netCoreWmemMax: 212992
+          netIpv4IPLocalPortRange: "32768 60999"
+          netIpv4NeighDefaultGcThresh1: 4096
+          netIpv4NeighDefaultGcThresh2: 8192
+          netIpv4NeighDefaultGcThresh3: 16384
+          netIpv4TCPFinTimeout: 60
+          netIpv4TCPKeepaliveProbes: 9
+          netIpv4TCPKeepaliveTime: 7200
+          netIpv4TCPMaxSynBacklog: 16384
+          netIpv4TCPMaxTwBuckets: 32768
+          netIpv4TCPTwReuse: false
+          netIpv4TCPkeepaliveIntvl: 75
+          netNetfilterNfConntrackBuckets: 65536
+          netNetfilterNfConntrackMax: 131072
+          vmMaxMapCount: 65530
+          vmSwappiness: 60
+          vmVfsCachePressure: 100
+        transparentHugePageDefrag: "madvise"
+        transparentHugePageEnabled: "always"

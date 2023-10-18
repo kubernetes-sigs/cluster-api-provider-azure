@@ -847,6 +847,52 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	Context("Creating an AKS cluster using ClusterClass [Managed Kubernetes]", func() {
+		It("with a single control plane node and 1 node", func() {
+			// Use default as the clusterclass name so test infra can find the clusterclass template
+			os.Setenv("CLUSTER_CLASS_NAME", "default")
+
+			// Use "cc" as spec name because NAT gateway pip name exceeds limit.
+			clusterName = getClusterName(clusterNamePrefix, "cc")
+			kubernetesVersionUpgradeFrom, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersionUpgradeFrom)
+			Byf("Upgrading from k8s version %s", kubernetesVersionUpgradeFrom)
+			Expect(err).To(BeNil())
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Byf("Upgrading to k8s version %s", kubernetesVersion)
+			Expect(err).To(BeNil())
+
+			// Create a cluster using the cluster class created above
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-clusterclass"),
+				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersionUpgradeFrom),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withMachineDeploymentInterval(specName, ""),
+				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
+
+			By("Performing ClusterClass operations on the cluster", func() {
+				AKSClusterClassSpec(ctx, func() AKSClusterClassInput {
+					return AKSClusterClassInput{
+						Cluster:                    result.Cluster,
+						MachinePool:                result.MachinePools[0],
+						WaitIntervals:              e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+						WaitUpgradeIntervals:       e2eConfig.GetIntervals(specName, "wait-machine-pool-upgrade"),
+						KubernetesVersionUpgradeTo: kubernetesVersion,
+					}
+				})
+			})
+		})
+	})
+
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
 	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
 	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
@@ -920,10 +966,10 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating clusters using clusterclass [OPTIONAL]", func() {
 		It("with a single control plane node, one linux worker node, and one windows worker node", func() {
-			// use ci-default as the clusterclass name so test infra can find the clusterclass template
+			// Use ci-default as the clusterclass name so test infra can find the clusterclass template
 			os.Setenv("CLUSTER_CLASS_NAME", "ci-default")
 
-			// use "cc" as spec name because natgw pip name exceeds limit.
+			// Use "cc" as spec name because NAT gateway pip name exceeds limit.
 			clusterName = getClusterName(clusterNamePrefix, "cc")
 
 			// Opt into using windows with prow template

@@ -55,8 +55,10 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 				},
 				ControlPlane: &infrav1.AzureManagedControlPlane{
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						OutboundType:   &explicitOutboundType,
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							OutboundType:   &explicitOutboundType,
+						},
 					},
 				},
 			},
@@ -73,7 +75,9 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 				},
 				ControlPlane: &infrav1.AzureManagedControlPlane{
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 			},
@@ -121,7 +125,9 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -159,8 +165,10 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						Version:        "v1.22.0",
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							Version:        "v1.22.0",
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -199,8 +207,10 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						Version:        "v1.20.1",
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							Version:        "v1.20.1",
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -257,7 +267,9 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -284,10 +296,12 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						AddonProfiles: []infrav1.AddonProfile{
-							{Name: "addon1", Config: nil, Enabled: false},
-							{Name: "addon2", Config: map[string]string{"k1": "v1", "k2": "v2"}, Enabled: true},
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							AddonProfiles: []infrav1.AddonProfile{
+								{Name: "addon1", Config: nil, Enabled: false},
+								{Name: "addon2", Config: map[string]string{"k1": "v1", "k2": "v2"}, Enabled: true},
+							},
 						},
 					},
 				},
@@ -345,8 +359,10 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						Version:        "v1.20.1",
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							Version:        "v1.20.1",
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -414,8 +430,10 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						Version:        "v1.20.1",
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							Version:        "v1.20.1",
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -482,8 +500,10 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						Version:        "v1.20.1",
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							Version:        "v1.20.1",
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -515,8 +535,10 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						Version:        "v1.20.1",
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							Version:        "v1.20.1",
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -550,8 +572,10 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						Version:        "v1.20.1",
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							Version:        "v1.20.1",
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -610,7 +634,9 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -637,10 +663,12 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						AADProfile: &infrav1.AADProfile{
-							Managed:             true,
-							AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							AADProfile: &infrav1.AADProfile{
+								Managed:             true,
+								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+							},
 						},
 					},
 				},
@@ -698,7 +726,9 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -725,8 +755,10 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID:       "00000000-0000-0000-0000-000000000000",
-						DisableLocalAccounts: ptr.To[bool](true),
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID:       "00000000-0000-0000-0000-000000000000",
+							DisableLocalAccounts: ptr.To[bool](true),
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -753,12 +785,14 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						AADProfile: &infrav1.AADProfile{
-							Managed:             true,
-							AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							AADProfile: &infrav1.AADProfile{
+								Managed:             true,
+								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+							},
+							DisableLocalAccounts: ptr.To[bool](true),
 						},
-						DisableLocalAccounts: ptr.To[bool](true),
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -811,7 +845,9 @@ func TestIsAADEnabled(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -838,12 +874,14 @@ func TestIsAADEnabled(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						AADProfile: &infrav1.AADProfile{
-							Managed:             true,
-							AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							AADProfile: &infrav1.AADProfile{
+								Managed:             true,
+								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+							},
+							DisableLocalAccounts: ptr.To[bool](true),
 						},
-						DisableLocalAccounts: ptr.To[bool](true),
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -894,7 +932,9 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
@@ -921,10 +961,12 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						AADProfile: &infrav1.AADProfile{
-							Managed:             true,
-							AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							AADProfile: &infrav1.AADProfile{
+								Managed:             true,
+								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+							},
 						},
 					},
 				},
@@ -952,12 +994,14 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						AADProfile: &infrav1.AADProfile{
-							Managed:             true,
-							AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							AADProfile: &infrav1.AADProfile{
+								Managed:             true,
+								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+							},
+							DisableLocalAccounts: ptr.To[bool](true),
 						},
-						DisableLocalAccounts: ptr.To[bool](true),
 					},
 				},
 				ManagedMachinePools: []ManagedMachinePool{

@@ -1,7 +1,6 @@
 namespace: default
 resources:
   - clusterclass.yaml
-  - cluster.yaml
   - azure-cluster-template.yaml
   - azure-machine-template-controlplane.yaml
   - azure-machine-template-worker.yaml

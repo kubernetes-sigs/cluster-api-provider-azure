@@ -66,12 +66,14 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 			Namespace: input.Cluster.Namespace,
 		},
 		Spec: infrav1.AzureManagedMachinePoolSpec{
-			Mode:             "User",
-			SKU:              "Standard_D2s_v3",
-			ScaleSetPriority: ptr.To(string(armcontainerservice.ScaleSetPrioritySpot)),
-			Scaling:          &scaling,
-			SpotMaxPrice:     &spotMaxPrice,
-			ScaleDownMode:    ptr.To("Deallocate"),
+			AzureManagedMachinePoolClassSpec: infrav1.AzureManagedMachinePoolClassSpec{
+				Mode:             "User",
+				SKU:              "Standard_D2s_v3",
+				ScaleSetPriority: ptr.To(string(armcontainerservice.ScaleSetPrioritySpot)),
+				Scaling:          &scaling,
+				SpotMaxPrice:     &spotMaxPrice,
+				ScaleDownMode:    ptr.To("Deallocate"),
+			},
 		},
 	}
 	err = mgmtClient.Create(ctx, infraMachinePool)

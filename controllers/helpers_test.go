@@ -1189,16 +1189,18 @@ func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1.Azu
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureManagedMachinePoolSpec{
-			Mode:         mode,
-			SKU:          "Standard_B2s",
-			OSDiskSizeGB: ptr.To(512),
-			KubeletConfig: &infrav1.KubeletConfig{
-				CPUManagerPolicy:      &cpuManagerPolicyStatic,
-				TopologyManagerPolicy: &topologyManagerPolicy,
-			},
-			LinuxOSConfig: &infrav1.LinuxOSConfig{
-				TransparentHugePageDefrag:  &transparentHugePageDefragMAdvise,
-				TransparentHugePageEnabled: &transparentHugePageEnabledAlways,
+			AzureManagedMachinePoolClassSpec: infrav1.AzureManagedMachinePoolClassSpec{
+				Mode:         mode,
+				SKU:          "Standard_B2s",
+				OSDiskSizeGB: ptr.To(512),
+				KubeletConfig: &infrav1.KubeletConfig{
+					CPUManagerPolicy:      &cpuManagerPolicyStatic,
+					TopologyManagerPolicy: &topologyManagerPolicy,
+				},
+				LinuxOSConfig: &infrav1.LinuxOSConfig{
+					TransparentHugePageDefrag:  &transparentHugePageDefragMAdvise,
+					TransparentHugePageEnabled: &transparentHugePageEnabledAlways,
+				},
 			},
 		},
 	}
