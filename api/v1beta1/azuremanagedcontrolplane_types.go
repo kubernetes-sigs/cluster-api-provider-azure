@@ -118,7 +118,7 @@ type AzureManagedControlPlaneSpec struct {
 	// NetworkPlugin used for building Kubernetes network.
 	// Allowed values are "azure", "kubenet".
 	// Immutable.
-	// +kubebuilder:validation:Enum=azure;kubenet
+	// +kubebuilder:validation:Enum=azure;kubenet;none
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 

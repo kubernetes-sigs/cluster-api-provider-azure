@@ -21,8 +21,10 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Reconciler is a generic interface for a controller reconciler which has Reconcile and Delete methods.
@@ -79,6 +81,7 @@ type NetworkDescriber interface {
 type ClusterDescriber interface {
 	Authorizer
 	ResourceGroup() string
+	NodeResourceGroup() string
 	ClusterName() string
 	Location() string
 	ExtendedLocation() *infrav1.ExtendedLocationSpec
@@ -104,6 +107,9 @@ type AsyncStatusUpdater interface {
 type ClusterScoper interface {
 	ClusterDescriber
 	NetworkDescriber
+	AsyncStatusUpdater
+	GetClient() client.Client
+	GetDeletionTimestamp() *metav1.Time
 }
 
 // ManagedClusterScoper defines the interface for ManagedClusterScope.

@@ -78,8 +78,10 @@ func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomCluste
 	By("Copying kubeadm config map to calico-system namespace")
 	workloadClusterClient := clusterProxy.GetClient()
 
-	// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
-	CopyConfigMap(ctx, input, workloadClusterClient, kubeadmConfigMapName, kubesystem, CalicoSystemNamespace)
+	if hasWindows {
+		// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
+		CopyConfigMap(ctx, input, workloadClusterClient, kubeadmConfigMapName, kubesystem, CalicoSystemNamespace)
+	}
 
 	By("Waiting for Ready tigera-operator deployment pods")
 	for _, d := range []string{"tigera-operator"} {

@@ -137,7 +137,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 				azureMachinePool,
 			},
 			fail: true,
-			err:  "azureclusters.infrastructure.cluster.x-k8s.io \"my-azure-cluster\" not found",
+			err:  "failed to create cluster scope for cluster /my-cluster: azureclusters.infrastructure.cluster.x-k8s.io \"my-azure-cluster\" not found",
 		},
 		"infra ref is nil": {
 			objects: []runtime.Object{
@@ -173,7 +173,8 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 				machinePool,
 				azureMachinePool,
 			},
-			fail: false,
+			fail: true,
+			err:  "failed to create cluster scope for cluster /my-cluster: unsupported infrastructure type \"FooCluster\", should be AzureCluster or AzureManagedCluster",
 		},
 	}
 

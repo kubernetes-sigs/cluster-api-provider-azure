@@ -97,6 +97,59 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 	}, nil
 }
 
+// AzureManagedClusterToAzureMachinePoolsMapper creates a mapping handler to transform AzureManagedClusters into AzureMachinePools. The transform
+// requires AzureManagedCluster to map to the owning Cluster, then from the Cluster, collect the MachinePools belonging to the cluster,
+// then finally projecting the infrastructure reference to the AzureMachinePool.
+func AzureManagedClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
+	gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureMachinePool), scheme)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find GVK for AzureMachinePool")
+	}
+
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
+		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
+		defer cancel()
+
+		azCluster, ok := o.(*infrav1.AzureManagedCluster)
+		if !ok {
+			log.Error(errors.Errorf("expected an AzureManagedCluster, got %T instead", o.GetObjectKind()), "failed to map AzureManagedCluster")
+			return nil
+		}
+
+		log = log.WithValues("AzureManagedCluster", azCluster.Name, "Namespace", azCluster.Namespace)
+
+		// Don't handle deleted AzureManagedCluster
+		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
+			log.V(4).Info("AzureManagedCluster has a deletion timestamp, skipping mapping.")
+			return nil
+		}
+
+		clusterName, ok := controllers.GetOwnerClusterName(azCluster.ObjectMeta)
+		if !ok {
+			log.V(4).Info("unable to get the owner cluster")
+			return nil
+		}
+
+		machineList := &expv1.MachinePoolList{}
+		machineList.SetGroupVersionKind(gvk)
+		// list all of the requested objects within the cluster namespace with the cluster name label
+		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+			log.V(4).Info(fmt.Sprintf("unable to list machine pools in cluster %s", clusterName))
+			return nil
+		}
+
+		mapFunc := MachinePoolToInfrastructureMapFunc(gvk, log)
+		var results []ctrl.Request
+		for _, machine := range machineList.Items {
+			m := machine
+			azureMachines := mapFunc(ctx, &m)
+			results = append(results, azureMachines...)
+		}
+
+		return results
+	}, nil
+}
+
 // AzureMachinePoolMachineMapper creates a mapping handler to transform AzureMachinePoolMachine to AzureMachinePools.
 func AzureMachinePoolMachineMapper(scheme *runtime.Scheme, log logr.Logger) handler.MapFunc {
 	return func(ctx context.Context, o client.Object) []ctrl.Request {

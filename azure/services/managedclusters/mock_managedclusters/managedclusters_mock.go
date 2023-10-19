@@ -25,6 +25,7 @@ limitations under the License.
 package mock_managedclusters
 
 import (
+	context "context"
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -210,6 +211,20 @@ func (mr *MockManagedClusterScopeMockRecorder) IsAADEnabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAADEnabled", reflect.TypeOf((*MockManagedClusterScope)(nil).IsAADEnabled))
 }
 
+// MakeClusterCA mocks base method.
+func (m *MockManagedClusterScope) MakeClusterCA() *v1.Secret {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MakeClusterCA")
+	ret0, _ := ret[0].(*v1.Secret)
+	return ret0
+}
+
+// MakeClusterCA indicates an expected call of MakeClusterCA.
+func (mr *MockManagedClusterScopeMockRecorder) MakeClusterCA() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MakeClusterCA", reflect.TypeOf((*MockManagedClusterScope)(nil).MakeClusterCA))
+}
+
 // MakeEmptyKubeConfigSecret mocks base method.
 func (m *MockManagedClusterScope) MakeEmptyKubeConfigSecret() v1.Secret {
 	m.ctrl.T.Helper()
@@ -308,6 +323,20 @@ func (m *MockManagedClusterScope) SetUserKubeconfigData(arg0 []byte) {
 func (mr *MockManagedClusterScopeMockRecorder) SetUserKubeconfigData(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUserKubeconfigData", reflect.TypeOf((*MockManagedClusterScope)(nil).SetUserKubeconfigData), arg0)
+}
+
+// StoreClusterInfo mocks base method.
+func (m *MockManagedClusterScope) StoreClusterInfo(arg0 context.Context, arg1 []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreClusterInfo", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreClusterInfo indicates an expected call of StoreClusterInfo.
+func (mr *MockManagedClusterScopeMockRecorder) StoreClusterInfo(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreClusterInfo", reflect.TypeOf((*MockManagedClusterScope)(nil).StoreClusterInfo), arg0, arg1)
 }
 
 // SubscriptionID mocks base method.

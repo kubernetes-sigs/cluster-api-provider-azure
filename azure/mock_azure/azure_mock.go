@@ -31,8 +31,10 @@ import (
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	gomock "go.uber.org/mock/gomock"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MockReconciler is a mock of Reconciler interface.
@@ -787,6 +789,20 @@ func (mr *MockClusterDescriberMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockClusterDescriber)(nil).Location))
 }
 
+// NodeResourceGroup mocks base method.
+func (m *MockClusterDescriber) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockClusterDescriberMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockClusterDescriber)(nil).NodeResourceGroup))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockClusterDescriber) ResourceGroup() string {
 	m.ctrl.T.Helper()
@@ -1145,6 +1161,18 @@ func (mr *MockClusterScoperMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneSubnet))
 }
 
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockClusterScoper) DeleteLongRunningOperationState(arg0, arg1, arg2 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1, arg2)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockClusterScoperMockRecorder) DeleteLongRunningOperationState(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockClusterScoper)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
+}
+
 // ExtendedLocation mocks base method.
 func (m *MockClusterScoper) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
 	m.ctrl.T.Helper()
@@ -1199,6 +1227,48 @@ func (m *MockClusterScoper) FailureDomains() []*string {
 func (mr *MockClusterScoperMockRecorder) FailureDomains() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockClusterScoper)(nil).FailureDomains))
+}
+
+// GetClient mocks base method.
+func (m *MockClusterScoper) GetClient() client.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(client.Client)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient.
+func (mr *MockClusterScoperMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockClusterScoper)(nil).GetClient))
+}
+
+// GetDeletionTimestamp mocks base method.
+func (m *MockClusterScoper) GetDeletionTimestamp() *v1.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionTimestamp")
+	ret0, _ := ret[0].(*v1.Time)
+	return ret0
+}
+
+// GetDeletionTimestamp indicates an expected call of GetDeletionTimestamp.
+func (mr *MockClusterScoperMockRecorder) GetDeletionTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionTimestamp", reflect.TypeOf((*MockClusterScoper)(nil).GetDeletionTimestamp))
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockClusterScoper) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*v1beta1.Future)
+	return ret0
+}
+
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockClusterScoperMockRecorder) GetLongRunningOperationState(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockClusterScoper)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
 }
 
 // GetPrivateDNSZoneName mocks base method.
@@ -1285,6 +1355,20 @@ func (mr *MockClusterScoperMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockClusterScoper)(nil).Location))
 }
 
+// NodeResourceGroup mocks base method.
+func (m *MockClusterScoper) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockClusterScoperMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockClusterScoper)(nil).NodeResourceGroup))
+}
+
 // NodeSubnets mocks base method.
 func (m *MockClusterScoper) NodeSubnets() []v1beta1.SubnetSpec {
 	m.ctrl.T.Helper()
@@ -1339,6 +1423,18 @@ func (m *MockClusterScoper) ResourceGroup() string {
 func (mr *MockClusterScoperMockRecorder) ResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockClusterScoper)(nil).ResourceGroup))
+}
+
+// SetLongRunningOperationState mocks base method.
+func (m *MockClusterScoper) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockClusterScoperMockRecorder) SetLongRunningOperationState(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockClusterScoper)(nil).SetLongRunningOperationState), arg0)
 }
 
 // SetSubnet mocks base method.
@@ -1421,6 +1517,42 @@ func (m *MockClusterScoper) Token() azcore.TokenCredential {
 func (mr *MockClusterScoperMockRecorder) Token() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockClusterScoper)(nil).Token))
+}
+
+// UpdateDeleteStatus mocks base method.
+func (m *MockClusterScoper) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
+}
+
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockClusterScoperMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockClusterScoper)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockClusterScoper) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockClusterScoperMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockClusterScoper)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockClusterScoper) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockClusterScoperMockRecorder) UpdatePutStatus(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockClusterScoper)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
 
 // Vnet mocks base method.

@@ -307,6 +307,20 @@ func (mr *MockInboundNatScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockInboundNatScope)(nil).Location))
 }
 
+// NodeResourceGroup mocks base method.
+func (m *MockInboundNatScope) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockInboundNatScopeMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockInboundNatScope)(nil).NodeResourceGroup))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockInboundNatScope) ResourceGroup() string {
 	m.ctrl.T.Helper()

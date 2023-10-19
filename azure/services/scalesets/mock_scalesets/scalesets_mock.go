@@ -280,6 +280,20 @@ func (mr *MockScaleSetScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScaleSetScope)(nil).Location))
 }
 
+// NodeResourceGroup mocks base method.
+func (m *MockScaleSetScope) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockScaleSetScopeMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockScaleSetScope)(nil).NodeResourceGroup))
+}
+
 // ReconcileReplicas mocks base method.
 func (m *MockScaleSetScope) ReconcileReplicas(arg0 context.Context, arg1 *azure.VMSS) error {
 	m.ctrl.T.Helper()

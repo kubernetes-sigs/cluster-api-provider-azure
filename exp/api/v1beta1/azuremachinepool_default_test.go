@@ -22,9 +22,14 @@ import (
 
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestAzureMachinePool_SetDefaultSSHPublicKey(t *testing.T) {
@@ -48,75 +53,141 @@ func TestAzureMachinePool_SetDefaultSSHPublicKey(t *testing.T) {
 }
 
 func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		machinePool *AzureMachinePool
-	}
-
 	fakeSubscriptionID := uuid.New().String()
 	fakeClusterName := "testcluster"
 	fakeRoleDefinitionID := "testroledefinitionid"
 	fakeScope := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", fakeSubscriptionID, fakeClusterName)
 	existingRoleAssignmentName := "42862306-e485-4319-9bf0-35dbc6f6fe9c"
-	roleAssignmentExistTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-		Identity: infrav1.VMIdentitySystemAssigned,
-		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
-			Name: existingRoleAssignmentName,
+
+	tests := []struct {
+		name                               string
+		machinePool                        *AzureMachinePool
+		wantErr                            bool
+		expectedRoleAssignmentName         string
+		expectedSystemAssignedIdentityRole *infrav1.SystemAssignedIdentityRole
+	}{
+		{
+			name: "bothRoleAssignmentNamesPopulated",
+			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+				Identity:           infrav1.VMIdentitySystemAssigned,
+				RoleAssignmentName: existingRoleAssignmentName,
+				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+					Name: existingRoleAssignmentName,
+				},
+			}},
+			expectedRoleAssignmentName: existingRoleAssignmentName,
+			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+				Name: existingRoleAssignmentName,
+			},
 		},
-	}}}
-	notSystemAssignedTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-		Identity: infrav1.VMIdentityUserAssigned,
-	}}}
-	systemAssignedIdentityRoleExistTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-		Identity: infrav1.VMIdentitySystemAssigned,
-		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
-			DefinitionID: fakeRoleDefinitionID,
-			Scope:        fakeScope,
+		{
+			name: "roleAssignmentExist",
+			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+				Identity: infrav1.VMIdentitySystemAssigned,
+				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+					Name: existingRoleAssignmentName,
+				},
+			}},
+			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+				Name:         existingRoleAssignmentName,
+				DefinitionID: fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, infrav1.ContributorRoleID),
+				Scope:        fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID),
+			},
 		},
-	}}}
-	deprecatedRoleAssignmentNameTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-		Identity:           infrav1.VMIdentitySystemAssigned,
-		RoleAssignmentName: existingRoleAssignmentName,
-	}}}
-	emptyTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-		Identity:                   infrav1.VMIdentitySystemAssigned,
-		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{},
-	}}}
-
-	bothRoleAssignmentNamesPopulatedTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-		Identity:           infrav1.VMIdentitySystemAssigned,
-		RoleAssignmentName: existingRoleAssignmentName,
-		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
-			Name: existingRoleAssignmentName,
+		{
+			name: "notSystemAssigned",
+			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+				Identity: infrav1.VMIdentityUserAssigned,
+			}},
+			expectedSystemAssignedIdentityRole: nil,
 		},
-	}}}
+		{
+			name: "systemAssignedIdentityRoleExist",
+			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+				Identity: infrav1.VMIdentitySystemAssigned,
+				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+					Name:         existingRoleAssignmentName,
+					DefinitionID: fakeRoleDefinitionID,
+					Scope:        fakeScope,
+				},
+			}},
+			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+				Name:         existingRoleAssignmentName,
+				DefinitionID: fakeRoleDefinitionID,
+				Scope:        fakeScope,
+			},
+		},
+		{
+			name: "deprecatedRoleAssignmentName",
+			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+				Identity:           infrav1.VMIdentitySystemAssigned,
+				RoleAssignmentName: existingRoleAssignmentName,
+			}},
+			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+				Name:         existingRoleAssignmentName,
+				DefinitionID: fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, infrav1.ContributorRoleID),
+				Scope:        fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID),
+			},
+		},
+	}
 
-	bothRoleAssignmentNamesPopulatedTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
-	g.Expect(bothRoleAssignmentNamesPopulatedTest.machinePool.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
-	g.Expect(bothRoleAssignmentNamesPopulatedTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 
-	roleAssignmentExistTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
-	g.Expect(roleAssignmentExistTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
+			scheme := runtime.NewScheme()
+			_ = AddToScheme(scheme)
+			_ = infrav1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
+			_ = expv1.AddToScheme(scheme)
 
-	notSystemAssignedTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
-	g.Expect(notSystemAssignedTest.machinePool.Spec.SystemAssignedIdentityRole).To(BeNil())
+			machinePool := &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pool1",
+					Namespace: "default",
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel: "testcluster",
+					},
+				},
+				Spec: expv1.MachinePoolSpec{
+					ClusterName: "testcluster",
+				},
+			}
+			azureCluster := &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcluster",
+					Namespace: "default",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: fakeSubscriptionID,
+					},
+				},
+			}
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcluster",
+					Namespace: "default",
+				},
+				Spec: clusterv1.ClusterSpec{
+					InfrastructureRef: &corev1.ObjectReference{
+						Name:      "testcluster",
+						Namespace: "default",
+					},
+				},
+			}
 
-	systemAssignedIdentityRoleExistTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
-	g.Expect(systemAssignedIdentityRoleExistTest.machinePool.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fakeScope))
-	g.Expect(systemAssignedIdentityRoleExistTest.machinePool.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fakeRoleDefinitionID))
-
-	deprecatedRoleAssignmentNameTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
-	g.Expect(deprecatedRoleAssignmentNameTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
-	g.Expect(deprecatedRoleAssignmentNameTest.machinePool.Spec.RoleAssignmentName).To(BeEmpty())
-
-	emptyTest.machinePool.SetIdentityDefaults(fakeSubscriptionID)
-	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
-	_, err := uuid.Parse(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.Name)
-	g.Expect(err).To(Not(HaveOccurred()))
-	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole).To(Not(BeNil()))
-	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
-	g.Expect(emptyTest.machinePool.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, infrav1.ContributorRoleID)))
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.machinePool, machinePool, azureCluster, cluster).Build()
+			err := tc.machinePool.SetIdentityDefaults(fakeClient)
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(tc.machinePool.Spec.RoleAssignmentName).To(Equal(tc.expectedRoleAssignmentName))
+				g.Expect(tc.machinePool.Spec.SystemAssignedIdentityRole).To(Equal(tc.expectedSystemAssignedIdentityRole))
+			}
+		})
+	}
 }
 
 func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {

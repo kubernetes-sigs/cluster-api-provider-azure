@@ -279,6 +279,20 @@ func (mr *MockScaleSetVMScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScaleSetVMScope)(nil).Location))
 }
 
+// NodeResourceGroup mocks base method.
+func (m *MockScaleSetVMScope) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockScaleSetVMScopeMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockScaleSetVMScope)(nil).NodeResourceGroup))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockScaleSetVMScope) ResourceGroup() string {
 	m.ctrl.T.Helper()

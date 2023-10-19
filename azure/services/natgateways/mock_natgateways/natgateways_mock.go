@@ -30,6 +30,7 @@ import (
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	v1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	gomock "go.uber.org/mock/gomock"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -323,6 +324,20 @@ func (mr *MockNatGatewayScopeMockRecorder) GetClient() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockNatGatewayScope)(nil).GetClient))
 }
 
+// GetDeletionTimestamp mocks base method.
+func (m *MockNatGatewayScope) GetDeletionTimestamp() *v1.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionTimestamp")
+	ret0, _ := ret[0].(*v1.Time)
+	return ret0
+}
+
+// GetDeletionTimestamp indicates an expected call of GetDeletionTimestamp.
+func (mr *MockNatGatewayScopeMockRecorder) GetDeletionTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionTimestamp", reflect.TypeOf((*MockNatGatewayScope)(nil).GetDeletionTimestamp))
+}
+
 // GetLongRunningOperationState mocks base method.
 func (m *MockNatGatewayScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
@@ -433,6 +448,20 @@ func (m *MockNatGatewayScope) NatGatewaySpecs() []azure.ASOResourceSpecGetter[*v
 func (mr *MockNatGatewayScopeMockRecorder) NatGatewaySpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NatGatewaySpecs", reflect.TypeOf((*MockNatGatewayScope)(nil).NatGatewaySpecs))
+}
+
+// NodeResourceGroup mocks base method.
+func (m *MockNatGatewayScope) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockNatGatewayScopeMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockNatGatewayScope)(nil).NodeResourceGroup))
 }
 
 // NodeSubnets mocks base method.

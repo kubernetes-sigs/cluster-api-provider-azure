@@ -44,11 +44,18 @@ type DiscoverAndWaitForAKSControlPlaneInput struct {
 // This will be invoked by cluster api e2e framework.
 func WaitForAKSControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
 	client := input.ClusterProxy.GetClient()
+	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+		Getter:    client,
+		Name:      input.ClusterName,
+		Namespace: input.Namespace,
+	})
+
 	DiscoverAndWaitForAKSControlPlaneInitialized(ctx, DiscoverAndWaitForAKSControlPlaneInput{
 		Lister:  client,
 		Getter:  client,
 		Cluster: result.Cluster,
 	}, input.WaitForControlPlaneIntervals...)
+	InstallCNIManifest(ctx, input, cluster.Spec.ClusterNetwork.Services.CIDRBlocks, true)
 }
 
 // WaitForAKSControlPlaneReady waits for the azure managed control plane to be ready.

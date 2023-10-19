@@ -279,6 +279,20 @@ func (mr *MockScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScope)(nil).Location))
 }
 
+// NodeResourceGroup mocks base method.
+func (m *MockScope) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockScopeMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockScope)(nil).NodeResourceGroup))
+}
+
 // PrivateDNSSpec mocks base method.
 func (m *MockScope) PrivateDNSSpec() (azure.ResourceSpecGetter, []azure.ResourceSpecGetter, []azure.ResourceSpecGetter) {
 	m.ctrl.T.Helper()
