@@ -12,4 +12,4 @@ patchesStrategicMerge:
   - patches/custom-vnet.yaml
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
-  - ../patches/cluster-label.yaml
+  - ../patches/cluster-label-calico.yaml

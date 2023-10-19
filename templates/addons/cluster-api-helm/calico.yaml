@@ -8,6 +8,7 @@ spec:
       cni: calico
   repoURL: https://docs.tigera.io/calico/charts
   chartName: tigera-operator
+  version: ${CALICO_VERSION}
   releaseName: projectcalico
   namespace: tigera-operator
   valuesTemplate: |
@@ -21,3 +22,10 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      registry: mcr.microsoft.com/oss
+    # Image and registry configuration for the tigera/operator pod.
+    tigeraOperator:
+      image: tigera/operator
+      registry: mcr.microsoft.com/oss
+    calicoctl:
+      image: mcr.microsoft.com/oss/calico/ctl

@@ -8,7 +8,7 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/azurecluster-gpu.yaml
-  - ../patches/cluster-label.yaml
+  - ../patches/cluster-label-calico.yaml
 patches:
 - path: patches/node-storage-type.yaml
   target:

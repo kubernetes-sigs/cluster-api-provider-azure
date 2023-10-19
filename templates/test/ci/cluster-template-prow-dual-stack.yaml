@@ -338,7 +338,7 @@ spec:
   namespace: tigera-operator
   releaseName: projectcalico
   repoURL: https://docs.tigera.io/calico/charts
-  valuesTemplate: |-
+  valuesTemplate: |
     installation:
       cni:
         type: Calico
@@ -358,3 +358,11 @@ spec:
           encapsulation: None
           natOutgoing: Enabled
           nodeSelector: all()
+      registry: mcr.microsoft.com/oss
+    # Image and registry configuration for the tigera/operator pod.
+    tigeraOperator:
+      image: tigera/operator
+      registry: mcr.microsoft.com/oss
+    calicoctl:
+      image: mcr.microsoft.com/oss/calico/ctl
+  version: ${CALICO_VERSION}

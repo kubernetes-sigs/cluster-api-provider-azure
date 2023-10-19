@@ -8,7 +8,7 @@ patchesStrategicMerge:
   - ../../../flavors/ipv6/patches/ipv6.yaml
   - ../../../flavors/ipv6/patches/controlplane-azuremachinetemplate.yaml
   - ../../../flavors/ipv6/patches/kubeadm-controlplane.yaml
-  - ../prow-ipv6/patches/cluster-label.yaml
+  - ../prow-ipv6/patches/cluster-label-calico-ipv6.yaml
   - patches/machine-deployment.yaml
   - ../patches/windows-addons-disabled.yaml
 patches:

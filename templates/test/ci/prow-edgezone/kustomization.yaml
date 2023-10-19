@@ -14,4 +14,4 @@ patchesStrategicMerge:
   - patches/standardssd-disk.yaml
   - patches/machine-type.yaml
   - patches/kubernetes-version.yaml
-  - ../patches/cluster-label.yaml
+  - ../patches/cluster-label-calico.yaml

@@ -21,7 +21,7 @@ patchesStrategicMerge:
   - ../patches/windows-feature-gates.yaml
   - ../patches/windows-containerd-labels.yaml
   - ../patches/windows-server-version.yaml
-  - ../patches/cluster-label.yaml
+  - ../patches/cluster-label-calico.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
