@@ -109,6 +109,7 @@ var (
 	syncPeriod                         time.Duration
 	healthAddr                         string
 	webhookPort                        int
+	webhookCertDir                     string
 	reconcileTimeout                   time.Duration
 	enableTracing                      bool
 )
@@ -221,8 +222,11 @@ func InitFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&webhookPort,
 		"webhook-port",
 		9443,
-		"Webhook Server port, disabled by default. When enabled, the manager will only work as webhook server, no reconcilers are installed.",
+		"The webhook server port the manager will listen on.",
 	)
+
+	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
+		"The webhook certificate directory, where the server should find the TLS certificate and key.")
 
 	fs.DurationVar(&reconcileTimeout,
 		"reconcile-timeout",
@@ -289,7 +293,8 @@ func main() {
 			},
 		},
 		WebhookServer: webhook.NewServer(webhook.Options{
-			Port: webhookPort,
+			Port:    webhookPort,
+			CertDir: webhookCertDir,
 		}),
 		EventBroadcaster: broadcaster,
 	})
