@@ -113,11 +113,15 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 				// update instead of returning early.
 				adopt = true
 			case cond.Reason == conditions.ReasonReconciling.Name:
-				readyErr = azure.NewOperationNotDoneError(&infrav1.Future{
+				// Updating the spec of an ASO resource that is already being updated will swallow this update
+				// and ignore it until the next periodic ASO resync.
+				// ref: https://github.com/Azure/azure-service-operator/issues/3451
+				err := azure.NewOperationNotDoneError(&infrav1.Future{
 					Type:          createOrUpdateFutureType,
 					ResourceGroup: existing.GetNamespace(),
 					Name:          existing.GetName(),
 				})
+				return nil, azure.WithTransientError(err, requeueInterval)
 			default:
 				readyErr = fmt.Errorf("resource is not Ready: %s", conds[i].Message)
 			}
