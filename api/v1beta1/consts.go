@@ -130,6 +130,8 @@ const (
 	NetworkInterfaceReadyCondition clusterv1.ConditionType = "NetworkInterfacesReady"
 	// PrivateEndpointsReadyCondition means the private endpoints exist and are ready to be used.
 	PrivateEndpointsReadyCondition clusterv1.ConditionType = "PrivateEndpointsReady"
+	// FleetReadyCondition means the Fleet exists and is ready to be used.
+	FleetReadyCondition clusterv1.ConditionType = "FleetReady"
 
 	// CreatingReason means the resource is being created.
 	CreatingReason = "Creating"

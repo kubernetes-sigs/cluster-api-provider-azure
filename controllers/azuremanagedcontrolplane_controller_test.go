@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
@@ -108,6 +109,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 		asocontainerservicev1.AddToScheme,
 		asonetworkv1.AddToScheme,
 		corev1.AddToScheme,
+		asocontainerservicev1preview.AddToScheme,
 	)
 	s := runtime.NewScheme()
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
@@ -187,6 +189,11 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 						},
 					},
 				},
+				FleetsMember: &infrav1.FleetsMemberClassSpec{
+					Group:                "fleets",
+					ManagerName:          "fleets-manager",
+					ManagerResourceGroup: "fleets-manager-rg",
+				},
 				IdentityRef: &corev1.ObjectReference{
 					Name:      "fake-identity",
 					Namespace: "default",
@@ -221,6 +228,14 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 		},
 	}
 	g.Expect(c.Create(ctx, vnet)).To(Succeed())
+
+	fleetsMember := &asocontainerservicev1preview.FleetsMember{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	g.Expect(c.Create(ctx, fleetsMember)).To(Succeed())
 
 	subnet := &asonetworkv1.VirtualNetworksSubnet{
 		ObjectMeta: metav1.ObjectMeta{

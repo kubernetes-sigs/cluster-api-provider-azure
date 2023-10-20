@@ -134,10 +134,10 @@ func TestAzureBastionSpec_Parameters(t *testing.T) {
 					},
 				)
 
-				// ObjectMeta should be carried over from existing private endpoint.
+				// ObjectMeta should be carried over from existing bastion host.
 				g.Expect(result.ObjectMeta).To(Equal(resultantASOBastionHost.ObjectMeta))
 
-				// EnableTunneling addition is accepted.
+				// DisableCopyPaste addition is accepted.
 				g.Expect(result.Spec).To(Equal(resultantASOBastionHost.Spec))
 
 				// Status should be carried over.

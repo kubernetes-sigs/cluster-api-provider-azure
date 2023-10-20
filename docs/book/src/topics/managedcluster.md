@@ -277,6 +277,31 @@ User can do that by adding the Service Principal to the appropriate group define
 add the corresponding group ID in `spec.aadProfile.adminGroupObjectIDs`. 
 CAPI and CAPZ will be able to authenticate via AAD while accessing the target cluster.
 
+### AKS Fleet Integration
+
+CAPZ supports joining your managed AKS clusters to a single AKS fleet. Azure Kubernetes Fleet Manager (Fleet) enables at-scale management of multiple Azure Kubernetes Service (AKS) clusters. For more documentation on Azure Kubernetes Fleet Manager, refer [AKS Docs](https://learn.microsoft.com/azure/kubernetes-fleet/overview)
+
+To join a CAPZ cluster to an AKS fleet, you must first create an AKS fleet manager. For more information on how to create an AKS fleet manager, refer [AKS Docs](https://learn.microsoft.com/en-us/azure/kubernetes-fleet/quickstart-create-fleet-and-members). This fleet manager will be your point of reference for managing any CAPZ clusters that you join to the fleet.
+
+Once you have created an AKS fleet manager, you can join your CAPZ cluster to the fleet by adding the `fleetsMember` field to your AzureManagedControlPlane resource spec:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  fleetsMember: 
+    group: fleet-update-group
+    managerName: fleet-manager-name
+    managerResourceGroup: fleet-manager-resource-group
+```
+
+The `managerName` and `managerResourceGroup` fields are the name and resource group of your AKS fleet manager. The `group` field is the name of the update group for the cluster, not to be confused with the resource group.
+
+When the `fleetMember` field is included, CAPZ will create an AKS fleet member resource which will join the CAPZ cluster to the AKS fleet. The AKS fleet member resource will be created in the same resource group as the CAPZ cluster.
+
 ## Features
 
 AKS clusters deployed from CAPZ currently only support a limited,
