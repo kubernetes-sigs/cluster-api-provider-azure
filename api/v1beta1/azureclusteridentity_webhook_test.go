@@ -27,8 +27,6 @@ const fakeTenantID = "fake-tenant-id"
 const fakeResourceID = "fake-resource-id"
 
 func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name            string
 		clusterIdentity *AzureClusterIdentity
@@ -84,6 +82,7 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			_, err := tc.clusterIdentity.ValidateCreate()
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -95,8 +94,6 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 }
 
 func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name               string
 		oldClusterIdentity *AzureClusterIdentity
@@ -165,6 +162,7 @@ func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			_, err := tc.clusterIdentity.ValidateUpdate(tc.oldClusterIdentity)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())

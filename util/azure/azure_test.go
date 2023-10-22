@@ -30,7 +30,6 @@ import (
 
 func TestFindParentMachinePool(t *testing.T) {
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
-	g := NewWithT(t)
 	client := mockClient{}
 
 	tests := []struct {
@@ -52,6 +51,7 @@ func TestFindParentMachinePool(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			mp, err := FindParentMachinePool(tc.mpName, client)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -65,7 +65,6 @@ func TestFindParentMachinePool(t *testing.T) {
 
 func TestFindParentMachinePoolWithRetry(t *testing.T) {
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
-	g := NewWithT(t)
 	client := mockClient{}
 
 	tests := []struct {
@@ -102,6 +101,7 @@ func TestFindParentMachinePoolWithRetry(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			mp, err := FindParentMachinePoolWithRetry(tc.mpName, client, tc.maxAttempts)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -126,8 +126,6 @@ func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...cl
 }
 
 func TestParseResourceID(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name         string
 		id           string
@@ -166,6 +164,7 @@ func TestParseResourceID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
 			resourceID, err := ParseResourceID(tt.id)
 			if tt.errExpected {
 				g.Expect(err).To(HaveOccurred())

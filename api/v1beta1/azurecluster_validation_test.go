@@ -27,7 +27,6 @@ import (
 )
 
 func TestClusterNameValidation(t *testing.T) {
-	g := NewWithT(t)
 	tests := []struct {
 		name        string
 		clusterName string
@@ -86,6 +85,7 @@ func TestClusterNameValidation(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			azureCluster := AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: tc.clusterName,
@@ -103,8 +103,6 @@ func TestClusterNameValidation(t *testing.T) {
 }
 
 func TestClusterWithPreexistingVnetValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -116,14 +114,13 @@ func TestClusterWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		_, err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).To(BeNil())
 	})
 }
 
 func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -143,14 +140,13 @@ func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		_, err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).NotTo(BeNil())
 	})
 }
 
 func TestClusterWithoutPreexistingVnetValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -166,14 +162,13 @@ func TestClusterWithoutPreexistingVnetValid(t *testing.T) {
 	testCase.cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		_, err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).To(BeNil())
 	})
 }
 
 func TestClusterSpecWithPreexistingVnetValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -185,14 +180,13 @@ func TestClusterSpecWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(errs).To(BeNil())
 	})
 }
 
 func TestClusterSpecWithPreexistingVnetInvalid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -212,14 +206,13 @@ func TestClusterSpecWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(len(errs)).To(BeNumerically(">", 0))
 	})
 }
 
 func TestClusterSpecWithoutPreexistingVnetValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -235,14 +228,13 @@ func TestClusterSpecWithoutPreexistingVnetValid(t *testing.T) {
 	testCase.cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(errs).To(BeNil())
 	})
 }
 
 func TestClusterSpecWithoutIdentityRefInvalid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -257,14 +249,13 @@ func TestClusterSpecWithoutIdentityRefInvalid(t *testing.T) {
 	testCase.cluster.Spec.IdentityRef = nil
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(len(errs)).To(BeNumerically(">", 0))
 	})
 }
 
 func TestClusterSpecWithWrongKindInvalid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -279,14 +270,13 @@ func TestClusterSpecWithWrongKindInvalid(t *testing.T) {
 	testCase.cluster.Spec.IdentityRef.Kind = "bad"
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(len(errs)).To(BeNumerically(">", 0))
 	})
 }
 
 func TestNetworkSpecWithPreexistingVnetValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name        string
 		networkSpec NetworkSpec
@@ -298,14 +288,13 @@ func TestNetworkSpecWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(BeNil())
 	})
 }
 
 func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name        string
 		networkSpec NetworkSpec
@@ -320,6 +309,7 @@ func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
 	testCase.networkSpec.Subnets = testCase.networkSpec.Subnets[:1]
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
@@ -329,8 +319,6 @@ func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
 }
 
 func TestNetworkSpecWithPreexistingVnetInvalidResourceGroup(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name        string
 		networkSpec NetworkSpec
@@ -344,6 +332,7 @@ func TestNetworkSpecWithPreexistingVnetInvalidResourceGroup(t *testing.T) {
 	testCase.networkSpec.Vnet.ResourceGroup = "invalid-name###"
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
@@ -353,8 +342,6 @@ func TestNetworkSpecWithPreexistingVnetInvalidResourceGroup(t *testing.T) {
 }
 
 func TestNetworkSpecWithoutPreexistingVnetValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name        string
 		networkSpec NetworkSpec
@@ -368,14 +355,13 @@ func TestNetworkSpecWithoutPreexistingVnetValid(t *testing.T) {
 	testCase.networkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(BeNil())
 	})
 }
 
 func TestResourceGroupValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name          string
 		resourceGroup string
@@ -387,6 +373,7 @@ func TestResourceGroupValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		err := validateResourceGroup(testCase.resourceGroup,
 			field.NewPath("spec").Child("networkSpec").Child("vnet").Child("resourceGroup"))
 		g.Expect(err).To(BeNil())
@@ -394,8 +381,6 @@ func TestResourceGroupValid(t *testing.T) {
 }
 
 func TestResourceGroupInvalid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name          string
 		resourceGroup string
@@ -407,6 +392,7 @@ func TestResourceGroupInvalid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		err := validateResourceGroup(testCase.resourceGroup,
 			field.NewPath("spec").Child("networkSpec").Child("vnet").Child("resourceGroup"))
 		g.Expect(err).NotTo(BeNil())
@@ -417,8 +403,6 @@ func TestResourceGroupInvalid(t *testing.T) {
 }
 
 func TestValidateVnetCIDR(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name           string
 		vnetCidrBlocks []string
@@ -444,6 +428,7 @@ func TestValidateVnetCIDR(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := validateVnetCIDR(testCase.vnetCidrBlocks, field.NewPath("vnet.cidrBlocks"))
 			if testCase.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
@@ -455,8 +440,6 @@ func TestValidateVnetCIDR(t *testing.T) {
 }
 
 func TestSubnetsValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		subnets Subnets
@@ -468,6 +451,7 @@ func TestSubnetsValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateSubnets(testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(BeNil())
@@ -475,8 +459,6 @@ func TestSubnetsValid(t *testing.T) {
 }
 
 func TestSubnetsInvalidSubnetName(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		subnets Subnets
@@ -490,6 +472,7 @@ func TestSubnetsInvalidSubnetName(t *testing.T) {
 	testCase.subnets[0].Name = "invalid-subnet-name-due-to-bracket)"
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateSubnets(testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
@@ -500,8 +483,6 @@ func TestSubnetsInvalidSubnetName(t *testing.T) {
 }
 
 func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		subnets Subnets
@@ -515,6 +496,7 @@ func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
 	testCase.subnets[0].Role = "random-role"
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateSubnets(testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
@@ -525,8 +507,6 @@ func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
 }
 
 func TestSubnetNamesNotUnique(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		subnets Subnets
@@ -541,6 +521,7 @@ func TestSubnetNamesNotUnique(t *testing.T) {
 	testCase.subnets[1].Name = "subnet-name"
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateSubnets(testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
@@ -550,8 +531,6 @@ func TestSubnetNamesNotUnique(t *testing.T) {
 }
 
 func TestSubnetNameValid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name       string
 		subnetName string
@@ -563,6 +542,7 @@ func TestSubnetNameValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		err := validateSubnetName(testCase.subnetName,
 			field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("name"))
 		g.Expect(err).To(BeNil())
@@ -570,8 +550,6 @@ func TestSubnetNameValid(t *testing.T) {
 }
 
 func TestSubnetNameInvalid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name       string
 		subnetName string
@@ -583,6 +561,7 @@ func TestSubnetNameInvalid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		err := validateSubnetName(testCase.subnetName,
 			field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("name"))
 		g.Expect(err).NotTo(BeNil())
@@ -593,8 +572,6 @@ func TestSubnetNameInvalid(t *testing.T) {
 }
 
 func TestValidateSubnetCIDR(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name             string
 		vnetCidrBlocks   []string
@@ -641,6 +618,7 @@ func TestValidateSubnetCIDR(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := validateSubnetCIDR(testCase.subnetCidrBlocks, testCase.vnetCidrBlocks, field.NewPath("subnets.cidrBlocks"))
 			if testCase.wantErr {
 				// Searches for expected error in list of thrown errors
@@ -653,8 +631,6 @@ func TestValidateSubnetCIDR(t *testing.T) {
 }
 
 func TestValidateSecurityRule(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name      string
 		validRule SecurityRule
@@ -692,6 +668,7 @@ func TestValidateSecurityRule(t *testing.T) {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			err := validateSecurityRule(
 				testCase.validRule,
 				field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("securityGroup").Child("securityRules").Index(0),
@@ -706,8 +683,6 @@ func TestValidateSecurityRule(t *testing.T) {
 }
 
 func TestValidateAPIServerLB(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name        string
 		lb          LoadBalancerSpec
@@ -910,6 +885,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			err := validateAPIServerLB(test.lb, test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
@@ -920,8 +896,6 @@ func TestValidateAPIServerLB(t *testing.T) {
 	}
 }
 func TestPrivateDNSZoneName(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name        string
 		network     NetworkSpec
@@ -991,6 +965,7 @@ func TestPrivateDNSZoneName(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			err := validatePrivateDNSZoneName(test.network.PrivateDNSZoneName, test.network.APIServerLB.Type, field.NewPath("spec", "networkSpec", "privateDNSZoneName"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
@@ -1002,8 +977,6 @@ func TestPrivateDNSZoneName(t *testing.T) {
 }
 
 func TestValidateNodeOutboundLB(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name        string
 		lb          *LoadBalancerSpec
@@ -1149,6 +1122,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			err := validateNodeOutboundLB(test.lb, test.old, test.apiServerLB, field.NewPath("nodeOutboundLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
@@ -1160,8 +1134,6 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 }
 
 func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name        string
 		lb          *LoadBalancerSpec
@@ -1230,6 +1202,7 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			err := validateControlPlaneOutboundLB(test.lb, test.apiServerLB, field.NewPath("controlPlaneOutboundLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
@@ -1241,8 +1214,6 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 }
 
 func TestValidateCloudProviderConfigOverrides(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name        string
 		oldConfig   *CloudProviderConfigOverrides
@@ -1321,6 +1292,7 @@ func TestValidateCloudProviderConfigOverrides(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := validateCloudProviderConfigOverrides(testCase.oldConfig, testCase.newConfig, field.NewPath("spec.cloudProviderConfigOverrides"))
 			if testCase.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
@@ -1430,8 +1402,6 @@ func createValidAPIServerInternalLB() LoadBalancerSpec {
 }
 
 func TestValidateServiceEndpoints(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name             string
 		serviceEndpoints ServiceEndpoints
@@ -1497,6 +1467,7 @@ func TestValidateServiceEndpoints(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := validateServiceEndpoints(testCase.serviceEndpoints, field.NewPath("subnets[0].serviceEndpoints"))
 			if testCase.wantErr {
 				// Searches for expected error in list of thrown errors
@@ -1509,8 +1480,6 @@ func TestValidateServiceEndpoints(t *testing.T) {
 }
 
 func TestServiceEndpointsLackRequiredFieldService(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name             string
 		serviceEndpoints ServiceEndpoints
@@ -1524,6 +1493,7 @@ func TestServiceEndpointsLackRequiredFieldService(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateServiceEndpoints(testCase.serviceEndpoints, field.NewPath("subnets[0].serviceEndpoints"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
@@ -1533,8 +1503,6 @@ func TestServiceEndpointsLackRequiredFieldService(t *testing.T) {
 }
 
 func TestServiceEndpointsLackRequiredFieldLocations(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name             string
 		serviceEndpoints ServiceEndpoints
@@ -1548,6 +1516,7 @@ func TestServiceEndpointsLackRequiredFieldLocations(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		errs := validateServiceEndpoints(testCase.serviceEndpoints, field.NewPath("subnets[0].serviceEndpoints"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
@@ -1557,8 +1526,6 @@ func TestServiceEndpointsLackRequiredFieldLocations(t *testing.T) {
 }
 
 func TestClusterWithExtendedLocationInvalid(t *testing.T) {
-	g := NewWithT(t)
-
 	type test struct {
 		name    string
 		cluster *AzureCluster
@@ -1575,6 +1542,7 @@ func TestClusterWithExtendedLocationInvalid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
+		g := NewWithT(t)
 		err := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(err).NotTo(BeNil())
 	})

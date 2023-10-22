@@ -242,8 +242,6 @@ func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
 }
 
 func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
-	g := NewWithT(t)
-
 	testCases := []struct {
 		name        string
 		machinePool *AzureMachinePool
@@ -328,6 +326,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			tc.machinePool.SetNetworkInterfacesDefaults()
 			g.Expect(tc.machinePool).To(Equal(tc.want))
 		})

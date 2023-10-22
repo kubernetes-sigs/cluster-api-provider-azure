@@ -62,8 +62,6 @@ func TestImageTooManyDetails(t *testing.T) {
 }
 
 func TestComputeImageGalleryValid(t *testing.T) {
-	g := NewWithT(t)
-
 	testCases := map[string]struct {
 		image          *Image
 		expectedErrors int
@@ -87,13 +85,12 @@ func TestComputeImageGalleryValid(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		g := NewWithT(t)
 		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(HaveLen(tc.expectedErrors))
 	}
 }
 
 func TestSharedImageGalleryValid(t *testing.T) {
-	g := NewWithT(t)
-
 	testCases := map[string]struct {
 		image          *Image
 		expectedErrors int
@@ -125,13 +122,12 @@ func TestSharedImageGalleryValid(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		g := NewWithT(t)
 		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(HaveLen(tc.expectedErrors))
 	}
 }
 
 func TestMarketPlaceImageValid(t *testing.T) {
-	g := NewWithT(t)
-
 	testCases := map[string]struct {
 		image          *Image
 		expectedErrors int
@@ -159,13 +155,12 @@ func TestMarketPlaceImageValid(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		g := NewWithT(t)
 		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(HaveLen(tc.expectedErrors))
 	}
 }
 
 func TestImageByIDValid(t *testing.T) {
-	g := NewWithT(t)
-
 	testCases := map[string]struct {
 		image          *Image
 		expectedErrors int
@@ -181,6 +176,7 @@ func TestImageByIDValid(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		g := NewWithT(t)
 		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(HaveLen(tc.expectedErrors))
 	}
 }

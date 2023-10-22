@@ -348,8 +348,6 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 }
 
 func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name    string
 		machine *AzureMachine
@@ -442,6 +440,7 @@ func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			tc.machine.Spec.SetNetworkInterfacesDefaults()
 			g.Expect(tc.machine).To(Equal(tc.want))
 		})
@@ -496,8 +495,6 @@ func TestAzureMachineSpec_GetOwnerCluster(t *testing.T) {
 }
 
 func TestAzureMachineSpec_GetSubscriptionID(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name                       string
 		maxAttempts                int
@@ -541,6 +538,7 @@ func TestAzureMachineSpec_GetSubscriptionID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			client := mockClient{ReturnError: tc.wantErr}
 			result, err := GetSubscriptionID(client, tc.ownerAzureClusterName, tc.ownerAzureClusterNamespace, tc.maxAttempts)
 			if tc.wantErr {

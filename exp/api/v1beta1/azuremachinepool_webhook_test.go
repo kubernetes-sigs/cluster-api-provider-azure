@@ -76,8 +76,6 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	// must prevent creating new objects in case the feature flag is disabled.
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 
-	g := NewWithT(t)
-
 	tests := []struct {
 		name          string
 		amp           *AzureMachinePool
@@ -244,6 +242,7 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	for _, tc := range tests {
 		client := mockClient{Version: tc.version, ReturnError: tc.ownerNotFound}
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			ampw := &azureMachinePoolWebhook{
 				Client: client,
 			}
@@ -304,8 +303,6 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
-
-	g := NewWithT(t)
 
 	var (
 		zero = intstr.FromInt(0)
@@ -387,6 +384,7 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			ampw := &azureMachinePoolWebhook{}
 			_, err := ampw.ValidateUpdate(context.Background(), tc.oldAMP, tc.amp)
 			if tc.wantErr {

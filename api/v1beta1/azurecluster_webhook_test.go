@@ -24,8 +24,6 @@ import (
 )
 
 func TestAzureCluster_ValidateCreate(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name    string
 		cluster *AzureCluster
@@ -109,6 +107,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			_, err := tc.cluster.ValidateCreate()
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -120,8 +119,6 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 }
 
 func TestAzureCluster_ValidateUpdate(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name       string
 		oldCluster *AzureCluster
@@ -347,6 +344,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			_, err := tc.cluster.ValidateUpdate(tc.oldCluster)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())

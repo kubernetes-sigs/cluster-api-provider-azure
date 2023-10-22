@@ -37,8 +37,6 @@ var (
 )
 
 func TestAzureMachine_ValidateCreate(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name    string
 		machine *AzureMachine
@@ -220,6 +218,7 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			mw := &azureMachineWebhook{}
 			_, err := mw.ValidateCreate(context.Background(), tc.machine)
 			if tc.wantErr {
@@ -232,8 +231,6 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 }
 
 func TestAzureMachine_ValidateUpdate(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name       string
 		oldMachine *AzureMachine
@@ -812,6 +809,7 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			mw := &azureMachineWebhook{}
 			_, err := mw.ValidateUpdate(context.Background(), tc.oldMachine, tc.newMachine)
 			if tc.wantErr {
