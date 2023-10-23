@@ -117,7 +117,7 @@ func TestValidatingWebhook(t *testing.T) {
 	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
-	g := NewWithT(t)
+
 	tests := []struct {
 		name      string
 		amcp      AzureManagedControlPlane
@@ -722,6 +722,7 @@ func TestValidatingWebhook(t *testing.T) {
 		// client is used to fetch the AzureManagedControlPlane, we do not want to return an error on client.Get
 		client := mockClient{ReturnError: false}
 		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}
@@ -739,7 +740,6 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
-	g := NewWithT(t)
 
 	tests := []struct {
 		name     string
@@ -950,6 +950,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 	client := mockClient{ReturnError: false}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}
@@ -967,8 +968,6 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 }
 
 func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name      string
 		amcp      *AzureManagedControlPlane
@@ -989,6 +988,7 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
+			g := NewWithT(t)
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}
@@ -999,7 +999,6 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 }
 
 func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
-	g := NewWithT(t)
 	commonSSHKey := generateSSHPublicKey(true)
 	tests := []struct {
 		name    string
@@ -1924,6 +1923,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 	client := mockClient{ReturnError: false}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}

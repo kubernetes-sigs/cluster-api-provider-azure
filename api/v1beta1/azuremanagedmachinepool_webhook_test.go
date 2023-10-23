@@ -97,8 +97,6 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 }
 
 func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
-	g := NewWithT(t)
-
 	t.Logf("Testing ammp updating webhook with mode system")
 
 	tests := []struct {
@@ -619,6 +617,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			mw := &azureManagedMachinePoolWebhook{
 				Client: client,
 			}
@@ -1189,8 +1188,6 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 }
 
 func TestAzureManagedMachinePool_ValidateCreateFailure(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name      string
 		ammp      *AzureManagedMachinePool
@@ -1210,6 +1207,7 @@ func TestAzureManagedMachinePool_ValidateCreateFailure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.deferFunc()
+			g := NewWithT(t)
 			mw := &azureManagedMachinePoolWebhook{}
 			_, err := mw.ValidateCreate(context.Background(), tc.ammp)
 			g.Expect(err).To(HaveOccurred())

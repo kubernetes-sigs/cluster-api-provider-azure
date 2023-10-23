@@ -32,8 +32,6 @@ import (
 )
 
 func TestAzureMachine_ValidateSSHKey(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name    string
 		sshKey  string
@@ -58,6 +56,7 @@ func TestAzureMachine_ValidateSSHKey(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := ValidateSSHKey(tc.sshKey, field.NewPath("sshPublicKey"))
 			if tc.wantErr {
 				g.Expect(err).NotTo(BeEmpty())
@@ -84,8 +83,6 @@ type osDiskTestInput struct {
 }
 
 func TestAzureMachine_ValidateOSDisk(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []osDiskTestInput{
 		{
 			name:    "valid os disk spec",
@@ -135,6 +132,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := ValidateOSDisk(test.osDisk, field.NewPath("osDisk"))
 			if test.wantErr {
 				g.Expect(err).NotTo(BeEmpty())
@@ -227,8 +225,6 @@ func createOSDiskWithCacheType(cacheType string) OSDisk {
 }
 
 func TestAzureMachine_ValidateDataDisks(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name    string
 		disks   []DataDisk
@@ -434,6 +430,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := ValidateDataDisks(test.disks, field.NewPath("dataDisks"))
 			if test.wantErr {
 				g.Expect(err).NotTo(BeEmpty())
@@ -445,8 +442,6 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 }
 
 func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name               string
 		roleAssignmentName string
@@ -489,6 +484,7 @@ func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := ValidateSystemAssignedIdentity(tc.Identity, tc.old, tc.roleAssignmentName, field.NewPath("sshPublicKey"))
 			if tc.wantErr {
 				g.Expect(err).NotTo(BeEmpty())
@@ -500,8 +496,6 @@ func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
 }
 
 func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name               string
 		Identity           VMIdentity
@@ -570,6 +564,7 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := ValidateSystemAssignedIdentityRole(tc.Identity, tc.roleAssignmentName, tc.role, field.NewPath("systemAssignedIdentityRole"))
 			if tc.wantErr {
 				g.Expect(err).NotTo(BeEmpty())
@@ -581,8 +576,6 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 }
 
 func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name       string
 		idType     VMIdentity
@@ -639,6 +632,7 @@ func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			errs := ValidateUserAssignedIdentity(tc.idType, tc.identities, field.NewPath("userAssignedIdentities"))
 			if tc.wantErr {
 				g.Expect(errs).NotTo(BeEmpty())
@@ -650,8 +644,6 @@ func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
 }
 
 func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name     string
 		disks    []DataDisk
@@ -835,6 +827,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := ValidateDataDisksUpdate(test.oldDisks, test.disks, field.NewPath("dataDisks"))
 			if test.wantErr {
 				g.Expect(err).NotTo(BeEmpty())
@@ -846,8 +839,6 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 }
 
 func TestAzureMachine_ValidateNetwork(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name                  string
 		subnetName            string
@@ -928,6 +919,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := ValidateNetwork(test.subnetName, test.acceleratedNetworking, test.networkInterfaces, field.NewPath("networkInterfaces"))
 			if test.wantErr {
 				g.Expect(err).ToNot(BeEmpty())
@@ -939,8 +931,6 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 }
 
 func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name            string
 		managedDisk     *ManagedDiskParameters
@@ -1111,6 +1101,7 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			err := ValidateConfidentialCompute(tc.managedDisk, tc.securityProfile, field.NewPath("securityProfile"))
 			if tc.wantErr {
 				g.Expect(err).NotTo(BeEmpty())

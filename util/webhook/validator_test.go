@@ -241,8 +241,6 @@ func TestValidateImmutableInt32(t *testing.T) {
 }
 
 func TestEnsureStringSlicesAreEquivalent(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name           string
 		input1         []string
@@ -294,6 +292,7 @@ func TestEnsureStringSlicesAreEquivalent(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			ret := EnsureStringSlicesAreEquivalent(tc.input1, tc.input2)
 			g.Expect(ret).To(Equal(tc.expectedOutput))
 		})

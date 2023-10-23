@@ -29,8 +29,6 @@ import (
 )
 
 func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
-	g := NewWithT(t)
-
 	tests := []struct {
 		name            string
 		machineTemplate *AzureMachineTemplate
@@ -240,6 +238,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			ctx := context.Background()
 			_, err := test.machineTemplate.ValidateCreate(ctx, test.machineTemplate)
 			if test.wantErr {
@@ -252,7 +251,6 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 }
 
 func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
-	g := NewWithT(t)
 	failureDomain := "domaintest"
 
 	tests := []struct {
@@ -587,6 +585,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 	for _, amt := range tests {
 		amt := amt
 		t.Run(amt.name, func(t *testing.T) {
+			g := NewWithT(t)
 			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(true)}})
 			_, err := amt.template.ValidateUpdate(ctx, amt.oldTemplate, amt.template)
 			if amt.wantErr {
@@ -601,6 +600,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		amt := amt
 		t.Run(amt.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(false)}})
 			_, err := amt.template.ValidateUpdate(ctx, amt.oldTemplate, amt.template)
 			if amt.wantErr {
