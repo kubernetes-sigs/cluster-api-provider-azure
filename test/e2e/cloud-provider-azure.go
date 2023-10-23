@@ -77,19 +77,25 @@ func InstallCNIAndCloudProviderAzureHelmChart(ctx context.Context, input cluster
 	}
 }
 
-// InstallAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
-func InstallAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, hasWindows bool) {
-	specName := "azuredisk-csi-drivers-install"
-	By("Installing azure-disk CSI driver components via helm")
-	options := &HelmOptions{
-		Values: []string{"controller.replicas=1", "controller.runOnControlPlane=true"},
-	}
-	// TODO: make this always true once HostProcessContainers are on for all supported k8s versions.
-	if hasWindows {
-		options.Values = append(options.Values, "windows.useHostProcessContainers=true")
-	}
+// EnsureAzureDiskCSIDriverHelmChart installs the official azure-disk CSI driver helm chart
+func EnsureAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, hasWindows bool) {
+	specName := "ensure-azuredisk-csi-drivers"
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
-	InstallHelmChart(ctx, clusterProxy, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options, "")
+
+	if installHelmChart {
+		By("Installing azure-disk CSI driver components via helm")
+		options := &HelmOptions{
+			Values: []string{"controller.replicas=1", "controller.runOnControlPlane=true"},
+		}
+		// TODO: make this always true once HostProcessContainers are on for all supported k8s versions.
+		if hasWindows {
+			options.Values = append(options.Values, "windows.useHostProcessContainers=true")
+		}
+		InstallHelmChart(ctx, clusterProxy, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options, "")
+	} else {
+		By("Ensuring azure-disk CSI driver is installed via CAAPH")
+	}
+
 	By("Waiting for Ready csi-azuredisk-controller deployment pods")
 	for _, d := range []string{"csi-azuredisk-controller"} {
 		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, kubesystem, specName)

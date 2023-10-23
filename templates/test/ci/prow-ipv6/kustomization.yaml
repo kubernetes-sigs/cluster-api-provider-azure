@@ -5,7 +5,10 @@ resources:
   - ../../../flavors/ipv6
   - machine-pool-ipv6.yaml
   - ../../../addons/cluster-api-helm/calico-ipv6.yaml
+  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - patches/cluster-label-calico-ipv6.yaml
+  - ../patches/cluster-label-azuredisk-csi-driver.yaml
+
