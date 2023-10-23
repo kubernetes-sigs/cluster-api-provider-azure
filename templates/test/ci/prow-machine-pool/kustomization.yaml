@@ -7,6 +7,7 @@ resources:
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
   - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
   - ../../../addons/cluster-api-helm/calico.yaml
+  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
 patchesStrategicMerge:
   - ../patches/azuremachinepool-vmextension.yaml
   - ../patches/tags.yaml
@@ -14,6 +15,7 @@ patchesStrategicMerge:
   - ../patches/machine-pool-worker-counts.yaml
   - ../patches/windows-containerd-labels.yaml
   - ../patches/cluster-label-calico.yaml
+  - ../patches/cluster-label-azuredisk-csi-driver.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     files:
