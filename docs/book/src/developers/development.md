@@ -549,7 +549,6 @@ With the following environment variables defined, CAPZ runs `./scripts/ci-build-
 | ------------------------- | ------------------------------------------------------------------------ |
 | `AZURE_STORAGE_ACCOUNT`   | Your Azure storage account name                                          |
 | `AZURE_STORAGE_KEY`       | Your Azure storage key                                                   |
-| `JOB_NAME`                | `test` (an environment variable used by CI, can be any non-empty string) |
 | `USE_LOCAL_KIND_REGISTRY` | `false`                                                                  |
 | `REGISTRY`                | Your Registry                                                            |
 | `TEST_K8S`                | `true`                                                                   |

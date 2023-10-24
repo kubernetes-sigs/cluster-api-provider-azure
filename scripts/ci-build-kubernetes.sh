@@ -35,9 +35,6 @@ source "${REPO_ROOT}/hack/util.sh"
 : "${AZURE_STORAGE_ACCOUNT:?Environment variable empty or not defined.}"
 : "${AZURE_STORAGE_KEY:?Environment variable empty or not defined.}"
 : "${REGISTRY:?Environment variable empty or not defined.}"
-# JOB_NAME is an environment variable set by a prow job -
-# https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
-: "${JOB_NAME:?Environment variable empty or not defined.}"
 
 declare -a BINARIES=("kubeadm" "kubectl" "kubelet" "e2e.test")
 declare -a WINDOWS_BINARIES=("kubeadm" "kubectl" "kubelet" "kube-proxy")
@@ -78,13 +75,15 @@ setup() {
     # ref: https://github.com/kubernetes/kubernetes/blob/5491484aa91fd09a01a68042e7674bc24d42687a/build/lib/release.sh#L345-L346
     export KUBE_IMAGE_TAG="${KUBE_GIT_VERSION/+/_}"
     echo "using K8s KUBE_IMAGE_TAG=${KUBE_IMAGE_TAG}"
+
+    export AZURE_BLOB_CONTAINER_NAME="${AZURE_BLOB_CONTAINER_NAME:-"kubernetes-ci"}"
 }
 
 main() {
-    if [[ "$(az storage container exists --name "${JOB_NAME}" --query exists --output tsv)" == "false" ]]; then
-        echo "Creating ${JOB_NAME} storage container"
-        az storage container create --name "${JOB_NAME}" > /dev/null
-        az storage container set-permission --name "${JOB_NAME}" --public-access container > /dev/null
+    if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
+        echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
+        az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
+        az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
     fi
 
     if [[ "${KUBE_BUILD_CONFORMANCE:-}" =~ [yY] ]]; then
@@ -112,12 +111,12 @@ main() {
             docker tag "${OLD_IMAGE_URL}" "${NEW_IMAGE_URL}" && docker push "${NEW_IMAGE_URL}"
         done
 
-        echo "Uploading binaries to Azure storage container ${JOB_NAME}"
+        echo "Uploading binaries to Azure storage container ${AZURE_BLOB_CONTAINER_NAME}"
 
         for BINARY in "${BINARIES[@]}"; do
             BIN_PATH="${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
             echo "uploading ${BIN_PATH}"
-            az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${BIN_PATH}"
+            az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${BIN_PATH}"
         done
 
         if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
@@ -130,7 +129,7 @@ main() {
             for BINARY in "${WINDOWS_BINARIES[@]}"; do
                 BIN_PATH="${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe"
                 echo "uploading ${BIN_PATH}"
-                az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${BIN_PATH}"
+                az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${BIN_PATH}"
             done
         fi
     fi
@@ -145,14 +144,14 @@ can_reuse_artifacts() {
     done
 
     for BINARY in "${BINARIES[@]}"; do
-        if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists --output tsv)" == "false" ]]; then
+        if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists --output tsv)" == "false" ]]; then
             echo "false" && return
         fi
     done
 
     if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
         for BINARY in "${WINDOWS_BINARIES[@]}"; do
-            if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists --output tsv)" == "false" ]]; then
+            if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists --output tsv)" == "false" ]]; then
                 echo "false" && return
             fi
         done

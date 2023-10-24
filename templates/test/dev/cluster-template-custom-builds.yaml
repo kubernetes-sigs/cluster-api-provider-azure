@@ -114,7 +114,7 @@ spec:
         az login --identity
         for BINARY in "$${BINARIES[@]}"; do
           echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-          az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
+          az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
         done
         systemctl restart kubelet
 
@@ -296,7 +296,7 @@ spec:
           az login --identity
           for BINARY in "$${BINARIES[@]}"; do
             echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-            az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
+            az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
           done
           systemctl restart kubelet
 
@@ -450,7 +450,7 @@ spec:
             $env:PATH +=";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
             # Install Binaries
             $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-            $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+            $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
             echo "running az login via identity"
             az login --identity
             foreach ( $$binary in $$binaries )
