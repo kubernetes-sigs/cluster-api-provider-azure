@@ -20,6 +20,7 @@ repos:
   rev: v2.17.2
   hooks:
   - id: pylint
+    exclude: ^hack/boilerplate/boilerplate.py$
 - repo: local
   hooks:
   - id: make-verify-boilerplate
