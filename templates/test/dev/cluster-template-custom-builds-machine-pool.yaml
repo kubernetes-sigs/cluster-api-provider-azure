@@ -103,7 +103,7 @@ spec:
         declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
         for BINARY in "$${BINARIES[@]}"; do
           echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-          curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+          curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
         done
         systemctl restart kubelet
 
@@ -280,7 +280,7 @@ spec:
       declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
       for BINARY in "$${BINARIES[@]}"; do
         echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-        curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+        curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
       done
       systemctl restart kubelet
 
@@ -395,7 +395,7 @@ spec:
       if($$KUBE_GIT_VERSION -ne "")
       {
         $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
         foreach ( $$binary in $$binaries )
         {
           echo "downloading binary: $$ci_url/$$binary.exe"
