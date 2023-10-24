@@ -15,6 +15,12 @@ patches:
     version: v1beta1
     kind: KubeadmControlPlane
     name: .*-control-plane
+  path: ../prow-ci-version/patches/oot-credential-provider-kcp.yaml
+- target:
+    group: controlplane.cluster.x-k8s.io
+    version: v1beta1
+    kind: KubeadmControlPlane
+    name: .*-control-plane
     namespace: default
   path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml
 - target:

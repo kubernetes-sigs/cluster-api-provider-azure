@@ -56,11 +56,9 @@ setup() {
     echo "Image registry is ${REGISTRY}"
     echo "Image Tag CCM is ${IMAGE_TAG_CCM}"
     echo "Image Tag CNM is ${IMAGE_TAG_CNM}"
-    if [[ "${TEST_ACR_CREDENTIAL_PROVIDER:-}" =~ "true" ]]; then
-        IMAGE_TAG_ACR_CREDENTIAL_PROVIDER="${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER:-${IMAGE_TAG}}"
-        export IMAGE_TAG_ACR_CREDENTIAL_PROVIDER
-        echo "Image Tag ACR credential provider is ${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}"
-    fi
+    IMAGE_TAG_ACR_CREDENTIAL_PROVIDER="${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER:-${IMAGE_TAG}}"
+    export IMAGE_TAG_ACR_CREDENTIAL_PROVIDER
+    echo "Image Tag ACR credential provider is ${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}"
 
     if [[ -n "${WINDOWS_SERVER_VERSION:-}" ]]; then
         if [[ "${WINDOWS_SERVER_VERSION}" == "windows-2019" ]]; then
@@ -80,19 +78,17 @@ main() {
         echo "Building Linux amd64 and Windows ${WINDOWS_IMAGE_VERSION} amd64 cloud node managers"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64 manifest-node-manager-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64
 
-        if [[ "${TEST_ACR_CREDENTIAL_PROVIDER:-}" =~ "true" ]]; then
-            echo "Building and pushing Linux and Windows amd64 Azure ACR credential provider"
-            make -C "${AZURE_CLOUD_PROVIDER_ROOT}" bin/azure-acr-credential-provider bin/azure-acr-credential-provider.exe
+        echo "Building and pushing Linux and Windows amd64 Azure ACR credential provider"
+        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" bin/azure-acr-credential-provider bin/azure-acr-credential-provider.exe
 
-            if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
-                echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
-                az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
-                az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
-            fi
-
-            az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
-            az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider.exe" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe"
+        if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
+            echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
+            az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
+            az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
         fi
+
+        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider.exe" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe"
     fi
 }
 
@@ -110,13 +106,11 @@ can_reuse_artifacts() {
         echo "false" && return
     fi
 
-    if [[ "${TEST_ACR_CREDENTIAL_PROVIDER:-}" =~ "true" ]]; then
-        for BINARY in azure-acr-credential-provider azure-acr-credential-provider.exe; do
-            if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv)" == "false" ]]; then
-                echo "false" && return
-            fi
-        done
-    fi
+    for BINARY in azure-acr-credential-provider azure-acr-credential-provider.exe; do
+        if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv)" == "false" ]]; then
+            echo "false" && return
+        fi
+    done
 
     echo "true"
 }
