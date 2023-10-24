@@ -159,7 +159,7 @@ spec:
         echo "* checking binary versions"
         echo "ctr version: " $(ctr version)
         echo "kubeadm version: " $(kubeadm version -o=short)
-        echo "kubectl version: " $(kubectl version --client=true --short=true)
+        echo "kubectl version: " $(kubectl version --client=true)
         echo "kubelet version: " $(kubelet --version)
         echo "$$LINE_SEPARATOR"
       owner: root:root
@@ -345,7 +345,7 @@ spec:
           echo "* checking binary versions"
           echo "ctr version: " $(ctr version)
           echo "kubeadm version: " $(kubeadm version -o=short)
-          echo "kubectl version: " $(kubectl version --client=true --short=true)
+          echo "kubectl version: " $(kubectl version --client=true)
           echo "kubelet version: " $(kubelet --version)
           echo "$$LINE_SEPARATOR"
         owner: root:root
@@ -493,7 +493,7 @@ spec:
           ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
 
           kubeadm.exe version -o=short
-          kubectl.exe version --client=true --short=true
+          kubectl.exe version --client=true
           kubelet.exe --version
           kube-proxy.exe --version
         path: C:/replace-ci-binaries.ps1

@@ -119,7 +119,7 @@ spec:
         done
 
         echo "kubeadm version: $(kubeadm version -o=short)"
-        echo "kubectl version: $(kubectl version --client=true --short=true)"
+        echo "kubectl version: $(kubectl version --client=true)"
         echo "kubelet version: $(kubelet --version)"
       owner: root:root
       path: /tmp/replace-k8s-binaries.sh
@@ -286,7 +286,7 @@ spec:
       systemctl restart kubelet
 
       echo "kubeadm version: $(kubeadm version -o=short)"
-      echo "kubectl version: $(kubectl version --client=true --short=true)"
+      echo "kubectl version: $(kubectl version --client=true)"
       echo "kubelet version: $(kubelet --version)"
     owner: root:root
     path: /tmp/replace-k8s-binaries.sh
@@ -410,7 +410,7 @@ spec:
       ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
 
       kubeadm.exe version -o=short
-      kubectl.exe version --client=true --short=true
+      kubectl.exe version --client=true
       kubelet.exe --version
       kube-proxy.exe --version
     path: C:/replace-pr-binaries.ps1

@@ -27,7 +27,7 @@
         done
 
         echo "kubeadm version: $(kubeadm version -o=short)"
-        echo "kubectl version: $(kubectl version --client=true --short=true)"
+        echo "kubectl version: $(kubectl version --client=true)"
         echo "kubelet version: $(kubelet --version)"
     path: /tmp/replace-k8s-binaries.sh
     owner: "root:root"
