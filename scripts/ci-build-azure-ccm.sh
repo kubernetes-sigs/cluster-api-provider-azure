@@ -30,9 +30,6 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
 : "${AZURE_STORAGE_ACCOUNT:?Environment variable empty or not defined.}"
 : "${AZURE_STORAGE_KEY:?Environment variable empty or not defined.}"
-# JOB_NAME is an environment variable set by a prow job -
-# https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
-: "${JOB_NAME:?Environment variable empty or not defined.}"
 : "${REGISTRY:?Environment variable empty or not defined.}"
 
 # cloud controller manager image
@@ -41,6 +38,8 @@ export CCM_IMAGE_NAME=azure-cloud-controller-manager
 export CNM_IMAGE_NAME=azure-cloud-node-manager
 # cloud node manager windows image version
 export WINDOWS_IMAGE_VERSION=1809
+# container name
+export AZURE_BLOB_CONTAINER_NAME="${AZURE_BLOB_CONTAINER_NAME:-"kubernetes-ci"}"
 
 setup() {
     AZURE_CLOUD_PROVIDER_ROOT="${AZURE_CLOUD_PROVIDER_ROOT:-""}"
@@ -85,14 +84,14 @@ main() {
             echo "Building and pushing Linux and Windows amd64 Azure ACR credential provider"
             make -C "${AZURE_CLOUD_PROVIDER_ROOT}" bin/azure-acr-credential-provider bin/azure-acr-credential-provider.exe
 
-            if [[ "$(az storage container exists --name "${JOB_NAME}" --query exists --output tsv)" == "false" ]]; then
-                echo "Creating ${JOB_NAME} storage container"
-                az storage container create --name "${JOB_NAME}" > /dev/null
-                az storage container set-permission --name "${JOB_NAME}" --public-access container > /dev/null
+            if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
+                echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
+                az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
+                az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
             fi
 
-            az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
-            az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider.exe" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe"
+            az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+            az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider.exe" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe"
         fi
     fi
 }
@@ -113,7 +112,7 @@ can_reuse_artifacts() {
 
     if [[ "${TEST_ACR_CREDENTIAL_PROVIDER:-}" =~ "true" ]]; then
         for BINARY in azure-acr-credential-provider azure-acr-credential-provider.exe; do
-            if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv)" == "false" ]]; then
+            if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv)" == "false" ]]; then
                 echo "false" && return
             fi
         done

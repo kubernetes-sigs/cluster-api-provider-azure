@@ -21,7 +21,6 @@ export AZURE_STORAGE_ACCOUNT=<AzureStorageAccount>
 export AZURE_STORAGE_KEY=<AzureStorageKey>
 export REGISTRY=<Registry>
 export TEST_K8S="true"
-export JOB_NAME="test" # an environment variable used by CI, can be any non-empty string
 
 source ./scripts/ci-build-kubernetes.sh
 ```
