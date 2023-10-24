@@ -17,6 +17,26 @@ patches:
     kind: KubeadmConfigTemplate
     name: .*-md-0
     namespace: default
+  path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider.yaml
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1beta1
+    kind: KubeadmConfigTemplate
+    name: .*-md-win
+    namespace: default
+  path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-win.yaml
+- target:
+    group: controlplane.cluster.x-k8s.io
+    version: v1beta1
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+  path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-kcp.yaml
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1beta1
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
   path: patches/kubeadm-bootstrap.yaml
 - target:
     group: controlplane.cluster.x-k8s.io
