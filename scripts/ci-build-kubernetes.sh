@@ -39,7 +39,7 @@ source "${REPO_ROOT}/hack/util.sh"
 # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
 : "${JOB_NAME:?Environment variable empty or not defined.}"
 
-declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+declare -a BINARIES=("kubeadm" "kubectl" "kubelet" "e2e.test")
 declare -a WINDOWS_BINARIES=("kubeadm" "kubectl" "kubelet" "kube-proxy")
 declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
 
@@ -112,8 +112,12 @@ main() {
             docker tag "${OLD_IMAGE_URL}" "${NEW_IMAGE_URL}" && docker push "${NEW_IMAGE_URL}"
         done
 
+        echo "Uploading binaries to Azure storage container ${JOB_NAME}"
+
         for BINARY in "${BINARIES[@]}"; do
-            az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
+            BIN_PATH="${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
+            echo "uploading ${BIN_PATH}"
+            az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${BIN_PATH}"
         done
 
         if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
@@ -124,7 +128,9 @@ main() {
             done
 
             for BINARY in "${WINDOWS_BINARIES[@]}"; do
-                az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe"
+                BIN_PATH="${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe"
+                echo "uploading ${BIN_PATH}"
+                az storage blob upload --overwrite --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${BIN_PATH}"
             done
         fi
     fi
