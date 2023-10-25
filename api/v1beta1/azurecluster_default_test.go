@@ -703,6 +703,30 @@ func TestSubnetDefaults(t *testing.T) {
 									Name: "my-custom-sg",
 								},
 							},
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: "node",
+									Name: "cluster-test-node-subnet",
+								},
+								SecurityGroup: SecurityGroup{
+									SecurityGroupClass: SecurityGroupClass{
+										SecurityRules: []SecurityRule{
+											{
+												Name:             "allow_port_50000",
+												Description:      "allow port 50000",
+												Protocol:         "*",
+												Priority:         2202,
+												SourcePorts:      ptr.To("*"),
+												DestinationPorts: ptr.To("*"),
+												Source:           ptr.To("*"),
+												Destination:      ptr.To("*"),
+												Action:           SecurityRuleActionAllow,
+											},
+										},
+									},
+									Name: "my-custom-node-sg",
+								},
+							},
 						},
 					},
 				},
@@ -746,14 +770,32 @@ func TestSubnetDefaults(t *testing.T) {
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+								SecurityGroup: SecurityGroup{
+									Name: "my-custom-node-sg",
+									SecurityGroupClass: SecurityGroupClass{
+										SecurityRules: []SecurityRule{
+											{
+												Name:             "allow_port_50000",
+												Description:      "allow port 50000",
+												Protocol:         "*",
+												Priority:         2202,
+												SourcePorts:      ptr.To("*"),
+												DestinationPorts: ptr.To("*"),
+												Source:           ptr.To("*"),
+												Destination:      ptr.To("*"),
+												Direction:        SecurityRuleDirectionInbound,
+												Action:           SecurityRuleActionAllow,
+											},
+										},
+									},
+								},
+								RouteTable: RouteTable{Name: "cluster-test-node-routetable"},
 								NatGateway: NatGateway{
 									NatGatewayIP: PublicIPSpec{
-										Name: "",
+										Name: "pip-cluster-test-node-natgw-1",
 									},
 									NatGatewayClassSpec: NatGatewayClassSpec{
-										Name: "cluster-test-node-natgw",
+										Name: "cluster-test-node-natgw-1",
 									},
 								},
 							},
