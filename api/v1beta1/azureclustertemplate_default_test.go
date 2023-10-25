@@ -264,6 +264,129 @@ func TestSubnetsTemplateDefaults(t *testing.T) {
 			},
 		},
 		{
+			name: "subnet with custom attributes and security groups",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetControlPlane,
+											CIDRBlocks: []string{"10.0.0.16/24"},
+										},
+										SecurityGroup: SecurityGroupClass{
+											SecurityRules: []SecurityRule{
+												{
+													Name:             "allow_port_50000",
+													Description:      "allow port 50000",
+													Protocol:         "*",
+													Priority:         2202,
+													SourcePorts:      ptr.To("*"),
+													DestinationPorts: ptr.To("*"),
+													Source:           ptr.To("*"),
+													Destination:      ptr.To("*"),
+													Action:           SecurityRuleActionAllow,
+												},
+											},
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"10.1.0.16/24"},
+										},
+										NatGateway: NatGatewayClassSpec{
+											Name: "foo-natgw",
+										},
+										SecurityGroup: SecurityGroupClass{
+											SecurityRules: []SecurityRule{
+												{
+													Name:             "allow_port_50000",
+													Description:      "allow port 50000",
+													Protocol:         "*",
+													Priority:         2202,
+													SourcePorts:      ptr.To("*"),
+													DestinationPorts: ptr.To("*"),
+													Source:           ptr.To("*"),
+													Destination:      ptr.To("*"),
+													Action:           SecurityRuleActionAllow,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetControlPlane,
+											CIDRBlocks: []string{"10.0.0.16/24"},
+										},
+										SecurityGroup: SecurityGroupClass{
+											SecurityRules: SecurityRules{
+												{
+													Name:             "allow_port_50000",
+													Description:      "allow port 50000",
+													Protocol:         "*",
+													Priority:         2202,
+													SourcePorts:      ptr.To("*"),
+													DestinationPorts: ptr.To("*"),
+													Source:           ptr.To("*"),
+													Destination:      ptr.To("*"),
+													Direction:        SecurityRuleDirectionInbound,
+													Action:           SecurityRuleActionAllow,
+												},
+											},
+										},
+									},
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetNode,
+											CIDRBlocks: []string{"10.1.0.16/24"},
+										},
+										NatGateway: NatGatewayClassSpec{Name: "foo-natgw"},
+										SecurityGroup: SecurityGroupClass{
+											SecurityRules: SecurityRules{
+												{
+													Name:             "allow_port_50000",
+													Description:      "allow port 50000",
+													Protocol:         "*",
+													Priority:         2202,
+													SourcePorts:      ptr.To("*"),
+													DestinationPorts: ptr.To("*"),
+													Source:           ptr.To("*"),
+													Destination:      ptr.To("*"),
+													Direction:        SecurityRuleDirectionInbound,
+													Action:           SecurityRuleActionAllow,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "subnets specified",
 			clusterTemplate: &AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
