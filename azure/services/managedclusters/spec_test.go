@@ -485,6 +485,99 @@ func TestParameters(t *testing.T) {
 				g.Expect(*result.(armcontainerservice.ManagedCluster).Properties.OidcIssuerProfile.Enabled).To(BeFalse())
 			},
 		},
+		{
+			name:     "do not update addon profile",
+			existing: getExistingClusterWithAddonProfile(),
+			spec: &ManagedClusterSpec{
+				Name:          "test-managedcluster",
+				ResourceGroup: "test-rg",
+				Location:      "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				AddonProfiles: []AddonProfile{
+					{
+						Name:    "first-addon-profile",
+						Enabled: true,
+					},
+					{
+						Name:    "second-addon-profile",
+						Enabled: true,
+					},
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+		},
+		{
+			name:     "update needed when addon profile enabled changes",
+			existing: getExistingClusterWithAddonProfile(),
+			spec: &ManagedClusterSpec{
+				Name:          "test-managedcluster",
+				ResourceGroup: "test-rg",
+				Location:      "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				AddonProfiles: []AddonProfile{
+					{
+						Name:    "first-addon-profile",
+						Enabled: true,
+					},
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				g.Expect(*result.(armcontainerservice.ManagedCluster).Properties.AddonProfiles["first-addon-profile"].Enabled).To(BeTrue())
+				g.Expect(*result.(armcontainerservice.ManagedCluster).Properties.AddonProfiles["second-addon-profile"].Enabled).To(BeFalse())
+			},
+		},
+		{
+			name:     "update when we delete an addon profile",
+			existing: getExistingClusterWithAddonProfile(),
+			spec: &ManagedClusterSpec{
+				Name:          "test-managedcluster",
+				ResourceGroup: "test-rg",
+				Location:      "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:         "v1.22.0",
+				LoadBalancerSKU: "standard",
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				AddonProfiles: []AddonProfile{
+					{
+						Name:    "first-addon-profile",
+						Enabled: true,
+					},
+					{
+						Name:    "second-addon-profile",
+						Enabled: true,
+					},
+					{
+						Name:    "third-addon-profile",
+						Enabled: true,
+					},
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				g.Expect(*result.(armcontainerservice.ManagedCluster).Properties.AddonProfiles["third-addon-profile"].Enabled).To(BeTrue())
+			},
+		},
 	}
 	for _, tc := range testcases {
 		tc := tc
@@ -566,6 +659,21 @@ func getExistingCluster() armcontainerservice.ManagedCluster {
 	mc := getSampleManagedCluster()
 	mc.Properties.ProvisioningState = ptr.To("Succeeded")
 	mc.ID = ptr.To("test-id")
+	return mc
+}
+
+func getExistingClusterWithAddonProfile() armcontainerservice.ManagedCluster {
+	mc := getSampleManagedCluster()
+	mc.Properties.ProvisioningState = ptr.To("Succeeded")
+	mc.ID = ptr.To("test-id")
+	mc.Properties.AddonProfiles = map[string]*armcontainerservice.ManagedClusterAddonProfile{
+		"first-addon-profile": {
+			Enabled: ptr.To(true),
+		},
+		"second-addon-profile": {
+			Enabled: ptr.To(true),
+		},
+	}
 	return mc
 }
 

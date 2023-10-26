@@ -1037,6 +1037,102 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "AzureManagedControlPlane AddonProfiles is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AddonProfiles: []AddonProfile{
+						{
+							Name:    "first-addon-profile",
+							Enabled: true,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane AddonProfiles can be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AddonProfiles: []AddonProfile{
+						{
+							Name:    "first-addon-profile",
+							Enabled: true,
+						},
+					},
+					Version: "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AddonProfiles: []AddonProfile{
+						{
+							Name:    "first-addon-profile",
+							Enabled: false,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane AddonProfiles cannot update to empty array",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AddonProfiles: []AddonProfile{
+						{
+							Name:    "first-addon-profile",
+							Enabled: true,
+						},
+					},
+					Version: "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane AddonProfiles cannot be completely removed",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AddonProfiles: []AddonProfile{
+						{
+							Name:    "first-addon-profile",
+							Enabled: true,
+						},
+						{
+							Name:    "second-addon-profile",
+							Enabled: true,
+						},
+					},
+					Version: "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AddonProfiles: []AddonProfile{
+						{
+							Name:    "first-addon-profile",
+							Enabled: true,
+						},
+					},
+					Version: "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "AzureManagedControlPlane SubscriptionID is immutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{

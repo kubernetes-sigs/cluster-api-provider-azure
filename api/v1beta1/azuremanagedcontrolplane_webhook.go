@@ -244,6 +244,10 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := m.validateAddonProfilesUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if errs := m.validateAPIServerAccessProfileUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
@@ -520,6 +524,26 @@ func (m *AzureManagedControlPlane) validateAPIServerAccessProfileUpdate(old *Azu
 		)
 	}
 
+	return allErrs
+}
+
+// validateAddonProfilesUpdate validates update to AddonProfiles.
+func (m *AzureManagedControlPlane) validateAddonProfilesUpdate(old *AzureManagedControlPlane) field.ErrorList {
+	var allErrs field.ErrorList
+	newAddonProfileMap := map[string]struct{}{}
+	if len(old.Spec.AddonProfiles) != 0 {
+		for _, addonProfile := range m.Spec.AddonProfiles {
+			newAddonProfileMap[addonProfile.Name] = struct{}{}
+		}
+		for i, addonProfile := range old.Spec.AddonProfiles {
+			if _, ok := newAddonProfileMap[addonProfile.Name]; !ok {
+				allErrs = append(allErrs, field.Invalid(
+					field.NewPath("Spec", "AddonProfiles"),
+					m.Spec.AddonProfiles,
+					fmt.Sprintf("cannot remove addonProfile %s, To disable this AddonProfile, update Spec.AddonProfiles[%v].Enabled to false", addonProfile.Name, i)))
+			}
+		}
+	}
 	return allErrs
 }
 
