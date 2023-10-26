@@ -135,6 +135,7 @@ var _ = Describe("Workload cluster creation", func() {
 		}
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 		Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
+		Expect(os.Unsetenv(AzureCustomVnetResourceGroup)).To(Succeed())
 		Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
 		Expect(os.Unsetenv(ClusterIdentityName)).To(Succeed())
 		Expect(os.Unsetenv(ClusterIdentityNamespace)).To(Succeed())
@@ -155,6 +156,7 @@ var _ = Describe("Workload cluster creation", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
 				By("Creating a custom virtual network", func() {
 					Expect(os.Setenv(AzureCustomVNetName, "custom-vnet")).To(Succeed())
+					Expect(os.Setenv(AzureCustomVnetResourceGroup, clusterName+"-vnetrg")).To(Succeed())
 					additionalCleanup = SetupExistingVNet(ctx,
 						"10.0.0.0/16",
 						map[string]string{fmt.Sprintf("%s-controlplane-subnet", os.Getenv(AzureCustomVNetName)): "10.0.0.0/24"},

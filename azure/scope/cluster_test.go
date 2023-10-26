@@ -810,11 +810,13 @@ func TestRouteTableSpecs(t *testing.T) {
 				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
-						ResourceGroup: "my-rg",
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
 						},
 						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ResourceGroup: "my-rg",
+							},
 							Subnets: infrav1.Subnets{
 								{
 									RouteTable: infrav1.RouteTable{
@@ -1216,11 +1218,13 @@ func TestNSGSpecs(t *testing.T) {
 				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
-						ResourceGroup: "my-rg",
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
 						},
 						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ResourceGroup: "my-rg",
+							},
 							Subnets: infrav1.Subnets{
 								{
 									SecurityGroup: infrav1.SecurityGroup{

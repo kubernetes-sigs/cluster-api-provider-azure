@@ -310,7 +310,7 @@ func (s *ClusterScope) RouteTableSpecs() []azure.ResourceSpecGetter {
 			specs = append(specs, &routetables.RouteTableSpec{
 				Name:           subnet.RouteTable.Name,
 				Location:       s.Location(),
-				ResourceGroup:  s.ResourceGroup(),
+				ResourceGroup:  s.Vnet().ResourceGroup,
 				ClusterName:    s.ClusterName(),
 				AdditionalTags: s.AdditionalTags(),
 			})
@@ -358,7 +358,7 @@ func (s *ClusterScope) NSGSpecs() []azure.ResourceSpecGetter {
 		nsgspecs[i] = &securitygroups.NSGSpec{
 			Name:                     subnet.SecurityGroup.Name,
 			SecurityRules:            subnet.SecurityGroup.SecurityRules,
-			ResourceGroup:            s.ResourceGroup(),
+			ResourceGroup:            s.Vnet().ResourceGroup,
 			Location:                 s.Location(),
 			ClusterName:              s.ClusterName(),
 			AdditionalTags:           s.AdditionalTags(),
