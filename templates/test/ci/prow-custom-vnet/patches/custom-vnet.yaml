@@ -5,7 +5,7 @@ metadata:
 spec:
   networkSpec:
     vnet:
-      resourceGroup: ${AZURE_RESOURCE_GROUP}
+      resourceGroup: ${AZURE_CUSTOM_VNET_RESOURCE_GROUP}
       name: ${AZURE_CUSTOM_VNET_NAME}
     subnets:
       - name: ${AZURE_CUSTOM_VNET_NAME}-controlplane-subnet
