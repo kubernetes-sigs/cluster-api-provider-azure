@@ -10,9 +10,10 @@
 
         systemctl stop kubelet
         declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+        az login --identity
         for BINARY in "$${BINARIES[@]}"; do
           echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-          curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+          az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
         done
         systemctl restart kubelet
 

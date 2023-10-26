@@ -111,9 +111,10 @@ spec:
 
         systemctl stop kubelet
         declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+        az login --identity
         for BINARY in "$${BINARIES[@]}"; do
           echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-          curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+          az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
         done
         systemctl restart kubelet
 
@@ -194,6 +195,7 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
+      identity: UserAssigned
       image:
         marketplace:
           offer: capi
@@ -204,6 +206,8 @@ spec:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -240,6 +244,7 @@ metadata:
 spec:
   template:
     spec:
+      identity: UserAssigned
       image:
         marketplace:
           offer: capi
@@ -250,6 +255,8 @@ spec:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmExtensions:
       - name: CustomScript
         protectedSettings:
@@ -286,9 +293,10 @@ spec:
 
           systemctl stop kubelet
           declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+          az login --identity
           for BINARY in "$${BINARIES[@]}"; do
             echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-            curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+            az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
           done
           systemctl restart kubelet
 
@@ -344,6 +352,7 @@ spec:
         runtime: containerd
         windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
     spec:
+      identity: UserAssigned
       image:
         marketplace:
           offer: capi-windows
@@ -356,6 +365,8 @@ spec:
           storageAccountType: Premium_LRS
         osType: Windows
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -417,6 +428,16 @@ spec:
         path: C:/collect-hns-crashes.ps1
         permissions: "0744"
       - content: |
+          Write-Host "Installing Azure CLI"
+          $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri https://azcliprod.blob.core.windows.net/msi/azure-cli-2.53.0.msi -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; Remove-Item .\AzureCLI.msi
+          # Need to add manually AZ to PATH as it is not added without a reset
+          Write-Host "Adding AZ to path:"
+          $env:PATH +=";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
+          Write-Host "Version Azure CLI:"
+          az version
+        path: C:/install-az-cli.ps1
+        permissions: "0744"
+      - content: |
           $ErrorActionPreference = 'Stop'
 
           Stop-Service kubelet -Force
@@ -424,12 +445,18 @@ spec:
           $$KUBE_GIT_VERSION="${KUBE_GIT_VERSION}"
           if($$KUBE_GIT_VERSION -ne "")
           {
+            # Need to add manually AZ to PATH as it is not added without a reset
+            Write-Host "Adding AZ to path:"
+            $env:PATH +=";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
+            # Install Binaries
             $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
             $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+            echo "running az login via identity"
+            az login --identity
             foreach ( $$binary in $$binaries )
             {
               echo "downloading binary: $$ci_url/$$binary.exe"
-              curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+              az storage blob download --blob-url "$$ci_url/$$binary.exe" --file "c:/k/$$binary.exe" --auth-mode login
             }
           }
 
@@ -461,6 +488,7 @@ spec:
       - powershell C:/create-temp-folder.ps1
       - powershell C:/replace-containerd.ps1
       - powershell C:/collect-hns-crashes.ps1
+      - powershell C:/install-az-cli.ps1
       - powershell C:/replace-pr-binaries.ps1
       users:
       - groups: Administrators
