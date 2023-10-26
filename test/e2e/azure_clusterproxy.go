@@ -134,53 +134,63 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 			Logf("failed to describe pod %s/%s: %v", podNamespace, pod.GetName(), err)
 		}
 
+		// collect the init container logs
+		for _, container := range pod.Spec.InitContainers {
+			// Watch each init container's logs in a goroutine, so we can stream them all concurrently.
+			go collectContainerLogs(ctx, pod, container, aboveMachinesPath, workload)
+		}
+
 		for _, container := range pod.Spec.Containers {
-			// Watch each container's logs in a goroutine so we can stream them all concurrently.
-			go func(pod corev1.Pod, container corev1.Container) {
-				defer GinkgoRecover()
-
-				Logf("Creating log watcher for controller %s/%s, container %s", podNamespace, pod.Name, container.Name)
-				logFile := path.Join(aboveMachinesPath, podNamespace, pod.Name, container.Name+".log")
-				if err := os.MkdirAll(filepath.Dir(logFile), 0o755); err != nil {
-					// Failing to mkdir should not cause the test to fail
-					Logf("Error mkdir: %v", err)
-					return
-				}
-
-				f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-				if err != nil {
-					// Failing to fetch logs should not cause the test to fail
-					Logf("Error opening file to write pod logs: %v", err)
-					return
-				}
-				defer f.Close()
-
-				opts := &corev1.PodLogOptions{
-					Container: container.Name,
-					Follow:    true,
-				}
-
-				podLogs, err := workload.GetClientSet().CoreV1().Pods(podNamespace).GetLogs(pod.Name, opts).Stream(ctx)
-				if err != nil {
-					// Failing to stream logs should not cause the test to fail
-					Logf("Error starting logs stream for pod %s/%s, container %s: %v", podNamespace, pod.Name, container.Name, err)
-					return
-				}
-				defer podLogs.Close()
-
-				out := bufio.NewWriter(f)
-				defer out.Flush()
-				_, err = out.ReadFrom(podLogs)
-				if errors.Is(err, io.ErrUnexpectedEOF) {
-					// Failing to stream logs should not cause the test to fail
-					Logf("Got error while streaming logs for pod %s/%s, container %s: %v", podNamespace, pod.Name, container.Name, err)
-				}
-			}(pod, container)
+			// Watch each container's logs in a goroutine, so we can stream them all concurrently.
+			go collectContainerLogs(ctx, pod, container, aboveMachinesPath, workload)
 		}
 
 		Logf("Describing Pod %s/%s", podNamespace, pod.Name)
 		describeFile := path.Join(aboveMachinesPath, podNamespace, pod.Name, "pod-describe.txt")
 		writeLogFile(describeFile, podDescribe)
+	}
+}
+
+func collectContainerLogs(ctx context.Context, pod corev1.Pod, container corev1.Container, aboveMachinesPath string, workload framework.ClusterProxy) {
+	defer GinkgoRecover()
+
+	podNamespace := pod.GetNamespace()
+
+	Logf("Creating log watcher for controller %s/%s, container %s", podNamespace, pod.Name, container.Name)
+	logFile := path.Join(aboveMachinesPath, podNamespace, pod.Name, container.Name+".log")
+	if err := os.MkdirAll(filepath.Dir(logFile), 0o755); err != nil {
+		// Failing to mkdir should not cause the test to fail
+		Logf("Error mkdir: %v", err)
+		return
+	}
+
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		// Failing to fetch logs should not cause the test to fail
+		Logf("Error opening file to write pod logs: %v", err)
+		return
+	}
+	defer f.Close()
+
+	opts := &corev1.PodLogOptions{
+		Container: container.Name,
+		Follow:    true,
+	}
+
+	podLogs, err := workload.GetClientSet().CoreV1().Pods(podNamespace).GetLogs(pod.Name, opts).Stream(ctx)
+	if err != nil {
+		// Failing to stream logs should not cause the test to fail
+		Logf("Error starting logs stream for pod %s/%s, container %s: %v", podNamespace, pod.Name, container.Name, err)
+		return
+	}
+	defer podLogs.Close()
+
+	out := bufio.NewWriter(f)
+	defer out.Flush()
+	_, err = out.ReadFrom(podLogs)
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		// Failing to stream logs should not cause the test to fail
+		Logf("Got error while streaming logs for pod %s/%s, container %s: %v", podNamespace, pod.Name, container.Name, err)
 	}
 }
 
