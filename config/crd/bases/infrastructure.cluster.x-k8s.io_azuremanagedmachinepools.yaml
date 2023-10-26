@@ -58,6 +58,11 @@ spec:
                 items:
                   type: string
                 type: array
+              enableEncryptionAtHost:
+                description: "EnableEncryptionAtHost indicates whether host encryption
+                  is enabled on the node pool. Immutable. See also [AKS doc]. \n [AKS
+                  doc]: https://learn.microsoft.com/en-us/azure/aks/enable-host-encryption"
+                type: boolean
               enableFIPS:
                 description: EnableFIPS indicates whether FIPS is enabled on the node
                   pool. Immutable.
