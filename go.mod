@@ -33,13 +33,13 @@ require (
 	github.com/pkg/sftp v1.13.6
 	github.com/prometheus/client_golang v1.16.0
 	github.com/spf13/pflag v1.0.5
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.43.0
-	go.opentelemetry.io/otel v1.17.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.17.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0
+	go.opentelemetry.io/otel v1.19.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.19.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.40.0
-	go.opentelemetry.io/otel/sdk v1.17.0
+	go.opentelemetry.io/otel/sdk v1.19.0
 	go.opentelemetry.io/otel/sdk/metric v0.40.0
-	go.opentelemetry.io/otel/trace v1.17.0
+	go.opentelemetry.io/otel/trace v1.19.0
 	go.uber.org/mock v0.2.0
 	golang.org/x/crypto v0.14.0
 	golang.org/x/mod v0.12.0
@@ -52,8 +52,8 @@ require (
 	k8s.io/kubectl v0.27.2
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/cloud-provider-azure v1.27.7
-	sigs.k8s.io/cluster-api v1.5.2
-	sigs.k8s.io/cluster-api/test v1.5.2
+	sigs.k8s.io/cluster-api v1.5.3
+	sigs.k8s.io/cluster-api/test v1.5.3
 	sigs.k8s.io/controller-runtime v0.15.1
 	sigs.k8s.io/kind v0.20.0
 )
@@ -171,8 +171,8 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.17.0 // indirect
-	go.opentelemetry.io/otel/metric v1.17.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
+	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd // indirect
@@ -187,7 +187,7 @@ require (
 	google.golang.org/genproto v0.0.0-20230803162519-f966b187b2e5 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230803162519-f966b187b2e5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230803162519-f966b187b2e5 // indirect
-	google.golang.org/grpc v1.57.1 // indirect
+	google.golang.org/grpc v1.58.3 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -206,4 +206,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.2
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.3
