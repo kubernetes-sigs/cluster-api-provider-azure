@@ -875,11 +875,17 @@ func (s *ClusterScope) APIServerHost() string {
 	return s.APIServerPublicIP().DNSName
 }
 
-// SetFailureDomain will set the spec for a for a given key.
+// SetFailureDomain sets a failure domain in a cluster's status by its id.
+// The provided failure domain spec may be overridden to false by cluster's spec property.
 func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
 	if s.AzureCluster.Status.FailureDomains == nil {
 		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains)
 	}
+
+	if fd, ok := s.AzureCluster.Spec.FailureDomains[id]; ok && !fd.ControlPlane {
+		spec.ControlPlane = false
+	}
+
 	s.AzureCluster.Status.FailureDomains[id] = spec
 }
 

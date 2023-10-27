@@ -3438,3 +3438,73 @@ func TestVNetPeerings(t *testing.T) {
 		})
 	}
 }
+
+func TestSetFailureDomain(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		discoveredFDs clusterv1.FailureDomains
+		specifiedFDs  clusterv1.FailureDomains
+		expectedFDs   clusterv1.FailureDomains
+	}{
+		"no failure domains specified": {
+			discoveredFDs: clusterv1.FailureDomains{
+				"fd1": clusterv1.FailureDomainSpec{ControlPlane: true},
+				"fd2": clusterv1.FailureDomainSpec{ControlPlane: false},
+			},
+			expectedFDs: clusterv1.FailureDomains{
+				"fd1": clusterv1.FailureDomainSpec{ControlPlane: true},
+				"fd2": clusterv1.FailureDomainSpec{ControlPlane: false},
+			},
+		},
+		"no failure domains discovered": {
+			specifiedFDs: clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
+		},
+		"failure domain specified without intersection": {
+			discoveredFDs: clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
+			specifiedFDs:  clusterv1.FailureDomains{"fd2": clusterv1.FailureDomainSpec{ControlPlane: false}},
+			expectedFDs:   clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
+		},
+		"failure domain override to false succeeds": {
+			discoveredFDs: clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
+			specifiedFDs:  clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: false}},
+			expectedFDs:   clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: false}},
+		},
+		"failure domain override to true fails": {
+			discoveredFDs: clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: false}},
+			specifiedFDs:  clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
+			expectedFDs:   clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: false}},
+		},
+	}
+
+	for name, tc := range cases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+
+			c := ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+							FailureDomains: tc.specifiedFDs,
+						},
+					},
+				},
+			}
+
+			for fdName, fd := range tc.discoveredFDs {
+				c.SetFailureDomain(fdName, fd)
+			}
+
+			for fdName, fd := range tc.expectedFDs {
+				g.Expect(fdName).Should(BeKeyOf(c.AzureCluster.Status.FailureDomains))
+				g.Expect(c.AzureCluster.Status.FailureDomains[fdName].ControlPlane).To(Equal(fd.ControlPlane))
+
+				delete(c.AzureCluster.Status.FailureDomains, fdName)
+			}
+
+			g.Expect(c.AzureCluster.Status.FailureDomains).To(BeEmpty())
+		})
+	}
+}
