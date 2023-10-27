@@ -1292,6 +1292,41 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 				g.Expect(len(list.Items)).Should(Equal(1))
 			},
 		},
+		{
+			Name: "if existing MachinePool is not present, reduce replicas",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+				mp.Spec.Replicas = ptr.To[int32](1)
+
+				vmssState.Instances = []azure.VMSSVM{
+					{
+						ID:   "/subscriptions/123/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm",
+						Name: "vm",
+					},
+				}
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+				list := infrav1exp.AzureMachinePoolMachineList{}
+				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
+				g.Expect(len(list.Items)).Should(Equal(1))
+			},
+		},
+		{
+			Name: "if existing MachinePool is not present and Instances ID is in wrong format, reduce replicas",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+				mp.Spec.Replicas = ptr.To[int32](1)
+
+				vmssState.Instances = []azure.VMSSVM{
+					{
+						ID:   "foo/ampm0",
+						Name: "ampm0",
+					},
+				}
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+				g.Expect(err).To(HaveOccurred())
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
