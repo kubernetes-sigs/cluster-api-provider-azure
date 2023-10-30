@@ -72,7 +72,7 @@ spec:
       name: ${AZURE_VNET_NAME}
       peerings:
       - remoteVnetName: ${AZURE_CUSTOM_VNET_NAME}
-        resourceGroup: ${AZURE_RESOURCE_GROUP}
+        resourceGroup: ${AZURE_CUSTOM_VNET_RESOURCE_GROUP}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---

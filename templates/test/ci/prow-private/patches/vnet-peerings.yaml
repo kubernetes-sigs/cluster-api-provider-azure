@@ -15,7 +15,7 @@ spec:
       cidrBlocks:
       - ${AZURE_PRIVATE_VNET_CIDR}
       peerings:
-      - resourceGroup: ${AZURE_RESOURCE_GROUP}
+      - resourceGroup: ${AZURE_CUSTOM_VNET_RESOURCE_GROUP}
         remoteVnetName: ${AZURE_CUSTOM_VNET_NAME}
     subnets:
       - name: private-cp-subnet

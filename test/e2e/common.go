@@ -57,6 +57,7 @@ const (
 	AzureExtendedLocationType       = "AZURE_EXTENDEDLOCATION_TYPE"
 	AzureExtendedLocationName       = "AZURE_EXTENDEDLOCATION_NAME"
 	AzureResourceGroup              = "AZURE_RESOURCE_GROUP"
+	AzureCustomVnetResourceGroup    = "AZURE_CUSTOM_VNET_RESOURCE_GROUP"
 	AzureVNetName                   = "AZURE_VNET_NAME"
 	AzureCustomVNetName             = "AZURE_CUSTOM_VNET_NAME"
 	AzureInternalLBIP               = "AZURE_INTERNAL_LB_IP"

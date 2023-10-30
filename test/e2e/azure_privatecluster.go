@@ -228,7 +228,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	routetableClient.Authorizer = authorizer
 
 	By("creating a resource group")
-	groupName := os.Getenv(AzureResourceGroup)
+	groupName := os.Getenv(AzureCustomVnetResourceGroup)
 	_, err = groupClient.CreateOrUpdate(ctx, groupName, resources.Group{
 		Location: ptr.To(os.Getenv(AzureLocation)),
 		Tags: map[string]*string{
