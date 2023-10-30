@@ -23,7 +23,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/jongio/azidext/go/azidext v0.5.0
