@@ -368,8 +368,8 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing interface{
 	}
 
 	if s.ServiceCIDR != "" {
+		managedCluster.Properties.NetworkProfile.ServiceCidr = &s.ServiceCIDR
 		if s.DNSServiceIP == nil {
-			managedCluster.Properties.NetworkProfile.ServiceCidr = &s.ServiceCIDR
 			ip, _, err := net.ParseCIDR(s.ServiceCIDR)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse service cidr: %w", err)

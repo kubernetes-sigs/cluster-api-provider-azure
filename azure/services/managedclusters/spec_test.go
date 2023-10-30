@@ -111,6 +111,121 @@ func TestParameters(t *testing.T) {
 			},
 		},
 		{
+			name:     "managedcluster does not exist without DNSServiceIP",
+			existing: nil,
+			spec: &ManagedClusterSpec{
+				Name:              "test-managedcluster",
+				ResourceGroup:     "test-rg",
+				NodeResourceGroup: "test-node-rg",
+				ClusterName:       "test-cluster",
+				Location:          "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:           "v1.22.0",
+				LoadBalancerSKU:   "standard",
+				SSHPublicKey:      base64.StdEncoding.EncodeToString([]byte("test-ssh-key")),
+				NetworkPluginMode: ptr.To(infrav1.NetworkPluginModeOverlay),
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				ServiceCIDR: "192.168.200.6/30",
+				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
+					return []azure.ResourceSpecGetter{
+						&agentpools.AgentPoolSpec{
+							Name:          "test-agentpool-0",
+							Mode:          string(infrav1.NodePoolModeSystem),
+							ResourceGroup: "test-rg",
+							Replicas:      int32(2),
+							AdditionalTags: map[string]string{
+								"test-tag": "test-value",
+							},
+						},
+						&agentpools.AgentPoolSpec{
+							Name:              "test-agentpool-1",
+							Mode:              string(infrav1.NodePoolModeUser),
+							ResourceGroup:     "test-rg",
+							Replicas:          int32(4),
+							Cluster:           "test-managedcluster",
+							SKU:               "test_SKU",
+							Version:           ptr.To("v1.22.0"),
+							VnetSubnetID:      "fake/subnet/id",
+							MaxPods:           ptr.To[int32](int32(32)),
+							AvailabilityZones: []string{"1", "2"},
+							AdditionalTags: map[string]string{
+								"test-tag": "test-value",
+							},
+						},
+					}, nil
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				sampleCluster := getSampleManagedCluster()
+				sampleCluster.Properties.NetworkProfile.ServiceCidr = ptr.To("192.168.200.6/30")
+				sampleCluster.Properties.NetworkProfile.DNSServiceIP = ptr.To("192.168.200.10")
+				g.Expect(gomockinternal.DiffEq(result).Matches(sampleCluster)).To(BeTrue(), cmp.Diff(result, getSampleManagedCluster()))
+			},
+		},
+		{
+			name:     "managedcluster does not exist with DNSServiceIP",
+			existing: nil,
+			spec: &ManagedClusterSpec{
+				Name:              "test-managedcluster",
+				ResourceGroup:     "test-rg",
+				NodeResourceGroup: "test-node-rg",
+				ClusterName:       "test-cluster",
+				Location:          "test-location",
+				Tags: map[string]string{
+					"test-tag": "test-value",
+				},
+				Version:           "v1.22.0",
+				LoadBalancerSKU:   "standard",
+				SSHPublicKey:      base64.StdEncoding.EncodeToString([]byte("test-ssh-key")),
+				NetworkPluginMode: ptr.To(infrav1.NetworkPluginModeOverlay),
+				OIDCIssuerProfile: &OIDCIssuerProfile{
+					Enabled: ptr.To(true),
+				},
+				ServiceCIDR:  "192.168.200.6/30",
+				DNSServiceIP: ptr.To("192.168.200.6"),
+				GetAllAgentPools: func() ([]azure.ResourceSpecGetter, error) {
+					return []azure.ResourceSpecGetter{
+						&agentpools.AgentPoolSpec{
+							Name:          "test-agentpool-0",
+							Mode:          string(infrav1.NodePoolModeSystem),
+							ResourceGroup: "test-rg",
+							Replicas:      int32(2),
+							AdditionalTags: map[string]string{
+								"test-tag": "test-value",
+							},
+						},
+						&agentpools.AgentPoolSpec{
+							Name:              "test-agentpool-1",
+							Mode:              string(infrav1.NodePoolModeUser),
+							ResourceGroup:     "test-rg",
+							Replicas:          int32(4),
+							Cluster:           "test-managedcluster",
+							SKU:               "test_SKU",
+							Version:           ptr.To("v1.22.0"),
+							VnetSubnetID:      "fake/subnet/id",
+							MaxPods:           ptr.To[int32](int32(32)),
+							AvailabilityZones: []string{"1", "2"},
+							AdditionalTags: map[string]string{
+								"test-tag": "test-value",
+							},
+						},
+					}, nil
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcontainerservice.ManagedCluster{}))
+				sampleCluster := getSampleManagedCluster()
+				sampleCluster.Properties.NetworkProfile.ServiceCidr = ptr.To("192.168.200.6/30")
+				sampleCluster.Properties.NetworkProfile.DNSServiceIP = ptr.To("192.168.200.6")
+				g.Expect(gomockinternal.DiffEq(result).Matches(sampleCluster)).To(BeTrue(), cmp.Diff(result, getSampleManagedCluster()))
+			},
+		},
+		{
 			name:     "managedcluster exists, no update needed",
 			existing: getExistingCluster(),
 			spec: &ManagedClusterSpec{
