@@ -2,6 +2,19 @@
   path: /spec/template/spec/files/-
   value:
     content: |
+      Write-Host "Installing Azure CLI"
+      $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri https://azcliprod.blob.core.windows.net/msi/azure-cli-2.53.0.msi -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; Remove-Item .\AzureCLI.msi
+      # Need to add manually AZ to PATH as it is not added without a reset
+      Write-Host "Adding AZ to path:"
+      $env:PATH +=";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
+      Write-Host "Version Azure CLI:"
+      az version
+    path: C:/install-az-cli.ps1
+    permissions: "0744"
+- op: add
+  path: /spec/template/spec/files/-
+  value:
+    content: |
       $ErrorActionPreference = 'Stop'
 
       Stop-Service kubelet -Force
@@ -9,12 +22,18 @@
       $$KUBE_GIT_VERSION="${KUBE_GIT_VERSION}"
       if($$KUBE_GIT_VERSION -ne "")
       {
+        # Need to add manually AZ to PATH as it is not added without a reset
+        Write-Host "Adding AZ to path:"
+        $env:PATH +=";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
+        # Install Binaries
         $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
         $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+        echo "running az login via identity"
+        az login --identity
         foreach ( $$binary in $$binaries )
         {
           echo "downloading binary: $$ci_url/$$binary.exe"
-          curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+          az storage blob download --blob-url "$$ci_url/$$binary.exe" --file "c:/k/$$binary.exe" --auth-mode login
         }
       }
 
@@ -29,6 +48,10 @@
       kube-proxy.exe --version
     path: C:/replace-pr-binaries.ps1
     permissions: "0744"
+- op: add
+  path: /spec/template/spec/preKubeadmCommands/-
+  value:
+    powershell C:/install-az-cli.ps1
 - op: add
   path: /spec/template/spec/preKubeadmCommands/-
   value:
