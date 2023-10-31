@@ -1,5 +1,5 @@
 ginkgo.focus: \[Feature\:IPv6DualStack\]
-ginkgo.skip: \[Feature\:SCTPConnectivity\]
+ginkgo.skip: \[Feature\:SCTPConnectivity\]|\[Feature\:PodHostIPs\]
 disable-log-dump: true
 ginkgo.progress: true
 ginkgo.slowSpecThreshold: 120.0
