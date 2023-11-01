@@ -656,8 +656,9 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditio
 	}
 
 	// Remove deprecated finalizer if it exists, Register the finalizer immediately to avoid orphaning Azure resources on delete.
-	if controllerutil.RemoveFinalizer(identity, deprecatedClusterIdentityFinalizer(finalizerPrefix, namespace, name)) ||
-		controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name)) {
+	needsPatch := controllerutil.RemoveFinalizer(identity, deprecatedClusterIdentityFinalizer(finalizerPrefix, namespace, name))
+	needsPatch = controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name)) || needsPatch
+	if needsPatch {
 		// finalizers are added/removed then patch the object
 		identityHelper, err := patch.NewHelper(identity, c)
 		if err != nil {
