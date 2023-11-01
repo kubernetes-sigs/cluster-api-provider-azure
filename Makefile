@@ -326,7 +326,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	$(KUBECTL) apply -f templates/addons/windows/calico-resource-set.yaml
 
 	# Wait for CAPZ deployments
-	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capz-system deployment --all
 
 	# required sleep for when creating management and workload cluster simultaneously
 	# Wait for the core CRD resources to be "installed" onto the mgmt cluster before returning control
