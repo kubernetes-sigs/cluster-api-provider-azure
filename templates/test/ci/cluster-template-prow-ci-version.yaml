@@ -208,7 +208,7 @@ spec:
           offer: capi
           publisher: cncf-upstream
           sku: ubuntu-2204-gen1
-          version: 128.2.20230918
+          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -254,7 +254,7 @@ spec:
           offer: capi
           publisher: cncf-upstream
           sku: ubuntu-2204-gen1
-          version: 128.2.20230918
+          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux

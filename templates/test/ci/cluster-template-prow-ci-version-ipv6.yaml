@@ -211,7 +211,7 @@ spec:
     - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
     - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
       /etc/resolv.conf
-    - systemctl restart systemd-resolved
+    - systemctl restart systemd-resolved containerd
     preKubeadmCommands:
     - bash -c /tmp/kubeadm-bootstrap.sh
     verbosity: 5
@@ -241,7 +241,7 @@ spec:
           offer: capi
           publisher: cncf-upstream
           sku: ubuntu-2204-gen1
-          version: 128.2.20230918
+          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -288,7 +288,7 @@ spec:
           offer: capi
           publisher: cncf-upstream
           sku: ubuntu-2204-gen1
-          version: 128.2.20230918
+          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -405,7 +405,7 @@ spec:
       - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
       - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
         /etc/resolv.conf
-      - systemctl restart systemd-resolved
+      - systemctl restart systemd-resolved containerd
       preKubeadmCommands:
       - bash -c /tmp/kubeadm-bootstrap.sh
       verbosity: 5
