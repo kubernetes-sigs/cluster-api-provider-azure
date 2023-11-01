@@ -58,8 +58,6 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	val, ok := ammp.Labels[LabelAgentPoolMode]
 	g.Expect(ok).To(BeTrue())
 	g.Expect(val).To(Equal("System"))
-	g.Expect(*ammp.Spec.Name).To(Equal("fooname"))
-	g.Expect(*ammp.Spec.OSType).To(Equal(LinuxOS))
 	g.Expect(ammp.Spec.SpotMaxPrice).To(BeNil())
 
 	t.Logf("Testing ammp defaulting webhook with empty string name specified in Spec")

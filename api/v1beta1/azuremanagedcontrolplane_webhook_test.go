@@ -47,8 +47,6 @@ func TestDefaultingWebhook(t *testing.T) {
 	mcpw := &azureManagedControlPlaneWebhook{}
 	err := mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal("azure"))
-	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal("Standard"))
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
 	g.Expect(*amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))

@@ -427,6 +427,7 @@ type AzureManagedMachinePoolSpec struct {
 
 	// Name - name of the agent pool. If not specified, CAPZ uses the name of the CR as the agent pool name.
 	// Immutable.
+	// +kubebuilder:default=default
 	// +optional
 	Name *string `json:"name,omitempty"`
 
@@ -502,6 +503,7 @@ type AzureManagedMachinePoolSpec struct {
 	//
 	// [AKS doc]: https://learn.microsoft.com/rest/api/aks/agent-pools/create-or-update?tabs=HTTP#ostype
 	// +kubebuilder:validation:Enum=Linux;Windows
+	// +kubebuilder:default=Linux
 	// +optional
 	OSType *string `json:"osType,omitempty"`
 
@@ -518,6 +520,7 @@ type AzureManagedMachinePoolSpec struct {
 	// ScaleSetPriority specifies the ScaleSetPriority value. Default to Regular. Possible values include: 'Regular', 'Spot'
 	// Immutable.
 	// +kubebuilder:validation:Enum=Regular;Spot
+	// +kubebuilder:default=Regular
 	// +optional
 	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
 

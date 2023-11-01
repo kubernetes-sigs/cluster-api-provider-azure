@@ -119,6 +119,7 @@ type AzureManagedControlPlaneSpec struct {
 	// Allowed values are "azure", "kubenet".
 	// Immutable.
 	// +kubebuilder:validation:Enum=azure;kubenet
+	// +kubebuilder:default=azure
 	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
@@ -156,6 +157,7 @@ type AzureManagedControlPlaneSpec struct {
 	// LoadBalancerSKU is the SKU of the loadBalancer to be provisioned.
 	// Immutable.
 	// +kubebuilder:validation:Enum=Basic;Standard
+	// +kubebuilder:default=Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
 

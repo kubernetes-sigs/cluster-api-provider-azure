@@ -456,6 +456,7 @@ spec:
                 - User
                 type: string
               name:
+                default: default
                 description: Name - name of the agent pool. If not specified, CAPZ
                   uses the name of the CR as the agent pool name. Immutable.
                 type: string
@@ -485,6 +486,7 @@ spec:
                 - Managed
                 type: string
               osType:
+                default: Linux
                 description: "OSType specifies the virtual machine operating system.
                   Default to Linux. Possible values include: 'Linux', 'Windows'. 'Windows'
                   requires the AzureManagedControlPlane's `spec.networkPlugin` to
@@ -508,6 +510,7 @@ spec:
                 - Delete
                 type: string
               scaleSetPriority:
+                default: Regular
                 description: 'ScaleSetPriority specifies the ScaleSetPriority value.
                   Default to Regular. Possible values include: ''Regular'', ''Spot''
                   Immutable.'

@@ -97,12 +97,14 @@ type AzureMachineSpec struct {
 	AdditionalCapabilities *AdditionalCapabilities `json:"additionalCapabilities,omitempty"`
 
 	// AllocatePublicIP allows the ability to create dynamic public ips for machines where this value is true.
+	// +kubebuilder:default=true
 	// +optional
 	AllocatePublicIP bool `json:"allocatePublicIP,omitempty"`
 
 	// EnableIPForwarding enables IP Forwarding in Azure which is required for some CNI's to send traffic from a pods on one machine
 	// to another. This is required for IpV6 with Calico in combination with User Defined Routes (set by the Azure Cloud Controller
 	// manager). Default is false for disabled.
+	// +kubebuilder:default=false
 	// +optional
 	EnableIPForwarding bool `json:"enableIPForwarding,omitempty"`
 

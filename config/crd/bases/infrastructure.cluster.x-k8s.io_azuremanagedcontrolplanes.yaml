@@ -365,6 +365,7 @@ spec:
                     type: array
                 type: object
               loadBalancerSKU:
+                default: Standard
                 description: LoadBalancerSKU is the SKU of the loadBalancer to be
                   provisioned. Immutable.
                 enum:
@@ -376,6 +377,7 @@ spec:
                   region names. Examples: "westus2", "eastus". Immutable.'
                 type: string
               networkPlugin:
+                default: azure
                 description: NetworkPlugin used for building Kubernetes network. Allowed
                   values are "azure", "kubenet". Immutable.
                 enum:

@@ -75,14 +75,6 @@ func (mw *azureManagedMachinePoolWebhook) Default(ctx context.Context, obj runti
 	}
 	m.Labels[LabelAgentPoolMode] = m.Spec.Mode
 
-	if m.Spec.Name == nil || *m.Spec.Name == "" {
-		m.Spec.Name = &m.Name
-	}
-
-	if m.Spec.OSType == nil {
-		m.Spec.OSType = ptr.To(DefaultOSType)
-	}
-
 	if ptr.Deref(m.Spec.ScaleSetPriority, "") == string(armcontainerservice.ScaleSetPrioritySpot) && m.Spec.SpotMaxPrice == nil {
 		m.Spec.SpotMaxPrice = ptr.To(resource.MustParse("-1"))
 	}

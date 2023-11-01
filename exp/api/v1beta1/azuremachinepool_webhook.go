@@ -55,15 +55,6 @@ type azureMachinePoolWebhook struct {
 	Client client.Client
 }
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	amp, ok := obj.(*AzureMachinePool)
-	if !ok {
-		return apierrors.NewBadRequest("expected an AzureMachinePool")
-	}
-	return amp.SetDefaults(ampw.Client)
-}
-
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.

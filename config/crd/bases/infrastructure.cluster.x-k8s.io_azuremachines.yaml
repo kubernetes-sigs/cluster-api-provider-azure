@@ -101,6 +101,7 @@ spec:
                   takes precedence.
                 type: object
               allocatePublicIP:
+                default: true
                 description: AllocatePublicIP allows the ability to create dynamic
                   public ips for machines where this value is true.
                 type: boolean
@@ -238,6 +239,7 @@ spec:
                   type: string
                 type: array
               enableIPForwarding:
+                default: false
                 description: EnableIPForwarding enables IP Forwarding in Azure which
                   is required for some CNI's to send traffic from a pods on one machine
                   to another. This is required for IpV6 with Calico in combination
