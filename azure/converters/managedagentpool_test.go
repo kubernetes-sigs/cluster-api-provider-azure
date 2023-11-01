@@ -56,7 +56,8 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					Tags: map[string]*string{
 						"custom": ptr.To("default"),
 					},
-					EnableFIPS: ptr.To(true),
+					EnableFIPS:             ptr.To(true),
+					EnableEncryptionAtHost: ptr.To(true),
 				},
 			},
 
@@ -84,7 +85,8 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					Tags: map[string]*string{
 						"custom": ptr.To("default"),
 					},
-					EnableFIPS: ptr.To(true),
+					EnableFIPS:             ptr.To(true),
+					EnableEncryptionAtHost: ptr.To(true),
 				}))
 			},
 		},

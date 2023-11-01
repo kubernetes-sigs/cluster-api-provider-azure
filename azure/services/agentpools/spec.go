@@ -150,6 +150,9 @@ type AgentPoolSpec struct {
 
 	// EnableFIPS indicates whether FIPS is enabled on the node pool
 	EnableFIPS *bool
+
+	// EnableEncryptionAtHost indicates whether host encryption is enabled on the node pool
+	EnableEncryptionAtHost *bool
 }
 
 // ResourceName returns the name of the agent pool.
@@ -353,33 +356,34 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing interface{}) (p
 
 	agentPool := armcontainerservice.AgentPool{
 		Properties: &armcontainerservice.ManagedClusterAgentPoolProfileProperties{
-			AvailabilityZones:    availabilityZones,
-			Count:                &s.Replicas,
-			EnableAutoScaling:    ptr.To(s.EnableAutoScaling),
-			EnableUltraSSD:       s.EnableUltraSSD,
-			KubeletConfig:        kubeletConfig,
-			KubeletDiskType:      azure.AliasOrNil[armcontainerservice.KubeletDiskType]((*string)(s.KubeletDiskType)),
-			MaxCount:             s.MaxCount,
-			MaxPods:              s.MaxPods,
-			MinCount:             s.MinCount,
-			Mode:                 ptr.To(armcontainerservice.AgentPoolMode(s.Mode)),
-			NodeLabels:           nodeLabels,
-			NodeTaints:           nodeTaints,
-			OrchestratorVersion:  s.Version,
-			OSDiskSizeGB:         &s.OSDiskSizeGB,
-			OSDiskType:           azure.AliasOrNil[armcontainerservice.OSDiskType](s.OsDiskType),
-			OSType:               azure.AliasOrNil[armcontainerservice.OSType](s.OSType),
-			ScaleSetPriority:     azure.AliasOrNil[armcontainerservice.ScaleSetPriority](s.ScaleSetPriority),
-			ScaleDownMode:        azure.AliasOrNil[armcontainerservice.ScaleDownMode](s.ScaleDownMode),
-			SpotMaxPrice:         spotMaxPrice,
-			Type:                 ptr.To(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
-			VMSize:               sku,
-			VnetSubnetID:         vnetSubnetID,
-			EnableNodePublicIP:   s.EnableNodePublicIP,
-			NodePublicIPPrefixID: s.NodePublicIPPrefixID,
-			Tags:                 tags,
-			EnableFIPS:           s.EnableFIPS,
-			LinuxOSConfig:        linuxOSConfig,
+			AvailabilityZones:      availabilityZones,
+			Count:                  &s.Replicas,
+			EnableAutoScaling:      ptr.To(s.EnableAutoScaling),
+			EnableUltraSSD:         s.EnableUltraSSD,
+			KubeletConfig:          kubeletConfig,
+			KubeletDiskType:        azure.AliasOrNil[armcontainerservice.KubeletDiskType]((*string)(s.KubeletDiskType)),
+			MaxCount:               s.MaxCount,
+			MaxPods:                s.MaxPods,
+			MinCount:               s.MinCount,
+			Mode:                   ptr.To(armcontainerservice.AgentPoolMode(s.Mode)),
+			NodeLabels:             nodeLabels,
+			NodeTaints:             nodeTaints,
+			OrchestratorVersion:    s.Version,
+			OSDiskSizeGB:           &s.OSDiskSizeGB,
+			OSDiskType:             azure.AliasOrNil[armcontainerservice.OSDiskType](s.OsDiskType),
+			OSType:                 azure.AliasOrNil[armcontainerservice.OSType](s.OSType),
+			ScaleSetPriority:       azure.AliasOrNil[armcontainerservice.ScaleSetPriority](s.ScaleSetPriority),
+			ScaleDownMode:          azure.AliasOrNil[armcontainerservice.ScaleDownMode](s.ScaleDownMode),
+			SpotMaxPrice:           spotMaxPrice,
+			Type:                   ptr.To(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
+			VMSize:                 sku,
+			VnetSubnetID:           vnetSubnetID,
+			EnableNodePublicIP:     s.EnableNodePublicIP,
+			NodePublicIPPrefixID:   s.NodePublicIPPrefixID,
+			Tags:                   tags,
+			EnableFIPS:             s.EnableFIPS,
+			EnableEncryptionAtHost: s.EnableEncryptionAtHost,
+			LinuxOSConfig:          linuxOSConfig,
 		},
 	}
 
