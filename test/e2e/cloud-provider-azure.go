@@ -48,7 +48,10 @@ func InstallCNIAndCloudProviderAzureHelmChart(ctx context.Context, input cluster
 			fmt.Sprintf("infra.clusterName=%s", input.ClusterName),
 			"cloudControllerManager.logVerbosity=4",
 		},
-		StringValues: []string{fmt.Sprintf("cloudControllerManager.clusterCIDR=%s", strings.Join(cidrBlocks, `\,`))},
+		StringValues: []string{
+			fmt.Sprintf("cloudControllerManager.clusterCIDR=%s", strings.Join(cidrBlocks, `\,`)),
+			"cloudControllerManager.federatedTokenPath=",
+		},
 	}
 	// If testing a CI version of Kubernetes, use CCM and CNM images built from source.
 	if useCIArtifacts || usePRArtifacts {
