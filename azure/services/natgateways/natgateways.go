@@ -35,22 +35,13 @@ type NatGatewayScope interface {
 	NatGatewaySpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]
 }
 
-// Service provides operations on azure resources.
-type Service struct {
-	Scope NatGatewayScope
-	*aso.Service[*asonetworkv1.NatGateway, NatGatewayScope]
-}
-
 // New creates a new service.
-func New(scope NatGatewayScope) *Service {
+func New(scope NatGatewayScope) *aso.Service[*asonetworkv1.NatGateway, NatGatewayScope] {
 	svc := aso.NewService[*asonetworkv1.NatGateway, NatGatewayScope](serviceName, scope)
 	svc.Specs = scope.NatGatewaySpecs()
 	svc.ConditionType = infrav1.NATGatewaysReadyCondition
 	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHook
-	return &Service{
-		Scope:   scope,
-		Service: svc,
-	}
+	return svc
 }
 
 func postCreateOrUpdateResourceHook(_ context.Context, scope NatGatewayScope, result *asonetworkv1.NatGateway, err error) error {
