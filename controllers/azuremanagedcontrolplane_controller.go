@@ -224,8 +224,9 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 	log.Info("Reconciling AzureManagedControlPlane")
 
 	// Remove deprecated Cluster finalizer if it exists, if the AzureManagedControlPlane doesn't have our finalizer, add it.
-	if controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer) ||
-		controllerutil.AddFinalizer(scope.ControlPlane, infrav1.ManagedClusterFinalizer) {
+	needsPatch := controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer)
+	needsPatch = controllerutil.AddFinalizer(scope.ControlPlane, infrav1.ManagedClusterFinalizer) || needsPatch
+	if needsPatch {
 		// Register the finalizer immediately to avoid orphaning Azure resources on delete
 		if err := scope.PatchObject(ctx); err != nil {
 			amcpr.Recorder.Eventf(scope.ControlPlane, corev1.EventTypeWarning, "AzureManagedControlPlane unavailable", "failed to patch resource: %s", err)
