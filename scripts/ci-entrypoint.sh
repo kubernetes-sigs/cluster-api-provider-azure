@@ -209,7 +209,6 @@ install_cloud_provider_azure() {
         --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
         --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
         --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}" \
-        --set-string cloudControllerManager.federatedTokenPath= \
         --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}" "${CCM_IMG_ARGS[@]}" || return 1
 }
 
