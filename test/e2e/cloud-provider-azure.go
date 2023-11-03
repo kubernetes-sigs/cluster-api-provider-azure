@@ -48,10 +48,7 @@ func InstallCalicoAndCloudProviderAzureHelmChart(ctx context.Context, input clus
 			fmt.Sprintf("infra.clusterName=%s", input.ClusterName),
 			"cloudControllerManager.logVerbosity=4",
 		},
-		StringValues: []string{
-			fmt.Sprintf("cloudControllerManager.clusterCIDR=%s", strings.Join(cidrBlocks, `\,`)),
-			"cloudControllerManager.federatedTokenPath=",
-		},
+		StringValues: []string{fmt.Sprintf("cloudControllerManager.clusterCIDR=%s", strings.Join(cidrBlocks, `\,`))},
 	}
 	// If testing a CI version of Kubernetes, use CCM and CNM images built from source.
 	if useCIArtifacts || usePRArtifacts {
