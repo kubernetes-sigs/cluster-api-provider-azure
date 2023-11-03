@@ -27,7 +27,7 @@
         $env:PATH +=";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
         # Install Binaries
         $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
         echo "running az login via identity"
         az login --identity
         foreach ( $$binary in $$binaries )

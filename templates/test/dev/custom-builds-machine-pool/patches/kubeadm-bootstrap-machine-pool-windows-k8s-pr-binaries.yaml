@@ -10,7 +10,7 @@
       if($$KUBE_GIT_VERSION -ne "")
       {
         $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
         foreach ( $$binary in $$binaries )
         {
           echo "downloading binary: $$ci_url/$$binary.exe"
