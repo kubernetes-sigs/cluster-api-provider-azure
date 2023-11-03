@@ -3,9 +3,34 @@ kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-mp-0
 spec:
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        azure-container-registry-config: /etc/kubernetes/azure.json
+        cloud-provider: external
+        image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
+        image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
   preKubeadmCommands:
+    - bash -c /tmp/oot-cred-provider.sh
     - bash -c /tmp/kubeadm-bootstrap.sh
   files:
+    - path: /tmp/oot-cred-provider.sh
+      owner: "root:root"
+      permissions: "0744"
+      content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+
+        echo "Use OOT credential provider"
+        mkdir -p /var/lib/kubelet/credential-provider
+        curl --retry 10 --retry-delay 5 -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+        chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
+        curl --retry 10 --retry-delay 5 -Lo /var/lib/kubelet/credential-provider-config.yaml https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/examples/out-of-tree/credential-provider-config.yaml
+        chmod 644 /var/lib/kubelet/credential-provider-config.yaml
     - path: /tmp/kubeadm-bootstrap.sh
       owner: "root:root"
       permissions: "0744"
