@@ -11,6 +11,7 @@ resources:
   - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
   - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
   - ../../../addons/cluster-api-helm/calico.yaml
+  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
@@ -22,6 +23,7 @@ patchesStrategicMerge:
   - ../patches/windows-containerd-labels.yaml
   - ../patches/windows-server-version.yaml
   - ../patches/cluster-label-calico.yaml
+  - ../patches/cluster-label-azuredisk-csi-driver.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io

@@ -4,8 +4,10 @@ bases:
   - mhc.yaml
   - ../bases/azure-cluster-identity.yaml
   - ../bases/calico.yaml
+  - ../bases/azuredisk-csi-driver.yaml
 
 patchesStrategicMerge:
 - ./md.yaml
 - ../patches/azurecluster-identity-ref.yaml
 - ../patches/cluster-label-calico.yaml
+- ../patches/cluster-label-azuredisk-csi-driver.yaml

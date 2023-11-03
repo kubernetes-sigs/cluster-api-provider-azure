@@ -1,6 +1,8 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
+  labels:
+    azuredisk-csi: "true"
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -220,3 +222,23 @@ spec:
     namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
   tenantID: ${AZURE_TENANT_ID}
   type: ServicePrincipal
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: azuredisk-csi-driver-chart
+  namespace: default
+spec:
+  chartName: azuredisk-csi-driver
+  clusterSelector:
+    matchLabels:
+      azuredisk-csi: "true"
+  namespace: kube-system
+  releaseName: azuredisk-csi-driver-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
+  valuesTemplate: |-
+    controller:
+      replicas: 1
+      runOnControlPlane: true
+    windows:
+      useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}

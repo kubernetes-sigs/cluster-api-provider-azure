@@ -4,7 +4,9 @@ namespace: default
 resources:
   - ../../../flavors/flatcar/
   - ../../../addons/cluster-api-helm/calico.yaml
+  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/cluster-label-calico.yaml
+  - ../patches/cluster-label-azuredisk-csi-driver.yaml

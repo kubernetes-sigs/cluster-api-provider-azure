@@ -4,11 +4,13 @@ namespace: default
 resources:
   - ../../../flavors/nvidia-gpu
   - ../../../addons/cluster-api-helm/calico.yaml
+  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/azurecluster-gpu.yaml
   - ../patches/cluster-label-calico.yaml
+  - ../patches/cluster-label-azuredisk-csi-driver.yaml
 patches:
 - path: patches/node-storage-type.yaml
   target:

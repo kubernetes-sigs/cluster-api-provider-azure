@@ -2,6 +2,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
+    azuredisk-csi: "true"
     cni: calico-ipv6
   name: ${CLUSTER_NAME}
   namespace: default
@@ -383,3 +384,23 @@ spec:
     calicoctl:
       image: mcr.microsoft.com/oss/calico/ctl
   version: ${CALICO_VERSION}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: azuredisk-csi-driver-chart
+  namespace: default
+spec:
+  chartName: azuredisk-csi-driver
+  clusterSelector:
+    matchLabels:
+      azuredisk-csi: "true"
+  namespace: kube-system
+  releaseName: azuredisk-csi-driver-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
+  valuesTemplate: |-
+    controller:
+      replicas: 1
+      runOnControlPlane: true
+    windows:
+      useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}

@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/azure-cni-v1/
+  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
+  - ../patches/cluster-label-azuredisk-csi-driver.yaml
