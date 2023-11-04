@@ -19,14 +19,19 @@ package scope
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -39,13 +44,19 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const resourceHealthWarningInitialGracePeriod = 1 * time.Hour
+const (
+	resourceHealthWarningInitialGracePeriod = 1 * time.Hour
+	// managedControlPlaneScopeName is the sourceName, or more specifically the UserAgent, of client used to store the Cluster Info configmap.
+	managedControlPlaneScopeName = "azuremanagedcontrolplane-scope"
+)
 
 // ManagedControlPlaneScopeParams defines the input parameters used to create a new managed
 // control plane.
@@ -137,6 +148,11 @@ type ManagedControlPlaneCache struct {
 // GetClient returns the controller-runtime client.
 func (s *ManagedControlPlaneScope) GetClient() client.Client {
 	return s.Client
+}
+
+// GetDeletionTimestamp returns the deletion timestamp of the cluster.
+func (s *ManagedControlPlaneScope) GetDeletionTimestamp() *metav1.Time {
+	return s.Cluster.DeletionTimestamp
 }
 
 // ResourceGroup returns the managed control plane's resource group.
@@ -418,7 +434,7 @@ func (s *ManagedControlPlaneScope) APIServerLBName() string {
 }
 
 // APIServerLBPoolName returns the API Server LB backend pool name.
-func (s *ManagedControlPlaneScope) APIServerLBPoolName(_ string) string {
+func (s *ManagedControlPlaneScope) APIServerLBPoolName() string {
 	return "" // does not apply for AKS
 }
 
@@ -680,6 +696,64 @@ func (s *ManagedControlPlaneScope) GetUserKubeconfigData() []byte {
 // SetUserKubeconfigData sets userKubeconfig data.
 func (s *ManagedControlPlaneScope) SetUserKubeconfigData(kubeConfigData []byte) {
 	s.userKubeConfigData = kubeConfigData
+}
+
+// MakeClusterCA returns a cluster CA Secret for the managed control plane.
+func (s *ManagedControlPlaneScope) MakeClusterCA() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secret.Name(s.Cluster.Name, secret.ClusterCA),
+			Namespace: s.Cluster.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
+			},
+		},
+	}
+}
+
+// StoreClusterInfo stores the discovery cluster-info configmap in the kube-public namespace on the AKS cluster so kubeadm can access it to join nodes.
+func (s *ManagedControlPlaneScope) StoreClusterInfo(ctx context.Context, caData []byte) error {
+	remoteclient, err := remote.NewClusterClient(ctx, managedControlPlaneScopeName, s.Client, types.NamespacedName{
+		Namespace: s.Cluster.Namespace,
+		Name:      s.Cluster.Name,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to create remote cluster kubeclient")
+	}
+
+	discoveryFile := clientcmdapi.NewConfig()
+	discoveryFile.Clusters[""] = &clientcmdapi.Cluster{
+		CertificateAuthorityData: caData,
+		Server: fmt.Sprintf(
+			"%s:%d",
+			s.ControlPlane.Spec.ControlPlaneEndpoint.Host,
+			s.ControlPlane.Spec.ControlPlaneEndpoint.Port,
+		),
+	}
+
+	data, err := yaml.Marshal(&discoveryFile)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize cluster-info to yaml")
+	}
+
+	clusterInfo := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      bootstrapapi.ConfigMapClusterInfo,
+			Namespace: metav1.NamespacePublic,
+		},
+		Data: map[string]string{
+			bootstrapapi.KubeConfigKey: string(data),
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, remoteclient, clusterInfo, func() error {
+		clusterInfo.Data[bootstrapapi.KubeConfigKey] = string(data)
+		return nil
+	}); err != nil {
+		return errors.Wrapf(err, "failed to reconcile certificate authority data secret for cluster")
+	}
+
+	return nil
 }
 
 // SetKubeletIdentity sets the ID of the user-assigned identity for kubelet if not already set.

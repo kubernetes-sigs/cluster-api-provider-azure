@@ -76,6 +76,12 @@ type (
 		controller.Options
 		Cache *coalescing.ReconcileCache
 	}
+
+	// ClusterScoper is a interface used by AzureMachinePools that can be owned by either an AzureManagedCluster or AzureCluster.
+	ClusterScoper interface {
+		azure.ClusterScoper
+		groups.GroupScope
+	}
 )
 
 // AzureClusterToAzureMachinesMapper creates a mapping handler to transform AzureClusters into AzureMachines. The transform
@@ -599,15 +605,18 @@ func GetAzureMachinePoolByName(ctx context.Context, c client.Client, namespace, 
 
 // ShouldDeleteIndividualResources returns false if the resource group is managed and the whole cluster is being deleted
 // meaning that we can rely on a single resource group delete operation as opposed to deleting every individual VM resource.
-func ShouldDeleteIndividualResources(ctx context.Context, clusterScope *scope.ClusterScope) bool {
+func ShouldDeleteIndividualResources(ctx context.Context, cluster ClusterScoper) bool {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.ShouldDeleteIndividualResources")
 	defer done()
 
-	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
+	if cluster.GetDeletionTimestamp().IsZero() {
 		return true
 	}
 
-	return groups.New(clusterScope).ShouldDeleteIndividualResources(ctx)
+	managed, err := groups.New(cluster).IsManaged(ctx)
+	// Since this is a best effort attempt to speed up delete, we don't fail the delete if we can't get the RG status.
+	// Instead, take the long way and delete all resources one by one.
+	return err != nil || !managed
 }
 
 // GetClusterIdentityFromRef returns the AzureClusterIdentity referenced by the AzureCluster.
@@ -1060,4 +1069,50 @@ func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
 // additionally accepts Cluster pause events.
 func ClusterPauseChangeAndInfrastructureReady(log logr.Logger) predicate.Funcs {
 	return predicates.Any(log, predicates.ClusterCreateInfraReady(log), predicates.ClusterUpdateInfraReady(log), ClusterUpdatePauseChange(log))
+}
+
+// GetClusterScoper returns a ClusterScoper for the given cluster using the infra ref pointing to either an AzureCluster or an AzureManagedCluster.
+func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1.Cluster) (ClusterScoper, error) {
+	infraRef := cluster.Spec.InfrastructureRef
+	switch infraRef.Kind {
+	case "AzureCluster":
+		logger = logger.WithValues("AzureCluster", infraRef.Name)
+		azureClusterName := client.ObjectKey{
+			Namespace: infraRef.Namespace,
+			Name:      infraRef.Name,
+		}
+		azureCluster := &infrav1.AzureCluster{}
+		if err := c.Get(ctx, azureClusterName, azureCluster); err != nil {
+			logger.V(2).Info("AzureCluster is not available yet")
+			return nil, err
+		}
+
+		// Create the cluster scope
+		return scope.NewClusterScope(ctx, scope.ClusterScopeParams{
+			Client:       c,
+			Cluster:      cluster,
+			AzureCluster: azureCluster,
+		})
+
+	case "AzureManagedCluster":
+		logger = logger.WithValues("AzureManagedCluster", infraRef.Name)
+		azureManagedControlPlaneName := client.ObjectKey{
+			Namespace: infraRef.Namespace,
+			Name:      cluster.Spec.ControlPlaneRef.Name,
+		}
+		azureManagedControlPlane := &infrav1.AzureManagedControlPlane{}
+		if err := c.Get(ctx, azureManagedControlPlaneName, azureManagedControlPlane); err != nil {
+			logger.V(2).Info("AzureManagedControlPlane is not available yet")
+			return nil, err
+		}
+
+		// Create the control plane scope
+		return scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
+			Client:       c,
+			Cluster:      cluster,
+			ControlPlane: azureManagedControlPlane,
+		})
+	}
+
+	return nil, errors.Errorf("unsupported infrastructure type %q, should be AzureCluster or AzureManagedCluster", cluster.Spec.InfrastructureRef.Kind)
 }

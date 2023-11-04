@@ -157,7 +157,7 @@ func (s *MachinePoolMachineScope) ScaleSetVMSpec() azure.ResourceSpecGetter {
 	spec := &scalesetvms.ScaleSetVMSpec{
 		Name:          s.Name(),
 		InstanceID:    s.InstanceID(),
-		ResourceGroup: s.ResourceGroup(),
+		ResourceGroup: s.NodeResourceGroup(),
 		ScaleSetName:  s.ScaleSetName(),
 		ProviderID:    s.ProviderID(),
 		IsFlex:        s.OrchestrationMode() == infrav1.FlexibleOrchestrationMode,

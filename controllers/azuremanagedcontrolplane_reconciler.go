@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
@@ -156,8 +157,31 @@ func (r *azureManagedControlPlaneService) reconcileKubeconfig(ctx context.Contex
 			}
 			return nil
 		}); err != nil {
-			return errors.Wrap(err, "failed to kubeconfig secret for cluster")
+			return errors.Wrap(err, "failed to reconcile kubeconfig secret for cluster")
 		}
+	}
+
+	// store cluster-info for the cluster with the admin kubeconfig.
+	kubeconfigFile, err := clientcmd.Load(kubeConfigs[0])
+	if err != nil {
+		return errors.Wrap(err, "failed to turn aks credentials into kubeconfig file struct")
+	}
+
+	cluster := kubeconfigFile.Contexts[kubeconfigFile.CurrentContext].Cluster
+	caData := kubeconfigFile.Clusters[cluster].CertificateAuthorityData
+	caSecret := r.scope.MakeClusterCA()
+	if _, err := controllerutil.CreateOrUpdate(ctx, r.kubeclient, caSecret, func() error {
+		caSecret.Data = map[string][]byte{
+			secret.TLSCrtDataName: caData,
+			secret.TLSKeyDataName: []byte("foo"),
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrapf(err, "failed to reconcile certificate authority data secret for cluster")
+	}
+
+	if err := r.scope.StoreClusterInfo(ctx, caData); err != nil {
+		return errors.Wrap(err, "failed to construct cluster-info")
 	}
 
 	return nil

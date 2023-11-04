@@ -33,12 +33,13 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestShouldDeleteIndividualResources(t *testing.T) {
+func TestIsManaged(t *testing.T) {
 	tests := []struct {
-		name     string
-		objects  []client.Object
-		expect   func(s *mock_groups.MockGroupScopeMockRecorder)
-		expected bool
+		name          string
+		objects       []client.Object
+		expect        func(s *mock_groups.MockGroupScopeMockRecorder)
+		expected      bool
+		expectedError bool
 	}{
 		{
 			name:    "error checking if group is managed",
@@ -47,7 +48,7 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 				s.GroupSpecs().Return([]azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{&GroupSpec{}}).AnyTimes()
 				s.ClusterName().Return("").AnyTimes()
 			},
-			expected: true,
+			expectedError: true,
 		},
 		{
 			name: "group is unmanaged",
@@ -71,7 +72,7 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
 			},
-			expected: true,
+			expected: false,
 		},
 		{
 			name: "group is managed and has reconcile policy skip",
@@ -98,7 +99,7 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
 			},
-			expected: true,
+			expected: false,
 		},
 		{
 			name: "group is managed and has reconcile policy manage",
@@ -125,7 +126,7 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
 			},
-			expected: false,
+			expected: true,
 		},
 	}
 
@@ -146,8 +147,12 @@ func TestShouldDeleteIndividualResources(t *testing.T) {
 			scopeMock.EXPECT().GetClient().Return(ctrlClient).AnyTimes()
 			test.expect(scopeMock.EXPECT())
 
-			actual := New(scopeMock).ShouldDeleteIndividualResources(context.Background())
-			g.Expect(actual).To(Equal(test.expected))
+			actual, err := New(scopeMock).IsManaged(context.Background())
+			if test.expectedError {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(actual).To(Equal(test.expected))
+			}
 		})
 	}
 }

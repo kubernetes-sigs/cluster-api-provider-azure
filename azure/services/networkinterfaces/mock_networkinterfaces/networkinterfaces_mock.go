@@ -293,6 +293,20 @@ func (mr *MockNICScopeMockRecorder) NICSpecs() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NICSpecs", reflect.TypeOf((*MockNICScope)(nil).NICSpecs))
 }
 
+// NodeResourceGroup mocks base method.
+func (m *MockNICScope) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockNICScopeMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockNICScope)(nil).NodeResourceGroup))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockNICScope) ResourceGroup() string {
 	m.ctrl.T.Helper()

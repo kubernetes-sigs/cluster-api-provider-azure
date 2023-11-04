@@ -29,9 +29,11 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MockBastionScope is a mock of BastionScope interface.
@@ -321,6 +323,34 @@ func (mr *MockBastionScopeMockRecorder) FailureDomains() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockBastionScope)(nil).FailureDomains))
 }
 
+// GetClient mocks base method.
+func (m *MockBastionScope) GetClient() client.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(client.Client)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient.
+func (mr *MockBastionScopeMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockBastionScope)(nil).GetClient))
+}
+
+// GetDeletionTimestamp mocks base method.
+func (m *MockBastionScope) GetDeletionTimestamp() *v1.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionTimestamp")
+	ret0, _ := ret[0].(*v1.Time)
+	return ret0
+}
+
+// GetDeletionTimestamp indicates an expected call of GetDeletionTimestamp.
+func (mr *MockBastionScopeMockRecorder) GetDeletionTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionTimestamp", reflect.TypeOf((*MockBastionScope)(nil).GetDeletionTimestamp))
+}
+
 // GetLongRunningOperationState mocks base method.
 func (m *MockBastionScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()
@@ -417,6 +447,20 @@ func (m *MockBastionScope) Location() string {
 func (mr *MockBastionScopeMockRecorder) Location() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockBastionScope)(nil).Location))
+}
+
+// NodeResourceGroup mocks base method.
+func (m *MockBastionScope) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockBastionScopeMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockBastionScope)(nil).NodeResourceGroup))
 }
 
 // NodeSubnets mocks base method.

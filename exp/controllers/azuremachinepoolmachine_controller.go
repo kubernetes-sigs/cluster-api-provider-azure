@@ -186,27 +186,9 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 		return ctrl.Result{}, nil
 	}
 
-	azureClusterName := client.ObjectKey{
-		Namespace: machine.Namespace,
-		Name:      cluster.Spec.InfrastructureRef.Name,
-	}
-
-	azureCluster := &infrav1.AzureCluster{}
-	if err := ampmr.Client.Get(ctx, azureClusterName, azureCluster); err != nil {
-		logger.Info("AzureCluster is not available yet")
-		return reconcile.Result{}, nil
-	}
-
-	logger = logger.WithValues("AzureCluster", azureCluster.Name)
-
-	// Create the cluster scope
-	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
-		Client:       ampmr.Client,
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
-	})
+	clusterScope, err := infracontroller.GetClusterScoper(ctx, logger, ampmr.Client, cluster)
 	if err != nil {
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrapf(err, "failed to create cluster scope for cluster %s/%s", cluster.Namespace, cluster.Name)
 	}
 
 	// Create the machine pool scope
@@ -233,7 +215,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 		return ampmr.reconcileDelete(ctx, machineScope)
 	}
 
-	if !clusterScope.Cluster.Status.InfrastructureReady {
+	if !cluster.Status.InfrastructureReady {
 		logger.Info("Cluster infrastructure is not ready yet")
 		return reconcile.Result{}, nil
 	}

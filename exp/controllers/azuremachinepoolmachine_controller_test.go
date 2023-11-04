@@ -120,6 +120,9 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 
 func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureCluster, *expv1.MachinePool, *infrav1exp.AzureMachinePool, *infrav1exp.AzureMachinePoolMachine) {
 	azCluster := &infrav1.AzureCluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "AzureCluster",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "azCluster1",
 			Namespace: "default",
@@ -132,13 +135,18 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 	}
 
 	cluster := &clusterv1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "Cluster",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cluster1",
 			Namespace: "default",
 		},
 		Spec: clusterv1.ClusterSpec{
 			InfrastructureRef: &corev1.ObjectReference{
-				Name: azCluster.Name,
+				Name:      azCluster.Name,
+				Namespace: "default",
+				Kind:      "AzureCluster",
 			},
 		},
 		Status: clusterv1.ClusterStatus{
@@ -147,6 +155,9 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 	}
 
 	mp := &expv1.MachinePool{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "MachinePool",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mp1",
 			Namespace: "default",
@@ -157,6 +168,9 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 	}
 
 	amp := &infrav1exp.AzureMachinePool{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "AzureMachinePool",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "amp1",
 			Namespace: "default",

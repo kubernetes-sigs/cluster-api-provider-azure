@@ -21,6 +21,7 @@ package e2e
 
 import (
 	"context"
+	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
@@ -89,7 +90,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 		},
 		Spec: infrav1.AzureManagedMachinePoolSpec{
 			Mode:                 "User",
-			SKU:                  "Standard_D2s_v3",
+			SKU:                  os.Getenv("AZURE_NODE_MACHINE_TYPE"),
 			EnableNodePublicIP:   ptr.To(true),
 			NodePublicIPPrefixID: ptr.To("/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroupName + "/providers/Microsoft.Network/publicipprefixes/" + *publicIPPrefix.Name),
 		},

@@ -90,6 +90,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 		Spec: clusterv1.ClusterSpec{
 			Paused: true,
 			InfrastructureRef: &corev1.ObjectReference{
+				Kind:      "AzureCluster",
 				Name:      name,
 				Namespace: namespace,
 			},

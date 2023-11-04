@@ -179,7 +179,7 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 
 	spec := &scalesets.ScaleSetSpec{
 		Name:                         m.Name(),
-		ResourceGroup:                m.ResourceGroup(),
+		ResourceGroup:                m.NodeResourceGroup(),
 		Size:                         m.AzureMachinePool.Spec.Template.VMSize,
 		Capacity:                     int64(ptr.Deref[int32](m.MachinePool.Spec.Replicas, 0)),
 		SSHKeyData:                   m.AzureMachinePool.Spec.Template.SSHPublicKey,
@@ -741,7 +741,7 @@ func (m *MachinePoolScope) RoleAssignmentSpecs(principalID *string) []azure.Reso
 		roles[0] = &roleassignments.RoleAssignmentSpec{
 			Name:             m.SystemAssignedIdentityName(),
 			MachineName:      m.Name(),
-			ResourceGroup:    m.ResourceGroup(),
+			ResourceGroup:    m.NodeResourceGroup(),
 			ResourceType:     azure.VirtualMachineScaleSet,
 			Scope:            m.SystemAssignedIdentityScope(),
 			RoleDefinitionID: m.SystemAssignedIdentityDefinitionID(),
@@ -777,7 +777,7 @@ func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
 				Settings:          extension.Settings,
 				ProtectedSettings: extension.ProtectedSettings,
 			},
-			ResourceGroup: m.ResourceGroup(),
+			ResourceGroup: m.NodeResourceGroup(),
 		})
 	}
 
@@ -787,7 +787,7 @@ func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
 	if bootstrapExtensionSpec != nil {
 		extensionSpecs = append(extensionSpecs, &scalesets.VMSSExtensionSpec{
 			ExtensionSpec: *bootstrapExtensionSpec,
-			ResourceGroup: m.ResourceGroup(),
+			ResourceGroup: m.NodeResourceGroup(),
 		})
 	}
 

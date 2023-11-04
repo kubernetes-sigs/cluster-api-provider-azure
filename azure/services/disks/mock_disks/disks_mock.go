@@ -293,6 +293,20 @@ func (mr *MockDiskScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockDiskScope)(nil).Location))
 }
 
+// NodeResourceGroup mocks base method.
+func (m *MockDiskScope) NodeResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeResourceGroup indicates an expected call of NodeResourceGroup.
+func (mr *MockDiskScopeMockRecorder) NodeResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockDiskScope)(nil).NodeResourceGroup))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockDiskScope) ResourceGroup() string {
 	m.ctrl.T.Helper()

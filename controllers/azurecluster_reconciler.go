@@ -174,6 +174,7 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to get group service")
 		}
+
 		// Delete the entire resource group directly.
 		if err := groupSvc.Delete(ctx); err != nil {
 			return errors.Wrap(err, "failed to delete resource group")
@@ -189,15 +190,6 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (s *azureClusterService) getService(name string) (azure.ServiceReconciler, error) {
-	for _, service := range s.services {
-		if service.Name() == name {
-			return service, nil
-		}
-	}
-	return nil, errors.Errorf("service %s not found", name)
 }
 
 // setFailureDomainsForLocation sets the AzureCluster Status failure domains based on which Azure Availability Zones are available in the cluster location.
@@ -219,4 +211,13 @@ func (s *azureClusterService) setFailureDomainsForLocation(ctx context.Context) 
 	}
 
 	return nil
+}
+
+func (s *azureClusterService) getService(name string) (azure.ServiceReconciler, error) {
+	for _, service := range s.services {
+		if service.Name() == name {
+			return service, nil
+		}
+	}
+	return nil, errors.Errorf("service %s not found", name)
 }

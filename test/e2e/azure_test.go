@@ -737,6 +737,7 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("aks"),
+				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withKubernetesVersion(kubernetesVersionUpgradeFrom),
@@ -840,6 +841,17 @@ var _ = Describe("Workload cluster creation", func() {
 						Cluster:       result.Cluster,
 						MachinePools:  result.MachinePools,
 						WaitForUpdate: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+					}
+				})
+			})
+
+			By("creating a byo nodepool", func() {
+				AKSBYONodeSpec(ctx, func() AKSBYONodeSpecInput {
+					return AKSBYONodeSpecInput{
+						Cluster:             result.Cluster,
+						KubernetesVersion:   kubernetesVersion,
+						WaitIntervals:       e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+						ExpectedWorkerNodes: result.ExpectedWorkerNodes(),
 					}
 				})
 			})

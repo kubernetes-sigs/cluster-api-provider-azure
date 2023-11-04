@@ -136,6 +136,11 @@ func (s *ClusterScope) GetClient() client.Client {
 	return s.Client
 }
 
+// GetDeletionTimestamp returns the deletion timestamp of the Cluster.
+func (s *ClusterScope) GetDeletionTimestamp() *metav1.Time {
+	return s.Cluster.DeletionTimestamp
+}
+
 // PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 	var publicIPSpecs []azure.ResourceSpecGetter
@@ -738,6 +743,12 @@ func (s *ClusterScope) OutboundPoolName(role string) string {
 // ResourceGroup returns the cluster resource group.
 func (s *ClusterScope) ResourceGroup() string {
 	return s.AzureCluster.Spec.ResourceGroup
+}
+
+// NodeResourceGroup returns the resource group where nodes live.
+// For AzureClusters this is the same as the cluster RG.
+func (s *ClusterScope) NodeResourceGroup() string {
+	return s.ResourceGroup()
 }
 
 // ClusterName returns the cluster name.
