@@ -168,14 +168,14 @@ const (
 )
 
 const (
-	// AzureClusterKind is kind value for the AzureCluster kind name.
+	// AzureClusterKind indicates the kind of an AzureCluster.
 	AzureClusterKind = "AzureCluster"
-	// AzureMachinePoolKind is kind value for the AzureMachinePool kind name.
+	// AzureMachinePoolKind indicates the kind of an AzureMachinePool.
 	AzureMachinePoolKind = "AzureMachinePool"
-	// AzureManagedClusterKind is kind value for the AzureManagedCluster kind name.
+	// AzureManagedClusterKind indicates the kind of an AzureManagedCluster.
 	AzureManagedClusterKind = "AzureManagedCluster"
-	// AzureManagedControlPlaneKind is kind value for the AzureManagedControlPlane kind name.
+	// AzureManagedControlPlaneKind indicates the kind of an AzureManagedControlPlane.
 	AzureManagedControlPlaneKind = "AzureManagedControlPlane"
-	// AzureClusterIdentityKind is kind value for the AzureClusterIdentity kind name.
+	// AzureClusterIdentityKind indicates the kind of an AzureClusterIdentity.
 	AzureClusterIdentityKind = "AzureClusterIdentity"
 )
