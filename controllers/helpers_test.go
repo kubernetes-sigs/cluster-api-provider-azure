@@ -883,7 +883,7 @@ func TestAzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t *testing.T) 
 	cluster := newCluster("my-cluster")
 	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
 		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       "AzureManagedControlPlane",
+		Kind:       infrav1.AzureManagedControlPlaneKind,
 		Name:       cpName,
 		Namespace:  cluster.Namespace,
 	}
@@ -949,7 +949,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 	controlPlane := newAzureManagedControlPlane(cpName)
 	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
 		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       "AzureManagedControlPlane",
+		Kind:       infrav1.AzureManagedControlPlaneKind,
 		Name:       cpName,
 		Namespace:  cluster.Namespace,
 	}
@@ -975,7 +975,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 
 	sink := mock_log.NewMockLogSink(gomock.NewController(t))
 	sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
-	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1.GroupVersion.WithKind("AzureManagedControlPlane"), logr.New(sink))
+	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind), logr.New(sink))
 
 	// system pool should trigger
 	requests := mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
@@ -1000,7 +1000,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncFailure(t *testing.T) {
 	cluster := newCluster(clusterName)
 	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
 		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       "AzureManagedControlPlane",
+		Kind:       infrav1.AzureManagedControlPlaneKind,
 		Name:       cpName,
 		Namespace:  cluster.Namespace,
 	}
@@ -1019,7 +1019,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncFailure(t *testing.T) {
 	sink.EXPECT().Error(gomock.Any(), "failed to fetch default pool reference")
 	sink.EXPECT().Error(gomock.Any(), "failed to fetch default pool reference") // twice because we are testing two calls
 
-	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1.GroupVersion.WithKind("AzureManagedControlPlane"), logr.New(sink))
+	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind), logr.New(sink))
 
 	// default pool should trigger if owned cluster could not be fetched
 	requests := mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
@@ -1051,7 +1051,7 @@ func TestAzureManagedClusterToAzureManagedControlPlaneMapper(t *testing.T) {
 	cluster := newCluster("my-cluster")
 	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
 		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       "AzureManagedControlPlane",
+		Kind:       infrav1.AzureManagedControlPlaneKind,
 		Name:       cpName,
 		Namespace:  cluster.Namespace,
 	}
@@ -1113,7 +1113,7 @@ func TestAzureManagedControlPlaneToAzureManagedClusterMapper(t *testing.T) {
 
 	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
 		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       "AzureManagedControlPlane",
+		Kind:       infrav1.AzureManagedControlPlaneKind,
 		Name:       cpName,
 		Namespace:  cluster.Namespace,
 	}

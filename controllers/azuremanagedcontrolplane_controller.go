@@ -74,7 +74,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	}
 
 	// map requests for machine pools corresponding to AzureManagedControlPlane's defaultPool back to the corresponding AzureManagedControlPlane.
-	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, amcpr.Client, infrav1.GroupVersion.WithKind("AzureManagedControlPlane"), log)
+	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, amcpr.Client, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind), log)
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
@@ -122,7 +122,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedControlPlaneReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", "AzureManagedControlPlane"),
+		tele.KVP("kind", infrav1.AzureManagedControlPlaneKind),
 	)
 	defer done()
 
@@ -333,7 +333,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) ClusterToAzureManagedControlPla
 	}
 
 	controlPlaneRef := c.Spec.ControlPlaneRef
-	if controlPlaneRef != nil && controlPlaneRef.Kind == "AzureManagedControlPlane" {
+	if controlPlaneRef != nil && controlPlaneRef.Kind == infrav1.AzureManagedControlPlaneKind {
 		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
 	}
 

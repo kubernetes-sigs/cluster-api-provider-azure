@@ -256,7 +256,7 @@ func (s *ManagedControlPlaneScope) GroupSpecs() []azure.ASOResourceSpecGetter[*a
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
-			Owner:          *metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
+			Owner:          *metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind)),
 		},
 	}
 }
@@ -655,7 +655,7 @@ func (s *ManagedControlPlaneScope) MakeEmptyKubeConfigSecret() corev1.Secret {
 			Name:      secret.Name(s.Cluster.Name, secret.Kubeconfig),
 			Namespace: s.Cluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
+				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind)),
 			},
 			Labels: map[string]string{clusterv1.ClusterNameLabel: s.Cluster.Name},
 		},
