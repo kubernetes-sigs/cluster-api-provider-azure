@@ -138,7 +138,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	_, kind := infrav1.GroupVersion.WithKind("AzureCluster").ToAPIVersionAndKind()
+	_, kind := infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind).ToAPIVersionAndKind()
 
 	// only look at azure clusters
 	if cluster.Spec.InfrastructureRef == nil {

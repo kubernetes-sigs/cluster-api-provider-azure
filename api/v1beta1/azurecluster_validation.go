@@ -79,7 +79,7 @@ func (c *AzureCluster) validateCluster(old *AzureCluster) (admission.Warnings, e
 	}
 
 	return nil, apierrors.NewInvalid(
-		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "AzureCluster"},
+		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: AzureClusterKind},
 		c.Name, allErrs)
 }
 

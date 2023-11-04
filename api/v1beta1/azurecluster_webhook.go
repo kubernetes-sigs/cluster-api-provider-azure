@@ -136,7 +136,8 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings
 		return c.validateCluster(old)
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureCluster").GroupKind(), c.Name, allErrs)
+	// replace with constant
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterKind).GroupKind(), c.Name, allErrs)
 }
 
 // validateSubnetUpdate validates a ClusterSpec.NetworkSpec.Subnets for immutability.

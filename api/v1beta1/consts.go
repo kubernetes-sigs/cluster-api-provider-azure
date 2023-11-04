@@ -166,3 +166,16 @@ const (
 	// value for the label is the CAPI Cluster Name.
 	OwnedByClusterLabelKey = NameAzureProviderPrefix + string(ResourceLifecycleOwned)
 )
+
+const (
+	// AzureClusterKind is kind value for the AzureCluster kind name.
+	AzureClusterKind = "AzureCluster"
+	// AzureMachinePoolKind is kind value for the AzureMachinePool kind name.
+	AzureMachinePoolKind = "AzureMachinePool"
+	// AzureManagedClusterKind is kind value for the AzureManagedCluster kind name.
+	AzureManagedClusterKind = "AzureManagedCluster"
+	// AzureManagedControlPlaneKind is kind value for the AzureManagedControlPlane kind name.
+	AzureManagedControlPlaneKind = "AzureManagedControlPlane"
+	// AzureClusterIdentityKind is kind value for the AzureClusterIdentity kind name.
+	AzureClusterIdentityKind = "AzureClusterIdentity"
+)

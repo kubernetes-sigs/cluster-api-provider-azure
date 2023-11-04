@@ -271,7 +271,7 @@ func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj cl
 		obj.Spec.SubscriptionID = m.SubscriptionID
 	case *clusterv1.Cluster:
 		obj.Spec.InfrastructureRef = &corev1.ObjectReference{
-			Kind: "AzureCluster",
+			Kind: infrav1.AzureClusterKind,
 			Name: "test-cluster",
 		}
 	default:

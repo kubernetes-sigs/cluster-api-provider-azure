@@ -425,7 +425,7 @@ func (s *ClusterScope) GroupSpecs() []azure.ASOResourceSpecGetter[*asoresourcesv
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
-			Owner:          *metav1.NewControllerRef(s.AzureCluster, infrav1.GroupVersion.WithKind("AzureCluster")),
+			Owner:          *metav1.NewControllerRef(s.AzureCluster, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind)),
 		},
 	}
 }
