@@ -72,7 +72,7 @@ func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) (admission.W
 	}
 
 	if len(allErrs) != 0 {
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedCluster").GroupKind(), r.Name, allErrs)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedClusterKind).GroupKind(), r.Name, allErrs)
 	}
 
 	return nil, nil

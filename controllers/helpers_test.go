@@ -1119,7 +1119,7 @@ func TestAzureManagedControlPlaneToAzureManagedClusterMapper(t *testing.T) {
 	}
 	cluster.Spec.InfrastructureRef = &corev1.ObjectReference{
 		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       "AzureManagedCluster",
+		Kind:       infrav1.AzureManagedClusterKind,
 		Name:       azManagedCluster.Name,
 		Namespace:  azManagedCluster.Namespace,
 	}

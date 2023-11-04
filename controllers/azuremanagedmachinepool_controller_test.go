@@ -247,7 +247,7 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 			},
 			InfrastructureRef: &corev1.ObjectReference{
 				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       "AzureManagedCluster",
+				Kind:       infrav1.AzureManagedClusterKind,
 				Name:       azManagedCluster.Name,
 				Namespace:  azManagedCluster.Namespace,
 			},
