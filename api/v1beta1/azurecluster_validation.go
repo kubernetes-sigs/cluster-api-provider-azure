@@ -147,7 +147,7 @@ func validateIdentityRef(identityRef *corev1.ObjectReference, fldPath *field.Pat
 	if identityRef == nil {
 		return field.Required(fldPath, "identityRef is required")
 	}
-	if identityRef.Kind != "AzureClusterIdentity" {
+	if identityRef.Kind != AzureClusterIdentityKind {
 		return field.NotSupported(fldPath.Child("name"), identityRef.Name, []string{"AzureClusterIdentity"})
 	}
 	return nil

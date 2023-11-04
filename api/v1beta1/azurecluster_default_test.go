@@ -145,7 +145,7 @@ func TestVnetDefaults(t *testing.T) {
 					},
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: "AzureClusterIdentity",
+							Kind: AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -161,7 +161,7 @@ func TestVnetDefaults(t *testing.T) {
 					ResourceGroup: "cluster-test",
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: "AzureClusterIdentity",
+							Kind: AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -183,7 +183,7 @@ func TestVnetDefaults(t *testing.T) {
 					},
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: "AzureClusterIdentity",
+							Kind: AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -206,7 +206,7 @@ func TestVnetDefaults(t *testing.T) {
 					},
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: "AzureClusterIdentity",
+							Kind: AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -228,7 +228,7 @@ func TestVnetDefaults(t *testing.T) {
 					},
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: "AzureClusterIdentity",
+							Kind: AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -251,7 +251,7 @@ func TestVnetDefaults(t *testing.T) {
 					},
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: "AzureClusterIdentity",
+							Kind: AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -273,7 +273,7 @@ func TestVnetDefaults(t *testing.T) {
 					},
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: "AzureClusterIdentity",
+							Kind: AzureClusterIdentityKind,
 						},
 					},
 				},

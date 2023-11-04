@@ -1312,7 +1312,7 @@ func createValidCluster() *AzureCluster {
 			NetworkSpec: createValidNetworkSpec(),
 			AzureClusterClassSpec: AzureClusterClassSpec{
 				IdentityRef: &corev1.ObjectReference{
-					Kind: "AzureClusterIdentity",
+					Kind: AzureClusterIdentityKind,
 				},
 			},
 		},
