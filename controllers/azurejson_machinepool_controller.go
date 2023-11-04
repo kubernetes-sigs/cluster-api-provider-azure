@@ -100,7 +100,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 		"controllers.AzureJSONMachinePoolReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", "AzureMachinePool"),
+		tele.KVP("kind", infrav1.AzureMachinePoolKind),
 	)
 	defer done()
 
@@ -186,7 +186,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 		}
 	}
 
-	apiVersion, kind := infrav1.GroupVersion.WithKind("AzureMachinePool").ToAPIVersionAndKind()
+	apiVersion, kind := infrav1.GroupVersion.WithKind(infrav1.AzureMachinePoolKind).ToAPIVersionAndKind()
 	owner := metav1.OwnerReference{
 		APIVersion: apiVersion,
 		Kind:       kind,

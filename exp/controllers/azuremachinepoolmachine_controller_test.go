@@ -178,7 +178,7 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Name:       amp.Name,
-					Kind:       "AzureMachinePool",
+					Kind:       infrav1.AzureMachinePoolKind,
 					APIVersion: infrav1exp.GroupVersion.String(),
 				},
 			},

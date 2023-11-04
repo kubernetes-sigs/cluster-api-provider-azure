@@ -1203,7 +1203,7 @@ func getReadyAzureMachinePoolMachines(count int32) []infrav1exp.AzureMachinePool
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Name:       "amp",
-						Kind:       "AzureMachinePool",
+						Kind:       infrav1.AzureMachinePoolKind,
 						APIVersion: infrav1exp.GroupVersion.String(),
 					},
 				},
