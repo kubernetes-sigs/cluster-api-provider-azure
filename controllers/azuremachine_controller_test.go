@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -729,9 +728,6 @@ func TestConditions(t *testing.T) {
 			reconciler := NewAzureMachineReconciler(client, recorder, reconciler.DefaultLoopTimeout, "")
 
 			clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Client:       client,
 				Cluster:      cluster,
 				AzureCluster: azureCluster,

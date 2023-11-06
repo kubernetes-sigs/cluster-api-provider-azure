@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -174,9 +173,6 @@ func TestAPIServerHost(t *testing.T) {
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 		clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-			AzureClients: AzureClients{
-				Authorizer: autorest.NullAuthorizer{},
-			},
 			Cluster:      cluster,
 			AzureCluster: &tc.azureCluster,
 			Client:       fakeClient,
@@ -233,9 +229,6 @@ func TestGettingSecurityRules(t *testing.T) {
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-		AzureClients: AzureClients{
-			Authorizer: autorest.NullAuthorizer{},
-		},
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
 		Client:       fakeClient,
@@ -764,9 +757,6 @@ func TestPublicIPSpecs(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: tc.azureCluster,
 				Client:       fakeClient,
@@ -1826,9 +1816,6 @@ func TestSubnet(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -1925,9 +1912,6 @@ func TestControlPlaneRouteTable(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -1994,9 +1978,6 @@ func TestGetPrivateDNSZoneName(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -2064,9 +2045,6 @@ func TestAPIServerLBPoolName(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -2205,9 +2183,6 @@ func TestOutboundLBName(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -2334,9 +2309,6 @@ func TestBackendPoolName(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -2426,9 +2398,6 @@ func TestOutboundPoolName(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -2508,9 +2477,6 @@ func TestGenerateFQDN(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -2596,9 +2562,6 @@ func TestAdditionalTags(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -2675,9 +2638,6 @@ func TestAPIServerPort(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -2760,9 +2720,6 @@ func TestFailureDomains(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -3040,9 +2997,6 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: tc.azureCluster,
 				Client:       fakeClient,
@@ -3118,9 +3072,6 @@ func TestExtendedLocationName(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -3196,9 +3147,6 @@ func TestExtendedLocationType(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,
@@ -3429,9 +3377,6 @@ func TestVNetPeerings(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				Client:       fakeClient,

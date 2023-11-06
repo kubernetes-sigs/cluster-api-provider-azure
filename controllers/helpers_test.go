@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -179,9 +178,6 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster:      tc.cluster,
 				AzureCluster: tc.azureCluster,
 				Client:       fakeClient,
@@ -288,9 +284,6 @@ func TestReconcileAzureSecret(t *testing.T) {
 	kubeclient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
-		AzureClients: scope.AzureClients{
-			Authorizer: autorest.NullAuthorizer{},
-		},
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
 		Client:       kubeclient,
