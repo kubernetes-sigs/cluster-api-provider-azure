@@ -111,6 +111,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			Host: ptr.Deref(managedCluster.Properties.Fqdn, ""),
 			Port: 443,
 		}
+		if managedCluster.Properties.APIServerAccessProfile != nil &&
+			ptr.Deref(managedCluster.Properties.APIServerAccessProfile.EnablePrivateCluster, false) &&
+			!ptr.Deref(managedCluster.Properties.APIServerAccessProfile.EnablePrivateClusterPublicFQDN, false) {
+			endpoint = clusterv1.APIEndpoint{
+				Host: ptr.Deref(managedCluster.Properties.PrivateFQDN, ""),
+				Port: 443,
+			}
+		}
 		s.Scope.SetControlPlaneEndpoint(endpoint)
 
 		// Update kubeconfig data
