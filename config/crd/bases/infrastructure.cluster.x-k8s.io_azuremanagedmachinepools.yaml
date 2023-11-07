@@ -146,6 +146,9 @@ spec:
               enableFIPS:
                 description: EnableFIPS - Whether to use FIPS enabled OS
                 type: boolean
+              enableEncryptionAtHost:
+                description: EnableEncryptionAtHost - Whether to enable host based OS and data drive encryption
+                type: boolean
               enableNodePublicIP:
                 description: EnableNodePublicIP - Enable public IP for nodes
                 type: boolean
@@ -360,6 +363,9 @@ spec:
                 type: array
               enableFIPS:
                 description: EnableFIPS - Whether to use FIPS enabled OS
+                type: boolean
+              enableEncryptionAtHost:
+                description: EnableEncryptionAtHost - Whether to enable host based OS and data drive encryption
                 type: boolean
               enableNodePublicIP:
                 description: EnableNodePublicIP - Enable public IP for nodes
