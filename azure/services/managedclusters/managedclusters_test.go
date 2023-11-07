@@ -83,6 +83,36 @@ func TestReconcile(t *testing.T) {
 			},
 		},
 		{
+			name:          "create managed private cluster succeeds",
+			expectedError: "",
+			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(containerservice.ManagedCluster{
+					ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+						APIServerAccessProfile: &containerservice.ManagedClusterAPIServerAccessProfile{
+							EnablePrivateCluster:           pointer.Bool(true),
+							EnablePrivateClusterPublicFQDN: pointer.Bool(false),
+						},
+						PrivateFQDN:       pointer.String("my-managedcluster-fqdn.private"),
+						ProvisioningState: pointer.String("Succeeded"),
+						IdentityProfile: map[string]*containerservice.UserAssignedIdentity{
+							kubeletIdentityKey: {
+								ResourceID: pointer.String("kubelet-id"),
+							},
+						},
+					},
+				}, nil)
+				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
+					Host: "my-managedcluster-fqdn.private",
+					Port: 443,
+				})
+				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
+				s.SetKubeConfigData([]byte("credentials"))
+				s.SetKubeletIdentity("kubelet-id")
+				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
+			},
+		},
+		{
 			name:          "fail to get managed cluster credentials",
 			expectedError: "failed to get credentials for managed cluster: internal server error",
 			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
