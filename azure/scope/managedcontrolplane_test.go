@@ -20,7 +20,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -109,9 +108,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 		{
 			Name: "Without Version",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -149,9 +145,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 		{
 			Name: "With Version",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -191,9 +184,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 		{
 			Name: "With bad version",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -252,9 +242,6 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 		{
 			Name: "Without add-ons",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -282,9 +269,6 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 		{
 			Name: "With add-ons",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -346,9 +330,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 		{
 			Name: "with Linux and Windows pools",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -415,9 +396,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 		{
 			Name: "system pool required",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -486,9 +464,6 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 		{
 			Name: "no Cache value",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -522,9 +497,6 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 		{
 			Name: "with Cache value of true",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -560,9 +532,6 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 		{
 			Name: "with Cache value of false",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -623,9 +592,6 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 		{
 			Name: "Without AADProfile",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -653,9 +619,6 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 		{
 			Name: "With AADProfile",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -717,9 +680,6 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		{
 			Name: "Without DisableLocalAccounts",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -747,9 +707,6 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		{
 			Name: "Without AAdProfile and With DisableLocalAccounts",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -778,9 +735,6 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		{
 			Name: "With AAdProfile and With DisableLocalAccounts",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -839,9 +793,6 @@ func TestIsAADEnabled(t *testing.T) {
 		{
 			Name: "AAD is not enabled",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -869,9 +820,6 @@ func TestIsAADEnabled(t *testing.T) {
 		{
 			Name: "AAdProfile and With DisableLocalAccounts",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -928,9 +876,6 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 		{
 			Name: "DisbaleLocalAccount is not enabled",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -958,9 +903,6 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 		{
 			Name: "With AAdProfile and Without DisableLocalAccounts",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -992,9 +934,6 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 		{
 			Name: "With AAdProfile and With DisableLocalAccounts",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
