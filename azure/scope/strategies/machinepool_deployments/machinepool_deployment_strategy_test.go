@@ -28,6 +28,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomega"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func TestMachinePoolRollingUpdateStrategy_Type(t *testing.T) {
@@ -238,6 +239,21 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 			}),
 		},
 		{
+			name:            "if over-provisioned and has delete machine annotation, select machines those first and then by oldest",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour)), HasDeleteMachineAnnotation: true}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			},
+			want: gomega.DiffEq([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour)), HasDeleteMachineAnnotation: true}),
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			}),
+		},
+		{
 			name:            "if over-provisioned, select machines ordered by creation date",
 			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
 			desiredReplicas: 2,
@@ -253,6 +269,21 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 			}),
 		},
 		{
+			name:            "if over-provisioned and has delete machine annotation, prioritize those machines first over creation date",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour)), HasDeleteMachineAnnotation: true}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			},
+			want: gomega.DiffEq([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour)), HasDeleteMachineAnnotation: true}),
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			}),
+		},
+		{
 			name:            "if over-provisioned, select machines ordered by newest first",
 			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.NewestDeletePolicyType}),
 			desiredReplicas: 2,
@@ -265,6 +296,21 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 			want: gomega.DiffEq([]infrav1exp.AzureMachinePoolMachine{
 				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
 				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour))}),
+			}),
+		},
+		{
+			name:            "if over-provisioned and has delete machine annotation, select those machines machines first followed by newest",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.NewestDeletePolicyType}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour))}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+				"bar": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour)), HasDeleteMachineAnnotation: true}),
+			},
+			want: gomega.DiffEq([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour)), HasDeleteMachineAnnotation: true}),
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
 			}),
 		},
 		{
@@ -403,18 +449,20 @@ func makeRollingUpdateStrategy(rolling infrav1exp.MachineRollingUpdateDeployment
 }
 
 type ampmOptions struct {
-	Ready             bool
-	LatestModel       bool
-	ProvisioningState infrav1.ProvisioningState
-	CreationTime      metav1.Time
-	DeletionTime      *metav1.Time
+	Ready                      bool
+	LatestModel                bool
+	ProvisioningState          infrav1.ProvisioningState
+	CreationTime               metav1.Time
+	DeletionTime               *metav1.Time
+	HasDeleteMachineAnnotation bool
 }
 
 func makeAMPM(opts ampmOptions) infrav1exp.AzureMachinePoolMachine {
-	return infrav1exp.AzureMachinePoolMachine{
+	ampm := infrav1exp.AzureMachinePoolMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			CreationTimestamp: opts.CreationTime,
 			DeletionTimestamp: opts.DeletionTime,
+			Annotations:       map[string]string{},
 		},
 		Status: infrav1exp.AzureMachinePoolMachineStatus{
 			Ready:              opts.Ready,
@@ -422,4 +470,10 @@ func makeAMPM(opts ampmOptions) infrav1exp.AzureMachinePoolMachine {
 			ProvisioningState:  &opts.ProvisioningState,
 		},
 	}
+
+	if opts.HasDeleteMachineAnnotation {
+		ampm.Annotations[clusterv1.DeleteMachineAnnotation] = "true"
+	}
+
+	return ampm
 }

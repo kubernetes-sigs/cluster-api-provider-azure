@@ -525,17 +525,6 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			By("Cordon and draining a node", func() {
-				AzureMachinePoolDrainSpec(ctx, func() AzureMachinePoolDrainSpecInput {
-					return AzureMachinePoolDrainSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
 			By("PASSED!")
 		})
 	})

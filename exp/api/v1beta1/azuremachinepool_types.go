@@ -157,12 +157,6 @@ type (
 		// +kubebuilder:default={type: "RollingUpdate", rollingUpdate: {maxSurge: 1, maxUnavailable: 0, deletePolicy: Oldest}}
 		Strategy AzureMachinePoolDeploymentStrategy `json:"strategy,omitempty"`
 
-		// NodeDrainTimeout is the total amount of time that the controller will spend on draining a node.
-		// The default value is 0, meaning that the node can be drained without any time limitations.
-		// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
-		// +optional
-		NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
-
 		// OrchestrationMode specifies the orchestration mode for the Virtual Machine Scale Set
 		// +kubebuilder:default=Uniform
 		OrchestrationMode infrav1.OrchestrationModeType `json:"orchestrationMode,omitempty"`
@@ -308,6 +302,10 @@ type (
 		// next reconciliation loop.
 		// +optional
 		LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
+
+		// InfrastructureMachineKind is the kind of the infrastructure resources behind MachinePool Machines.
+		// +optional
+		InfrastructureMachineKind string `json:"infrastructureMachineKind,omitempty"`
 	}
 
 	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
