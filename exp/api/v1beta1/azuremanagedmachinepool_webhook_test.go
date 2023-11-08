@@ -501,6 +501,26 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Cannot change EnableEncryptionAtHost of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:                   "System",
+					SKU:                    "StandardD2S_V3",
+					OSDiskSizeGB:           to.Int32Ptr(512),
+					EnableEncryptionAtHost: to.BoolPtr(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:                   "System",
+					SKU:                    "StandardD2S_V3",
+					OSDiskSizeGB:           to.Int32Ptr(512),
+					EnableEncryptionAtHost: to.BoolPtr(false),
+				},
+			},
+			wantErr: true,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {
