@@ -349,6 +349,33 @@ func TestAzureManagedClusterToAzureManagedControlPlaneMapper(t *testing.T) {
 	}))
 }
 
+func TestClusterToAzureManagedControlPlaneMapper(t *testing.T) {
+	g := NewWithT(t)
+	cluster := newCluster("my-cluster")
+	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
+		APIVersion: infrav1exp.GroupVersion.String(),
+		Kind:       "AzureManagedControlPlane",
+		Name:       cpName,
+		Namespace:  cluster.Namespace,
+	}
+
+	sink := mock_log.NewMockLogSink(gomock.NewController(t))
+	sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
+	sink.EXPECT().WithValues("Cluster", cluster.Name, "Namespace", "default")
+
+	mapper := ClusterToAzureManagedControlPlaneMapper(logr.New(sink))
+	requests := mapper(cluster)
+	g.Expect(requests).To(HaveLen(1))
+	g.Expect(requests).To(Equal([]reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      cpName,
+				Namespace: cluster.Namespace,
+			},
+		},
+	}))
+}
+
 func TestAzureManagedControlPlaneToAzureManagedClusterMapper(t *testing.T) {
 	g := NewWithT(t)
 	scheme := newScheme(g)
