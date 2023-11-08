@@ -120,6 +120,7 @@ func Test_AgentPoolToAgentPoolToContainerServiceAgentPool(t *testing.T) {
 				NodeLabels: map[string]*string{
 					"custom": to.StringPtr("default"),
 				},
+				EnableEncryptionAtHost: to.BoolPtr(true),
 			},
 
 			expect: func(g *GomegaWithT, result containerservice.AgentPool) {
@@ -143,6 +144,7 @@ func Test_AgentPoolToAgentPoolToContainerServiceAgentPool(t *testing.T) {
 						NodeLabels: map[string]*string{
 							"custom": to.StringPtr("default"),
 						},
+						EnableEncryptionAtHost: to.BoolPtr(true),
 					},
 				}))
 			},
