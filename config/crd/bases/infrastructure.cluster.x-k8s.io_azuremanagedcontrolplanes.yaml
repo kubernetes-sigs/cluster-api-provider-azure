@@ -101,12 +101,14 @@ spec:
                 enum:
                 - azure
                 - kubenet
+                - none
                 type: string
               networkPolicy:
                 description: NetworkPolicy used for building Kubernetes network.
                 enum:
                 - azure
                 - calico
+                - ''''''
                 type: string
               nodeResourceGroupName:
                 description: NodeResourceGroupName is the name of the resource group
@@ -363,12 +365,14 @@ spec:
                 enum:
                 - azure
                 - kubenet
+                - none
                 type: string
               networkPolicy:
                 description: NetworkPolicy used for building Kubernetes network.
                 enum:
                 - azure
                 - calico
+                - ''''''
                 type: string
               nodeResourceGroupName:
                 description: NodeResourceGroupName is the name of the resource group
@@ -674,6 +678,13 @@ spec:
                     description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
                     type: string
                 type: object
+              ipFamilies:
+                description: IPFamilies - IP families are used to determine single-stack
+                  or dual-stack clusters. For single-stack, the expected value is
+                  IPv4. For dual-stack, the expected values are IPv4 and IPv6.
+                items:
+                  type: string
+                type: array
               loadBalancerProfile:
                 description: LoadBalancerProfile is the profile of the cluster load
                   balancer.
@@ -725,12 +736,14 @@ spec:
                 enum:
                 - azure
                 - kubenet
+                - none
                 type: string
               networkPolicy:
                 description: NetworkPolicy used for building Kubernetes network.
                 enum:
                 - azure
                 - calico
+                - ''''''
                 type: string
               nodeResourceGroupName:
                 description: NodeResourceGroupName is the name of the resource group
