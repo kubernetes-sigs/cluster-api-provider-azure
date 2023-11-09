@@ -8,6 +8,7 @@ spec:
       azuredisk-csi: "true"
   repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
   chartName: azuredisk-csi-driver
+  version: ${AZUREDISK_CSI_DRIVER_VERSION}
   releaseName: azuredisk-csi-driver-oot
   namespace: kube-system
   valuesTemplate: |

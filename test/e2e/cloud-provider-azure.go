@@ -91,7 +91,7 @@ func EnsureAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.App
 		if hasWindows {
 			options.Values = append(options.Values, "windows.useHostProcessContainers=true")
 		}
-		InstallHelmChart(ctx, clusterProxy, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options, "")
+		InstallHelmChart(ctx, clusterProxy, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options, os.Getenv(AzureDiskCSIDriverVersion))
 	} else {
 		By("Ensuring azure-disk CSI driver is installed via CAAPH")
 	}
