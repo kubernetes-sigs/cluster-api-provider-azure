@@ -1082,6 +1082,7 @@ func autoConvert_v1beta1_AzureManagedControlPlaneSpec_To_v1alpha4_AzureManagedCo
 	out.LoadBalancerProfile = (*LoadBalancerProfile)(unsafe.Pointer(in.LoadBalancerProfile))
 	out.APIServerAccessProfile = (*APIServerAccessProfile)(unsafe.Pointer(in.APIServerAccessProfile))
 	out.DisableLocalAccounts = (*bool)(unsafe.Pointer(in.DisableLocalAccounts))
+	// WARNING: in.IPFamilies requires manual conversion: does not exist in peer-type
 	return nil
 }
 
@@ -1217,6 +1218,7 @@ func autoConvert_v1beta1_AzureManagedMachinePoolSpec_To_v1alpha4_AzureManagedMac
 	// WARNING: in.EnableUltraSSD requires manual conversion: does not exist in peer-type
 	out.EnableNodePublicIP = (*bool)(unsafe.Pointer(in.EnableNodePublicIP))
 	out.EnableFIPS = (*bool)(unsafe.Pointer(in.EnableFIPS))
+	// WARNING: in.EnableEncryptionAtHost requires manual conversion: does not exist in peer-type
 	out.VnetSubnetID = (*string)(unsafe.Pointer(in.VnetSubnetID))
 	out.ScaleSetPriority = (*string)(unsafe.Pointer(in.ScaleSetPriority))
 	out.KubeletConfig = (*KubeletConfig)(unsafe.Pointer(in.KubeletConfig))

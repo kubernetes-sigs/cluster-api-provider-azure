@@ -298,6 +298,30 @@ func (m *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object, client c
 		}
 	}
 
+	if old.Spec.EnableEncryptionAtHost == nil && m.Spec.EnableEncryptionAtHost != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "EnableEncryptionAtHost"),
+				m.Spec.EnableEncryptionAtHost,
+				"field is immutable, setting after creation is not allowed"))
+	}
+
+	if old.Spec.EnableEncryptionAtHost != nil {
+		if m.Spec.EnableEncryptionAtHost == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableEncryptionAtHost"),
+					m.Spec.EnableEncryptionAtHost,
+					"field is immutable, unsetting is not allowed"))
+		} else if *m.Spec.EnableEncryptionAtHost != *old.Spec.EnableEncryptionAtHost {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "EnableEncryptionAtHost"),
+					m.Spec.EnableEncryptionAtHost,
+					"field is immutable"))
+		}
+	}
+
 	if kubeletConfigErr := m.validateKubeletConfig(); kubeletConfigErr != nil {
 		allErrs = append(allErrs, kubeletConfigErr)
 	}

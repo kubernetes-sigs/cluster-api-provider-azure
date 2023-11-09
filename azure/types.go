@@ -327,6 +327,9 @@ type AgentPoolSpec struct {
 	// Enable FIPS node image
 	EnableFIPS *bool `json:"EnableFIPS,omitempty"`
 
+	// Enable host based OS and data drive encryption
+	EnableEncryptionAtHost *bool `json:"EnableEncryptionAtHost,omitempty"`
+
 	// Enable node public IP
 	EnableNodePublicIP *bool `json:"EnableNodePublicIP,omitempty"`
 
