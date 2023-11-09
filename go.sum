@@ -80,8 +80,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/search/armsearch v1.2.0 h1
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/servicebus/armservicebus v1.1.1 h1:h+ZMdUM0/8oVqHjY9+1rupIvT0craBLapKhuzWui9lo=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.4.0 h1:YLeqNPz/6sJC4fGNUofP+I9QZrMQBvL6lKpCzeu/3Ms=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.1.0 h1:pYhaMoTHP/zYIJGDA1sWsfyTDjdglaoYjIFMOEcL+/U=
-github.com/Azure/azure-service-operator/v2 v2.3.1-0.20231113091516-a5b528ef1049 h1:Gy6a0X1mrcsJw19OHBy0H42Zr+d2G62OI0jL/8a95AQ=
-github.com/Azure/azure-service-operator/v2 v2.3.1-0.20231113091516-a5b528ef1049/go.mod h1:C7sCq7YmaCaqTC4fqUKuxazlhZ9rTcrj6IBrhMh5/Ag=
+github.com/Azure/azure-service-operator/v2 v2.4.0 h1:uFzN8dzwNJl68QHnpNGLU/29tc5cMklg9x7hK/E0RQQ=
+github.com/Azure/azure-service-operator/v2 v2.4.0/go.mod h1:bIyuYaF9888WlXjser0bW2Rj/jnPMsNvkft0FGT92rE=
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOElx5B5HZ4hJQsoJ/PvUvKRhJHDQXO8P8=
 github.com/Azure/go-autorest v14.2.0+incompatible h1:V5VMDjClD3GiElqLWO7mz2MxNAK/vTfRHdAubSIPRgs=
 github.com/Azure/go-autorest v14.2.0+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
@@ -515,8 +515,8 @@ github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLA
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/onsi/ginkgo/v2 v2.13.1 h1:LNGfMbR2OVGBfXjvRZIZ2YCTQdGKtPLvuI1rMCCj3OU=
 github.com/onsi/ginkgo/v2 v2.13.1/go.mod h1:XStQ8QcGwLyF4HdfcZB8SFOS/MWCgDuXMSBe6zrvLgM=
-github.com/onsi/gomega v1.29.0 h1:KIA/t2t5UBzoirT4H9tsML45GEbo3ouUnBHsCfD2tVg=
-github.com/onsi/gomega v1.29.0/go.mod h1:9sxs+SwGrKI0+PWe4Fxa9tFQQBG5xSsSbMXOI8PPpoQ=
+github.com/onsi/gomega v1.30.0 h1:hvMK7xYz4D3HapigLTeGdId/NcfQx1VHMJc60ew99+8=
+github.com/onsi/gomega v1.30.0/go.mod h1:9sxs+SwGrKI0+PWe4Fxa9tFQQBG5xSsSbMXOI8PPpoQ=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0-rc2.0.20221005185240-3a7f492d3f1b h1:YWuSjZCQAPM8UUBLkYUk1e+rZcvWHJmFb6i6rM44Xs8=

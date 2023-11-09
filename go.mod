@@ -15,7 +15,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1
-	github.com/Azure/azure-service-operator/v2 v2.3.1-0.20231113091516-a5b528ef1049
+	github.com/Azure/azure-service-operator/v2 v2.4.0
 	github.com/Azure/go-autorest/autorest v0.11.29
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/jongio/azidext/go/azidext v0.5.0
 	github.com/onsi/ginkgo/v2 v2.13.1
-	github.com/onsi/gomega v1.29.0
+	github.com/onsi/gomega v1.30.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.6
 	github.com/prometheus/client_golang v1.17.0
