@@ -536,6 +536,8 @@ $(CALICO_MANIFESTS_DIR):
 	@echo "Fetching Calico release manifests from release artifacts, this might take a minute..."
 	wget -qO- https://github.com/projectcalico/calico/releases/download/$(CALICO_VERSION)/release-$(CALICO_VERSION).tgz | tar xz --directory $(CALICO_RELEASES) $(CALICO_RELEASE_MANIFESTS_DIR)
 
+export AZUREDISK_CSI_DRIVER_VERSION := v1.29.0
+
 .PHONY: modules
 modules: ## Runs go mod tidy to ensure proper vendoring.
 	go mod tidy

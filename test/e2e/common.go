@@ -83,6 +83,7 @@ const (
 	SecurityScanFailThreshold       = "SECURITY_SCAN_FAIL_THRESHOLD"
 	SecurityScanContainer           = "SECURITY_SCAN_CONTAINER"
 	CalicoVersion                   = "CALICO_VERSION"
+	AzureDiskCSIDriverVersion       = "AZUREDISK_CSI_DRIVER_VERSION"
 	ManagedClustersResourceType     = "managedClusters"
 	capiImagePublisher              = "cncf-upstream"
 	capiOfferName                   = "capi"
