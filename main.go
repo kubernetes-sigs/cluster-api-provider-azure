@@ -20,7 +20,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	_ "net/http/pprof"
+	"net/http"
+	"net/http/pprof"
 	"os"
 	"time"
 
@@ -34,11 +35,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apiserver/pkg/server/routes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	cgrecord "k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/klogr"
+	"k8s.io/component-base/logs"
+	"k8s.io/klog/v2/textlogger"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -58,6 +60,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
@@ -67,8 +71,6 @@ var (
 )
 
 func init() {
-	klog.InitFlags(nil)
-
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
@@ -94,7 +96,6 @@ func init() {
 }
 
 var (
-	metricsAddr                        string
 	enableLeaderElection               bool
 	leaderElectionNamespace            string
 	leaderElectionLeaseDuration        time.Duration
@@ -112,19 +113,14 @@ var (
 	healthAddr                         string
 	webhookPort                        int
 	webhookCertDir                     string
+	diagnosticsOptions                 = DiagnosticsOptions{}
 	reconcileTimeout                   time.Duration
 	enableTracing                      bool
+	logConfig                          = textlogger.NewConfig()
 )
 
 // InitFlags initializes all command-line flags.
-func InitFlags(fs *pflag.FlagSet) {
-	fs.StringVar(
-		&metricsAddr,
-		"metrics-bind-addr",
-		"localhost:8080",
-		"The address the metric endpoint binds to.",
-	)
-
+func InitFlags(fs *pflag.FlagSet, gofs *flag.FlagSet) {
 	fs.BoolVar(
 		&enableLeaderElection,
 		"leader-elect",
@@ -243,15 +239,22 @@ func InitFlags(fs *pflag.FlagSet) {
 		"Enable tracing to the opentelemetry-collector service in the same namespace.",
 	)
 
+	AddDiagnosticsOptions(fs, &diagnosticsOptions)
+	logConfig.AddFlags(gofs)
+
 	feature.MutableGates.AddFlag(fs)
 }
 
+// Add RBAC for the authorized diagnostics endpoint.
+// +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
+// +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
+
 func main() {
-	InitFlags(pflag.CommandLine)
+	InitFlags(pflag.CommandLine, flag.CommandLine)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
-	ctrl.SetLogger(klogr.New())
+	ctrl.SetLogger(textlogger.NewLogger(logConfig))
 
 	if watchNamespace != "" {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
@@ -263,16 +266,19 @@ func main() {
 		BurstSize: 100,
 	})
 
-	var watchNamespaces []string
+	diagnosticsOpts := GetDiagnosticsOptions(diagnosticsOptions)
+
+	var watchNamespaces map[string]cache.Config
 	if watchNamespace != "" {
-		watchNamespaces = []string{watchNamespace}
+		watchNamespaces = map[string]cache.Config{
+			watchNamespace: {},
+		}
 	}
 
 	restConfig := ctrl.GetConfigOrDie()
 	restConfig.UserAgent = "cluster-api-provider-azure-manager"
 	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
 		Scheme:                     scheme,
-		MetricsBindAddress:         metricsAddr,
 		LeaderElection:             enableLeaderElection,
 		LeaderElectionID:           "controller-leader-election-capz",
 		LeaderElectionNamespace:    leaderElectionNamespace,
@@ -282,9 +288,10 @@ func main() {
 		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
 		HealthProbeBindAddress:     healthAddr,
 		PprofBindAddress:           profilerAddress,
+		Metrics:                    diagnosticsOpts,
 		Cache: cache.Options{
-			Namespaces: watchNamespaces,
-			SyncPeriod: &syncPeriod,
+			DefaultNamespaces: watchNamespaces,
+			SyncPeriod:        &syncPeriod,
 		},
 		Client: client.Options{
 			Cache: &client.CacheOptions{
@@ -554,5 +561,70 @@ func registerWebhooks(mgr manager.Manager) {
 	if err := mgr.AddHealthzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to create health check")
 		os.Exit(1)
+	}
+}
+
+// DiagnosticsOptions is CAPI 1.6's (util/flags).DiagnosticsOptions.
+type DiagnosticsOptions struct {
+	// MetricsBindAddr
+	//
+	// Deprecated: This field will be removed in an upcoming release.
+	MetricsBindAddr     string
+	DiagnosticsAddress  string
+	InsecureDiagnostics bool
+}
+
+// AddDiagnosticsOptions is CAPI 1.6's (util/flags).AddDiagnosticsOptions.
+func AddDiagnosticsOptions(fs *pflag.FlagSet, options *DiagnosticsOptions) {
+	fs.StringVar(&options.MetricsBindAddr, "metrics-bind-addr", "",
+		"The address the metrics endpoint binds to.")
+	_ = fs.MarkDeprecated("metrics-bind-addr", "Please use --diagnostics-address instead. To continue to serve"+
+		"metrics via http and without authentication/authorization set --insecure-diagnostics as well.")
+
+	fs.StringVar(&options.DiagnosticsAddress, "diagnostics-address", ":8443",
+		"The address the diagnostics endpoint binds to. Per default metrics are served via https and with"+
+			"authentication/authorization. To serve via http and without authentication/authorization set --insecure-diagnostics."+
+			"If --insecure-diagnostics is not set the diagnostics endpoint also serves pprof endpoints and an endpoint to change the log level.")
+
+	fs.BoolVar(&options.InsecureDiagnostics, "insecure-diagnostics", false,
+		"Enable insecure diagnostics serving. For more details see the description of --diagnostics-address.")
+}
+
+// GetDiagnosticsOptions is CAPI 1.6's (util/flags).GetDiagnosticsOptions.
+func GetDiagnosticsOptions(options DiagnosticsOptions) metricsserver.Options {
+	// If the deprecated "--metrics-bind-addr" flag is set, continue to serve metrics via http
+	// and without authentication/authorization.
+	if options.MetricsBindAddr != "" {
+		return metricsserver.Options{
+			BindAddress: options.MetricsBindAddr,
+		}
+	}
+
+	// If "--insecure-diagnostics" is set, serve metrics via http
+	// and without authentication/authorization.
+	if options.InsecureDiagnostics {
+		return metricsserver.Options{
+			BindAddress:   options.DiagnosticsAddress,
+			SecureServing: false,
+		}
+	}
+
+	// If "--insecure-diagnostics" is not set, serve metrics via https
+	// and with authentication/authorization. As the endpoint is protected,
+	// we also serve pprof endpoints and an endpoint to change the log level.
+	return metricsserver.Options{
+		BindAddress:    options.DiagnosticsAddress,
+		SecureServing:  true,
+		FilterProvider: filters.WithAuthenticationAndAuthorization,
+		ExtraHandlers: map[string]http.Handler{
+			// Add handler to dynamically change log level.
+			"/debug/flags/v": routes.StringFlagPutHandler(logs.GlogSetter),
+			// Add pprof handler.
+			"/debug/pprof/":        http.HandlerFunc(pprof.Index),
+			"/debug/pprof/cmdline": http.HandlerFunc(pprof.Cmdline),
+			"/debug/pprof/profile": http.HandlerFunc(pprof.Profile),
+			"/debug/pprof/symbol":  http.HandlerFunc(pprof.Symbol),
+			"/debug/pprof/trace":   http.HandlerFunc(pprof.Trace),
+		},
 	}
 }
