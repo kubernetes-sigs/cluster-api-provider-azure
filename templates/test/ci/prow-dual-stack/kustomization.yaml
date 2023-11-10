@@ -6,9 +6,12 @@ resources:
   - machine-pool-dualstack.yaml
   - ../../../addons/cluster-api-helm/calico-dual-stack.yaml
   - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - patches/azure-machine-template-control-plane.yaml
   - patches/azure-machine-template.yaml
   - patches/cluster-label-calico-dual-stack.yaml
+  - ../patches/cluster-label-cloud-provider-azure.yaml

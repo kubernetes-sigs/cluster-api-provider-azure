@@ -2,6 +2,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
+    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
     cni: calico
     cni-windows: ${CLUSTER_NAME}-calico
     containerd-logger: enabled
@@ -132,6 +133,55 @@ spec:
       runOnControlPlane: true
     windows:
       useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |-
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-ci
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure-ci
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |-
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
+      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      imageName: ${CCM_IMAGE_NAME:-""}
+      imageRepository: ${IMAGE_REGISTRY:-""}
+      imageTag: ${IMAGE_TAG_CCM:-""}
+      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
+      replicas: ${CCM_COUNT:-1}
+      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
+    cloudNodeManager:
+      imageName: ${CNM_IMAGE_NAME:-""}
+      imageRepository: ${IMAGE_REGISTRY:-""}
+      imageTag: ${IMAGE_TAG_CNM:-""}
 ---
 apiVersion: v1
 data:

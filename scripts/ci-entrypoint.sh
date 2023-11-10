@@ -58,12 +58,17 @@ setup() {
         echo "Will use the ${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG_CCM} cloud-controller-manager image for external cloud-provider-cluster"
         echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM} cloud-node-manager image for external cloud-provider-azure cluster"
 
-        CCM_IMG_ARGS=(--set cloudControllerManager.imageRepository="${IMAGE_REGISTRY}"
-        --set cloudNodeManager.imageRepository="${IMAGE_REGISTRY}"
-        --set cloudControllerManager.imageName="${CCM_IMAGE_NAME}"
-        --set cloudNodeManager.imageName="${CNM_IMAGE_NAME}"
-        --set-string cloudControllerManager.imageTag="${IMAGE_TAG_CCM}"
-        --set-string cloudNodeManager.imageTag="${IMAGE_TAG_CNM}")
+        if [[ -n "${LOAD_CLOUD_CONFIG_FROM_SECRET:-}" ]]; then
+            export CLOUD_CONFIG=""
+            export CONFIG_SECRET_NAME="azure-cloud-provider"
+            export ENABLE_DYNAMIC_RELOADING=true
+            until copy_secret; do
+                sleep 5
+            done
+        fi
+
+        export CCM_LOG_VERBOSITY="${CCM_LOG_VERBOSITY:-4}"
+        export CLOUD_PROVIDER_AZURE_LABEL="azure-ci"
     fi
 
     if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
@@ -142,33 +147,6 @@ create_cluster() {
     export KUBE_SSH_USER
 }
 
-# get_cidrs derives the CIDR from the Cluster's '.spec.clusterNetwork.pods.cidrBlocks' metadata
-# any retryable operation in this function must return a non-zero exit code on failure so that we can
-# retry it using a `until get_cidrs; do sleep 5; done` pattern;
-# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
-get_cidrs() {
-    # Get cluster CIDRs from Cluster object
-    CIDR0=$(${KUBECTL} --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[0]}') || return 1
-    export CIDR0
-    CIDR_LENGTH=$(${KUBECTL} --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get cluster "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks}' | jq '. | length') || return 1
-    if [[ "${CIDR_LENGTH}" == "2" ]]; then
-        CIDR1=$(${KUBECTL} get cluster --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" "${CLUSTER_NAME}" -o=jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[1]}') || return 1
-        export CIDR1
-    fi
-}
-
-# get_cloud_provider determines if the Cluster is using an intree or external cloud-provider from the KubeadmConfigSpec.
-# any retryable operation in this function must return a non-zero exit code on failure so that we can
-# retry it using a `until get_cloud_provider; do sleep 5; done` pattern;
-# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
-get_cloud_provider() {
-    CLOUD_PROVIDER=$("${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get kubeadmcontrolplane -l cluster.x-k8s.io/cluster-name="${CLUSTER_NAME}" -o=jsonpath='{.items[0].spec.kubeadmConfigSpec.clusterConfiguration.controllerManager.extraArgs.cloud-provider}') || return 1
-    if [[ "${CLOUD_PROVIDER:-}" = "azure" ]]; then
-        IN_TREE="true"
-        export IN_TREE
-    fi
-}
-
 # copy_kubeadm_config_map copies the kubeadm configmap into the calico-system namespace.
 # any retryable operation in this function must return a non-zero exit code on failure so that we can
 # retry it using a `until copy_kubeadm_config_map; do sleep 5; done` pattern;
@@ -183,39 +161,6 @@ copy_kubeadm_config_map() {
     if ! "${KUBECTL}" get configmap kubeadm-config --namespace=calico-system; then
         "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | "${KUBECTL}" apply -f - || return 1
     fi
-}
-
-# install_cloud_provider_azure installs OOT cloud-provider-azure componentry onto the Cluster.
-# Any retryable operation in this function must return a non-zero exit code on failure so that we can
-# retry it using a `until install_cloud_provider_azure; do sleep 5; done` pattern;
-# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
-install_cloud_provider_azure() {
-    CLOUD_CONFIG="/etc/kubernetes/azure.json"
-    CONFIG_SECRET_NAME=""
-    ENABLE_DYNAMIC_RELOADING=false
-    if [[ -n "${LOAD_CLOUD_CONFIG_FROM_SECRET:-}" ]]; then
-        CLOUD_CONFIG=""
-        CONFIG_SECRET_NAME="azure-cloud-provider"
-        ENABLE_DYNAMIC_RELOADING=true
-        copy_secret || return 1
-    fi
-
-    CCM_CLUSTER_CIDR="${CIDR0}"
-    if [[ -n "${CIDR1:-}" ]]; then
-        CCM_CLUSTER_CIDR="${CIDR0}\,${CIDR1}"
-    fi
-    echo "CCM cluster CIDR: ${CCM_CLUSTER_CIDR:-}"
-
-    export CCM_LOG_VERBOSITY="${CCM_LOG_VERBOSITY:-4}"
-    echo "Installing cloud-provider-azure components via helm"
-    "${HELM}" upgrade cloud-provider-azure --install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure \
-        --set infra.clusterName="${CLUSTER_NAME}" \
-        --set cloudControllerManager.replicas="${CCM_COUNT}" \
-        --set cloudControllerManager.enableDynamicReloading="${ENABLE_DYNAMIC_RELOADING}"  \
-        --set cloudControllerManager.cloudConfig="${CLOUD_CONFIG}" \
-        --set cloudControllerManager.cloudConfigSecretName="${CONFIG_SECRET_NAME}" \
-        --set cloudControllerManager.logVerbosity="${CCM_LOG_VERBOSITY}" \
-        --set-string cloudControllerManager.clusterCIDR="${CCM_CLUSTER_CIDR}" "${CCM_IMG_ARGS[@]}" || return 1
 }
 
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
@@ -255,23 +200,11 @@ wait_for_pods() {
 }
 
 install_addons() {
-    until get_cidrs; do
-        sleep 5
-    done
     # export the target cluster KUBECONFIG if not already set
     export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
     until copy_kubeadm_config_map; do
         sleep 5
     done
-    # install cloud-provider-azure components, if using out-of-tree
-    until get_cloud_provider; do
-        sleep 5
-    done
-    if [[ -z "${IN_TREE:-}" ]]; then
-        until install_cloud_provider_azure; do
-            sleep 5
-        done
-    fi
     # In order to determine the successful outcome of CNI and cloud-provider-azure,
     # we need to wait a little bit for nodes and pods terminal state,
     # so we block successful return upon the cluster being fully operational.

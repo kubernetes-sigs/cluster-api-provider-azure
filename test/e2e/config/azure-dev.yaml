@@ -124,8 +124,6 @@ providers:
         targetName: "cluster-template-conformance-ci-artifacts-dual-stack.yaml"
       - sourcePath: "${PWD}/templates/test/dev/cluster-template-custom-builds.yaml"
         targetName: "cluster-template-conformance-presubmit-artifacts.yaml"
-      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-intree-cloud-provider.yaml"
-        targetName: "cluster-template-intree-cloud-provider.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool-flex.yaml"
         targetName: "cluster-template-machine-pool-flex.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-workload-identity.yaml"
