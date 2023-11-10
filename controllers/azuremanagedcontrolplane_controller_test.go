@@ -58,7 +58,7 @@ func TestClusterToAzureManagedControlPlane(t *testing.T) {
 		{
 			name: "ok",
 			controlPlaneRef: &corev1.ObjectReference{
-				Kind:      "AzureManagedControlPlane",
+				Kind:      infrav1.AzureManagedControlPlaneKind,
 				Name:      "name",
 				Namespace: "namespace",
 			},

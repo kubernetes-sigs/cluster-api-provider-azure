@@ -136,7 +136,7 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		log.Info("infra ref is nil")
 		return ctrl.Result{}, nil
 	}
-	if cluster.Spec.InfrastructureRef.Kind != "AzureCluster" {
+	if cluster.Spec.InfrastructureRef.Kind != infrav1.AzureClusterKind {
 		log.WithValues("kind", cluster.Spec.InfrastructureRef.Kind).Info("infra ref was not an AzureCluster")
 		return ctrl.Result{}, nil
 	}

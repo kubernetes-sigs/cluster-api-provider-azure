@@ -84,7 +84,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 	// Add a watch on clusterv1.Cluster object for unpause notifications.
 	if err = c.Watch(
 		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("AzureCluster"), mgr.GetClient(), &infrav1.AzureCluster{})),
+		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind), mgr.GetClient(), &infrav1.AzureCluster{})),
 		predicates.ClusterUnpaused(log),
 		predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),
 	); err != nil {
@@ -107,7 +107,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureIdentityReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", "AzureCluster"),
+		tele.KVP("kind", infrav1.AzureClusterKind),
 	)
 	defer done()
 

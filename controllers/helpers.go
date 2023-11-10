@@ -561,7 +561,7 @@ func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.O
 	defer done()
 
 	for _, ref := range obj.OwnerReferences {
-		if ref.Kind != "AzureMachinePool" {
+		if ref.Kind != infrav1.AzureMachinePoolKind {
 			continue
 		}
 

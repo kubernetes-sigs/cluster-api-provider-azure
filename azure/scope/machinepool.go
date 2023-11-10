@@ -489,7 +489,7 @@ func (m *MachinePoolScope) createMachine(ctx context.Context, machine azure.VMSS
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion:         infrav1exp.GroupVersion.String(),
-					Kind:               "AzureMachinePool",
+					Kind:               infrav1.AzureMachinePoolKind,
 					Name:               m.AzureMachinePool.Name,
 					BlockOwnerDeletion: ptr.To(true),
 					UID:                m.AzureMachinePool.UID,

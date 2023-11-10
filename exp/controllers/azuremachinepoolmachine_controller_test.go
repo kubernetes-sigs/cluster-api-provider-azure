@@ -210,7 +210,7 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool) []client.Obje
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Name:       amp.Name,
-					Kind:       "AzureMachinePool",
+					Kind:       infrav1.AzureMachinePoolKind,
 					APIVersion: infrav1exp.GroupVersion.String(),
 				},
 				{

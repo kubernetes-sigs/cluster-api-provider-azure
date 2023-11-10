@@ -264,7 +264,7 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		return nil, m.Validate(mw.Client)
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), m.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedControlPlaneKind).GroupKind(), m.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.

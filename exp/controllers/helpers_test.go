@@ -107,7 +107,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 				return newMachinePool("azureCluster", "machinePool")
 			},
 			Setup: func(logMock *mock_log.MockLogSink) {
-				ampGK := infrav1exp.GroupVersion.WithKind("AzureMachinePool").GroupKind()
+				ampGK := infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind).GroupKind()
 				logMock.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
 				logMock.EXPECT().Enabled(4).Return(true)
 				logMock.EXPECT().Info(4, "gk does not match", "gk", ampGK, "infraGK", gomock.Any())
@@ -144,7 +144,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 			if c.Setup != nil {
 				c.Setup(sink)
 			}
-			f := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), logr.New(sink))
+			f := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind), logr.New(sink))
 			reqs := f(context.TODO(), c.MapObjectFactory(g))
 			c.Expect(g, reqs)
 		})

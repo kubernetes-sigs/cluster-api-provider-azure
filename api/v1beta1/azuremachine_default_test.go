@@ -567,7 +567,7 @@ func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Ob
 	case *clusterv1.Cluster:
 		obj.Spec = clusterv1.ClusterSpec{
 			InfrastructureRef: &corev1.ObjectReference{
-				Kind:      "AzureCluster",
+				Kind:      AzureClusterKind,
 				Name:      "test-cluster",
 				Namespace: "default",
 			},
