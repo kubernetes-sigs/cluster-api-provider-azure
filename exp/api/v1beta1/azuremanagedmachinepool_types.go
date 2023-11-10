@@ -100,6 +100,14 @@ type AzureManagedMachinePoolSpec struct {
 	// +optional
 	EnableFIPS *bool `json:"enableFIPS,omitempty"`
 
+	// EnableEncryptionAtHost indicates whether host encryption is enabled on the node pool.
+	// Immutable.
+	// See also [AKS doc].
+	//
+	// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/enable-host-encryption
+	// +optional
+	EnableEncryptionAtHost *bool `json:"enableEncryptionAtHost,omitempty"`
+
 	// VnetSubnetID - VNet SubnetID specifies the VNet's subnet identifier for nodes and maybe pods
 	// +optional
 	VnetSubnetID *string `json:"vnetSubnetID,omitempty"`

@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
@@ -292,6 +291,34 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(ctx context.Context, c 
 			},
 		}
 	}, nil
+}
+
+// ClusterToAzureManagedControlPlaneMapper creates a mapping handler to transform Cluster into
+// AzureManagedControlPlane. The transform uses the control plane infrastructure reference on the Cluster.
+func ClusterToAzureManagedControlPlaneMapper(log logr.Logger) handler.MapFunc {
+	return func(o client.Object) []ctrl.Request {
+		cluster, ok := o.(*clusterv1.Cluster)
+		if !ok {
+			log.Error(errors.Errorf("expected a Cluster, got %T instead", o), "failed to map Cluster")
+			return nil
+		}
+
+		log = log.WithValues("Cluster", cluster.Name, "Namespace", cluster.Namespace)
+
+		ref := cluster.Spec.ControlPlaneRef
+		if ref == nil || ref.Name == "" {
+			return nil
+		}
+
+		return []ctrl.Request{
+			{
+				NamespacedName: types.NamespacedName{
+					Namespace: ref.Namespace,
+					Name:      ref.Name,
+				},
+			},
+		}
+	}
 }
 
 // AzureManagedControlPlaneToAzureManagedClusterMapper creates a mapping handler to transform AzureManagedClusters into

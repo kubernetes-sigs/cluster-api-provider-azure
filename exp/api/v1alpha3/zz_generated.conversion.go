@@ -768,6 +768,7 @@ func autoConvert_v1beta1_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedCo
 	// WARNING: in.LoadBalancerProfile requires manual conversion: does not exist in peer-type
 	// WARNING: in.APIServerAccessProfile requires manual conversion: does not exist in peer-type
 	// WARNING: in.DisableLocalAccounts requires manual conversion: does not exist in peer-type
+	// WARNING: in.IPFamilies requires manual conversion: does not exist in peer-type
 	return nil
 }
 
@@ -893,6 +894,7 @@ func autoConvert_v1beta1_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMac
 	// WARNING: in.EnableUltraSSD requires manual conversion: does not exist in peer-type
 	// WARNING: in.EnableNodePublicIP requires manual conversion: does not exist in peer-type
 	// WARNING: in.EnableFIPS requires manual conversion: does not exist in peer-type
+	// WARNING: in.EnableEncryptionAtHost requires manual conversion: does not exist in peer-type
 	// WARNING: in.VnetSubnetID requires manual conversion: does not exist in peer-type
 	// WARNING: in.ScaleSetPriority requires manual conversion: does not exist in peer-type
 	// WARNING: in.KubeletConfig requires manual conversion: does not exist in peer-type

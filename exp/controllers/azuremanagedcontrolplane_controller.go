@@ -77,6 +77,9 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	// map requests for machine pools corresponding to AzureManagedControlPlane's defaultPool back to the corresponding AzureManagedControlPlane.
 	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, amcpr.Client, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), log)
 
+	// map requests for Cluster corresponding to AzureManagedControlPlane back to the corresponding AzureManagedControlPlane.
+	clusterMapper := ClusterToAzureManagedControlPlaneMapper(log)
+
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(azManagedControlPlane).
@@ -90,6 +93,11 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
+		).
+		// Add a watch on clusterv1.Cluster object for unpause notifications.
+		Watches(
+			&source.Kind{Type: &clusterv1.Cluster{}},
+			handler.EnqueueRequestsFromMapFunc(clusterMapper),
 		).
 		Build(r)
 	if err != nil {
