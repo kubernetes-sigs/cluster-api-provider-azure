@@ -3,6 +3,7 @@ kind: Cluster
 metadata:
   labels:
     azuredisk-csi: "true"
+    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL}
     cni: calico-ipv6
     cni-windows: ${CLUSTER_NAME}-calico
     containerd-logger: disabled
@@ -532,6 +533,51 @@ spec:
       runOnControlPlane: true
     windows:
       useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure
+  releaseName: cloud-provider-azure
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |-
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-ci
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure-ci
+  releaseName: cloud-provider-azure
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |-
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      imageName: ${CCM_IMAGE_NAME}
+      imageRepository: ${CCM_IMAGE_REGISTRY}
+      imageTag: ${IMAGE_TAG_CCM}
+      logVerbosity: 4
+    cloudNodeManager:
+      imageName: ${CNM_IMAGE_NAME}
+      imageRepository: ${CNM_IMAGE_REGISTRY}
+      imageTag: ${IMAGE_TAG_CCM}
 ---
 apiVersion: v1
 data:

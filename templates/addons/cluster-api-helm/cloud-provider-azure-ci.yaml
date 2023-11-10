@@ -1,0 +1,24 @@
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-ci
+spec:
+  clusterSelector:
+    matchLabels:
+      cloud-provider: "azure-ci"
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  chartName: cloud-provider-azure
+  releaseName: cloud-provider-azure
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      imageName: ${CCM_IMAGE_NAME}
+      imageRepository: ${CCM_IMAGE_REGISTRY}
+      imageTag: ${IMAGE_TAG_CCM}
+      logVerbosity: 4
+    cloudNodeManager:
+      imageName: ${CNM_IMAGE_NAME}
+      imageRepository: ${CNM_IMAGE_REGISTRY}
+      imageTag: ${IMAGE_TAG_CCM}

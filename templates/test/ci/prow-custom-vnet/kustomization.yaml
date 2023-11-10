@@ -6,6 +6,8 @@ resources:
   - ../prow/mhc.yaml
   - ../../../addons/cluster-api-helm/calico.yaml
   - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
@@ -15,3 +17,4 @@ patchesStrategicMerge:
   - ../patches/uami-control-plane.yaml
   - ../patches/cluster-label-calico.yaml
   - ../patches/cluster-label-azuredisk-csi-driver.yaml
+  - ../patches/cluster-label-cloud-provider-azure.yaml

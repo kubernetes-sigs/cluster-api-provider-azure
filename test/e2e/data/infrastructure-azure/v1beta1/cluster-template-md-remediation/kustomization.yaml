@@ -1,13 +1,16 @@
 bases:
-  - ../bases/cluster-with-kcp.yaml
-  - ../bases/md.yaml
-  - mhc.yaml
-  - ../bases/azure-cluster-identity.yaml
-  - ../bases/calico.yaml
-  - ../bases/azuredisk-csi-driver.yaml
+- ../bases/cluster-with-kcp.yaml
+- ../bases/md.yaml
+- mhc.yaml
+- ../bases/azure-cluster-identity.yaml
+- ../bases/calico.yaml
+- ../bases/azuredisk-csi-driver.yaml
+- ../bases/cloud-provider-azure.yaml
+- ../bases/cloud-provider-azure-ci.yaml
 
 patchesStrategicMerge:
 - ./md.yaml
 - ../patches/azurecluster-identity-ref.yaml
 - ../patches/cluster-label-calico.yaml
 - ../patches/cluster-label-azuredisk-csi-driver.yaml
+- ../patches/cluster-label-cloud-provider-azure.yaml

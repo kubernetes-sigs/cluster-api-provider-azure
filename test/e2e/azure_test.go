@@ -71,6 +71,13 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterNamePrefix = clusterNameSpace
 		}
 
+		cloudProviderAzureLabel := "azure"
+		fmt.Println("Value of useCIArtifacts is", useCIArtifacts)
+		if useCIArtifacts {
+			cloudProviderAzureLabel = "azure-ci"
+		}
+		os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", cloudProviderAzureLabel)
+
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		var err error
 		namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterNamePrefix, bootstrapClusterProxy, artifactFolder)
