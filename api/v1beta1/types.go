@@ -29,6 +29,8 @@ const (
 	Node string = "node"
 	// Bastion subnet label.
 	Bastion string = "bastion"
+	// Cluster subnet label.
+	Cluster string = "cluster"
 )
 
 // SecurityEncryptionType represents the Encryption Type when the virtual machine is a
@@ -705,6 +707,9 @@ const (
 
 	// SubnetBastion defines a Bastion subnet role.
 	SubnetBastion = SubnetRole(Bastion)
+
+	// SubnetCluster defines a role that can be used for both Kubernetes control plane node and Kubernetes workload node.
+	SubnetCluster = SubnetRole(Cluster)
 )
 
 // SubnetSpec configures an Azure subnet.
@@ -796,29 +801,40 @@ type NetworkInterface struct {
 	AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
 }
 
-// GetControlPlaneSubnet returns the cluster control plane subnet.
+// GetControlPlaneSubnet returns a subnet that has a role assigned to controlplane or all. Subnets with role controlplane are given higher priority.
 func (n *NetworkSpec) GetControlPlaneSubnet() (SubnetSpec, error) {
-	for _, sn := range n.Subnets {
-		if sn.Role == SubnetControlPlane {
-			return sn, nil
-		}
+	// Priority is given for subnet that have role assigned as controlplane
+	if subnet, err := n.GetSubnet(SubnetControlPlane); err == nil {
+		return subnet, nil
 	}
+
+	if subnet, err := n.GetSubnet(SubnetCluster); err == nil {
+		return subnet, nil
+	}
+
 	return SubnetSpec{}, errors.Errorf("no subnet found with role %s", SubnetControlPlane)
 }
 
-// UpdateControlPlaneSubnet updates the cluster control plane subnet.
-func (n *NetworkSpec) UpdateControlPlaneSubnet(subnet SubnetSpec) {
-	for i, sn := range n.Subnets {
-		if sn.Role == SubnetControlPlane {
-			n.Subnets[i] = subnet
+// GetSubnet returns a subnet based on the subnet role.
+func (n *NetworkSpec) GetSubnet(role SubnetRole) (SubnetSpec, error) {
+	for _, sn := range n.Subnets {
+		if sn.Role == role {
+			return sn, nil
 		}
 	}
+	return SubnetSpec{}, errors.Errorf("no subnet found with role %s", role)
 }
 
-// UpdateNodeSubnet updates the cluster node subnet.
-func (n *NetworkSpec) UpdateNodeSubnet(subnet SubnetSpec) {
+// UpdateControlPlaneSubnet updates the cluster control plane subnets.
+func (n *NetworkSpec) UpdateControlPlaneSubnet(subnet SubnetSpec) {
+	n.UpdateSubnet(subnet, SubnetControlPlane)
+	n.UpdateSubnet(subnet, SubnetCluster)
+}
+
+// UpdateSubnet updates the subnet based on the subnet role.
+func (n *NetworkSpec) UpdateSubnet(subnet SubnetSpec, role SubnetRole) {
 	for i, sn := range n.Subnets {
-		if sn.Role == SubnetNode {
+		if sn.Role == role {
 			n.Subnets[i] = subnet
 		}
 	}

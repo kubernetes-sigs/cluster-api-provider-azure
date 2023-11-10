@@ -318,7 +318,7 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 // getOneNodeSubnet returns one of the subnets for the node role.
 func getOneNodeSubnet(d azure.ClusterScoper) infrav1.SubnetSpec {
 	for _, subnet := range d.Subnets() {
-		if subnet.Role == infrav1.SubnetNode {
+		if subnet.Role == infrav1.SubnetNode || subnet.Role == infrav1.SubnetCluster {
 			return subnet
 		}
 	}

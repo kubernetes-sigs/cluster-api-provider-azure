@@ -432,7 +432,7 @@ type SubnetClassSpec struct {
 	Name string `json:"name"`
 
 	// Role defines the subnet role (eg. Node, ControlPlane)
-	// +kubebuilder:validation:Enum=node;control-plane;bastion
+	// +kubebuilder:validation:Enum=node;control-plane;bastion;all
 	Role SubnetRole `json:"role"`
 
 	// CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.

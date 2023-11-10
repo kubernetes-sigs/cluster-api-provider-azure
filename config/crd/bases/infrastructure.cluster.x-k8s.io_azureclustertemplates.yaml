@@ -194,6 +194,7 @@ spec:
                                     - node
                                     - control-plane
                                     - bastion
+                                    - all
                                     type: string
                                   securityGroup:
                                     description: SecurityGroup defines the NSG (network
@@ -692,6 +693,7 @@ spec:
                                   - node
                                   - control-plane
                                   - bastion
+                                  - all
                                   type: string
                                 securityGroup:
                                   description: SecurityGroup defines the NSG (network
