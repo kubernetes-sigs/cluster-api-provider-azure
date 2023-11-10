@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -262,14 +263,18 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	defer done()
 
 	log.Info("Reconciling AzureMachinePool")
+
 	// If the AzureMachine is in an error state, return early.
 	if machinePoolScope.AzureMachinePool.Status.FailureReason != nil || machinePoolScope.AzureMachinePool.Status.FailureMessage != nil {
 		log.Info("Error state detected, skipping reconciliation")
 		return reconcile.Result{}, nil
 	}
 
-	// If the AzureMachine doesn't have our finalizer, add it.
-	if controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer) {
+	// Add the finalizer and the InfrastructureMachineKind if it is not already set, and patch if either changed.
+
+	needsPatch := controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer)
+	needsPatch = machinePoolScope.SetInfrastructureMachineKind() || needsPatch
+	if needsPatch {
 		// Register the finalizer immediately to avoid orphaning Azure resources on delete
 		if err := machinePoolScope.PatchObject(ctx); err != nil {
 			return reconcile.Result{}, err
@@ -383,6 +388,37 @@ func (ampr *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, mac
 		if err := amps.Delete(ctx); err != nil {
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachinePool %s/%s", machinePoolScope.AzureMachinePool.Namespace, machinePoolScope.Name())
 		}
+	}
+
+	// Block deletion until all AzureMachinePoolMachines are finished deleting.
+	ampms, err := machinePoolScope.GetMachinePoolMachines(ctx)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "error finding AzureMachinePoolMachines while deleting AzureMachinePool %s/%s", machinePoolScope.AzureMachinePool.Namespace, machinePoolScope.Name())
+	}
+
+	if len(ampms) > 0 {
+		log.Info("AzureMachinePool still has dependent AzureMachinePoolMachines, deleting them first and requeing", "count", len(ampms))
+
+		var errs []error
+
+		for _, ampm := range ampms {
+			if !ampm.GetDeletionTimestamp().IsZero() {
+				// Don't handle deleted child
+				continue
+			}
+
+			if err := machinePoolScope.DeleteMachine(ctx, ampm); err != nil {
+				err = errors.Wrapf(err, "error deleting AzureMachinePool %s/%s: failed to delete %s %s", machinePoolScope.AzureMachinePool.Namespace, machinePoolScope.AzureMachinePool.Name, ampm.Namespace, ampm.Name)
+				log.Error(err, "Error deleting AzureMachinePoolMachine", "namespace", ampm.Namespace, "name", ampm.Name)
+				errs = append(errs, err)
+			}
+		}
+
+		if len(errs) > 0 {
+			return ctrl.Result{}, kerrors.NewAggregate(errs)
+		}
+
+		return reconcile.Result{}, nil
 	}
 
 	// Delete succeeded, remove finalizer

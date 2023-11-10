@@ -38,6 +38,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -50,9 +51,9 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 		{
 			Name: "should successfully reconcile",
 			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
-				cluster, azCluster, mp, amp, ampm := getAReadyMachinePoolMachineCluster()
+				objects := getReadyMachinePoolMachineClusterObjects(false)
 				reconciler.Reconcile(gomock2.AContext()).Return(nil)
-				cb.WithObjects(cluster, azCluster, mp, amp, ampm)
+				cb.WithObjects(objects...)
 			},
 			Verify: func(g *WithT, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
@@ -61,12 +62,9 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 		{
 			Name: "should successfully delete",
 			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
-				cluster, azCluster, mp, amp, ampm := getAReadyMachinePoolMachineCluster()
-				ampm.DeletionTimestamp = &metav1.Time{
-					Time: time.Now(),
-				}
+				objects := getReadyMachinePoolMachineClusterObjects(true)
 				reconciler.Delete(gomock2.AContext()).Return(nil)
-				cb.WithObjects(cluster, azCluster, mp, amp, ampm)
+				cb.WithObjects(objects...)
 			},
 			Verify: func(g *WithT, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
@@ -118,7 +116,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 	}
 }
 
-func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureCluster, *expv1.MachinePool, *infrav1exp.AzureMachinePool, *infrav1exp.AzureMachinePoolMachine) {
+func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool) []client.Object {
 	azCluster := &infrav1.AzureCluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "AzureCluster",
@@ -184,20 +182,51 @@ func getAReadyMachinePoolMachineCluster() (*clusterv1.Cluster, *infrav1.AzureClu
 		},
 	}
 
+	ma := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ma1",
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       mp.Name,
+					Kind:       "MachinePool",
+					APIVersion: expv1.GroupVersion.String(),
+				},
+			},
+			Labels: map[string]string{
+				"cluster.x-k8s.io/cluster-name": cluster.Name,
+			},
+		},
+	}
+
 	ampm := &infrav1exp.AzureMachinePoolMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "ampm1",
 			Namespace:  "default",
 			Finalizers: []string{"test"},
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: cluster.Name,
+			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Name:       amp.Name,
 					Kind:       "AzureMachinePool",
 					APIVersion: infrav1exp.GroupVersion.String(),
 				},
+				{
+					Name:       ma.Name,
+					Kind:       "Machine",
+					APIVersion: clusterv1.GroupVersion.String(),
+				},
 			},
 		},
 	}
 
-	return cluster, azCluster, mp, amp, ampm
+	if ampmIsDeleting {
+		ampm.DeletionTimestamp = &metav1.Time{
+			Time: time.Now(),
+		}
+	}
+
+	return []client.Object{cluster, azCluster, mp, amp, ma, ampm}
 }
