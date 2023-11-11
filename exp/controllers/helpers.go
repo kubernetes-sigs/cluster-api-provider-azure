@@ -59,7 +59,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 
 		azCluster, ok := o.(*infrav1.AzureCluster)
 		if !ok {
-			log.Error(errors.Errorf("expected an AzureCluster, got %T instead", o.GetObjectKind()), "failed to map AzureCluster")
+			log.Error(errors.Errorf("expected an AzureCluster, got %T instead", o), "failed to map AzureCluster")
 			return nil
 		}
 
@@ -97,10 +97,10 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 	}, nil
 }
 
-// AzureManagedClusterToAzureMachinePoolsMapper creates a mapping handler to transform AzureManagedClusters into AzureMachinePools. The transform
-// requires AzureManagedCluster to map to the owning Cluster, then from the Cluster, collect the MachinePools belonging to the cluster,
+// AzureManagedControlPlaneToAzureMachinePoolsMapper creates a mapping handler to transform AzureManagedControlPlanes into AzureMachinePools. The transform
+// requires AzureManagedControlPlane to map to the owning Cluster, then from the Cluster, collect the MachinePools belonging to the cluster,
 // then finally projecting the infrastructure reference to the AzureMachinePool.
-func AzureManagedClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
+func AzureManagedControlPlaneToAzureMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
 	gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureMachinePool), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find GVK for AzureMachinePool")
@@ -110,21 +110,21 @@ func AzureManagedClusterToAzureMachinePoolsMapper(ctx context.Context, c client.
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
-		azCluster, ok := o.(*infrav1.AzureManagedCluster)
+		azControlPlane, ok := o.(*infrav1.AzureManagedControlPlane)
 		if !ok {
-			log.Error(errors.Errorf("expected an AzureManagedCluster, got %T instead", o.GetObjectKind()), "failed to map AzureManagedCluster")
+			log.Error(errors.Errorf("expected an AzureManagedControlPlane, got %T instead", o), "failed to map AzureManagedControlPlane")
 			return nil
 		}
 
-		log = log.WithValues("AzureManagedCluster", azCluster.Name, "Namespace", azCluster.Namespace)
+		log = log.WithValues("AzureManagedControlPlane", azControlPlane.Name, "Namespace", azControlPlane.Namespace)
 
-		// Don't handle deleted AzureManagedCluster
-		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
-			log.V(4).Info("AzureManagedCluster has a deletion timestamp, skipping mapping.")
+		// Don't handle deleted AzureManagedControlPlane
+		if !azControlPlane.ObjectMeta.DeletionTimestamp.IsZero() {
+			log.V(4).Info("AzureManagedControlPlane has a deletion timestamp, skipping mapping.")
 			return nil
 		}
 
-		clusterName, ok := controllers.GetOwnerClusterName(azCluster.ObjectMeta)
+		clusterName, ok := controllers.GetOwnerClusterName(azControlPlane.ObjectMeta)
 		if !ok {
 			log.V(4).Info("unable to get the owner cluster")
 			return nil
@@ -133,7 +133,7 @@ func AzureManagedClusterToAzureMachinePoolsMapper(ctx context.Context, c client.
 		machineList := &expv1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
 			log.V(4).Info(fmt.Sprintf("unable to list machine pools in cluster %s", clusterName))
 			return nil
 		}
