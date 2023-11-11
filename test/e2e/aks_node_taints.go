@@ -89,6 +89,7 @@ func AKSNodeTaintsSpec(ctx context.Context, inputGetter func() AKSNodeTaintsSpec
 
 				resp, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name, nil)
 				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(resp.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")))
 				actualTaintStrs := resp.AgentPool.Properties.NodeTaints
 				if expectedTaintStrs == nil {
 					g.Expect(actualTaintStrs).To(BeNil())
