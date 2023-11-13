@@ -103,7 +103,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachinePools mapper")
 	}
-	azureManagedClusterMapper, err := AzureManagedClusterToAzureMachinePoolsMapper(ctx, ampr.Client, mgr.GetScheme(), log)
+	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureMachinePoolsMapper(ctx, ampr.Client, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureManagedCluster to AzureMachinePools mapper")
 	}
@@ -125,7 +125,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		// watch for changes in AzureManagedControlPlane resources
 		Watches(
 			&infrav1.AzureManagedControlPlane{},
-			handler.EnqueueRequestsFromMapFunc(azureManagedClusterMapper),
+			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
 		// watch for changes in KubeadmConfig to sync bootstrap token
 		Watches(
