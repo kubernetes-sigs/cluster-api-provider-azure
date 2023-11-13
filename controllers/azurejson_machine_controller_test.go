@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -244,6 +245,7 @@ func newScheme() (*runtime.Scheme, error) {
 		infrav1.AddToScheme,
 		clusterv1.AddToScheme,
 		infrav1exp.AddToScheme,
+		aadpodv1.AddToScheme,
 		expv1.AddToScheme,
 	}
 	for _, fn := range schemeFn {
