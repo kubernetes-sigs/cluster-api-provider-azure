@@ -28,6 +28,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -83,6 +84,7 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 		checkTags := func(g Gomega) {
 			resp, err := managedclustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, nil)
 			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(resp.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")))
 			actualTags := converters.MapToTags(resp.ManagedCluster.Tags)
 			// Ignore tags not originally specified in spec.additionalTags
 			for k := range nonAdditionalTagKeys {
@@ -167,6 +169,7 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 			checkTags := func(g Gomega) {
 				resp, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name, nil)
 				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(resp.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")))
 				actualTags := converters.MapToTags(resp.AgentPool.Properties.Tags)
 				// Ignore tags not originally specified in spec.additionalTags
 				for k := range nonAdditionalTagKeys {
