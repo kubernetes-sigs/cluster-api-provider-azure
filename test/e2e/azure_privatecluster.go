@@ -24,21 +24,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/msi/mgmt/2018-11-30/msi"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/msi/armmsi"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -171,12 +167,11 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 	// Check that azure bastion is provisioned successfully.
 	{
-		By("verifying the Azure Bastion Host was create successfully")
-		settings, err := auth.GetSettingsFromEnvironment()
-		Expect(err).To(BeNil())
+		By("verifying the Azure Bastion Host was created successfully")
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		Expect(err).NotTo(HaveOccurred())
 
-		azureBastionClient := network.NewBastionHostsClient(settings.GetSubscriptionID())
-		azureBastionClient.Authorizer, err = azureutil.GetAuthorizer(settings)
+		azureBastionClient, err := armnetwork.NewBastionHostsClient(getSubscriptionID(Default), cred, nil)
 		Expect(err).To(BeNil())
 
 		groupName := os.Getenv(AzureResourceGroup)
@@ -189,19 +184,20 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 			Steps:    retryBackoffSteps,
 		}
 		retryFn := func() (bool, error) {
-			bastion, err := azureBastionClient.Get(ctx, groupName, azureBastionName)
+			resp, err := azureBastionClient.Get(ctx, groupName, azureBastionName, nil)
 			if err != nil {
 				return false, err
 			}
 
-			switch bastion.ProvisioningState {
-			case network.ProvisioningStateSucceeded:
+			bastion := resp.BastionHost
+			switch ptr.Deref(bastion.Properties.ProvisioningState, "") {
+			case armnetwork.ProvisioningStateSucceeded:
 				return true, nil
-			case network.ProvisioningStateUpdating:
+			case armnetwork.ProvisioningStateUpdating:
 				// Wait for operation to complete.
 				return false, nil
 			default:
-				return false, errors.New(fmt.Sprintf("Azure Bastion provisioning failed with state: %q", bastion.ProvisioningState))
+				return false, errors.New(fmt.Sprintf("Azure Bastion provisioning failed with state: %q", ptr.Deref(bastion.Properties.ProvisioningState, "(nil)")))
 			}
 		}
 		err = wait.ExponentialBackoff(backoff, retryFn)
@@ -213,42 +209,41 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 // SetupExistingVNet creates a resource group and a VNet to be used by a workload cluster.
 func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, nodeSubnetCidrs map[string]string, bastionSubnetName, bastionSubnetCidr string) func() {
 	By("creating Azure clients with the workload cluster's subscription")
-	settings, err := auth.GetSettingsFromEnvironment()
+	subscriptionID := getSubscriptionID(Default)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := azureutil.GetAuthorizer(settings)
+
+	groupClient, err := armresources.NewResourceGroupsClient(subscriptionID, cred, nil)
 	Expect(err).NotTo(HaveOccurred())
-	groupClient := resources.NewGroupsClient(subscriptionID)
-	groupClient.Authorizer = authorizer
-	vnetClient := network.NewVirtualNetworksClient(subscriptionID)
-	vnetClient.Authorizer = authorizer
-	nsgClient := network.NewSecurityGroupsClient(subscriptionID)
-	nsgClient.Authorizer = authorizer
-	routetableClient := network.NewRouteTablesClient(subscriptionID)
-	routetableClient.Authorizer = authorizer
+	vnetClient, err := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+	nsgClient, err := armnetwork.NewSecurityGroupsClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+	routetableClient, err := armnetwork.NewRouteTablesClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
 	By("creating a resource group")
 	groupName := os.Getenv(AzureCustomVnetResourceGroup)
-	_, err = groupClient.CreateOrUpdate(ctx, groupName, resources.Group{
+	_, err = groupClient.CreateOrUpdate(ctx, groupName, armresources.ResourceGroup{
 		Location: ptr.To(os.Getenv(AzureLocation)),
 		Tags: map[string]*string{
 			"jobName":           ptr.To(os.Getenv(JobName)),
 			"creationTimestamp": ptr.To(os.Getenv(Timestamp)),
 		},
-	})
+	}, nil)
 	Expect(err).To(BeNil())
 
 	By("creating a network security group")
 	nsgName := "control-plane-nsg"
-	securityRules := []network.SecurityRule{
+	securityRules := []*armnetwork.SecurityRule{
 		{
 			Name: ptr.To("allow_ssh"),
-			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+			Properties: &armnetwork.SecurityRulePropertiesFormat{
 				Description:              ptr.To("Allow SSH"),
 				Priority:                 ptr.To[int32](2200),
-				Protocol:                 network.SecurityRuleProtocolTCP,
-				Access:                   network.SecurityRuleAccessAllow,
-				Direction:                network.SecurityRuleDirectionInbound,
+				Protocol:                 ptr.To(armnetwork.SecurityRuleProtocolTCP),
+				Access:                   ptr.To(armnetwork.SecurityRuleAccessAllow),
+				Direction:                ptr.To(armnetwork.SecurityRuleDirectionInbound),
 				SourceAddressPrefix:      ptr.To("*"),
 				SourcePortRange:          ptr.To("*"),
 				DestinationAddressPrefix: ptr.To("*"),
@@ -257,60 +252,60 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 		},
 		{
 			Name: ptr.To("allow_apiserver"),
-			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+			Properties: &armnetwork.SecurityRulePropertiesFormat{
 				Description:              ptr.To("Allow API Server"),
 				SourcePortRange:          ptr.To("*"),
 				DestinationPortRange:     ptr.To("6443"),
 				SourceAddressPrefix:      ptr.To("*"),
 				DestinationAddressPrefix: ptr.To("*"),
-				Protocol:                 network.SecurityRuleProtocolTCP,
-				Access:                   network.SecurityRuleAccessAllow,
-				Direction:                network.SecurityRuleDirectionInbound,
+				Protocol:                 ptr.To(armnetwork.SecurityRuleProtocolTCP),
+				Access:                   ptr.To(armnetwork.SecurityRuleAccessAllow),
+				Direction:                ptr.To(armnetwork.SecurityRuleDirectionInbound),
 				Priority:                 ptr.To[int32](2201),
 			},
 		},
 	}
-	nsgFuture, err := nsgClient.CreateOrUpdate(ctx, groupName, nsgName, network.SecurityGroup{
+	nsgPoller, err := nsgClient.BeginCreateOrUpdate(ctx, groupName, nsgName, armnetwork.SecurityGroup{
 		Location: ptr.To(os.Getenv(AzureLocation)),
-		SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-			SecurityRules: &securityRules,
+		Properties: &armnetwork.SecurityGroupPropertiesFormat{
+			SecurityRules: securityRules,
 		},
-	})
+	}, nil)
 	Expect(err).To(BeNil())
-	err = nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)
+	_, err = nsgPoller.PollUntilDone(ctx, nil)
 	Expect(err).To(BeNil())
 
 	By("creating a node security group")
 	nsgNodeName := "node-nsg"
-	securityRulesNode := []network.SecurityRule{}
-	nsgNodeFuture, err := nsgClient.CreateOrUpdate(ctx, groupName, nsgNodeName, network.SecurityGroup{
+	securityRulesNode := []*armnetwork.SecurityRule{}
+	nsgNodePoller, err := nsgClient.BeginCreateOrUpdate(ctx, groupName, nsgNodeName, armnetwork.SecurityGroup{
 		Location: ptr.To(os.Getenv(AzureLocation)),
-		SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-			SecurityRules: &securityRulesNode,
+		Properties: &armnetwork.SecurityGroupPropertiesFormat{
+			SecurityRules: securityRulesNode,
 		},
-	})
+	}, nil)
 	Expect(err).To(BeNil())
-	err = nsgNodeFuture.WaitForCompletionRef(ctx, nsgClient.Client)
+	_, err = nsgNodePoller.PollUntilDone(ctx, nil)
 	Expect(err).To(BeNil())
 
 	By("creating a node routetable")
 	routeTableName := "node-routetable"
-	routeTable := network.RouteTable{
-		Location:                   ptr.To(os.Getenv(AzureLocation)),
-		RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
+	routeTable := armnetwork.RouteTable{
+		Location:   ptr.To(os.Getenv(AzureLocation)),
+		Properties: &armnetwork.RouteTablePropertiesFormat{},
 	}
-	routetableFuture, err := routetableClient.CreateOrUpdate(ctx, groupName, routeTableName, routeTable)
+	routetablePoller, err := routetableClient.BeginCreateOrUpdate(ctx, groupName, routeTableName, routeTable, nil)
 	Expect(err).To(BeNil())
-	err = routetableFuture.WaitForCompletionRef(ctx, routetableClient.Client)
+	_, err = routetablePoller.PollUntilDone(ctx, nil)
 	Expect(err).To(BeNil())
 
 	By("creating a virtual network")
-	var subnets []network.Subnet
+	var subnets []*armnetwork.Subnet
 	for name, cidr := range cpSubnetCidrs {
-		subnets = append(subnets, network.Subnet{
-			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+		subnets = append(subnets, &armnetwork.Subnet{
+			Properties: &armnetwork.SubnetPropertiesFormat{
 				AddressPrefix: ptr.To(cidr),
-				NetworkSecurityGroup: &network.SecurityGroup{
+				NetworkSecurityGroup: &armnetwork.SecurityGroup{
 					ID: ptr.To(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, groupName, nsgName)),
 				},
 			},
@@ -318,13 +313,13 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 		})
 	}
 	for name, cidr := range nodeSubnetCidrs {
-		subnets = append(subnets, network.Subnet{
-			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+		subnets = append(subnets, &armnetwork.Subnet{
+			Properties: &armnetwork.SubnetPropertiesFormat{
 				AddressPrefix: ptr.To(cidr),
-				NetworkSecurityGroup: &network.SecurityGroup{
+				NetworkSecurityGroup: &armnetwork.SecurityGroup{
 					ID: ptr.To(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, groupName, nsgNodeName)),
 				},
-				RouteTable: &network.RouteTable{
+				RouteTable: &armnetwork.RouteTable{
 					ID: ptr.To(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/routeTables/%s", subscriptionID, groupName, routeTableName)),
 				},
 			},
@@ -333,133 +328,100 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	}
 
 	// Create the AzureBastion subnet.
-	subnets = append(subnets, network.Subnet{
-		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+	subnets = append(subnets, &armnetwork.Subnet{
+		Properties: &armnetwork.SubnetPropertiesFormat{
 			AddressPrefix: ptr.To(bastionSubnetCidr),
 		},
 		Name: ptr.To(bastionSubnetName),
 	})
 
-	vnetFuture, err := vnetClient.CreateOrUpdate(ctx, groupName, os.Getenv(AzureCustomVNetName), network.VirtualNetwork{
+	vnetPoller, err := vnetClient.BeginCreateOrUpdate(ctx, groupName, os.Getenv(AzureCustomVNetName), armnetwork.VirtualNetwork{
 		Location: ptr.To(os.Getenv(AzureLocation)),
-		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-			AddressSpace: &network.AddressSpace{
-				AddressPrefixes: &[]string{vnetCidr},
+		Properties: &armnetwork.VirtualNetworkPropertiesFormat{
+			AddressSpace: &armnetwork.AddressSpace{
+				AddressPrefixes: []*string{ptr.To(vnetCidr)},
 			},
-			Subnets: &subnets,
+			Subnets: subnets,
 		},
-	})
+	}, nil)
 	if err != nil {
 		fmt.Print(err.Error())
 	}
 	Expect(err).To(BeNil())
-	err = vnetFuture.WaitForCompletionRef(ctx, vnetClient.Client)
+	_, err = vnetPoller.PollUntilDone(ctx, nil)
 	Expect(err).To(BeNil())
 
 	return func() {
 		Logf("deleting an existing virtual network %q", os.Getenv(AzureCustomVNetName))
-		vFuture, err := vnetClient.Delete(ctx, groupName, os.Getenv(AzureCustomVNetName))
+		vPoller, err := vnetClient.BeginDelete(ctx, groupName, os.Getenv(AzureCustomVNetName), nil)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(vFuture.WaitForCompletionRef(ctx, vnetClient.Client)).To(Succeed())
+		_, err = vPoller.PollUntilDone(ctx, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		Logf("deleting an existing route table %q", routeTableName)
-		rtFuture, err := routetableClient.Delete(ctx, groupName, routeTableName)
+		rtPoller, err := routetableClient.BeginDelete(ctx, groupName, routeTableName, nil)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(rtFuture.WaitForCompletionRef(ctx, routetableClient.Client)).To(Succeed())
+		_, err = rtPoller.PollUntilDone(ctx, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		Logf("deleting an existing network security group %q", nsgNodeName)
-		nsgFuture, err := nsgClient.Delete(ctx, groupName, nsgNodeName)
+		nsgPoller, err := nsgClient.BeginDelete(ctx, groupName, nsgNodeName, nil)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)).To(Succeed())
+		_, err = nsgPoller.PollUntilDone(ctx, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		Logf("deleting an existing network security group %q", nsgName)
-		nsgFuture, err = nsgClient.Delete(ctx, groupName, nsgName)
+		nsgPoller, err = nsgClient.BeginDelete(ctx, groupName, nsgName, nil)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)).To(Succeed())
+		_, err = nsgPoller.PollUntilDone(ctx, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		Logf("verifying the existing resource group %q is empty", groupName)
-		resClient := resources.NewClient(subscriptionID)
-		resClient.Authorizer = authorizer
-		Eventually(func() ([]resources.GenericResourceExpanded, error) {
-			page, err := resClient.ListByResourceGroup(ctx, groupName, "", "provisioningState", ptr.To[int32](10))
-			if err != nil {
-				return nil, err
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		Expect(err).NotTo(HaveOccurred())
+		resClient, err := armresources.NewClient(getSubscriptionID(Default), cred, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() ([]*armresources.GenericResourceExpanded, error) {
+			var foundResources []*armresources.GenericResourceExpanded
+			opts := armresources.ClientListByResourceGroupOptions{
+				Expand: ptr.To("provisioningState"),
+				Top:    ptr.To[int32](10),
 			}
-
-			// for each resource do a GET directly for that resource to avoid hitting Azure list cache
-			var foundResources []resources.GenericResourceExpanded
-			for _, genericResource := range page.Values() {
-				apiversion, err := getAPIVersion(*genericResource.ID)
+			pager := resClient.NewListByResourceGroupPager(groupName, &opts)
+			for pager.More() {
+				page, err := pager.NextPage(ctx)
 				if err != nil {
-					LogWarningf("failed to get API version for %q with %+v", *genericResource.ID, err)
-				}
-
-				_, err = resClient.GetByID(ctx, *genericResource.ID, apiversion)
-				if err != nil && azure.ResourceNotFound(err) {
-					// the resources is returned in the list, but it's actually 404
-					continue
-				}
-
-				// unexpected error calling GET on the resource
-				if err != nil {
-					LogWarningf("failed GETing resource %q with %+v", *genericResource.ID, err)
 					return nil, err
 				}
-
-				// if resource is still there, then append to foundResources
-				foundResources = append(foundResources, genericResource)
+				foundResources = append(foundResources, page.Value...)
 			}
 			return foundResources, nil
-			// add some tolerance for Azure caching of resource group resource caching
+			// add some tolerance for Azure caching of resource group resources
 		}, deleteOperationTimeout, retryableOperationTimeout).Should(BeEmpty(), "Expect the manually created resource group is empty after removing the manually created resources.")
 
 		Logf("deleting the existing resource group %q", groupName)
-		grpFuture, err := groupClient.Delete(ctx, groupName)
+		grpPoller, err := groupClient.BeginDelete(ctx, groupName, nil)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(grpFuture.WaitForCompletionRef(ctx, nsgClient.Client)).To(Succeed())
+		_, err = grpPoller.PollUntilDone(ctx, nil)
+		Expect(err).NotTo(HaveOccurred())
 	}
-}
-
-func getAPIVersion(resourceID string) (string, error) {
-	parsed, err := azureutil.ParseResourceID(resourceID)
-	if err != nil {
-		return "", errors.Wrap(err, fmt.Sprintf("unable to parse resource ID %q", resourceID))
-	}
-
-	switch parsed.Provider {
-	case "Microsoft.Network":
-		if parsed.ResourceType.String() == "privateDnsZones" {
-			return getAPIVersionFromUserAgent(privatedns.UserAgent()), nil
-		}
-		return getAPIVersionFromUserAgent(network.UserAgent()), nil
-	case "Microsoft.Compute":
-		return getAPIVersionFromUserAgent(compute.UserAgent()), nil
-	default:
-		return "", fmt.Errorf("failed to find an API version for resource provider %q", parsed.Provider)
-	}
-}
-
-func getAPIVersionFromUserAgent(userAgent string) string {
-	splits := strings.Split(userAgent, "/")
-	return splits[len(splits)-1]
 }
 
 // getClientIDforMSI fetches the client ID of a user assigned identity.
 func getClientIDforMSI(resourceID string) string {
-	settings, err := auth.GetSettingsFromEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := azureutil.GetAuthorizer(settings)
+	subscriptionID := getSubscriptionID(Default)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	msiClient := msi.NewUserAssignedIdentitiesClient(subscriptionID)
-	msiClient.Authorizer = authorizer
+	msiClient, err := armmsi.NewUserAssignedIdentitiesClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
 
 	parsed, err := azureutil.ParseResourceID(resourceID)
 	Expect(err).NotTo(HaveOccurred())
 
-	id, err := msiClient.Get(context.TODO(), parsed.ResourceGroupName, parsed.Name)
+	resp, err := msiClient.Get(context.TODO(), parsed.ResourceGroupName, parsed.Name, nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	return id.ClientID.String()
+	return *resp.Properties.ClientID
 }
