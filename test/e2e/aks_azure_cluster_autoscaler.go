@@ -64,6 +64,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 
 		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name)
 		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(aks.ProvisioningState).To(Equal(pointer.String("Succeeded")))
 		aksInitialAutoScalerProfile := aks.AutoScalerProfile
 
 		// Conditional is based off of the actual AKS settings not the AzureManagedControlPlane
@@ -109,6 +110,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 		// Check that the autoscaler settings have been sync'd to AKS
 		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name)
 		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(aks.ProvisioningState).To(Equal(pointer.String("Succeeded")))
 		g.Expect(aks.AutoScalerProfile).ToNot(BeNil())
 		g.Expect(aks.AutoScalerProfile.Expander).To(Equal(expectedAksExpander))
 	}, input.WaitIntervals...).Should(Succeed())
