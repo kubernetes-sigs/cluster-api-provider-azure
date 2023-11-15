@@ -33,4 +33,7 @@ $(RELEASELINK): $(TOOLS_DIR)/go.mod
 
 .PHONY: serve
 serve:
-	mdbook serve
+	/tmp/mdbook serve
+
+build:
+	./install-and-build.sh

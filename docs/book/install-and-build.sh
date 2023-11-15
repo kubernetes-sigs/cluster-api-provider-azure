@@ -23,7 +23,7 @@ cd "${KUBE_ROOT}" || exit 1
 
 os=$(go env GOOS)
 arch=$(go env GOARCH)
-mdBookVersion="v0.4.5"
+mdBookVersion="v0.4.35"
 genCRDAPIReferenceDocsVersion="11fe95cbdcb91e9c25446fc99e6f2cdd8cbeb91a"
 
 # translate arch to rust's conventions (if we can)
@@ -58,7 +58,7 @@ esac
 # we hardcode linux/amd64 since rust uses a different naming scheme
 echo "downloading mdBook-${mdBookVersion}-${arch}-${target}.${ext}"
 set -x
-curl --retry 3 -sL -o /tmp/mdbook.${ext} "https://github.com/rust-lang-nursery/mdBook/releases/download/${mdBookVersion}/mdBook-${mdBookVersion}-${arch}-${target}.${ext}"
+curl --retry 3 -sL -o /tmp/mdbook.${ext} "https://github.com/rust-lang/mdBook/releases/download/${mdBookVersion}/mdBook-${mdBookVersion}-${arch}-${target}.${ext}"
 ${cmd} /tmp/mdbook.${ext}
 chmod +x /tmp/mdbook
 
