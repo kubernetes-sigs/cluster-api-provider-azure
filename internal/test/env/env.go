@@ -101,8 +101,7 @@ func NewTestEnvironment() *TestEnvironment {
 	}
 
 	mgr, err := manager.New(env.Config, manager.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: "0",
+		Scheme: scheme,
 	})
 	if err != nil {
 		klog.Fatalf("Failed to start testenv manager: %v", err)
