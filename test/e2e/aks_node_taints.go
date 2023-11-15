@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -92,6 +93,7 @@ func AKSNodeTaintsSpec(ctx context.Context, inputGetter func() AKSNodeTaintsSpec
 
 				agentpool, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name)
 				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(agentpool.ProvisioningState).To(Equal(pointer.String("Succeeded")))
 				actualTaintStrs := agentpool.NodeTaints
 				if expectedTaintStrs == nil {
 					g.Expect(actualTaintStrs).To(BeNil())

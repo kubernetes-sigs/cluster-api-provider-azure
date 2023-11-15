@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -69,6 +70,7 @@ func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput)
 	Eventually(func(g Gomega) {
 		aksCluster, err := managedClustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name)
 		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(aksCluster.ProvisioningState).To(Equal(pointer.String("Succeeded")))
 		g.Expect(aksCluster.ManagedClusterProperties).NotTo(BeNil())
 		g.Expect(aksCluster.ManagedClusterProperties.KubernetesVersion).NotTo(BeNil())
 		g.Expect("v" + *aksCluster.KubernetesVersion).To(Equal(input.KubernetesVersionUpgradeTo))

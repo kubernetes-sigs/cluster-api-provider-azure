@@ -114,6 +114,7 @@ func validateAKSAutoscaleDisabled(agentPoolGetter func() (containerservice.Agent
 	Eventually(func(g Gomega) {
 		agentpool, err := agentPoolGetter()
 		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(agentpool.ProvisioningState).To(Equal(pointer.String("Succeeded")))
 		g.Expect(pointer.BoolDeref(agentpool.EnableAutoScaling, false)).To(BeFalse())
 	}, inputGetter().WaitIntervals...).Should(Succeed())
 }
@@ -123,6 +124,7 @@ func validateAKSAutoscaleEnabled(agentPoolGetter func() (containerservice.AgentP
 	Eventually(func(g Gomega) {
 		agentpool, err := agentPoolGetter()
 		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(agentpool.ProvisioningState).To(Equal(pointer.String("Succeeded")))
 		g.Expect(pointer.BoolDeref(agentpool.EnableAutoScaling, false)).To(BeTrue())
 	}, inputGetter().WaitIntervals...).Should(Succeed())
 }

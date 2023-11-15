@@ -81,6 +81,7 @@ func AKSNodeLabelsSpec(ctx context.Context, inputGetter func() AKSNodeLabelsSpec
 			checkLabels := func(g Gomega) {
 				agentpool, err := agentpoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, *ammp.Spec.Name)
 				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(agentpool.ProvisioningState).To(Equal(pointer.String("Succeeded")))
 
 				var actualLabels map[string]string
 				if agentpool.NodeLabels != nil {
