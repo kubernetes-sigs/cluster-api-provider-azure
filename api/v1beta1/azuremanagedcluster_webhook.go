@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,6 +43,11 @@ func (r *AzureManagedCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &AzureManagedCluster{}
 
+func validateClusterName(clusterName *string) bool {
+	clusterNameValidRegex := regexp.MustCompile(`^[a-zA-Z0-9]$|^[a-zA-Z0-9][-_a-zA-Z0-9]{0,61}[a-zA-Z0-9]$`)
+	return clusterName != nil && clusterNameValidRegex.Match([]byte(*clusterName))
+}
+
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedCluster) ValidateCreate() (admission.Warnings, error) {
 	// NOTE: AzureManagedCluster relies upon MachinePools, which is behind a feature gate flag.
@@ -52,6 +58,15 @@ func (r *AzureManagedCluster) ValidateCreate() (admission.Warnings, error) {
 			"can be set only if the Cluster API 'MachinePool' feature flag is enabled",
 		)
 	}
+
+	if !validateClusterName(&r.ObjectMeta.Name) {
+		return nil, field.Invalid(
+			field.NewPath("objectMeta"),
+			r.Name,
+			"Name is invalid. Must only contain alphanumeric characters, hypens, or underscores.",
+		)
+	}
+
 	return nil, nil
 }
 

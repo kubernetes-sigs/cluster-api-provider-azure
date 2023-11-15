@@ -194,6 +194,9 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 						Host: "my-host",
 					},
 				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
 			},
 			wantErr: false,
 		},
@@ -205,8 +208,29 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 						Port: 4443,
 					},
 				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "clusterName is valid",
+			amc: &AzureManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-clustername",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "clusterName is invalid",
+			amc: &AzureManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-name-1.0",
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tc := range tests {
